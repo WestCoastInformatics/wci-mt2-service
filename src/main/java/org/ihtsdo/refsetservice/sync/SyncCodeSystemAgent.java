@@ -26,7 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class SyncCodeSystemAgent extends SyncService {
 
-    private static Logger logger = LoggerFactory.getLogger(SyncCodeSystemAgent.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SyncCodeSystemAgent.class);
 
     private static final String DEVELOPER_CODE_SYSTEM_SHORTNAME = "SNOMEDCT-WCI";
 
@@ -37,6 +37,7 @@ public class SyncCodeSystemAgent extends SyncService {
         codeSystemsNewAndInactive.clear();
     }
 
+    @Override
     public void syncSnowstorm() throws Exception {
 
         updateDatabaseCache();
@@ -47,27 +48,27 @@ public class SyncCodeSystemAgent extends SyncService {
 
         // Count and filter code systems (filtering based on ignoredCS list and bad data)
         final Iterator<JsonNode> organizationIterator = organizationJsonRootNode.iterator();
-        int codeSystemsReturned = countCodeSystems(organizationIterator);
-        logger.info("Found " + codeSystemsReturned + " + Code Systems on Snowstorm: " + organizationJsonRootNode);
+        final int codeSystemsReturned = countCodeSystems(organizationIterator);
+        LOG.info("Found " + codeSystemsReturned + " + Code Systems on Snowstorm: " + organizationJsonRootNode);
 
-        Set<JsonNode> filteredCodeSystemsToProcess = filterCodeSystems(organizationJsonRootNode);
-        logger.info("Will be processing only these " + filteredCodeSystemsToProcess.size() + " Code Systems: " + organizationJsonRootNode);
+        final Set<JsonNode> filteredCodeSystemsToProcess = filterCodeSystems(organizationJsonRootNode);
+        LOG.info("Will be processing only these " + filteredCodeSystemsToProcess.size() + " Code Systems: " + organizationJsonRootNode);
         statistics.setCodeSystemsSynced(codeSystemsReturned);
         statistics.setCodeSystemsFiltered(filteredCodeSystemsToProcess.size());
 
         // Identify new, removed, and existing codeSystems (Based on shortName)
         allDatabaseEditions.stream().forEach(e -> dbShortNames.add(e.getShortName()));
         filteredCodeSystemsToProcess.stream().filter(c -> (c.has("active") && c.get("active").asBoolean()) || !c.has("active"))
-                .forEach(cs -> activeSnowstormShortNames.add(cs.get("shortName").asText()));
+            .forEach(cs -> activeSnowstormShortNames.add(cs.get("shortName").asText()));
 
-        List<String> newShortNames = activeSnowstormShortNames.stream().filter(c -> !dbShortNames.contains(c)).collect(Collectors.toList());
-        List<String> removedShortNames = dbShortNames.stream().filter(c -> !activeSnowstormShortNames.contains(c)).collect(Collectors.toList());
+        final List<String> newShortNames = activeSnowstormShortNames.stream().filter(c -> !dbShortNames.contains(c)).collect(Collectors.toList());
+        final List<String> removedShortNames = dbShortNames.stream().filter(c -> !activeSnowstormShortNames.contains(c)).collect(Collectors.toList());
         statistics.setEditionsAdded(newShortNames.size());
         statistics.setEditionsRemoved(removedShortNames.size());
 
         // Process each type of code system. First review existing so that anything changed will be deleted and recreated
-        List<String> existingShortNames = dbShortNames.stream().filter(c -> activeSnowstormShortNames.contains(c)).collect(Collectors.toList());
-        List<String> changedShortNames = reviewExistingCodeSystems(filteredCodeSystemsToProcess, existingShortNames);
+        final List<String> existingShortNames = dbShortNames.stream().filter(c -> activeSnowstormShortNames.contains(c)).collect(Collectors.toList());
+        final List<String> changedShortNames = reviewExistingCodeSystems(filteredCodeSystemsToProcess, existingShortNames);
         statistics.setEditionsUnchanged(existingShortNames.size() - changedShortNames.size());
         statistics.setEditionsRecreated(changedShortNames.size());
 
@@ -77,10 +78,10 @@ public class SyncCodeSystemAgent extends SyncService {
         // Remove existing organizations
         filteredCodeSystemsToProcess.stream().filter(cs -> removedShortNames.contains(cs.get("shortName").asText())).forEach(matching -> {
             try {
-                Edition edition = allDatabaseEditions.stream().filter(e -> e.getShortName().equals(matching)).collect(Collectors.toList()).iterator().next();
+                final Edition edition = allDatabaseEditions.stream().filter(e -> e.getShortName().equals(matching)).collect(Collectors.toList()).iterator().next();
                 utilities.removeEdition(edition);
-            } catch (Exception e1) {
-                logger.error("Failed to remove edition: " + matching);
+            } catch (final Exception e1) {
+                LOG.error("Failed to remove edition: " + matching);
             }
         });
 
@@ -96,13 +97,14 @@ public class SyncCodeSystemAgent extends SyncService {
         updateDatabaseCache();
 
         // Only identify branches on filtered code systems and on runShortSync value
-        Map<String, SortedMap<Date, String>> editionBranchesToProcess = identifyEditionBranches(filteredCodeSystemsToProcess);
+        final Map<String, SortedMap<Date, String>> editionBranchesToProcess = identifyEditionBranches(filteredCodeSystemsToProcess);
         editionsToProcess.putAll(editionBranchesToProcess);
 
-        logger.info("Will be processing these " + editionsToProcess.keySet() + " edition-branches for refsets: " + editionsToProcess);
+        LOG.info("Will be processing these " + editionsToProcess.keySet() + " edition-branches for refsets: " + editionsToProcess);
     }
 
-    private int countCodeSystems(Iterator<JsonNode> organizationIterator) {
+    private int countCodeSystems(final Iterator<JsonNode> organizationIterator) {
+
         int counter = 0;
 
         while (organizationIterator.hasNext()) {
@@ -126,24 +128,24 @@ public class SyncCodeSystemAgent extends SyncService {
      * @return the map
      * @throws Exception the exception
      */
-    private Map<String, SortedMap<Date, String>> identifyEditionBranches(Set<JsonNode> codeSystems) throws Exception {
+    private Map<String, SortedMap<Date, String>> identifyEditionBranches(final Set<JsonNode> codeSystems) throws Exception {
 
-        Map<String, SortedMap<Date, String>> retMap = new HashMap<>();
-        logger.info("Database editions already in DB at start of sync in identifyEditionBranches() are: ");
-        allDatabaseEditions.stream().forEach(e -> logger.info(e.getName()));
+        final Map<String, SortedMap<Date, String>> retMap = new HashMap<>();
+        LOG.info("Database editions already in DB at start of sync in identifyEditionBranches() are: ");
+        allDatabaseEditions.stream().forEach(e -> LOG.info(e.getName()));
 
-        for (JsonNode codeSystem : codeSystems) {
+        for (final JsonNode codeSystem : codeSystems) {
 
             final String editionName = codeSystem.has("name") ? codeSystem.get("name").asText() : "";
             final String shortName = codeSystem.has("shortName") ? codeSystem.get("shortName").asText() : "";
             final String branch = codeSystem.has("branchPath") ? codeSystem.get("branchPath").asText() : "";
 
-            logger.info("Identifying CodeSystem branches for: " + editionName);
+            LOG.info("Identifying CodeSystem branches for: " + editionName);
 
-            final String genericUrl = SnowstormConnection.BASE_URL + "branches/{branch}/children";
+            final String genericUrl = SnowstormConnection.getBaseUrl() + "branches/{branch}/children";
 
-            SortedMap<Date, String> children = new TreeMap<>();
-            logger.info(" genericUrl: " + genericUrl.replace("{branch}", branch));
+            final SortedMap<Date, String> children = new TreeMap<>();
+            LOG.info(" genericUrl: " + genericUrl.replace("{branch}", branch));
 
             try (final Response response = SnowstormConnection.getResponse(genericUrl.replace("{branch}", branch))) {
 
@@ -157,7 +159,7 @@ public class SyncCodeSystemAgent extends SyncService {
 
                 while (branchIterator.hasNext()) {
 
-                    JsonNode child = branchIterator.next();
+                    final JsonNode child = branchIterator.next();
                     final String childBranch = child.get("path").asText();
                     String childDate = childBranch.replace(branch, "");
 
@@ -172,7 +174,7 @@ public class SyncCodeSystemAgent extends SyncService {
 
                     if (childDate.matches("^\\d{4}-\\d{2}-\\d{2}$")) {
 
-                        Date branchDate = branchDateFormatter.parse(childDate);
+                        final Date branchDate = branchDateFormatter.parse(childDate);
 
                         if (branchDate.before(new Date())) {
 
@@ -181,22 +183,24 @@ public class SyncCodeSystemAgent extends SyncService {
                         }
 
                     } else {
-                        logger.info("Ignoring branch " + childDate + " as it doesn't comply with expected format (where final item in path is a date in format yyyy-mm-dd");
+                        LOG.info("Ignoring branch " + childDate
+                            + " as it doesn't comply with expected format (where final item in path is a date in format yyyy-mm-dd");
                     }
 
                     if (!childAdded) {
 
-                        // logger.info("Skipping over childBranch/branchDate pair " + edition.getBranch() + "/" + childDate + " as the branch isn't an official release
+                        // LOG.info("Skipping over childBranch/branchDate pair " + edition.getBranch() + "/" + childDate + " as the branch isn't an official
+                        // release
                         // branch");
                     }
 
                 }
 
-                logger.info("Branch Dates for edition: " + editionName);
+                LOG.info("Branch Dates for edition: " + editionName);
 
-                for (Date child : children.keySet()) {
+                for (final Date child : children.keySet()) {
 
-                    logger.info("Child: " + child.toString() + " with branch: " + children.get(child));
+                    LOG.info("Child: " + child.toString() + " with branch: " + children.get(child));
                 }
 
             }
@@ -207,14 +211,16 @@ public class SyncCodeSystemAgent extends SyncService {
         return retMap;
     }
 
-    private List<String> reviewExistingCodeSystems(Set<JsonNode> filteredCodeSystemsToProcess, List<String> newShortNames) throws Exception {
-        List<String> modifiedShortNames = new ArrayList<>();
+    private List<String> reviewExistingCodeSystems(final Set<JsonNode> filteredCodeSystemsToProcess, final List<String> newShortNames) throws Exception {
 
-        // syncedEdition = handleExistingCodeSystem(correspondingDbEdition, snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch, isActiveSnowstormEdition,
+        final List<String> modifiedShortNames = new ArrayList<>();
+
+        // syncedEdition = handleExistingCodeSystem(correspondingDbEdition, snowstormEditionShortName, snowstormEditionName, snowstormEditionBranch,
+        // isActiveSnowstormEdition,
         // codeSystem);
 
         // Process one Organization per Edition.
-        for (JsonNode codeSystem : filteredCodeSystemsToProcess) {
+        for (final JsonNode codeSystem : filteredCodeSystemsToProcess) {
             if (newShortNames.contains(codeSystem.get("shortName").asText())) {
 
                 final String shortName = codeSystem.has("shortName") ? codeSystem.get("shortName").asText() : "";
@@ -223,13 +229,16 @@ public class SyncCodeSystemAgent extends SyncService {
                 final String maintainerType = identifyMaintainerType(codeSystem, editionName);
                 final Set<String> editionModules = utilities.identifyModules(shortName, editionName, branch, codeSystem);
 
-                Edition dbEdition = allDatabaseEditions.stream().filter(e -> e.getShortName().equals(codeSystem.get("shortName").asText())).collect(Collectors.toList()).iterator().next();
+                final Edition dbEdition = allDatabaseEditions.stream().filter(e -> e.getShortName().equals(codeSystem.get("shortName").asText()))
+                    .collect(Collectors.toList()).iterator().next();
 
                 if (isDifferentAttribute(dbEdition.getShortName(), "Edition name ", dbEdition.getName(), editionName)
-                        || isDifferentAttribute(dbEdition.getShortName(), "Edition branch ", dbEdition.getBranch(), branch)
-                        || isDifferentAttribute(dbEdition.getShortName(), "Edition modules ", dbEdition.getModules(), editionModules)
-                        || isDifferentAttribute(dbEdition.getShortName(), "Edition maintainerType ", dbEdition.getOrganization().getCodeSystemType(), maintainerType) || isDifferentAttribute(
-                                dbEdition.getShortName(), "Edition defaultLanguageCode ", dbEdition.getDefaultLanguageCode(), utilities.identifyDefaultLanguageCode(codeSystem, editionName))) {
+                    || isDifferentAttribute(dbEdition.getShortName(), "Edition branch ", dbEdition.getBranch(), branch)
+                    || isDifferentAttribute(dbEdition.getShortName(), "Edition modules ", dbEdition.getModules(), editionModules)
+                    || isDifferentAttribute(dbEdition.getShortName(), "Edition maintainerType ", dbEdition.getOrganization().getCodeSystemType(),
+                        maintainerType)
+                    || isDifferentAttribute(dbEdition.getShortName(), "Edition defaultLanguageCode ", dbEdition.getDefaultLanguageCode(),
+                        utilities.identifyDefaultLanguageCode(codeSystem, editionName))) {
                     modifiedShortNames.add(shortName);
                     continue;
                 }
@@ -240,10 +249,12 @@ public class SyncCodeSystemAgent extends SyncService {
 
                     if (!dbEdition.getDefaultLanguageRefsets().isEmpty() && editionDefaultLanguageRefsets.isEmpty()) {
 
-                        logger.info(" False-Positive inconsistent Edition defaultLanguageRefsets with '" + dbEdition.getDefaultLanguageRefsets() + "' and '" + editionDefaultLanguageRefsets + "'");
+                        LOG.info(" False-Positive inconsistent Edition defaultLanguageRefsets with '" + dbEdition.getDefaultLanguageRefsets() + "' and '"
+                            + editionDefaultLanguageRefsets + "'");
                     } else {
 
-                        logger.info(" inconsistent Edition defaultLanguageRefsets with '" + dbEdition.getDefaultLanguageRefsets() + "' and '" + editionDefaultLanguageRefsets + "'");
+                        LOG.info(" inconsistent Edition defaultLanguageRefsets with '" + dbEdition.getDefaultLanguageRefsets() + "' and '"
+                            + editionDefaultLanguageRefsets + "'");
 
                         modifiedShortNames.add(shortName);
                         continue;
@@ -253,12 +264,13 @@ public class SyncCodeSystemAgent extends SyncService {
             }
         }
 
-        modifiedShortNames.stream().forEach(n -> logger.info("Removing and re-adding edition: " + n));
+        modifiedShortNames.stream().forEach(n -> LOG.info("Removing and re-adding edition: " + n));
 
         return modifiedShortNames;
     }
 
-    private Edition addCodeSystem(JsonNode codeSystem) {
+    private Edition addCodeSystem(final JsonNode codeSystem) {
+
         try {
             final String shortName = codeSystem.has("shortName") ? codeSystem.get("shortName").asText() : "";
             final String editionName = codeSystem.has("name") ? codeSystem.get("name").asText() : "";
@@ -287,9 +299,9 @@ public class SyncCodeSystemAgent extends SyncService {
             postCodeSystemProcessing(newEdition);
 
             return newEdition;
-        } catch (Exception e) {
+        } catch (final Exception e) {
 
-            logger.error("Failed in syncing New Snowstorm Code System: " + codeSystem);
+            LOG.error("Failed in syncing New Snowstorm Code System: " + codeSystem);
             e.printStackTrace();
 
             return null;
@@ -300,10 +312,11 @@ public class SyncCodeSystemAgent extends SyncService {
     /*
      * See if organization with the name provided already exists. If so, return it. If not, create and then return.
      */
-    private Organization identifyMatchingOrganization(String editionShortName) throws Exception {
+    private Organization identifyMatchingOrganization(final String editionShortName) throws Exception {
 
         // Determine Owner
-        List<Organization> organizations = allDatabaseOrganizations.stream().filter(o -> o.getName().equals(editionOwnerMap.get(editionShortName))).collect(Collectors.toList());
+        final List<Organization> organizations =
+            allDatabaseOrganizations.stream().filter(o -> o.getName().equals(editionOwnerMap.get(editionShortName))).collect(Collectors.toList());
 
         if (organizations.isEmpty()) {
             // TODO: If was once there but not, do we remove owner?
@@ -320,23 +333,24 @@ public class SyncCodeSystemAgent extends SyncService {
         return organizations.iterator().next();
     }
 
-    private Organization createOrganization(String editionShortName, String organizationMaintainerType) throws Exception {
+    private Organization createOrganization(final String editionShortName, final String organizationMaintainerType) throws Exception {
 
         // Create new organization
         // TODO: 1 - Add a description default value or update snowstorm with value per codesystem
         final String organizationName = editionOwnerMap.get(editionShortName);
         final String organizationDescription = ownerDescriptionMap.get(organizationName);
 
-        Organization organization = utilities.addOrganziation(organizationName, organizationDescription, organizationMaintainerType);
+        final Organization organization = utilities.addOrganziation(organizationName, organizationDescription, organizationMaintainerType);
 
         allDatabaseOrganizations.add(organization);
 
-        logger.info("Created Organization: " + organization.getName());
+        LOG.info("Created Organization: " + organization.getName());
 
         return organization;
     }
 
-    private void setSnowstormEditionOwner(String editionShortName, String editionName, JsonNode codeSystem) {
+    private void setSnowstormEditionOwner(final String editionShortName, final String editionName, final JsonNode codeSystem) {
+
         String description;
         String owner;
 
@@ -347,9 +361,9 @@ public class SyncCodeSystemAgent extends SyncService {
         } else {
             owner = "Owner of " + editionName;
             description = "Two things to change." + System.lineSeparator()
-                    + "1) Your organization name isn't defined on Snowstorm yet, so we have provided you with a temporary one that matches your edition name." + System.lineSeparator()
-                    + "Have your organization's administrator(s) contact SNOMED International to have it changed." + System.lineSeparator()
-                    + "2) Organizational administrator(s) can update this default description at any time";
+                + "1) Your organization name isn't defined on Snowstorm yet, so we have provided you with a temporary one that matches your edition name."
+                + System.lineSeparator() + "Have your organization's administrator(s) contact SNOMED International to have it changed." + System.lineSeparator()
+                + "2) Organizational administrator(s) can update this default description at any time";
         }
 
         editionOwnerMap.put(editionShortName, owner);
@@ -361,7 +375,7 @@ public class SyncCodeSystemAgent extends SyncService {
 
     }
 
-    private Set<JsonNode> filterCodeSystems(JsonNode organizationJsonRootNode) throws Exception {
+    private Set<JsonNode> filterCodeSystems(final JsonNode organizationJsonRootNode) throws Exception {
 
         final Set<JsonNode> filteredCodeSystems = new HashSet<>();
 
@@ -373,12 +387,12 @@ public class SyncCodeSystemAgent extends SyncService {
 
             while (codeSystems.hasNext()) {
 
-                JsonNode codeSystem = codeSystems.next();
+                final JsonNode codeSystem = codeSystems.next();
 
                 // Check for invalid or ignored code systems
                 if (!codeSystem.has("shortName")) {
 
-                    logger.error("Encountered codeSystem without a shortName: " + codeSystem);
+                    LOG.error("Encountered codeSystem without a shortName: " + codeSystem);
                     // Skipping odd code system without a shortName
                     continue;
                 }
@@ -392,26 +406,26 @@ public class SyncCodeSystemAgent extends SyncService {
                     if (!maintainerType.equalsIgnoreCase("Managed Service")) {
 
                         // For now, only supportCode Managed Service
-                        logger.info("Ignoring codesystem " + editionShortName + " as is of maintainerType: " + maintainerType);
+                        LOG.info("Ignoring codesystem " + editionShortName + " as is of maintainerType: " + maintainerType);
                         continue;
 
                     } else if (utilities.getPropertyReader().getCodeSystemsToIgnore().contains(editionShortName)) {
 
                         // Code System has been defined as to-be-ignored (either by specifying name or shortname)
-                        logger.info("Ignoring codesystem " + editionShortName + " as it's listed in ignoredCodeSystems.txt");
+                        LOG.info("Ignoring codesystem " + editionShortName + " as it's listed in ignoredCodeSystems.txt");
                         continue;
                     }
 
                     filteredCodeSystems.add(codeSystem);
                 } else {
-                    logger.info("Ignoring codesystem " + editionShortName + " as it failed isEditionToProcess()");
+                    LOG.info("Ignoring codesystem " + editionShortName + " as it failed isEditionToProcess()");
                 }
 
             }
 
         }
 
-        filteredCodeSystems.stream().forEach(c -> logger.info("Will process codeSystem: " + c));
+        filteredCodeSystems.stream().forEach(c -> LOG.info("Will process codeSystem: " + c));
 
         return filteredCodeSystems;
     }
@@ -430,8 +444,8 @@ public class SyncCodeSystemAgent extends SyncService {
      */
     private JsonNode getSnowstormCodeSystems() throws Exception {
 
-        final String url = SnowstormConnection.BASE_URL + "codesystems";
-        logger.info("getSnowstormCodeSystems url: " + url);
+        final String url = SnowstormConnection.getBaseUrl() + "codesystems";
+        LOG.info("getSnowstormCodeSystems url: " + url);
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
@@ -445,7 +459,7 @@ public class SyncCodeSystemAgent extends SyncService {
 
     }
 
-    private String identifyMaintainerType(JsonNode codeSystem, String editionShortName) throws Exception {
+    private String identifyMaintainerType(final JsonNode codeSystem, final String editionShortName) throws Exception {
 
         String codeSystemType = codeSystem.has("maintainerType") ? codeSystem.get("maintainerType").asText() : "";
 
@@ -466,7 +480,7 @@ public class SyncCodeSystemAgent extends SyncService {
     }
 
     // Organization is done at this point. Check if Developer Edition. If not, create a default UAT project
-    private void postCodeSystemProcessing(Edition syncedEdition) throws Exception {
+    private void postCodeSystemProcessing(final Edition syncedEdition) throws Exception {
 
         if (DEVELOPER_CODE_SYSTEM_SHORTNAME.equalsIgnoreCase(syncedEdition.getShortName())) {
 
@@ -492,7 +506,8 @@ public class SyncCodeSystemAgent extends SyncService {
 
                 final String projectName = syncedEdition.getName() + " Default Project";
                 final String projectDescription =
-                        "This is a project to support all refsets not already associated with a project in the Refset & Translation Tool for " + syncedEdition.getName() + ".";
+                    "This is a project to support all refsets not already associated with a project in the Refset & Translation Tool for "
+                        + syncedEdition.getName() + ".";
 
                 // Create default project
                 final Project project = utilities.addProject(projectName, projectDescription, syncedEdition);
@@ -508,10 +523,10 @@ public class SyncCodeSystemAgent extends SyncService {
         return developerTestingEdition;
     }
 
-    private boolean isEditionToProcess(String codeSystem) {
+    private boolean isEditionToProcess(final String codeSystem) {
 
-        return !isTesting() || (isTesting() && (testingEditionShortName == null || testingEditionShortName.isEmpty()) || codeSystem.equalsIgnoreCase(testingEditionShortName)
-                || utilities.isInternationalEdition(codeSystem));
+        return !isTesting() || (isTesting() && (testingEditionShortName == null || testingEditionShortName.isEmpty())
+            || codeSystem.equalsIgnoreCase(testingEditionShortName) || utilities.isInternationalEdition(codeSystem));
 
     }
 }

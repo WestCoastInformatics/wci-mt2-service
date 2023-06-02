@@ -14,299 +14,314 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "Represents a set of search parameters for finding data.")
 public class SearchParameters {
 
-	/** The query. */
-	private String query;
+    /** The query. */
+    private String query;
 
-	/** The limit. */
-	private Integer limit;
+    /** The limit. */
+    private Integer limit;
 
-	/** The offset. */
-	private Integer offset;
+    /** The offset. */
+    private Integer offset;
 
-	/** The active only. */
-	private Boolean activeOnly;
+    /** The active only. */
+    private Boolean activeOnly;
 
-	/** The sort. */
-	private String sort;
+    /** The sort. */
+    private String sort;
 
-	/** The sort ascending. */
-	private Boolean sortAscending;
+    /** The sort ascending. */
+    private Boolean sortAscending;
 
-	/** Flag for if this search is for editing. */
-	private Boolean editing = false;
+    /** Flag for if this search is for editing. */
+    private Boolean editing = false;
 
-	/**
-	 * Instantiates an empty {@link SearchParameters}.
-	 */
-	public SearchParameters() {
-		// n/a
-	}
+    /**
+     * Instantiates an empty {@link SearchParameters}.
+     */
+    public SearchParameters() {
 
-	/**
-	 * Instantiates a {@link SearchParameters} from the specified parameters.
-	 *
-	 * @param other the other
-	 */
-	public SearchParameters(final SearchParameters other) {
-		populateFrom(other);
-	}
+        // n/a
+    }
 
-	/**
-	 * Populate from.
-	 *
-	 * @param other the other
-	 */
-	public void populateFrom(final SearchParameters other) {
-		query = other.getQuery();
-		limit = other.getLimit();
-		offset = other.getOffset();
-		activeOnly = other.getActiveOnly();
-		sort = other.getSort();
-		sortAscending = other.getSortAscending();
-		editing = other.getEditing();
-	}
+    /**
+     * Instantiates a {@link SearchParameters} from the specified parameters.
+     *
+     * @param other the other
+     */
+    public SearchParameters(final SearchParameters other) {
 
-	/**
-	 * Returns the query.
-	 *
-	 * @return the query
-	 */
-	@ApiModelProperty(value = "The search query")
-	public String getQuery() {
-		return query;
-	}
+        populateFrom(other);
+    }
 
-	/**
-	 * Sets the query.
-	 *
-	 * @param query the query
-	 */
-	public void setQuery(final String query) {
-		this.query = query;
-	}
+    /**
+     * Populate from.
+     *
+     * @param other the other
+     */
+    public void populateFrom(final SearchParameters other) {
 
-	/**
-	 * Returns the limit.
-	 *
-	 * @return the limit
-	 */
-	@ApiModelProperty(value = "Indicates the maximum number of search results.")
-	public Integer getLimit() {
-		return limit;
-	}
+        query = other.getQuery();
+        limit = other.getLimit();
+        offset = other.getOffset();
+        activeOnly = other.getActiveOnly();
+        sort = other.getSort();
+        sortAscending = other.getSortAscending();
+        editing = other.getEditing();
+    }
 
-	/**
-	 * Sets the limit.
-	 *
-	 * @param limit the limit
-	 */
-	public void setLimit(final Integer limit) {
-		this.limit = limit;
-	}
+    /**
+     * Returns the query.
+     *
+     * @return the query
+     */
+    @ApiModelProperty(value = "The search query")
+    public String getQuery() {
 
-	/**
-	 * Returns the offset.
-	 *
-	 * @return the offset
-	 */
-	@ApiModelProperty(value = "Indicates the start index of the search results")
-	public Integer getOffset() {
-		return offset;
-	}
+        return query;
+    }
 
-	/**
-	 * Sets the offset.
-	 *
-	 * @param offset the offset
-	 */
-	public void setOffset(final Integer offset) {
-		this.offset = offset;
-	}
+    /**
+     * Sets the query.
+     *
+     * @param query the query
+     */
+    public void setQuery(final String query) {
 
-	/**
-	 * Returns the active only.
-	 *
-	 * @return the active only
-	 */
-	@ApiModelProperty(value = "Indicates that only active content should be searched.")
-	public Boolean getActiveOnly() {
-		return activeOnly;
-	}
+        this.query = query;
+    }
 
-	/**
-	 * Sets the active only.
-	 *
-	 * @param activeOnly the active only
-	 */
-	public void setActiveOnly(final Boolean activeOnly) {
-		this.activeOnly = activeOnly;
-	}
+    /**
+     * Returns the limit.
+     *
+     * @return the limit
+     */
+    @ApiModelProperty(value = "Indicates the maximum number of search results.")
+    public Integer getLimit() {
 
-	/**
-	 * Returns the sort.
-	 *
-	 * @return the sort
-	 */
-	@ApiModelProperty(value = "Indicates the sort field for search results")
-	public String getSort() {
-		return sort;
-	}
+        return limit;
+    }
 
-	/**
-	 * Sets the sort.
-	 *
-	 * @param sort the sort
-	 */
-	public void setSort(final String sort) {
-		this.sort = sort;
-	}
+    /**
+     * Sets the limit.
+     *
+     * @param limit the limit
+     */
+    public void setLimit(final Integer limit) {
 
-	/**
-	 * Returns the sort ascending.
-	 *
-	 * @return the sort ascending
-	 */
-	@ApiModelProperty(value = "Indicates whether sort is ascending (<code>true</code>) "
-			+ "or descending (<code>false</code>).")
-	public Boolean getSortAscending() {
-		return sortAscending;
-	}
+        this.limit = limit;
+    }
 
-	/**
-	 * Sets the sort ascending.
-	 *
-	 * @param sortAscending the sort ascending
-	 */
-	public void setSortAscending(final Boolean sortAscending) {
-		this.sortAscending = sortAscending;
-	}
+    /**
+     * Returns the offset.
+     *
+     * @return the offset
+     */
+    @ApiModelProperty(value = "Indicates the start index of the search results")
+    public Integer getOffset() {
 
-	/**
-	 * Returns the editing flag.
-	 *
-	 * @return the editing flag
-	 */
-	@ApiModelProperty(value = "Only used when getting members or concepts for members "
-			+ "and indicates inferred form should be used an leaf flags included.")
-	public Boolean getEditing() {
-		return editing;
-	}
+        return offset;
+    }
 
-	/**
-	 * Sets the editing flag.
-	 *
-	 * @param editing the editing flag
-	 */
-	public void setEditing(final Boolean editing) {
-		this.editing = editing;
-	}
+    /**
+     * Sets the offset.
+     *
+     * @param offset the offset
+     */
+    public void setOffset(final Integer offset) {
 
-	/**
-	 * Sets the sort ascending.
-	 *
-	 * @param obj the obj
-	 * @return true, if successful
-	 */
-	@Override
-	public boolean equals(final Object obj) {
+        this.offset = offset;
+    }
 
-		if (this == obj) {
-			return true;
-		}
+    /**
+     * Returns the active only.
+     *
+     * @return the active only
+     */
+    @ApiModelProperty(value = "Indicates that only active content should be searched.")
+    public Boolean getActiveOnly() {
 
-		if (obj == null) {
-			return false;
-		}
+        return activeOnly;
+    }
 
-		if (getClass() != obj.getClass()) {
-			return false;
-		}
+    /**
+     * Sets the active only.
+     *
+     * @param activeOnly the active only
+     */
+    public void setActiveOnly(final Boolean activeOnly) {
 
-		final SearchParameters other = (SearchParameters) obj;
+        this.activeOnly = activeOnly;
+    }
 
-		if (query == null) {
+    /**
+     * Returns the sort.
+     *
+     * @return the sort
+     */
+    @ApiModelProperty(value = "Indicates the sort field for search results")
+    public String getSort() {
 
-			if (other.query != null) {
-				return false;
-			}
+        return sort;
+    }
 
-		} else if (!query.equals(other.query)) {
-			return false;
-		}
+    /**
+     * Sets the sort.
+     *
+     * @param sort the sort
+     */
+    public void setSort(final String sort) {
 
-		if (sort == null) {
+        this.sort = sort;
+    }
 
-			if (other.sort != null) {
-				return false;
-			}
+    /**
+     * Returns the sort ascending.
+     *
+     * @return the sort ascending
+     */
+    @ApiModelProperty(value = "Indicates whether sort is ascending (<code>true</code>) " + "or descending (<code>false</code>).")
+    public Boolean getSortAscending() {
 
-		} else if (!sort.equals(other.sort)) {
-			return false;
-		}
+        return sortAscending;
+    }
 
-		if (limit == null) {
+    /**
+     * Sets the sort ascending.
+     *
+     * @param sortAscending the sort ascending
+     */
+    public void setSortAscending(final Boolean sortAscending) {
 
-			if (other.limit != null) {
-				return false;
-			}
+        this.sortAscending = sortAscending;
+    }
 
-		} else if (!limit.equals(other.limit)) {
-			return false;
-		}
+    /**
+     * Returns the editing flag.
+     *
+     * @return the editing flag
+     */
+    @ApiModelProperty(value = "Only used when getting members or concepts for members " + "and indicates inferred form should be used an leaf flags included.")
+    public Boolean getEditing() {
 
-		if (offset == null) {
+        return editing;
+    }
 
-			if (other.offset != null) {
-				return false;
-			}
+    /**
+     * Sets the editing flag.
+     *
+     * @param editing the editing flag
+     */
+    public void setEditing(final Boolean editing) {
 
-		} else if (!offset.equals(other.offset)) {
-			return false;
-		}
+        this.editing = editing;
+    }
 
-		if (!activeOnly.equals(other.activeOnly)) {
-			return false;
-		}
+    /**
+     * Sets the sort ascending.
+     *
+     * @param obj the obj
+     * @return true, if successful
+     */
+    @Override
+    public boolean equals(final Object obj) {
 
-		if (!sortAscending.equals(other.sortAscending)) {
-			return false;
-		}
+        if (this == obj) {
+            return true;
+        }
 
-		if (!editing.equals(other.editing)) {
-			return false;
-		}
+        if (obj == null) {
+            return false;
+        }
 
-		return true;
-	}
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
 
-	/**
-	 * Hash code.
-	 *
-	 * @return the int
-	 */
-	@Override
-	public int hashCode() {
+        final SearchParameters other = (SearchParameters) obj;
 
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((limit == null) ? 0 : limit.hashCode());
-		result = prime * result + ((offset == null) ? 0 : offset.hashCode());
-		result = prime * result + ((query == null) ? 0 : query.hashCode());
-		result = prime * result + ((sort == null) ? 0 : sort.hashCode());
-		result = prime * result + (activeOnly ? 1 : 0);
-		result = prime * result + (sortAscending ? 1 : 0);
-		result = prime * result + (editing ? 1 : 0);
-		return result;
-	}
+        if (query == null) {
 
-	/* see superclass */
-	@Override
-	public String toString() {
+            if (other.query != null) {
+                return false;
+            }
 
-		try {
-			return ModelUtility.toJson(this);
-		} catch (final Exception e) {
-			return e.getMessage();
-		}
-	}
+        } else if (!query.equals(other.query)) {
+            return false;
+        }
+
+        if (sort == null) {
+
+            if (other.sort != null) {
+                return false;
+            }
+
+        } else if (!sort.equals(other.sort)) {
+            return false;
+        }
+
+        if (limit == null) {
+
+            if (other.limit != null) {
+                return false;
+            }
+
+        } else if (!limit.equals(other.limit)) {
+            return false;
+        }
+
+        if (offset == null) {
+
+            if (other.offset != null) {
+                return false;
+            }
+
+        } else if (!offset.equals(other.offset)) {
+            return false;
+        }
+
+        if (!activeOnly.equals(other.activeOnly)) {
+            return false;
+        }
+
+        if (!sortAscending.equals(other.sortAscending)) {
+            return false;
+        }
+
+        if (!editing.equals(other.editing)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Hash code.
+     *
+     * @return the int
+     */
+    @Override
+    public int hashCode() {
+
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((limit == null) ? 0 : limit.hashCode());
+        result = prime * result + ((offset == null) ? 0 : offset.hashCode());
+        result = prime * result + ((query == null) ? 0 : query.hashCode());
+        result = prime * result + ((sort == null) ? 0 : sort.hashCode());
+        result = prime * result + (activeOnly ? 1 : 0);
+        result = prime * result + (sortAscending ? 1 : 0);
+        result = prime * result + (editing ? 1 : 0);
+        return result;
+    }
+
+    /* see superclass */
+    @Override
+    public String toString() {
+
+        try {
+            return ModelUtility.toJson(this);
+        } catch (final Exception e) {
+            return e.getMessage();
+        }
+    }
 }

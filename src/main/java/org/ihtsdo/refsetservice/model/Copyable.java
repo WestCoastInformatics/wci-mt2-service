@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -30,11 +30,4 @@ public interface Copyable<T> {
      */
     public void patchFrom(T other);
 
-    /**
-     * Patch from to support deletes.
-     *
-     * @param node the node
-     */
-    // TODO
-    // public void patchFrom(JsonNode node);
 }

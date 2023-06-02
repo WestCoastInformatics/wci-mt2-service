@@ -40,7 +40,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.json.JacksonTester;
-import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
@@ -58,8 +57,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ProjectControllerIntegrationTest extends BaseTest {
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(ProjectControllerIntegrationTest.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(ProjectControllerIntegrationTest.class);
 
     /** The mvc. */
     @Autowired
@@ -71,9 +70,9 @@ public class ProjectControllerIntegrationTest extends BaseTest {
     /** The base url. */
     private String baseUrl = "";
 
-    /** The env. */
-    @Autowired
-    private Environment env;
+    // /** The env. */
+    // @Autowired
+    // private Environment env;
 
     /** The test user. */
     private User testUser = null;
@@ -106,9 +105,9 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         try {
 
             testUser = addUser(testUser);
-        } catch (Exception e) {
+        } catch (final Exception e) {
 
-            logger.error("ERROR {}", e.getMessage(), e);
+            LOG.error("ERROR {}", e.getMessage(), e);
             assertTrue(false);
         }
 
@@ -132,9 +131,9 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         try {
 
             edition = EditionService.createEdition(testUser, tempEdition);
-        } catch (Exception e) {
+        } catch (final Exception e) {
 
-            logger.error("ERROR {}", e.getMessage(), e);
+            LOG.error("ERROR {}", e.getMessage(), e);
             assertTrue(false);
         }
 
@@ -151,9 +150,9 @@ public class ProjectControllerIntegrationTest extends BaseTest {
 
             service.commit();
 
-        } catch (Exception e) {
+        } catch (final Exception e) {
 
-            logger.error("ERROR {}", e.getMessage(), e);
+            LOG.error("ERROR {}", e.getMessage(), e);
             assertTrue(false);
         }
 
@@ -202,12 +201,13 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         originalProject.getRoles().add("author");
         originalProject.getRoles().add("reviewer");
 
-        logger.info(" project = {}", originalProject.toString());
+        LOG.info(" project = {}", originalProject.toString());
         // forbidden - unit test user is set so this does not happen
         // mvc.perform(post(url).content(org.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isForbidden()).andReturn();
 
         // unsupported media type
-        mvc.perform(post(url).content(originalProject.toString()).contentType(MediaType.APPLICATION_XML)).andExpect(status().isUnsupportedMediaType()).andReturn();
+        mvc.perform(post(url).content(originalProject.toString()).contentType(MediaType.APPLICATION_XML)).andExpect(status().isUnsupportedMediaType())
+            .andReturn();
 
         // method not found
         mvc.perform(post(url + "xyz").content(originalProject.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound()).andReturn();
@@ -215,7 +215,7 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         result = mvc.perform(post(url).content(originalProject.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
 
         content = result.getResponse().getContentAsString();
-        logger.info(" PROJECT: content = {}", content);
+        LOG.info(" PROJECT: content = {}", content);
         final Project newProject = new ObjectMapper().readValue(content, Project.class);
         assertThat(compareProjects(originalProject, newProject, true)).isTrue();
     }
@@ -244,12 +244,13 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         originalProject.getRoles().add("author");
         originalProject.getRoles().add("reviewer");
 
-        logger.info(" project = {}", originalProject.toString());
+        LOG.info(" project = {}", originalProject.toString());
         // forbidden - unit test user is set so this does not happen
         // mvc.perform(post(url).content(org.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isForbidden()).andReturn();
 
         // unsupported media type
-        mvc.perform(post(url).content(originalProject.toString()).contentType(MediaType.APPLICATION_XML)).andExpect(status().isUnsupportedMediaType()).andReturn();
+        mvc.perform(post(url).content(originalProject.toString()).contentType(MediaType.APPLICATION_XML)).andExpect(status().isUnsupportedMediaType())
+            .andReturn();
 
         // method not found
         mvc.perform(post(url + "xyz").content(originalProject.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound()).andReturn();
@@ -257,7 +258,7 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         result = mvc.perform(post(url).content(originalProject.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
 
         content = result.getResponse().getContentAsString();
-        logger.info(" PROJECT: content = {}", content);
+        LOG.info(" PROJECT: content = {}", content);
         final Project newProject = new ObjectMapper().readValue(content, Project.class);
         assertThat(compareProjects(originalProject, newProject, true)).isTrue();
 
@@ -275,15 +276,16 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         mvc.perform(put(url + "xyz").content(newProject.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest()).andReturn();
 
         // method not found
-        mvc.perform(put(baseUrl + "xyz" + "/" + newProject.getId()).content(newProject.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound()).andReturn();
+        mvc.perform(put(baseUrl + "xyz" + "/" + newProject.getId()).content(newProject.toString()).contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNotFound()).andReturn();
 
         // update
         url = baseUrl + "/" + newProject.getId();
-        logger.info("XXXX UPDATE URL {} | Project {}", url, newProject);
+        LOG.info("XXXX UPDATE URL {} | Project {}", url, newProject);
         result = mvc.perform(put(url).content(newProject.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
 
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
 
         final Project updatedProject = new ObjectMapper().readValue(content, Project.class);
         assertThat(compareProjects(newProject, updatedProject, true)).isTrue();
@@ -313,11 +315,11 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         originalProject.getRoles().add("author");
         originalProject.getRoles().add("reviewer");
 
-        logger.info(" project = {}", originalProject.toString());
+        LOG.info(" project = {}", originalProject.toString());
         result = mvc.perform(post(url).content(originalProject.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
 
         content = result.getResponse().getContentAsString();
-        logger.info(" PROJECT: content = {}", content);
+        LOG.info(" PROJECT: content = {}", content);
         final Project newProject = new ObjectMapper().readValue(content, Project.class);
         assertThat(compareProjects(originalProject, newProject, true)).isTrue();
 
@@ -328,7 +330,7 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         url = baseUrl + "/" + newProject.getId();
         result = mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
 
         final Project getProject = new ObjectMapper().readValue(content, Project.class);
         assertThat(compareProjects(getProject, newProject, true)).isTrue();
@@ -358,13 +360,13 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         originalProject.getRoles().add("author");
         originalProject.getRoles().add("reviewer");
 
-        logger.info(" project = {}", originalProject.toString());
+        LOG.info(" project = {}", originalProject.toString());
 
         // create
         result = mvc.perform(post(url).content(originalProject.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
 
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
         final Project newProject = new ObjectMapper().readValue(content, Project.class);
         assertThat(compareProjects(originalProject, newProject, true)).isTrue();
 
@@ -375,9 +377,10 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         url = baseUrl + "/" + "search";
 
         // find by id
-        result = mvc.perform(get(url).queryParam("query", "id:" + newProject.getId()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+        result = mvc.perform(get(url).queryParam("query", "id:" + newProject.getId()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+            .andReturn();
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
         final ResultList<Project> resultList1 = new ObjectMapper().readValue(content, (new TypeReference<ResultList<Project>>() {
         }));
         assertThat(resultList1).isNotNull();
@@ -387,9 +390,10 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         assertThat(compareProjects(resultList1.getItems().get(0), newProject, true)).isTrue();
 
         // find by name
-        result = mvc.perform(get(url).queryParam("query", "name:" + newProject.getName()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+        result = mvc.perform(get(url).queryParam("query", "name:" + newProject.getName()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+            .andReturn();
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
         final ResultList<Project> resultList2 = new ObjectMapper().readValue(content, (new TypeReference<ResultList<Project>>() {
         }));
         assertThat(resultList2).isNotNull();
@@ -423,13 +427,13 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         originalProject.getRoles().add("author");
         originalProject.getRoles().add("reviewer");
 
-        logger.info(" project = {}", originalProject.toString());
+        LOG.info(" project = {}", originalProject.toString());
 
         // create
         result = mvc.perform(post(url).content(originalProject.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
 
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
         final Project newProject = new ObjectMapper().readValue(content, Project.class);
         assertThat(compareProjects(originalProject, newProject, true)).isTrue();
 
@@ -447,9 +451,10 @@ public class ProjectControllerIntegrationTest extends BaseTest {
 
         url = baseUrl + "/search";
         // // find by id
-        result = mvc.perform(get(url).queryParam("query", "id:" + newProject.getId()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+        result = mvc.perform(get(url).queryParam("query", "id:" + newProject.getId()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+            .andReturn();
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
         final ResultList<Project> resultList1 = new ObjectMapper().readValue(content, (new TypeReference<ResultList<Project>>() {
         }));
         assertThat(resultList1).isNotNull();
@@ -457,9 +462,10 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         assertThat(resultList1.getItems().size()).isEqualTo(0);
 
         // find by name
-        result = mvc.perform(get(url).queryParam("query", "name:" + newProject.getName()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+        result = mvc.perform(get(url).queryParam("query", "name:" + newProject.getName()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+            .andReturn();
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
         final ResultList<Project> resultList = new ObjectMapper().readValue(content, (new TypeReference<ResultList<Project>>() {
         }));
         assertThat(resultList).isNotNull();
@@ -478,7 +484,7 @@ public class ProjectControllerIntegrationTest extends BaseTest {
     private boolean compareProjects(final Project newProject, final Project originalProject, final boolean nonUpdatedAttributes) {
 
         boolean pass = false;
-        logger.info("new project record = {}", newProject);
+        LOG.info("new project record = {}", newProject);
         assertThat(newProject).isNotNull();
         assertThat(newProject.getName()).isEqualTo(originalProject.getName());
         assertThat(newProject.isActive()).isEqualTo(originalProject.isActive());
@@ -508,7 +514,7 @@ public class ProjectControllerIntegrationTest extends BaseTest {
     private boolean compareEditions(final Edition newEdition, final Edition originalEdition, final boolean nonUpdatedAttributes) {
 
         boolean pass = false;
-        logger.info("new org record = {}", newEdition);
+        LOG.info("new org record = {}", newEdition);
         assertThat(newEdition).isNotNull();
         assertThat(newEdition.getName()).isEqualTo(originalEdition.getName());
         assertThat(newEdition.isActive()).isEqualTo(originalEdition.isActive());

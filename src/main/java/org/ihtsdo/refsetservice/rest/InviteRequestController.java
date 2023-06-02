@@ -33,18 +33,18 @@ import io.swagger.annotations.ApiResponses;
 @RestController
 @Api(tags = "teams", description = "Endpoints for handling reponses from invites")
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
-public class InviteRequestController  extends BaseController {
+public class InviteRequestController extends BaseController {
 
-    /** Logger. */
-    private static Logger logger = LoggerFactory.getLogger(InviteRequestController.class);
-    
-    /**  The app url root. */
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(InviteRequestController.class);
+
+    /** The app url root. */
     private static String appUrlRoot;
-    
+
     static {
         appUrlRoot = PropertyUtility.getProperties().getProperty("app.url.root");
     }
-    
+
     /**
      * Response to invite organization.
      *
@@ -55,16 +55,18 @@ public class InviteRequestController  extends BaseController {
      */
     @ApiOperation(value = "Process invitation response.")
     @ApiResponses(value = {
-        @ApiResponse(code = 302, message = "Response to invitation processed"), @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 417, message = "Failed Expectation"),
-        @ApiResponse(code = 500, message = "Internal server error")
+        @ApiResponse(code = 302, message = "Response to invitation processed"), @ApiResponse(code = 404, message = "Not Found"),
+        @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
     })
     @ApiImplicitParams({
         @ApiImplicitParam(name = "id", value = "Invite request id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-        @ApiImplicitParam(name = "acceptance", value = "Indicate if accepted with true or false", required = true, dataTypeClass = Boolean.class, paramType = "query", defaultValue = "false")
+        @ApiImplicitParam(name = "acceptance", value = "Indicate if accepted with true or false", required = true, dataTypeClass = Boolean.class,
+            paramType = "query", defaultValue = "false")
     })
     @RecordMetric
     @GetMapping(value = "/inviterequest/{id}/response")
-    public @ResponseBody ResponseEntity<String> responseToInviteOrganization(@PathVariable(value = "id") final String id, @QueryParam(value = "acceptance") final boolean acceptance) throws Exception {
+    public @ResponseBody ResponseEntity<String> responseToInviteOrganization(@PathVariable(value = "id") final String id,
+        @QueryParam(value = "acceptance") final boolean acceptance) throws Exception {
 
         // no auth - response is from email.
 
@@ -72,30 +74,28 @@ public class InviteRequestController  extends BaseController {
         headers.add("Location", appUrlRoot);
 
         try (final TerminologyService service = new TerminologyService()) {
-            
+
             final InviteRequest inviteRequest = service.findSingle("id:" + id, InviteRequest.class, null);
-            
+
             if (inviteRequest == null) {
-                logger.info("Did not find invite request id: " + id + " and acceptance: " + acceptance);
+                LOG.info("Did not find invite request id: " + id + " and acceptance: " + acceptance);
                 return new ResponseEntity<>(headers, HttpStatus.FOUND);
             }
 
-            logger.info("response to invite request: id: " + id + " and acceptance: " + acceptance);
+            LOG.info("response to invite request: id: " + id + " and acceptance: " + acceptance);
             if (inviteRequest.getPayload().contains("organization")) {
-                OrganizationService.processOrganizationInvitation(service, inviteRequest, acceptance);    
-            }
-            else if (inviteRequest.getPayload().contains("refset")) {
+                OrganizationService.processOrganizationInvitation(service, inviteRequest, acceptance);
+            } else if (inviteRequest.getPayload().contains("refset")) {
                 RefsetService.processRefsetInvitation(service, inviteRequest, acceptance);
             }
-            
 
             return new ResponseEntity<>(headers, HttpStatus.FOUND);
 
         } catch (final Exception e) {
 
-            logger.error("Exception while processing response for organization id invite", acceptance);
+            LOG.error("Exception while processing response for organization id invite", acceptance);
             return new ResponseEntity<>(headers, HttpStatus.FOUND);
         }
     }
-        
+
 }

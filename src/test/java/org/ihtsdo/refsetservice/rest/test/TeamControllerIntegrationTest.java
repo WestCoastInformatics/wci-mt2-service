@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -45,7 +45,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.json.JacksonTester;
-import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
@@ -63,8 +62,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TeamControllerIntegrationTest extends BaseTest {
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(TeamControllerIntegrationTest.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(TeamControllerIntegrationTest.class);
 
     /** The mvc. */
     @Autowired
@@ -76,9 +75,9 @@ public class TeamControllerIntegrationTest extends BaseTest {
     /** The base url. */
     private String baseUrl = "";
 
-    /** The env. */
-    @Autowired
-    private Environment env;
+    // /** The env. */
+    // @Autowired
+    // private Environment env;
 
     /** The test user. */
     private User testUser = null;
@@ -116,11 +115,11 @@ public class TeamControllerIntegrationTest extends BaseTest {
 
         try {
             testUser = addUser(testUser);
-        } catch (Exception e) {
-            logger.error("ERROR {}", e.getMessage(), e);
+        } catch (final Exception e) {
+            LOG.error("ERROR {}", e.getMessage(), e);
             assertTrue(false);
         }
-        
+
         final Organization tempOrganization = new Organization();
         tempOrganization.setId(null);
         tempOrganization.setName("Organization for Team Unit Tests");
@@ -128,7 +127,6 @@ public class TeamControllerIntegrationTest extends BaseTest {
         tempOrganization.setDescription("Generated from unit test");
         tempOrganization.setIconUri("/organization/icon/");
         tempOrganization.setPrimaryContactEmail("org@test.com");
-
 
         final Edition tempEdition = new Edition();
         tempEdition.setId(null);
@@ -141,8 +139,8 @@ public class TeamControllerIntegrationTest extends BaseTest {
 
         try {
             edition = EditionService.createEdition(testUser, tempEdition);
-        } catch (Exception e) {
-            logger.error("ERROR {}", e.getMessage(), e);
+        } catch (final Exception e) {
+            LOG.error("ERROR {}", e.getMessage(), e);
             assertTrue(false);
         }
 
@@ -150,18 +148,18 @@ public class TeamControllerIntegrationTest extends BaseTest {
         assertThat(edition.getId()).isNotNull();
 
         try (final TerminologyService service = new TerminologyService()) {
-            
+
             service.setModifiedBy(testUser.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
-            
+
             organization = OrganizationService.createOrganization(service, testUser, tempOrganization);
-            
+
             service.commit();
-            
-        } catch (Exception e) {
-            
-            logger.error("ERROR {}", e.getMessage(), e);
+
+        } catch (final Exception e) {
+
+            LOG.error("ERROR {}", e.getMessage(), e);
             assertTrue(false);
         }
 
@@ -183,8 +181,8 @@ public class TeamControllerIntegrationTest extends BaseTest {
 
         try {
             project = ProjectService.addProject(testUser, tempProject);
-        } catch (Exception e) {
-            logger.error("ERROR {}", e.getMessage(), e);
+        } catch (final Exception e) {
+            LOG.error("ERROR {}", e.getMessage(), e);
             assertTrue(false);
         }
 
@@ -229,12 +227,12 @@ public class TeamControllerIntegrationTest extends BaseTest {
         originalTeam.getRoles().add("reviewer");
 
         originalTeam.setOrganization(organization);
-        Set<String> members = new HashSet<>();
+        final Set<String> members = new HashSet<>();
         members.add(UUID.randomUUID().toString());
         members.add(UUID.randomUUID().toString());
         originalTeam.setMembers(members);
 
-        logger.info(" team = {}", originalTeam.toString());
+        LOG.info(" team = {}", originalTeam.toString());
         // forbidden - unit test user is set so this does not happen
         // mvc.perform(post(url).content(originalTeam.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isForbidden()).andReturn();
 
@@ -247,7 +245,7 @@ public class TeamControllerIntegrationTest extends BaseTest {
         result = mvc.perform(post(url).content(originalTeam.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
 
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
         final Team newTeam = new ObjectMapper().readValue(content, Team.class);
         assertThat(compareTeams(originalTeam, newTeam, true)).isTrue();
     }
@@ -262,9 +260,11 @@ public class TeamControllerIntegrationTest extends BaseTest {
     public void testUpdate() throws Exception {
 
         // create organization
-        // result = mvc.perform(post("/organization").content(organization.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
+        // result =
+        // mvc.perform(post("/organization").content(organization.toString())
+        // .contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
         // content = result.getResponse().getContentAsString();
-        // logger.info(" content = {}", content);
+        // LOG.info(" content = {}", content);
         // organization = new ObjectMapper().readValue(content, Organization.class);
         // assertThat(organization).isNotNull();
         // assertThat(organization.getId()).isNotNull();
@@ -280,18 +280,18 @@ public class TeamControllerIntegrationTest extends BaseTest {
         originalTeam.getRoles().add("reviewer");
 
         originalTeam.setOrganization(organization);
-        Set<String> members = new HashSet<>();
+        final Set<String> members = new HashSet<>();
         members.add(UUID.randomUUID().toString());
         members.add(UUID.randomUUID().toString());
         originalTeam.setMembers(members);
 
-        logger.info(" team = {}", originalTeam.toString());
+        LOG.info(" team = {}", originalTeam.toString());
         // forbidden - unit test user is set so this does not happen
         // mvc.perform(put(url).content(originalTeam.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isForbidden()).andReturn();
 
         result = mvc.perform(post(url).content(originalTeam.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
         final Team newTeam = new ObjectMapper().readValue(content, Team.class);
         assertThat(compareTeams(originalTeam, newTeam, true)).isTrue();
 
@@ -308,14 +308,15 @@ public class TeamControllerIntegrationTest extends BaseTest {
         mvc.perform(put(url + "xyz").content(newTeam.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest()).andReturn();
 
         // method not found
-        mvc.perform(put(baseUrl + "xyz" + "/" + newTeam.getId()).content(newTeam.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound()).andReturn();
+        mvc.perform(put(baseUrl + "xyz" + "/" + newTeam.getId()).content(newTeam.toString()).contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isNotFound()).andReturn();
 
         // update
         url = baseUrl + "/" + newTeam.getId();
         result = mvc.perform(put(url).content(newTeam.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
 
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
 
         final Team updatedTeam = new ObjectMapper().readValue(content, Team.class);
         assertThat(compareTeams(newTeam, updatedTeam, true)).isTrue();
@@ -331,9 +332,11 @@ public class TeamControllerIntegrationTest extends BaseTest {
     public void testGet() throws Exception {
 
         // create organization
-        // result = mvc.perform(post("/organization").content(organization.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
+        // result =
+        // mvc.perform(post("/organization").content(organization.toString())
+        // .contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
         // content = result.getResponse().getContentAsString();
-        // logger.info(" content = {}", content);
+        // LOG.info(" content = {}", content);
         // organization = new ObjectMapper().readValue(content, Organization.class);
         // assertThat(organization).isNotNull();
         // assertThat(organization.getId()).isNotNull();
@@ -349,16 +352,16 @@ public class TeamControllerIntegrationTest extends BaseTest {
         originalTeam.getRoles().add("reviewer");
 
         originalTeam.setOrganization(organization);
-        Set<String> members = new HashSet<>();
+        final Set<String> members = new HashSet<>();
         members.add(UUID.randomUUID().toString());
         members.add(UUID.randomUUID().toString());
         originalTeam.setMembers(members);
 
-        logger.info(" team = {}", originalTeam.toString());
+        LOG.info(" team = {}", originalTeam.toString());
         result = mvc.perform(post(url).content(originalTeam.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
 
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
         final Team newTeam = new ObjectMapper().readValue(content, Team.class);
         assertThat(compareTeams(originalTeam, newTeam, true)).isTrue();
 
@@ -369,7 +372,7 @@ public class TeamControllerIntegrationTest extends BaseTest {
         url = baseUrl + "/" + newTeam.getId();
         result = mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
 
         final Team getTeam = new ObjectMapper().readValue(content, Team.class);
         assertThat(compareTeams(getTeam, newTeam, true)).isTrue();
@@ -395,18 +398,18 @@ public class TeamControllerIntegrationTest extends BaseTest {
         originalTeam.getRoles().add("reviewer");
 
         originalTeam.setOrganization(organization);
-        Set<String> members = new HashSet<>();
+        final Set<String> members = new HashSet<>();
         members.add(UUID.randomUUID().toString());
         members.add(UUID.randomUUID().toString());
         originalTeam.setMembers(members);
 
-        logger.info(" team = {}", originalTeam.toString());
+        LOG.info(" team = {}", originalTeam.toString());
 
         // create
         result = mvc.perform(post(url).content(originalTeam.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
 
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
         final Team newTeam = new ObjectMapper().readValue(content, Team.class);
         assertThat(compareTeams(originalTeam, newTeam, true)).isTrue();
 
@@ -417,9 +420,10 @@ public class TeamControllerIntegrationTest extends BaseTest {
         url = baseUrl + "/" + "search";
 
         // find by id
-        result = mvc.perform(get(url).queryParam("query", "id:" + newTeam.getId()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+        result =
+            mvc.perform(get(url).queryParam("query", "id:" + newTeam.getId()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
         final ResultList<Team> resultList1 = new ObjectMapper().readValue(content, (new TypeReference<ResultList<Team>>() {
         }));
         assertThat(resultList1).isNotNull();
@@ -429,9 +433,10 @@ public class TeamControllerIntegrationTest extends BaseTest {
         assertThat(compareTeams(resultList1.getItems().get(0), newTeam, true)).isTrue();
 
         // find by name
-        result = mvc.perform(get(url).queryParam("query", "name:" + newTeam.getName()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+        result = mvc.perform(get(url).queryParam("query", "name:" + newTeam.getName()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+            .andReturn();
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
         final ResultList<Team> resultList2 = new ObjectMapper().readValue(content, (new TypeReference<ResultList<Team>>() {
         }));
         assertThat(resultList2).isNotNull();
@@ -466,13 +471,13 @@ public class TeamControllerIntegrationTest extends BaseTest {
         members.add(UUID.randomUUID().toString());
         originalTeam.setMembers(members);
 
-        logger.info(" team = {}", originalTeam.toString());
+        LOG.info(" team = {}", originalTeam.toString());
 
         // create
         result = mvc.perform(post(url).content(originalTeam.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
 
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
         final Team newTeam = new ObjectMapper().readValue(content, Team.class);
         assertThat(compareTeams(originalTeam, newTeam, true)).isTrue();
 
@@ -489,9 +494,10 @@ public class TeamControllerIntegrationTest extends BaseTest {
 
         url = baseUrl + "/search";
         // find by id
-        result = mvc.perform(get(url).queryParam("query", "id:" + newTeam.getId()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+        result =
+            mvc.perform(get(url).queryParam("query", "id:" + newTeam.getId()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
         final ResultList<Team> resultList1 = new ObjectMapper().readValue(content, (new TypeReference<ResultList<Team>>() {
         }));
         assertThat(resultList1).isNotNull();
@@ -499,9 +505,10 @@ public class TeamControllerIntegrationTest extends BaseTest {
         assertThat(resultList1.getItems().size()).isEqualTo(0);
 
         // find by name
-        result = mvc.perform(get(url).queryParam("query", "name:" + newTeam.getName()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+        result = mvc.perform(get(url).queryParam("query", "name:" + newTeam.getName()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+            .andReturn();
         content = result.getResponse().getContentAsString();
-        logger.info(" content = {}", content);
+        LOG.info(" content = {}", content);
         final ResultList<Team> resultList = new ObjectMapper().readValue(content, (new TypeReference<ResultList<Team>>() {
         }));
         assertThat(resultList).isNotNull();
@@ -520,7 +527,7 @@ public class TeamControllerIntegrationTest extends BaseTest {
     private boolean compareTeams(final Team newTeam, final Team originalTeam, final boolean nonUpdatedAttributes) {
 
         boolean pass = false;
-        logger.info("new project record = {}", newTeam);
+        LOG.info("new project record = {}", newTeam);
         assertThat(newTeam).isNotNull();
         assertThat(newTeam.getName()).isEqualTo(originalTeam.getName());
         assertThat(newTeam.isActive()).isEqualTo(originalTeam.isActive());
@@ -544,7 +551,7 @@ public class TeamControllerIntegrationTest extends BaseTest {
     private boolean compareOrganizations(final Organization newOrganization, final Organization originalOrganization, final boolean nonUpdatedAttributes) {
 
         boolean pass = false;
-        logger.info("new org record = {}", newOrganization);
+        LOG.info("new org record = {}", newOrganization);
         assertThat(newOrganization).isNotNull();
         assertThat(newOrganization.getName()).isEqualTo(originalOrganization.getName());
         assertThat(newOrganization.isActive()).isEqualTo(originalOrganization.isActive());

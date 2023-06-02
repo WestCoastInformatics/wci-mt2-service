@@ -23,8 +23,8 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 @Component
 public class EndpointsListener {
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(EndpointsListener.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(EndpointsListener.class);
 
     /** The config properties. */
     private Properties properties = PropertyUtility.getProperties();
@@ -43,22 +43,21 @@ public class EndpointsListener {
     public void handleContextRefresh(final ContextRefreshedEvent event) throws Exception {
 
         // Local address
-        String localAdd = InetAddress.getLocalHost().getHostAddress();
-        String localname = InetAddress.getLocalHost().getHostName();
+        final String localAdd = InetAddress.getLocalHost().getHostAddress();
+        final String localname = InetAddress.getLocalHost().getHostName();
 
         // Remote address
-        String remoteAdd = InetAddress.getLoopbackAddress().getHostAddress();
-        String remoteName = InetAddress.getLoopbackAddress().getHostName();
+        final String remoteAdd = InetAddress.getLoopbackAddress().getHostAddress();
+        final String remoteName = InetAddress.getLoopbackAddress().getHostName();
 
-        logger.debug("******* localAdd: " + localAdd);
-        logger.debug("******* localname: " + localname);
-        logger.debug("******* remoteAdd: " + remoteAdd);
-        logger.debug("******* remoteName: " + remoteName);
-        logger.debug("******* ContextPath(): " + servletContext.getContextPath());
-        logger.debug("******* server.port: " + properties.getProperty("server.port"));
+        LOG.debug("******* localAdd: " + localAdd);
+        LOG.debug("******* localname: " + localname);
+        LOG.debug("******* remoteAdd: " + remoteAdd);
+        LOG.debug("******* remoteName: " + remoteName);
+        LOG.debug("******* ContextPath(): " + servletContext.getContextPath());
+        LOG.debug("******* server.port: " + properties.getProperty("server.port"));
 
-        ApplicationContext applicationContext = event.getApplicationContext();
-        applicationContext.getBean(RequestMappingHandlerMapping.class).getHandlerMethods()
-                .forEach((key, value) -> logger.debug("{} {}", key, value));
+        final ApplicationContext applicationContext = event.getApplicationContext();
+        applicationContext.getBean(RequestMappingHandlerMapping.class).getHandlerMethods().forEach((key, value) -> LOG.debug("{} {}", key, value));
     }
 }

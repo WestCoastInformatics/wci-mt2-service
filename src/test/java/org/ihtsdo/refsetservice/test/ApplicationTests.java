@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
-import org.springframework.core.env.Environment;
 
 /**
  * The Class ApplicationTests.
@@ -20,16 +19,16 @@ import org.springframework.core.env.Environment;
 @SpringBootTest
 public class ApplicationTests extends BaseTest {
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(ApplicationTests.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(ApplicationTests.class);
 
     /** The context. */
     @Autowired
     private ApplicationContext context;
 
-    /** The env. */
-    @Autowired
-    private Environment env;
+    // /** The env. */
+    // @Autowired
+    // private Environment env;
 
     /** The config properties. */
     private Properties properties = PropertyUtility.getProperties();
@@ -39,8 +38,9 @@ public class ApplicationTests extends BaseTest {
      */
     @Test
     public void contextLoads() {
+
         assertThat(this.context).isNotNull();
-        logger.info("context loaded successfully");
+        LOG.info("context loaded successfully");
     }
 
     /**
@@ -48,9 +48,9 @@ public class ApplicationTests extends BaseTest {
      */
     @Test
     public void propertiesLoads() {
-        assertThat(properties.getProperty("spring.application.name"))
-                .isEqualTo("snomed-refset-service");
-        logger.info("properties loaded successfully");
+
+        assertThat(properties.getProperty("spring.application.name")).isEqualTo("snomed-refset-service");
+        LOG.info("properties loaded successfully");
     }
 
 }

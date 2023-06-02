@@ -33,9 +33,8 @@ import org.slf4j.LoggerFactory;
  */
 public class OrganizationUnitTest extends BaseTest {
 
-    /** The logger. */
-    @SuppressWarnings("unused")
-    private static Logger logger = LoggerFactory.getLogger(OrganizationUnitTest.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(OrganizationUnitTest.class);
 
     /** The model object to test. */
     private Organization object;
@@ -137,7 +136,7 @@ public class OrganizationUnitTest extends BaseTest {
 
             final ProxyTester tester2 = new ProxyTester(new Organization());
             final Organization object = (Organization) tester2.createObject(1);
-            logger.info("************ object: " + object);
+            LOG.info("************ object: " + object);
             object.setId(null);
             object.setMembers(null);
 

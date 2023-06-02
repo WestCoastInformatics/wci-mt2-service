@@ -11,7 +11,6 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.ihtsdo.refsetservice.model.Metric;
-import org.ihtsdo.refsetservice.properties.ElasticServerProperties;
 import org.ihtsdo.refsetservice.service.ElasticOperationsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,12 +28,12 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 @ConditionalOnProperty(name = "app.metrics.enabled")
 public class MetricAdvice {
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(MetricAdvice.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(MetricAdvice.class);
 
     /** The elastic server properties. */
-    @Autowired
-    private ElasticServerProperties elasticServerProperties;
+    // @Autowired
+    // private ElasticServerProperties elasticServerProperties;
 
     /** The operations service. */
     @Autowired
@@ -50,13 +49,10 @@ public class MetricAdvice {
      */
 
     @Around("execution(* org.ihtsdo.refsetservice.rest.*.*(..)) && @annotation(recordMetric)")
-    private Object recordMetric(final ProceedingJoinPoint pjp, final RecordMetric recordMetric)
-        throws Throwable {
+    private Object recordMetric(final ProceedingJoinPoint pjp, final RecordMetric recordMetric) throws Throwable {
 
         // get the request
-        final HttpServletRequest request =
-                ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes())
-                        .getRequest();
+        final HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
         return recordMetricHelper(pjp, request, request.getParameterMap());
 
     }
@@ -70,8 +66,7 @@ public class MetricAdvice {
      * @return the object
      * @throws Throwable the throwable
      */
-    public Object recordMetricHelper(final ProceedingJoinPoint pjp,
-        final HttpServletRequest request, final Map<String, String[]> params) throws Throwable {
+    public Object recordMetricHelper(final ProceedingJoinPoint pjp, final HttpServletRequest request, final Map<String, String[]> params) throws Throwable {
 
         // get the start time
         final Date startDate = new Date();
@@ -84,8 +79,7 @@ public class MetricAdvice {
         metric.setDuration(duration);
 
         // get the ip address of the remote user
-        final ServletRequestAttributes attr =
-                (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
+        final ServletRequestAttributes attr = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
 
         final String userIpAddress = attr.getRequest().getRemoteAddr();
         metric.setRemoteIpAddress(userIpAddress);
@@ -102,10 +96,9 @@ public class MetricAdvice {
 
         // get the parameters
         operationsService.loadMetric(metric,
-                "metrics-" + String.valueOf(Calendar.getInstance().get(Calendar.YEAR)) + "-"
-                        + String.valueOf(Calendar.getInstance().get(Calendar.MONTH)));
+            "metrics-" + String.valueOf(Calendar.getInstance().get(Calendar.YEAR)) + "-" + String.valueOf(Calendar.getInstance().get(Calendar.MONTH)));
 
-        logger.debug("metric = " + metric);
+        LOG.debug("metric = " + metric);
         return retval;
     }
 

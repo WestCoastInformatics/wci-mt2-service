@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -50,9 +50,9 @@ public class DiscussionThread extends AbstractHasModified {
     /** serialVersionUID. */
     private static final long serialVersionUID = -3062800846649092242L;
 
-    /** The logger. */
+    /** The Constant LOG. */
     @SuppressWarnings("unused")
-    private static Logger logger = LoggerFactory.getLogger(DiscussionThread.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DiscussionThread.class);
 
     /** The subject. */
     @Column(nullable = false, length = 4000)
@@ -372,17 +372,17 @@ public class DiscussionThread extends AbstractHasModified {
 
         final int prime = 31;
         int result = super.hashCode();
-        result = prime * result + ((refsetInternalId == null) ? 0 : refsetInternalId.hashCode());
         result = prime * result + ((conceptId == null) ? 0 : conceptId.hashCode());
+        result = prime * result + ((lastPost == null) ? 0 : lastPost.hashCode());
+        result = prime * result + numberReplies;
         result = prime * result + ((posts == null) ? 0 : posts.hashCode());
-        result = prime * result + ((status == null) ? 0 : status.hashCode());
-        result = prime * result + ((visibility == null) ? 0 : visibility.hashCode());
+        result = prime * result + (privateThread ? 1231 : 1237);
+        result = prime * result + ((refsetInternalId == null) ? 0 : refsetInternalId.hashCode());
         result = prime * result + ((resolvedBy == null) ? 0 : resolvedBy.hashCode());
+        result = prime * result + ((status == null) ? 0 : status.hashCode());
         result = prime * result + ((subject == null) ? 0 : subject.hashCode());
         result = prime * result + ((type == null) ? 0 : type.hashCode());
-        result = prime * result + ((lastPost == null) ? 0 : lastPost.hashCode());
-        result = prime * result + (privateThread ? 1 : 0);
-        result = prime * result + numberReplies;
+        result = prime * result + ((visibility == null) ? 0 : visibility.hashCode());
         return result;
     }
 
@@ -396,104 +396,79 @@ public class DiscussionThread extends AbstractHasModified {
         if (!super.equals(obj)) {
             return false;
         }
-        if (getClass() != obj.getClass()) {
+        if (!(obj instanceof DiscussionThread)) {
             return false;
         }
-
-        final DiscussionThread other = (DiscussionThread) obj;
-
-        if (refsetInternalId == null) {
-
-            if (other.refsetInternalId != null) {
-                return false;
-            }
-
-        } else if (!refsetInternalId.equals(other.refsetInternalId)) {
-            return false;
-        }
-
+        DiscussionThread other = (DiscussionThread) obj;
         if (conceptId == null) {
-
             if (other.conceptId != null) {
                 return false;
             }
-
         } else if (!conceptId.equals(other.conceptId)) {
             return false;
         }
-
-        if (posts == null) {
-
-            if (other.posts != null) {
-                return false;
-            }
-
-        } else if (!posts.equals(other.posts)) {
-            return false;
-        }
-
-        if (visibility == null) {
-
-            if (other.visibility != null) {
-                return false;
-            }
-
-        } else if (!visibility.equals(other.visibility)) {
-            return false;
-        }
-
-        if (status == null) {
-
-            if (other.status != null) {
-                return false;
-            }
-
-        } else if (!status.equals(other.status)) {
-            return false;
-        }
-
-        if (resolvedBy == null) {
-
-            if (other.resolvedBy != null) {
-                return false;
-            }
-
-        } else if (!resolvedBy.equals(other.resolvedBy)) {
-            return false;
-        }
-
         if (lastPost == null) {
-
             if (other.lastPost != null) {
                 return false;
             }
-
         } else if (!lastPost.equals(other.lastPost)) {
             return false;
         }
-
-        if (subject == null) {
-
-            if (other.subject != null) {
-                return false;
-            }
-
-        } else if (!subject.equals(other.subject)) {
-            return false;
-        }
-
-        if (privateThread != other.privateThread) {
-            return false;
-        }
-
-        if (type != other.type) {
-            return false;
-        }
-
         if (numberReplies != other.numberReplies) {
             return false;
         }
-
+        if (posts == null) {
+            if (other.posts != null) {
+                return false;
+            }
+        } else if (!posts.equals(other.posts)) {
+            return false;
+        }
+        if (privateThread != other.privateThread) {
+            return false;
+        }
+        if (refsetInternalId == null) {
+            if (other.refsetInternalId != null) {
+                return false;
+            }
+        } else if (!refsetInternalId.equals(other.refsetInternalId)) {
+            return false;
+        }
+        if (resolvedBy == null) {
+            if (other.resolvedBy != null) {
+                return false;
+            }
+        } else if (!resolvedBy.equals(other.resolvedBy)) {
+            return false;
+        }
+        if (status == null) {
+            if (other.status != null) {
+                return false;
+            }
+        } else if (!status.equals(other.status)) {
+            return false;
+        }
+        if (subject == null) {
+            if (other.subject != null) {
+                return false;
+            }
+        } else if (!subject.equals(other.subject)) {
+            return false;
+        }
+        if (type == null) {
+            if (other.type != null) {
+                return false;
+            }
+        } else if (!type.equals(other.type)) {
+            return false;
+        }
+        if (visibility == null) {
+            if (other.visibility != null) {
+                return false;
+            }
+        } else if (!visibility.equals(other.visibility)) {
+            return false;
+        }
         return true;
     }
 
@@ -512,7 +487,7 @@ public class DiscussionThread extends AbstractHasModified {
     @Override
     public void lazyInit() {
 
-        // TODO Auto-generated method stub
+        // n/a
 
     }
 

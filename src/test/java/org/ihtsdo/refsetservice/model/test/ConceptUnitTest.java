@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.model.test;
 
@@ -19,9 +28,9 @@ import org.slf4j.LoggerFactory;
  */
 public class ConceptUnitTest extends BaseTest {
 
-    /** The logger. */
+    /** The Constant LOG. */
     @SuppressWarnings("unused")
-    private static Logger logger = LoggerFactory.getLogger(ConceptUnitTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ConceptUnitTest.class);
 
     /** The model object to test. */
     private Concept object;
@@ -63,7 +72,7 @@ public class ConceptUnitTest extends BaseTest {
         tester.exclude("created");
         tester.exclude("modified");
         tester.exclude("modifiedBy");
-        
+
         // from Concept
         tester.include("code");
         tester.include("name");

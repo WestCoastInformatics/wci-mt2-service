@@ -30,8 +30,8 @@ import org.springframework.core.io.ClassPathResource;
 
 public abstract class SyncService {
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(SyncService.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(SyncService.class);
 
     protected static SyncUtilities utilities = null;
 
@@ -99,7 +99,7 @@ public abstract class SyncService {
 
     public abstract void syncSnowstorm() throws Exception;
 
-    private static void initialize(boolean refsetPerVersionSync, boolean runForProduction, boolean ignoreCoreRefsets) {
+    private static void initialize(final boolean refsetPerVersionSync, final boolean runForProduction, final boolean ignoreCoreRefsets) {
 
         if (utilities == null) {
 
@@ -115,7 +115,7 @@ public abstract class SyncService {
 
             updateDatabaseCache();
 
-        } catch (Exception e) {
+        } catch (final Exception e) {
 
             e.printStackTrace();
         }
@@ -123,7 +123,8 @@ public abstract class SyncService {
     }
 
     // TODO: Define when called vs normal one
-    public static void sync(TerminologyService service, boolean refsetPerVersionSync, boolean runForProduction, boolean ignoreCoreRefsets) throws Exception {
+    public static void sync(final TerminologyService service, final boolean refsetPerVersionSync, final boolean runForProduction, final boolean ignoreCoreRefsets) throws Exception {
+
         clearPreviousRun();
 
         if (isProductionSystem == null || !isProductionSystem) {
@@ -135,7 +136,7 @@ public abstract class SyncService {
 
     }
 
-    public static void sync(TerminologyService service) throws Exception {
+    public static void sync(final TerminologyService service) throws Exception {
 
         clearPreviousRun();
 
@@ -144,7 +145,7 @@ public abstract class SyncService {
             initialize(false, false, false);
         }
 
-        logger.info("Starting Syncing of Code System, Branches, and Refsets from Snowstorm");
+        LOG.info("Starting Syncing of Code System, Branches, and Refsets from Snowstorm");
 
         utilities.initializeService(service);
 
@@ -153,7 +154,7 @@ public abstract class SyncService {
         // Only identify branches on filtered code systems and on runShortSync value
         agent.syncSnowstorm();
 
-        SyncUtilities syncUtilities = new SyncUtilities();
+        final SyncUtilities syncUtilities = new SyncUtilities();
         syncUtilities.parseRttData();
 
         // Find all refsets from filtered branches
@@ -163,20 +164,20 @@ public abstract class SyncService {
         // Update imported refsets with RTT-based metadata (as defined in parseRttData())
         if (!isProductionSystem) {
 
-            SyncOperationsInitializer initializer = new SyncOperationsInitializer(utilities);
+            final SyncOperationsInitializer initializer = new SyncOperationsInitializer(utilities);
 
             initializer.initialize(agent.getDeveleperTestingEdition(), agent.getAllDatabaseEditions(), agent.getAllDatabaseRefsets());
         }
 
         // Post processing
-        logger.info(agent.printStatistics());
+        LOG.info(agent.printStatistics());
 
         service.add(AuditEntryHelper.syncEntry(new Date()));
 
         final String queryResults = getPostSyncResults();
         utilities.emailImportResults(queryResults);
 
-        logger.info("Completed Syncing with Snowstorm");
+        LOG.info("Completed Syncing with Snowstorm");
     }
 
     public static void setRefsetToSync(final String refsetId, final String editionShortName) throws Exception {
@@ -208,7 +209,7 @@ public abstract class SyncService {
 
     protected static void updateDatabaseCache() throws Exception {
 
-        try (TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
             allDatabaseEditions.clear();
             allDatabaseOrganizations.clear();
@@ -227,17 +228,18 @@ public abstract class SyncService {
 
             /** Process supporting collections **/
             allDatabaseEditions.stream().forEach(e -> editionOwnerMap.put(e.getShortName(), e.getOrganization().getName()));
-            logger.info(" Edition Owner Map: " + editionOwnerMap);
+            LOG.info(" Edition Owner Map: " + editionOwnerMap);
 
-            List<Project> defaultProjects =
-                    allDatabaseProjects.stream().filter(p -> p.getName().toLowerCase().contains("default") || p.getDescription().toLowerCase().contains(("default"))).collect(Collectors.toList());
+            final List<Project> defaultProjects = allDatabaseProjects.stream()
+                .filter(p -> p.getName().toLowerCase().contains("default") || p.getDescription().toLowerCase().contains(("default")))
+                .collect(Collectors.toList());
             defaultProjects.stream().forEach(p -> defaultEditionProjects.put(p.getEdition().getShortName(), p));
-            logger.info(" defaultEditionProjects: " + defaultEditionProjects);
+            LOG.info(" defaultEditionProjects: " + defaultEditionProjects);
         }
 
     }
 
-    protected boolean isDifferentAttribute(String shortName, String attributeName, Object databaseAttribute, Object snowstormAttribute) {
+    protected boolean isDifferentAttribute(final String shortName, final String attributeName, final Object databaseAttribute, final Object snowstormAttribute) {
 
         if (snowstormAttribute == null && databaseAttribute == null) {
             // Both null, no difference
@@ -250,11 +252,12 @@ public abstract class SyncService {
         // values are different. List them
         if (databaseAttribute instanceof Long) {
 
-            logger.error(" inconsistency found in " + shortName + " having " + attributeName + " with DB value '" + new Date((Long) databaseAttribute) + "' (" + databaseAttribute
-                    + ") and Snowstorm value '" + new Date((Long) snowstormAttribute) + "' (" + snowstormAttribute + ")");
+            LOG.error(" inconsistency found in " + shortName + " having " + attributeName + " with DB value '" + new Date((Long) databaseAttribute) + "' ("
+                + databaseAttribute + ") and Snowstorm value '" + new Date((Long) snowstormAttribute) + "' (" + snowstormAttribute + ")");
         } else {
 
-            logger.error(" inconsistency found in " + shortName + " having " + attributeName + " with DB value '" + databaseAttribute + "' and Snowstorm value '" + snowstormAttribute + "'");
+            LOG.error(" inconsistency found in " + shortName + " having " + attributeName + " with DB value '" + databaseAttribute + "' and Snowstorm value '"
+                + snowstormAttribute + "'");
         }
 
         return true;
@@ -312,7 +315,7 @@ public abstract class SyncService {
         return isPerVersionSync == null ? false : isPerVersionSync;
     }
 
-    public static void setTesting(boolean testing) {
+    public static void setTesting(final boolean testing) {
 
         SyncService.testing = testing;
 
@@ -334,7 +337,7 @@ public abstract class SyncService {
                 }
                 line = reader.readLine();
             }
-        } catch (IOException e) {
+        } catch (final IOException e) {
             e.printStackTrace();
         }
 
@@ -362,10 +365,10 @@ public abstract class SyncService {
                 }
             }
 
-            logger.info("DONE POST SYNC DATA QUERIES");
+            LOG.info("DONE POST SYNC DATA QUERIES");
 
-        } catch (Exception e) {
-            logger.error("ERROR getting db results", e);
+        } catch (final Exception e) {
+            LOG.error("ERROR getting db results", e);
         }
 
         return result.toString();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -27,14 +27,33 @@ import org.slf4j.LoggerFactory;
 /**
  * The Class AuditEntryHelper.
  */
-public class AuditEntryHelper {
+public final class AuditEntryHelper {
 
-    public enum ENTITY_TYPE {
-        EDITION, ORGANIZATION, PROJECT, TEAM, REFSET, USER, DISCUSSION, SYNC
+    /**
+     * The Enum EntityType.
+     */
+    public static enum EntityType {
+
+        /** The edition. */
+        EDITION,
+        /** The organization. */
+        ORGANIZATION,
+        /** The project. */
+        PROJECT,
+        /** The team. */
+        TEAM,
+        /** The refset. */
+        REFSET,
+        /** The user. */
+        USER,
+        /** The discussion. */
+        DISCUSSION,
+        /** The sync. */
+        SYNC
     }
 
-    /** Logger. */
-    private static Logger logger = LoggerFactory.getLogger(AuditEntryHelper.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(AuditEntryHelper.class);
 
     /**
      * Log.
@@ -43,7 +62,15 @@ public class AuditEntryHelper {
      */
     private static void log(final AuditEntry entry) {
 
-        logger.info(entry.toLogString());
+        LOG.info(entry.toLogString());
+    }
+
+    /**
+     * Instantiates an empty {@link AuditEntryHelper}.
+     */
+    private AuditEntryHelper() {
+
+        // n/a
     }
 
     /**
@@ -56,7 +83,7 @@ public class AuditEntryHelper {
     public static AuditEntry newEditionEntry(final Edition edition) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.EDITION.toString());
+        entry.setEntityType(EntityType.EDITION.toString());
         entry.setEntityId(edition.getId());
         entry.setMessage("ADD Edition");
         entry.setDetails(edition.getName());
@@ -73,7 +100,7 @@ public class AuditEntryHelper {
     public static AuditEntry updateEditionEntry(final Edition edition) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.EDITION.toString());
+        entry.setEntityType(EntityType.EDITION.toString());
         entry.setEntityId(edition.getId());
         entry.setMessage("UPDATE Edition");
         entry.setDetails(edition.getName());
@@ -90,7 +117,7 @@ public class AuditEntryHelper {
     public static AuditEntry inactivateEditionEntry(final Edition edition) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.EDITION.toString());
+        entry.setEntityType(EntityType.EDITION.toString());
         entry.setEntityId(edition.getId());
         entry.setMessage("INACTIVATE Edition");
         entry.setDetails(edition.getName());
@@ -108,7 +135,7 @@ public class AuditEntryHelper {
     public static AuditEntry newOrganizationEntry(final Organization organization) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.ORGANIZATION.toString());
+        entry.setEntityType(EntityType.ORGANIZATION.toString());
         entry.setEntityId(organization.getId());
         entry.setMessage("NEW Organization");
         entry.setDetails(organization.getName());
@@ -125,7 +152,7 @@ public class AuditEntryHelper {
     public static AuditEntry updateOrganizationEntry(final Organization organization) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.ORGANIZATION.toString());
+        entry.setEntityType(EntityType.ORGANIZATION.toString());
         entry.setEntityId(organization.getId());
         entry.setMessage("UPDATE Organization");
         entry.setDetails(organization.getName());
@@ -142,7 +169,7 @@ public class AuditEntryHelper {
     public static AuditEntry inactivateOrganizationEntry(final Organization organization) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.ORGANIZATION.toString());
+        entry.setEntityType(EntityType.ORGANIZATION.toString());
         entry.setEntityId(organization.getId());
         entry.setMessage("INACTIVATE Organization");
         entry.setDetails(organization.getName());
@@ -160,7 +187,7 @@ public class AuditEntryHelper {
     public static AuditEntry addUserToOrganizationEntry(final Organization organization, final User user) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.ORGANIZATION.toString());
+        entry.setEntityType(EntityType.ORGANIZATION.toString());
         entry.setEntityId(organization.getId());
         entry.setMessage("UPDATE Organization");
         entry.setDetails("Add user " + user.getName() + " to organization " + organization.getName() + ".");
@@ -178,7 +205,7 @@ public class AuditEntryHelper {
     public static AuditEntry removeUserFromOrganizationEntry(final Organization organization, final User user) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.ORGANIZATION.toString());
+        entry.setEntityType(EntityType.ORGANIZATION.toString());
         entry.setEntityId(organization.getId());
         entry.setMessage("UPDATE Organization");
         entry.setDetails("Remove user " + user.getName() + " form organization " + organization.getName() + ".");
@@ -196,14 +223,14 @@ public class AuditEntryHelper {
     public static AuditEntry updateIconForOrganizationEntry(final Organization organization, final String fileName) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.ORGANIZATION.toString());
+        entry.setEntityType(EntityType.ORGANIZATION.toString());
         entry.setEntityId(organization.getId());
         entry.setMessage("UPDATE Organization");
         entry.setDetails("Change icon for organization " + organization.getName() + " to " + fileName + ".");
         log(entry);
         return entry;
     }
-    
+
     /**
      * Send organization invite.
      *
@@ -215,7 +242,7 @@ public class AuditEntryHelper {
     public static AuditEntry sendOrganizationInvite(final Organization organization, final User requester, final String recipientEmail) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(organization.getId());
         entry.setMessage("INVITE Organization");
         entry.setDetails("User " + requester.getUserName() + " sent request for " + recipientEmail + " to join organization " + organization.getId());
@@ -226,19 +253,21 @@ public class AuditEntryHelper {
     /**
      * Response for refset invite.
      *
-     * @param refset the refset
+     * @param organization the organization
      * @param requester the requester
      * @param recipientEmail the recipient email
+     * @param acceptance the acceptance
      * @return the audit entry
      */
-    public static AuditEntry responseForOrganizationInvite(final Organization organization, final User requester, final String recipientEmail, final boolean acceptance) {
+    public static AuditEntry responseForOrganizationInvite(final Organization organization, final User requester, final String recipientEmail,
+        final boolean acceptance) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(organization.getId());
         entry.setMessage("INVITE Organization Response");
-        entry.setDetails(
-            "Recipient " + recipientEmail + " " + (acceptance ? " accepted " : " decline ") + " user's " + requester.getUserName() + " request to join organization " + organization.getId());
+        entry.setDetails("Recipient " + recipientEmail + " " + (acceptance ? " accepted " : " decline ") + " user's " + requester.getUserName()
+            + " request to join organization " + organization.getId());
         log(entry);
         return entry;
     }
@@ -253,7 +282,7 @@ public class AuditEntryHelper {
     // public static AuditEntry emailOrganizationEntry(final Organization organization, final String action, final String email) {
     //
     // final AuditEntry entry = new AuditEntry();
-    // entry.setEntityType(ENTITY_TYPE.ORGANIZATION.toString());
+    // entry.setEntityType(EntityType.ORGANIZATION.toString());
     // entry.setEntityId(organization.getId());
     // entry.setMessage("INVITE Organization");
     // entry.setDetails(action + " " + email + " to organization " + organization.getName() + ".");
@@ -271,7 +300,7 @@ public class AuditEntryHelper {
     public static AuditEntry newProjectEntry(final Project project) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.PROJECT.toString());
+        entry.setEntityType(EntityType.PROJECT.toString());
         entry.setEntityId(project.getId());
         entry.setMessage("NEW Project");
         entry.setDetails(project.getName());
@@ -288,7 +317,7 @@ public class AuditEntryHelper {
     public static AuditEntry updateProjectEntry(final Project project) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.PROJECT.toString());
+        entry.setEntityType(EntityType.PROJECT.toString());
         entry.setEntityId(project.getId());
         entry.setMessage("UPDATE Project");
         entry.setDetails(project.getName());
@@ -305,7 +334,7 @@ public class AuditEntryHelper {
     public static AuditEntry inactivateProjectEntry(final Project project) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.PROJECT.toString());
+        entry.setEntityType(EntityType.PROJECT.toString());
         entry.setEntityId(project.getId());
         entry.setMessage("INACTIVATE Project");
         entry.setDetails(project.getName());
@@ -323,7 +352,7 @@ public class AuditEntryHelper {
     public static AuditEntry newTeamEntry(final Team team) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.TEAM.toString());
+        entry.setEntityType(EntityType.TEAM.toString());
         entry.setEntityId(team.getId());
         entry.setMessage("NEW Team");
         entry.setDetails(team.getName());
@@ -340,7 +369,7 @@ public class AuditEntryHelper {
     public static AuditEntry updateTeamEntry(final Team team) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.TEAM.toString());
+        entry.setEntityType(EntityType.TEAM.toString());
         entry.setEntityId(team.getId());
         entry.setMessage("UPDATE Team");
         entry.setDetails(team.getName());
@@ -357,7 +386,7 @@ public class AuditEntryHelper {
     public static AuditEntry inactivateTeamEntry(final Team team) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.TEAM.toString());
+        entry.setEntityType(EntityType.TEAM.toString());
         entry.setEntityId(team.getId());
         entry.setMessage("INACTIVATE Team");
         entry.setDetails(team.getName());
@@ -375,7 +404,7 @@ public class AuditEntryHelper {
     public static AuditEntry addRoleToTeamEntry(final Team team, final String role) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.TEAM.toString());
+        entry.setEntityType(EntityType.TEAM.toString());
         entry.setEntityId(team.getId());
         entry.setMessage("UPDATE Team");
         entry.setDetails("Add role " + role + " to team " + team.getName());
@@ -393,7 +422,7 @@ public class AuditEntryHelper {
     public static AuditEntry removeRoleFromTeamEntry(final Team team, final String role) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.TEAM.toString());
+        entry.setEntityType(EntityType.TEAM.toString());
         entry.setEntityId(team.getId());
         entry.setMessage("UPDATE Team");
         entry.setDetails("Remove role " + role + " from team " + team.getName());
@@ -411,7 +440,7 @@ public class AuditEntryHelper {
     public static AuditEntry addUserToTeamEntry(final Team team, final User user) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.TEAM.toString());
+        entry.setEntityType(EntityType.TEAM.toString());
         entry.setEntityId(team.getId());
         entry.setMessage("UPDATE Team");
         entry.setDetails("Add user " + user.getName() + " to team " + team.getName());
@@ -429,7 +458,7 @@ public class AuditEntryHelper {
     public static AuditEntry removeUserFromTeamEntry(final Team team, final User user) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.TEAM.toString());
+        entry.setEntityType(EntityType.TEAM.toString());
         entry.setEntityId(team.getId());
         entry.setMessage("UPDATE Team");
         entry.setDetails("Remove user " + user.getName() + " from team " + team.getName());
@@ -447,7 +476,7 @@ public class AuditEntryHelper {
     public static AuditEntry newUserEntry(final User user) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.USER.toString());
+        entry.setEntityType(EntityType.USER.toString());
         entry.setEntityId(user.getId());
         entry.setMessage("NEW User");
         entry.setDetails(user.getName());
@@ -464,7 +493,7 @@ public class AuditEntryHelper {
     public static AuditEntry updateUserEntry(final User user) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.USER.toString());
+        entry.setEntityType(EntityType.USER.toString());
         entry.setEntityId(user.getId());
         entry.setMessage("UPDATE User");
         entry.setDetails(user.getName());
@@ -481,7 +510,7 @@ public class AuditEntryHelper {
     public static AuditEntry inactivateUserEntry(final User user) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.USER.toString());
+        entry.setEntityType(EntityType.USER.toString());
         entry.setEntityId(user.getId());
         entry.setMessage("INACTIVATE User");
         entry.setDetails(user.getName());
@@ -499,7 +528,7 @@ public class AuditEntryHelper {
     public static AuditEntry newRefsetEntry(final Refset refset) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(refset.getId());
         entry.setMessage("NEW Refset");
         entry.setDetails(refset.getName());
@@ -516,15 +545,15 @@ public class AuditEntryHelper {
     public static AuditEntry changeRefsetStatusEntry(final Refset refset) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(refset.getId());
-        
+
         if (refset.isActive()) {
             entry.setMessage("REACTIVATE Refset");
         } else {
             entry.setMessage("INACTIVATE Refset");
         }
-        
+
         entry.setDetails(refset.getName());
         log(entry);
         return entry;
@@ -539,7 +568,7 @@ public class AuditEntryHelper {
     public static AuditEntry resetRefsetEntry(final Refset refset) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(refset.getRefsetId());
         entry.setMessage("RESET all versions of Refset");
         entry.setDetails(refset.getName());
@@ -557,7 +586,7 @@ public class AuditEntryHelper {
     public static AuditEntry completeRefsetPublicationEntry(final Refset refset) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(refset.getId());
         entry.setMessage("UPDATE Refset");
         entry.setDetails("Complete Publication on refset " + refset.getRefsetId());
@@ -569,6 +598,7 @@ public class AuditEntryHelper {
      * Update refset entry.
      *
      * @param refset the refset
+     * @param eclUpdated the ecl updated
      * @return the audit entry
      */
     public static AuditEntry updateRefsetMetadataEntry(final Refset refset, final boolean eclUpdated) {
@@ -576,7 +606,7 @@ public class AuditEntryHelper {
         final String eclInfo = (eclUpdated) ? "including" : "not including";
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(refset.getId());
         entry.setMessage("UPDATE Refset");
         entry.setDetails("Refset " + refset.getRefsetId() + " metadata changed " + eclInfo + " the ECL definition");
@@ -588,12 +618,14 @@ public class AuditEntryHelper {
      * Add Refset Members entry.
      *
      * @param refset the refset
+     * @param additionalInformation the additional information
+     * @param conceptIds the concept ids
      * @return the audit entry
      */
     public static AuditEntry addMembersEntry(final Refset refset, final String additionalInformation, final String conceptIds) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(refset.getId());
         entry.setMessage("UPDATE Refset");
         entry.setDetails("Refset " + refset.getRefsetId() + " modified by adding " + additionalInformation + ": " + conceptIds);
@@ -605,12 +637,14 @@ public class AuditEntryHelper {
      * Remove Refset Members entry.
      *
      * @param refset the refset
+     * @param additionalInformation the additional information
+     * @param conceptIds the concept ids
      * @return the audit entry
      */
-    public static AuditEntry removeMembersEntry(Refset refset, String additionalInformation, String conceptIds) {
+    public static AuditEntry removeMembersEntry(final Refset refset, final String additionalInformation, final String conceptIds) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(refset.getId());
         entry.setMessage("UPDATE Refset");
         entry.setDetails("Refset " + refset.getRefsetId() + " modified by removing " + additionalInformation + ": " + conceptIds);
@@ -622,8 +656,8 @@ public class AuditEntryHelper {
     /**
      * Adds editing cycle entry.
      *
-     * @param workflowHistory the workflow history
      * @param refset the refset
+     * @param isSaving the is saving
      * @return the audit entry
      */
     public static AuditEntry addEditingCycleEntry(final Refset refset, final boolean isSaving) {
@@ -631,7 +665,7 @@ public class AuditEntryHelper {
         final String type = (isSaving) ? "saved" : " canceled";
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(refset.getId());
         entry.setMessage("UPDATE Refset");
         entry.setDetails("Refset " + refset.getRefsetId() + " changes since refset was put IN_EDIT have been " + type);
@@ -651,7 +685,7 @@ public class AuditEntryHelper {
     public static AuditEntry sendRefsetInvite(final Refset refset, final User requester, final String recipientEmail) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(refset.getId());
         entry.setMessage("INVITE Refset");
         entry.setDetails("User " + requester.getUserName() + " sent request for " + recipientEmail + " to join refset " + refset.getRefsetId());
@@ -666,15 +700,17 @@ public class AuditEntryHelper {
      * @param refset the refset
      * @param requester the requester
      * @param recipientEmail the recipient email
+     * @param acceptance the acceptance
      * @return the audit entry
      */
     public static AuditEntry responseForRefsetInvite(final Refset refset, final User requester, final String recipientEmail, final boolean acceptance) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(refset.getId());
         entry.setMessage("INVITE Refset Response");
-        entry.setDetails("Recipient " + recipientEmail + " " + (acceptance ? " accepted " : " decline ") + " user's " + requester.getUserName() + " request to join refset " + refset.getRefsetId());
+        entry.setDetails("Recipient " + recipientEmail + " " + (acceptance ? " accepted " : " decline ") + " user's " + requester.getUserName()
+            + " request to join refset " + refset.getRefsetId());
         log(entry);
 
         return entry;
@@ -685,12 +721,13 @@ public class AuditEntryHelper {
      *
      * @param workflowHistory the workflow history
      * @param refset the refset
+     * @param newState the new state
      * @return the audit entry
      */
     public static AuditEntry addWorkflowHistoryEntry(final WorkflowHistory workflowHistory, final Refset refset, final String newState) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(refset.getId());
         entry.setMessage("NEW Workflow History");
         entry.setDetails("Refset " + refset.getRefsetId() + " has advanced workflow to " + newState);
@@ -708,7 +745,7 @@ public class AuditEntryHelper {
     public static AuditEntry updateWorkflowNoteEntry(final WorkflowHistory workflowHistory, final Refset refset) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(refset.getId());
         entry.setMessage("NEW Workflow History");
         entry.setDetails("Note for workflow history entry with status " + refset.getWorkflowStatus() + " updated for refset " + refset.getRefsetId() + ".");
@@ -726,7 +763,7 @@ public class AuditEntryHelper {
     public static AuditEntry postDiscussionThreadEntry(final DiscussionThread discussionThread) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.DISCUSSION.toString());
+        entry.setEntityType(EntityType.DISCUSSION.toString());
         entry.setEntityId(discussionThread.getId());
         entry.setMessage("NEW Collaboration Thread");
         entry.setDetails(discussionThread.getSubject());
@@ -734,10 +771,16 @@ public class AuditEntryHelper {
         return entry;
     }
 
-    public static HasModified convertToExtensionalRefsetEntry(Refset refset) {
+    /**
+     * Convert to extensional refset entry.
+     *
+     * @param refset the refset
+     * @return the checks for modified
+     */
+    public static HasModified convertToExtensionalRefsetEntry(final Refset refset) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(refset.getId());
         entry.setMessage("Convert Intensional to Extensional");
         entry.setDetails("Note for converting intensional to extensional refset for refset " + refset.getRefsetId() + ".");
@@ -745,10 +788,19 @@ public class AuditEntryHelper {
         return entry;
     }
 
-    public static HasModified sendCommunicationEmailEntry(Refset refset, String action, String from, String to) {
+    /**
+     * Send communication email entry.
+     *
+     * @param refset the refset
+     * @param action the action
+     * @param from the from
+     * @param to the to
+     * @return the checks for modified
+     */
+    public static HasModified sendCommunicationEmailEntry(final Refset refset, final String action, final String from, final String to) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.REFSET.toString());
+        entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(refset.getId());
         entry.setMessage(action);
         entry.setDetails(action + " from: " + from + " to " + to + " for refset " + refset.getRefsetId() + ".");
@@ -756,10 +808,16 @@ public class AuditEntryHelper {
         return entry;
     }
 
-    public static HasModified syncEntry(Date date) {
+    /**
+     * Sync entry.
+     *
+     * @param date the date
+     * @return the checks for modified
+     */
+    public static HasModified syncEntry(final Date date) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(ENTITY_TYPE.SYNC.toString());
+        entry.setEntityType(EntityType.SYNC.toString());
         entry.setEntityId("");
         entry.setMessage("Sync completed successfully");
         entry.setDetails("Finish date is " + date.getTime());

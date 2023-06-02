@@ -6,8 +6,7 @@ import java.io.IOException;
 import java.io.Reader;
 
 /**
- * Extends {@link BufferedReader} to provide the ability to push a single line
- * of input back onto the reader to read it again on the next
+ * Extends {@link BufferedReader} to provide the ability to push a single line of input back onto the reader to read it again on the next
  * <code>readLine()</code> call.
  */
 public class PushBackReader extends BufferedReader {
@@ -16,23 +15,23 @@ public class PushBackReader extends BufferedReader {
     private String pushedBackLine;
 
     /**
-     * Instantiates a new {@link PushBackReader} wrapped around the specified
-     * reader.
+     * Instantiates a new {@link PushBackReader} wrapped around the specified reader.
      * 
      * @param r {@link Reader}
      */
     public PushBackReader(final Reader r) {
+
         super(r);
     }
 
     /**
-     * Instantiates a new {@link PushBackReader} wrapped around the specified
-     * reader.
+     * Instantiates a new {@link PushBackReader} wrapped around the specified reader.
      * 
      * @param r {@link Reader}
      * @param bufferSize the buffer size
      */
     public PushBackReader(final Reader r, final int bufferSize) {
+
         super(r, bufferSize);
     }
 
@@ -44,6 +43,7 @@ public class PushBackReader extends BufferedReader {
      */
     @Override
     public String readLine() throws IOException {
+
         if (pushedBackLine != null) {
             final String l = pushedBackLine;
             pushedBackLine = null;
@@ -61,6 +61,7 @@ public class PushBackReader extends BufferedReader {
      * @throws Exception the exception
      */
     public void push(final String line) throws Exception {
+
         if (pushedBackLine != null) {
             throw new Exception("Line already pushed, must readLine before push again");
         }
@@ -73,6 +74,7 @@ public class PushBackReader extends BufferedReader {
      * @return the string
      */
     public String peek() {
+
         return this.pushedBackLine;
     }
 

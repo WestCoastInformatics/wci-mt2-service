@@ -45,6 +45,7 @@ public class Metric {
      * @return the remote ip address
      */
     public String getRemoteIpAddress() {
+
         return remoteIpAddress;
     }
 
@@ -54,6 +55,7 @@ public class Metric {
      * @param remoteIpAddress the remote ip address
      */
     public void setRemoteIpAddress(final String remoteIpAddress) {
+
         this.remoteIpAddress = remoteIpAddress;
     }
 
@@ -63,6 +65,7 @@ public class Metric {
      * @return the end point
      */
     public String getEndPoint() {
+
         return endPoint;
     }
 
@@ -72,6 +75,7 @@ public class Metric {
      * @param endPoint the end point
      */
     public void setEndPoint(final String endPoint) {
+
         this.endPoint = endPoint;
     }
 
@@ -81,6 +85,7 @@ public class Metric {
      * @return the query params
      */
     public Map<String, String[]> getQueryParams() {
+
         return queryParams;
     }
 
@@ -90,6 +95,7 @@ public class Metric {
      * @param queryParams the query params
      */
     public void setQueryParams(final Map<String, String[]> queryParams) {
+
         this.queryParams = queryParams;
     }
 
@@ -99,6 +105,7 @@ public class Metric {
      * @return the start time
      */
     public Date getStartTime() {
+
         return startTime;
     }
 
@@ -108,6 +115,7 @@ public class Metric {
      * @param startTime the start time
      */
     public void setStartTime(final Date startTime) {
+
         this.startTime = startTime;
     }
 
@@ -117,6 +125,7 @@ public class Metric {
      * @return the end time
      */
     public Date getEndTime() {
+
         return endTime;
     }
 
@@ -126,6 +135,7 @@ public class Metric {
      * @param endTime the end time
      */
     public void setEndTime(final Date endTime) {
+
         this.endTime = endTime;
     }
 
@@ -135,6 +145,7 @@ public class Metric {
      * @return the duration
      */
     public Long getDuration() {
+
         return duration;
     }
 
@@ -144,6 +155,7 @@ public class Metric {
      * @param duration the duration
      */
     public void setDuration(final Long duration) {
+
         this.duration = duration;
     }
 
@@ -153,6 +165,7 @@ public class Metric {
      * @return the host name
      */
     public String getHostName() {
+
         return hostName;
     }
 
@@ -162,6 +175,7 @@ public class Metric {
      * @param hostName the host name
      */
     public void setHostName(final String hostName) {
+
         this.hostName = hostName;
     }
 
@@ -173,6 +187,7 @@ public class Metric {
     /* see superclass */
     @Override
     public String toString() {
+
         try {
             return new ObjectMapper().writeValueAsString(this);
         } catch (final Exception e) {

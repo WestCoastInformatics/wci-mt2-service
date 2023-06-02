@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -17,7 +17,15 @@ import org.apache.commons.lang3.StringUtils;
 /**
  * The Class CrowdGroupNameGenerator.
  */
-public class CrowdGroupNameAlgorithm {
+public final class CrowdGroupNameAlgorithm {
+
+    /**
+     * Instantiates an empty {@link CrowdGroupNameAlgorithm}.
+     */
+    private CrowdGroupNameAlgorithm() {
+
+        // n/a
+    }
 
     /**
      * Generate crowd group name.
@@ -43,7 +51,8 @@ public class CrowdGroupNameAlgorithm {
      * @return the string
      * @throws Exception the exception
      */
-    public static String generateCrowdGroupName(final String editionName, final String projectName, final String role, final boolean adminRole) throws Exception {
+    public static String generateCrowdGroupName(final String editionName, final String projectName, final String role, final boolean adminRole)
+        throws Exception {
 
         if (StringUtils.isAnyBlank(editionName, projectName, role)) {
             throw new Exception("Parameters cannot be empty or null");
@@ -63,7 +72,7 @@ public class CrowdGroupNameAlgorithm {
 
         return groupName.toString();
     }
-    
+
     /**
      * Builds the crowd group name.
      *
@@ -117,7 +126,8 @@ public class CrowdGroupNameAlgorithm {
             throw new Exception("Project name cannot be null or empty.");
         }
 
-        final String project = Arrays.stream(projectName.trim().split(" ")).map(s -> s.substring(0, 1)).collect(Collectors.joining()).replaceAll("[^a-zA-Z0-9]", "");
+        final String project =
+            Arrays.stream(projectName.trim().split(" ")).map(s -> s.substring(0, 1)).collect(Collectors.joining()).replaceAll("[^a-zA-Z0-9]", "");
 
         return project.toLowerCase().trim();
     }

@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.model.test;
 
@@ -30,9 +39,8 @@ import org.slf4j.LoggerFactory;
  */
 public class RefsetUnitTest extends BaseTest {
 
-    /** The logger. */
-    @SuppressWarnings("unused")
-    private final Logger logger = LoggerFactory.getLogger(RefsetUnitTest.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(RefsetUnitTest.class);
 
     /** The model object to test. */
     private Refset object;
@@ -91,7 +99,7 @@ public class RefsetUnitTest extends BaseTest {
         tester.exclude("editionBranch");
         tester.exclude("editionId");
         tester.exclude("projectId");
-       
+
         tester.test();
     }
 
@@ -186,7 +194,7 @@ public class RefsetUnitTest extends BaseTest {
 
             final ProxyTester tester2 = new ProxyTester(new Refset());
             final Refset object = (Refset) tester2.createObject(1);
-            logger.info("************ object: " + object);
+            LOG.info("************ object: " + object);
             object.setId(null);
             object.setEdition(null);
             object.setProject(null);
@@ -207,7 +215,7 @@ public class RefsetUnitTest extends BaseTest {
             service.add(project);
             object.setProject(project);
 
-            Set<String> tags = new HashSet<>();
+            final Set<String> tags = new HashSet<>();
             tags.add("blood");
             tags.add("covid 19");
             object.setTags(tags);
@@ -244,7 +252,8 @@ public class RefsetUnitTest extends BaseTest {
             }
 
             // test that project and organization were properly added.
-            if (retrievedObject.getProject() == null || !retrievedObject.getProject().getName().equals("1") || retrievedObject.getProject().getEdition().getOrganization() == null
+            if (retrievedObject.getProject() == null || !retrievedObject.getProject().getName().equals("1")
+                || retrievedObject.getProject().getEdition().getOrganization() == null
                 || !retrievedObject.getProject().getEdition().getOrganization().getName().equals("1")) {
                 throw new Exception("Refset project and organization not properly saved = " + retrievedObject.getId());
             }

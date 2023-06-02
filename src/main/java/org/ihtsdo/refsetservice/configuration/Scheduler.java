@@ -13,14 +13,15 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class Scheduler {
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(Scheduler.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(Scheduler.class);
 
     /**
      * Instantiates an empty {@link Scheduler}.
      */
     public Scheduler() {
-        logger.debug("Creating instance of class Scheduler");
+
+        LOG.debug("Creating instance of class Scheduler");
     }
 
 }

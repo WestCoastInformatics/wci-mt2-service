@@ -19,7 +19,7 @@ public class SyncRefsetMetadata {
 
     private String branchPath;
 
-    public SyncRefsetMetadata(JsonNode refsetNode, Edition edition, Set<Date> allRefsetVersions, Date version, String branchPath) {
+    public SyncRefsetMetadata(final JsonNode refsetNode, final Edition edition, final Set<Date> allRefsetVersions, final Date version, final String branchPath) {
 
         this.refsetNode = refsetNode;
         this.edition = edition;
@@ -33,7 +33,7 @@ public class SyncRefsetMetadata {
         return refsetNode;
     }
 
-    protected void setRefsetNode(JsonNode refsetNode) {
+    protected void setRefsetNode(final JsonNode refsetNode) {
 
         this.refsetNode = refsetNode;
     }
@@ -43,7 +43,7 @@ public class SyncRefsetMetadata {
         return edition;
     }
 
-    protected void setEdition(Edition edition) {
+    protected void setEdition(final Edition edition) {
 
         this.edition = edition;
     }
@@ -53,7 +53,7 @@ public class SyncRefsetMetadata {
         return allRefsetVersions;
     }
 
-    protected void setAllRefsetVersions(Set<Date> allRefsetVersions) {
+    protected void setAllRefsetVersions(final Set<Date> allRefsetVersions) {
 
         this.allRefsetVersions = allRefsetVersions;
     }
@@ -63,7 +63,7 @@ public class SyncRefsetMetadata {
         return version;
     }
 
-    protected void setVersion(Date version) {
+    protected void setVersion(final Date version) {
 
         this.version = version;
     }
@@ -73,7 +73,7 @@ public class SyncRefsetMetadata {
         return branchPath;
     }
 
-    protected void setBranchPath(String branchPath) {
+    protected void setBranchPath(final String branchPath) {
 
         this.branchPath = branchPath;
     }

@@ -76,8 +76,8 @@ public class SyncPropertyFileReader {
 
     private final Map<String, String> projectOrganizationMap = new HashMap<>();
 
-    /** The logger. */
-    private final Logger logger = LoggerFactory.getLogger(SyncPropertyFileReader.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(SyncPropertyFileReader.class);
 
     private Set<String> projectsToIgnore = new HashSet<>();
 
@@ -127,7 +127,7 @@ public class SyncPropertyFileReader {
 
             ignoredCodeSystemsResource = new ClassPathResource(IGNORED_CODE_SYSTEMS_PATH);
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(ignoredCodeSystemsResource.getInputStream()));
+            final BufferedReader reader = new BufferedReader(new InputStreamReader(ignoredCodeSystemsResource.getInputStream()));
 
             String line = reader.readLine();
 
@@ -135,7 +135,7 @@ public class SyncPropertyFileReader {
 
                 if (!line.isBlank()) {
 
-                    String shortName = line.split("\t")[0];
+                    final String shortName = line.split("\t")[0];
 
                     codeSystemShortNames.add(shortName);
                 }
@@ -144,7 +144,7 @@ public class SyncPropertyFileReader {
             }
 
             reader.close();
-        } catch (IOException e) {
+        } catch (final IOException e) {
 
             e.printStackTrace();
         }
@@ -173,7 +173,7 @@ public class SyncPropertyFileReader {
                 }
 
                 reader.close();
-            } catch (IOException e) {
+            } catch (final IOException e) {
 
                 e.printStackTrace();
             }
@@ -186,7 +186,7 @@ public class SyncPropertyFileReader {
     private Map<String, String> readRttRefsetsToClausesMap() {
 
         BufferedReader reader;
-        Map<String, String> refsetToClausesInfoMap = new HashMap<>();
+        final Map<String, String> refsetToClausesInfoMap = new HashMap<>();
 
         try {
 
@@ -202,7 +202,7 @@ public class SyncPropertyFileReader {
             }
 
             reader.close();
-        } catch (IOException e) {
+        } catch (final IOException e) {
 
             e.printStackTrace();
         }
@@ -213,7 +213,7 @@ public class SyncPropertyFileReader {
     private Map<String, String> readRttRefsetsToDescriptionMap() {
 
         BufferedReader reader;
-        Map<String, String> refsetToDescriptionMap = new HashMap<>();
+        final Map<String, String> refsetToDescriptionMap = new HashMap<>();
 
         try {
 
@@ -223,7 +223,7 @@ public class SyncPropertyFileReader {
 
             while (line != null && !line.trim().isEmpty()) {
 
-                int columnSplit = line.indexOf(",");
+                final int columnSplit = line.indexOf(",");
 
                 if (columnSplit < 0) {
 
@@ -231,8 +231,8 @@ public class SyncPropertyFileReader {
 
                 }
 
-                String sctId = line.substring(0, columnSplit);
-                String description = stripQuotes(line.substring(columnSplit + 1));
+                final String sctId = line.substring(0, columnSplit);
+                final String description = stripQuotes(line.substring(columnSplit + 1));
 
                 refsetToDescriptionMap.put(sctId, description);
 
@@ -240,7 +240,7 @@ public class SyncPropertyFileReader {
             }
 
             reader.close();
-        } catch (Exception e) {
+        } catch (final Exception e) {
 
             e.printStackTrace();
         }
@@ -251,7 +251,7 @@ public class SyncPropertyFileReader {
     private Map<String, String> readRttRefsetsToProjectsMap() {
 
         BufferedReader reader;
-        Map<String, String> refsetToProjectsInfoMap = new HashMap<>();
+        final Map<String, String> refsetToProjectsInfoMap = new HashMap<>();
 
         try {
 
@@ -261,7 +261,7 @@ public class SyncPropertyFileReader {
 
             while (line != null && !line.isEmpty()) {
 
-                String[] columns = line.split(",");
+                final String[] columns = line.split(",");
 
                 if (!refsetToProjectsInfoMap.containsKey(columns[0])) {
 
@@ -272,7 +272,7 @@ public class SyncPropertyFileReader {
             }
 
             reader.close();
-        } catch (IOException e) {
+        } catch (final IOException e) {
 
             e.printStackTrace();
         }
@@ -283,7 +283,7 @@ public class SyncPropertyFileReader {
     private Map<String, Set<String>> readRttRefsetsToTagsMap() {
 
         BufferedReader reader;
-        Map<String, Set<String>> refsetToTagsInfoMap = new HashMap<>();
+        final Map<String, Set<String>> refsetToTagsInfoMap = new HashMap<>();
 
         try {
 
@@ -293,7 +293,7 @@ public class SyncPropertyFileReader {
 
             while (line != null && !line.isEmpty()) {
 
-                String[] columns = line.split("\t");
+                final String[] columns = line.split("\t");
 
                 if (!refsetToTagsInfoMap.containsKey(columns[0])) {
 
@@ -305,7 +305,7 @@ public class SyncPropertyFileReader {
             }
 
             reader.close();
-        } catch (IOException e) {
+        } catch (final IOException e) {
 
             e.printStackTrace();
         }
@@ -316,7 +316,7 @@ public class SyncPropertyFileReader {
     private Map<String, Map<String, Set<String>>> readTeamCreation() {
 
         BufferedReader reader;
-        Map<String, Map<String, Set<String>>> teamsToCreate = new HashMap<>();
+        final Map<String, Map<String, Set<String>>> teamsToCreate = new HashMap<>();
 
         try {
 
@@ -326,7 +326,7 @@ public class SyncPropertyFileReader {
 
             while (line != null && !line.isEmpty()) {
 
-                String[] columns = line.split("\t");
+                final String[] columns = line.split("\t");
 
                 if (columns.length != 3) {
 
@@ -350,7 +350,7 @@ public class SyncPropertyFileReader {
             reader.close();
         } catch (
 
-        IOException e) {
+        final IOException e) {
 
             e.printStackTrace();
         }
@@ -361,7 +361,7 @@ public class SyncPropertyFileReader {
     private Map<String, Set<String>> readTeamToProjectAssignement() {
 
         BufferedReader reader;
-        Map<String, Set<String>> teamToProjects = new HashMap<>();
+        final Map<String, Set<String>> teamToProjects = new HashMap<>();
 
         try {
 
@@ -371,7 +371,7 @@ public class SyncPropertyFileReader {
 
             while (line != null && !line.isEmpty()) {
 
-                String[] columns = line.split("\t");
+                final String[] columns = line.split("\t");
 
                 if (columns.length != 2) {
 
@@ -388,7 +388,7 @@ public class SyncPropertyFileReader {
             }
 
             reader.close();
-        } catch (IOException e) {
+        } catch (final IOException e) {
 
             e.printStackTrace();
         }
@@ -399,7 +399,7 @@ public class SyncPropertyFileReader {
     private Map<String, Set<String>> readTeamMembership() {
 
         BufferedReader reader;
-        Map<String, Set<String>> teamMembership = new HashMap<>();
+        final Map<String, Set<String>> teamMembership = new HashMap<>();
 
         try {
 
@@ -409,7 +409,7 @@ public class SyncPropertyFileReader {
 
             while (line != null && !line.isEmpty()) {
 
-                String[] columns = line.split("\t");
+                final String[] columns = line.split("\t");
 
                 if (columns.length != 2) {
 
@@ -426,7 +426,7 @@ public class SyncPropertyFileReader {
             }
 
             reader.close();
-        } catch (IOException e) {
+        } catch (final IOException e) {
 
             e.printStackTrace();
         }
@@ -450,7 +450,7 @@ public class SyncPropertyFileReader {
 
                 while (line != null) {
 
-                    String[] columns = line.split("\t");
+                    final String[] columns = line.split("\t");
                     defaultLanguageRefsetMap.put(columns[0], new HashSet<String>());
 
                     for (int i = 1; i < columns.length; i++) {
@@ -462,7 +462,7 @@ public class SyncPropertyFileReader {
                 }
 
                 reader.close();
-            } catch (IOException e) {
+            } catch (final IOException e) {
 
                 e.printStackTrace();
             }
@@ -542,7 +542,7 @@ public class SyncPropertyFileReader {
             }
 
             reader.close();
-        } catch (IOException e) {
+        } catch (final IOException e) {
 
             e.printStackTrace();
         }
@@ -551,7 +551,7 @@ public class SyncPropertyFileReader {
 
     public List<String> getTestQueries(final ClassPathResource classPathResource) throws Exception {
 
-        logger.info("NUNO TEST READ FILE {}", classPathResource.getPath());
+        LOG.info("NUNO TEST READ FILE {}", classPathResource.getPath());
 
         final List<String> lines = FileUtils.readLines(new File(classPathResource.getPath()), "utf-8");
 
@@ -580,21 +580,21 @@ public class SyncPropertyFileReader {
      * @param line the line
      * @return the string
      */
-    private String lineToClauseJson(final String line, int lineNumber) {
+    private String lineToClauseJson(final String line, final int lineNumber) {
 
         try {
 
-            StringBuffer buf = new StringBuffer();
-            String[] clauseValues = line.split(SPLIT_CHARACTER);
+            final StringBuffer buf = new StringBuffer();
+            final String[] clauseValues = line.split(SPLIT_CHARACTER);
             buf.append("{ \"negated\":\"");
             buf.append(clauseValues[1].equals("0") ? "false" : "true");
             buf.append("\",");
 
             buf.append("\"value\":\"" + clauseValues[2].replaceAll("\"", "").replaceAll("\t", "") + "\"}");
             return buf.toString();
-        } catch (Exception e) {
+        } catch (final Exception e) {
 
-            logger.error("failed to process line #" + lineNumber + " of clause json: " + line);
+            LOG.error("failed to process line #" + lineNumber + " of clause json: " + line);
             e.printStackTrace();
 
             throw e;
@@ -608,7 +608,7 @@ public class SyncPropertyFileReader {
      * @param line the line
      * @return the string
      */
-    private String lineToRefsetJson(final String line, int lineNumber) throws Exception {
+    private String lineToRefsetJson(final String line, final int lineNumber) throws Exception {
 
         String updatedLine = line;
         String narrative;
@@ -625,7 +625,8 @@ public class SyncPropertyFileReader {
                 narrative = updatedLine.substring(descStartIdx + 1, descStartIdx + descEndIdx + 1);
 
                 // Cleanup updateLine to remove ',' in narrative
-                updatedLine = updatedLine.substring(0, descStartIdx) + narrative.replaceAll(SPLIT_CHARACTER, "") + updatedLine.substring(descStartIdx + descEndIdx + 2);
+                updatedLine =
+                    updatedLine.substring(0, descStartIdx) + narrative.replaceAll(SPLIT_CHARACTER, "") + updatedLine.substring(descStartIdx + descEndIdx + 2);
             } else {
 
                 narrative = updatedLine.split(SPLIT_CHARACTER)[9];
@@ -710,14 +711,14 @@ public class SyncPropertyFileReader {
             // Store effective Time to avoid handling it within Json
             rttRefsetToEffectiveDateMap.put(rttRefsetId, values[2]);
 
-            SyncPersistenceMetadata meta = new SyncPersistenceMetadata(values[3], values[4]);
+            final SyncPersistenceMetadata meta = new SyncPersistenceMetadata(values[3], values[4]);
             metadataMap.put("refset-" + rttRefsetId, meta);
 
             return buf.toString();
-        } catch (Exception e) {
+        } catch (final Exception e) {
 
-            logger.error("failed to process line #" + lineNumber + " of refset json: " + line);
-            logger.error("and here is the updatedLine: " + updatedLine);
+            LOG.error("failed to process line #" + lineNumber + " of refset json: " + line);
+            LOG.error("and here is the updatedLine: " + updatedLine);
             e.printStackTrace();
 
             throw e;
@@ -732,7 +733,7 @@ public class SyncPropertyFileReader {
      * @return the string
      * @throws Exception the exception
      */
-    private void parseProjectLine(final String line, int lineNumber) throws Exception {
+    private void parseProjectLine(final String line, final int lineNumber) throws Exception {
 
         String organizationName;
         String modified;
@@ -769,9 +770,9 @@ public class SyncPropertyFileReader {
 
             projectOrganizationMap.put(line.split(SPLIT_CHARACTER)[0], organizationName);
             metadataMap.put("project-" + line.split(SPLIT_CHARACTER)[0], new SyncPersistenceMetadata(modified, modifiedBy));
-        } catch (Exception e) {
+        } catch (final Exception e) {
 
-            logger.error("failed to process line #" + lineNumber + " of project json: " + line);
+            LOG.error("failed to process line #" + lineNumber + " of project json: " + line);
             e.printStackTrace();
 
             throw e;

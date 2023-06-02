@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.rest.test;
 
@@ -42,92 +51,270 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 
 @AutoConfigureMockMvc
-abstract public class AbstractRefsetTests extends BaseTest {
+public abstract class AbstractRefsetTests extends BaseTest {
 
+    /** The Constant SIMPLE_DATE_FORMAT. */
     protected static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
 
     /** The config properties. */
-    protected final Properties properties = PropertyUtility.getProperties();
+    protected static final Properties PROPERTIES = PropertyUtility.getProperties();
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(AbstractRefsetTests.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractRefsetTests.class);
 
-    protected static String readOnlyTestingProjectId = null;
+    /** The read only testing project id. */
+    private static String readOnlyTestingProjectId = null;
 
-    protected static String readOnlyTestingEditionId = null;
+    /** The read only testing edition id. */
+    private static String readOnlyTestingEditionId = null;
 
-    protected static String wciTestingProjectId = null;
+    /** The wci testing project id. */
+    private static String wciTestingProjectId = null;
 
-    protected static String wciTestingEditionId = null;
+    /** The wci testing edition id. */
+    private static String wciTestingEditionId = null;
 
-    protected static String mainCoreTestingRefsetInternalId = "";
+    /** The main core testing refset internal id. */
+    private static String mainCoreTestingRefsetInternalId = "";
 
-    protected static String refsetWithInactiveConceptAsActiveMemberInternalId = "";
+    /** The refset with inactive concept as active member internal id. */
+    private static String refsetWithInactiveConceptAsActiveMemberInternalId = "";
 
-    protected static String mainNrcTestingRefsetInternalId = "";
+    /** The main nrc testing refset internal id. */
+    private static String mainNrcTestingRefsetInternalId = "";
 
+    /** The Constant SNOMED_ROOT. */
     protected static final String SNOMED_ROOT = "138875005";
 
+    /** The Constant DESCRIPTION_TERM. */
     protected static final String DESCRIPTION_TERM = "term";
 
+    /** The Constant REFSET_FILE_PATH. */
     protected static final String REFSET_FILE_PATH = "src/test/resources/refsetService/";
 
+    /** The Constant INVALID_INTERNAL_REFSET_ID. */
     protected static final String INVALID_INTERNAL_REFSET_ID = "12345678901234567890";
 
+    /** The Constant MAIN_NRC_TESTING_REFSET_ID. */
     protected static final String MAIN_NRC_TESTING_REFSET_ID = "561000172108"; // Belgian
 
+    /** The Constant MAIN_NRC_TESTING_REFSET_VERSION. */
     protected static final String MAIN_NRC_TESTING_REFSET_VERSION = "2022-03-15";
 
+    /** The Constant MAIN_CORE_TESTING_REFSET_ID. */
     protected static final String MAIN_CORE_TESTING_REFSET_ID = "721145008"; // Belgian
 
+    /** The Constant MAIN_CORE_TESTING_REFSET_VERSION. */
     protected static final String MAIN_CORE_TESTING_REFSET_VERSION = "2021-07-31";
 
+    /** The Constant MEMBER_ID_LIST_FILE_NAME. */
     protected static final String MEMBER_ID_LIST_FILE_NAME = "member_concept_id_list.txt";
 
+    /** The Constant MEMBER_ID_LIST_FILE_PATH. */
     protected static final String MEMBER_ID_LIST_FILE_PATH = REFSET_FILE_PATH + MEMBER_ID_LIST_FILE_NAME;
 
+    /** The Constant MEMBER_ID_RF2_FILE_NAME. */
     protected static final String MEMBER_ID_RF2_FILE_NAME = "member_concept_ids_rf2.txt";
 
+    /** The Constant MEMBER_ID_RF2_FILE. */
     protected static final String MEMBER_ID_RF2_FILE = REFSET_FILE_PATH + MEMBER_ID_RF2_FILE_NAME;
 
+    /** The Constant READ_ONLY_TESTING_PROJECT_NAME. */
     protected static final String READ_ONLY_TESTING_PROJECT_NAME = "SNOMED International Project";
 
+    /** The Constant READ_ONLY_TESTING_EDITION_NAME. */
     protected static final String READ_ONLY_TESTING_EDITION_NAME = "International Edition";
 
+    /** The Constant WCI_TESTING_PROJECT_NAME. */
     protected static final String WCI_TESTING_PROJECT_NAME = "WCI Testing Project";
 
+    /** The Constant WCI_TESTING_EDITION_NAME. */
     protected static final String WCI_TESTING_EDITION_NAME = "WCI Testing Extension";
 
+    /** The Constant REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID. */
     protected static final String REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID = "450970008";
 
+    /** The Constant INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID. */
     protected static final String INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID = "4106009";
-    
+
+    /** The Constant INACTIVE_CONCEPT_ACTIVE_MEMBER_PARENT_CONCEPT_ID. */
     protected static final String INACTIVE_CONCEPT_ACTIVE_MEMBER_PARENT_CONCEPT_ID = "76318008";
-    
+
+    /** The Constant REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_VERSION. */
     protected static final String REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_VERSION = "2021-07-31";
-    
+
+    /** The Constant REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_EARLIER_VERSION. */
     protected static final String REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_EARLIER_VERSION = "2020-07-31";
 
-    
+    /** NUNO start *. */
     /** The mvc. */
     @Autowired
-    protected MockMvc mvc;
+    private MockMvc mvc;
 
     /** The object mapper. */
-    protected static ObjectMapper objectMapper;
+    private static ObjectMapper objectMapper;
 
     /** The base url. */
-    protected static String baseUrl = "/refset";
+    private static String baseUrl = "/refset";
 
-    protected static GetUnitTestUtilities getUtil;
+    /** The get util. */
+    private static GetUnitTestUtilities getUtil;
 
-    protected static ExportUnitTestUtilities exportUtil;
+    /** The export util. */
+    private static ExportUnitTestUtilities exportUtil;
 
-    protected static WorkflowUnitTestUtilities workflowUtil;
+    /** The workflow util. */
+    private static WorkflowUnitTestUtilities workflowUtil;
 
-    protected static EditUnitTestUtilities editUtil;
+    /** The edit util. */
+    private static EditUnitTestUtilities editUtil;
 
-    protected void validateRefsetMetadata(Refset refset) {
+    /**
+     * Returns the mvc.
+     *
+     * @return the mvc
+     */
+    protected MockMvc getMvc() {
+
+        return mvc;
+    }
+
+    /**
+     * Sets the mvc.
+     *
+     * @param mvc the mvc to set
+     */
+    protected void setMvc(final MockMvc mvc) {
+
+        this.mvc = mvc;
+    }
+
+    /**
+     * Returns the object mapper.
+     *
+     * @return the objectMapper
+     */
+    protected static ObjectMapper getObjectMapper() {
+
+        return objectMapper;
+    }
+
+    /**
+     * Sets the object mapper.
+     *
+     * @param objectMapper the objectMapper to set
+     */
+    protected static void setObjectMapper(final ObjectMapper objectMapper) {
+
+        AbstractRefsetTests.objectMapper = objectMapper;
+    }
+
+    /**
+     * Returns the base url.
+     *
+     * @return the baseUrl
+     */
+    protected static String getBaseUrl() {
+
+        return baseUrl;
+    }
+
+    /**
+     * Sets the base url.
+     *
+     * @param baseUrl the baseUrl to set
+     */
+    protected static void setBaseUrl(final String baseUrl) {
+
+        AbstractRefsetTests.baseUrl = baseUrl;
+    }
+
+    /**
+     * Returns the returns the util.
+     *
+     * @return the getUtil
+     */
+    protected static GetUnitTestUtilities getGetUtil() {
+
+        return getUtil;
+    }
+
+    /**
+     * Sets the returns the util.
+     *
+     * @param getUtil the getUtil to set
+     */
+    protected static void setGetUtil(final GetUnitTestUtilities getUtil) {
+
+        AbstractRefsetTests.getUtil = getUtil;
+    }
+
+    /**
+     * Returns the export util.
+     *
+     * @return the exportUtil
+     */
+    protected static ExportUnitTestUtilities getExportUtil() {
+
+        return exportUtil;
+    }
+
+    /**
+     * Sets the export util.
+     *
+     * @param exportUtil the exportUtil to set
+     */
+    protected static void setExportUtil(final ExportUnitTestUtilities exportUtil) {
+
+        AbstractRefsetTests.exportUtil = exportUtil;
+    }
+
+    /**
+     * Returns the workflow util.
+     *
+     * @return the workflowUtil
+     */
+    protected static WorkflowUnitTestUtilities getWorkflowUtil() {
+
+        return workflowUtil;
+    }
+
+    /**
+     * Sets the workflow util.
+     *
+     * @param workflowUtil the workflowUtil to set
+     */
+    protected static void setWorkflowUtil(final WorkflowUnitTestUtilities workflowUtil) {
+
+        AbstractRefsetTests.workflowUtil = workflowUtil;
+    }
+
+    /**
+     * Returns the edits the util.
+     *
+     * @return the editUtil
+     */
+    protected static EditUnitTestUtilities getEditUtil() {
+
+        return editUtil;
+    }
+
+    /**
+     * Sets the edits the util.
+     *
+     * @param editUtil the editUtil to set
+     */
+    protected static void setEditUtil(final EditUnitTestUtilities editUtil) {
+
+        AbstractRefsetTests.editUtil = editUtil;
+    }
+
+    /**
+     * Validate refset metadata.
+     *
+     * @param refset the refset
+     */
+    protected void validateRefsetMetadata(final Refset refset) {
 
         assertThat(refset).isNotNull();
 
@@ -155,7 +342,8 @@ abstract public class AbstractRefsetTests extends BaseTest {
             assertThat(refset.getRefsetId()).isEqualTo(MAIN_NRC_TESTING_REFSET_ID);
 
             assertThat(refset.getName()).isEqualToIgnoringCase("Belgian simple reference set for translated animal materials");
-            assertThat(refset.getNarrative()).isEqualToIgnoringCase("descendants of 256363008 |Animal material (substance)| translated in the Belgian extension");
+            assertThat(refset.getNarrative())
+                .isEqualToIgnoringCase("descendants of 256363008 |Animal material (substance)| translated in the Belgian extension");
             assertThat(refset.getModifiedBy()).isEqualToIgnoringCase("Migration");
             assertThat(refset.getType()).isEqualToIgnoringCase("extensional");
             assertThat(refset.getModuleId()).isEqualTo("11000172109");
@@ -178,9 +366,24 @@ abstract public class AbstractRefsetTests extends BaseTest {
     }
 
     // useDescriptions Should the validation use the description array or the
+    /**
+     * Validate concept.
+     *
+     * @param concept the concept
+     * @param conceptId the concept id
+     * @param memberEfectiveTime the member efective time
+     * @param isRefsetMember the is refset member
+     * @param descriptionList the description list
+     * @param roleGroupSize the role group size
+     * @param parentSize the parent size
+     * @param childSize the child size
+     * @param useDescriptions the use descriptions
+     * @throws ParseException the parse exception
+     */
     // concept name for validating descriptions
-    protected void validateConcept(Concept concept, String conceptId, String memberEfectiveTime, boolean isRefsetMember, List<String> descriptionList, int roleGroupSize, int parentSize, int childSize,
-        boolean useDescriptions) throws ParseException {
+    protected void validateConcept(final Concept concept, final String conceptId, final String memberEfectiveTime, final boolean isRefsetMember,
+        final List<String> descriptionList, final int roleGroupSize, final int parentSize, final int childSize, final boolean useDescriptions)
+        throws ParseException {
 
         assertThat(concept).isNotNull();
         assertThat(concept.getCode()).isEqualTo(conceptId);
@@ -195,7 +398,7 @@ abstract public class AbstractRefsetTests extends BaseTest {
 
             assertThat(concept.getDescriptions().size()).isEqualTo(descriptionList.size());
 
-            for (String matchingDesc : descriptionList) {
+            for (final String matchingDesc : descriptionList) {
 
                 validateDescExist(concept.getDescriptions(), matchingDesc);
             }
@@ -222,17 +425,36 @@ abstract public class AbstractRefsetTests extends BaseTest {
 
     }
 
-    protected void validateConcept(Concept concept, String conId, String memberEfectiveTime, boolean isRefsetMember, List<String> descriptionList, int roleGroupSize, int parentSize, int childSize)
-        throws ParseException {
+    /**
+     * Validate concept.
+     *
+     * @param concept the concept
+     * @param conId the con id
+     * @param memberEfectiveTime the member efective time
+     * @param isRefsetMember the is refset member
+     * @param descriptionList the description list
+     * @param roleGroupSize the role group size
+     * @param parentSize the parent size
+     * @param childSize the child size
+     * @throws ParseException the parse exception
+     */
+    protected void validateConcept(final Concept concept, final String conId, final String memberEfectiveTime, final boolean isRefsetMember,
+        final List<String> descriptionList, final int roleGroupSize, final int parentSize, final int childSize) throws ParseException {
 
         validateConcept(concept, conId, memberEfectiveTime, isRefsetMember, descriptionList, roleGroupSize, parentSize, childSize, true);
     }
 
-    protected void validateDescExist(List<Map<String, String>> descriptions, String matchingTerm) {
+    /**
+     * Validate desc exist.
+     *
+     * @param descriptions the descriptions
+     * @param matchingTerm the matching term
+     */
+    protected void validateDescExist(final List<Map<String, String>> descriptions, final String matchingTerm) {
 
         boolean descFound = false;
 
-        for (Map<String, String> descriptionGroup : descriptions) {
+        for (final Map<String, String> descriptionGroup : descriptions) {
 
             if (descriptionGroup.get(DESCRIPTION_TERM).equalsIgnoreCase(matchingTerm)) {
 
@@ -245,7 +467,14 @@ abstract public class AbstractRefsetTests extends BaseTest {
         assertTrue(descFound);
     }
 
-    protected void validateExportFiles(JsonNode root, String expectedFilePath) throws IOException {
+    /**
+     * Validate export files.
+     *
+     * @param root the root
+     * @param expectedFilePath the expected file path
+     * @throws IOException Signals that an I/O exception has occurred.
+     */
+    protected void validateExportFiles(final JsonNode root, final String expectedFilePath) throws IOException {
 
         BufferedReader expectedFileReader = null;
         BufferedReader generatedFileReader = null;
@@ -254,19 +483,19 @@ abstract public class AbstractRefsetTests extends BaseTest {
 
             // Get Zipped File
             final String fileUrl = (root.get("url")).asText();
-            logger.info("File Url: " + fileUrl);
+            LOG.info("File Url: " + fileUrl);
             final String zipFileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
-            final String exportRefsetPath = properties.getProperty("REFSET_EXPORT_DIR");
-            logger.info("Refset Directory: " + exportRefsetPath);
+            final String exportRefsetPath = PROPERTIES.getProperty("REFSET_EXPORT_DIR");
+            LOG.info("Refset Directory: " + exportRefsetPath);
             final String downloadedZipFile = exportRefsetPath + "/" + zipFileName;
-            logger.info("Zip File Path: " + downloadedZipFile);
-            Path unzippedPath = Files.createTempDirectory("exportTest-");
+            LOG.info("Zip File Path: " + downloadedZipFile);
+            final Path unzippedPath = Files.createTempDirectory("exportTest-");
             FileUtility.unzip(downloadedZipFile, unzippedPath.toFile().getAbsolutePath());
 
             assertThat(1).isEqualTo(unzippedPath.toFile().list().length);
 
             // Get generated File
-            File generatedFile = unzippedPath.toFile().listFiles()[0];
+            final File generatedFile = unzippedPath.toFile().listFiles()[0];
 
             final SortedSet<String> generatedLines = new TreeSet<>();
             final SortedSet<String> testLines = new TreeSet<>();
@@ -293,12 +522,12 @@ abstract public class AbstractRefsetTests extends BaseTest {
 
             for (int i = 0; i < generatedLines.size(); i++) {
 
-                String generatedLine = (String) generatedLines.toArray()[i];
+                final String generatedLine = (String) generatedLines.toArray()[i];
 
                 // If header line, just ignore altogether
                 if (!generatedLine.startsWith("id\teffectiveTime")) {
 
-                    String testLine = (String) testLines.toArray()[j++];
+                    final String testLine = (String) testLines.toArray()[j++];
 
                     assertThat(testLine).isEqualTo(generatedLine);
                 }
@@ -322,9 +551,16 @@ abstract public class AbstractRefsetTests extends BaseTest {
 
     }
 
+    /**
+     * Validate refset exists.
+     *
+     * @param refsetList the refset list
+     * @param internalRefsetId the internal refset id
+     * @return the refset
+     */
     protected Refset validateRefsetExists(final ResultList<Refset> refsetList, final String internalRefsetId) {
 
-        for (Refset r : refsetList.getItems()) {
+        for (final Refset r : refsetList.getItems()) {
 
             if (r.getRefsetId().equals(internalRefsetId)) {
 
@@ -334,5 +570,145 @@ abstract public class AbstractRefsetTests extends BaseTest {
         }
 
         return null;
+    }
+
+    /**
+     * Returns the read only testing project id.
+     *
+     * @return the readOnlyTestingProjectId
+     */
+    public static String getReadOnlyTestingProjectId() {
+
+        return readOnlyTestingProjectId;
+    }
+
+    /**
+     * Returns the read only testing edition id.
+     *
+     * @return the readOnlyTestingEditionId
+     */
+    public static String getReadOnlyTestingEditionId() {
+
+        return readOnlyTestingEditionId;
+    }
+
+    /**
+     * Returns the wci testing project id.
+     *
+     * @return the wciTestingProjectId
+     */
+    public static String getWciTestingProjectId() {
+
+        return wciTestingProjectId;
+    }
+
+    /**
+     * Returns the wci testing edition id.
+     *
+     * @return the wciTestingEditionId
+     */
+    public static String getWciTestingEditionId() {
+
+        return wciTestingEditionId;
+    }
+
+    /**
+     * Returns the main core testing refset internal id.
+     *
+     * @return the mainCoreTestingRefsetInternalId
+     */
+    public static String getMainCoreTestingRefsetInternalId() {
+
+        return mainCoreTestingRefsetInternalId;
+    }
+
+    /**
+     * Returns the refset with inactive concept as active member internal id.
+     *
+     * @return the refsetWithInactiveConceptAsActiveMemberInternalId
+     */
+    public static String getRefsetWithInactiveConceptAsActiveMemberInternalId() {
+
+        return refsetWithInactiveConceptAsActiveMemberInternalId;
+    }
+
+    /**
+     * Returns the main nrc testing refset internal id.
+     *
+     * @return the mainNrcTestingRefsetInternalId
+     */
+    public static String getMainNrcTestingRefsetInternalId() {
+
+        return mainNrcTestingRefsetInternalId;
+    }
+
+    /**
+     * Sets the read only testing project id.
+     *
+     * @param readOnlyTestingProjectId the readOnlyTestingProjectId to set
+     */
+    public static void setReadOnlyTestingProjectId(final String readOnlyTestingProjectId) {
+
+        AbstractRefsetTests.readOnlyTestingProjectId = readOnlyTestingProjectId;
+    }
+
+    /**
+     * Sets the read only testing edition id.
+     *
+     * @param readOnlyTestingEditionId the readOnlyTestingEditionId to set
+     */
+    public static void setReadOnlyTestingEditionId(final String readOnlyTestingEditionId) {
+
+        AbstractRefsetTests.readOnlyTestingEditionId = readOnlyTestingEditionId;
+    }
+
+    /**
+     * Sets the wci testing project id.
+     *
+     * @param wciTestingProjectId the wciTestingProjectId to set
+     */
+    public static void setWciTestingProjectId(final String wciTestingProjectId) {
+
+        AbstractRefsetTests.wciTestingProjectId = wciTestingProjectId;
+    }
+
+    /**
+     * Sets the wci testing edition id.
+     *
+     * @param wciTestingEditionId the wciTestingEditionId to set
+     */
+    public static void setWciTestingEditionId(final String wciTestingEditionId) {
+
+        AbstractRefsetTests.wciTestingEditionId = wciTestingEditionId;
+    }
+
+    /**
+     * Sets the main core testing refset internal id.
+     *
+     * @param mainCoreTestingRefsetInternalId the mainCoreTestingRefsetInternalId to set
+     */
+    public static void setMainCoreTestingRefsetInternalId(final String mainCoreTestingRefsetInternalId) {
+
+        AbstractRefsetTests.mainCoreTestingRefsetInternalId = mainCoreTestingRefsetInternalId;
+    }
+
+    /**
+     * Sets the refset with inactive concept as active member internal id.
+     *
+     * @param refsetWithInactiveConceptAsActiveMemberInternalId the refsetWithInactiveConceptAsActiveMemberInternalId to set
+     */
+    public static void setRefsetWithInactiveConceptAsActiveMemberInternalId(final String refsetWithInactiveConceptAsActiveMemberInternalId) {
+
+        AbstractRefsetTests.refsetWithInactiveConceptAsActiveMemberInternalId = refsetWithInactiveConceptAsActiveMemberInternalId;
+    }
+
+    /**
+     * Sets the main nrc testing refset internal id.
+     *
+     * @param mainNrcTestingRefsetInternalId the mainNrcTestingRefsetInternalId to set
+     */
+    public static void setMainNrcTestingRefsetInternalId(final String mainNrcTestingRefsetInternalId) {
+
+        AbstractRefsetTests.mainNrcTestingRefsetInternalId = mainNrcTestingRefsetInternalId;
     }
 }

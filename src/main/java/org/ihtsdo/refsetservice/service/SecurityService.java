@@ -48,8 +48,8 @@ import org.springframework.web.server.ResponseStatusException;
  */
 public class SecurityService implements AutoCloseable {
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(SecurityService.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(SecurityService.class);
 
     /** The token userName . */
     private static Map<String, String> tokenUsernameMap = Collections.synchronizedMap(new HashMap<String, String>());
@@ -113,7 +113,7 @@ public class SecurityService implements AutoCloseable {
 
         if (object != null) {
 
-            logger.debug("getUserFromSession SESSION USER: " + ModelUtility.toJson(object));
+            LOG.debug("getUserFromSession SESSION USER: " + ModelUtility.toJson(object));
             return (User) object;
         }
 
@@ -124,12 +124,12 @@ public class SecurityService implements AutoCloseable {
             testUser.getRoles().add("all-all-author");
             testUser.getRoles().add("all-all-reviewer");
             testUser.getRoles().add("all-all-admin");
-            logger.debug("getUserFromSession SESSION USER: " + ModelUtility.toJson(testUser));
+            LOG.debug("getUserFromSession SESSION USER: " + ModelUtility.toJson(testUser));
             return testUser;
         }
 
         final User nonLoggedInUser = new User(GUEST_USERNAME, "Non Logged In User", "", "", "", new HashSet<String>());
-        logger.debug("getUserFromSession SESSION USER: " + ModelUtility.toJson(nonLoggedInUser));
+        LOG.debug("getUserFromSession SESSION USER: " + ModelUtility.toJson(nonLoggedInUser));
 
         final ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
 
@@ -138,7 +138,7 @@ public class SecurityService implements AutoCloseable {
             return nonLoggedInUser;
         }
 
-        final HttpServletResponse response = ((ServletRequestAttributes) requestAttributes).getResponse();
+        final HttpServletResponse response = requestAttributes.getResponse();
         final Cookie imsCookie = getImsCookie();
 
         if (imsCookie != null) {
@@ -153,38 +153,37 @@ public class SecurityService implements AutoCloseable {
 
         return nonLoggedInUser;
     }
-    
+
     /**
-     * Clear cookies.
+     * Returns the ims cookie.
      *
+     * @return the ims cookie
      * @throws Exception the exception
      */
     public static Cookie getImsCookie() throws Exception {
-        
-        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+
+        final ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
 
         if (requestAttributes == null || requestAttributes.getRequest() == null) {
             return null;
         }
-        
+
         Cookie imsCookie = null;
         final Cookie[] cookies = requestAttributes.getRequest().getCookies();
 
         if (cookies != null) {
 
-
-
             for (int i = 0; i < cookies.length; i++) {
 
                 if (cookies[i].getName().contains("ims-ihtsdo")) {
 
-                    //logger.debug("getImsCookie ims-ihtsdo cookie: " + ModelUtility.toJson(cookies[i]));
+                    // LOG.debug("getImsCookie ims-ihtsdo cookie: " + ModelUtility.toJson(cookies[i]));
                     imsCookie = cookies[i];
                     break;
                 }
             }
         }
-        
+
         return imsCookie;
     }
 
@@ -203,13 +202,13 @@ public class SecurityService implements AutoCloseable {
 
             if (cookies != null) {
 
-                final HttpServletResponse response = ((ServletRequestAttributes) requestAttributes).getResponse();
+                final HttpServletResponse response = requestAttributes.getResponse();
 
                 for (int i = 0; i < cookies.length; i++) {
 
                     if (cookies[i].getName().contains("ims-ihtsdo")) {
 
-                        logger.debug("clearCookies ims-ihtsdo cookie: " + ModelUtility.toJson(cookies[i]));
+                        LOG.debug("clearCookies ims-ihtsdo cookie: " + ModelUtility.toJson(cookies[i]));
                         final Cookie cookie = new Cookie(cookies[i].getName(), null);
                         cookie.setPath("/");
                         cookie.setDomain(".ihtsdotools.org");
@@ -236,7 +235,7 @@ public class SecurityService implements AutoCloseable {
      */
     public static Object getFromSession(final String attributeName) throws Exception {
 
-        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        final ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
 
         if (requestAttributes == null || requestAttributes.getRequest() == null) {
 
@@ -250,7 +249,7 @@ public class SecurityService implements AutoCloseable {
             return null;
         }
 
-        Object object = session.getAttribute(attributeName);
+        final Object object = session.getAttribute(attributeName);
         return object;
     }
 
@@ -264,7 +263,7 @@ public class SecurityService implements AutoCloseable {
      */
     public static boolean setInSession(final String attributeName, final String value) throws Exception {
 
-        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        final ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
 
         if (requestAttributes == null || requestAttributes.getRequest() == null) {
 
@@ -290,7 +289,7 @@ public class SecurityService implements AutoCloseable {
      */
     public static void removeFromSession(final String attributeName) throws Exception {
 
-        ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        final ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
 
         if (requestAttributes == null || requestAttributes.getRequest() == null) {
 
@@ -393,14 +392,15 @@ public class SecurityService implements AutoCloseable {
             throw new LocalException("Invalid userName: null");
         }
 
-        Properties config = PropertyUtility.getProperties();
+        final Properties config = PropertyUtility.getProperties();
 
         if (handler == null) {
 
-            timeout = (StringUtils.isNotBlank(config.getProperty("spring.session.timeout.seconds"))) ? Integer.valueOf(config.getProperty("spring.session.timeout.seconds")) : 900000;
+            timeout = (StringUtils.isNotBlank(config.getProperty("spring.session.timeout.seconds")))
+                ? Integer.valueOf(config.getProperty("spring.session.timeout.seconds")) : 900000;
 
-            final String handlerName =
-                (StringUtils.isNotBlank(config.getProperty("security.handler"))) ? config.getProperty("security.handler") : "org.ihtsdo.refsetservice.handler.ImsSecurityServiceHandler";
+            final String handlerName = (StringUtils.isNotBlank(config.getProperty("security.handler"))) ? config.getProperty("security.handler")
+                : "org.ihtsdo.refsetservice.handler.ImsSecurityServiceHandler";
 
             handler = HandlerUtility.newStandardHandlerInstanceWithConfiguration("security.handler", handlerName, SecurityServiceHandler.class);
 
@@ -409,8 +409,8 @@ public class SecurityService implements AutoCloseable {
         //
         // Call the security service
         //
-        User authUser = handler.authenticate(userName);
-        logger.info("Authenticated user is {}", authUser);
+        final User authUser = handler.authenticate(userName);
+        LOG.info("Authenticated user is {}", authUser);
         return authHelper(authUser);
     }
 
@@ -423,8 +423,9 @@ public class SecurityService implements AutoCloseable {
      */
     private User authHelper(final User authUser) throws Exception {
 
-        if (authUser == null)
+        if (authUser == null) {
             return null;
+        }
 
         // check if authenticated user exists
         final User userFound = getUserFromUserName(authUser.getUserName());
@@ -435,7 +436,7 @@ public class SecurityService implements AutoCloseable {
         if (userFound != null) {
             // handleLazyInit(userFound);
 
-            logger.info("update user {}", authUser);
+            LOG.info("update user {}", authUser);
             userFound.setEmail(authUser.getEmail());
             userFound.setName(authUser.getName());
             userFound.setUserName(authUser.getUserName());
@@ -443,9 +444,10 @@ public class SecurityService implements AutoCloseable {
             updateUser(userFound);
             userId = userFound.getId();
 
-        } else if (("rt2-dev-admin".equals(authUser.getUserName()) || "rt2-uat-admin".equals(authUser.getUserName()) || "rt2-prod-admin".equals(authUser.getUserName())) && userFound == null) {
+        } else if (("rt2-dev-admin".equals(authUser.getUserName()) || "rt2-uat-admin".equals(authUser.getUserName())
+            || "rt2-prod-admin".equals(authUser.getUserName())) && userFound == null) {
 
-            logger.info("add admin user {}", authUser);
+            LOG.info("add admin user {}", authUser);
             User newUser = new User();
             newUser.setEmail(authUser.getEmail());
             newUser.setName(authUser.getName());
@@ -464,11 +466,12 @@ public class SecurityService implements AutoCloseable {
         tokenUsernameMap.put(token, authUser.getUserName());
         tokenTimeoutMap.put(token, new Date(new Date().getTime() + timeout));
 
-        logger.debug("User = " + authUser.getUserName() + ", " + authUser);
+        LOG.debug("User = " + authUser.getUserName() + ", " + authUser);
 
         // Reload the user to populate UserPreferences
         final User finalUser = getUser(userId);
         finalUser.setAuthToken(token);
+        finalUser.setRoles(authUser.getRoles());
         return finalUser;
 
     }
@@ -542,7 +545,7 @@ public class SecurityService implements AutoCloseable {
 
                     if (!isMember) {
 
-                        logger.debug("Add user " + user.getUserName() + " to organization " + edition.getOrganization().getName());
+                        LOG.debug("Add user " + user.getUserName() + " to organization " + edition.getOrganization().getName());
                         OrganizationService.addUserToOrganization(service, appAdminUser, edition.getOrganization().getId(), user.getEmail());
                     }
 
@@ -566,11 +569,11 @@ public class SecurityService implements AutoCloseable {
     public void logout(final String userName) throws Exception {
 
         final User user = getUserFromSession();
-        
+
         if (!user.getUserName().equals(userName)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "This user name supplied is not authenticated.");
         }
-        
+
         tokenUsernameMap.remove(userName);
         tokenTimeoutMap.remove(userName);
         removeFromSession(SESSION_USER_OBJECT_KEY);
@@ -603,7 +606,7 @@ public class SecurityService implements AutoCloseable {
      * @return the user from user name
      * @throws Exception the exception
      */
-    public static User getUserFromUserName(String userName) throws Exception {
+    public static User getUserFromUserName(final String userName) throws Exception {
 
         User user = null;
 
@@ -625,7 +628,7 @@ public class SecurityService implements AutoCloseable {
      */
     public User addUser(User user) throws Exception {
 
-        logger.debug("Security Service - add user {}", user);
+        LOG.debug("Security Service - add user {}", user);
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -642,9 +645,9 @@ public class SecurityService implements AutoCloseable {
      * @param user the user
      * @throws Exception the exception
      */
-    public void removeUser(User user) throws Exception {
+    public void removeUser(final User user) throws Exception {
 
-        logger.debug("Security Service - remove user {}", user);
+        LOG.debug("Security Service - remove user {}", user);
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -653,16 +656,16 @@ public class SecurityService implements AutoCloseable {
         }
 
     }
-    
+
     /**
      * Update user.
      *
      * @param user the user
      * @throws Exception the exception
      */
-    public void updateUser(User user) throws Exception {
+    public void updateUser(final User user) throws Exception {
 
-        logger.debug("Security Service - update user {}", user);
+        LOG.debug("Security Service - update user {}", user);
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -675,7 +678,8 @@ public class SecurityService implements AutoCloseable {
     /* see superclass */
     @Override
     public void close() throws Exception {
-        // TODO Auto-generated method stub
+
+        // n/a
 
     }
 

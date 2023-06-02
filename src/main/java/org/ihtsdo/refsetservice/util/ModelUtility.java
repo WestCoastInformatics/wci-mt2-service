@@ -26,14 +26,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Utility for interacting with domain objects. TODO: clean this up and
- * reconcile with NormUtility (push all logic here).
+ * Utility for interacting with domain objects. TODO: clean this up and reconcile with NormUtility (push all logic here).
  */
 public final class ModelUtility {
 
-    /** The logger. */
+    /** The Constant LOG. */
     @SuppressWarnings("unused")
-    private static Logger logger = LoggerFactory.getLogger(ModelUtility.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ModelUtility.class);
 
     /** The resource dependency map. */
     private static Map<String, Set<String>> resourceDependencyMap = new HashMap<>();
@@ -43,8 +42,7 @@ public final class ModelUtility {
 
     static {
         resourceDependencyMap.put("Provider", asSet("Program"));
-        resourceDependencyMap.put("Program",
-                asSet("Endpoint", "Order", "Participant", "Template", "Schedule"));
+        resourceDependencyMap.put("Program", asSet("Endpoint", "Order", "Participant", "Template", "Schedule"));
         resourceDependencyMap.put("Endpoint", asSet());
         resourceDependencyMap.put("Order", asSet());
         resourceDependencyMap.put("Participant", asSet("Device"));
@@ -55,6 +53,7 @@ public final class ModelUtility {
      * Instantiates an empty {@link ConfigUtility}.
      */
     private ModelUtility() {
+
         // n/a
     }
 
@@ -66,20 +65,20 @@ public final class ModelUtility {
      * @return true, if successful
      */
     public static boolean bothOrNeitherNull(final Object a, final Object b) {
+
         return (a == null && b == null) || (a != null && b != null);
     }
 
     /**
-     * Returns the name from class by stripping package and putting spaces where
-     * CamelCase is used.
+     * Returns the name from class by stripping package and putting spaces where CamelCase is used.
      *
      * @param clazz the clazz
      * @return the name from class
      */
     public static String getNameFromClass(final Class<?> clazz) {
+
         return clazz.getName().substring(clazz.getName().lastIndexOf('.') + 1)
-                .replaceAll(String.format("%s|%s|%s", "(?<=[A-Z])(?=[A-Z][a-z])",
-                        "(?<=[^A-Z])(?=[A-Z])", "(?<=[A-Za-z])(?=[^A-Za-z])"), " ");
+            .replaceAll(String.format("%s|%s|%s", "(?<=[A-Z])(?=[A-Z][a-z])", "(?<=[^A-Z])(?=[A-Z])", "(?<=[A-Za-z])(?=[^A-Za-z])"), " ");
     }
 
     /**
@@ -89,6 +88,7 @@ public final class ModelUtility {
      * @return the min date
      */
     public static Date getMinDate(final Date... dates) {
+
         final Set<Date> set = new HashSet<>();
         for (final Date date : dates) {
             if (date != null) {
@@ -105,6 +105,7 @@ public final class ModelUtility {
      * @return the max date
      */
     public static Date getMaxDate(final Date... dates) {
+
         final Set<Date> set = new HashSet<>();
         for (final Date date : dates) {
             if (date != null) {
@@ -122,6 +123,7 @@ public final class ModelUtility {
      * @return true, if successful
      */
     public static boolean equalsNullSafe(final Object a, final Object b) {
+
         if ((a == null && b != null) || (a != null && b == null)) {
             return false;
         }
@@ -136,6 +138,7 @@ public final class ModelUtility {
      * @return true, if successful
      */
     public static boolean equalsNullMatch(final Object a, final Object b) {
+
         if ((a == null && b != null) || (a != null && b == null)) {
             return true;
         }
@@ -150,6 +153,7 @@ public final class ModelUtility {
      * @return the t
      */
     public static <T> T firstNotNull(@SuppressWarnings("unchecked") final T... values) {
+
         for (final T t : values) {
             if (t != null) {
                 return t;
@@ -165,6 +169,7 @@ public final class ModelUtility {
      * @return the dependent resource types
      */
     public static Set<String> getDependentResourceTypes(final String type) {
+
         final Set<String> result = resourceDependencyMap.get(type);
         return result == null ? new HashSet<>() : result;
     }
@@ -179,6 +184,7 @@ public final class ModelUtility {
      * @throws Exception the exception
      */
     public static <T> T toJson(final String json, final Class<T> graphClass) throws Exception {
+
         if (StringUtility.isEmpty(json)) {
             return null;
         }
@@ -197,6 +203,7 @@ public final class ModelUtility {
      * @throws Exception the exception
      */
     public static <T> T fromJson(final String json, final Class<T> graphClass) throws Exception {
+
         if (json == null) {
             return null;
         }
@@ -213,8 +220,8 @@ public final class ModelUtility {
      * @return the graph for json
      * @throws Exception the exception
      */
-    public static <T> T fromJson(final String json, final TypeReference<T> typeRef)
-        throws Exception {
+    public static <T> T fromJson(final String json, final TypeReference<T> typeRef) throws Exception {
+
         if (StringUtility.isEmpty(json)) {
             return null;
         }
@@ -231,6 +238,7 @@ public final class ModelUtility {
      * @throws Exception the exception
      */
     public static String toJson(final Object object) throws Exception {
+
         final ObjectMapper mapper = new ObjectMapper();
         return mapper.writeValueAsString(object);
     }
@@ -243,6 +251,7 @@ public final class ModelUtility {
      * @throws Exception the exception
      */
     public static JsonNode toJsonNode(final String string) throws Exception {
+
         return new ObjectMapper().readTree(string);
     }
 
@@ -254,6 +263,7 @@ public final class ModelUtility {
      * @throws JsonProcessingException the json processing exception
      */
     public static String prettyFormatJson(final Object input) throws JsonProcessingException {
+
         final ObjectMapper mapper = new ObjectMapper();
         return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(input);
     }
@@ -266,6 +276,7 @@ public final class ModelUtility {
      * @throws Exception the exception
      */
     public static String prettyFormatJson(final String input) throws Exception {
+
         final ObjectMapper mapper = new ObjectMapper();
         return prettyFormatJson(mapper.readTree(input));
     }
@@ -280,10 +291,11 @@ public final class ModelUtility {
      * @throws Exception the exception
      */
     public static <T> T jsonCopy(final Object o, final Class<T> graphClass) throws Exception {
+
         final String json = toJson(o);
         return fromJson(json, graphClass);
     }
-    
+
     /**
      * Json copy.
      *
@@ -294,6 +306,7 @@ public final class ModelUtility {
      * @throws Exception the exception
      */
     public static <T> T jsonCopy(final Object o, final TypeReference<T> typeRef) throws Exception {
+
         final String json = toJson(o);
         return fromJson(json, typeRef);
     }
@@ -307,20 +320,20 @@ public final class ModelUtility {
      * @param sortField the sort field
      * @throws Exception the exception
      */
-    public static <T> void reflectionSort(final List<T> classes, final Class<T> clazz,
-        final String sortField) throws Exception {
+    public static <T> void reflectionSort(final List<T> classes, final Class<T> clazz, final String sortField) throws Exception {
 
-        final Method getMethod = clazz.getMethod(
-                "get" + sortField.substring(0, 1).toUpperCase() + sortField.substring(1));
+        final Method getMethod = clazz.getMethod("get" + sortField.substring(0, 1).toUpperCase() + sortField.substring(1));
         if (getMethod.getReturnType().isAssignableFrom(Comparable.class)) {
             throw new Exception("Referenced sort field is not comparable");
         }
         Collections.sort(classes, new Comparator<T>() {
+
             @SuppressWarnings({
-                    "rawtypes", "unchecked"
+                "rawtypes", "unchecked"
             })
             @Override
             public int compare(final T o1, final T o2) {
+
                 try {
                     final Comparable f1 = (Comparable) getMethod.invoke(o1, new Object[] {});
                     final Comparable f2 = (Comparable) getMethod.invoke(o2, new Object[] {});
@@ -340,6 +353,7 @@ public final class ModelUtility {
      * @return <code>true</code> if so, <code>false</code> otherwise
      */
     public static boolean isEmpty(final Collection<?> collection) {
+
         return collection == null || collection.isEmpty();
     }
 
@@ -350,6 +364,7 @@ public final class ModelUtility {
      * @return the map
      */
     public static Map<String, String> asMap(final String... values) {
+
         final Map<String, String> map = new HashMap<>();
         if (values.length % 2 != 0) {
             throw new RuntimeException("Unexpected odd number of parameters");
@@ -367,6 +382,7 @@ public final class ModelUtility {
      * @return the list
      */
     public static List<String> asList(final String[] values) {
+
         return new ArrayList<String>(Arrays.asList(values));
     }
 
@@ -378,6 +394,7 @@ public final class ModelUtility {
      * @return the list
      */
     public static <T> List<T> asList(@SuppressWarnings("unchecked") final T... values) {
+
         final List<T> list = new ArrayList<>(values.length);
         for (final T value : values) {
             if (value != null) {
@@ -395,6 +412,7 @@ public final class ModelUtility {
      * @return the sets the
      */
     public static <T> Set<T> asSet(@SuppressWarnings("unchecked") final T... values) {
+
         final Set<T> set = new HashSet<>(values.length);
         for (final T value : values) {
             if (value != null) {
@@ -412,6 +430,7 @@ public final class ModelUtility {
      * @throws Exception the exception
      */
     public static Set<String> asSet(final String[] values) throws Exception {
+
         return new HashSet<String>(Arrays.asList(values));
     }
 

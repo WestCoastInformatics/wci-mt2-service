@@ -26,6 +26,7 @@ public class Error extends BaseModel {
      * Instantiates an empty {@link Error}.
      */
     public Error() {
+
         // n/a
     }
 
@@ -38,6 +39,7 @@ public class Error extends BaseModel {
      * @param message the message
      */
     public Error(final boolean local, final int status, final String error, final String message) {
+
         this.timestamp = new Date();
         this.local = local;
         this.status = status;
@@ -51,6 +53,7 @@ public class Error extends BaseModel {
      * @param other the other
      */
     public Error(final Error other) {
+
         populateFrom(other);
     }
 
@@ -60,6 +63,7 @@ public class Error extends BaseModel {
      * @param other the other
      */
     public void populateFrom(final Error other) {
+
         timestamp = other.getTimestamp();
         local = other.isLocal();
         status = other.getStatus();
@@ -73,6 +77,7 @@ public class Error extends BaseModel {
      * @return the timestamp
      */
     public Date getTimestamp() {
+
         return timestamp;
     }
 
@@ -82,6 +87,7 @@ public class Error extends BaseModel {
      * @param timestamp the timestamp
      */
     public void setTimestamp(final Date timestamp) {
+
         this.timestamp = timestamp;
     }
 
@@ -91,6 +97,7 @@ public class Error extends BaseModel {
      * @return <code>true</code> if so, <code>false</code> otherwise
      */
     public boolean isLocal() {
+
         return local;
     }
 
@@ -100,6 +107,7 @@ public class Error extends BaseModel {
      * @param local the local
      */
     public void setLocal(final boolean local) {
+
         this.local = local;
     }
 
@@ -109,6 +117,7 @@ public class Error extends BaseModel {
      * @return the status
      */
     public int getStatus() {
+
         return status;
     }
 
@@ -118,6 +127,7 @@ public class Error extends BaseModel {
      * @param status the status
      */
     public void setStatus(final int status) {
+
         this.status = status;
     }
 
@@ -127,6 +137,7 @@ public class Error extends BaseModel {
      * @return the error
      */
     public String getError() {
+
         return error;
     }
 
@@ -136,6 +147,7 @@ public class Error extends BaseModel {
      * @param error the error
      */
     public void setError(final String error) {
+
         this.error = error;
     }
 
@@ -145,6 +157,7 @@ public class Error extends BaseModel {
      * @return the message
      */
     public String getMessage() {
+
         return message;
     }
 
@@ -154,12 +167,14 @@ public class Error extends BaseModel {
      * @param message the message
      */
     public void setMessage(final String message) {
+
         this.message = message;
     }
 
     /* see superclass */
     @Override
     public int hashCode() {
+
         final int prime = 31;
         int result = 1;
         result = prime * result + ((error == null) ? 0 : error.hashCode());
@@ -173,6 +188,7 @@ public class Error extends BaseModel {
     /* see superclass */
     @Override
     public boolean equals(final Object obj) {
+
         if (this == obj) {
             return true;
         }

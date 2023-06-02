@@ -10,36 +10,36 @@
 package org.ihtsdo.refsetservice.model;
 
 /**
- * The Enum VersionStatus.
+ * The Enum TeamType.
  */
-public enum VersionStatus {
+public enum TeamType {
 
-    /** Captures all non-published status. */
-    IN_DEVELOPMENT("IN DEVELOPMENT"),
+    /** For organization administration team. */
+    ORGANIZATION("O"),
+    /** For project team. */
+    PPROJECT("P");
 
-    /** The published status. */
-    PUBLISHED("PUBLISHED");
-
-    /** The label. */
-    private final String label;
+    /** The text. */
+    private final String text;
 
     /**
-     * Instantiates a {@link VersionStatus} from the specified parameters.
+     * Instantiates a {@link TeamType} from the specified parameters.
      *
-     * @param label the label
+     * @param text the text
      */
-    private VersionStatus(final String label) {
+    private TeamType(final String text) {
 
-        this.label = label;
+        this.text = text;
     }
 
     /**
-     * Returns the lable.
+     * Returns the text.
      *
-     * @return the lable
+     * @return the text
      */
-    public String getLable() {
+    public String getText() {
 
-        return label;
+        return this.text;
     }
+
 }

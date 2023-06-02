@@ -12,9 +12,8 @@ import org.slf4j.LoggerFactory;
  * Automates JUnit testing of simple getter/setter methods.
  * 
  * <p>
- * It may be used in exclusive or inclusive mode. In exclusive mode, which is
- * the default, all JavaBeans properties (getter/setter method pairs with
- * matching names) are tested unless they are excluded beforehand. For example:
+ * It may be used in exclusive or inclusive mode. In exclusive mode, which is the default, all JavaBeans properties (getter/setter method pairs with matching
+ * names) are tested unless they are excluded beforehand. For example:
  * 
  * <pre>
  * MyClass objectToTest = new MyClass();
@@ -29,32 +28,28 @@ import org.slf4j.LoggerFactory;
  * <ul>
  * <li>All Java primitive types.
  * <li>Interfaces.
- * <li>All non-final classes if <a href="http://cglib.sourceforge.net">cglib</a>
- * is on your classpath -- this uses cglib even when a no-argument constructor
- * is available because a constructor might have side effects that you wouldn.t
- * want to trigger in a unit test.
+ * <li>All non-final classes if <a href="http://cglib.sourceforge.net">cglib</a> is on your classpath -- this uses cglib even when a no-argument constructor is
+ * available because a constructor might have side effects that you wouldn.t want to trigger in a unit test.
  * <li>Java 5 enums.
  * </ul>
  * 
  * <p>
- * Properties whose types are classes declared <code>final</code> are not
- * supported; neither are non-primitive, non-interface properties if you don't
- * have cglib.
+ * Properties whose types are classes declared <code>final</code> are not supported; neither are non-primitive, non-interface properties if you don't have
+ * cglib.
  * 
  * <p>
  * Copyright (c) 2005, Steven Grimm.<br>
- * This software may be used for any purpose, commercial or noncommercial, so
- * long as this copyright notice is retained. If you make improvements to the
- * code, you're encouraged (but not required) to send them to me so I can make
- * them available to others. For updates, please check
+ * This software may be used for any purpose, commercial or noncommercial, so long as this copyright notice is retained. If you make improvements to the code,
+ * you're encouraged (but not required) to send them to me so I can make them available to others. For updates, please check
  * <a href="http://www.plaintivemewling.com/?p=34">here</a>.
  * 
  * @author Steven Grimm, koreth@midwinter.com
  * @version 1.0 (2005/11/08).
  */
 public class GetterSetterTester extends ProxyTester {
-    /** The logger. */
-    private final Logger logger = LoggerFactory.getLogger(GetterSetterTester.class);
+
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(GetterSetterTester.class);
 
     /** Object under test. */
     private Object obj;
@@ -63,12 +58,12 @@ public class GetterSetterTester extends ProxyTester {
     private boolean verbose = false;
 
     /**
-     * Constructs a new getter/setter tester to test objects of a particular
-     * class.
+     * Constructs a new getter/setter tester to test objects of a particular class.
      * 
      * @param obj Object to test.
      */
     public GetterSetterTester(final Object obj) {
+
         super(obj);
         this.obj = obj;
     }
@@ -79,17 +74,18 @@ public class GetterSetterTester extends ProxyTester {
      * @return this
      */
     public GetterSetterTester setVerbose(final boolean verbose) {
+
         this.verbose = verbose;
         return this;
     }
 
     /**
-     * Walks through the methods in the class looking for getters and setters
-     * that are on our include list (if any) and are not on our exclude list.
+     * Walks through the methods in the class looking for getters and setters that are on our include list (if any) and are not on our exclude list.
      *
      * @throws Exception the exception
      */
     public void test() throws Exception {
+
         final Method[] methods = getClazz().getMethods();
         final Object emptyObj = obj.getClass().getDeclaredConstructor().newInstance();
 
@@ -124,10 +120,8 @@ public class GetterSetterTester extends ProxyTester {
                 if (Collection.class.isAssignableFrom(getter.getReturnType())) {
                     final Object value = getter.invoke(emptyObj, new Object[] {});
                     if (value == null) {
-                        logger.error("  " + getter.getName()
-                                + " returns null instead of empty collection");
-                        throw new Exception(
-                                getter.getName() + " returns null instead of empty collection");
+                        LOG.error("  " + getter.getName() + " returns null instead of empty collection");
+                        throw new Exception(getter.getName() + " returns null instead of empty collection");
                     }
                 }
             } catch (final NoSuchMethodException e) {
@@ -137,12 +131,11 @@ public class GetterSetterTester extends ProxyTester {
                         continue;
                     }
                 } catch (final NoSuchMethodException e2) {
-                    throw new Exception(
-                            "Set method does not have corresponding get method: " + m.getName());
+                    throw new Exception("Set method does not have corresponding get method: " + m.getName());
                 }
             }
 
-            logger.debug("  field = " + fieldName);
+            LOG.debug("  field = " + fieldName);
             testGetterSetter(fieldName, getter, m, args[0]);
         }
     }
@@ -156,35 +149,32 @@ public class GetterSetterTester extends ProxyTester {
      * @param argType the data type
      * @throws Exception the exception
      */
-    private void testGetterSetter(final String field, final Method get, final Method set,
-        final Class<?> argType) throws Exception {
+    private void testGetterSetter(final String field, final Method get, final Method set, final Class<?> argType) throws Exception {
+
         if (this.verbose) {
-            logger.debug("Testing " + get.getDeclaringClass().getName() + "." + get.getName());
+            LOG.debug("Testing " + get.getDeclaringClass().getName() + "." + get.getName());
         }
         final Object proxy = makeProxy(field, argType, 1);
         try {
             set.invoke(this.obj, new Object[] {
-                    proxy
+                proxy
             });
         } catch (final InvocationTargetException e) {
             e.printStackTrace();
-            throw new RuntimeException("Setter " + set.getDeclaringClass().getName() + "."
-                    + set.getName() + " threw " + e.getTargetException().toString());
+            throw new RuntimeException("Setter " + set.getDeclaringClass().getName() + "." + set.getName() + " threw " + e.getTargetException().toString());
         }
 
         Object getResult;
         try {
             getResult = get.invoke(this.obj, new Object[] {});
         } catch (final InvocationTargetException e) {
-            throw new RuntimeException("Getter " + get.getDeclaringClass().getName() + "."
-                    + set.getName() + " threw " + e.getTargetException().toString());
+            throw new RuntimeException("Getter " + get.getDeclaringClass().getName() + "." + set.getName() + " threw " + e.getTargetException().toString());
         }
 
         if (getResult == proxy || proxy.equals(getResult)) {
             return;
         }
-        throw new RuntimeException("Getter " + get.getName() + " did not return value from setter: "
-                + proxy + ", " + getResult);
+        throw new RuntimeException("Getter " + get.getName() + " did not return value from setter: " + proxy + ", " + getResult);
     }
 
 }

@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.model;
 
@@ -29,6 +38,7 @@ public class DefinitionClause extends AbstractHasModified {
      * Instantiates an empty {@link DefinitionClause}.
      */
     public DefinitionClause() {
+
         // n/a
     }
 
@@ -38,6 +48,7 @@ public class DefinitionClause extends AbstractHasModified {
      * @param other the other
      */
     public DefinitionClause(final DefinitionClause other) {
+
         populateFrom(other);
     }
 
@@ -48,6 +59,7 @@ public class DefinitionClause extends AbstractHasModified {
      * @param negated the negated
      */
     public DefinitionClause(final String value, final boolean negated) {
+
         this.value = value;
         this.negated = negated;
     }
@@ -58,6 +70,7 @@ public class DefinitionClause extends AbstractHasModified {
      * @param other the other
      */
     public void populateFrom(final DefinitionClause other) {
+
         super.populateFrom(other);
         value = other.getValue();
         negated = other.getNegated();
@@ -70,6 +83,7 @@ public class DefinitionClause extends AbstractHasModified {
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public String getValue() {
+
         return value;
     }
 
@@ -79,6 +93,7 @@ public class DefinitionClause extends AbstractHasModified {
      * @param value the value
      */
     public void setValue(final String value) {
+
         this.value = value;
     }
 
@@ -89,6 +104,7 @@ public class DefinitionClause extends AbstractHasModified {
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public boolean getNegated() {
+
         return negated;
     }
 
@@ -98,6 +114,7 @@ public class DefinitionClause extends AbstractHasModified {
      * @param negated the negated
      */
     public void setNegated(final boolean negated) {
+
         this.negated = negated;
     }
 
@@ -155,9 +172,10 @@ public class DefinitionClause extends AbstractHasModified {
         return result;
     }
 
+    /* see superclass */
     @Override
     public void lazyInit() {
-        // TODO Auto-generated method stub
+        // n/a
 
     }
 }

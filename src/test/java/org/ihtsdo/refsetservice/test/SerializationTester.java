@@ -14,16 +14,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class SerializationTester extends ProxyTester {
 
-    /** The logger. */
-    private final Logger logger = LoggerFactory.getLogger(SerializationTester.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(SerializationTester.class);
 
     /**
-     * Constructs a new getter/setter tester to test objects of a particular
-     * class.
+     * Constructs a new getter/setter tester to test objects of a particular class.
      * 
      * @param obj Object to test.
      */
     public SerializationTester(final Object obj) {
+
         super(obj);
     }
 
@@ -34,16 +34,17 @@ public class SerializationTester extends ProxyTester {
      * @throws Exception the exception
      */
     public boolean testJsonSerialization() throws Exception {
-        logger.debug("Test json serialization - " + getClazz().getName());
+
+        LOG.debug("Test json serialization - " + getClazz().getName());
         final Object obj = createObject(1);
         final ObjectMapper mapper = new ObjectMapper();
         mapper.setSerializationInclusion(Include.NON_EMPTY);
-        logger.debug(" " + obj);
+        LOG.debug(" " + obj);
         final String json = mapper.writeValueAsString(obj);
-        logger.info("json = " + json);
+        LOG.info("json = " + json);
         final Object obj3 = mapper.readValue(json, obj.getClass());
 
-        logger.debug(" " + obj3);
+        LOG.debug(" " + obj3);
 
         // If obj has an "id" field, compare the ids
         try {
@@ -53,7 +54,7 @@ public class SerializationTester extends ProxyTester {
                 final Long id1 = (Long) method.invoke(obj, new Object[] {});
                 final Long id3 = (Long) method.invoke(obj3, new Object[] {});
                 if (!id1.equals(id3)) {
-                    logger.debug("  id fields do not match " + id1 + ", " + id3);
+                    LOG.debug("  id fields do not match " + id1 + ", " + id3);
                     return false;
                 }
             }
@@ -63,9 +64,9 @@ public class SerializationTester extends ProxyTester {
         if (obj.equals(obj3)) {
             return true;
         } else {
-            logger.info("obj = " + obj);
-            logger.debug("json = " + json);
-            logger.info("obj3 = " + obj3);
+            LOG.info("obj = " + obj);
+            LOG.debug("json = " + json);
+            LOG.info("obj3 = " + obj3);
             return false;
         }
     }

@@ -11,15 +11,12 @@ import org.ihtsdo.refsetservice.util.ModelUtility;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
- * Abstractly represents something that persists itself with json data payload.
- * This class makes use of hibernate lifecycle callbacks as explained here:
- * https://www.logicbig.com/tutorials/java-ee-tutorial/jpa/entity-call-back.html
- * .
+ * Abstractly represents something that persists itself with json data payload. This class makes use of hibernate lifecycle callbacks as explained here:
+ * https://www.logicbig.com/tutorials/java-ee-tutorial/jpa/entity-call-back.html .
  */
 @MappedSuperclass
 @org.hibernate.annotations.TypeDef(name = "JsonBType", typeClass = JsonBType.class)
-public abstract class AbstractHasJsonDataNoGenerator extends AbstractHasModifiedNoGenerator
-        implements HasJsonData {
+public abstract class AbstractHasJsonDataNoGenerator extends AbstractHasModifiedNoGenerator implements HasJsonData {
 
     /** The data. */
     @Type(type = "JsonBType")
@@ -29,16 +26,17 @@ public abstract class AbstractHasJsonDataNoGenerator extends AbstractHasModified
      * Instantiates an empty {@link AbstractHasJsonDataNoGenerator}.
      */
     protected AbstractHasJsonDataNoGenerator() {
+
         // n/a
     }
 
     /**
-     * Instantiates a {@link AbstractHasJsonDataNoGenerator} from the specified
-     * parameters.
+     * Instantiates a {@link AbstractHasJsonDataNoGenerator} from the specified parameters.
      *
      * @param other the other
      */
     protected AbstractHasJsonDataNoGenerator(final HasId other) {
+
         populateFrom(other);
     }
 
@@ -47,6 +45,7 @@ public abstract class AbstractHasJsonDataNoGenerator extends AbstractHasModified
     @PreUpdate
     @Override
     public void marshall() throws Exception {
+
         data = ModelUtility.toJson(this);
     }
 
@@ -57,6 +56,7 @@ public abstract class AbstractHasJsonDataNoGenerator extends AbstractHasModified
      */
     @JsonIgnore
     public String getData() {
+
         return data;
     }
 

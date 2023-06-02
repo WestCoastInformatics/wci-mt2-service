@@ -33,121 +33,126 @@ import springfox.documentation.annotations.ApiIgnore;
 @RequestMapping("/error")
 public class ErrorHandlerController implements ErrorController {
 
-	/** Logger. */
-	@SuppressWarnings("unused")
-	private static Logger logger = LoggerFactory.getLogger(ErrorHandlerController.class);
+    /** The Constant LOG. */
+    @SuppressWarnings("unused")
+    private static final Logger LOG = LoggerFactory.getLogger(ErrorHandlerController.class);
 
-	/** The error attributes. */
-	private ErrorAttributes errorAttributes;
+    /** The error attributes. */
+    private ErrorAttributes errorAttributes;
 
-	/**
-	 * Basic error controller.
-	 *
-	 * @param errorAttributes the error attributes
-	 */
-	public ErrorHandlerController(final ErrorAttributes errorAttributes) {
-		this.errorAttributes = errorAttributes;
-	}
+    /**
+     * Basic error controller.
+     *
+     * @param errorAttributes the error attributes
+     */
+    public ErrorHandlerController(final ErrorAttributes errorAttributes) {
 
-	/**
-	 * Handle error.
-	 *
-	 * @param request the request
-	 * @return the string
-	 */
-	@RequestMapping(produces = MediaType.TEXT_HTML_VALUE)
-	@ResponseBody
-	public String handleErrorHtml(final HttpServletRequest request) {
-		final Integer statusCode = (Integer) request.getAttribute("javax.servlet.error.status_code");
-		final Map<String, Object> body = getErrorAttributes(request, false);
-		String ppBody = null;
-		try {
-			ppBody = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(body);
-		} catch (Exception e) {
-			ppBody = body.toString().replaceAll("<", "&lt;");
-		}
-		if (statusCode != null && statusCode == 401) {
-			return String.format("<html><body><h2>Error Page</h2><div>Unauthorized. Log in to access this page");
-		}
-		return String.format("<html><body><h2>Error Page</h2><div>Something went wrong</div><pre>%s<%/pre>", ppBody);
-	}
+        this.errorAttributes = errorAttributes;
+    }
 
-	/**
-	 * Handle error json.
-	 *
-	 * @param request the request
-	 * @return the response entity
-	 */
-	@RequestMapping()
-	@ResponseBody
-	public ResponseEntity<Map<String, Object>> handleErrorJson(final HttpServletRequest request) {
-		HttpStatus status = getStatus(request);
-		if (status == HttpStatus.NO_CONTENT) {
-			return new ResponseEntity<>(status);
-		}
-		Map<String, Object> body = getErrorAttributes(request, false);
-		return new ResponseEntity<>(body, status);
-	}
+    /**
+     * Handle error.
+     *
+     * @param request the request
+     * @return the string
+     */
+    @RequestMapping(produces = MediaType.TEXT_HTML_VALUE)
+    @ResponseBody
+    public String handleErrorHtml(final HttpServletRequest request) {
 
-	/**
-	 * Returns the status.
-	 *
-	 * @param request the request
-	 * @return the status
-	 */
-	protected HttpStatus getStatus(final HttpServletRequest request) {
-		Integer statusCode = (Integer) request.getAttribute("javax.servlet.error.status_code");
-		if (statusCode == null) {
-			return HttpStatus.INTERNAL_SERVER_ERROR;
-		}
-		try {
-			return HttpStatus.valueOf(statusCode);
-		} catch (Exception ex) {
-			return HttpStatus.INTERNAL_SERVER_ERROR;
-		}
-	}
+        final Integer statusCode = (Integer) request.getAttribute("javax.servlet.error.status_code");
+        final Map<String, Object> body = getErrorAttributes(request, false);
+        String ppBody = null;
+        try {
+            ppBody = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(body);
+        } catch (final Exception e) {
+            ppBody = body.toString().replaceAll("<", "&lt;");
+        }
+        if (statusCode != null && statusCode == 401) {
+            return String.format("<html><body><h2>Error Page</h2><div>Unauthorized. Log in to access this page");
+        }
+        return String.format("<html><body><h2>Error Page</h2><div>Something went wrong</div><pre>%s<%/pre>", ppBody);
+    }
 
-	/**
-	 * Returns the error attributes.
-	 *
-	 * @param request           the request
-	 * @param includeStackTrace the include stack trace
-	 * @return the error attributes
-	 */
-	protected Map<String, Object> getErrorAttributes(final HttpServletRequest request,
-			final boolean includeStackTrace) {
-		WebRequest webRequest = new ServletWebRequest(request);
-		final ErrorAttributeOptions options = ErrorAttributeOptions.defaults();
-		if (includeStackTrace) {
-			options.including(Include.STACK_TRACE);
-		}
-		Map<String, Object> body = errorAttributes.getErrorAttributes(webRequest, options);
-		if (body.containsKey("message")) {
-			try {
-				final String message = body.get("message").toString();
-				final StringBuilder sb = new StringBuilder();
-				for (final String line : message.split("\\n")) {
-					sb.append(StringEscapeUtils.escapeHtml4(line));
-					sb.append("\n");
-				}
-				// remove the trailing \n
-				body.put("message", sb.toString().replaceFirst("\\n$", ""));
-			} catch (Exception e) {
-				body.put("message", body.get("message").toString().replaceAll("<", "&lt;"));
-			}
-		}
-		return body;
-	}
+    /**
+     * Handle error json.
+     *
+     * @param request the request
+     * @return the response entity
+     */
+    @RequestMapping()
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> handleErrorJson(final HttpServletRequest request) {
 
-	/**
-	 * Returns the error path.
-	 *
-	 * @return the error path
-	 */
-	/* see superclass */
-	@Override
-	public String getErrorPath() {
-		return "/error";
-	}
+        final HttpStatus status = getStatus(request);
+        if (status == HttpStatus.NO_CONTENT) {
+            return new ResponseEntity<>(status);
+        }
+        final Map<String, Object> body = getErrorAttributes(request, false);
+        return new ResponseEntity<>(body, status);
+    }
+
+    /**
+     * Returns the status.
+     *
+     * @param request the request
+     * @return the status
+     */
+    protected HttpStatus getStatus(final HttpServletRequest request) {
+
+        final Integer statusCode = (Integer) request.getAttribute("javax.servlet.error.status_code");
+        if (statusCode == null) {
+            return HttpStatus.INTERNAL_SERVER_ERROR;
+        }
+        try {
+            return HttpStatus.valueOf(statusCode);
+        } catch (final Exception ex) {
+            return HttpStatus.INTERNAL_SERVER_ERROR;
+        }
+    }
+
+    /**
+     * Returns the error attributes.
+     *
+     * @param request the request
+     * @param includeStackTrace the include stack trace
+     * @return the error attributes
+     */
+    protected Map<String, Object> getErrorAttributes(final HttpServletRequest request, final boolean includeStackTrace) {
+
+        final WebRequest webRequest = new ServletWebRequest(request);
+        final ErrorAttributeOptions options = ErrorAttributeOptions.defaults();
+        if (includeStackTrace) {
+            options.including(Include.STACK_TRACE);
+        }
+        final Map<String, Object> body = errorAttributes.getErrorAttributes(webRequest, options);
+        if (body.containsKey("message")) {
+            try {
+                final String message = body.get("message").toString();
+                final StringBuilder sb = new StringBuilder();
+                for (final String line : message.split("\\n")) {
+                    sb.append(StringEscapeUtils.escapeHtml4(line));
+                    sb.append("\n");
+                }
+                // remove the trailing \n
+                body.put("message", sb.toString().replaceFirst("\\n$", ""));
+            } catch (final Exception e) {
+                body.put("message", body.get("message").toString().replaceAll("<", "&lt;"));
+            }
+        }
+        return body;
+    }
+
+    /**
+     * Returns the error path.
+     *
+     * @return the error path
+     */
+    /* see superclass */
+    @Override
+    public String getErrorPath() {
+
+        return "/error";
+    }
 
 }

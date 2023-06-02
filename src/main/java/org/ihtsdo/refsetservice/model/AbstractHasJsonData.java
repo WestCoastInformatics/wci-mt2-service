@@ -11,10 +11,8 @@ import org.ihtsdo.refsetservice.util.ModelUtility;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
- * Abstractly represents something that persists itself with json data payload.
- * This class makes use of hibernate lifecycle callbacks as explained here:
- * https://www.logicbig.com/tutorials/java-ee-tutorial/jpa/entity-call-back.html
- * .
+ * Abstractly represents something that persists itself with json data payload. This class makes use of hibernate lifecycle callbacks as explained here:
+ * https://www.logicbig.com/tutorials/java-ee-tutorial/jpa/entity-call-back.html .
  */
 @MappedSuperclass
 @org.hibernate.annotations.TypeDef(name = "JsonBType", typeClass = JsonBType.class)
@@ -28,6 +26,7 @@ public abstract class AbstractHasJsonData extends AbstractHasModified implements
      * Instantiates an empty {@link AbstractHasJsonData}.
      */
     protected AbstractHasJsonData() {
+
         // n/a
     }
 
@@ -37,6 +36,7 @@ public abstract class AbstractHasJsonData extends AbstractHasModified implements
      * @param other the other
      */
     protected AbstractHasJsonData(final HasId other) {
+
         populateFrom(other);
     }
 
@@ -45,6 +45,7 @@ public abstract class AbstractHasJsonData extends AbstractHasModified implements
     @PreUpdate
     @Override
     public void marshall() throws Exception {
+
         data = ModelUtility.toJson(this);
     }
 
@@ -55,6 +56,7 @@ public abstract class AbstractHasJsonData extends AbstractHasModified implements
      */
     @JsonIgnore
     public String getData() {
+
         return data;
     }
 

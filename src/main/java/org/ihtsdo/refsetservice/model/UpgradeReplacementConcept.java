@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.model;
 
@@ -6,10 +15,7 @@ import javax.persistence.Entity;
 import javax.persistence.Table;
 
 import org.hibernate.annotations.Type;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-// TODO: Auto-generated Javadoc
 /**
  * Represents an inactive concept during the refset upgrade process.
  * 
@@ -18,13 +24,10 @@ import org.slf4j.LoggerFactory;
 @Table(name = "upgrade_replacement_concepts")
 public class UpgradeReplacementConcept extends AbstractHasModified {
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(UpgradeReplacementConcept.class);
-    
     /** The code. */
     @Column(nullable = false, length = 256)
     private String code;
-    
+
     /** The UUID of the membership. */
     @Column(nullable = true, length = 256)
     private String memberId;
@@ -33,7 +36,7 @@ public class UpgradeReplacementConcept extends AbstractHasModified {
     @Column(nullable = false, length = 10000)
     @Type(type = "text")
     private String descriptions;
-    
+
     /** The reason for replacement. */
     @Column(nullable = false, length = 256)
     private String reason;
@@ -50,6 +53,7 @@ public class UpgradeReplacementConcept extends AbstractHasModified {
      * Instantiates an empty {@link UpgradeReplacementConcept}.
      */
     public UpgradeReplacementConcept() {
+
         // n/a
     }
 
@@ -59,6 +63,7 @@ public class UpgradeReplacementConcept extends AbstractHasModified {
      * @param other the other
      */
     public UpgradeReplacementConcept(final UpgradeReplacementConcept other) {
+
         populateFrom(other);
     }
 
@@ -68,7 +73,7 @@ public class UpgradeReplacementConcept extends AbstractHasModified {
      * @param other the other
      */
     public void populateFrom(final UpgradeReplacementConcept other) {
-        
+
         super.populateFrom(other);
         code = other.getCode();
         memberId = other.getMemberId();
@@ -77,42 +82,44 @@ public class UpgradeReplacementConcept extends AbstractHasModified {
         existingMember = other.isExistingMember();
         added = other.isAdded();
     }
-    
+
     /**
      * Returns the code.
      *
      * @return the code
      */
     public String getCode() {
+
         return code;
     }
-    
+
     /**
      * Sets the code.
      *
      * @param code the code
      */
     public void setCode(final String code) {
+
         this.code = code;
     }
-    
+
     /**
      * Returns the UUID of the membership.
      *
      * @return the member ID
      */
     public String getMemberId() {
-        
+
         return memberId;
     }
-    
+
     /**
      * Sets the UUID of the membership.
      *
      * @param memberId the member ID
      */
     public void setMemberId(final String memberId) {
-        
+
         this.memberId = memberId;
     }
 
@@ -122,6 +129,7 @@ public class UpgradeReplacementConcept extends AbstractHasModified {
      * @return the descriptions
      */
     public String getDescriptions() {
+
         return descriptions;
     }
 
@@ -131,24 +139,27 @@ public class UpgradeReplacementConcept extends AbstractHasModified {
      * @param descriptions the descriptions
      */
     public void setDescriptions(final String descriptions) {
+
         this.descriptions = descriptions;
     }
-    
+
     /**
      * Returns the reason.
      *
      * @return the reason
      */
     public String getReason() {
+
         return reason;
     }
-    
+
     /**
      * Sets the reason.
      *
      * @param reason the reason
      */
     public void setReason(final String reason) {
+
         this.reason = reason;
     }
 
@@ -158,6 +169,7 @@ public class UpgradeReplacementConcept extends AbstractHasModified {
      * @return the existingMember flag
      */
     public boolean isExistingMember() {
+
         return existingMember;
     }
 
@@ -167,6 +179,7 @@ public class UpgradeReplacementConcept extends AbstractHasModified {
      * @param existingMember the flag value to set
      */
     public void setExistingMember(final boolean existingMember) {
+
         this.existingMember = existingMember;
     }
 
@@ -176,6 +189,7 @@ public class UpgradeReplacementConcept extends AbstractHasModified {
      * @return the added flag
      */
     public boolean isAdded() {
+
         return added;
     }
 
@@ -185,6 +199,7 @@ public class UpgradeReplacementConcept extends AbstractHasModified {
      * @param added the flag to set
      */
     public void setAdded(final boolean added) {
+
         this.added = added;
     }
 
@@ -195,6 +210,7 @@ public class UpgradeReplacementConcept extends AbstractHasModified {
      */
     @Override
     public int hashCode() {
+
         final int prime = 31;
         int result = 1;
         result = prime * result + ((code == null) ? 0 : code.hashCode());
@@ -204,7 +220,7 @@ public class UpgradeReplacementConcept extends AbstractHasModified {
         result = prime * result + (added ? 1 : 0);
         return result;
     }
-    
+
     /**
      * Equals.
      *
@@ -227,7 +243,7 @@ public class UpgradeReplacementConcept extends AbstractHasModified {
         }
 
         final UpgradeReplacementConcept other = (UpgradeReplacementConcept) obj;
-        
+
         if (code == null) {
             if (other.code != null) {
                 return false;
@@ -235,7 +251,7 @@ public class UpgradeReplacementConcept extends AbstractHasModified {
         } else if (!code.equals(other.code)) {
             return false;
         }
-        
+
         if (memberId == null) {
             if (other.memberId != null) {
                 return false;
@@ -251,7 +267,7 @@ public class UpgradeReplacementConcept extends AbstractHasModified {
         } else if (!descriptions.equals(other.descriptions)) {
             return false;
         }
-        
+
         if (reason == null) {
             if (other.reason != null) {
                 return false;
@@ -276,7 +292,8 @@ public class UpgradeReplacementConcept extends AbstractHasModified {
      */
     @Override
     public void lazyInit() {
-        // TODO Auto-generated method stub
+
+        // n/a
 
     }
 }

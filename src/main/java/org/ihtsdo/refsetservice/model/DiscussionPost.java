@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -36,9 +36,9 @@ public class DiscussionPost extends AbstractHasModified {
     /** The Constant serialVersionUID. */
     private static final long serialVersionUID = -4303326622967031897L;
 
-    /** The logger. */
+    /** The Constant LOG. */
     @SuppressWarnings("unused")
-    private static Logger logger = LoggerFactory.getLogger(DiscussionPost.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DiscussionPost.class);
 
     /** The user. */
     @OneToOne(targetEntity = User.class)
@@ -233,7 +233,7 @@ public class DiscussionPost extends AbstractHasModified {
     @Override
     public void lazyInit() {
 
-        // TODO Auto-generated method stub
+        // n/a
 
     }
 

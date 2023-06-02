@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.model;
 
@@ -32,30 +41,31 @@ public class WorkflowHistory extends AbstractHasModified {
     /** The username. */
     @Column(nullable = false, length = 256)
     private String userName;
-    
+
     /** The workflow status. */
     @Column(nullable = true, length = 256)
     private String workflowStatus;
-    
+
     /** The workflow status. */
     @Column(nullable = true, length = 256)
     private String workflowAction;
-    
+
     /** The workflow status notes. */
     @Column(nullable = true, length = 10000)
     @Type(type = "text")
     private String notes;
-    
+
     /** The refset version. */
     @ManyToOne(targetEntity = Refset.class)
     @JoinColumn(nullable = false)
     @Fetch(FetchMode.JOIN)
     private Refset refset;
-    
+
     /**
      * Instantiates an empty {@link WorkflowHistory}.
      */
     public WorkflowHistory() {
+
         // n/a
     }
 
@@ -65,6 +75,7 @@ public class WorkflowHistory extends AbstractHasModified {
      * @param other the other
      */
     public WorkflowHistory(final WorkflowHistory other) {
+
         populateFrom(other);
     }
 
@@ -73,10 +84,12 @@ public class WorkflowHistory extends AbstractHasModified {
      *
      * @param userName the username
      * @param workflowStatus the workflow status
+     * @param workflowAction the workflow action
      * @param notes the notes
+     * @param refset the refset
      */
     public WorkflowHistory(final String userName, final String workflowStatus, final String workflowAction, final String notes, final Refset refset) {
-        
+
         this.userName = userName;
         this.workflowStatus = workflowStatus;
         this.workflowAction = workflowAction;
@@ -90,7 +103,7 @@ public class WorkflowHistory extends AbstractHasModified {
      * @param other the other
      */
     public void populateFrom(final WorkflowHistory other) {
-        
+
         super.populateFrom(other);
         userName = other.getUserName();
         workflowStatus = other.getWorkflowStatus();
@@ -105,9 +118,9 @@ public class WorkflowHistory extends AbstractHasModified {
      * @return the userName
      */
     @FullTextField(analyzer = "standard")
-    @GenericField(name = "userNameSort", searchable = Searchable.YES, projectable = Projectable.NO,
-            sortable = Sortable.YES)
+    @GenericField(name = "userNameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getUserName() {
+
         return userName;
     }
 
@@ -117,15 +130,17 @@ public class WorkflowHistory extends AbstractHasModified {
      * @param userName the userName
      */
     public void setUserName(final String userName) {
+
         this.userName = userName;
     }
-    
+
     /**
      * Gets the notes.
      *
      * @return the notes
      */
     public String getNotes() {
+
         return notes;
     }
 
@@ -135,93 +150,98 @@ public class WorkflowHistory extends AbstractHasModified {
      * @param notes the notes to set
      */
     public void setNotes(final String notes) {
+
         this.notes = notes;
     }
-    
+
     /**
      * Returns the workflow status.
      *
      * @return the workflow status
      */
     @FullTextField(analyzer = "standard")
-    @GenericField(name = "workflowStatusSort", searchable = Searchable.YES, projectable = Projectable.NO,
-            sortable = Sortable.YES)
+    @GenericField(name = "workflowStatusSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getWorkflowStatus() {
+
         return workflowStatus;
     }
-    
+
     /**
      * Sets the workflow status.
      *
      * @param workflowStatus the workflow status
      */
     public void setWorkflowStatus(final String workflowStatus) {
+
         this.workflowStatus = workflowStatus;
     }
-    
+
     /**
      * Returns the workflow action.
      *
      * @return the workflow action
      */
     @FullTextField(analyzer = "standard")
-    @GenericField(name = "workflowActionSort", searchable = Searchable.YES, projectable = Projectable.NO,
-            sortable = Sortable.YES)
+    @GenericField(name = "workflowActionSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getWorkflowAction() {
+
         return workflowAction;
     }
-    
+
     /**
      * Sets the workflow action.
      *
      * @param workflowAction the workflow action
      */
     public void setWorkflowAction(final String workflowAction) {
+
         this.workflowAction = workflowAction;
     }
-    
+
     /**
      * Gets the refset.
      *
      * @return the refset
      */
     public Refset getRefset() {
+
         return refset;
     }
-    
+
     /**
      * Sets the refset.
      *
      * @param refset the refset to set
      */
     public void setRefset(final Refset refset) {
+
         this.refset = refset;
     }
-    
+
     /**
      * Returns the refset ID.
      *
      * @return the workflow status
      */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO,
-            sortable = Sortable.YES)
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     @IndexingDependency(derivedFrom = @ObjectPath({
         @PropertyValue(propertyName = "refset")
     }))
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
     public String getRefsetId() {
+
         return refset == null ? null : refset.getId();
     }
-    
+
     /**
      * Sets the refsetId.
      *
-     * @param refset the refset to set
+     * @param refsetId the refset id
      */
     public void setRefsetId(final String refsetId) {
+
         // NA
     }
-
 
     /**
      * Equals.
@@ -253,7 +273,7 @@ public class WorkflowHistory extends AbstractHasModified {
         } else if (!userName.equals(other.userName)) {
             return false;
         }
-        
+
         if (notes == null) {
             if (other.notes != null) {
                 return false;
@@ -261,7 +281,7 @@ public class WorkflowHistory extends AbstractHasModified {
         } else if (!notes.equals(other.notes)) {
             return false;
         }
-        
+
         if (workflowStatus == null) {
             if (other.workflowStatus != null) {
                 return false;
@@ -269,7 +289,7 @@ public class WorkflowHistory extends AbstractHasModified {
         } else if (!workflowStatus.equals(other.workflowStatus)) {
             return false;
         }
-        
+
         if (workflowAction == null) {
             if (other.workflowAction != null) {
                 return false;
@@ -277,7 +297,7 @@ public class WorkflowHistory extends AbstractHasModified {
         } else if (!workflowAction.equals(other.workflowAction)) {
             return false;
         }
-        
+
         if (refset == null) {
             if (other.refset != null) {
                 return false;
@@ -308,6 +328,7 @@ public class WorkflowHistory extends AbstractHasModified {
         return result;
     }
 
+    /* see superclass */
     @Override
     public void lazyInit() {
         // TODO Auto-generated method stub

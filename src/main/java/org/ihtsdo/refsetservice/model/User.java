@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -14,13 +14,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 import javax.persistence.Column;
-import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
@@ -30,8 +27,6 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.ihtsdo.refsetservice.terminologyservice.EditionService;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.ihtsdo.refsetservice.util.ModelUtility;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -49,9 +44,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Indexed
 public class User extends AbstractHasModified implements Comparable<User>, Copyable<User>, ValidateCrud<User> {
-
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(User.class);
 
     /** The username. */
     @Column(nullable = false, unique = true, length = 250)
@@ -79,8 +71,8 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     private String authToken;
 
     /** A list of the roles this user has. */
-    @ElementCollection
-    @Fetch(FetchMode.JOIN)
+    @Transient
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Set<String> roles = new HashSet<>();
 
     /** The icon uri. */
@@ -159,6 +151,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
      *
      * @param other the other
      */
+    @Override
     public void populateFrom(final User other) {
 
         super.populateFrom(other);
@@ -178,6 +171,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
      *
      * @param other the other
      */
+    @Override
     public void patchFrom(final User other) {
 
         // super.populateFrom(other);
@@ -301,7 +295,6 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
      *
      * @return the roles
      */
-    // @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public Set<String> getRoles() {
 
         if (roles == null) {
@@ -435,7 +428,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
                 editionName = "all";
             } else if (edition != null) {
                 editionName = CrowdGroupNameAlgorithm.getEditionString(edition.getShortName());
-            }           
+            }
 
             final String lowerCasedRoleToCheck = roleToCheck.toLowerCase();
 
@@ -444,30 +437,31 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
                 final String lowerCasedRole = role.toLowerCase();
                 final int indexFirstHyphen = lowerCasedRole.indexOf("-");
                 final String editionPart = lowerCasedRole.substring(0, indexFirstHyphen);
-                // logger.debug("doesUserHavePermission editionName: " + editionName + " ; edition part of role: " + editionPart);
+                // LOG.debug("doesUserHavePermission editionName: " + editionName + " ; edition part of role: " + editionPart);
 
                 // first check the edition permissions
                 if (editionPart.equals("all") || editionPart.equals(editionName)) {
 
                     final String projectPart = lowerCasedRole.substring(indexFirstHyphen + 1, lowerCasedRole.indexOf("-", indexFirstHyphen + 1));
-                    // logger.debug("doesUserHavePermission projectName: " + projectName + " ; project part of role: " + projectPart);
+                    // LOG.debug("doesUserHavePermission projectName: " + projectName + " ; project part of role: " + projectPart);
 
                     // then check the project level permissions against 1: all access, 2: org level viewer, 3: project level project name
-                    if (projectPart.equals("all") || (projectCrowdId == null && roleToCheck.equals(ROLE_VIEWER)) || (projectCrowdId != null && projectPart.equals(projectCrowdId))) {
+                    if (projectPart.equals("all") || (projectCrowdId == null && roleToCheck.equals(ROLE_VIEWER))
+                        || (projectCrowdId != null && projectPart.equals(projectCrowdId))) {
 
-                        // logger.debug("doesUserHavePermission lowerCasedRole: " + lowerCasedRole + " ; lowerCasedRoleToCheck: " + lowerCasedRoleToCheck);
+                        // LOG.debug("doesUserHavePermission lowerCasedRole: " + lowerCasedRole + " ; lowerCasedRoleToCheck: " + lowerCasedRoleToCheck);
 
                         // last check for the role or if they have any permission at this level they have the VIEWER role
                         if (lowerCasedRole.endsWith("-all") || lowerCasedRole.endsWith("-" + lowerCasedRoleToCheck) || roleToCheck.equals(ROLE_VIEWER)) {
 
-                            // logger.debug("doesUserHavePermission = true");
+                            // LOG.debug("doesUserHavePermission = true");
                             return true;
                         }
                     }
                 }
             }
 
-        } catch (Exception e) {
+        } catch (final Exception e) {
             return false;
         }
         return false;
@@ -478,7 +472,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     public int hashCode() {
 
         final int prime = 31;
-        int result = 1;
+        int result = super.hashCode();
         result = prime * result + ((authToken == null) ? 0 : authToken.hashCode());
         result = prime * result + ((company == null) ? 0 : company.hashCode());
         result = prime * result + ((email == null) ? 0 : email.hashCode());
@@ -496,125 +490,78 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     public boolean equals(final Object obj) {
 
         if (this == obj) {
-
             return true;
         }
-
-        if (getClass() != obj.getClass()) {
-
+        if (!super.equals(obj)) {
             return false;
         }
-
-        final User other = (User) obj;
-
+        if (!(obj instanceof User)) {
+            return false;
+        }
+        User other = (User) obj;
         if (authToken == null) {
-
             if (other.authToken != null) {
-
                 return false;
             }
-
         } else if (!authToken.equals(other.authToken)) {
-
             return false;
         }
-
         if (company == null) {
-
             if (other.company != null) {
-
                 return false;
             }
-
         } else if (!company.equals(other.company)) {
-
             return false;
         }
-
         if (email == null) {
-
             if (other.email != null) {
-
                 return false;
             }
-
         } else if (!email.equals(other.email)) {
-
             return false;
         }
-
         if (iconUri == null) {
-
             if (other.iconUri != null) {
-
                 return false;
             }
-
         } else if (!iconUri.equals(other.iconUri)) {
-
             return false;
         }
-
         if (name == null) {
-
             if (other.name != null) {
-
                 return false;
             }
-
         } else if (!name.equals(other.name)) {
-
             return false;
         }
-
         if (roles == null) {
-
             if (other.roles != null) {
-
                 return false;
             }
-
         } else if (!roles.equals(other.roles)) {
-
             return false;
         }
-
         if (teams == null) {
-
             if (other.teams != null) {
-
                 return false;
             }
-
         } else if (!teams.equals(other.teams)) {
-
             return false;
         }
-
         if (title == null) {
-
             if (other.title != null) {
-
                 return false;
             }
-
         } else if (!title.equals(other.title)) {
-
             return false;
         }
-
         if (userName == null) {
-
             if (other.userName != null) {
-
                 return false;
             }
-
         } else if (!userName.equals(other.userName)) {
-
             return false;
         }
-
         return true;
     }
 
@@ -651,7 +598,8 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
      */
     @Override
     public void lazyInit() {
-        // TODO Auto-generated method stub
+
+        // n/a
 
     }
 
@@ -659,7 +607,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     @Override
     public void validateAdd() throws Exception {
 
-        // TODO Auto-generated method stub
+        // n/a
 
     }
 
@@ -667,7 +615,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     @Override
     public void validateUpdate(final User other) throws Exception {
 
-        // TODO Auto-generated method stub
+        // n/a
 
     }
 
@@ -675,7 +623,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     @Override
     public void validateDelete() throws Exception {
 
-        // TODO Auto-generated method stub
+        // n/a
 
     }
 }

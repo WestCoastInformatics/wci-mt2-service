@@ -22,9 +22,8 @@ import org.slf4j.LoggerFactory;
  * Automates JUnit testing of Hibernate persistence.
  * 
  * <p>
- * It may be used in exclusive or inclusive mode. In exclusive mode, which is
- * the default, all JavaBeans properties (getter/setter method pairs with
- * matching names) are tested unless they are excluded beforehand. For example:
+ * It may be used in exclusive or inclusive mode. In exclusive mode, which is the default, all JavaBeans properties (getter/setter method pairs with matching
+ * names) are tested unless they are excluded beforehand. For example:
  * 
  * <pre>
  * MyClass objectToTest = new MyClass();
@@ -39,32 +38,28 @@ import org.slf4j.LoggerFactory;
  * <ul>
  * <li>All Java primitive types.
  * <li>Interfaces.
- * <li>All non-final classes if <a href="http://cglib.sourceforge.net">cglib</a>
- * is on your classpath -- this uses cglib even when a no-argument constructor
- * is available because a constructor might have side effects that you wouldn.t
- * want to trigger in a unit test.
+ * <li>All non-final classes if <a href="http://cglib.sourceforge.net">cglib</a> is on your classpath -- this uses cglib even when a no-argument constructor is
+ * available because a constructor might have side effects that you wouldn.t want to trigger in a unit test.
  * <li>Java 5 enums.
  * </ul>
  * 
  * <p>
- * Properties whose types are classes declared <code>final</code> are not
- * supported; neither are non-primitive, non-interface properties if you don't
- * have cglib.
+ * Properties whose types are classes declared <code>final</code> are not supported; neither are non-primitive, non-interface properties if you don't have
+ * cglib.
  * 
  * <p>
  * Copyright (c) 2005, Steven Grimm.<br>
- * This software may be used for any purpose, commercial or noncommercial, so
- * long as this copyright notice is retained. If you make improvements to the
- * code, you're encouraged (but not required) to send them to me so I can make
- * them available to others. For updates, please check
+ * This software may be used for any purpose, commercial or noncommercial, so long as this copyright notice is retained. If you make improvements to the code,
+ * you're encouraged (but not required) to send them to me so I can make them available to others. For updates, please check
  * <a href="http://www.plaintivemewling.com/?p=34">here</a>.
  * 
  * @author Steven Grimm, koreth@midwinter.com
  * @version 1.0 (2005/11/08).
  */
 public class PersistenceTester extends ProxyTester {
-    /** The logger. */
-    private final Logger logger = LoggerFactory.getLogger(PersistenceTester.class);
+
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(PersistenceTester.class);
 
     /** HasId under test. */
     @SuppressWarnings("unused")
@@ -81,12 +76,12 @@ public class PersistenceTester extends ProxyTester {
     private boolean generatedIdFlag = true;
 
     /**
-     * Constructs a new getter/setter tester to test objects of a particular
-     * class.
+     * Constructs a new getter/setter tester to test objects of a particular class.
      * 
      * @param obj Object to test.
      */
     public PersistenceTester(final HasId obj) {
+
         super(obj);
         this.obj = obj;
     }
@@ -98,8 +93,8 @@ public class PersistenceTester extends ProxyTester {
      * @param indexedFlag the indexed flag
      * @param generatedIdFlag the generated id flag
      */
-    public PersistenceTester(final HasId obj, final boolean indexedFlag,
-            final boolean generatedIdFlag) {
+    public PersistenceTester(final HasId obj, final boolean indexedFlag, final boolean generatedIdFlag) {
+
         super(obj);
         this.obj = obj;
         this.indexedFlag = indexedFlag;
@@ -112,13 +107,13 @@ public class PersistenceTester extends ProxyTester {
      * @return this
      */
     public PersistenceTester setVerbose(final boolean verbose) {
+
         this.verbose = verbose;
         return this;
     }
 
     /**
-     * Walks through the methods in the class looking for getters and setters
-     * that are on our include list (if any) and are not on our exclude list.
+     * Walks through the methods in the class looking for getters and setters that are on our include list (if any) and are not on our exclude list.
      *
      * @throws Exception the exception
      */
@@ -132,13 +127,13 @@ public class PersistenceTester extends ProxyTester {
 
         // Verify @Entity annotation
         if (!object.getClass().isAnnotationPresent(Entity.class)) {
-            logger.error("  MISSING @Entity");
+            LOG.error("  MISSING @Entity");
             throw new Exception("  MISSING @Entity");
         }
 
         // Verify @Table annotation (with un-camel-cased name
         if (!object.getClass().isAnnotationPresent(Table.class)) {
-            logger.error("  MISSING @Table");
+            LOG.error("  MISSING @Table");
             throw new Exception("  MISSING @Table");
         }
         // final String tableClassName =
@@ -150,7 +145,7 @@ public class PersistenceTester extends ProxyTester {
         // if (!tableName.equals(tableClassName)) {
         // // exceptions for sql keywords
         // if (!tableName.equals("orders")) {
-        // logger.error(" @Table annotation name does not match class = " +
+        // LOG.error(" @Table annotation name does not match class = " +
         // tableClassName);
         // throw new Exception(" @Table annotation name does not match class = "
         // +
@@ -160,24 +155,22 @@ public class PersistenceTester extends ProxyTester {
 
         // Verify @Indexed annotation
         if (indexedFlag && !object.getClass().isAnnotationPresent(Indexed.class)) {
-            logger.error("  MISSING @Indexed");
+            LOG.error("  MISSING @Indexed");
             throw new Exception("  MISSING @Indexed");
         }
 
         // Verify @XmlRootElement
         // if (!object.getClass().isAnnotationPresent(XmlRootElement.class)) {
-        // logger.error(" MISSING @XmlRootElement");
+        // LOG.error(" MISSING @XmlRootElement");
         // throw new Exception(" MISSING @XmlRootElement");
         // }
 
         // Check indexed fields
         if (indexedFlag) {
-            final Set<String> fieldNames =
-                    IndexUtility.getIndexedFieldNames(object.getClass(), "all");
-            logger.info("  field names = " + fieldNames);
+            final Set<String> fieldNames = IndexUtility.getIndexedFieldNames(object.getClass(), "all");
+            LOG.info("  field names = " + fieldNames);
             if (fieldNames.size() <= 4) {
-                throw new Exception(
-                        "Indexed fields should include more than id, active, modified, modifiedBy");
+                throw new Exception("Indexed fields should include more than id, active, modified, modifiedBy");
             }
         }
 
@@ -193,12 +186,11 @@ public class PersistenceTester extends ProxyTester {
                 if (!field.isAnnotationPresent(Transient.class)) {
                     problem = true;
                     sb.append(field.getName()).append(", ");
-                    logger.error("    field without @Transient = " + field.getName());
+                    LOG.error("    field without @Transient = " + field.getName());
                 }
             }
             if (problem) {
-                throw new Exception(
-                        "HasJsonData class with non-transient local fields = " + sb.toString());
+                throw new Exception("HasJsonData class with non-transient local fields = " + sb.toString());
             }
         }
 
@@ -212,13 +204,14 @@ public class PersistenceTester extends ProxyTester {
              */
             @Override
             public void validateInit() throws Exception {
+
                 // n/a
             }
         }) {
             service.setModifiedBy("persistenceTester");
 
             // Add an object
-            logger.info("  test add object = " + object);
+            LOG.info("  test add object = " + object);
             if (object instanceof HasModified) {
                 service.add((HasModified) object);
             } else {
@@ -232,70 +225,62 @@ public class PersistenceTester extends ProxyTester {
             }
 
             // get object
-            logger.info("  test get object");
+            LOG.info("  test get object");
             object = service.get(object.getId(), object.getClass());
-            logger.info("    id = " + object.getId());
+            LOG.info("    id = " + object.getId());
             if (!origId.equals(object.getId())) {
-                throw new Exception("Original id unexpectedly does not match object id = " + origId
-                        + ", " + object.getId());
+                throw new Exception("Original id unexpectedly does not match object id = " + origId + ", " + object.getId());
             }
 
             if (indexedFlag) {
-                logger.info("  test find objects");
+                LOG.info("  test find objects");
                 ResultList<? extends HasId> list = null;
                 // test find
                 list = service.find(origId, null, object.getClass(), null);
-                logger.info("    find = " + list);
+                LOG.info("    find = " + list);
                 if (list.size() != 1) {
-                    throw new Exception(
-                            "Search results size is unexpectedly not 1 = " + list.size());
+                    throw new Exception("Search results size is unexpectedly not 1 = " + list.size());
                 }
                 if (service.findIds(origId, null, object.getClass(), null).size() != 1) {
-                    throw new Exception("Search results size for findIds is unexpectedly not 1 = "
-                            + list.size());
+                    throw new Exception("Search results size for findIds is unexpectedly not 1 = " + list.size());
                 }
 
                 object = list.getItems().get(0);
-                logger.info("  id = " + object.getId());
+                LOG.info("  id = " + object.getId());
                 if (!origId.equals(object.getId())) {
-                    throw new Exception("Original id unexpectedly does not match object id = "
-                            + origId + ", " + object.getId());
+                    throw new Exception("Original id unexpectedly does not match object id = " + origId + ", " + object.getId());
                 }
 
                 // test find on "modifiedBy"
                 if (object instanceof HasModified) {
                     list = service.find("persistenceTester", null, object.getClass(), null);
-                    logger.info("    find = " + list);
+                    LOG.info("    find = " + list);
                     if (list.size() != 1) {
-                        throw new Exception(
-                                "Search results size is unexpectedly not 1 = " + list.size());
+                        throw new Exception("Search results size is unexpectedly not 1 = " + list.size());
                     }
 
-                    logger.info("  test update objects");
+                    LOG.info("  test update objects");
                     service.setModifiedBy("persistenceTester2");
                     service.update((HasModified) object);
                     list = service.find("persistenceTester", null, object.getClass(), null);
-                    logger.info("    find = " + list);
+                    LOG.info("    find = " + list);
                     if (list.size() != 0) {
-                        throw new Exception(
-                                "Search results size is unexpectedly not empty = " + list.size());
+                        throw new Exception("Search results size is unexpectedly not empty = " + list.size());
                     }
                     list = service.find("persistenceTester2", null, object.getClass(), null);
-                    logger.info("    find = " + list);
+                    LOG.info("    find = " + list);
                     if (list.size() != 1) {
-                        throw new Exception(
-                                "Search results size is unexpectedly not 1 = " + list.size());
+                        throw new Exception("Search results size is unexpectedly not 1 = " + list.size());
                     }
                 }
             }
 
             // delete the object
-            logger.info("  test delete object");
+            LOG.info("  test delete object");
             service.removeObject(object);
             object = service.get(object.getId(), object.getClass());
             if (object != null) {
-                throw new Exception(
-                        "Search results size is unexpectedly not empty = " + object.getId());
+                throw new Exception("Search results size is unexpectedly not empty = " + object.getId());
             }
 
         }

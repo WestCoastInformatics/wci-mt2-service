@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -61,35 +61,35 @@ public class UserProjectRole {
         this.project = project;
         this.role = role;
     }
-    
+
     /**
      * Instantiates a {@link UserProjectRole} from the specified parameters.
      *
-     * @param role the role
+     * @param crowdGroupString the crowd group string
+     * @throws Exception the exception
      */
     public UserProjectRole(final String crowdGroupString) throws Exception {
 
         super();
-        
+
         if (StringUtils.isBlank(crowdGroupString)) {
-            throw new Exception ("Crowd group name cannot be null or empty");
+            throw new Exception("Crowd group name cannot be null or empty");
         }
-                
+
         final String[] projectsRole = crowdGroupString.split("-");
-        
+
         if (projectsRole.length < 2) {
-            throw new Exception ("Crowd group name does not have enough parts");
+            throw new Exception("Crowd group name does not have enough parts");
         }
-        
+
         // should have 3 -, if only 2 rt2 was removed.
-        final boolean hasApplication = ("rt2".equalsIgnoreCase(projectsRole[0])); 
-        
+        final boolean hasApplication = ("rt2".equalsIgnoreCase(projectsRole[0]));
+
         if (!hasApplication) {
             this.organization = projectsRole[0];
             this.project = projectsRole[1];
             this.role = projectsRole[1];
-        }
-        else {
+        } else {
             this.organization = projectsRole[1];
             this.project = projectsRole[2];
             this.role = projectsRole[3];
@@ -102,7 +102,7 @@ public class UserProjectRole {
      *
      * @param application the application to set
      */
-    public void setApplication(String application) {
+    public void setApplication(final String application) {
 
         this.application = application;
     }
@@ -122,7 +122,7 @@ public class UserProjectRole {
      *
      * @param organization the organization to set
      */
-    public void setOrganization(String organization) {
+    public void setOrganization(final String organization) {
 
         this.organization = organization;
     }
@@ -142,7 +142,7 @@ public class UserProjectRole {
      *
      * @param project the project to set
      */
-    public void setProject(String project) {
+    public void setProject(final String project) {
 
         this.project = project;
     }
@@ -162,7 +162,7 @@ public class UserProjectRole {
      *
      * @param role the role to set
      */
-    public void setRole(String role) {
+    public void setRole(final String role) {
 
         this.role = role;
     }
@@ -182,7 +182,7 @@ public class UserProjectRole {
 
     /* see superclass */
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
 
         if (this == obj) {
             return true;
@@ -193,7 +193,7 @@ public class UserProjectRole {
         if (!(obj instanceof UserProjectRole)) {
             return false;
         }
-        UserProjectRole other = (UserProjectRole) obj;
+        final UserProjectRole other = (UserProjectRole) obj;
         if (application == null) {
             if (other.application != null) {
                 return false;

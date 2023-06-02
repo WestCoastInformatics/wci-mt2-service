@@ -36,41 +36,41 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Indexed
 public class InviteRequest extends AbstractHasModified {
 
-    /**  The Constant serialVersionUID. */
+    /** The Constant serialVersionUID. */
     private static final long serialVersionUID = 1L;
 
-    /**  The action. */
+    /** The action. */
     @Column(nullable = false)
     private String action;
-    
-    /**  The requester. */
+
+    /** The requester. */
     @Column(nullable = false)
     private String requester;
-    
-    /**  The recipient email. */
+
+    /** The recipient email. */
     @Column(nullable = false)
     private String recipientEmail;
-    
-    /**  The payload. */
+
+    /** The payload. */
     @Column(nullable = true)
     private String payload;
-    
-    /**  The response. */
+
+    /** The response. */
     @Column(nullable = true)
     private String response;
-    
-    /**  The response date. */
+
+    /** The response date. */
     @Column(nullable = true)
     private Date responseDate;
-    
+
     /**
      * Instantiates an empty {@link InviteRequest}.
      */
     public InviteRequest() {
+
         // n/a
     }
-    
-    
+
     /**
      * Instantiates a {@link InviteRequest} from the specified parameters.
      *
@@ -80,27 +80,30 @@ public class InviteRequest extends AbstractHasModified {
      * @param payload the payload
      */
     public InviteRequest(final String action, final String requester, final String recipientEmail, final String payload) {
+
         this.action = action;
         this.requester = requester;
         this.recipientEmail = recipientEmail;
-        this.payload = payload;        
+        this.payload = payload;
     }
-    
+
     /**
      * Instantiates a {@link InviteRequest} from the specified parameters.
      *
      * @param other the other
      */
     public InviteRequest(final InviteRequest other) {
+
         populateFrom(other);
     }
-    
+
     /**
      * Populate from.
      *
      * @param other the other
      */
     public void populateFrom(final InviteRequest other) {
+
         super.populateFrom(other);
         this.action = other.getAction();
         this.requester = other.getRequester();
@@ -110,29 +113,26 @@ public class InviteRequest extends AbstractHasModified {
         this.responseDate = other.getResponseDate();
     }
 
-    
     /**
      * Returns the action.
      *
      * @return the action
      */
     public String getAction() {
-    
+
         return action;
     }
 
-    
     /**
      * Sets the action.
      *
      * @param action the action to set
      */
-    public void setAction(String action) {
-    
+    public void setAction(final String action) {
+
         this.action = action;
     }
 
-    
     /**
      * Returns the requester.
      *
@@ -141,106 +141,97 @@ public class InviteRequest extends AbstractHasModified {
     @FullTextField(analyzer = "standard")
     @GenericField(name = "nameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getRequester() {
-    
+
         return requester;
     }
 
-    
     /**
      * Sets the requester.
      *
      * @param requester the requester to set
      */
-    public void setRequester(String requester) {
-    
+    public void setRequester(final String requester) {
+
         this.requester = requester;
     }
 
-    
     /**
      * Returns the recipient email.
      *
      * @return the recipientEmail
      */
     public String getRecipientEmail() {
-    
+
         return recipientEmail;
     }
 
-    
     /**
      * Sets the recipient email.
      *
      * @param recipientEmail the recipientEmail to set
      */
-    public void setRecipientEmail(String recipientEmail) {
-    
+    public void setRecipientEmail(final String recipientEmail) {
+
         this.recipientEmail = recipientEmail;
     }
 
-    
     /**
      * Returns the payload.
      *
      * @return the payload
      */
     public String getPayload() {
-    
+
         return payload;
     }
 
-    
     /**
      * Sets the payload.
      *
      * @param payload the payload to set
      */
-    public void setPayload(String payload) {
-    
+    public void setPayload(final String payload) {
+
         this.payload = payload;
     }
 
-    
     /**
      * Returns the response.
      *
      * @return the response
      */
     public String getResponse() {
-    
+
         return response;
     }
 
-    
     /**
      * Sets the response.
      *
      * @param response the response to set
      */
-    public void setResponse(String response) {
-    
+    public void setResponse(final String response) {
+
         this.response = response;
     }
 
-    
     /**
      * Returns the response date.
      *
      * @return the responseDate
      */
     public Date getResponseDate() {
-    
+
         return responseDate;
     }
 
-    
     /**
      * Sets the response date.
      *
      * @param responseDate the responseDate to set
      */
-    public void setResponseDate(Date responseDate) {
-    
+    public void setResponseDate(final Date responseDate) {
+
         this.responseDate = responseDate;
     }
 
@@ -261,7 +252,7 @@ public class InviteRequest extends AbstractHasModified {
 
     /* see superclass */
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
 
         if (this == obj) {
             return true;
@@ -272,7 +263,7 @@ public class InviteRequest extends AbstractHasModified {
         if (!(obj instanceof InviteRequest)) {
             return false;
         }
-        InviteRequest other = (InviteRequest) obj;
+        final InviteRequest other = (InviteRequest) obj;
         if (action == null) {
             if (other.action != null) {
                 return false;
@@ -322,16 +313,14 @@ public class InviteRequest extends AbstractHasModified {
     @Override
     public String toString() {
 
-        return "InviteRequest [action=" + action + ", requester=" + requester + ", recipientEmail=" + recipientEmail + ", payload=" + payload + ", response=" + response + ", responseDate="
-            + responseDate + "]";
+        return "InviteRequest [action=" + action + ", requester=" + requester + ", recipientEmail=" + recipientEmail + ", payload=" + payload + ", response="
+            + response + ", responseDate=" + responseDate + "]";
     }
-
 
     @Override
     public void lazyInit() {
+
         // n/a
     }
-    
-    
-    
+
 }

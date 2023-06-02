@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.util;
 
@@ -28,16 +37,16 @@ public class ResultList<T> implements Collection<T> {
 
     /** The offset. */
     private int offset;
-    
+
     /** A miscellaneous field for other counts that might be needed. */
     private int miscCountA;
-    
+
     /** A miscellaneous field for other counts that might be needed. */
     private int miscCountB;
-    
-    /** The searchAfter */
+
+    /**  The searchAfter. */
     private String searchAfter;
-    
+
     /** The offset. */
     private boolean totalKnown;
 
@@ -54,6 +63,7 @@ public class ResultList<T> implements Collection<T> {
      * Instantiates an empty {@link ResultList}.
      */
     public ResultList() {
+
         // n/a
     }
 
@@ -63,6 +73,7 @@ public class ResultList<T> implements Collection<T> {
      * @param items the items
      */
     public ResultList(final List<T> items) {
+
         this.items = items;
         if (items != null) {
             this.total = items.size();
@@ -77,6 +88,7 @@ public class ResultList<T> implements Collection<T> {
      * @param other the other
      */
     public ResultList(final ResultList<T> other) {
+
         populateFrom(other);
     }
 
@@ -86,6 +98,7 @@ public class ResultList<T> implements Collection<T> {
      * @param other the other
      */
     public void populateFrom(final ResultList<T> other) {
+
         items = other.getItems();
         limit = other.getLimit();
         offset = other.getOffset();
@@ -105,6 +118,7 @@ public class ResultList<T> implements Collection<T> {
      * @return the int
      */
     public int size() {
+
         return getItems().size();
     }
 
@@ -115,6 +129,7 @@ public class ResultList<T> implements Collection<T> {
      * @return true, if successful
      */
     public boolean contains(final T element) {
+
         return items.contains(element);
     }
 
@@ -125,6 +140,7 @@ public class ResultList<T> implements Collection<T> {
      */
     @Override
     public void setItems(final List<T> items) {
+
         this.items = items;
     }
 
@@ -135,6 +151,7 @@ public class ResultList<T> implements Collection<T> {
      */
     @Override
     public List<T> getItems() {
+
         if (items == null) {
             items = new ArrayList<>();
         }
@@ -148,6 +165,7 @@ public class ResultList<T> implements Collection<T> {
      */
     @XmlTransient
     public Map<String, Float> getScoreMap() {
+
         if (scoreMap == null) {
             scoreMap = new HashMap<>();
         }
@@ -160,100 +178,129 @@ public class ResultList<T> implements Collection<T> {
      * @param scoreMap the score map
      */
     public void setScoreMap(final Map<String, Float> scoreMap) {
+
         this.scoreMap = scoreMap;
     }
 
     /* see superclass */
     @Override
     public int getTotal() {
+
         return total;
     }
 
     /**
+     * Indicates whether or not total known is the case.
+     *
      * @return the totalKnown
      */
     public boolean isTotalKnown() {
+
         return totalKnown;
     }
 
     /**
+     * Sets the total known.
+     *
      * @param totalKnown the totalKnown to set
      */
-    public void setTotalKnown(boolean totalKnown) {
+    public void setTotalKnown(final boolean totalKnown) {
+
         this.totalKnown = totalKnown;
     }
 
     /* see superclass */
     @Override
     public void setTotal(final int total) {
+
         this.total = total;
     }
 
     /* see superclass */
     @Override
     public int getLimit() {
+
         return limit;
     }
 
     /* see superclass */
     @Override
     public void setLimit(final int limit) {
+
         this.limit = limit;
     }
-    
+
     /**
      * Returns a miscellaneous field for other counts that might be needed.
      *
      * @return the count
      */
     public int getMiscCountA() {
+
         return miscCountA;
     }
-    
+
     /**
      * Sets a miscellaneous field for other counts that might be needed.
      *
      * @param miscCountA the count
      */
     public void setMiscCountA(final int miscCountA) {
+
         this.miscCountA = miscCountA;
     }
-    
+
     /**
      * Returns a miscellaneous field for other counts that might be needed.
      *
      * @return the count
      */
     public int getMiscCountB() {
+
         return miscCountB;
     }
-    
+
     /**
      * Sets a miscellaneous field for other counts that might be needed.
      *
      * @param miscCountB the count
      */
     public void setMiscCountB(final int miscCountB) {
+
         this.miscCountB = miscCountB;
     }
 
     /* see superclass */
     @Override
     public int getOffset() {
+
         return offset;
     }
 
     /* see superclass */
     @Override
     public void setOffset(final int offset) {
+
         this.offset = offset;
     }
-    
+
+    /**
+     * Returns the search after.
+     *
+     * @return the search after
+     */
     public String getSearchAfter() {
+
         return searchAfter;
     }
 
+    /**
+     * Sets the search after.
+     *
+     * @param searchAfter the search after
+     */
     public void setSearchAfter(final String searchAfter) {
+
         this.searchAfter = searchAfter;
     }
 
@@ -263,6 +310,7 @@ public class ResultList<T> implements Collection<T> {
      * @return the long
      */
     public Long getTimeTaken() {
+
         return timeTaken;
     }
 
@@ -272,6 +320,7 @@ public class ResultList<T> implements Collection<T> {
      * @param timeTaken the time taken
      */
     public void setTimeTaken(final Long timeTaken) {
+
         this.timeTaken = timeTaken;
     }
 
@@ -281,6 +330,7 @@ public class ResultList<T> implements Collection<T> {
      * @return the parameters
      */
     public SearchParameters getParameters() {
+
         return parameters;
     }
 
@@ -290,9 +340,9 @@ public class ResultList<T> implements Collection<T> {
      * @param parameters the parameters
      */
     public void setParameters(final SearchParameters parameters) {
+
         this.parameters = parameters;
     }
-
 
     /* see superclass */
     @Override
@@ -315,60 +365,80 @@ public class ResultList<T> implements Collection<T> {
     }
 
     /* see superclass */
+    @SuppressWarnings("rawtypes")
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
 
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (!(obj instanceof ResultList)) {
             return false;
-        @SuppressWarnings("unchecked")
-        final ResultList<T> other = (ResultList<T>) obj;
+        }
+        final ResultList other = (ResultList) obj;
         if (items == null) {
-            if (other.items != null)
+            if (other.items != null) {
                 return false;
-        } else if (!items.equals(other.items))
+            }
+        } else if (!items.equals(other.items)) {
             return false;
-        if (limit != other.limit)
+        }
+        if (limit != other.limit) {
             return false;
-        if (miscCountA != other.miscCountA)
+        }
+        if (miscCountA != other.miscCountA) {
             return false;
-        if (miscCountB != other.miscCountB)
+        }
+        if (miscCountB != other.miscCountB) {
             return false;
-        if (offset != other.offset)
+        }
+        if (offset != other.offset) {
             return false;
+        }
         if (parameters == null) {
-            if (other.parameters != null)
+            if (other.parameters != null) {
                 return false;
-        } else if (!parameters.equals(other.parameters))
+            }
+        } else if (!parameters.equals(other.parameters)) {
             return false;
+        }
         if (scoreMap == null) {
-            if (other.scoreMap != null)
+            if (other.scoreMap != null) {
                 return false;
-        } else if (!scoreMap.equals(other.scoreMap))
+            }
+        } else if (!scoreMap.equals(other.scoreMap)) {
             return false;
+        }
         if (searchAfter == null) {
-            if (other.searchAfter != null)
+            if (other.searchAfter != null) {
                 return false;
-        } else if (!searchAfter.equals(other.searchAfter))
+            }
+        } else if (!searchAfter.equals(other.searchAfter)) {
             return false;
+        }
         if (timeTaken == null) {
-            if (other.timeTaken != null)
+            if (other.timeTaken != null) {
                 return false;
-        } else if (!timeTaken.equals(other.timeTaken))
+            }
+        } else if (!timeTaken.equals(other.timeTaken)) {
             return false;
-        if (total != other.total)
+        }
+        if (total != other.total) {
             return false;
-        if (totalKnown != other.totalKnown)
+        }
+        if (totalKnown != other.totalKnown) {
             return false;
+        }
         return true;
     }
 
     /* see superclass */
     @Override
     public String toString() {
+
         try {
             return ModelUtility.toJson(this);
         } catch (final Exception e) {

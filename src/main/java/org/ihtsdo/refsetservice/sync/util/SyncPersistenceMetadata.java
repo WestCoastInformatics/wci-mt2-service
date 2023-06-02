@@ -17,8 +17,8 @@ public class SyncPersistenceMetadata {
     /** The modified by. */
     private String modifiedBy;
 
-    /** The logger. */
-    private final Logger logger = LoggerFactory.getLogger(SyncPersistenceMetadata.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(SyncPersistenceMetadata.class);
 
     /** The sdf. */
     private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -44,9 +44,9 @@ public class SyncPersistenceMetadata {
                 this.modified = sdf.parse(modified.replaceAll("\"", ""));
             }
 
-        } catch (Exception e) {
+        } catch (final Exception e) {
 
-            logger.error("Failed with mod/modBy: " + modified + " / " + modifiedBy);
+            LOG.error("Failed with mod/modBy: " + modified + " / " + modifiedBy);
             e.printStackTrace();
         }
 
@@ -64,9 +64,9 @@ public class SyncPersistenceMetadata {
 
             this.modified = modified;
             this.modifiedBy = modifiedBy;
-        } catch (Exception e) {
+        } catch (final Exception e) {
 
-            logger.error("Failed with mod/modBy: " + modified + " / " + modifiedBy);
+            LOG.error("Failed with mod/modBy: " + modified + " / " + modifiedBy);
             e.printStackTrace();
         }
 

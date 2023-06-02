@@ -24,8 +24,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 public class SpringBootUnitTest {
 
-    /** The logger. */
-    private final Logger logger = LoggerFactory.getLogger(SpringBootUnitTest.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(SpringBootUnitTest.class);
 
     /**
      * Test connectability.
@@ -34,7 +34,8 @@ public class SpringBootUnitTest {
      */
     @Test
     public void testConnectability() throws Exception {
-        logger.info("TEST");
+
+        LOG.info("TEST");
         final Client client = ClientBuilder.newClient();
         final WebTarget target = client.target("https://www.google.com");
 

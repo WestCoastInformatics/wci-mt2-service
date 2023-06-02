@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -11,7 +11,6 @@
 package org.ihtsdo.refsetservice.config.test;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import javax.annotation.PreDestroy;
 
@@ -21,11 +20,8 @@ import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.util.FileUtility;
-import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.servlet.server.ServletWebServerFactory;
@@ -33,7 +29,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.event.EventListener;
-import org.springframework.core.env.ConfigurableEnvironment;
 
 /**
  * The Class TestConfiguration.
@@ -41,16 +36,16 @@ import org.springframework.core.env.ConfigurableEnvironment;
 
 @Configuration
 @DependsOn({
-        "propertyUtility", "customMigrationStrategy"
+    "propertyUtility", "customMigrationStrategy"
 })
 public class TestConfiguration {
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(TestConfiguration.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(TestConfiguration.class);
 
     /** the Spring environment variable. */
-    @Autowired
-    private ConfigurableEnvironment env;
+    // @Autowired
+    // private ConfigurableEnvironment env;
 
     /** Flag to indicate if test data has been loaded. */
     private static boolean dataLoaded = false;
@@ -89,7 +84,8 @@ public class TestConfiguration {
      * Instantiates an empty {@link TestConfiguration}.
      */
     public TestConfiguration() {
-        logger.debug("Creating instance of class TestConfiguration");
+
+        LOG.debug("Creating instance of class TestConfiguration");
     }
 
     /**
@@ -100,84 +96,79 @@ public class TestConfiguration {
     @EventListener(ApplicationReadyEvent.class)
     public void loadTestData() throws Exception {
 
-        if (false) { //!dataLoaded
-
-            List<String> refsetsJson = FileUtility.readFileToArray(refsetDataFile);
-            List<String> organizationsJson = FileUtility.readFileToArray(organizationDataFile);
-            List<String> projectsJson = FileUtility.readFileToArray(projectDataFile);
-            List<String> definitionsJson = FileUtility.readFileToArray(definitionDataFile);
-            List<String> editionsJson = FileUtility.readFileToArray(editionDataFile);
-
-            try (final TerminologyService service = new TerminologyService()) {
-
-                service.setModifiedBy("TestConfiguration");
-                service.setModifiedFlag(true);
-                
-                for (String organizationJson : organizationsJson) {
-
-                    Organization organization =
-                            ModelUtility.fromJson(organizationJson, Organization.class);
-                    
-                    // Add an object
-                    service.add(organization);
-                    organizationList.add(organization);
-                    logger.info("Organization " + organization.getName() + " successfully added");
-                }
-
-
-                for (String editionJson : editionsJson) {
-
-                    Edition edition = ModelUtility.fromJson(editionJson, Edition.class);
-
-                    // Add an object
-                    service.add(edition);
-                    editionList.add(edition);
-                    edition.setOrganization(organizationList.get(0));
-                    logger.info("Edition " + edition.getName() + " successfully added");
-                }
-
-                for (String projectJson : projectsJson) {
-
-                    Project project = ModelUtility.fromJson(projectJson, Project.class);
-                    project.setEdition(editionList.get(0));
-
-                    // Add an object
-                    service.add(project);
-                    projectList.add(project);
-                    logger.info("Project " + project.getName() + " successfully added");
-                }
-
-                for (String definitionJson : definitionsJson) {
-
-                    DefinitionClause definition =
-                            ModelUtility.fromJson(definitionJson, DefinitionClause.class);
-
-                    // Add an object
-                    service.add(definition);
-                    definitionList.add(definition);
-                    logger.info("Definition " + definition.getValue() + " successfully added");
-                }
-
-                for (String refsetJson : refsetsJson) {
-
-                    Refset refset = ModelUtility.fromJson(refsetJson, Refset.class);
-                    refset.setProject(projectList.get(0));
-                    
-
-                    
-                    if (refset.getType().equals("intensional")) {
-                        refset.getDefinitionClauses().addAll(definitionList);
-                    }
-
-                    // Add an object
-                    service.add(refset);
-                    refsetList.add(refset);
-                    logger.info("Refset " + refset.getRefsetId() + " successfully added");
-                }
-
-                dataLoaded = true;
-            }
-        }
+        // if (false) { // !dataLoaded
+        //
+        // final List<String> refsetsJson = FileUtility.readFileToArray(refsetDataFile);
+        // final List<String> organizationsJson = FileUtility.readFileToArray(organizationDataFile);
+        // final List<String> projectsJson = FileUtility.readFileToArray(projectDataFile);
+        // final List<String> definitionsJson = FileUtility.readFileToArray(definitionDataFile);
+        // final List<String> editionsJson = FileUtility.readFileToArray(editionDataFile);
+        //
+        // try (final TerminologyService service = new TerminologyService()) {
+        //
+        // service.setModifiedBy("TestConfiguration");
+        // service.setModifiedFlag(true);
+        //
+        // for (final String organizationJson : organizationsJson) {
+        //
+        // final Organization organization = ModelUtility.fromJson(organizationJson, Organization.class);
+        //
+        // // Add an object
+        // service.add(organization);
+        // organizationList.add(organization);
+        // LOG.info("Organization " + organization.getName() + " successfully added");
+        // }
+        //
+        // for (final String editionJson : editionsJson) {
+        //
+        // final Edition edition = ModelUtility.fromJson(editionJson, Edition.class);
+        //
+        // // Add an object
+        // service.add(edition);
+        // editionList.add(edition);
+        // edition.setOrganization(organizationList.get(0));
+        // LOG.info("Edition " + edition.getName() + " successfully added");
+        // }
+        //
+        // for (final String projectJson : projectsJson) {
+        //
+        // final Project project = ModelUtility.fromJson(projectJson, Project.class);
+        // project.setEdition(editionList.get(0));
+        //
+        // // Add an object
+        // service.add(project);
+        // projectList.add(project);
+        // LOG.info("Project " + project.getName() + " successfully added");
+        // }
+        //
+        // for (final String definitionJson : definitionsJson) {
+        //
+        // final DefinitionClause definition = ModelUtility.fromJson(definitionJson, DefinitionClause.class);
+        //
+        // // Add an object
+        // service.add(definition);
+        // definitionList.add(definition);
+        // LOG.info("Definition " + definition.getValue() + " successfully added");
+        // }
+        //
+        // for (final String refsetJson : refsetsJson) {
+        //
+        // final Refset refset = ModelUtility.fromJson(refsetJson, Refset.class);
+        // refset.setProject(projectList.get(0));
+        //
+        // if (refset.getType().equals("intensional")) {
+        // refset.getDefinitionClauses().addAll(definitionList);
+        // }
+        //
+        // // Add an object
+        // service.add(refset);
+        // refsetList.add(refset);
+        // LOG.info("Refset " + refset.getRefsetId() + " successfully added");
+        // }
+        //
+        // dataLoaded = true;
+        // }
+        // }
     }
 
     /**
@@ -192,49 +183,49 @@ public class TestConfiguration {
 
             try (final TerminologyService service = new TerminologyService()) {
 
-                for (Refset refset : refsetList) {
+                for (final Refset refset : refsetList) {
 
                     final String id = refset.getRefsetId();
 
                     // remove an object
                     service.remove(refset);
-                    logger.info("Refset " + id + " successfully removed");
+                    LOG.info("Refset " + id + " successfully removed");
                 }
-                for (Project project : projectList) {
+                for (final Project project : projectList) {
 
                     final String name = project.getName();
 
                     // remove an object
                     service.remove(project);
-                    logger.info("Project " + name + " successfully removed");
+                    LOG.info("Project " + name + " successfully removed");
                 }
 
-                for (Organization organization : organizationList) {
+                for (final Organization organization : organizationList) {
 
                     final String name = organization.getName();
 
                     // remove an object
                     service.remove(organization);
-                    logger.info("Organization " + name + " successfully removed");
+                    LOG.info("Organization " + name + " successfully removed");
                 }
-                
-                for (Edition edition : editionList) {
+
+                for (final Edition edition : editionList) {
 
                     final String name = edition.getName();
 
                     // remove an object
                     service.remove(edition);
-                    logger.info("Edition " + name + " successfully removed");
+                    LOG.info("Edition " + name + " successfully removed");
                 }
 
-                 for (DefinitionClause definition : definitionList) {
-                
-                     final String name = definition.getValue();
-                    
-                     // remove an object
-                     service.remove(definition);
-                     logger.info("Definition " + name + " successfully removed");
-                 }
+                for (final DefinitionClause definition : definitionList) {
+
+                    final String name = definition.getValue();
+
+                    // remove an object
+                    service.remove(definition);
+                    LOG.info("Definition " + name + " successfully removed");
+                }
 
                 refsetList.clear();
                 dataLoaded = false;
@@ -249,6 +240,7 @@ public class TestConfiguration {
      */
     @Bean
     public ServletWebServerFactory servletWebServerFactory() {
+
         return new TomcatServletWebServerFactory();
     }
 }

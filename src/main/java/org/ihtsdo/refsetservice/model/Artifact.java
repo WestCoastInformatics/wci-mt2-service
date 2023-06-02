@@ -132,7 +132,7 @@ public class Artifact extends AbstractHasModified {
      *
      * @param entityType the entityType to set
      */
-    public void setEntityType(String entityType) {
+    public void setEntityType(final String entityType) {
 
         this.entityType = entityType;
     }
@@ -153,7 +153,7 @@ public class Artifact extends AbstractHasModified {
      *
      * @param entityId the entityId to set
      */
-    public void setEntityId(String entityId) {
+    public void setEntityId(final String entityId) {
 
         this.entityId = entityId;
     }
@@ -347,15 +347,15 @@ public class Artifact extends AbstractHasModified {
      */
     public String toLogString() {
 
-        return "ARTIFACT [entityType=" + entityType + ", entityId=" + entityId + ", fileName=" + fileName + ", fileType=" + fileType + ", modified=" + getModified() + ", modified=" + getModifiedBy()
-            + ", storedFileName=" + storedFileName + "]";
+        return "ARTIFACT [entityType=" + entityType + ", entityId=" + entityId + ", fileName=" + fileName + ", fileType=" + fileType + ", modified="
+            + getModified() + ", modified=" + getModifiedBy() + ", storedFileName=" + storedFileName + "]";
     }
 
     /* see superclass */
     @Override
     public void lazyInit() {
 
-        // TODO Auto-generated method stub
+        // n/a
 
     }
 

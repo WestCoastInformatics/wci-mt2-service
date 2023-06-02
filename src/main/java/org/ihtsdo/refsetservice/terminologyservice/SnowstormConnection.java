@@ -1,9 +1,17 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.io.InputStream;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 
 import javax.ws.rs.client.Client;
@@ -18,58 +26,68 @@ import javax.ws.rs.core.Response.Status.Family;
 
 import org.ihtsdo.refsetservice.util.LocalException;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Class to handle making calls to Snowstorm.
  */
-public class SnowstormConnection {
+public final class SnowstormConnection {
 
     /** The authentication url. */
-    private static String AUTH_URL;
+    private static String authUrl;
 
     /** The user name. */
-    public static String USER_NAME;
+    private static String userName;
 
     /** The password. */
-    public static String PASSWORD;
+    private static String password;
 
     /** The snowstorm url. */
-    public static String BASE_URL;
+    private static String baseUrl;
 
     /** The accept. */
-    private static final String ACCEPT = "application/json";
-
-    /** The logger. */
-    private static final Logger logger = LoggerFactory.getLogger(SnowstormConnection.class);
-
-    /** The headers. */
-    private static Map<String, String> headers = new HashMap<>();
+    private static final String ACCEPT = MediaType.APPLICATION_JSON;
 
     /** The generic user cookie expiration date. */
     private static Date genericUserCookieExpirationDate = null;
 
     /** The generic user cookie. */
     private static String genericUserCookie;
-    
+
     /** The default English language acceptance strings. */
     public static final String DEFAULT_ACCECPT_LANGUAGES = "en-X-900000000000509007,en-X-900000000000508004,en";
 
     /** Static initialization. */
     static {
 
-        BASE_URL = PropertyUtility.getProperty("snowstorm.baseUrl");
-        AUTH_URL = PropertyUtility.getProperty("snowstorm.authUrl");
-        USER_NAME = PropertyUtility.getProperty("snowstorm.username");
-        PASSWORD = PropertyUtility.getProperty("snowstorm.password");
+        baseUrl = PropertyUtility.getProperty("snowstorm.baseUrl");
+        authUrl = PropertyUtility.getProperty("snowstorm.authUrl");
+        userName = PropertyUtility.getProperty("snowstorm.username");
+        password = PropertyUtility.getProperty("snowstorm.password");
     }
-    
+
+    /**
+     * Instantiates an empty {@link SnowstormConnection}.
+     */
+    private SnowstormConnection() {
+
+        // n/a
+    }
+
+    /**
+     * Returns the base url.
+     *
+     * @return the base url
+     */
+    public static String getBaseUrl() {
+
+        return baseUrl;
+    }
+
     /**
      * Calls a Snowstorm URL and returns the response.
      *
      * @param url The Snowstorm URL to call
-     * @param language The language to prefer snowstorm to return descriptions in. 
+     * @param language The language to prefer snowstorm to return descriptions in.
      * @return The Snowstorm response
      * @throws Exception the exception
      */
@@ -81,18 +99,15 @@ public class SnowstormConnection {
         Response response = null;
         boolean firstRun = true;
         boolean run = true;
-        
+
         while (run) {
-            
+
             run = false;
-            
-            response = target.request(ACCEPT)
-                .header("Accept-Language", language)
-                .header("Cookie", cookie)
-                .get();
-            
+
+            response = target.request(ACCEPT).header("Accept-Language", language).header("Cookie", cookie).get();
+
             if (firstRun && response.getStatus() == Response.Status.FORBIDDEN.getStatusCode()) {
-                
+
                 run = true;
                 firstRun = false;
                 cookie = getGenericUserCookie(true);
@@ -100,7 +115,7 @@ public class SnowstormConnection {
                 response.close();
             }
         }
-        
+
         return response;
     }
 
@@ -112,9 +127,10 @@ public class SnowstormConnection {
      * @throws Exception the exception
      */
     public static Response getResponse(final String url) throws Exception {
+
         return getResponse(url, DEFAULT_ACCECPT_LANGUAGES);
     }
-    
+
     /**
      * Calls a Snowstorm URL and returns the response.
      *
@@ -123,15 +139,13 @@ public class SnowstormConnection {
      * @throws Exception the exception
      */
     public static InputStream getFileDownload(final String url) throws Exception {
-        
+
         final Client client = ClientBuilder.newClient();
         final WebTarget target = client.target(url);
-        final Response response = target.request("application/zip")
-                .header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES)
-                .header("Cookie", getGenericUserCookie(false))
-                .get();
-        
-        InputStream inputStream = response.readEntity(InputStream.class);
+        final Response response =
+            target.request("application/zip").header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES).header("Cookie", getGenericUserCookie(false)).get();
+
+        final InputStream inputStream = response.readEntity(InputStream.class);
 
         return inputStream;
     }
@@ -144,19 +158,18 @@ public class SnowstormConnection {
      * @return the response
      * @throws Exception the exception
      */
-    public static Response postResponse(final String url, String entity) throws Exception {
-        
-        Client client = ClientBuilder.newClient();
-        WebTarget target = client.target(url);
-        Builder builder = target.request(MediaType.APPLICATION_JSON)
-                .header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES)
-                .header("Cookie", getGenericUserCookie(false));
-        
-        Response response = builder.post(Entity.json(entity));
-        
+    public static Response postResponse(final String url, final String entity) throws Exception {
+
+        final Client client = ClientBuilder.newClient();
+        final WebTarget target = client.target(url);
+        final Builder builder =
+            target.request(MediaType.APPLICATION_JSON).header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES).header("Cookie", getGenericUserCookie(false));
+
+        final Response response = builder.post(Entity.json(entity));
+
         return response;
     }
-    
+
     /**
      * Post response.
      *
@@ -165,19 +178,18 @@ public class SnowstormConnection {
      * @return the response
      * @throws Exception the exception
      */
-    public static Response putResponse(final String url, String entity) throws Exception {
-        
-        Client client = ClientBuilder.newClient();
-        WebTarget target = client.target(url);
-        Builder builder = target.request(MediaType.APPLICATION_JSON)
-                .header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES)
-                .header("Cookie", getGenericUserCookie(false));
-        
-        Response response = builder.put(Entity.json(entity));
-        
+    public static Response putResponse(final String url, final String entity) throws Exception {
+
+        final Client client = ClientBuilder.newClient();
+        final WebTarget target = client.target(url);
+        final Builder builder =
+            target.request(MediaType.APPLICATION_JSON).header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES).header("Cookie", getGenericUserCookie(false));
+
+        final Response response = builder.put(Entity.json(entity));
+
         return response;
     }
-    
+
     /**
      * Calls a Snowstorm DELETE URL and returns the response.
      *
@@ -186,57 +198,50 @@ public class SnowstormConnection {
      * @return The Snowstorm response
      * @throws Exception the exception
      */
-    @SuppressWarnings("resource")
-    public static Response deleteResponse(final String url, String entity) throws Exception {
+    public static Response deleteResponse(final String url, final String entity) throws Exception {
 
-        Client client = ClientBuilder.newClient();
+        final Client client = ClientBuilder.newClient();
         final WebTarget target = client.target(url);
         Response response;
-        
+
         if (entity == null) {
-            
-            response = target.request(ACCEPT)
-                .header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES)
-                .header("Cookie", getGenericUserCookie(false))
-                .delete();
+
+            response = target.request(ACCEPT).header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES).header("Cookie", getGenericUserCookie(false)).delete();
         } else {
-            
-            response = target.request(ACCEPT)
-                .header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES)
-                .header("Cookie", getGenericUserCookie(false))
-                .build("DELETE", Entity.entity(entity, MediaType.APPLICATION_JSON_TYPE))
-                .invoke(Response.class);
+
+            response = target.request(ACCEPT).header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES).header("Cookie", getGenericUserCookie(false))
+                .build("DELETE", Entity.entity(entity, MediaType.APPLICATION_JSON_TYPE)).invoke(Response.class);
         }
-        
+
         return response;
     }
 
     /**
      * Gets the generic user cookie.
      *
+     * @param forceReload the force reload
      * @return the generic user cookie
      * @throws Exception the exception
      */
     public static String getGenericUserCookie(final boolean forceReload) throws Exception {
 
         // if there is no auth configured then skip this
-        if (AUTH_URL.equals("none")) {
+        if (authUrl.equals("none")) {
             return "";
         }
-        
+
         if (forceReload) {
             genericUserCookie = null;
         }
-        
+
         // Check if the generic user cookie is expired and needs to be cleared
         // and re-read
-        if (genericUserCookieExpirationDate == null
-                || new Date().after(genericUserCookieExpirationDate)) {
+        if (genericUserCookieExpirationDate == null || new Date().after(genericUserCookieExpirationDate)) {
 
             genericUserCookie = null;
 
             // Set the new expiration date for tomorrow
-            Calendar now = Calendar.getInstance();
+            final Calendar now = Calendar.getInstance();
             now.add(Calendar.HOUR, 24);
             genericUserCookieExpirationDate = now.getTime();
         }
@@ -246,22 +251,21 @@ public class SnowstormConnection {
         }
 
         // Login the generic user, then save and return the cookie
-        Client client = ClientBuilder.newClient();
-        WebTarget target = client.target(AUTH_URL + "authenticate");
-        Builder builder = target.request(MediaType.APPLICATION_JSON);
+        final Client client = ClientBuilder.newClient();
+        final WebTarget target = client.target(authUrl + "authenticate");
+        final Builder builder = target.request(MediaType.APPLICATION_JSON);
 
-        try (Response response = builder.post(Entity.json(
-                "{ \"login\": \"" + USER_NAME + "\", \"password\": \"" + PASSWORD + "\" }"))) {
+        try (Response response = builder.post(Entity.json("{ \"login\": \"" + userName + "\", \"password\": \"" + password + "\" }"))) {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-                throw new LocalException(
-                        "Authentication of generic user failed. " + " Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.getStatusInfo().getReasonPhrase());
+                throw new LocalException("Authentication of generic user failed. " + " Status: " + Integer.toString(response.getStatus()) + ". Error: "
+                    + response.getStatusInfo().getReasonPhrase());
             }
 
-            Map<String, NewCookie> genericUserCookies = response.getCookies();
-            StringBuilder sb = new StringBuilder();
+            final Map<String, NewCookie> genericUserCookies = response.getCookies();
+            final StringBuilder sb = new StringBuilder();
 
-            for (String key : genericUserCookies.keySet()) {
+            for (final String key : genericUserCookies.keySet()) {
 
                 sb.append(genericUserCookies.get(key));
                 sb.append(";");
@@ -273,5 +277,3 @@ public class SnowstormConnection {
         return genericUserCookie;
     }
 }
-
-

@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.model;
 
@@ -22,10 +31,7 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericFie
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmbedded;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDependency;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-// TODO: Auto-generated Javadoc
 /**
  * Represents an inactive concept during the refset upgrade process.
  * 
@@ -35,9 +41,6 @@ import org.slf4j.LoggerFactory;
 @Indexed
 public class UpgradeInactiveConcept extends AbstractHasModified implements Comparable<UpgradeInactiveConcept> {
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(UpgradeInactiveConcept.class);
-    
     /** The refset ID. */
     @Column(nullable = false, length = 256)
     private String refsetId;
@@ -45,7 +48,7 @@ public class UpgradeInactiveConcept extends AbstractHasModified implements Compa
     /** The code. */
     @Column(nullable = false, length = 256)
     private String code;
-    
+
     /** The UUID of the membership. */
     @Column(nullable = true, length = 256)
     private String memberId;
@@ -54,7 +57,7 @@ public class UpgradeInactiveConcept extends AbstractHasModified implements Compa
     @Column(nullable = false, length = 10000)
     @Type(type = "text")
     private String descriptions;
-    
+
     /** The descriptions. */
     @Column(nullable = false, length = 256)
     @Type(type = "text")
@@ -67,7 +70,7 @@ public class UpgradeInactiveConcept extends AbstractHasModified implements Compa
     /** The flag showing if this concept has had a replacement chosen. */
     @Column(nullable = false)
     private boolean replaced;
-    
+
     /** The replacement concepts. */
     @OneToMany(cascade = CascadeType.ALL, targetEntity = UpgradeReplacementConcept.class, orphanRemoval = true, fetch = FetchType.EAGER)
     @OrderBy("created ASC")
@@ -77,6 +80,7 @@ public class UpgradeInactiveConcept extends AbstractHasModified implements Compa
      * Instantiates an empty {@link UpgradeInactiveConcept}.
      */
     public UpgradeInactiveConcept() {
+
         setActive(false);
     }
 
@@ -86,6 +90,7 @@ public class UpgradeInactiveConcept extends AbstractHasModified implements Compa
      * @param other the other
      */
     public UpgradeInactiveConcept(final UpgradeInactiveConcept other) {
+
         populateFrom(other);
     }
 
@@ -95,7 +100,7 @@ public class UpgradeInactiveConcept extends AbstractHasModified implements Compa
      * @param other the other
      */
     public void populateFrom(final UpgradeInactiveConcept other) {
-        
+
         super.populateFrom(other);
         refsetId = other.getRefsetId();
         code = other.getCode();
@@ -114,6 +119,7 @@ public class UpgradeInactiveConcept extends AbstractHasModified implements Compa
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getRefsetId() {
+
         return refsetId;
     }
 
@@ -123,6 +129,7 @@ public class UpgradeInactiveConcept extends AbstractHasModified implements Compa
      * @param refsetId the refset ID
      */
     public void setRefsetId(final String refsetId) {
+
         this.refsetId = refsetId;
     }
 
@@ -133,6 +140,7 @@ public class UpgradeInactiveConcept extends AbstractHasModified implements Compa
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getCode() {
+
         return code;
     }
 
@@ -142,26 +150,27 @@ public class UpgradeInactiveConcept extends AbstractHasModified implements Compa
      * @param code the code
      */
     public void setCode(final String code) {
+
         this.code = code;
     }
-    
+
     /**
      * Returns the UUID of the membership.
      *
      * @return the member ID
      */
     public String getMemberId() {
-        
+
         return memberId;
     }
-    
+
     /**
      * Sets the UUID of the membership.
      *
      * @param memberId the member ID
      */
     public void setMemberId(final String memberId) {
-        
+
         this.memberId = memberId;
     }
 
@@ -171,6 +180,7 @@ public class UpgradeInactiveConcept extends AbstractHasModified implements Compa
      * @return the descriptions
      */
     public String getDescriptions() {
+
         return descriptions;
     }
 
@@ -180,24 +190,27 @@ public class UpgradeInactiveConcept extends AbstractHasModified implements Compa
      * @param descriptions the descriptions
      */
     public void setDescriptions(final String descriptions) {
+
         this.descriptions = descriptions;
     }
-    
+
     /**
      * Returns the inactivation reason.
      *
      * @return the inactivation reason
      */
     public String getInactivationReason() {
+
         return inactivationReason;
     }
-    
+
     /**
      * Sets the inactivation reason.
      *
      * @param inactivationReason the inactivation reason
      */
     public void setInactivationReason(final String inactivationReason) {
+
         this.inactivationReason = inactivationReason;
     }
 
@@ -208,6 +221,7 @@ public class UpgradeInactiveConcept extends AbstractHasModified implements Compa
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public boolean isStillMember() {
+
         return stillMember;
     }
 
@@ -217,6 +231,7 @@ public class UpgradeInactiveConcept extends AbstractHasModified implements Compa
      * @param stillMember the flag value to set
      */
     public void setStillMember(final boolean stillMember) {
+
         this.stillMember = stillMember;
     }
 
@@ -226,6 +241,7 @@ public class UpgradeInactiveConcept extends AbstractHasModified implements Compa
      * @return the replaced flag
      */
     public boolean isReplaced() {
+
         return replaced;
     }
 
@@ -235,9 +251,10 @@ public class UpgradeInactiveConcept extends AbstractHasModified implements Compa
      * @param replaced the flag to set
      */
     public void setReplaced(final boolean replaced) {
+
         this.replaced = replaced;
     }
-    
+
     /**
      * Gets the replacement concepts.
      *
@@ -260,7 +277,7 @@ public class UpgradeInactiveConcept extends AbstractHasModified implements Compa
      * @param replacementConcepts the replacementConcepts to set
      */
     public void setReplacementConcepts(final List<UpgradeReplacementConcept> replacementConcepts) {
-        
+
         Collections.sort(replacementConcepts, (o1, o2) -> (o1.getCreated().compareTo(o2.getCreated())));
         this.replacementConcepts = replacementConcepts;
     }
@@ -272,6 +289,7 @@ public class UpgradeInactiveConcept extends AbstractHasModified implements Compa
      */
     @Override
     public int hashCode() {
+
         final int prime = 31;
         int result = 1;
         result = prime * result + ((refsetId == null) ? 0 : refsetId.hashCode());
@@ -284,7 +302,7 @@ public class UpgradeInactiveConcept extends AbstractHasModified implements Compa
         result = prime * result + (replaced ? 1 : 0);
         return result;
     }
-    
+
     /**
      * Equals.
      *
@@ -323,7 +341,7 @@ public class UpgradeInactiveConcept extends AbstractHasModified implements Compa
         } else if (!code.equals(other.code)) {
             return false;
         }
-        
+
         if (memberId == null) {
             if (other.memberId != null) {
                 return false;
@@ -339,7 +357,7 @@ public class UpgradeInactiveConcept extends AbstractHasModified implements Compa
         } else if (!descriptions.equals(other.descriptions)) {
             return false;
         }
-        
+
         if (inactivationReason == null) {
             if (other.inactivationReason != null) {
                 return false;
@@ -347,7 +365,7 @@ public class UpgradeInactiveConcept extends AbstractHasModified implements Compa
         } else if (!inactivationReason.equals(other.inactivationReason)) {
             return false;
         }
-        
+
         if (replacementConcepts == null) {
             if (other.replacementConcepts != null) {
                 return false;
@@ -375,6 +393,7 @@ public class UpgradeInactiveConcept extends AbstractHasModified implements Compa
      */
     @Override
     public int compareTo(final UpgradeInactiveConcept other) {
+
         // Handle null
         return (code + refsetId).compareToIgnoreCase(other.getCode() + other.getRefsetId());
     }
@@ -384,7 +403,8 @@ public class UpgradeInactiveConcept extends AbstractHasModified implements Compa
      */
     @Override
     public void lazyInit() {
-        // TODO Auto-generated method stub
+
+        // n/a
 
     }
 }

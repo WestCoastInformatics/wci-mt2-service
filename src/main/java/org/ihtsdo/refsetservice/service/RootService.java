@@ -51,8 +51,7 @@ public interface RootService extends AutoCloseable {
      * @return the list
      * @throws Exception the exception
      */
-    public <T> List<T> applyPfsToList(final List<T> list, final Class<T> clazz, final int[] totalCt,
-        final PfsParameter pfs) throws Exception;
+    public <T> List<T> applyPfsToList(final List<T> list, final Class<T> clazz, final int[] totalCt, final PfsParameter pfs) throws Exception;
 
     /**
      * Checks if is modified flag.
@@ -130,8 +129,7 @@ public interface RootService extends AutoCloseable {
     public void closeFactory() throws Exception;
 
     /**
-     * New instance of the object type - this binds a service implementation to
-     * an object impl.
+     * New instance of the object type - this binds a service implementation to an object impl.
      *
      * @param <T> the
      * @param clazz the clazz
@@ -194,8 +192,7 @@ public interface RootService extends AutoCloseable {
      * @return the list
      * @throws Exception the exception
      */
-    public <T extends HasId> ResultList<T> find(QueryParameter query, PfsParameter pfs,
-        Class<T> clazz, String handler) throws Exception;
+    public <T extends HasId> ResultList<T> find(QueryParameter query, PfsParameter pfs, Class<T> clazz, String handler) throws Exception;
 
     /**
      * Find ids.
@@ -208,8 +205,7 @@ public interface RootService extends AutoCloseable {
      * @return the result list
      * @throws Exception the exception
      */
-    public <T extends HasId> ResultList<String> findIds(QueryParameter query, PfsParameter pfs,
-        Class<T> clazz, String handler) throws Exception;
+    public <T extends HasId> ResultList<String> findIds(QueryParameter query, PfsParameter pfs, Class<T> clazz, String handler) throws Exception;
 
     /**
      * Find total.
@@ -222,8 +218,7 @@ public interface RootService extends AutoCloseable {
      * @return the int
      * @throws Exception the exception
      */
-    public <T extends HasId> int findTotal(QueryParameter query, PfsParameter pfs, Class<T> clazz,
-        String handler) throws Exception;
+    public <T extends HasId> int findTotal(QueryParameter query, PfsParameter pfs, Class<T> clazz, String handler) throws Exception;
 
     /**
      * Find.
@@ -236,8 +231,7 @@ public interface RootService extends AutoCloseable {
      * @return the result list
      * @throws Exception the exception
      */
-    public <T extends HasId> ResultList<T> find(String query, PfsParameter pfs, Class<T> clazz,
-        String handler) throws Exception;
+    public <T extends HasId> ResultList<T> find(String query, PfsParameter pfs, Class<T> clazz, String handler) throws Exception;
 
     /**
      * Find.
@@ -250,8 +244,7 @@ public interface RootService extends AutoCloseable {
      * @return the result list
      * @throws Exception the exception
      */
-    public <T extends HasId> ResultList<String> findIds(String query, PfsParameter pfs,
-        Class<T> clazz, String handler) throws Exception;
+    public <T extends HasId> ResultList<String> findIds(String query, PfsParameter pfs, Class<T> clazz, String handler) throws Exception;
 
     /**
      * Find total.
@@ -264,8 +257,7 @@ public interface RootService extends AutoCloseable {
      * @return the int
      * @throws Exception the exception
      */
-    public <T extends HasId> int findTotal(String query, PfsParameter pfs, Class<T> clazz,
-        String handler) throws Exception;
+    public <T extends HasId> int findTotal(String query, PfsParameter pfs, Class<T> clazz, String handler) throws Exception;
 
     /**
      * Find single.
@@ -277,8 +269,7 @@ public interface RootService extends AutoCloseable {
      * @return the t
      * @throws Exception the exception
      */
-    public <T extends HasModified> T findSingle(QueryParameter query, Class<T> clazz,
-        String handler) throws Exception;
+    public <T extends HasModified> T findSingle(QueryParameter query, Class<T> clazz, String handler) throws Exception;
 
     /**
      * Find single.
@@ -290,8 +281,7 @@ public interface RootService extends AutoCloseable {
      * @return the t
      * @throws Exception the exception
      */
-    public <T extends HasModified> T findSingle(String query, Class<T> clazz, String handler)
-        throws Exception;
+    public <T extends HasModified> T findSingle(String query, Class<T> clazz, String handler) throws Exception;
 
     /**
      * Adds the model object.
@@ -379,8 +369,7 @@ public interface RootService extends AutoCloseable {
      * @return the handler
      * @throws Exception the exception
      */
-    public <T extends SearchHandler> T getHandlerByName(String name, Class<T> type)
-        throws Exception;
+    public <T extends SearchHandler> T getHandlerByName(String name, Class<T> type) throws Exception;
 
     /**
      * Compute lucene indexes.

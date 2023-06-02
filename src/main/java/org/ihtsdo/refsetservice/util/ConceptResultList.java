@@ -17,6 +17,7 @@ public class ConceptResultList extends ResultList<Concept> {
      * Instantiates an empty {@link ConceptResultList}.
      */
     public ConceptResultList() {
+
         // NA
     }
 
@@ -26,6 +27,7 @@ public class ConceptResultList extends ResultList<Concept> {
      * @param items the items
      */
     public ConceptResultList(final List<Concept> items) {
+
         super(items);
     }
 
@@ -35,6 +37,7 @@ public class ConceptResultList extends ResultList<Concept> {
      * @param other the other
      */
     public ConceptResultList(final ConceptResultList other) {
+
         super.populateFrom(other);
     }
 }

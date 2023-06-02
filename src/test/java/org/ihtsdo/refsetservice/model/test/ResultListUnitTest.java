@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.model.test;
 
@@ -22,9 +31,9 @@ import org.slf4j.LoggerFactory;
  */
 public class ResultListUnitTest extends BaseTest {
 
-    /** The logger. */
+    /** The Constant LOG. */
     @SuppressWarnings("unused")
-    private static Logger logger = LoggerFactory.getLogger(ResultListUnitTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ResultListUnitTest.class);
 
     /** The model object to test. */
     private ResultList<AbstractHasId> object;
@@ -42,6 +51,7 @@ public class ResultListUnitTest extends BaseTest {
      */
     @BeforeEach
     public void setup() throws Exception {
+
         object = new ResultList<>();
 
         final ProxyTester tester = new ProxyTester(new SearchParameters());
@@ -56,6 +66,7 @@ public class ResultListUnitTest extends BaseTest {
      */
     @Test
     public void testModelGetSet() throws Exception {
+
         final GetterSetterTester tester = new GetterSetterTester(object);
         tester.proxy(SearchParameters.class, 1, sc1);
         tester.proxy(SearchParameters.class, 2, sc2);
@@ -69,8 +80,9 @@ public class ResultListUnitTest extends BaseTest {
      */
     @Test
     public void testModelEqualsHashcode() throws Exception {
+
         final EqualsHashcodeTester tester = new EqualsHashcodeTester(object);
-        
+
         tester.include("total");
         tester.exclude("items");
         tester.include("limit");
@@ -80,9 +92,9 @@ public class ResultListUnitTest extends BaseTest {
         tester.include("searchAfter");
         tester.include("totalKnown");
         tester.exclude("scoreMap");
-        tester.include("timeTaken");        
+        tester.include("timeTaken");
         tester.include("parameters");
-        
+
         tester.proxy(SearchParameters.class, 1, sc1);
         tester.proxy(SearchParameters.class, 2, sc2);
 
@@ -101,6 +113,7 @@ public class ResultListUnitTest extends BaseTest {
      */
     @Test
     public void testModelCopy() throws Exception {
+
         final CopyConstructorTester tester = new CopyConstructorTester(object);
         tester.proxy(SearchParameters.class, 1, sc1);
         assertTrue(tester.testCopyConstructor(ResultList.class));
@@ -113,6 +126,7 @@ public class ResultListUnitTest extends BaseTest {
      */
     @Test
     public void testModelSerialization() throws Exception {
+
         final SerializationTester tester = new SerializationTester(object);
         tester.proxy(SearchParameters.class, 1, sc1);
 

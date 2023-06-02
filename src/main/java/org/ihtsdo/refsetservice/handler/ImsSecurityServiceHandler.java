@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 package org.ihtsdo.refsetservice.handler;
 
 import java.util.Properties;
@@ -27,11 +36,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 
-    /** The logger. */
-    private static Logger logger = LoggerFactory.getLogger(DefaultSearchHandler.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultSearchHandler.class);
 
-    /** The logger. */
-    private static final String rt2RolePrefix = "rt2-";
+    /** The Constant LOG. */
+    private static final String RT2_ROLE_PREFIX = "rt2-";
 
     /** The properties. */
     @SuppressWarnings("unused")
@@ -50,11 +59,11 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
         // This is for IMS login
         final User user = CrowdAPIClient.getUser(userName);
         final Set<String> groupMemberships = CrowdAPIClient.getMembershipsForUser(userName);
-        logger.debug("Memberships {}", groupMemberships);
+        LOG.debug("Memberships {}", groupMemberships);
 
         for (final String role : groupMemberships) {
-            if (role.startsWith(rt2RolePrefix)) {
-                user.getRoles().add(role.substring(rt2RolePrefix.length()));
+            if (role.startsWith(RT2_ROLE_PREFIX)) {
+                user.getRoles().add(role.substring(RT2_ROLE_PREFIX.length()));
             }
         }
 
@@ -68,7 +77,7 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 
         user.setModifiedBy(user.getUserName());
 
-        logger.debug("authenticate user is: " + user);
+        LOG.debug("authenticate user is: " + user);
         return user;
     }
 
@@ -108,8 +117,8 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
                 }
             }
 
-        } catch (Exception e) {
-            logger.error("IMS Authentication error: {} ", url, e);
+        } catch (final Exception e) {
+            LOG.error("IMS Authentication error: {} ", url, e);
             throw e;
         }
 
