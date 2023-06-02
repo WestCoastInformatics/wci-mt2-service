@@ -13,6 +13,7 @@ import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.Team;
+import org.ihtsdo.refsetservice.model.TeamType;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.UserRole;
 import org.ihtsdo.refsetservice.service.SecurityService;
@@ -265,7 +266,7 @@ public class SyncDatabaseHandler {
 
     }
 
-    public Team addTeam(final TerminologyService service, final String teamName, final String teamDescription, final Organization organization) {
+    public Team addTeam(final TerminologyService service, final String teamName, final String teamDescription, final Organization organization, final String teamType) {
 
         try {
             final Team team = new Team();
@@ -273,6 +274,7 @@ public class SyncDatabaseHandler {
             team.setDescription(teamDescription);
             team.setOrganization(organization);
             team.setPrimaryContactEmail("support-rt2@westcoastinformatics.com");
+            team.setType(teamType);
 
             // Persist
             final Team newTeam = service.add(team);
@@ -649,7 +651,7 @@ public class SyncDatabaseHandler {
 
             if (adminTeam == null) {
 
-                adminTeam = addTeam(service, TeamService.generateOrganizationTeamName(organization), TeamService.getOrganizationTeamDescription(organization), organization);
+                adminTeam = addTeam(service, TeamService.generateOrganizationTeamName(organization), TeamService.getOrganizationTeamDescription(organization), organization, TeamType.ORGANIZATION.getText());
                 for (final UserRole role : UserRole.getAllRoles()) {
 
                     adminTeam = TeamService.addRoleToTeam(SecurityService.getUserFromSession(), adminTeam.getId(), UserRole.getRoleString(role));

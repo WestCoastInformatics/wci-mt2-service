@@ -14,13 +14,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 import javax.persistence.Column;
-import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
@@ -74,8 +71,8 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
     private String authToken;
 
     /** A list of the roles this user has. */
-    @ElementCollection
-    @Fetch(FetchMode.JOIN)
+    @Transient
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private Set<String> roles = new HashSet<>();
 
     /** The icon uri. */
@@ -298,7 +295,6 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
      *
      * @return the roles
      */
-    // @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public Set<String> getRoles() {
 
         if (roles == null) {
