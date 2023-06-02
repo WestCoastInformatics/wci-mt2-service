@@ -343,6 +343,12 @@ public class TeamService extends BaseService {
 
             for (final Team team : results.getItems()) {
 
+                final String systemUserList = PropertyUtility.getProperty("refset.service.system.accounts");
+                Set<String> systemUserSet = new HashSet<>();
+                if (StringUtils.isNotBlank(systemUserList)) {
+                    systemUserSet = new HashSet<>(Arrays.asList(systemUserList.split(",")));
+                }
+
                 // if only the user's teams should be returned then make sure the user is an
                 // admin or a member of the team
                 if ((onlyUsersTeams && !canUserViewTeam(user, team, false)) || (hideOrganizationTeams && isOrganizationTeam(team))) {
@@ -353,13 +359,13 @@ public class TeamService extends BaseService {
 
                     for (final String userId : team.getMembers()) {
 
-                        final ResultList<User> members = service.find("id:" + userId, null, User.class, null);
-
-                        for (final User member : members.getItems()) {
-
-                            member.setTeams(new HashSet<Team>(getUserTeams(user, member, team.getOrganizationId(), true)));
-                            team.getMemberList().add(member);
+                        final User member = service.findSingle("id:" + userId, User.class, null);
+                        if (member == null || systemUserSet.contains(member.getUserName())) {
+                            continue;
                         }
+
+                        member.setTeams(new HashSet<Team>(getUserTeams(user, member, team.getOrganizationId(), true)));
+                        team.getMemberList().add(member);
                     }
                 }
 
@@ -853,7 +859,7 @@ public class TeamService extends BaseService {
      */
     public static boolean isOrganizationTeam(final Team team) throws Exception {
 
-        return team.getName().equalsIgnoreCase(TeamType.ORGANIZATION.getText());
+        return TeamType.ORGANIZATION.getText().equalsIgnoreCase(team.getType());
     }
 
     /**
