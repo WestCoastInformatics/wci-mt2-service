@@ -60,6 +60,7 @@ public class SyncCrowdAgent extends SyncAgent {
     private void assignUsersToAdminTeams(final TerminologyService service, final Map<String, User> userMap, final Map<String, Set<String>> filteredEditionRulesMap) throws Exception {
 
         final Set<User> adminUsers = new HashSet<>();
+
         for (String userName : SyncAgent.getAdminUsernames()) {
             adminUsers.add(utilities.getUser(service, userName));
         }
@@ -73,23 +74,15 @@ public class SyncCrowdAgent extends SyncAgent {
 
             if (adminTeam != null) {
 
-                boolean matchFound = false;
+                List<User> usersToAdd = adminUsers.stream().filter(adminUser -> !adminTeam.getMembers().contains(adminUser.getId())).collect(Collectors.toList());
 
-                for (final User user : adminUsers) {
-                    for (final String memberId : adminTeam.getMembers()) {
 
-                        if (memberId.equals(user.getId())) {
-                            matchFound = true;
-                        }
-                    }
-
-                    if (!matchFound) {
-                        adminTeam = TeamService.addUserToTeam(service, SecurityService.getUserFromSession(), adminTeam, user);
-                    }
+                for (User adminUser : usersToAdd) {
+                    TeamService.addUserToTeam(service, SecurityService.getUserFromSession(), adminTeam, adminUser);
                 }
+
             } else {
-                // Sync must have failed before adminTeam was created for this organization. Thus create it here.
-                LOG.error("Here again why for edition{} ", edition);
+                throw new Exception("Failing to identify the Admin Team for Org: " + edition.getOrganizationName());
             }
         }
     }

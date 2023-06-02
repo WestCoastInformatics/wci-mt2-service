@@ -642,20 +642,20 @@ public class SyncDatabaseHandler {
     }
 
     public Team createAdminOrganizationTeam(final TerminologyService service, final Organization organization) throws Exception {
-        
-        service.setTransactionPerOperation(false);
-        service.beginTransaction();
 
         try {
             Team adminTeam = OrganizationService.getOrganizationAdminTeam(service, organization.getId());
 
             if (adminTeam == null) {
 
-                adminTeam = addTeam(service, TeamService.generateOrganizationTeamName(organization), TeamService.getOrganizationTeamDescription(organization), organization, TeamType.ORGANIZATION.getText());
-                for (final UserRole role : UserRole.getAllRoles()) {
+                adminTeam = addTeam(service, TeamService.generateOrganizationTeamName(organization), TeamService.getOrganizationTeamDescription(organization), organization,
+                        TeamType.ORGANIZATION.getText());
 
-                    adminTeam = TeamService.addRoleToTeam(SecurityService.getUserFromSession(), adminTeam.getId(), UserRole.getRoleString(role));
-                }
+            }
+
+            for (final UserRole role : UserRole.getAllRoles()) {
+
+                adminTeam = TeamService.addRoleToTeam(SecurityService.getUserFromSession(), adminTeam.getId(), UserRole.getRoleString(role));
             }
 
             return adminTeam;
@@ -663,11 +663,6 @@ public class SyncDatabaseHandler {
             LOG.error("Failed to create admin team with Exception --> " + e.getMessage());
 
             return null;
-        } finally {
-            
-            service.commit();
-            service.setTransactionPerOperation(true);
-
         }
     }
 }

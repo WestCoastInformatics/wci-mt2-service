@@ -852,7 +852,7 @@ public class TeamService extends BaseService {
      */
     public static boolean isOrganizationTeam(final Team team) throws Exception {
 
-        return team.getName().equalsIgnoreCase(TeamType.ORGANIZATION.getText());
+        return team.getType().equalsIgnoreCase(TeamType.ORGANIZATION.getText());
     }
 
     /**
