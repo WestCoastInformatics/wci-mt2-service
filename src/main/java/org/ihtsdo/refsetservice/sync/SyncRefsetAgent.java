@@ -292,6 +292,7 @@ public class SyncRefsetAgent extends SyncAgent {
         statistics.setRefsetVersionsAdded(addedVersions.size());
 
     }
+
     public void addMultipleRefsets(TerminologyService service, List<String> addedRefsetIds) throws Exception {
         service.setTransactionPerOperation(false);
         service.beginTransaction();
@@ -303,7 +304,6 @@ public class SyncRefsetAgent extends SyncAgent {
         service.setTransactionPerOperation(true);
 
     }
-
 
     // RefsetId to map of Dates to dbRefset
     private Map<String, Map<Long, Refset>> generateDatabaseRefsetIdtoRefsetVersionsMap(final Set<Refset> dbRefsets) {
@@ -592,23 +592,20 @@ public class SyncRefsetAgent extends SyncAgent {
          * Check new version refset version date. If none returned (null), then:
          * a) no changes to refset itself and 
          * b) thus no need to create  new version.
-         * c) Move onto nex refset
+         * c) Move onto next refset/version pair
          */
-        LOG.debug("ERROR? With {} on branch {} " +refsetId, termserverRefsetBranchPath);
         Long refsetVersionDate = RefsetMemberService.getLatestChangedVersionDate(termserverRefsetBranchPath, refsetId);
         long updatedVersionDate = versionDate;
 
         if (refsetVersionDate == null) {
 
             // No changes to refset so don't create a new version
-
             return false;
         }
 
         long earliestPublishedVersionDate = -1;
 
         if (!termserverEditionBranchDates.contains(refsetVersionDate)) {
-
             for (final long editionDate : termserverEditionBranchDates) {
 
                 if (refsetVersionDate > editionDate) {
@@ -622,7 +619,6 @@ public class SyncRefsetAgent extends SyncAgent {
 
                     earliestPublishedVersionDate = editionDate;
                 }
-
             }
 
             if (earliestPublishedVersionDate < 0) {
@@ -637,7 +633,6 @@ public class SyncRefsetAgent extends SyncAgent {
         updatedVersionDate = refsetVersionDate;
 
         if (!termserverEditionBranchDates.contains(updatedVersionDate)) {
-
             LOG.info(" Don't add refset versions that don't have corresponding termserver -based edition versions with Refset / and VersionDate pair: " + refsetId + " / " + updatedVersionDate);
 
             return false;

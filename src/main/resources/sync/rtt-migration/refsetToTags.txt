@@ -1,3 +1,5 @@
+terminologyId	domain
+721144007	Jesse
 101000210108	NA
 1051000202108	Helsenorge
 1081000202100	Helsedirektoratet
@@ -132,4 +134,3 @@
 9631000146108	Document types
 997321000189101	General
 997341000189105	General
-terminologyId	domain

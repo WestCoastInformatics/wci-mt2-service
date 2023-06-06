@@ -1,3 +1,4 @@
+id	negated	value
 10004901	\0	<< 49062001 | Device (physical object) |
 10004902		<< 705178002 | Physical therapy device (physical object) |
 10004903		<59432006 | Ligature, device (physical object) |
@@ -4174,4 +4175,3 @@
 99811606	\0	< 276323006 |Finding of color of skin (finding)|
 99811607	\0	^297971001 |Finding of sensation of skin (finding)|
 99811608	\0	364530004 |Skin texture (observable entity)|
-id	negated	value

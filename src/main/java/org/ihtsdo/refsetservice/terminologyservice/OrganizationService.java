@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -406,6 +407,16 @@ public class OrganizationService extends BaseService {
 
         final ResultListUser usersResultList = new ResultListUser();
         usersResultList.getItems().addAll(organization.getMembers());
+
+        // remove system users if configured.
+        final String systemUserList = PropertyUtility.getProperty("refset.service.system.accounts");
+        if (StringUtils.isNotBlank(systemUserList)) {
+
+            final Set<String> systemUserSet = new HashSet<>(Arrays.asList(systemUserList.split(",")));
+            if (!usersResultList.getItems().isEmpty() && !systemUserSet.isEmpty()) {
+                usersResultList.getItems().removeIf(u -> systemUserSet.contains(u.getUserName()));
+            }
+        }
 
         if (includeTeams && !usersResultList.getItems().isEmpty()) {
 

@@ -1,3 +1,4 @@
+rtt_project_id	refset_sctid	project_name	project_desc
 1	1119410008	SNOMED International Project	This project is the production area for official SNOMED International reference sets
 1	1119410008	SNOMED International Project	This project is the production area for official SNOMED International reference sets
 1	1157358007	SNOMED International Project	This project is the production area for official SNOMED International reference sets
@@ -1578,4 +1579,3 @@
 802	723264001	SNOMED International WIP Project	Uses terminology server and MAIN line, not to be used for production release of refsets
 802	723264001	SNOMED International WIP Project	Uses terminology server and MAIN line, not to be used for production release of refsets
 802	723264001	SNOMED International WIP Project	Uses terminology server and MAIN line, not to be used for production release of refsets
-rtt_project_id	refset_sctid	project_name	project_desc
