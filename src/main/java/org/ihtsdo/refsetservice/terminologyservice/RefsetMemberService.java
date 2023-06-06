@@ -4400,7 +4400,7 @@ public final class RefsetMemberService {
             String bodyConceptIds = "\"conceptIds\":[";
             Iterator<JsonNode> iterator = null;
             final List<String> conceptBatch = new ArrayList<>();
-            
+
             for (; searchIndex < permanentFullConceptList.size(); searchIndex++) {
 
                 // LOG.debug("addRefsetMembers searchIndex: " + searchIndex + " :: permanentFullConceptList.size(): " + permanentFullConceptList.size() + "
@@ -4526,32 +4526,33 @@ public final class RefsetMemberService {
                         final JsonNode conceptNode = iterator.next();
                         final String conceptId = conceptNode.get("referencedComponentId").asText();
                         final boolean active = conceptNode.get("active").asBoolean();
-                        
+
                         // if active remove from the list to add, else update the membership if the concept used to be a member
                         if (active) {
-                            
+
                             LOG.debug("addRefsetMembers removing already member conceptId: " + conceptId);
                             conceptIds.remove(conceptId);
 
                             final Map<String, String> status = new HashMap<>();
                             status.put("operation", "Added");
                             status.put("status", "Already Member");
-                            conceptsStatus.put(conceptId, status); 
+                            conceptsStatus.put(conceptId, status);
 
                         } else {
-                            
+
                             conceptIds.remove(conceptId);
-                            
-                            final ObjectNode memberBody = mapper.createObjectNode().put("active", true)
-                                .put("memberId", conceptNode.get("memberId").asText()).put("moduleId", conceptNode.get("moduleId").asText())
-                                .put("referencedComponentId", conceptNode.get("referencedComponentId").asText()).put("refsetId", conceptNode.get("refsetId").asText())
-                                .put("released", conceptNode.get("released").asBoolean()).put("releasedEffectiveTime", conceptNode.get("releasedEffectiveTime").asInt())
+
+                            final ObjectNode memberBody = mapper.createObjectNode().put("active", true).put("memberId", conceptNode.get("memberId").asText())
+                                .put("moduleId", conceptNode.get("moduleId").asText())
+                                .put("referencedComponentId", conceptNode.get("referencedComponentId").asText())
+                                .put("refsetId", conceptNode.get("refsetId").asText()).put("released", conceptNode.get("released").asBoolean())
+                                .put("releasedEffectiveTime", conceptNode.get("releasedEffectiveTime").asInt())
                                 .set("additionalFields", conceptNode.get("additionalFields"));
-                            
+
                             if (conceptNode.get("effectiveTime") != null) {
                                 memberBody.put("effectiveTime", conceptNode.get("effectiveTime").asText());
                             }
-                            
+
                             memberUpdateArray.add(memberBody);
                         }
                     }
@@ -4565,11 +4566,11 @@ public final class RefsetMemberService {
 
         if (conceptIds.size() == 1) {
             unaddedConcepts.addAll(callAddMemberSingle(refsetId, url, conceptIds.get(0), moduleId));
-            
+
         } else if (conceptIds.size() > 1) {
             unaddedConcepts.addAll(callAddMembersBulk(refsetId, url, conceptIds, moduleId));
         }
-        
+
         // re-add any concepts that used to be members
         if (!memberUpdateArray.isEmpty()) {
             callUpdateMembersBulk(refsetId, SnowstormConnection.getBaseUrl() + branchPath + "/members/bulk", memberUpdateArray);

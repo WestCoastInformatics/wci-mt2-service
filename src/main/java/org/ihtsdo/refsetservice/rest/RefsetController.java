@@ -1636,16 +1636,9 @@ public class RefsetController extends BaseController {
 
         // no auth required
         final User user = SecurityService.getUserFromSession();
-        final boolean includeInDevelopment = !(showInDevelopment != null && !showInDevelopment);
-        final boolean onlyShowPermitted = !(showOnlyPermitted != null && showOnlyPermitted);
 
-        // if (showInDevelopment != null && showInDevelopment == false) {
-        // includeInDevelopment = false;
-        // }
-        //
-        // if (showOnlyPermitted != null && showOnlyPermitted == true) {
-        // onlyShowPermitted = true;
-        // }
+        final boolean includeInDevelopment = (showInDevelopment != null) ? showInDevelopment : true;
+        final boolean onlyShowPermitted = (showOnlyPermitted != null) ? showOnlyPermitted : false;
 
         try (final TerminologyService service = new TerminologyService()) {
 
