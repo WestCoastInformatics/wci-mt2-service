@@ -33,8 +33,6 @@ public class SyncPropertyFileReader {
 
     private final ClassPathResource refsetToProjectsResource = new ClassPathResource("sync/rtt-migration/refsetToProjects.txt");
 
-    private final ClassPathResource refsetToClausesResource = new ClassPathResource("sync/rtt-migration/refsetToClauses.txt");
-
     private final ClassPathResource refsetToDescriptionResource = new ClassPathResource("sync/rtt-migration/refsetToDescription.txt");
 
     private static final String IGNORED_CODE_SYSTEMS_PATH = "sync/exceptions/ignoredCodeSystems.txt";
@@ -54,11 +52,9 @@ public class SyncPropertyFileReader {
     /** The Constant SPLIT_CHARACTER. */
     public static final String SPLIT_CHARACTER = "\t";
 
-    private final Map<String, String> refsetToClausesInfoMap = readRttRefsetsToClausesMap();
-
     private final Map<String, String> refsetToDescriptionMap = readRttRefsetsToDescriptionMap();
 
-    private final Map<String, Set<String>> refsetToTagsMap = readRttRefsetsToTagsMap();
+    private final Map<String, Set<String>> refsetSctIdToTagsMap = readRefsetSctIdToTagsMap();
 
     private final Map<String, Map<String, Set<String>>> teamCreation = readTeamCreation();
 
@@ -75,7 +71,7 @@ public class SyncPropertyFileReader {
     private final Map<String, Set<String>> rttRefsetSctIdToRttIdMap = new HashMap<>();
 
     /** The rtt refset to clauses map. */
-    private final Map<String, ArrayList<String>> rttRefsetToClausesMap = new HashMap<>();
+    private final Map<String, ArrayList<String>> refsetSctIdToClausesMap = new HashMap<>();
 
     private final Map<String, String> projectOrganizationMap = new HashMap<>();
 
@@ -121,6 +117,7 @@ public class SyncPropertyFileReader {
         // Based on findings, define the list of refsets in RTT
         populateFromFile(clausesResource, FileProcessType.CLAUSE);
         populateFromFile(projectsResource, FileProcessType.PROJECT);
+
 
         final BufferedReader reader = new BufferedReader(new InputStreamReader(refsetRttToSctIdResource.getInputStream()));
 
@@ -204,31 +201,6 @@ public class SyncPropertyFileReader {
         return refsetsToIgnore;
     }
 
-    private Map<String, String> readRttRefsetsToClausesMap() {
-
-        final Map<String, String> refsetToClausesInfoMap = new HashMap<>();
-
-        try {
-
-            final BufferedReader reader = new BufferedReader(new InputStreamReader(refsetToClausesResource.getInputStream()));
-
-            String line = reader.readLine();
-
-            while (line != null && !line.trim().isEmpty()) {
-
-                refsetToClausesInfoMap.put(line, "");
-
-                line = reader.readLine();
-            }
-
-            reader.close();
-        } catch (final IOException e) {
-
-            e.printStackTrace();
-        }
-
-        return refsetToClausesInfoMap;
-    }
 
     private Map<String, String> readRttRefsetsToDescriptionMap() {
 
@@ -301,7 +273,7 @@ public class SyncPropertyFileReader {
         }
     }
 
-    private Map<String, Set<String>> readRttRefsetsToTagsMap() {
+    private Map<String, Set<String>> readRefsetSctIdToTagsMap() {
 
         final Map<String, Set<String>> refsetToTagsInfoMap = new HashMap<>();
 
@@ -525,20 +497,33 @@ public class SyncPropertyFileReader {
                         break;
 
                     case CLAUSE:
+
+
                         // Combine multiline clauses into one
                         while (line.indexOf("\"") >= 0 && line.indexOf("\"") == line.lastIndexOf("\"")) {
 
                             line = line + " " + reader.readLine();
                         }
+
+
                         final String clauseJson = lineToClauseJson(line, lineNumber++);
+                        final String refsetSctId = line.split(SPLIT_CHARACTER)[0];
+
+
+
+
+
+
 
                         // store all clauses associated wtih a given refset
-                        final String rttRefsetId = line.split(SPLIT_CHARACTER)[0];
-                        if (!rttRefsetToClausesMap.containsKey(rttRefsetId)) {
 
-                            rttRefsetToClausesMap.put(rttRefsetId, new ArrayList<String>());
+                        if (!refsetSctIdToClausesMap.containsKey(refsetSctId)) {
+
+
+                            refsetSctIdToClausesMap.put(refsetSctId, new ArrayList<String>());
                         }
-                        rttRefsetToClausesMap.get(rttRefsetId).add(clauseJson);
+
+                        refsetSctIdToClausesMap.get(refsetSctId).add(clauseJson);
                         break;
 
                     case PROJECT:
@@ -627,7 +612,6 @@ public class SyncPropertyFileReader {
         String updatedLine = line;
         String narrative;
         try {
-
             // Clean up narrative if has commas which some do
             if (updatedLine.split(SPLIT_CHARACTER)[9].startsWith("\"")) {
 
@@ -661,7 +645,6 @@ public class SyncPropertyFileReader {
             final String values[] = updatedLine.split(SPLIT_CHARACTER);
 
             if (projectsToIgnore.contains(values[27])) {
-
                 // Don't add refsets from ignored projects (just WCI projects for now)
                 return null;
             } else if (!values[8].matches("\\b\\d*\\b")) {
@@ -675,7 +658,7 @@ public class SyncPropertyFileReader {
 
                 // Published refsets must have an effectiveTime
                 return null;
-            } else if (!values[1].equals("1")) {
+            } else if (values[1].length() != 1 || (!values[1].equals("1") && !Character.isISOControl(values[1].charAt(0)))) {
 
                 // Must be an active refset
                 return null;
@@ -683,12 +666,6 @@ public class SyncPropertyFileReader {
 
             final StringBuffer buf = new StringBuffer();
             final String rttRefsetId = values[0];
-
-            /*
-             * refset.setRefsetId(refsetId); refset.setModuleId(moduleId); refset.setActive(true); refset.setVersionDate(branchDate);
-             * 
-             * 
-             */
 
             if (narrative.equals(values[17])) {
 
@@ -698,6 +675,8 @@ public class SyncPropertyFileReader {
 
             // Begin RefsetJson
             buf.append("{");
+
+            // Populate the Json with values from refsets.txt file
             buf.append("\"name\": \"" + values[17] + "\",");
             buf.append("\"refsetId\": \"" + values[8] + "\",");
             buf.append("\"moduleId\": \"" + values[5] + "\",");
@@ -705,15 +684,8 @@ public class SyncPropertyFileReader {
             buf.append("\"narrative\": \"" + narrative + "\",");
             buf.append("\"privateRefset\": " + ((values[15].equals("0")) ? "true" : "false"));
 
-            // Tags
-            if (values[28] != null && !values[28].isEmpty() && !values[28].equals("NULL")) {
-
-                buf.append(",");
-                buf.append("\"tags\": [\"" + values[28] + "\"]");
-            }
-
+            // Complete the json
             buf.append("}");
-            // End RefsetJson
 
             // Store ability to map from RefsetId to ProjectId
             rttIdToRttProjectIdMap.put(rttRefsetId, values[27]);
@@ -809,19 +781,15 @@ public class SyncPropertyFileReader {
         return sctIdToProjectIdMap;
     }
 
-    Map<String, String> getRefsetToClausesInfoMap() {
-
-        return refsetToClausesInfoMap;
-    }
 
     Map<String, String> getRefsetToDescriptionMap() {
 
         return refsetToDescriptionMap;
     }
 
-    Map<String, Set<String>> getRefsetToTagsMap() {
+    public Map<String, Set<String>> getRefsetSctToTagsMap() {
 
-        return refsetToTagsMap;
+        return refsetSctIdToTagsMap;
     }
 
     public Map<String, Set<String>> getRefsetSctIdToRttIdMap() {
@@ -834,9 +802,9 @@ public class SyncPropertyFileReader {
         return rttIdToRefsetJsonMap;
     }
 
-    public Map<String, ArrayList<String>> getRttRefsetToClausesMap() {
+    public Map<String, ArrayList<String>> getRefsetSctToClausesMap() {
 
-        return rttRefsetToClausesMap;
+        return refsetSctIdToClausesMap;
     }
 
     Map<String, String> getRttRefsetToEffectiveDateMap() {

@@ -446,7 +446,6 @@ public class SyncDatabaseHandler {
             // Adding refsets identified on termserver
             for (final Refset refset : refsets) {
                 refsetToPersist = refset;
-                LOG.debug("About to {} with version {}", refsetToPersist.getName(), refsetToPersist.getVersionDate());
 
                 final Refset updatedRefset = service.update(refsetToPersist);
 
@@ -523,22 +522,18 @@ public class SyncDatabaseHandler {
         final Set<DefinitionClause> refsetClauses = new HashSet<>();
 
         try {
-            for (final String clauseJson : utilities.getPropertyReader().getRttRefsetToClausesMap().get(rttId)) {
+            for (final String clauseJson : utilities.getPropertyReader().getRefsetSctToClausesMap().get(rttId)) {
+                // ??FAILING HERE NOW???
 
                 final DefinitionClause clause = ModelUtility.fromJson(clauseJson, DefinitionClause.class);
-
-                final SyncPersistenceMetadata metadata = utilities.getPropertyReader().getMetadataMap().get("refset-" + rttId);
-
-                clause.setModified(metadata.getModified());
-                clause.setCreated(metadata.getModified());
-                clause.setModifiedBy(metadata.getModifiedBy());
-
-                LOG.info("Adding new DefinitionClause: " + clause.getId() + " (" + clause + ") ");
 
                 final DefinitionClause persistedClause = service.add(clause);
 
                 refsetClauses.add(persistedClause);
             }
+
+            LOG.info("Added new DefinitionClauses for {} with clauses {}: ", rttId, refsetClauses);
+
         } catch (Exception e) {
             LOG.error("Failed to read refset clauses from RTT for  rttId: " + rttId + " with Exception --> " + e.getMessage());
 

@@ -240,7 +240,9 @@ public class SyncRefsetAgent extends SyncAgent {
                 }
                 // Compare in termserver & active in db
                 final List<Refset> dbRefsets = service.getAll(Refset.class);
+
                 modifiedDBVersions.addAll(compareAndModifyRefsetVersions(service, dbRefsets, refsetId, existingInBothVersions, termserverVersionDataMaps));
+
                 unchangedVersions = existingInBothVersions.stream().filter(e -> !modifiedDBVersions.contains(e)).collect(Collectors.toList());
                 // Compare refsets (based on existing list of refsetId)
 
@@ -366,6 +368,9 @@ public class SyncRefsetAgent extends SyncAgent {
         // Map each refsetId/version pair's SyncRefsetMetadata
         dbActiveRefsetIdToVersionRefsetMap = generateDatabaseRefsetIdtoRefsetVersionsMap(dbActiveRefsets);
         dbInactiveRefsetIdToVersionRefsetMap = generateDatabaseRefsetIdtoRefsetVersionsMap(dbInactiveRefsets);
+
+        // add final attributes including narrative, intentional refset definition clauses (if exists), and tags (if exists)
+        finalizeNewOrChangedRefsets(service);
     }
 
     private Edition isEditionToProcess(final TerminologyService service, final String editionShortName) throws Exception {
@@ -786,24 +791,14 @@ public class SyncRefsetAgent extends SyncAgent {
 
     }
 
-    // Do not persist as will be done later
-    private void associateRefsetClauses(final TerminologyService service, final String rttId, final Refset refset) throws Exception {
-
-        // If has ECL clauses, associate them with refset
-        if (utilities.getPropertyReader().getRttRefsetToClausesMap().containsKey(rttId)) {
-
-            final Set<DefinitionClause> clauses = dbHandler.addDefinitionClauses(service, rttId);
-            refset.getDefinitionClauses().addAll(clauses);
-        }
-
-    }
-
     /**
      * Update refsets with values (including Projects) from json and also identify latestVersion, but do not persist at this point.
      * @param dbRefsets the db refsets
      * @throws Exception
      */
     private void finalizeNewOrChangedRefsets(final TerminologyService service) throws Exception {
+        final Set<Refset> dbActiveRefsets = new HashSet<>();
+        final List<Refset> dbRefsets = service.getAll(Refset.class);
 
         final Map<String, Long> latestVersionCache = new HashMap<>();
         final Set<Refset> refsetsUpdated = new HashSet<>();
@@ -811,42 +806,53 @@ public class SyncRefsetAgent extends SyncAgent {
         utilities.getPropertyReader().parseRttData();
 
         // Refresh DB cache with additions just made
-        final List<Refset> dbRefsets = service.getAll(Refset.class);
-        for (final String refsetId : newlyCreatedAndUnchangedRefsetToVersionsMap.keySet()) {
+        dbRefsets.stream().filter(r -> r.isActive()).forEach(ar -> dbActiveRefsets.add(ar));
+        dbActiveRefsetIdToVersionRefsetMap = generateDatabaseRefsetIdtoRefsetVersionsMap(dbActiveRefsets);
 
-            for (final long version : newlyCreatedAndUnchangedRefsetToVersionsMap.get(refsetId)) {
-                try {
-                    Refset refset = null;
-                    Stream<Refset> refsetStream = dbRefsets.stream().filter(r -> r.getRefsetId().equals(refsetId) && r.getVersionDate().getTime() == version);
-                    refset = (Refset) utilities.validateMatches(refsetStream, refsetId + " / " + version);
+        for (final String refsetId : dbActiveRefsetIdToVersionRefsetMap.keySet()) {
 
-                    // Actually process the refset here
-                    finalizeRefset(service, refset, latestVersionCache);
+            for (final long version : dbActiveRefsetIdToVersionRefsetMap.get(refsetId).keySet()) {
 
-                    refsetsUpdated.add(refset);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    LOG.error("Failed on refsetVersion: " + refsetId + " / " + version + " --- with message: " + e.getMessage());
+                if (isRefsetToProcess(refsetId, dbActiveRefsetIdToVersionRefsetMap.get(refsetId).get(version).getEditionShortName())) {
+
+                    try {
+                        final Refset refset = dbActiveRefsetIdToVersionRefsetMap.get(refsetId).get(version);
+
+                        // Actually process the refset here
+                        final Refset updatedRefset = finalizeRefset(service, refset, latestVersionCache);
+
+                        refsetsUpdated.add(updatedRefset);
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        LOG.error("Failed on refsetVersion: " + refsetId + " / " + version + " --- with message: " + e.getMessage());
+                    }
                 }
             }
         }
 
         // Reset latestPublishedVersion before recalculate it
-        for (final Refset refset : dbRefsets) {
-            if (refset.isLatestPublishedVersion()) {
-                refset.setLatestPublishedVersion(false);
-                refsetsUpdated.add(refset);
+        for (final Refset dbRefset : dbRefsets) {
+
+            if (dbRefset.isLatestPublishedVersion()) {
+
+                dbRefset.setLatestPublishedVersion(false);
+                refsetsUpdated.add(dbRefset);
             }
+
         }
 
         // Update the latest refset version cache per refset. Set the latestVersion flag to true for them
-        for (final Refset refset : refsetsUpdated) {
-            if (latestVersionCache.containsKey(refset.getRefsetId())) {
+        for (final Refset dbRefset : refsetsUpdated) {
+
+            if (latestVersionCache.containsKey(dbRefset.getRefsetId())) {
 
                 for (final String refsetId : latestVersionCache.keySet()) {
-                    if (refset.getRefsetId().equals(refsetId) && refset.getVersionDate().getTime() == latestVersionCache.get(refsetId)) {
 
-                        refset.setLatestPublishedVersion(true);
+                    if (dbRefset.getRefsetId().equals(refsetId) && dbRefset.getVersionDate().getTime() == latestVersionCache.get(refsetId)) {
+
+                        dbRefset.setLatestPublishedVersion(true);
+                        refsetsUpdated.add(dbRefset);
                         break;
                     }
 
@@ -860,33 +866,42 @@ public class SyncRefsetAgent extends SyncAgent {
 
     }
 
-    private void finalizeRefset(final TerminologyService service, final Refset refset, final Map<String, Long> latestVersionCache) throws Exception {
+    private Refset finalizeRefset(final TerminologyService service, final Refset refset, final Map<String, Long> latestVersionCache) throws Exception {
         // Update refset from JSON for Narrative, Type, tags, and ecl clauses. Project too.
+        Refset updatedRefset = null;
+
+        // setup data to persist later as at minimum will be defining the narrative in both scenarios
         if (utilities.getPropertyReader().getRefsetSctIdToRttIdMap().keySet().contains(refset.getRefsetId())) {
 
-            analyzeRttGenericData(service, refset);
+            updatedRefset = analyzeRttGenericData(service, refset);
 
         } else {
 
+            updatedRefset = refset;
             // If JSON not available to the refset, it means it resides exclusively on termserver.
             // Set defaults for type & narrative (TAGS & ECL) are defined in RT2 not via termserver
-            refset.setNarrative("No corresponding refset information found on RTT for " + refset.getRefsetId());
+            updatedRefset.setNarrative("No corresponding refset information found on RTT for " + refset.getRefsetId());
 
         }
 
         // Keep track of the latest version per refsetId
-        if (!latestVersionCache.containsKey(refset.getRefsetId()) || latestVersionCache.get(refset.getRefsetId()) < refset.getVersionDate().getTime()) {
+        if (!latestVersionCache.containsKey(updatedRefset.getRefsetId()) || latestVersionCache.get(updatedRefset.getRefsetId()) < updatedRefset.getVersionDate().getTime()) {
 
-            latestVersionCache.put(refset.getRefsetId(), refset.getVersionDate().getTime());
+            latestVersionCache.put(updatedRefset.getRefsetId(), updatedRefset.getVersionDate().getTime());
         }
+
+        return updatedRefset;
     }
 
-    private void analyzeRttGenericData(final TerminologyService service, final Refset refset) throws Exception {
+    private Refset analyzeRttGenericData(final TerminologyService service, final Refset refset) throws Exception {
         /* Refset lived in RTT as well */
         final Set<String> rttIds = utilities.getPropertyReader().getRefsetSctIdToRttIdMap().get(refset.getRefsetId());
 
         // Add Refset with RTT data as long as it also version resides on termserver. Keep track of which are added this way as to not add them from RTT as
         // well
+
+        final Map<String, Set<DefinitionClause>> refsetSctIdToClausesCreatedMap = new HashMap<>();
+
         for (final String rttId : rttIds) {
 
             if (utilities.getPropertyReader().getRttIdToRefsetJsonMap().containsKey(rttId)) {
@@ -899,28 +914,35 @@ public class SyncRefsetAgent extends SyncAgent {
 
                 if (rttDataRefsetVersion < 0 || rttDataRefsetVersion == refset.getVersionDate().getTime()) {
 
-                    // Set narrative
-                    refset.setNarrative(refsetJson.get("narrative").asText());
-                    // Tags
-                    if (refsetJson.has("tags")) {
+                    // Populate tags from contents of refsetToTags.txt file
+                    if (utilities.getPropertyReader().getRefsetSctToTagsMap().containsKey(refset.getRefsetId())) {
 
-                        Iterator<JsonNode> tagsIterator = refsetJson.get("tags").iterator();
-
-                        while (tagsIterator.hasNext()) {
-
-                            refset.getTags().add(tagsIterator.next().asText());
-                        }
-
+                        utilities.getPropertyReader().getRefsetSctToTagsMap().get(refset.getRefsetId()).stream().forEach(tag -> refset.getTags().add(tag));
                     }
 
-                    // If has ECL clauses, create and associate with refset
-                    associateRefsetClauses(service, rttId, refset);
+                    // Populate ECL clauses from contents of refsetToClauses.txt file
 
-                    // Only one will match, so no need to keep reading
+                    Set<DefinitionClause> clauses = null;
+
+                    if (utilities.getPropertyReader().getRefsetSctToClausesMap().containsKey(refset.getRefsetId())) {
+
+                        if (!refsetSctIdToClausesCreatedMap.containsKey(refset.getRefsetId())) {
+
+                            clauses = dbHandler.addDefinitionClauses(service, refset.getRefsetId());
+                            refsetSctIdToClausesCreatedMap.put(refset.getRefsetId(), clauses);
+                        } else {
+                            clauses = refsetSctIdToClausesCreatedMap.get(refset.getRefsetId());
+                        }
+
+                        refset.getDefinitionClauses().addAll(clauses);
+                    }
+
                     break;
                 }
             }
         }
+
+        return refset;
     }
 
     protected JsonNode isRefsetToProcess(final JsonNode refsetNode, final String shortName) throws Exception {
@@ -944,6 +966,24 @@ public class SyncRefsetAgent extends SyncAgent {
         }
 
         return null;
+    }
+
+    protected boolean isRefsetToProcess(final String refsetId, final String shortName) throws Exception {
+
+        if (!utilities.isInternationalEdition(shortName) && utilities.getCoreRefsets().contains(refsetId)) {
+            return false;
+        }
+
+        if (utilities.getPropertyReader().getRefsetsToIgnore().contains(refsetId)) {
+            LOG.info("Found refsetId: " + refsetId + ", but will not add it per property file refsetsToIgnore.txt");
+            return false;
+        }
+
+        if (!isTesting() || (isTesting() && (testingRefset == null || testingRefset.isEmpty()) || refsetId.equals(testingRefset))) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
