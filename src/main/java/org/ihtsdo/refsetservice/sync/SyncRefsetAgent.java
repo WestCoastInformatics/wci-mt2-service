@@ -843,6 +843,8 @@ public class SyncRefsetAgent extends SyncAgent {
         }
 
         // Update the latest refset version cache per refset. Set the latestVersion flag to true for them
+        Set<Refset> refsetsFinalized = new HashSet<>();
+        
         for (final Refset dbRefset : refsetsUpdated) {
 
             if (latestVersionCache.containsKey(dbRefset.getRefsetId())) {
@@ -852,7 +854,7 @@ public class SyncRefsetAgent extends SyncAgent {
                     if (dbRefset.getRefsetId().equals(refsetId) && dbRefset.getVersionDate().getTime() == latestVersionCache.get(refsetId)) {
 
                         dbRefset.setLatestPublishedVersion(true);
-                        refsetsUpdated.add(dbRefset);
+                        refsetsFinalized.add(dbRefset);
                         break;
                     }
 
@@ -861,7 +863,8 @@ public class SyncRefsetAgent extends SyncAgent {
             }
         }
 
-        // Persist changes
+        // Persist changes across all Refsets
+        refsetsUpdated.addAll(refsetsFinalized);
         dbHandler.updateMultipleRefsets(service, refsetsUpdated);
 
     }
