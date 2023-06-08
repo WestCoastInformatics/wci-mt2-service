@@ -501,7 +501,7 @@ public class OrganizationService extends BaseService {
      * @param email the email
      * @throws Exception the exception
      */
-    public static void addUserToOrganization(final TerminologyService service, final User authUser, final String organizationId, final String email)
+    public static Organization addUserToOrganization(final TerminologyService service, final User authUser, final String organizationId, final String email)
         throws Exception {
 
         User userToAdd = service.findSingle("email:" + email, User.class, null);
@@ -543,7 +543,7 @@ public class OrganizationService extends BaseService {
         organization.getMembers().add(userToAdd);
         service.add(AuditEntryHelper.addUserToOrganizationEntry(organization, userToAdd));
 
-        service.update(organization);
+        return service.update(organization);
     }
 
     /**
@@ -1064,8 +1064,10 @@ public class OrganizationService extends BaseService {
 
                 // teams not associated with project that are would not be in crowd.
                 final ResultList<Team> orgTeams = OrganizationService.getOrganizationTeams(service, organizationId);
+                
                 if (orgTeams != null && orgTeams.getItems() != null) {
                     for (final Team team : orgTeams.getItems()) {
+                        
                         if (team.getMembers() != null && team.getMembers().contains(userToRemove.getId())) {
                             TeamService.removeUserFromTeam(authUser, team.getId(), userToRemove.getId());
                         }
