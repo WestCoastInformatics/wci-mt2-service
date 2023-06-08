@@ -45,9 +45,9 @@ public abstract class SyncAgent {
     /** Testing options. */
     private static boolean testing = false;
 
-    protected static String TESTING_EDITION_SHORT_NAME = "SNOMEDCT-NO";
+    protected static String TESTING_EDITION_SHORT_NAME = "SNOMEDCT-NZ";
     
-     protected static String testingRefset = "721144007"; // Core - Dentistry (in multiple projects in RTT)
+     protected static String testingRefset = "421000210109"; // Core - Dentistry (in multiple projects in RTT)
 
     // protected static String testingRefset = null; // To test entire edition
     // protected static String testingRefset = "751000172100"; // 751000172100 - from Belgium
@@ -100,14 +100,8 @@ public abstract class SyncAgent {
         SyncAgent agent = new SyncCodeSystemAgent();
         agent.syncComponent(service);
 
-        LOG.debug("CCC Sleep 1");
-        Thread.sleep(3000);
-
         agent = new SyncCrowdAgent();
         agent.syncComponent(service);
-
-        LOG.debug("CCC Sleep 2");
-        Thread.sleep(3000);
 
         // Find all refsets from filtered branches
         agent = new SyncRefsetAgent();

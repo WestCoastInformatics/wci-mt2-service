@@ -1,5 +1,4 @@
 terminologyId	domain
-721144007	Jesse
 101000210108	NA
 1051000202108	Helsenorge
 1081000202100	Helsedirektoratet

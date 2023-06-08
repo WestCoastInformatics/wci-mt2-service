@@ -1,4 +1,5 @@
 terminologyId	negated	value
+421000210109	\0	<<223369002 |Country (geographic location)|
 1041000003106	\0	<<223369002 |Country (geographic location)|
 391000210104	\0	<<264395009 | Microorganism (organism) |
 391000210104	\0	<<264395009 | Microorganism (organism) |
