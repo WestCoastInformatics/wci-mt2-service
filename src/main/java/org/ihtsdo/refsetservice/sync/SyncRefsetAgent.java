@@ -80,7 +80,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
         final Set<String> termserverRefsetIds = termserverRefsetIdToRefsetVersionsDataMap.keySet();
 
-        LOG.info(("analyze refsetIds"));
+        LOG.info("analyze refsetIds");
 
         statistics.setRefsetIdsSynced(termserverRefsetIds.size());
 
@@ -452,12 +452,12 @@ public class SyncRefsetAgent extends SyncAgent {
             }
 
             if (modifyingVersion.getBranchPath() == null || isDifferentAttribute(refsetId + " / " + testingVersionDate, "Refset branch ", modifyingVersion.getBranchPath(), termserverRefsetBranch)) {
-                modifyingVersion.setBranchPath(termserverRefsetBranch);
 
                 if (modifyingVersion.getBranchPath() != null) {
-                    LOG.error("Likely an error as refsetId/version " + refsetId + "/" + testingVersionDate + " shouldn't be able to change their branch path from " + modifyingVersion.getBranchPath()
-                            + " to " + termserverRefsetBranch);
+                    LOG.error("Likely an error as refsetId/version " + refsetId + "/" + testingVersionDate + " shouldn't be able to change their branch path from '" + modifyingVersion.getBranchPath()
+                            + "' to '" + termserverRefsetBranch + "'");
                 }
+                modifyingVersion.setBranchPath(termserverRefsetBranch);
                 modificationMade = true;
             }
 
