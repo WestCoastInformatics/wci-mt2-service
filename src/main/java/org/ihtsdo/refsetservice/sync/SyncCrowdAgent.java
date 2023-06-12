@@ -48,8 +48,10 @@ public class SyncCrowdAgent extends SyncAgent {
         // EditionId to Rules
         final Map<String, Set<String>> filteredEditionRulesMap = identifyEditionRules(service, crowdRulesMembersMap.keySet());
 
+        // TODO: Handle Remove case?
         assignUsersToOrganizations(service, crowdRulesMembersMap, userMap, filteredEditionRulesMap);
 
+        // TODO: Handle Remove case?
         assignUsersToAdminTeams(service, userMap, filteredEditionRulesMap);
 
         addNewProjects(service, crowdRulesMembersMap, userMap, filteredEditionRulesMap);
@@ -69,21 +71,24 @@ public class SyncCrowdAgent extends SyncAgent {
             final Edition edition = service.get(editionId, Edition.class);
 
             // Setup return map of organizations to crowd users
-
             Team adminTeam = OrganizationService.getOrganizationAdminTeam(service, edition.getOrganizationId());
 
-            if (adminTeam != null) {
-
-                List<User> usersToAdd = adminUsers.stream().filter(adminUser -> !adminTeam.getMembers().contains(adminUser.getId())).collect(Collectors.toList());
-
-
-                for (User adminUser : usersToAdd) {
-                    TeamService.addUserToTeam(service, SecurityService.getUserFromSession(), adminTeam, adminUser);
-                }
-
-            } else {
-                throw new Exception("Failing to identify the Admin Team for Org: " + edition.getOrganizationName());
+            if (adminTeam == null) {
+                adminTeam = dbHandler.createAdminOrganizationTeam(service, edition.getOrganization());
             }
+
+            List<User> usersToAdd = new ArrayList<>();
+
+            for (User user : adminUsers) {
+                if (!adminTeam.getMembers().contains(user.getId())) {
+                    usersToAdd.add(user);
+                }
+            }
+
+            for (User adminUser : usersToAdd) {
+                TeamService.addUserToTeam(service, SecurityService.getUserFromSession(), adminTeam, adminUser);
+            }
+
         }
     }
 
@@ -323,7 +328,8 @@ public class SyncCrowdAgent extends SyncAgent {
         // Sort crowdProjects by edition/groupName/Set<Role>
         for (final String group : crowdGroups) {
 
-            if (isTesting() && !group.startsWith("rt2-" + getEditionShortNameToEdition(TESTING_EDITION_SHORT_NAME) + "-")) {
+            if (isTesting() && TESTING_EDITION_SHORT_NAME != null && !TESTING_EDITION_SHORT_NAME.isEmpty()
+                    && !group.startsWith("rt2-" + getEditionShortNameToEdition(TESTING_EDITION_SHORT_NAME) + "-")) {
                 continue;
             }
 

@@ -45,10 +45,6 @@ public class SyncRefsetAgent extends SyncAgent {
 
     private Map<String, Map<Long, SyncRefsetMetadata>> termserverRefsetIdToRefsetVersionsDataMap;
 
-    private Map<String, Map<Long, Refset>> dbActiveRefsetIdToVersionRefsetMap;
-
-    private Map<String, Map<Long, Refset>> dbInactiveRefsetIdToVersionRefsetMap;
-
     private Map<String, Set<Long>> newlyCreatedAndUnchangedRefsetToVersionsMap = new HashMap<>();
 
     private final Map<String, Project> refsetProjectMap = new HashMap<>();
@@ -83,6 +79,10 @@ public class SyncRefsetAgent extends SyncAgent {
         LOG.info("analyze refsetIds");
 
         statistics.setRefsetIdsSynced(termserverRefsetIds.size());
+
+        Map<String, Map<Long, Refset>> dbActiveRefsetIdToVersionRefsetMap = new HashMap<>();
+        Map<String, Map<Long, Refset>> dbInactiveRefsetIdToVersionRefsetMap = new HashMap<>();
+        populateRefsetToVersions(service, dbActiveRefsetIdToVersionRefsetMap, dbInactiveRefsetIdToVersionRefsetMap);
 
         // Determine new, inactivated, and existing refsets (Based on refsetId and version/branch info)
         // Determine and create new refsets (where db versions are needed). These are identified by those not in active nor in inactive DB refsets)
@@ -164,6 +164,10 @@ public class SyncRefsetAgent extends SyncAgent {
         // Dev note: Stream ignores those that are listed in the new or inactivated refsetId list (activated will be processed for changes)
 
         LOG.info(("analyze refset versions"));
+
+        Map<String, Map<Long, Refset>> dbActiveRefsetIdToVersionRefsetMap = new HashMap<>();
+        Map<String, Map<Long, Refset>> dbInactiveRefsetIdToVersionRefsetMap = new HashMap<>();
+        populateRefsetToVersions(service, dbActiveRefsetIdToVersionRefsetMap, dbInactiveRefsetIdToVersionRefsetMap);
 
         for (final String refsetId : termserverRefsetIdToRefsetVersionsDataMap.keySet().stream().filter(refsetId -> !addedOrInactivatedRefsetIds.contains(refsetId)).collect(Collectors.toList())) {
 
@@ -352,12 +356,18 @@ public class SyncRefsetAgent extends SyncAgent {
         LOG.info("Finished processing db branches across all editions with " + filteredRefsets.size() + " filtered refsets versions.");
 
         // Based on filteredCodeSystems which already filtered for active code systems
-        termserverRefsetIdToRefsetVersionsDataMap = generatetermserverRefsetIdtoRefsetVersionsMap();
+        termserverRefsetIdToRefsetVersionsDataMap = generateTermserverRefsetIdtoRefsetVersionsMap();
 
         if (termserverRefsetIdToRefsetVersionsDataMap.isEmpty()) {
             throw new Exception("termServerRefsetIdToRefsetVersionsDataMap should never be empty ");
         }
 
+        // add final attributes including narrative, intentional refset definition clauses (if exists), and tags (if exists)
+        finalizeNewOrChangedRefsets(service);
+    }
+
+    private void populateRefsetToVersions(TerminologyService service, Map<String, Map<Long, Refset>> dbActiveRefsetIdToVersionRefsetMap,
+        Map<String, Map<Long, Refset>> dbInactiveRefsetIdToVersionRefsetMap) throws Exception {
         final Set<Refset> dbActiveRefsets = new HashSet<>();
         final Set<Refset> dbInactiveRefsets = new HashSet<>();
         final List<Refset> dbRefsets = service.getAll(Refset.class);
@@ -366,11 +376,9 @@ public class SyncRefsetAgent extends SyncAgent {
         dbRefsets.stream().filter(r -> !r.isActive()).forEach(ir -> dbInactiveRefsets.add(ir));
 
         // Map each refsetId/version pair's SyncRefsetMetadata
-        dbActiveRefsetIdToVersionRefsetMap = generateDatabaseRefsetIdtoRefsetVersionsMap(dbActiveRefsets);
-        dbInactiveRefsetIdToVersionRefsetMap = generateDatabaseRefsetIdtoRefsetVersionsMap(dbInactiveRefsets);
+        dbActiveRefsetIdToVersionRefsetMap.putAll(generateDatabaseRefsetIdtoRefsetVersionsMap(dbActiveRefsets));
+        dbInactiveRefsetIdToVersionRefsetMap.putAll(generateDatabaseRefsetIdtoRefsetVersionsMap(dbInactiveRefsets));
 
-        // add final attributes including narrative, intentional refset definition clauses (if exists), and tags (if exists)
-        finalizeNewOrChangedRefsets(service);
     }
 
     private Edition isEditionToProcess(final TerminologyService service, final String editionShortName) throws Exception {
@@ -398,7 +406,7 @@ public class SyncRefsetAgent extends SyncAgent {
     }
 
     // RefsetId to map of Dates to RefsetMetadata
-    private Map<String, Map<Long, SyncRefsetMetadata>> generatetermserverRefsetIdtoRefsetVersionsMap() {
+    private Map<String, Map<Long, SyncRefsetMetadata>> generateTermserverRefsetIdtoRefsetVersionsMap() {
 
         final Map<String, Map<Long, SyncRefsetMetadata>> generatedMap = new HashMap<>();
 
@@ -797,17 +805,15 @@ public class SyncRefsetAgent extends SyncAgent {
      * @throws Exception
      */
     private void finalizeNewOrChangedRefsets(final TerminologyService service) throws Exception {
-        final Set<Refset> dbActiveRefsets = new HashSet<>();
-        final List<Refset> dbRefsets = service.getAll(Refset.class);
-
         final Map<String, Long> latestVersionCache = new HashMap<>();
         final Set<Refset> refsetsUpdated = new HashSet<>();
 
         utilities.getPropertyReader().parseRttData();
 
         // Refresh DB cache with additions just made
-        dbRefsets.stream().filter(r -> r.isActive()).forEach(ar -> dbActiveRefsets.add(ar));
-        dbActiveRefsetIdToVersionRefsetMap = generateDatabaseRefsetIdtoRefsetVersionsMap(dbActiveRefsets);
+        Map<String, Map<Long, Refset>> dbActiveRefsetIdToVersionRefsetMap = new HashMap<>();
+        Map<String, Map<Long, Refset>> dbInactiveRefsetIdToVersionRefsetMap = new HashMap<>();
+        populateRefsetToVersions(service, dbActiveRefsetIdToVersionRefsetMap, dbInactiveRefsetIdToVersionRefsetMap);
 
         for (final String refsetId : dbActiveRefsetIdToVersionRefsetMap.keySet()) {
 
@@ -831,6 +837,8 @@ public class SyncRefsetAgent extends SyncAgent {
             }
         }
 
+        final List<Refset> dbRefsets = service.getAll(Refset.class);
+
         // Reset latestPublishedVersion before recalculate it
         for (final Refset dbRefset : dbRefsets) {
 
@@ -844,7 +852,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
         // Update the latest refset version cache per refset. Set the latestVersion flag to true for them
         Set<Refset> refsetsFinalized = new HashSet<>();
-        
+
         for (final Refset dbRefset : refsetsUpdated) {
 
             if (latestVersionCache.containsKey(dbRefset.getRefsetId())) {

@@ -67,5 +67,8 @@
 		<Logger name="HttpLogger" level="info" additivity="false">
 			<AppenderRef ref="Console" />
 		</Logger>
+		<Logger name="org.flywaydb" level="info" additivity="false">
+			<AppenderRef ref="Console" />
+		</Logger>
 	</Loggers>
 </Configuration>

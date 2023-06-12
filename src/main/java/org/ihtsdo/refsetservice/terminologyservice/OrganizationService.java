@@ -646,7 +646,7 @@ public class OrganizationService extends BaseService {
 
         removeUserFromTeams(service, organizationId, userToRemove, authUser);
         final String crowdGroupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(edition.getShortName(), "all", User.ROLE_VIEWER);
-        CrowdAPIClient.deleteMembership(crowdGroupName, userToRemove.getUserName());
+        CrowdAPIClient.deleteMembership(crowdGroupName, userToRemove.getUserName().replace(" ", "%20"));
 
         return organization;
     }
