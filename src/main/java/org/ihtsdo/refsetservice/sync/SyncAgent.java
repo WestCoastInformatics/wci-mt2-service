@@ -43,7 +43,7 @@ public abstract class SyncAgent {
     private static Boolean isIgnoreCoreRefsets = null;
 
     /** Testing options. */
-    private static boolean testing = true;
+    private static boolean testing = false;
 
     protected static String TESTING_EDITION_SHORT_NAME = "SNOMEDCT";
     
@@ -80,7 +80,7 @@ public abstract class SyncAgent {
             isProductionSystem = runForProduction;
             isIgnoreCoreRefsets = ignoreCoreRefsets;
         }
-//        isIgnoreCoreRefsets = true;
+
         sync(service);
 
     }
