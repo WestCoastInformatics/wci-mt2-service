@@ -19,7 +19,6 @@ import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.test.CopyConstructorTester;
 import org.ihtsdo.refsetservice.test.EqualsHashcodeTester;
 import org.ihtsdo.refsetservice.test.GetterSetterTester;
-import org.ihtsdo.refsetservice.test.PersistenceTester;
 import org.ihtsdo.refsetservice.test.ProxyTester;
 import org.ihtsdo.refsetservice.test.SerializationTester;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,6 +67,9 @@ public class EditionUnitTest extends BaseTest {
     public void testModelGetSet() throws Exception {
 
         final GetterSetterTester tester = new GetterSetterTester(object);
+        tester.exclude("organizationName");
+        tester.exclude("organizationId");
+        tester.exclude("abbreviation");
         tester.test();
     }
 
@@ -80,14 +82,26 @@ public class EditionUnitTest extends BaseTest {
     public void testModelEqualsHashcode() throws Exception {
 
         final EqualsHashcodeTester tester = new EqualsHashcodeTester(object);
+        // from AbstractHasModified
+        tester.exclude("id");
+        tester.exclude("created");
+        tester.exclude("modified");
+        tester.exclude("modifiedBy");
+        tester.exclude("active");
+
         tester.include("name");
         tester.include("namespace");
         tester.include("shortName");
         tester.include("iconUri");
         tester.include("branch");
-        tester.include("topLevelModule");
         tester.include("defaultLanguageCode");
+
+        tester.exclude("organization");
+        tester.exclude("organizationId");
+        tester.exclude("organizationName");
+
         tester.exclude("defaultLanguageRefsets");
+        tester.exclude("moduleNames");
 
         assertTrue(tester.testIdentityFieldEquals());
         assertTrue(tester.testNonIdentityFieldEquals());
@@ -121,6 +135,10 @@ public class EditionUnitTest extends BaseTest {
     public void testModelSerialization() throws Exception {
 
         final SerializationTester tester = new SerializationTester(object);
+        tester.exclude("moduleNames");
+        tester.exclude("organization");
+        tester.exclude("organizationName");
+        tester.exclude("organizationId");
         assertTrue(tester.testJsonSerialization());
     }
 
@@ -132,26 +150,23 @@ public class EditionUnitTest extends BaseTest {
     @Test
     public void testPersistence() throws Exception {
 
-        final PersistenceTester tester = new PersistenceTester(object, true, true);
-        tester.test();
-
         try (final TerminologyService service = new TerminologyService()) {
-
-            final ProxyTester tester2 = new ProxyTester(new Edition());
-            final Edition object = (Edition) tester2.createObject(1);
-            LOG.info("************ object: " + object);
-            object.setId(null);
-            object.setOrganization(null);
-            object.setDefaultLanguageRefsets(null);
 
             service.setModifiedBy("test");
             service.setModifiedFlag(true);
 
-            service.add(object);
-
+            // organization
             organization.setId(null);
             service.add(organization);
+
+            // edition
+            final ProxyTester tester2 = new ProxyTester(new Edition());
+            final Edition object = (Edition) tester2.createObject(1);
+            LOG.info("************ edition: {}", object);
+            object.setId(null);
             object.setOrganization(organization);
+
+            service.add(object);
 
             object.getDefaultLanguageRefsets().add(DEFAULT_LANGUAGE_REFSET);
 

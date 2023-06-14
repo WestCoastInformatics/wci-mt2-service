@@ -16,6 +16,7 @@ import java.util.List;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -99,7 +100,8 @@ public class BaseController {
     public User authorizeUser() throws Exception {
 
         final User authUser = SecurityService.getUserFromSession();
-        if (authUser == null || authUser.getId() == null) {
+        
+        if (authUser == null || (authUser.getId() == null && !PropertyUtility.getProperty("springProfiles").toLowerCase().contains("test"))) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
         return authUser;

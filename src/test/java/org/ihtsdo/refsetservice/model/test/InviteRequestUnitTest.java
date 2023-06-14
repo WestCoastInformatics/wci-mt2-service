@@ -7,51 +7,33 @@
  * and are protected by trade secret or copyright law.  Dissemination of this information
  * or reproduction of this material is strictly forbidden.
  */
-
 package org.ihtsdo.refsetservice.model.test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.ihtsdo.refsetservice.model.Concept;
+import org.ihtsdo.refsetservice.model.InviteRequest;
+import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.test.CopyConstructorTester;
 import org.ihtsdo.refsetservice.test.EqualsHashcodeTester;
 import org.ihtsdo.refsetservice.test.GetterSetterTester;
 import org.ihtsdo.refsetservice.test.ProxyTester;
 import org.ihtsdo.refsetservice.test.SerializationTester;
-import org.ihtsdo.refsetservice.util.ConceptResultList;
-import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Unit test for {@link ConceptResultList}.
+ * The Class InviteRequestUnitTesst.
  */
-public class ConceptResultListUnitTest extends BaseTest {
+public class InviteRequestUnitTest extends BaseTest {
 
     /** The Constant LOG. */
-    @SuppressWarnings("unused")
-    private static final Logger LOG = LoggerFactory.getLogger(ConceptResultListUnitTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(InviteRequestUnitTest.class);
 
-    /** The model object to test. */
-    private ConceptResultList object;
-
-    /** The c 1. */
-    private List<Concept> c1;
-
-    /** The c 2. */
-    private List<Concept> c2;
-
-    /** The sc 1. */
-    private SearchParameters sp1;
-
-    /** The sc 2. */
-    private SearchParameters sp2;
+    /** The object. */
+    private InviteRequest object;
 
     /**
      * Setup.
@@ -61,18 +43,8 @@ public class ConceptResultListUnitTest extends BaseTest {
     @BeforeEach
     public void setup() throws Exception {
 
-        object = new ConceptResultList();
+        object = new InviteRequest();
 
-        final ProxyTester tester = new ProxyTester(new SearchParameters());
-        sp1 = (SearchParameters) tester.createObject(1);
-        sp2 = (SearchParameters) tester.createObject(2);
-
-        final ProxyTester tester2 = new ProxyTester(new Concept());
-        c1 = new ArrayList<>();
-        c1.add((Concept) tester2.createObject(1));
-        c2 = new ArrayList<>();
-        c2.add((Concept) tester2.createObject(1));
-        c2.add((Concept) tester2.createObject(2));
     }
 
     /**
@@ -84,11 +56,6 @@ public class ConceptResultListUnitTest extends BaseTest {
     public void testModelGetSet() throws Exception {
 
         final GetterSetterTester tester = new GetterSetterTester(object);
-        tester.proxy("concepts", 1, c1);
-        tester.proxy("concepts", 2, c2);
-        tester.proxy(SearchParameters.class, 1, sp1);
-        tester.proxy(SearchParameters.class, 2, sp2);
-
         tester.test();
     }
 
@@ -101,22 +68,19 @@ public class ConceptResultListUnitTest extends BaseTest {
     public void testModelEqualsHashcode() throws Exception {
 
         final EqualsHashcodeTester tester = new EqualsHashcodeTester(object);
-        tester.include("total");
-        tester.exclude("items");
-        tester.include("limit");
-        tester.include("offset");
-        tester.include("miscCountA");
-        tester.include("miscCountB");
-        tester.include("searchAfter");
-        tester.include("totalKnown");
-        tester.exclude("scoreMap");
-        tester.include("timeTaken");
-        tester.include("parameters");
+        // from AbstractHasModified
+        tester.exclude("id");
+        tester.exclude("created");
+        tester.exclude("modified");
+        tester.exclude("modifiedBy");
+        tester.exclude("active");
 
-        tester.proxy("concepts", 1, c1);
-        tester.proxy("concepts", 2, c2);
-        tester.proxy(SearchParameters.class, 1, sp1);
-        tester.proxy(SearchParameters.class, 2, sp2);
+        tester.include("action");
+        tester.include("requester");
+        tester.include("recipientEmail");
+        tester.include("payload");
+        tester.include("response");
+        tester.include("responseDate");
 
         assertTrue(tester.testIdentityFieldEquals());
         assertTrue(tester.testNonIdentityFieldEquals());
@@ -134,11 +98,9 @@ public class ConceptResultListUnitTest extends BaseTest {
     @Test
     public void testModelCopy() throws Exception {
 
-        final CopyConstructorTester tester = new CopyConstructorTester(object);
-        tester.proxy("concepts", 1, c1);
-        tester.proxy(SearchParameters.class, 1, sp1);
-
-        assertTrue(tester.testCopyConstructor(ConceptResultList.class));
+        final InviteRequest copyObject = new InviteRequest();
+        final CopyConstructorTester tester = new CopyConstructorTester(copyObject);
+        assertTrue(tester.testCopyConstructor(InviteRequest.class));
     }
 
     /**
@@ -150,9 +112,45 @@ public class ConceptResultListUnitTest extends BaseTest {
     public void testModelSerialization() throws Exception {
 
         final SerializationTester tester = new SerializationTester(object);
-        tester.proxy("concepts", 1, c1);
-        tester.proxy(SearchParameters.class, 1, sp1);
-
         assertTrue(tester.testJsonSerialization());
     }
+
+    /**
+     * Test persistence.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testPersistence() throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            service.setModifiedBy("test");
+            service.setModifiedFlag(true);
+
+            final ProxyTester tester1 = new ProxyTester(new InviteRequest());
+            final InviteRequest object = (InviteRequest) tester1.createObject(1);
+            object.setId(null);
+
+            service.add(object);
+            service.update(object);
+
+            InviteRequest retrievedObject = service.get(object.getId(), object.getClass());
+
+            // test that the team can be retrieved.
+            if (!object.getId().equals(retrievedObject.getId())) {
+                throw new Exception("Original id unexpectedly does not match retrieved object id = " + object.getId() + ", " + retrievedObject.getId());
+            }
+
+            service.remove(object);
+
+            retrievedObject = service.get(object.getId(), object.getClass());
+
+            if (retrievedObject != null) {
+                throw new Exception("Search results size is unexpectedly not empty = " + retrievedObject.getId());
+            }
+        }
+
+    }
+
 }

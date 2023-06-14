@@ -315,7 +315,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     public int hashCode() {
 
         final int prime = 31;
-        int result = super.hashCode();
+        int result = 1;
         result = prime * result + ((codeSystemType == null) ? 0 : codeSystemType.hashCode());
         result = prime * result + ((description == null) ? 0 : description.hashCode());
         result = prime * result + ((iconUri == null) ? 0 : iconUri.hashCode());
@@ -339,7 +339,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         if (!(obj instanceof Organization)) {
             return false;
         }
-        Organization other = (Organization) obj;
+        final Organization other = (Organization) obj;
         if (codeSystemType == null) {
             if (other.codeSystemType != null) {
                 return false;

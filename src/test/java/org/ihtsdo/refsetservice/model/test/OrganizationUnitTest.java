@@ -73,7 +73,7 @@ public class OrganizationUnitTest extends BaseTest {
     }
 
     /**
-     * Test equals and hascode methods.
+     * Test equals and hashcode methods.
      *
      * @throws Exception the exception
      */
@@ -81,19 +81,26 @@ public class OrganizationUnitTest extends BaseTest {
     public void testModelEqualsHashcode() throws Exception {
 
         final EqualsHashcodeTester tester = new EqualsHashcodeTester(object);
+        // from AbstractHasModified
+        tester.exclude("id");
+        tester.exclude("created");
+        tester.exclude("modified");
+        tester.exclude("modifiedBy");
+        tester.exclude("active");
+
         tester.include("name");
         tester.include("description");
-        tester.exclude("edition");
-        tester.exclude("members");
-        tester.exclude("roles");
         tester.include("primaryContactEmail");
+        tester.include("codeSystemType");
+        tester.exclude("members");
         tester.include("iconUri");
+        tester.exclude("roles");
 
         assertTrue(tester.testIdentityFieldEquals());
         assertTrue(tester.testNonIdentityFieldEquals());
         assertTrue(tester.testIdentityFieldNotEquals());
         assertTrue(tester.testIdentityFieldHashcode());
-        // TODO fix: assertTrue(tester.testNonIdentityFieldHashcode());
+        assertTrue(tester.testNonIdentityFieldHashcode());
         assertTrue(tester.testIdentityFieldDifferentHashcode());
     }
 
@@ -117,7 +124,7 @@ public class OrganizationUnitTest extends BaseTest {
      *
      * @throws Exception the exception
      */
-    // TODO Fix @Test
+    @Test
     public void testModelSerialization() throws Exception {
 
         final SerializationTester tester = new SerializationTester(object);

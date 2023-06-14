@@ -649,7 +649,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     public int hashCode() {
 
         final int prime = 31;
-        int result = super.hashCode();
+        int result = 1;
         result = prime * result + ((children == null) ? 0 : children.hashCode());
         result = prime * result + ((code == null) ? 0 : code.hashCode());
         result = prime * result + ((memberId == null) ? 0 : memberId.hashCode());
