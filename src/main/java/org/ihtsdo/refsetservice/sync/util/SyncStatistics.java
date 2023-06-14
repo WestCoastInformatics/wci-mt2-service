@@ -313,7 +313,7 @@ public class SyncStatistics {
         refsetIdsAdded = val;
     }
 
-    public void setRefsetIdsInactivated(int val) {
+    public void setRefsetVersionPairsInactivated(int val) {
         refsetIdsInactivated = val;
     }
 
@@ -341,6 +341,10 @@ public class SyncStatistics {
 
     public void incrementRefsetVersionsInactivated(int val) {
         refsetVersionsInactivated += val;
+    }
+
+    public void setRefsetVersionsInactivated(int val) {
+        refsetVersionsInactivated = val;
     }
 
     public void incrementRefsetVersionsActivated(int val) {

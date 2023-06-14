@@ -1,5 +1,7 @@
 package org.ihtsdo.refsetservice.sync;
 
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -27,6 +29,7 @@ import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,7 +107,7 @@ public class SyncRefsetAgent extends SyncAgent {
         activatedRefsetIds.stream().forEach(refsetId -> dbHandler.updateRefsetStatusAllVersions(service, refsetId, true));
 
         // Inactivate active DB refsets that are not in termserver
-        final List<String> inactivatedRefsetIds = new ArrayList<>();
+        final Map<String, Set<Long>> inactivatedRefsetIds = new HashMap<>();
 
         for (final String refsetId : dbActiveRefsetIdToVersionRefsetMap.keySet()) {
 
@@ -114,20 +117,32 @@ public class SyncRefsetAgent extends SyncAgent {
 
             for (final long dbVersion : dbActiveRefsetIdToVersionRefsetMap.get(refsetId).keySet()) {
 
-                if (!termserverRefsetIdToRefsetVersionsDataMap.containsKey(refsetId)
-                        || termserverRefsetIdToRefsetVersionsDataMap.get(refsetId).keySet().stream().noneMatch(tsVersion -> dbVersion == tsVersion)) {
-                    inactivatedRefsetIds.add(refsetId);
+                final String environment = PropertyUtility.getProperty("refset.service.env");
+
+                if ("DEV".equals(environment)) {
+
+                    if (!termserverRefsetIdToRefsetVersionsDataMap.containsKey(refsetId)
+                            || termserverRefsetIdToRefsetVersionsDataMap.get(refsetId).keySet().stream().noneMatch(tsVersion -> isRefsetVersionMatches(tsVersion, dbVersion))) {
+                        if (inactivatedRefsetIds.containsKey(refsetId)) {
+                            inactivatedRefsetIds.put(refsetId, new HashSet<>());
+                        }
+                        inactivatedRefsetIds.get(refsetId).add(dbVersion);
+                        LOG.debug("AAA - INACTIVATING Refset {} as not finding any published versions on termserver", refsetId);
+                    }
+
                 }
             }
         }
 
-        inactivatedRefsetIds.stream().forEach(refsetId -> dbHandler.updateRefsetStatusAllVersions(service, refsetId, false));
-        statistics.setRefsetIdsInactivated(inactivatedRefsetIds.size());
+        inactivatedRefsetIds.keySet().stream()
+                .forEach(refsetId -> inactivatedRefsetIds.get(refsetId).stream().forEach(version -> dbHandler.updateRefsetVersionStatus(service, refsetId, version, false)));
+
+        inactivatedRefsetIds.keySet().stream().forEach(refsetId -> statistics.setRefsetVersionsInactivated(statistics.getRefsetVersionsInactivated() + inactivatedRefsetIds.get(refsetId).size()));
 
         // Determine refsetIds that were just activated to see if there are any other changes necessary
         final List<String> activatedAndModifiedRefsetIds = new ArrayList<>();
 
-        final List<Refset> dbRefsets = service.getAll(Refset.class);
+        final List<Refset> dbRefsets = getAllPublishedRefsets(service);
 
         for (final String refsetId : activatedRefsetIds) {
 
@@ -150,9 +165,28 @@ public class SyncRefsetAgent extends SyncAgent {
         statistics.setRefsetIdsActivated(activatedRefsetIds.size());
 
         addedOrInactivatedRefsetIds.addAll(addedRefsetIds);
-        addedOrInactivatedRefsetIds.addAll(inactivatedRefsetIds);
+        addedOrInactivatedRefsetIds.addAll(inactivatedRefsetIds.keySet());
 
         return addedOrInactivatedRefsetIds;
+    }
+
+    private List<Refset> getAllPublishedRefsets(TerminologyService service) throws Exception {
+        List<Refset> dbRefsets = service.getAll(Refset.class);
+        return dbRefsets.stream().filter(r -> "PUBLISHED".equals(r.getWorkflowStatus())).collect(Collectors.toList());
+    }
+
+    private boolean isRefsetVersionMatches(Long tsVersion, long dbVersion) {
+        final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        final String environment = PropertyUtility.getProperty("refset.service.env");
+
+        if ("DEV".equals(environment)) {
+            // Get to midnight after dbVersion
+            final LocalDate dbVersionDate = LocalDate.parse(sdf.format(new Date(dbVersion))).plusDays(1);
+
+            return dbVersionDate.equals(LocalDate.parse(sdf.format(new Date(tsVersion))));
+        } else {
+            return tsVersion == dbVersion;
+        }
     }
 
     private void analyzeRefsetVersions(final TerminologyService service, final List<String> addedOrInactivatedRefsetIds) throws Exception {
@@ -186,11 +220,16 @@ public class SyncRefsetAgent extends SyncAgent {
             final Set<Long> termserverVersions = termserverVersionDataMaps.keySet();
 
             // Determine and create new refsetVersions (not in active nor in inactive DB refsetVersions)
-            final List<Long> addedVersions =
-                    termserverVersions.stream()
-                            .filter(date -> (!dbActiveRefsetIdToVersionRefsetMap.containsKey(refsetId) || !dbActiveRefsetIdToVersionRefsetMap.get(refsetId).containsKey(date))
-                                    && (!dbInactiveRefsetIdToVersionRefsetMap.containsKey(refsetId) || !dbInactiveRefsetIdToVersionRefsetMap.get(refsetId).containsKey(date)))
-                            .collect(Collectors.toList());
+            final List<Long> addedVersions = new ArrayList<>();
+
+            for (Long tsVersion : termserverVersions) {
+                if ((!dbActiveRefsetIdToVersionRefsetMap.containsKey(refsetId)
+                        || dbActiveRefsetIdToVersionRefsetMap.get(refsetId).keySet().stream().noneMatch(dbVersion -> isRefsetVersionMatches(tsVersion, dbVersion)))
+                        && (!dbInactiveRefsetIdToVersionRefsetMap.containsKey(refsetId)
+                                || dbInactiveRefsetIdToVersionRefsetMap.get(refsetId).keySet().stream().noneMatch(dbVersion -> isRefsetVersionMatches(tsVersion, dbVersion)))) {
+                    addedVersions.add(tsVersion);
+                }
+            }
 
             addMultipleRefsets(service, addedVersions, termserverVersionDataMaps);
 
@@ -209,7 +248,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
                     boolean matchFound = false;
                     for (final long termserverVersion : termserverVersions) {
-                        if (dbVersion == termserverVersion) {
+                        if (isRefsetVersionMatches(termserverVersion, dbVersion)) {
                             matchFound = true;
 
                         }
@@ -231,7 +270,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
                     for (final long termserverVersion : termserverVersionDataMaps.keySet()) {
 
-                        if (dbVersion == termserverVersion) {
+                        if (isRefsetVersionMatches(termserverVersion, dbVersion)) {
                             matchFound = true;
 
                         }
@@ -243,7 +282,7 @@ public class SyncRefsetAgent extends SyncAgent {
                     }
                 }
                 // Compare in termserver & active in db
-                final List<Refset> dbRefsets = service.getAll(Refset.class);
+                final List<Refset> dbRefsets = getAllPublishedRefsets(service);
 
                 modifiedDBVersions.addAll(compareAndModifyRefsetVersions(service, dbRefsets, refsetId, existingInBothVersions, termserverVersionDataMaps));
 
@@ -257,8 +296,7 @@ public class SyncRefsetAgent extends SyncAgent {
             }
 
             // Compare in termserver & newly activated in db
-
-            final List<Refset> dbRefsets = service.getAll(Refset.class);
+            final List<Refset> dbRefsets = getAllPublishedRefsets(service);
             if (!activatedVersions.isEmpty()) {
                 final List<Long> activatedAndModifiedVersions = compareAndModifyRefsetVersions(service, dbRefsets, refsetId, activatedVersions, termserverVersionDataMaps);
                 statistics.incrementRefsetVersionsActivatedAndModified(activatedAndModifiedVersions.size());
@@ -372,8 +410,8 @@ public class SyncRefsetAgent extends SyncAgent {
         final Set<Refset> dbInactiveRefsets = new HashSet<>();
         final List<Refset> dbRefsets = service.getAll(Refset.class);
 
-        dbRefsets.stream().filter(r -> r.isActive()).forEach(ar -> dbActiveRefsets.add(ar));
-        dbRefsets.stream().filter(r -> !r.isActive()).forEach(ir -> dbInactiveRefsets.add(ir));
+        dbRefsets.stream().filter(r -> "PUBLISHED".equals(r.getWorkflowStatus()) && r.isActive()).forEach(ar -> dbActiveRefsets.add(ar));
+        dbRefsets.stream().filter(r -> "PUBLISHED".equals(r.getWorkflowStatus()) && !r.isActive()).forEach(ir -> dbInactiveRefsets.add(ir));
 
         // Map each refsetId/version pair's SyncRefsetMetadata
         dbActiveRefsetIdToVersionRefsetMap.putAll(generateDatabaseRefsetIdtoRefsetVersionsMap(dbActiveRefsets));
@@ -411,7 +449,6 @@ public class SyncRefsetAgent extends SyncAgent {
         final Map<String, Map<Long, SyncRefsetMetadata>> generatedMap = new HashMap<>();
 
         for (final SyncRefsetMetadata termserverRefsetData : filteredRefsets) {
-
             final String refsetId = termserverRefsetData.getRefsetId();
 
             if (!generatedMap.containsKey(refsetId)) {
@@ -440,7 +477,7 @@ public class SyncRefsetAgent extends SyncAgent {
             final Refset modifyingVersion = (Refset) utilities.validateMatches(refsetVersionStream, refsetId + " / " + testingVersionDate);
 
             final List<Long> matchingTermserverRefsetVersionData =
-                    termserverPairDataMap.keySet().stream().filter(termserverVersion -> (testingVersionDate == termserverVersion)).collect(Collectors.toList());
+                    termserverPairDataMap.keySet().stream().filter(termserverVersion -> (isRefsetVersionMatches(termserverVersion, testingVersionDate))).collect(Collectors.toList());
 
             if (matchingTermserverRefsetVersionData.isEmpty()) {
                 throw new Exception("Compare Refset Version - Failed to find find expected the termserver pairing for refsetId/testingVersionDate: " + refsetId + " / " + testingVersionDate);
@@ -837,7 +874,7 @@ public class SyncRefsetAgent extends SyncAgent {
             }
         }
 
-        final List<Refset> dbRefsets = service.getAll(Refset.class);
+        final List<Refset> dbRefsets = getAllPublishedRefsets(service);
 
         // Reset latestPublishedVersion before recalculate it
         for (final Refset dbRefset : dbRefsets) {
@@ -859,7 +896,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
                 for (final String refsetId : latestVersionCache.keySet()) {
 
-                    if (dbRefset.getRefsetId().equals(refsetId) && dbRefset.getVersionDate().getTime() == latestVersionCache.get(refsetId)) {
+                    if (dbRefset.getRefsetId().equals(refsetId) && isRefsetVersionMatches(latestVersionCache.get(refsetId), dbRefset.getVersionDate().getTime())) {
 
                         dbRefset.setLatestPublishedVersion(true);
                         refsetsFinalized.add(dbRefset);

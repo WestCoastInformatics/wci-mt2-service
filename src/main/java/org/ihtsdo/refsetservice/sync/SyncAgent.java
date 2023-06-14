@@ -43,11 +43,11 @@ public abstract class SyncAgent {
     private static Boolean isIgnoreCoreRefsets = null;
 
     /** Testing options. */
-    private static boolean testing = false;
+    private static boolean testing = true;
 
-    protected static String TESTING_EDITION_SHORT_NAME = "SNOMEDCT-NZ";
+    protected static String TESTING_EDITION_SHORT_NAME = "SNOMEDCT";
     
-     protected static String testingRefset = "421000210109"; // Core - Dentistry (in multiple projects in RTT)
+     protected static String testingRefset = "733991000"; // Core - Dentistry (in multiple projects in RTT)
 
     // protected static String testingRefset = null; // To test entire edition
     // protected static String testingRefset = "751000172100"; // 751000172100 - from Belgium
@@ -56,7 +56,7 @@ public abstract class SyncAgent {
     // protected static String testingRefset = "11000172109"; // Sync in the single Intensional refset available on dev-integeration (Belgium Editing)
 
     protected static String developerTestingEditionShortName = null;
-
+ 
     protected static Organization develeperTestingOrganization = null;
 
     /** Other process fields **/
@@ -80,7 +80,7 @@ public abstract class SyncAgent {
             isProductionSystem = runForProduction;
             isIgnoreCoreRefsets = ignoreCoreRefsets;
         }
-
+//        isIgnoreCoreRefsets = true;
         sync(service);
 
     }

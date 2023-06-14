@@ -60,11 +60,11 @@ public class SyncCodeSystemAgent extends SyncAgent {
     private void analyzeTermServerCodeSystems(final JsonNode organizationJsonRootNode) throws Exception {
 
         final Iterator<JsonNode> organizationIterator = organizationJsonRootNode.iterator();
-        LOG.info("Found " + countCodeSystems(organizationIterator) + " + Code Systems on Snowstorm: ");
+        LOG.info("Found " + countCodeSystems(organizationIterator) + " + Code Systems on term server: ");
 
         // Filter code systems (based on active-setting, ignoredCS list, testing situation, and bad data)
         final Map<ReasonEditionSkipped, Set<String>> ignoredReasonsMap = filterCodeSystems(organizationJsonRootNode);
-        LOG.info("Will be processing these " + filteredCodeSystems.size() + " Code Systems: ");
+        LOG.info("Will be processing these " + filteredCodeSystems.size() + " Code Systems found on the term server: ");
 
         filteredCodeSystems.stream().forEach(c -> LOG.info(c.get("shortName").asText()));
 

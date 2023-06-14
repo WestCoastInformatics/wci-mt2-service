@@ -489,6 +489,7 @@ public class SyncUtilities {
         final long differenceInMinutes = ((end.getTime() - startTime.getTime()) / (1000 * 60)) % 60;
         final long differenceInSeconds = ((end.getTime() - startTime.getTime()) / (1000 * 60 * 60)) % 60;
 
+        LOG.info("Operation took " + differenceInMinutes + " seconds to run");
         LOG.info("Operation took " + differenceInSeconds + " seconds to run");
 
         return differenceInMinutes;

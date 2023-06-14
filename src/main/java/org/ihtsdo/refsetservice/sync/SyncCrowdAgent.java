@@ -160,7 +160,6 @@ public class SyncCrowdAgent extends SyncAgent {
         final Map<String, Set<String>> dbOrganizationUsernamesMap = identifyCrowdOrganizationUsersFromEditions(service, crowdRulesMembersMap, filteredEditionRulesMap);
 
         for (final String organizationId : dbOrganizationUsernamesMap.keySet()) {
-
             final Map<String, User> dbUserIdMap = new HashMap<>();
             final Organization organization = service.get(organizationId, Organization.class);
 
@@ -179,9 +178,9 @@ public class SyncCrowdAgent extends SyncAgent {
             localMembers.stream().filter(u -> dbOrganizationUsernamesMap.get(organizationId).contains(u.getUserName())).forEach(u -> removeLocally.remove(u));
 
             // Remove users from RT2 organization
+            LOG.info("remove local users {} from organization {}: ", removeLocally, organization.getName());
             for (final User user : removeLocally) {
 
-                LOG.info("remove local users {} from organization {}: ", removeLocally, organization.getName());
                 if (organization.getMembers().stream().anyMatch(m -> m.getId().equals(user.getId()))) {
                     final Organization removedOrganization = OrganizationService.removeUserFromOrganization(service, SecurityService.getUserFromSession(), user.getId(), organization.getId());
                     updatedOrganizations.add(removedOrganization.getId());

@@ -85,13 +85,13 @@ public class TeamService extends BaseService {
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
-            service.add(team);
+            Team addedTeam = service.add(team);
             service.add(AuditEntryHelper.addTeamEntry(team));
             service.commit();
 
             setUserRoles(authUser, newTeam, newTeam.getUserRoles());
 
-            return team;
+            return addedTeam;
         }
     }
 
@@ -225,11 +225,11 @@ public class TeamService extends BaseService {
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
-            service.update(existingTeam);
-            service.add(AuditEntryHelper.updateTeamEntry(existingTeam));
+            Team updatedTeam = service.update(existingTeam);
+            service.add(AuditEntryHelper.updateTeamEntry(updatedTeam));
             service.commit();
 
-            return existingTeam;
+            return updatedTeam;
         }
     }
 
@@ -249,7 +249,7 @@ public class TeamService extends BaseService {
             service.beginTransaction();
 
             // Find the object
-            final Team team = getTeam(teamId, true);
+            Team team = getTeam(teamId, true);
 
             checkEditPermissions(user, team);
 
@@ -261,7 +261,8 @@ public class TeamService extends BaseService {
             }
 
             for (final User teamMember : team.getMemberList()) {
-                removeUserFromTeam(service, user, team, teamMember);
+
+                team = removeUserFromTeam(service, user, team, teamMember);
             }
 
             team.setActive(false);
@@ -618,7 +619,6 @@ public class TeamService extends BaseService {
                 throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
             }
         }
-
         if (team.getMembers() != null) {
 
             if (team.getMembers().contains(userToRemove.getId())) {
@@ -635,8 +635,8 @@ public class TeamService extends BaseService {
 
         service.setModifiedBy(user.getUserName());
 
-        service.update(team);
-        service.add(AuditEntryHelper.removeUserFromTeamEntry(team, userToRemove));
+        Team updatedTeam = service.update(team);
+        service.add(AuditEntryHelper.removeUserFromTeamEntry(updatedTeam, userToRemove));
 
         // remove user from crowd groups
         if (crowdUnitTestSkip == null || !"true".equalsIgnoreCase(crowdUnitTestSkip)) {
@@ -649,19 +649,19 @@ public class TeamService extends BaseService {
 
             if (projectList != null && projectList.getItems() != null) {
                 for (final Project project : projectList.getItems()) {
-                    for (final String role : team.getRoles()) {
+                    for (final String role : updatedTeam.getRoles()) {
                         final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
                         CrowdAPIClient.deleteMembership(groupName, userToRemove.getUserName());
                     }
                 }
             }
 
-            final Edition edition = EditionService.getEditionForOrganization(team.getOrganization().getId());
+            final Edition edition = EditionService.getEditionForOrganization(updatedTeam.getOrganization().getId());
 
-            if (team.getType().equalsIgnoreCase(TeamType.ORGANIZATION.getText())) {
+            if (updatedTeam.getType().equalsIgnoreCase(TeamType.ORGANIZATION.getText())) {
 
                 final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(edition.getShortName(), "all", "admin");
-                CrowdAPIClient.deleteMembership(groupName, userToRemove.getUserName());
+                CrowdAPIClient.deleteMembership(groupName, userToRemove.getUserName().replace(" ", "%20"));
 
             }
 
@@ -669,7 +669,7 @@ public class TeamService extends BaseService {
             LOG.info("SKIP CALLING CROWD API");
         }
 
-        return team;
+        return updatedTeam;
     }
 
     /**
