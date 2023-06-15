@@ -1043,19 +1043,24 @@ public class OrganizationService extends BaseService {
             try {
                 // teams associated with projects for removal from crowd too.
                 final ResultList<Project> projects = getOrganizationProjects(service, organizationId);
+
                 if (projects != null && projects.getItems() != null) {
                     for (final Project project : projects.getItems()) {
+
                         for (final String teamId : project.getTeams()) {
                             final Team team = TeamService.getTeam(teamId, true);
-                            TeamService.removeUserFromTeam(authUser, teamId, userToRemove.getId());
-                            for (final String role : team.getRoles()) {
-                                try {
-                                    final String groupName =
-                                        CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
-                                    CrowdAPIClient.deleteMembership(groupName, userToRemove.getUserName());
-                                } catch (final Exception e) {
-                                    LOG.error("ERROR removing user {} from team {} for organization {}.", userToRemove.getUserName(), team.getId(),
-                                        organizationId, e);
+
+                            if (team.getMembers() != null && team.getMembers().contains(userToRemove.getId())) {
+
+                                TeamService.removeUserFromTeam(authUser, teamId, userToRemove.getId());
+                                for (final String role : team.getRoles()) {
+
+                                    try {
+                                        final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                                        CrowdAPIClient.deleteMembership(groupName, userToRemove.getUserName());
+                                    } catch (final Exception e) {
+                                        LOG.error("ERROR removing user {} from team {} for organization {}.", userToRemove.getUserName(), team.getId(), organizationId, e);
+                                    }
                                 }
                             }
                         }
@@ -1064,11 +1069,12 @@ public class OrganizationService extends BaseService {
 
                 // teams not associated with project that are would not be in crowd.
                 final ResultList<Team> orgTeams = OrganizationService.getOrganizationTeams(service, organizationId);
-                
+
                 if (orgTeams != null && orgTeams.getItems() != null) {
                     for (final Team team : orgTeams.getItems()) {
-                        
+
                         if (team.getMembers() != null && team.getMembers().contains(userToRemove.getId())) {
+
                             TeamService.removeUserFromTeam(authUser, team.getId(), userToRemove.getId());
                         }
                     }

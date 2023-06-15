@@ -23,13 +23,13 @@ import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.model.VersionStatus;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.util.SyncRefsetMetadata;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
-import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,12 +75,11 @@ public class SyncRefsetAgent extends SyncAgent {
     }
 
     private List<String> analyzeRefsetsIds(final TerminologyService service) throws Exception {
-        final List<String> addedOrInactivatedRefsetIds = new ArrayList<>();
-
-        final Set<String> termserverRefsetIds = termserverRefsetIdToRefsetVersionsDataMap.keySet();
 
         LOG.info("analyze refsetIds");
 
+        final List<String> addedOrInactivatedRefsetIds = new ArrayList<>();
+        final Set<String> termserverRefsetIds = termserverRefsetIdToRefsetVersionsDataMap.keySet();
         statistics.setRefsetIdsSynced(termserverRefsetIds.size());
 
         Map<String, Map<Long, Refset>> dbActiveRefsetIdToVersionRefsetMap = new HashMap<>();
@@ -117,20 +116,20 @@ public class SyncRefsetAgent extends SyncAgent {
 
             for (final long dbVersion : dbActiveRefsetIdToVersionRefsetMap.get(refsetId).keySet()) {
 
-                final String environment = PropertyUtility.getProperty("refset.service.env");
+                if (!termserverRefsetIdToRefsetVersionsDataMap.containsKey(refsetId)
+                        || termserverRefsetIdToRefsetVersionsDataMap.get(refsetId).keySet().stream().noneMatch(tsVersion -> isRefsetVersionMatches(tsVersion, dbVersion))) {
 
-                if ("DEV".equals(environment)) {
+                    // Only consider published refsets for inactivation (when not found on termserver) as anything else is still strictly managed within RT2
+                    if (VersionStatus.PUBLISHED.getLable().equals(dbActiveRefsetIdToVersionRefsetMap.get(refsetId).get(dbVersion).getVersionStatus())) {
 
-                    if (!termserverRefsetIdToRefsetVersionsDataMap.containsKey(refsetId)
-                            || termserverRefsetIdToRefsetVersionsDataMap.get(refsetId).keySet().stream().noneMatch(tsVersion -> isRefsetVersionMatches(tsVersion, dbVersion))) {
-                        if (inactivatedRefsetIds.containsKey(refsetId)) {
+                        if (!inactivatedRefsetIds.containsKey(refsetId)) {
                             inactivatedRefsetIds.put(refsetId, new HashSet<>());
                         }
-                        inactivatedRefsetIds.get(refsetId).add(dbVersion);
-                        LOG.debug("AAA - INACTIVATING Refset {} as not finding any published versions on termserver", refsetId);
-                    }
 
+                        inactivatedRefsetIds.get(refsetId).add(dbVersion);
+                    }
                 }
+
             }
         }
 
@@ -172,21 +171,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
     private List<Refset> getAllPublishedRefsets(TerminologyService service) throws Exception {
         List<Refset> dbRefsets = service.getAll(Refset.class);
-        return dbRefsets.stream().filter(r -> "PUBLISHED".equals(r.getWorkflowStatus())).collect(Collectors.toList());
-    }
-
-    private boolean isRefsetVersionMatches(Long tsVersion, long dbVersion) {
-        final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        final String environment = PropertyUtility.getProperty("refset.service.env");
-
-        if ("DEV".equals(environment)) {
-            // Get to midnight after dbVersion
-            final LocalDate dbVersionDate = LocalDate.parse(sdf.format(new Date(dbVersion))).plusDays(1);
-
-            return dbVersionDate.equals(LocalDate.parse(sdf.format(new Date(tsVersion))));
-        } else {
-            return tsVersion == dbVersion;
-        }
+        return dbRefsets.stream().filter(r -> VersionStatus.PUBLISHED.getLable().equals(r.getVersionStatus())).collect(Collectors.toList());
     }
 
     private void analyzeRefsetVersions(final TerminologyService service, final List<String> addedOrInactivatedRefsetIds) throws Exception {
@@ -410,8 +395,8 @@ public class SyncRefsetAgent extends SyncAgent {
         final Set<Refset> dbInactiveRefsets = new HashSet<>();
         final List<Refset> dbRefsets = service.getAll(Refset.class);
 
-        dbRefsets.stream().filter(r -> "PUBLISHED".equals(r.getWorkflowStatus()) && r.isActive()).forEach(ar -> dbActiveRefsets.add(ar));
-        dbRefsets.stream().filter(r -> "PUBLISHED".equals(r.getWorkflowStatus()) && !r.isActive()).forEach(ir -> dbInactiveRefsets.add(ir));
+        dbRefsets.stream().filter(r -> VersionStatus.PUBLISHED.getLable().equals(r.getVersionStatus()) && r.isActive()).forEach(ar -> dbActiveRefsets.add(ar));
+        dbRefsets.stream().filter(r -> VersionStatus.PUBLISHED.getLable().equals(r.getVersionStatus()) && !r.isActive()).forEach(ir -> dbInactiveRefsets.add(ir));
 
         // Map each refsetId/version pair's SyncRefsetMetadata
         dbActiveRefsetIdToVersionRefsetMap.putAll(generateDatabaseRefsetIdtoRefsetVersionsMap(dbActiveRefsets));
@@ -452,7 +437,6 @@ public class SyncRefsetAgent extends SyncAgent {
             final String refsetId = termserverRefsetData.getRefsetId();
 
             if (!generatedMap.containsKey(refsetId)) {
-
                 generatedMap.put(refsetId, new HashMap<>());
             }
 
@@ -1156,5 +1140,14 @@ public class SyncRefsetAgent extends SyncAgent {
             e.printStackTrace();
             return null;
         }
+    }
+
+    private boolean isRefsetVersionMatches(Long tsVersion, long dbVersion) {
+        final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+
+        // Get to midnight after dbVersion
+        final LocalDate dbVersionDate = LocalDate.parse(sdf.format(new Date(dbVersion))).plusDays(1);
+
+        return tsVersion == dbVersion || dbVersionDate.equals(LocalDate.parse(sdf.format(new Date(tsVersion))));
     }
 }

@@ -60,6 +60,7 @@ public class SyncCrowdAgent extends SyncAgent {
     }
 
     private void assignUsersToAdminTeams(final TerminologyService service, final Map<String, User> userMap, final Map<String, Set<String>> filteredEditionRulesMap) throws Exception {
+        LOG.info("Adding users to admin teams based on updates to CROWD-defined roles  {}", filteredEditionRulesMap);
 
         final Set<User> adminUsers = new HashSet<>();
 
@@ -158,6 +159,7 @@ public class SyncCrowdAgent extends SyncAgent {
 
         // Filtered organizationId to Usernames Map
         final Map<String, Set<String>> dbOrganizationUsernamesMap = identifyCrowdOrganizationUsersFromEditions(service, crowdRulesMembersMap, filteredEditionRulesMap);
+        LOG.info("Adding users to organizations based on updates to CROWD-defined projects (using the rt2 project-to-edition-to-organizaion hierarchy) {}", dbOrganizationUsernamesMap);
 
         for (final String organizationId : dbOrganizationUsernamesMap.keySet()) {
             final Map<String, User> dbUserIdMap = new HashMap<>();
@@ -291,6 +293,7 @@ public class SyncCrowdAgent extends SyncAgent {
         readDbAllEditions(service).stream().forEach(e -> dbEditionMap.put(getEditionShortNameToEdition(e.getShortName()), e));
 
         final Map<String, Set<String>> editionProjectsMap = identifyCrowdEditionProjects(service, crowdGroupMembersMap.keySet());
+        LOG.info("Adding projects based on updates to CROWD-defined projects {}", editionProjectsMap);
 
         for (final String editionId : editionProjectsMap.keySet()) {
 
@@ -302,6 +305,8 @@ public class SyncCrowdAgent extends SyncAgent {
             for (final String projectName : projects) {
 
                 if (!editionProjectsNames.contains(projectName)) {
+                    LOG.info("Adding new project just found on crowd for first time {} in {}", projectName, edition.getName());
+
                     final Project newProject = dbHandler.addProject(service, projectName, "Default description for crowd-defined project: " + projectName, edition);
 
                     if (!addedProjectMap.containsKey(editionId)) {
