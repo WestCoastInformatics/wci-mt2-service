@@ -120,7 +120,7 @@ public class SyncRefsetAgent extends SyncAgent {
                         || termserverRefsetIdToRefsetVersionsDataMap.get(refsetId).keySet().stream().noneMatch(tsVersion -> isRefsetVersionMatches(tsVersion, dbVersion))) {
 
                     // Only consider published refsets for inactivation (when not found on termserver) as anything else is still strictly managed within RT2
-                    if (VersionStatus.PUBLISHED.getLable().equals(dbActiveRefsetIdToVersionRefsetMap.get(refsetId).get(dbVersion).getVersionStatus())) {
+                    if (VersionStatus.PUBLISHED.getLabel().equals(dbActiveRefsetIdToVersionRefsetMap.get(refsetId).get(dbVersion).getVersionStatus())) {
 
                         if (!inactivatedRefsetIds.containsKey(refsetId)) {
                             inactivatedRefsetIds.put(refsetId, new HashSet<>());
@@ -171,7 +171,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
     private List<Refset> getAllPublishedRefsets(TerminologyService service) throws Exception {
         List<Refset> dbRefsets = service.getAll(Refset.class);
-        return dbRefsets.stream().filter(r -> VersionStatus.PUBLISHED.getLable().equals(r.getVersionStatus())).collect(Collectors.toList());
+        return dbRefsets.stream().filter(r -> VersionStatus.PUBLISHED.getLabel().equals(r.getVersionStatus())).collect(Collectors.toList());
     }
 
     private void analyzeRefsetVersions(final TerminologyService service, final List<String> addedOrInactivatedRefsetIds) throws Exception {
@@ -395,8 +395,8 @@ public class SyncRefsetAgent extends SyncAgent {
         final Set<Refset> dbInactiveRefsets = new HashSet<>();
         final List<Refset> dbRefsets = service.getAll(Refset.class);
 
-        dbRefsets.stream().filter(r -> VersionStatus.PUBLISHED.getLable().equals(r.getVersionStatus()) && r.isActive()).forEach(ar -> dbActiveRefsets.add(ar));
-        dbRefsets.stream().filter(r -> VersionStatus.PUBLISHED.getLable().equals(r.getVersionStatus()) && !r.isActive()).forEach(ir -> dbInactiveRefsets.add(ir));
+        dbRefsets.stream().filter(r -> VersionStatus.PUBLISHED.getLabel().equals(r.getVersionStatus()) && r.isActive()).forEach(ar -> dbActiveRefsets.add(ar));
+        dbRefsets.stream().filter(r -> VersionStatus.PUBLISHED.getLabel().equals(r.getVersionStatus()) && !r.isActive()).forEach(ir -> dbInactiveRefsets.add(ir));
 
         // Map each refsetId/version pair's SyncRefsetMetadata
         dbActiveRefsetIdToVersionRefsetMap.putAll(generateDatabaseRefsetIdtoRefsetVersionsMap(dbActiveRefsets));

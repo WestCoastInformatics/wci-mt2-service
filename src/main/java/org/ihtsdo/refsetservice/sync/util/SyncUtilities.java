@@ -485,12 +485,13 @@ public class SyncUtilities {
     public long getProcessingMinutes(final String operationType, final Date startTime) {
 
         final Date end = new Date();
+        final SimpleDateFormat sdf = new SimpleDateFormat("hh:mm:ss");
 
         final long differenceInMinutes = ((end.getTime() - startTime.getTime()) / (1000 * 60)) % 60;
-        final long differenceInSeconds = ((end.getTime() - startTime.getTime()) / (1000 * 60 * 60)) % 60;
 
-        LOG.info("Operation took " + differenceInMinutes + " seconds to run");
-        LOG.info("Operation took " + differenceInSeconds + " seconds to run");
+        LOG.info("start date: {}", sdf.format(new Date(startTime.getTime())));
+        LOG.info("end date: {}", sdf.format(new Date(end.getTime())));
+        LOG.info("Operation took " + differenceInMinutes + " minutes to run");
 
         return differenceInMinutes;
 

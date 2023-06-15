@@ -34,11 +34,11 @@ public enum VersionStatus {
     }
 
     /**
-     * Returns the lable.
+     * Returns the label.
      *
-     * @return the lable
+     * @return the label
      */
-    public String getLable() {
+    public String getLabel() {
 
         return label;
     }
