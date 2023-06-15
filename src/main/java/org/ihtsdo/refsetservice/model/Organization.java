@@ -314,6 +314,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         }
 
         Organization other = (Organization) obj;
+
         if (description == null) {
             if (other.description != null) {
                 return false;

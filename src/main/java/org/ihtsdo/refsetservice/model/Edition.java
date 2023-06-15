@@ -38,6 +38,7 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDe
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.ObjectPath;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.PropertyValue;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
+import org.ihtsdo.refsetservice.util.ModelUtility;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -94,10 +95,9 @@ public class Edition extends AbstractHasModified {
     @JoinColumn(nullable = true)
     @Fetch(FetchMode.JOIN)
     private Organization organization;
-
-    /**
-     * The modules and names for this edition. TODO - This is a temporary field until we fix sync to add the module name to the main modules field
-     */
+    
+    /** The modules and names for this edition. 
+     * TODO - This is a temporary field until we fix sync to add the module name to the main modules field */
     @Transient
     private Map<String, String> moduleNames;
 
@@ -563,11 +563,7 @@ public class Edition extends AbstractHasModified {
         this.moduleNames = moduleNames;
     }
 
-    /**
-     * Hash code.
-     *
-     * @return the int
-     */
+    /* see superclass */
     @Override
     public int hashCode() {
 
@@ -587,149 +583,93 @@ public class Edition extends AbstractHasModified {
         return result;
     }
 
-    /**
-     * Equals.
-     *
-     * @param obj the obj
-     * @return true, if successful
-     */
+    /* see superclass */
     @Override
     public boolean equals(final Object obj) {
 
         if (this == obj) {
-
             return true;
         }
-
-        if (obj == null) {
-
+        if (!super.equals(obj)) {
             return false;
         }
-
-        if (getClass() != obj.getClass()) {
-
+        if (!(obj instanceof Edition)) {
             return false;
         }
-
         final Edition other = (Edition) obj;
 
         if (name == null) {
-
             if (other.name != null) {
-
                 return false;
             }
-
         } else if (!name.equals(other.name)) {
-
             return false;
         }
-
         if (namespace == null) {
-
             if (other.namespace != null) {
-
                 return false;
             }
-
         } else if (!namespace.equals(other.namespace)) {
-
             return false;
         }
 
         if (branch == null) {
-
             if (other.branch != null) {
-
                 return false;
             }
-
         } else if (!branch.equals(other.branch)) {
-
             return false;
         }
 
         if (iconUri == null) {
-
             if (other.iconUri != null) {
-
                 return false;
             }
-
         } else if (!iconUri.equals(other.iconUri)) {
-
             return false;
         }
-
         if (modules == null) {
-
             if (other.modules != null) {
-
                 return false;
             }
-
         } else if (!modules.equals(other.modules)) {
-
             return false;
         }
-
+        
         if (defaultLanguageRefsets == null) {
-
             if (other.defaultLanguageRefsets != null) {
-
                 return false;
             }
-
         } else if (!defaultLanguageRefsets.equals(other.defaultLanguageRefsets)) {
-
             return false;
         }
-
         if (defaultLanguageCode == null) {
-
             if (other.defaultLanguageCode != null) {
-
                 return false;
             }
-
         } else if (!defaultLanguageCode.equals(other.defaultLanguageCode)) {
-
             return false;
         }
-
         if (shortName == null) {
-
             if (other.shortName != null) {
-
                 return false;
             }
-
         } else if (!shortName.equals(other.shortName)) {
-
             return false;
         }
-
         if (organization == null) {
-
             if (other.organization != null) {
-
                 return false;
             }
-
         } else if (!organization.equals(other.organization)) {
-
             return false;
         }
 
         if (moduleNames == null) {
-
             if (other.moduleNames != null) {
-
                 return false;
             }
-
         } else if (!moduleNames.equals(other.moduleNames)) {
-
             return false;
         }
 
@@ -745,7 +685,22 @@ public class Edition extends AbstractHasModified {
             return false;
         }
 
+
         return true;
+    }
+
+    /* see superclass */
+    @Override
+    public String toString() {
+
+        try {
+
+            return ModelUtility.toJson(this);
+        } catch (final Exception e) {
+
+            return e.getMessage();
+        }
+
     }
 
     /**

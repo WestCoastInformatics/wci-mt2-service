@@ -2100,7 +2100,6 @@ public class RefsetService {
     public static List<Map<String, String>> getSortedRefsetVersionList(final Refset refset, final TerminologyService service, final boolean sortAscending)
         throws Exception {
 
-        // NUNO DEAD CODE final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
         final List<Map<String, String>> versionList = new ArrayList<>();
         final PfsParameter pfs = new PfsParameter();
         pfs.setSort("versionDate");

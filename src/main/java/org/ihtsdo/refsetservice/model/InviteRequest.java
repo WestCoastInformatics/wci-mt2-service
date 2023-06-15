@@ -240,7 +240,7 @@ public class InviteRequest extends AbstractHasModified {
     public int hashCode() {
 
         final int prime = 31;
-        int result = super.hashCode();
+        int result = 1;
         result = prime * result + ((action == null) ? 0 : action.hashCode());
         result = prime * result + ((payload == null) ? 0 : payload.hashCode());
         result = prime * result + ((recipientEmail == null) ? 0 : recipientEmail.hashCode());

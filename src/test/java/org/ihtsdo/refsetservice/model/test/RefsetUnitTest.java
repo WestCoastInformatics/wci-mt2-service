@@ -15,7 +15,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+
+import javax.persistence.Transient;
 
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
@@ -67,6 +70,9 @@ public class RefsetUnitTest extends BaseTest {
 
         object = new Refset();
 
+        final ProxyTester tester3 = new ProxyTester(new Organization());
+        organization = (Organization) tester3.createObject(1);
+
         final ProxyTester tester = new ProxyTester(new Edition());
         edition = (Edition) tester.createObject(1);
 
@@ -74,9 +80,6 @@ public class RefsetUnitTest extends BaseTest {
         definitionList = new ArrayList<>();
         definitionList.add((DefinitionClause) tester2.createObject(1));
         definitionList.add((DefinitionClause) tester2.createObject(2));
-
-        final ProxyTester tester3 = new ProxyTester(new Organization());
-        organization = (Organization) tester3.createObject(1);
 
         final ProxyTester tester4 = new ProxyTester(new Project());
         project = (Project) tester4.createObject(1);
@@ -112,37 +115,53 @@ public class RefsetUnitTest extends BaseTest {
     public void testModelEqualsHashcode() throws Exception {
 
         final EqualsHashcodeTester tester = new EqualsHashcodeTester(object);
-        tester.include("refsetId");
-        tester.include("name");
-        tester.include("type");
-        tester.include("versionStatus");
-        tester.include("workflowStatus");
-        tester.include("versionDate");
-        tester.include("narrative");
-        tester.include("versionNotes");
-        tester.include("privateRefset");
-        tester.include("localSet");
-        tester.include("latestPublishedVersion");
-        tester.include("hasVersionInDevelopment");
+        // from AbstractHasModified
+        tester.exclude("id");
+        tester.exclude("created");
+        tester.exclude("modified");
+        tester.exclude("modifiedBy");
+        tester.exclude("active");
+
         tester.include("assignedUser");
-        tester.include("memberCount");
-        tester.include("downloadable");
-        tester.include("feedbackVisible");
-        tester.exclude("roles");
-        tester.include("locked");
-        tester.include("upgradeWarning");
-        tester.exclude("availableActions");
-        tester.include("parentConceptId");
         tester.include("branchPath");
-        tester.exclude("descriptions");
-        tester.exclude("versionList");
-        tester.include("moduleId");
+        tester.include("downloadable");
         tester.include("editBranchId");
         tester.include("externalUrl");
+        tester.include("feedbackVisible");
+        tester.include("hasVersionInDevelopment");
+        tester.include("latestPublishedVersion");
+        tester.include("localSet");
+        tester.include("locked");
+        tester.include("memberCount");
+        tester.include("moduleId");
+        tester.include("name");
+        tester.include("narrative");
+        tester.include("openDiscussionCount");
+        tester.include("parentConceptId");
+        tester.include("privateRefset");
+        tester.include("refsetId");
+        tester.include("resolvedDiscussionCount");
+        tester.include("type");
+        tester.include("upgradeWarning");
+        tester.include("versionDate");
+        tester.include("versionNotes");
+        tester.include("versionStatus");
+        tester.include("workflowStatus");
+
+        tester.exclude("availableActions");
+        tester.exclude("basedOnLatestVersion");
+        tester.exclude("comboRefset");
+        tester.exclude("definitionClauses");
+        tester.exclude("descriptions");
+        tester.exclude("localsetVersionName");
+        tester.exclude("memberSearchMatch");
         tester.exclude("project");
         tester.exclude("projectId");
+        tester.exclude("refsetBranchId");
+        tester.exclude("roles");
         tester.exclude("tags");
-        tester.exclude("definitionClauses");
+        tester.exclude("terminologyVersionDate");
+        tester.exclude("versionList");
 
         assertTrue(tester.testIdentityFieldEquals());
         assertTrue(tester.testNonIdentityFieldEquals());
@@ -157,16 +176,33 @@ public class RefsetUnitTest extends BaseTest {
      *
      * @throws Exception the exception
      */
-    @Test
+    @Test 
     public void testModelCopy() throws Exception {
 
-        final Refset copyObject = new Refset();
-        copyObject.setDefinitionClauses(definitionList);
-        copyObject.setProject(project);
-        copyObject.setEdition(edition);
-        // copyObject.setTags(tagList);
+        final CopyConstructorTester tester = new CopyConstructorTester(object);
+        tester.proxy("definitionList", 1, definitionList);
+        tester.proxy("project", 1, project);
+        tester.proxy("edition", 1, edition);
+        tester.proxy("comboRefset", 1, true);
+        tester.proxy("tagList", 1, "");
+        
+        // exclude transient attributes
+        tester.exclude("downloadable");
+        tester.exclude("feedbackVisible");
+        tester.exclude("roles");
+        tester.exclude("locked");
+        tester.exclude("terminologyVersionDate");
+        tester.exclude("basedOnLatestVersion");
+        tester.exclude("upgradeWarning");
+        tester.exclude("memberSearchMatch");
+        tester.exclude("availableActions");
+        tester.exclude("parentConceptId");
+        tester.exclude("branchPath");
+        tester.exclude("descriptions");
+        tester.exclude("versionList");
+        tester.exclude("openDiscussionCount");
+        tester.exclude("resolvedDiscussionCount");        
 
-        final CopyConstructorTester tester = new CopyConstructorTester(copyObject);
         assertTrue(tester.testCopyConstructor(Refset.class));
     }
 
@@ -192,28 +228,46 @@ public class RefsetUnitTest extends BaseTest {
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            final ProxyTester tester2 = new ProxyTester(new Refset());
-            final Refset object = (Refset) tester2.createObject(1);
-            LOG.info("************ object: " + object);
-            object.setId(null);
-            object.setEdition(null);
-            object.setProject(null);
-            object.setDefinitionClauses(null);
-            object.setTags(null);
-
             service.setModifiedBy("test");
             service.setModifiedFlag(true);
 
-            service.add(object);
+            // organization
+            final ProxyTester tester1 = new ProxyTester(new Organization());
+            final Organization organization = (Organization) tester1.createObject(1);
+            LOG.info("************ Organization: {}", organization);
+            organization.setId(null);
 
+            service.add(organization);
+
+            // edition
+            final ProxyTester tester2 = new ProxyTester(new Edition());
+            final Edition edition = (Edition) tester2.createObject(1);
+            LOG.info("************ Edition: {}", edition);
             edition.setId(null);
             edition.setOrganization(organization);
+
             service.add(edition);
 
+            // project
+            final ProxyTester tester3 = new ProxyTester(new Project());
+            final Project project = (Project) tester3.createObject(1);
+            LOG.info("************ Project: {}", project);
             project.setId(null);
             project.setEdition(edition);
+
             service.add(project);
+
+            // refset
+            final ProxyTester tester4 = new ProxyTester(new Refset());
+            final Refset object = (Refset) tester4.createObject(1);
+            LOG.info("************ Object: " + object);
+            object.setId(null);
+            object.setEdition(edition);
             object.setProject(project);
+            object.setDefinitionClauses(null);
+            object.setTags(null);
+
+            service.add(object);
 
             final Set<String> tags = new HashSet<>();
             tags.add("blood");
@@ -260,8 +314,8 @@ public class RefsetUnitTest extends BaseTest {
 
             service.remove(object);
             service.remove(project);
-            service.remove(organization);
             service.remove(edition);
+            service.remove(organization);
 
             retrievedObject = service.get(object.getId(), object.getClass());
 

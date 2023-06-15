@@ -193,7 +193,7 @@ public class AuditEntry extends AbstractHasModified {
     public int hashCode() {
 
         final int prime = 31;
-        int result = super.hashCode();
+        int result = 1;
         result = prime * result + ((details == null) ? 0 : details.hashCode());
         result = prime * result + ((entityId == null) ? 0 : entityId.hashCode());
         result = prime * result + ((entityType == null) ? 0 : entityType.hashCode());

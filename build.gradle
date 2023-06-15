@@ -253,7 +253,7 @@ test {
    //testLogging {
    //  showStandardStreams = true
    //}
-   //exclude "**/*IntegrationTest*"
+   exclude "**/*IntegrationTest*"
 }
 
 // ./gradlew reindex

@@ -59,7 +59,7 @@ public class ConceptUnitTest extends BaseTest {
     }
 
     /**
-     * Test equals and hascode methods.
+     * Test equals and hashcode methods.
      *
      * @throws Exception the exception
      */
@@ -72,9 +72,11 @@ public class ConceptUnitTest extends BaseTest {
         tester.exclude("created");
         tester.exclude("modified");
         tester.exclude("modifiedBy");
+        tester.exclude("active");
 
         // from Concept
         tester.include("code");
+        tester.include("memberId");
         tester.include("name");
         tester.include("fsn");
         tester.include("terminology");
@@ -96,6 +98,8 @@ public class ConceptUnitTest extends BaseTest {
         tester.exclude("children");
         tester.include("hasDescendantRefsetMembers");
         tester.exclude("roleGroups");
+        tester.exclude("resolvedDiscussionCount");
+        tester.include("openDiscussionCount");
 
         assertTrue(tester.testIdentityFieldEquals());
         assertTrue(tester.testNonIdentityFieldEquals());
@@ -128,4 +132,5 @@ public class ConceptUnitTest extends BaseTest {
         final SerializationTester tester = new SerializationTester(object);
         assertTrue(tester.testJsonSerialization());
     }
+
 }

@@ -548,8 +548,6 @@ public class SyncPropertyFileReader {
 
     public List<String> getTestQueries(final ClassPathResource classPathResource) throws Exception {
 
-        LOG.info("NUNO TEST READ FILE {}", classPathResource.getPath());
-
         final List<String> lines = FileUtils.readLines(new File(classPathResource.getPath()), "utf-8");
 
         return lines;
