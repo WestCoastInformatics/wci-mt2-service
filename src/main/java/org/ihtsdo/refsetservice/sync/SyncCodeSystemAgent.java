@@ -213,24 +213,26 @@ public class SyncCodeSystemAgent extends SyncAgent {
     private void syncEditionOrganizationMaps(final TerminologyService service, final List<String> existingShortNames) throws Exception {
         final List<String> updatedEditionOrganizationMaps = new ArrayList<>();
 
-        // TODO: Not using termserverEditionToOrganizationMap... why?
-        // TODO: singleCommit
+        service.setTransactionPerOperation(false);
+        service.beginTransaction();
+
+        List<Edition> activeDbRefsets = readDbActiveEditions(service);
+        List<Organization> allDbOrganizations = service.getAll(Organization.class);
+
         for (final String shortName : existingShortNames) {
 
             // Prepare DB edition for analysis
-            final Stream<Edition> editionStream = readDbActiveEditions(service).stream().filter(e -> e.getShortName().equals(shortName));
+            final Stream<Edition> editionStream = activeDbRefsets.stream().filter(e -> e.getShortName().equals(shortName));
             final Edition dbEdition = (Edition) utilities.validateMatches(editionStream, shortName);
             final String dbOrganizationName = dbEdition.getOrganizationName();
 
             // Prepare termserver edition for analysis
-            final Stream<JsonNode> jsonStream = filteredCodeSystems.stream().filter(cs -> cs.get("shortName").asText().equals(shortName));
-            final JsonNode termserverEdition = (JsonNode) utilities.validateMatches(jsonStream, shortName);
-            final String termserverOrganizationName = determineOrganizationName(termserverEdition);
+            String termserverOrganizationName = termserverEditionToOrganizationMap.get(shortName);
 
             // compare and update if needed
             if (!dbOrganizationName.equals(termserverOrganizationName)) {
 
-                final Stream<Organization> organizationStream = service.getAll(Organization.class).stream().filter(o -> o.getName().equals(termserverOrganizationName));
+                final Stream<Organization> organizationStream = allDbOrganizations.stream().filter(o -> o.getName().equals(termserverOrganizationName));
                 final Organization dbOrganization = (Organization) utilities.validateMatches(organizationStream, termserverOrganizationName);
 
                 dbEdition.setOrganization(dbOrganization);
@@ -241,6 +243,9 @@ public class SyncCodeSystemAgent extends SyncAgent {
                 statistics.incrementEditionOrganizationMapChanged();
             }
         }
+
+        service.commit();
+        service.setTransactionPerOperation(true);
 
     }
 

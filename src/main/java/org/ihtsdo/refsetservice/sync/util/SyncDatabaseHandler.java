@@ -16,6 +16,7 @@ import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.TeamType;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.UserRole;
+import org.ihtsdo.refsetservice.model.VersionStatus;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
@@ -141,15 +142,16 @@ public class SyncDatabaseHandler {
         }
     }
 
-    public Refset addRefset(final TerminologyService service, final String name, final String refsetId, final String moduleId, long versionDate, final String type, final Project project) {
+    public Refset addRefset(final TerminologyService service, final String name, final String refsetId, final String moduleId, long versionDate, final String type, final VersionStatus versionStatus,
+        final String worfklowStatus, final Project project) {
         try {
             final Refset refset = new Refset();
 
             refset.setName(name);
             refset.setRefsetId(refsetId);
             refset.setModuleId(moduleId);
-            refset.setVersionStatus("PUBLISHED");
-            refset.setWorkflowStatus("PUBLISHED");
+            refset.setVersionStatus(versionStatus.getLabel());
+            refset.setWorkflowStatus(worfklowStatus);
             refset.setActive(true);
             refset.setVersionDate(new Date(versionDate));
             refset.setType(type);
@@ -208,7 +210,7 @@ public class SyncDatabaseHandler {
     }
 
     public Refset addWCIRefset(final TerminologyService service, final User u, final String name, final String refsetId, final String moduleId, final Date versionDate, final String narrative,
-        final Project project) {
+        final VersionStatus versionStatus, final String worfklowStatus, final Project project) {
 
         try {
             final Edition e = service.get(project.getEditionId(), Edition.class);
@@ -224,8 +226,8 @@ public class SyncDatabaseHandler {
             refsetParameters.setName(name);
             refsetParameters.setRefsetId(refsetId);
             refsetParameters.setModuleId(moduleId);
-            refsetParameters.setVersionStatus("PUBLISHED");
-            refsetParameters.setWorkflowStatus("PUBLISHED");
+            refsetParameters.setVersionStatus(versionStatus.getLabel());
+            refsetParameters.setWorkflowStatus(worfklowStatus);
             refsetParameters.setActive(true);
             refsetParameters.setVersionDate(versionDate);
             refsetParameters.setVersionNotes("");

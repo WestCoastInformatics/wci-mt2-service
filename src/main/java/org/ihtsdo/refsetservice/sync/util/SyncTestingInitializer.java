@@ -14,8 +14,10 @@ import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.model.VersionStatus;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -143,7 +145,7 @@ public class SyncTestingInitializer {
         if (latestVersion == 0) {
 
             newTestingRefset = dbHandler.addWCIRefset(service, SecurityService.getUserFromSession(), testingRefsetName + "1", testingRefsetId + "01",
-                    getDeveloperTestingEdition(service).getModules().iterator().next(), new Date(), "", getDeveloperTestingProject(service));
+                    getDeveloperTestingEdition(service).getModules().iterator().next(), new Date(), "", VersionStatus.PUBLISHED, WorkflowService.PUBLISHED, getDeveloperTestingProject(service));
         } else {
 
             latestVersion++;
@@ -151,7 +153,7 @@ public class SyncTestingInitializer {
             final String onesValue = Integer.toString(latestVersion % 10);
 
             newTestingRefset = dbHandler.addWCIRefset(service, SecurityService.getUserFromSession(), testingRefsetName + latestVersion, testingRefsetId + tensValue + onesValue,
-                    getDeveloperTestingEdition(service).getModules().iterator().next(), new Date(), "", getDeveloperTestingProject(service));
+                    getDeveloperTestingEdition(service).getModules().iterator().next(), new Date(), "", VersionStatus.PUBLISHED, WorkflowService.PUBLISHED, getDeveloperTestingProject(service));
         }
 
         LOG.info("Creating new testing refset: newTestingRefset: " + newTestingRefset.getRefsetId() + " - " + newTestingRefset.getName());

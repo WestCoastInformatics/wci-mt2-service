@@ -30,6 +30,7 @@ import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
+import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1132,7 +1133,8 @@ public class SyncRefsetAgent extends SyncAgent {
                 return null;
             }
 
-            final Refset newRefset = dbHandler.addRefset(service, refsetName, refsetId, moduleId, version, refsetType, project);
+            // Refset coming from term server, so already published
+            final Refset newRefset = dbHandler.addRefset(service, refsetName, refsetId, moduleId, version, refsetType, VersionStatus.PUBLISHED, WorkflowService.PUBLISHED, project);
 
             return newRefset;
         } catch (Exception e) {
