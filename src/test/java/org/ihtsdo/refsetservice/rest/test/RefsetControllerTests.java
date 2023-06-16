@@ -15,6 +15,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -177,8 +178,8 @@ public class RefsetControllerTests extends AbstractRefsetTests {
         }
 
         if (getGetUtil() == null) {
-
-            setGetUtil(new GetUnitTestUtilities(getMvc(), getBaseUrl(), SIMPLE_DATE_FORMAT));
+            final SimpleDateFormat sdf = new SimpleDateFormat(YYYYMMDD_FORMAT);
+            setGetUtil(new GetUnitTestUtilities(getMvc(), getBaseUrl(), sdf));
             setExportUtil(new ExportUnitTestUtilities(getMvc()));
             setWorkflowUtil(new WorkflowUnitTestUtilities(getMvc(), getBaseUrl(), REFSET_FILE_PATH));
         }

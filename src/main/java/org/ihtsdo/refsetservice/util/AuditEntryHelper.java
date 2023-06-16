@@ -111,7 +111,7 @@ public final class AuditEntryHelper {
     /**
      * Change edition entry.
      *
-     * @param refset the edition
+     * @param edition the edition
      * @return the audit entry
      */
     public static AuditEntry changeEditionStatusEntry(final Edition edition) {
@@ -169,7 +169,7 @@ public final class AuditEntryHelper {
     /**
      * Change organization status entry.
      *
-     * @param refset the organization
+     * @param organization the organization
      * @return the audit entry
      */
     public static AuditEntry changeOrganizationStatusEntry(final Organization organization) {
@@ -271,14 +271,15 @@ public final class AuditEntryHelper {
      * @param acceptance the acceptance
      * @return the audit entry
      */
-    public static AuditEntry responseForOrganizationInvite(final Organization organization, final User requester, final String recipientEmail, final boolean acceptance) {
+    public static AuditEntry responseForOrganizationInvite(final Organization organization, final User requester, final String recipientEmail,
+        final boolean acceptance) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(organization.getId());
         entry.setMessage("INVITE Organization Response");
-        entry.setDetails(
-                "Recipient " + recipientEmail + " " + (acceptance ? " accepted " : " decline ") + " user's " + requester.getUserName() + " request to join organization " + organization.getId());
+        entry.setDetails("Recipient " + recipientEmail + " " + (acceptance ? " accepted " : " decline ") + " user's " + requester.getUserName()
+            + " request to join organization " + organization.getId());
         log(entry);
         return entry;
     }
@@ -565,7 +566,12 @@ public final class AuditEntryHelper {
         return entry;
     }
 
-
+    /**
+     * Update multiple refset versions entry.
+     *
+     * @param refsetList the refset list
+     * @return the checks for modified
+     */
     public static HasModified updateMultipleRefsetVersionsEntry(final String refsetList) {
 
         final AuditEntry entry = new AuditEntry();
@@ -767,7 +773,8 @@ public final class AuditEntryHelper {
         entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(refset.getId());
         entry.setMessage("INVITE Refset Response");
-        entry.setDetails("Recipient " + recipientEmail + " " + (acceptance ? " accepted " : " decline ") + " user's " + requester.getUserName() + " request to join refset " + refset.getRefsetId());
+        entry.setDetails("Recipient " + recipientEmail + " " + (acceptance ? " accepted " : " decline ") + " user's " + requester.getUserName()
+            + " request to join refset " + refset.getRefsetId());
         log(entry);
 
         return entry;
@@ -865,7 +872,13 @@ public final class AuditEntryHelper {
         return entry;
     }
 
-    public static HasModified syncBeginEntry(Date date) {
+    /**
+     * Sync begin entry.
+     *
+     * @param date the date
+     * @return the checks for modified
+     */
+    public static HasModified syncBeginEntry(final Date date) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.SYNC.toString());
@@ -876,7 +889,14 @@ public final class AuditEntryHelper {
         return entry;
     }
 
-    public static HasModified syncFinishEntry(Date date, long processingMinutes) {
+    /**
+     * Sync finish entry.
+     *
+     * @param date the date
+     * @param processingMinutes the processing minutes
+     * @return the checks for modified
+     */
+    public static HasModified syncFinishEntry(final Date date, final long processingMinutes) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.SYNC.toString());

@@ -65,8 +65,9 @@ public class TeamService extends BaseService {
     }
 
     /**
-     * Creates the team. (Required are name, description, organization, primaryContactEmail and roles); Members (Users) can be included but must already exist in the
-     * application. Do not use setMemberList or setUserRoles. These are not persisted and are meant to return additional information to the user interface.
+     * Creates the team. (Required are name, description, organization, primaryContactEmail and roles); Members (Users) can be included but must already exist
+     * in the application. Do not use setMemberList or setUserRoles. These are not persisted and are meant to return additional information to the user
+     * interface.
      *
      * @param authUser the auth user
      * @param team the team
@@ -201,8 +202,8 @@ public class TeamService extends BaseService {
     }
 
     /**
-     * Update the team. Required are name, description, organization, primaryContactEmail and roles); Members (Users) can be included but must already exist in the
-     * application. Do not use setMemberList or setUserRoles. These are not persisted and are meant to return additional information to the user interface.
+     * Update the team. Required are name, description, organization, primaryContactEmail and roles); Members (Users) can be included but must already exist in
+     * the application. Do not use setMemberList or setUserRoles. These are not persisted and are meant to return additional information to the user interface.
      *
      *
      * @param authUser the auth user
@@ -238,6 +239,7 @@ public class TeamService extends BaseService {
      *
      * @param user the user
      * @param teamId the team id
+     * @return the team
      * @throws Exception the exception
      */
     public static Team inactivateTeam(final User user, final String teamId) throws Exception {
@@ -307,8 +309,8 @@ public class TeamService extends BaseService {
      * @return the list of projects
      * @throws Exception the exception
      */
-    public static ResultList<Team> searchTeams(final User user, final SearchParameters searchParameters, final boolean includeMembers, final boolean onlyUsersTeams,
-        final boolean hideOrganizationTeams) throws Exception {
+    public static ResultList<Team> searchTeams(final User user, final SearchParameters searchParameters, final boolean includeMembers,
+        final boolean onlyUsersTeams, final boolean hideOrganizationTeams) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -520,7 +522,8 @@ public class TeamService extends BaseService {
 
                     for (final String role : updatedTeam.getRoles()) {
 
-                        final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                        final String groupName =
+                            CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
                         CrowdAPIClient.addMembership(groupName, userToAdd.getUserName());
                     }
                 }
@@ -609,11 +612,13 @@ public class TeamService extends BaseService {
 
             final SearchParameters sp = new SearchParameters();
             final String projectIds = "(" + projectsForTeam.stream().map(Project::getId).collect(Collectors.joining(" OR ", "projectId: ", "")) + ")";
-            sp.setQuery("assignedUser: " + userToRemove.getUserName() + " AND versionStatus:IN DEVELOPMENT AND (workflowStatus: IN_EDIT OR workflowStatus: IN_REVIEW) AND " + projectIds);
+            sp.setQuery("assignedUser: " + userToRemove.getUserName()
+                + " AND versionStatus:IN DEVELOPMENT AND (workflowStatus: IN_EDIT OR workflowStatus: IN_REVIEW) AND " + projectIds);
             final ResultList<Refset> refsets = service.find(sp.getQuery(), null, Refset.class, null);
 
             if (!refsets.getItems().isEmpty()) {
-                final String message = "User " + userToRemove.getName() + " has a reference set \"In Edit\" or \"In Review\" assigned to them. As the admin, you are able "
+                final String message =
+                    "User " + userToRemove.getName() + " has a reference set \"In Edit\" or \"In Review\" assigned to them. As the admin, you are able "
                         + " to un-assign the reference set(s) first before inactivating user.";
                 LOG.error(message);
                 throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
@@ -650,7 +655,8 @@ public class TeamService extends BaseService {
             if (projectList != null && projectList.getItems() != null) {
                 for (final Project project : projectList.getItems()) {
                     for (final String role : updatedTeam.getRoles()) {
-                        final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                        final String groupName =
+                            CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
                         CrowdAPIClient.deleteMembership(groupName, userToRemove.getUserName());
                     }
                 }
@@ -678,6 +684,7 @@ public class TeamService extends BaseService {
      * @param authUser the auth user
      * @param teamId the team id
      * @param role the role
+     * @return the team
      * @throws Exception the exception
      */
     public static Team addRoleToTeam(final User authUser, final String teamId, final String role) throws Exception {
@@ -725,7 +732,8 @@ public class TeamService extends BaseService {
                         if (updatedTeam.getMemberList() != null) {
                             for (final User user : updatedTeam.getMemberList()) {
 
-                                final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                                final String groupName =
+                                    CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
                                 CrowdAPIClient.addMembership(groupName, user.getUserName());
                             }
                         }
@@ -743,6 +751,7 @@ public class TeamService extends BaseService {
      * @param authUser the auth user
      * @param teamId the team id
      * @param role the role
+     * @return the team
      * @throws Exception the exception
      */
     public static Team removeRoleFromTeam(final User authUser, final String teamId, final String role) throws Exception {
@@ -787,14 +796,15 @@ public class TeamService extends BaseService {
                     for (final Project project : projects) {
                         if (team != null && team.getMemberList() != null) {
                             for (final User user : team.getMemberList()) {
-                                final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                                final String groupName =
+                                    CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
                                 CrowdAPIClient.deleteMembership(groupName, user.getUserName());
                             }
                         }
                     }
                 }
             }
-            
+
             return updatedTeam;
         }
     }
@@ -837,7 +847,8 @@ public class TeamService extends BaseService {
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            final ResultList<Project> allOrganizationProjects = service.find("active: true AND organizationId: " + team.getOrganizationId(), null, Project.class, null);
+            final ResultList<Project> allOrganizationProjects =
+                service.find("active: true AND organizationId: " + team.getOrganizationId(), null, Project.class, null);
             final List<Project> projects = new ArrayList<>();
 
             for (final Project organizationProject : allOrganizationProjects.getItems()) {

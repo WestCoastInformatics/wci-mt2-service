@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -64,7 +64,7 @@ public enum UserRole {
     public static List<UserRole> getAllRoles() {
 
         if (ALL_ROLES.isEmpty()) {
-            
+
             ALL_ROLES.add(ADMIN);
             ALL_ROLES.add(AUTHOR);
             ALL_ROLES.add(REVIEWER);
@@ -73,18 +73,15 @@ public enum UserRole {
         return ALL_ROLES;
     }
 
-    public static String getRoleString(UserRole user) {
+    /**
+     * Returns the role string.
+     *
+     * @param userRole the user role
+     * @return the UserRole as a string
+     */
+    public static String getRoleString(final UserRole userRole) {
 
-        if (user.equals(VIEWER)) {
-            return "VIEWER";
-        } else if (user.equals(ADMIN)) {
-            return "ADMIN";
-        } else if (user.equals(AUTHOR)) {
-            return "AUTHOR";
-        } else if (user.equals(REVIEWER)) {
-            return "REVIEWER";
-        }
+        return (userRole != null) ? userRole.getValue() : null;
 
-        return null;
     }
 }

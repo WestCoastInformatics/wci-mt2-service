@@ -118,8 +118,8 @@ public abstract class CrowdClientAbstract {
     protected static int post(final String url, final String entity) throws Exception {
 
         final HttpClient httpClient = HttpClient.newBuilder().build();
-        final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).POST(HttpRequest.BodyPublishers.ofString(entity)).header("Authorization", getBasicAuthHeader())
-                .header("Content-Type", ACCEPT_DEFAULT).build();
+        final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).POST(HttpRequest.BodyPublishers.ofString(entity))
+            .header("Authorization", getBasicAuthHeader()).header("Content-Type", ACCEPT_DEFAULT).build();
 
         LOG.debug("CROWD API POST Url: {}", url);
         final HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
@@ -138,7 +138,8 @@ public abstract class CrowdClientAbstract {
     protected static int delete(final String url) throws Exception {
 
         final HttpClient httpClient = HttpClient.newBuilder().build();
-        final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).DELETE().header("Authorization", getBasicAuthHeader()).header("Accept", ACCEPT_DEFAULT).build();
+        final HttpRequest request =
+            HttpRequest.newBuilder().uri(URI.create(url)).DELETE().header("Authorization", getBasicAuthHeader()).header("Accept", ACCEPT_DEFAULT).build();
 
         LOG.debug("CROWD API DELETE Url: {}", url);
 

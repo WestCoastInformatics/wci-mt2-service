@@ -48,10 +48,10 @@ public class TeamUnitTest extends BaseTest {
 
     /** The members. */
     private Set<String> roles;
-    
+
     /** The members. */
     private Set<String> members;
-    
+
     /** The users. */
     private List<User> users;
 
@@ -88,7 +88,7 @@ public class TeamUnitTest extends BaseTest {
         roles.add((String) tester3.createObject(1));
         roles.add((String) tester3.createObject(2));
         object.getRoles().addAll(roles);
-        
+
         // member list
         final ProxyTester tester4 = new ProxyTester(new User());
         users = new ArrayList<>();
@@ -96,7 +96,6 @@ public class TeamUnitTest extends BaseTest {
         users.add((User) tester4.createObject(2));
         users.add((User) tester4.createObject(3));
         object.getMemberList().addAll(users);
-        
 
     }
 
@@ -124,19 +123,19 @@ public class TeamUnitTest extends BaseTest {
         final EqualsHashcodeTester tester = new EqualsHashcodeTester(object);
         // from AbstractHasModified
         tester.include("id");
-       
+
         tester.include("name");
         tester.include("description");
-        
+
         tester.proxy("organization", 1, organization);
         tester.include("primaryContactEmail");
         tester.include("type");
-        
-        tester.proxy("roles", 1, roles);  //set<string>
-        tester.proxy("members", 1, members); //set<string> 
-        tester.exclude("memberList"); //list<users>
-        tester.exclude("userRoles"); //list<string>
-        
+
+        tester.proxy("roles", 1, roles); // set<string>
+        tester.proxy("members", 1, members); // set<string>
+        tester.exclude("memberList"); // list<users>
+        tester.exclude("userRoles"); // list<string>
+
         tester.exclude("organizationId");
 
         assertTrue(tester.testIdentityFieldEquals());
@@ -175,13 +174,13 @@ public class TeamUnitTest extends BaseTest {
         tester.include("name");
         tester.include("description");
         tester.proxy("organization", 1, organization);
-        tester.include("primaryContactEmail");        
-        tester.proxy("roles", 1, roles);  // set<string>
-        tester.proxy("members", 1, members); // set<string> 
+        tester.include("primaryContactEmail");
+        tester.proxy("roles", 1, roles); // set<string>
+        tester.proxy("members", 1, members); // set<string>
         tester.proxy("memberList", 1, users); // list<users>
         tester.proxy("userRoles", 1, members); // list<string>
         tester.include("organizationId");
-        
+
         assertTrue(tester.testJsonSerialization());
     }
 
@@ -215,7 +214,7 @@ public class TeamUnitTest extends BaseTest {
 
             service.add(object);
             service.update(object);
-            
+
             Team retrievedObject = service.get(object.getId(), object.getClass());
 
             // test that the team can be retrieved.

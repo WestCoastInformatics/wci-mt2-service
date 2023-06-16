@@ -71,7 +71,7 @@ public class TerminologyService implements RootService {
     private static boolean reindex = true;
 
     /** The search handler. */
-    private static Map<String, SearchHandler> searchHandlerMap = null;
+    private static Map<String, SearchHandler> searchHandlerMap = new HashMap<>();
 
     /** The factory. */
     private static EntityManagerFactory factory = null;
@@ -119,8 +119,12 @@ public class TerminologyService implements RootService {
         }
 
         if (searchHandlerMap == null) {
-            final String key = "search.handler";
             searchHandlerMap = new HashMap<>();
+        }
+
+        if (searchHandlerMap.isEmpty()) {
+
+            final String key = "search.handler";
             LOG.debug(">>>>>> handler property: " + PropertyUtility.getProperty(key));
 
             for (final String handlerName : PropertyUtility.getProperty(key).split(",")) {
@@ -142,7 +146,7 @@ public class TerminologyService implements RootService {
 
             LOG.debug("  initialize search handler = " + searchHandlerMap.values().stream().map(f -> f.getName()).collect(Collectors.toSet()));
 
-            // Validate the search handler map was initialized successfuly
+            // Validate the search handler map was initialized successfully
             validateInit();
         }
 

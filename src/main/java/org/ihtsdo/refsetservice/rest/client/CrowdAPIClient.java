@@ -45,8 +45,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class CrowdAPIClient extends CrowdClientAbstract {
 
-    /** The Constant logger. */
-    private static final Logger logger = LoggerFactory.getLogger(CrowdAPIClient.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(CrowdAPIClient.class);
 
     /** Group name prefix for RT2 application. */
     private static final String APP_PREFIX = "rt2-";
@@ -87,15 +87,15 @@ public class CrowdAPIClient extends CrowdClientAbstract {
      */
     public static User getUser(final String userName) throws Exception {
 
-        logger.debug("Get information for user {}", userName);
+        LOG.debug("Get information for user {}", userName);
 
         if (StringUtils.isEmpty(userName)) {
             throw new Exception("User name cannot be empty or null. Received username: " + userName);
         }
 
         final HttpClient httpClient = HttpClient.newBuilder().build();
-        final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(getBaseUrl() + GET_USER + "?username=" + userName)).GET().header("Accept", MediaType.APPLICATION_JSON)
-                .header("Authorization", getBasicAuthHeader()).build();
+        final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(getBaseUrl() + GET_USER + "?username=" + userName)).GET()
+            .header("Accept", MediaType.APPLICATION_JSON).header("Authorization", getBasicAuthHeader()).build();
         final HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
 
         // 200 OK.
@@ -122,8 +122,8 @@ public class CrowdAPIClient extends CrowdClientAbstract {
     }
 
     /**
-     * Add all groups with roles e.g. rt2-no-abc-author. - rt2 is the application - no is the two letter code for the organization (country) - abc is the acronym of the group
-     * name - author is the role (admin, author, reviewer and viewer are the others)
+     * Add all groups with roles e.g. rt2-no-abc-author. - rt2 is the application - no is the two letter code for the organization (country) - abc is the
+     * acronym of the group name - author is the role (admin, author, reviewer and viewer are the others)
      *
      * @param organization the organization
      * @param projectName the project name
@@ -132,9 +132,10 @@ public class CrowdAPIClient extends CrowdClientAbstract {
      * @param adminOnly to add the all-admin permission for organization administrators
      * @throws Exception the exception
      */
-    public static void addGroup(final String organization, final String projectName, final String projectDescription, final boolean generateProjectName, final boolean adminOnly) throws Exception {
+    public static void addGroup(final String organization, final String projectName, final String projectDescription, final boolean generateProjectName,
+        final boolean adminOnly) throws Exception {
 
-        logger.info("Add group {} to organization {} with description of {}", projectName, organization, projectDescription);
+        LOG.info("Add group {} to organization {} with description of {}", projectName, organization, projectDescription);
 
         if (StringUtils.isBlank(organization)) {
             throw new Exception("Organization name cannot be empty or null. Received organization: " + organization);
@@ -159,12 +160,12 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         for (final String role : rolesToAdd) {
 
             final String groupName = generateProjectName ? CrowdGroupNameAlgorithm.generateCrowdGroupName(organization, projectName, role)
-                    : CrowdGroupNameAlgorithm.buildCrowdGroupName(organization, projectName, role);
+                : CrowdGroupNameAlgorithm.buildCrowdGroupName(organization, projectName, role);
 
-            logger.info("CALL CROWD API url:" + getBaseUrl() + ADD_GROUP);
+            LOG.info("CALL CROWD API url:" + getBaseUrl() + ADD_GROUP);
             final String entity = "{\"name\": \"" + groupName + "\", \"description\": \"" + description + "\", \"type\": \"GROUP\" }";
 
-            logger.info("CALL CROWD API payload: " + entity);
+            LOG.info("CALL CROWD API payload: " + entity);
             final int statusCode = post(getBaseUrl() + ADD_GROUP, entity);
 
             // 201 Returned if the group is successfully created.
@@ -173,19 +174,19 @@ public class CrowdAPIClient extends CrowdClientAbstract {
             if (statusCode == 201) {
 
                 // expected 201 status, error occurred.
-                logger.info("Added group {}.", groupName);
+                LOG.info("Added group {}.", groupName);
 
             } else if (statusCode == 400) {
 
-                logger.info("Group already exists {}.", groupName);
+                LOG.info("Group already exists {}.", groupName);
 
             } else if (statusCode == 403) {
 
-                logger.error("The group " + groupName + " could not be created. Not allowed.");
+                LOG.error("The group " + groupName + " could not be created. Not allowed.");
                 throw new Exception("The group " + groupName + " could not be created. Not allowed.");
 
             } else {
-                logger.error("The group " + groupName + " could not be created. Received HTTP " + statusCode + " from the API server.");
+                LOG.error("The group " + groupName + " could not be created. Received HTTP " + statusCode + " from the API server.");
                 throw new Exception("The group " + groupName + " could not be created. Received HTTP " + statusCode + " from the API server.");
             }
         }
@@ -201,7 +202,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
      */
     public static String addAdminGroup(final String organization, final String description) throws Exception {
 
-        logger.info("Add group {} to organization {} with description of {}", "all", organization, description);
+        LOG.info("Add group {} to organization {} with description of {}", "all", organization, description);
 
         if (StringUtils.isBlank(organization)) {
             throw new Exception("Organization name cannot be empty or null. Received organization: " + organization);
@@ -212,10 +213,10 @@ public class CrowdAPIClient extends CrowdClientAbstract {
          */
         final String groupName = CrowdGroupNameAlgorithm.generateCrowdGroupName(organization, "all", "admin", true);
 
-        logger.info("CALL CROWD API url:" + getBaseUrl() + ADD_GROUP);
+        LOG.info("CALL CROWD API url:" + getBaseUrl() + ADD_GROUP);
         final String entity = "{\"name\": \"" + groupName + "\", \"description\": \"" + description + "\", \"type\": \"GROUP\" }";
 
-        logger.info("CALL CROWD API payload: " + entity);
+        LOG.info("CALL CROWD API payload: " + entity);
         final int statusCode = post(getBaseUrl() + ADD_GROUP, entity);
 
         // 201 Returned if the group is successfully created.
@@ -224,7 +225,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         if (statusCode == 201) {
 
             // expected 201 status, error occurred.
-            logger.info("Added group {}", groupName);
+            LOG.info("Added group {}", groupName);
             return groupName;
 
         }
@@ -232,19 +233,19 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         if (statusCode == 400) {
 
             // ignore 400 and continue?
-            logger.error("The group " + groupName + " already exists");
+            LOG.error("The group " + groupName + " already exists");
             // throw new Exception("The group " + groupName + " already exists");
             return groupName;
         }
 
         if (statusCode == 403) {
 
-            logger.error("The group " + groupName + " could not be created. Not allowed.");
+            LOG.error("The group " + groupName + " could not be created. Not allowed.");
             throw new Exception("The group " + groupName + " could not be created. Not allowed.");
 
         }
 
-        logger.error("The group " + groupName + " could not be created. Received HTTP " + statusCode + " from the API server.");
+        LOG.error("The group " + groupName + " could not be created. Received HTTP " + statusCode + " from the API server.");
         throw new Exception("The group " + groupName + " could not be created. Received HTTP " + statusCode + " from the API server.");
 
     }
@@ -258,15 +259,16 @@ public class CrowdAPIClient extends CrowdClientAbstract {
      */
     public static String getUserAvatar(final String username) throws Exception {
 
-        logger.debug("Get avatar for username {}", username);
+        LOG.debug("Get avatar for username {}", username);
         if (StringUtils.isBlank(username)) {
             throw new Exception("User name cannot be empty or null. Received username: " + username);
         }
         final String url = getBaseUrl() + GET_AVATAR_FOR_USER + username;
         final HttpClient httpClient = HttpClient.newBuilder().build();
-        final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().header("Accept", MediaType.APPLICATION_JSON).header("Authorization", getBasicAuthHeader()).build();
+        final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().header("Accept", MediaType.APPLICATION_JSON)
+            .header("Authorization", getBasicAuthHeader()).build();
 
-        logger.debug("CROWD API GET Url: {}", url);
+        LOG.debug("CROWD API GET Url: {}", url);
 
         final HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
 
@@ -274,104 +276,113 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         // 404 - The user doesn't exist, or doesn't have an avatar defined
         if (response.statusCode() == 303) {
 
-            logger.debug("Found avatar for username {}", username);
+            LOG.debug("Found avatar for username {}", username);
             return response.headers().firstValue("location").orElse("");
 
         } else if (response.statusCode() == 404) {
 
-            logger.debug("Did not find avatar for username {}", username);
+            LOG.debug("Did not find avatar for username {}", username);
             return null;
 
         } else {
 
-            logger.debug("Did not find avatar for username {}", username);
+            LOG.debug("Did not find avatar for username {}", username);
             return "Did not find avatar for username " + username;
 
         }
 
     }
 
+    /**
+     * Returns the all groups.
+     *
+     * @return the all groups
+     * @throws Exception the exception
+     */
     public static Set<String> getAllGroups() throws Exception {
-        logger.debug("Get all groups with url: " + getBaseUrl() + GET_MEMBERSHIPS);
+
+        LOG.debug("Get all groups with url: " + getBaseUrl() + GET_MEMBERSHIPS);
 
         final Set<String> userGroups = new HashSet<>();
-        String xmlString = null;
-        ByteArrayInputStream input = null;
+        final String xmlString = get(getBaseUrl() + GET_MEMBERSHIPS, MediaType.APPLICATION_XML);
 
-        try {
-            xmlString = get(getBaseUrl() + GET_MEMBERSHIPS, MediaType.APPLICATION_XML);
+        try (final ByteArrayInputStream input = new ByteArrayInputStream(xmlString.toString().getBytes("UTF-8"));) {
 
             // Load the input XML document, parse it and return an instance of the
             // Document class.
-            input = new ByteArrayInputStream(xmlString.toString().getBytes("UTF-8"));
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
+            final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            final DocumentBuilder builder = factory.newDocumentBuilder();
 
-            Document document = builder.parse(input);
+            final Document document = builder.parse(input);
 
-            NodeList groupList = document.getDocumentElement().getChildNodes();
+            final NodeList groupList = document.getDocumentElement().getChildNodes();
+            final int groupListSize = groupList.getLength();
 
-            for (int i = 0; i < groupList.getLength(); i++) {
-                Node groupNode = groupList.item(i);
+            for (int i = 0; i < groupListSize; i++) {
+
+                final Node groupNode = groupList.item(i);
 
                 if (groupNode.getNodeType() == Node.ELEMENT_NODE) {
 
                     // Get the value of the group name attribute.
-                    String groupName = groupNode.getAttributes().getNamedItem("group").getNodeValue();
-                    logger.debug("groupName1: " + groupName);
+                    final String groupName = groupNode.getAttributes().getNamedItem("group").getNodeValue();
+                    LOG.debug("groupName1: " + groupName);
 
                     if (groupName.startsWith(APP_PREFIX)) {
                         userGroups.add(groupName);
                     }
 
                 } else {
-                    logger.error("groupNode Type2: " + groupNode.getNodeType());
+                    LOG.error("groupNode Type2: " + groupNode.getNodeType());
                 }
             }
 
             return userGroups;
+
         } catch (Exception e) {
-            throw new Exception("The groups could not be retrieved. Received HTTP " + xmlString + " from the API server with error Message--> " + e.getMessage());
-        } finally {
-            input.close();
+            throw new Exception(
+                "The groups could not be retrieved. Received HTTP " + xmlString + " from the API server with error Message--> " + e.getMessage());
         }
     }
 
+    /**
+     * Returns the all crowd rule members.
+     *
+     * @return the all crowd rule members
+     * @throws Exception the exception
+     */
     public static Map<String, Set<String>> getAllCrowdRuleMembers() throws Exception {
-        logger.debug("Get all groups' members {}");
+
+        LOG.debug("Get all groups' members {}");
 
         final Map<String, Set<String>> groupMemberMap = new HashMap<>();
-        logger.debug("url: " + getBaseUrl() + GET_MEMBERSHIPS);
+        LOG.debug("url: " + getBaseUrl() + GET_MEMBERSHIPS);
 
-        final Set<String> userGroups = new HashSet<>();
-        String xmlString = null;
-        ByteArrayInputStream input = null;
+        final String xmlString = get(getBaseUrl() + GET_MEMBERSHIPS, MediaType.APPLICATION_XML);
 
-        try {
-            xmlString = get(getBaseUrl() + GET_MEMBERSHIPS, MediaType.APPLICATION_XML);
+        try (final ByteArrayInputStream input = new ByteArrayInputStream(xmlString.toString().getBytes("UTF-8"));) {
 
             // Load the input XML document, parse it and return an instance of the
             // Document class.
-            input = new ByteArrayInputStream(xmlString.toString().getBytes("UTF-8"));
-
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
+            final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            final DocumentBuilder builder = factory.newDocumentBuilder();
 
             // Load the input XML document, parse it and return an instance of the
             // Document class.
-            Document document = builder.parse(input);
+            final Document document = builder.parse(input);
 
-            NodeList membershipList = document.getDocumentElement().getChildNodes();
+            final NodeList membershipList = document.getDocumentElement().getChildNodes();
+            final int membershipListSize = membershipList.getLength();
 
-            for (int i = 0; i < membershipList.getLength(); i++) {
+            for (int i = 0; i < membershipListSize; i++) {
 
-                Node membershipNode = membershipList.item(i);
+                final Node membershipNode = membershipList.item(i);
 
                 if (membershipNode.getNodeType() == Node.ELEMENT_NODE && membershipNode.getNodeName().equals("membership")) {
 
-                    Element membership = (Element) membershipNode;
+                    final Element membership = (Element) membershipNode;
                     // Get the value of the group name attribute.
-                    String projectName = membershipNode.getAttributes().getNamedItem("group").getNodeValue();
+                    final String projectName = membershipNode.getAttributes().getNamedItem("group").getNodeValue();
 
                     if (!projectName.startsWith(APP_PREFIX) || !membership.hasChildNodes()) {
                         continue;
@@ -381,19 +392,21 @@ public class CrowdAPIClient extends CrowdClientAbstract {
                         groupMemberMap.put(projectName, new HashSet<>());
                     }
 
-                    NodeList usersList = membership.getChildNodes();
+                    final NodeList usersList = membership.getChildNodes();
+                    final int usersListSize = usersList.getLength();
 
-                    for (int j = 0; j < usersList.getLength(); j++) {
-                        Node usersNode = usersList.item(j);
+                    for (int j = 0; j < usersListSize; j++) {
+                        final Node usersNode = usersList.item(j);
 
                         if (usersNode.getNodeType() == Node.ELEMENT_NODE && usersNode.getNodeName().equals("users")) {
-                            Element users = (Element) usersNode;
 
-                            NodeList userList = users.getChildNodes();
+                            final Element users = (Element) usersNode;
+                            final NodeList userList = users.getChildNodes();
+                            final int userListSize = usersList.getLength();
 
-                            for (int k = 0; k < userList.getLength(); k++) {
+                            for (int k = 0; k < userListSize; k++) {
 
-                                Node userNode = userList.item(k);
+                                final Node userNode = userList.item(k);
 
                                 if (usersNode.getNodeType() == Node.ELEMENT_NODE && userNode.getNodeName().equals("user")) {
                                     // Get the user name
@@ -410,26 +423,29 @@ public class CrowdAPIClient extends CrowdClientAbstract {
             }
 
             return groupMemberMap;
+
         } catch (Exception e) {
-            throw new Exception("The groups could not be retrieved. Received HTTP " + xmlString + " from the API server with error Message--> " + e.getMessage());
-        } finally {
-            input.close();
+            throw new Exception(
+                "The groups could not be retrieved. Received HTTP " + xmlString + " from the API server with error Message--> " + e.getMessage());
         }
 
     }
 
     /**
-     * Calls a Crowd URL and returns the response with non-default MediaType (ACCEPT_DEFAULT) needed
+     * Calls a Crowd URL and returns the response with non-default MediaType (ACCEPT_DEFAULT) needed.
      *
      * @param url The Crowd URL to call
+     * @param mediaType the media type
      * @return the response
      * @throws Exception the exception
      */
     private static String get(final String url, final String mediaType) throws Exception {
-        final HttpClient httpClient = HttpClient.newBuilder().build();
-        final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().header("Authorization", getBasicAuthHeader()).header("Accept", mediaType).build();
 
-        logger.debug("CROWD API GET Url: {}", url);
+        final HttpClient httpClient = HttpClient.newBuilder().build();
+        final HttpRequest request =
+            HttpRequest.newBuilder().uri(URI.create(url)).GET().header("Authorization", getBasicAuthHeader()).header("Accept", mediaType).build();
+
+        LOG.debug("CROWD API GET Url: {}", url);
 
         final HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
 
@@ -439,7 +455,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
 
         }
 
-        logger.error("CROWD GET ERROR url: {} : response code: {}", url, response.statusCode());
+        LOG.error("CROWD GET ERROR url: {} : response code: {}", url, response.statusCode());
         throw new Exception("CROWD GET ERROR url: " + url);
     }
 
@@ -452,7 +468,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
      */
     public static Set<String> getMembershipsForUser(final String username) throws Exception {
 
-        logger.debug("Get memberships for user {}", username);
+        LOG.debug("Get memberships for user {}", username);
         if (StringUtils.isBlank(username)) {
             throw new Exception("User name cannot be empty or null. Received username: " + username);
         }
@@ -479,25 +495,6 @@ public class CrowdAPIClient extends CrowdClientAbstract {
     }
 
     /**
-     * Get list of all users in a group.
-     *
-     * @param groupname The name of the group.
-     * @return the memberships for group
-     * @throws Exception the exception
-     */
-    public static Set<String> getMembershipsForGroup(final String groupname) throws Exception {
-
-        if (StringUtils.isBlank(groupname)) {
-            throw new Exception("Group name cannot be empty or null. Received groupname: " + groupname);
-        }
-
-        final Set<String> users = new HashSet<>();
-
-        return users;
-
-    }
-
-    /**
      * Add a user to a group.
      * 
      * @param groupname Name of the group from which the user membership will be added.
@@ -506,7 +503,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
      */
     public static void addMembership(final String groupname, final String username) throws Exception {
 
-        logger.info("Add user {} to group {}", username, groupname);
+        LOG.info("Add user {} to group {}", username, groupname);
         if (StringUtils.isBlank(groupname)) {
             throw new Exception("Group name cannot be empty or null. Received groupname: " + groupname);
         }
@@ -525,11 +522,12 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         if (statusCode == 201) {
 
             // was previously added.
-            logger.info("User {} already is a member of {}.", username, groupname);
+            LOG.info("User {} already is a member of {}.", username, groupname);
 
         } else if (statusCode == 400) {
 
-            throw new Exception("Failed to add " + username.trim() + " to group " + groupname.trim() + ". " + "User could not be found or groupName is not specified or user has no name.");
+            throw new Exception("Failed to add " + username.trim() + " to group " + groupname.trim() + ". "
+                + "User could not be found or groupName is not specified or user has no name.");
 
         } else if (statusCode == 404) {
 
@@ -539,10 +537,11 @@ public class CrowdAPIClient extends CrowdClientAbstract {
 
             // throw new Exception("Failed to add username " + username.trim() + " to group
             // " + groupname.trim() + ". User is already a direct member of the group.");
-            logger.warn("Failed to add username " + username.trim() + " to group " + groupname.trim() + ". User is already a direct member of the group.");
+            LOG.warn("Failed to add username " + username.trim() + " to group " + groupname.trim() + ". User is already a direct member of the group.");
 
         } else {
-            throw new Exception("Failed to add username " + username.trim() + " to group " + groupname.trim() + ". Received HTTP " + statusCode + " from the API server.");
+            throw new Exception(
+                "Failed to add username " + username.trim() + " to group " + groupname.trim() + ". Received HTTP " + statusCode + " from the API server.");
         }
     }
 
@@ -555,7 +554,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
      */
     public static void deleteMembership(final String groupname, final String username) throws Exception {
 
-        logger.info("Remove user {} from group {}", username, groupname);
+        LOG.info("Remove user {} from group {}", username, groupname);
         if (StringUtils.isBlank(groupname)) {
             throw new Exception("Group name cannot be empty or null. Received groupname: " + groupname);
         }
@@ -568,17 +567,18 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         // 404 Returned if the user or group could not be found.
         if (statusCode == 204) {
 
-            logger.info("User {} removed from group {}.", username, groupname);
+            LOG.info("User {} removed from group {}.", username, groupname);
 
         } else if (statusCode == 404) {
 
             // throw new Exception("Failed to remove username " + username.trim() + " from
             // group " + groupname.trim() + ". Group could not be found.");
-            logger.info("Failed to remove username " + username.trim() + " from group " + groupname.trim() + ". Group could not be found.");
+            LOG.info("Failed to remove username " + username.trim() + " from group " + groupname.trim() + ". Group could not be found.");
 
         } else {
 
-            throw new Exception("Failed to remove username " + username.trim() + " from group " + groupname.trim() + ". Received HTTP " + statusCode + " from the API server.");
+            throw new Exception(
+                "Failed to remove username " + username.trim() + " from group " + groupname.trim() + ". Received HTTP " + statusCode + " from the API server.");
 
         }
     }
@@ -592,10 +592,10 @@ public class CrowdAPIClient extends CrowdClientAbstract {
      */
     public static User findUserByEmail(final String email) throws Exception {
 
-        logger.info("Find user by email: {} ", email);
+        LOG.info("Find user by email: {} ", email);
 
         if (StringUtils.isBlank(email)) {
-            logger.warn("Email is blank or empty. Received email: " + email);
+            LOG.warn("Email is blank or empty. Received email: " + email);
             return null;
         }
 
@@ -610,7 +610,8 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         }
 
         if (users.isArray() && users.size() > 1) {
-            throw new RestException(false, HttpStatus.CONFLICT, "Found multiple", "Found multiple users with email of " + email + ". Can't determine which user to create.");
+            throw new RestException(false, HttpStatus.CONFLICT, "Found multiple",
+                "Found multiple users with email of " + email + ". Can't determine which user to create.");
         }
 
         final String name = users.get(0).findValue("name").asText();

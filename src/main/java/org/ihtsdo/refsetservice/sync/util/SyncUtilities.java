@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 package org.ihtsdo.refsetservice.sync.util;
 
 import java.io.BufferedReader;
@@ -46,43 +55,75 @@ import org.springframework.core.io.ClassPathResource;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+/**
+ * The Class SyncUtilities.
+ */
 public class SyncUtilities {
 
+    /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(SyncUtilities.class);
 
+    /** The db handler. */
     private SyncDatabaseHandler dbHandler;
 
-    private static final SyncPropertyFileReader propertyReader = new SyncPropertyFileReader();
+    /** The Constant PROPERTY_READER. */
+    private static final SyncPropertyFileReader PROPERTY_READER = new SyncPropertyFileReader();
 
-    private static Map<String, Set<String>> undefinedDefaultLanguageRefsets = propertyReader.readUndefinedDefaultLanguageRefsets();
+    /** The undefined default language refsets. */
+    private static Map<String, Set<String>> undefinedDefaultLanguageRefsets = PROPERTY_READER.readUndefinedDefaultLanguageRefsets();
 
-    protected static final Set<String> coreRefsets = new HashSet<>();
+    /** The Constant CORE_REFSETS. */
+    protected static final Set<String> CORE_REFSETS = new HashSet<>();
 
-    protected static final Set<String> coreModules = new HashSet<>();
+    /** The Constant CORE_MODULES. */
+    protected static final Set<String> CORE_MODULES = new HashSet<>();
 
+    /** The Constant DEVELOPER_ORGANIZATION_NAME_KEYWORD. */
     protected static final String DEVELOPER_ORGANIZATION_NAME_KEYWORD = "wci";
 
+    /** The Constant EDITION_MODULES_MAP. */
     // Edition shortName to Set<Module SctIds>
-    private static final Map<String, Set<String>> editionModulesMap = new HashMap<>();
+    private static final Map<String, Set<String>> EDITION_MODULES_MAP = new HashMap<>();
 
+    /** The Constant FEEDBACK_TESTING_USER_NAME. */
     public static final String FEEDBACK_TESTING_USER_NAME = "FeedbackTesting";
 
+    /** The Constant SYNC_USER_NAME. */
     public static final String SYNC_USER_NAME = "Snowstorm Sync";
 
+    /** The Constant UNDEFINED_USER_NAME. */
     private static final String UNDEFINED_USER_NAME = "Undefined";
 
-    private static final SyncPersistenceMetadata metadata = new SyncPersistenceMetadata(new Date(), UNDEFINED_USER_NAME);
+    /** The Constant METADATA. */
+    private static final SyncPersistenceMetadata METADATA = new SyncPersistenceMetadata(new Date(), UNDEFINED_USER_NAME);
 
+    /** The Constant DEFAULT_LANGUAGE_REFSET. */
     private static final String DEFAULT_LANGUAGE_REFSET = "900000000000509007";
 
+    /** The Constant CORE_MODULE_PARENT. */
     private static final String CORE_MODULE_PARENT = "900000000000443000";
 
+    /** The Constant SIMPLE_REFSET_TYPE_CONCEPT. */
     static final String SIMPLE_REFSET_TYPE_CONCEPT = "446609009";
 
+    /**
+     * Instantiates a {@link SyncUtilities} from the specified parameters.
+     *
+     * @param dbHandler the db handler
+     */
     public SyncUtilities(final SyncDatabaseHandler dbHandler) {
+
         this.dbHandler = dbHandler;
     }
 
+    /**
+     * Returns the user.
+     *
+     * @param service the service
+     * @param userName the user name
+     * @return the user
+     * @throws Exception the exception
+     */
     public User getUser(final TerminologyService service, final String userName) throws Exception {
 
         User user = null;
@@ -102,7 +143,19 @@ public class SyncUtilities {
         return user;
     }
 
-    public User getUser(final TerminologyService service, final String name, final String userName, final String email, final Set<String> roles) throws Exception {
+    /**
+     * Returns the user.
+     *
+     * @param service the service
+     * @param name the name
+     * @param userName the user name
+     * @param email the email
+     * @param roles the roles
+     * @return the user
+     * @throws Exception the exception
+     */
+    public User getUser(final TerminologyService service, final String name, final String userName, final String email, final Set<String> roles)
+        throws Exception {
 
         User user = getUser(service, userName);
 
@@ -114,9 +167,16 @@ public class SyncUtilities {
 
     }
 
+    /**
+     * Returns the core refsets.
+     *
+     * @return the core refsets
+     * @throws Exception the exception
+     */
     public Set<String> getCoreRefsets() throws Exception {
-        if (coreRefsets != null && !coreRefsets.isEmpty()) {
-            return coreRefsets;
+
+        if (CORE_REFSETS != null && !CORE_REFSETS.isEmpty()) {
+            return CORE_REFSETS;
         }
 
         // https://dev-integration-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/MAIN/concepts/446609009/descendants?stated=false&offset=0&limit=50
@@ -142,20 +202,26 @@ public class SyncUtilities {
                     LOG.error("Refset must have conceptId: " + refset);
                 } else {
                     LOG.info("Core Refset: " + refset.get("conceptId").asText());
-                    coreRefsets.add(refset.get("conceptId").asText());
+                    CORE_REFSETS.add(refset.get("conceptId").asText());
                 }
             }
         } catch (Exception e) {
             throw new Exception("Failed finding descendents on Simple Refset Concept in SI-CORE to identify international refsets");
         }
 
-        return coreRefsets;
+        return CORE_REFSETS;
     }
 
+    /**
+     * Returns the core modules.
+     *
+     * @return the core modules
+     * @throws Exception the exception
+     */
     public Set<String> getCoreModules() throws Exception {
 
-        if (coreModules != null && !coreModules.isEmpty()) {
-            return coreModules;
+        if (CORE_MODULES != null && !CORE_MODULES.isEmpty()) {
+            return CORE_MODULES;
         }
 
         // https://dev-integration-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/MAIN/concepts/900000000000443000/descendants?stated=false&offset=0&limit=50
@@ -180,17 +246,28 @@ public class SyncUtilities {
                 if (!module.has("conceptId")) {
                     LOG.error("Module must have conceptId: " + module);
                 } else {
-                    coreModules.add(module.get("conceptId").asText());
+                    CORE_MODULES.add(module.get("conceptId").asText());
                 }
             }
         } catch (final Exception e) {
             throw new Exception("Failed finding descendents of CORE MModule Parent in MAIN to identify international modules");
         }
 
-        return coreModules;
+        return CORE_MODULES;
     }
 
-    public Set<String> identifyModules(final String shortName, final String editionName, final String editionBranch, final JsonNode codeSystem) throws Exception {
+    /**
+     * Identify modules.
+     *
+     * @param shortName the short name
+     * @param editionName the edition name
+     * @param editionBranch the edition branch
+     * @param codeSystem the code system
+     * @return the sets the
+     * @throws Exception the exception
+     */
+    public Set<String> identifyModules(final String shortName, final String editionName, final String editionBranch, final JsonNode codeSystem)
+        throws Exception {
 
         final Set<String> editionModules = new HashSet<>();
 
@@ -240,12 +317,20 @@ public class SyncUtilities {
 
         }
 
-        editionModulesMap.put(shortName, editionModules);
+        EDITION_MODULES_MAP.put(shortName, editionModules);
 
         return editionModules;
 
     }
 
+    /**
+     * Identify default language code.
+     *
+     * @param codeSystem the code system
+     * @param editionName the edition name
+     * @return the string
+     * @throws Exception the exception
+     */
     public String identifyDefaultLanguageCode(final JsonNode codeSystem, final String editionName) throws Exception {
 
         // Identify Edition's defaultLanguageCode - Per Kai, transform first language in set as defaultLangCode
@@ -259,6 +344,13 @@ public class SyncUtilities {
         return languages.next();
     }
 
+    /**
+     * Identify default language refsets.
+     *
+     * @param codeSystem the code system
+     * @param shortName the short name
+     * @return the sets the
+     */
     public Set<String> identifyDefaultLanguageRefsets(final JsonNode codeSystem, final String shortName) {
 
         final Set<String> retSet = new HashSet<>();
@@ -286,6 +378,13 @@ public class SyncUtilities {
         return retSet;
     }
 
+    /**
+     * Prints the edition values.
+     *
+     * @param service the service
+     * @param edition the edition
+     * @throws Exception the exception
+     */
     public void printEditionValues(final TerminologyService service, final Edition edition) throws Exception {
 
         final List<Project> orgProjects = service.find("edition.id:" + edition.getId(), null, Project.class, null).getItems();
@@ -308,21 +407,44 @@ public class SyncUtilities {
 
     }
 
-    public SimpleDateFormat getSdf() {
 
-        return metadata.getSdf();
+    /**
+     * Returns the iso date time format.
+     *
+     * @return the iso date time format
+     */
+    public static String getIsoDateTimeFormat() {
+
+        return METADATA.ISO_DATE_TIME_FORMAT;
     }
 
+    /**
+     * Returns the property reader.
+     *
+     * @return the property reader
+     */
     public SyncPropertyFileReader getPropertyReader() {
 
-        return propertyReader;
+        return PROPERTY_READER;
     }
 
+    /**
+     * Returns the edition modules map.
+     *
+     * @return the edition modules map
+     */
     public Map<String, Set<String>> getEditionModulesMap() {
 
-        return editionModulesMap;
+        return EDITION_MODULES_MAP;
     }
 
+    /**
+     * Returns the sync results.
+     *
+     * @param service the service
+     * @return the sync results
+     * @throws Exception the exception
+     */
     private String getSyncResults(final TerminologyService service) throws Exception {
 
         final ClassPathResource syncTestQueries = new ClassPathResource("sync/syncTestQueries.sql");
@@ -371,12 +493,20 @@ public class SyncUtilities {
         return result.toString();
     }
 
+    /**
+     * Email sync results.
+     *
+     * @param service the service
+     * @throws Exception the exception
+     */
     public void emailSyncResults(final TerminologyService service) throws Exception {
+
         final String results = getSyncResults(service);
 
         try {
             final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
-            final String fileName = String.format(System.getProperty("java.io.tmpdir") + FileSystems.getDefault().getSeparator() + "refset-sync-results-%s.txt", dateFormat.format(new Date()));
+            final String fileName = String.format(System.getProperty("java.io.tmpdir") + FileSystems.getDefault().getSeparator() + "refset-sync-results-%s.txt",
+                dateFormat.format(new Date()));
             final Path path = Paths.get(fileName);
             final byte[] queryResultsToBytes = results.getBytes();
 
@@ -398,26 +528,50 @@ public class SyncUtilities {
 
     }
 
+    /**
+     * Indicates whether or not international edition is the case.
+     *
+     * @param matchingString the matching string
+     * @return <code>true</code> if so, <code>false</code> otherwise
+     */
     public boolean isInternationalEdition(final String matchingString) {
 
         return "international edition".equals(matchingString.toLowerCase()) || "snomedct".equals(matchingString.toLowerCase());
     }
 
+    /**
+     * Indicates whether or not developer edition is the case.
+     *
+     * @param editionName the edition name
+     * @return <code>true</code> if so, <code>false</code> otherwise
+     */
     // In WCI case, accepts either name or shortName
     public boolean isDeveloperEdition(final String editionName) {
 
         return editionName.toLowerCase().contains(DEVELOPER_ORGANIZATION_NAME_KEYWORD.toLowerCase());
     }
 
+    /**
+     * Clear previous run.
+     */
     public void clearPreviousRun() {
 
-        editionModulesMap.clear();
-        coreModules.clear();
-        coreRefsets.clear();
-        undefinedDefaultLanguageRefsets = propertyReader.readUndefinedDefaultLanguageRefsets();
+        EDITION_MODULES_MAP.clear();
+        CORE_MODULES.clear();
+        CORE_REFSETS.clear();
+        undefinedDefaultLanguageRefsets = PROPERTY_READER.readUndefinedDefaultLanguageRefsets();
     }
 
+    /**
+     * Validate matches.
+     *
+     * @param stream the stream
+     * @param matchingValueDescription the matching value description
+     * @return the object
+     * @throws Exception the exception
+     */
     public Object validateMatches(final Stream<?> stream, final String matchingValueDescription) throws Exception {
+
         final List<?> items = stream.collect(Collectors.toList());
 
         if (items.size() == 1) {
@@ -431,6 +585,14 @@ public class SyncUtilities {
         }
     }
 
+    /**
+     * Determine maintainer type.
+     *
+     * @param codeSystem the code system
+     * @param editionShortName the edition short name
+     * @return the string
+     * @throws Exception the exception
+     */
     public String determineMaintainerType(final JsonNode codeSystem, final String editionShortName) throws Exception {
 
         String codeSystemType = codeSystem.has("maintainerType") ? codeSystem.get("maintainerType").asText() : "";
@@ -451,7 +613,15 @@ public class SyncUtilities {
         return codeSystemType;
     }
 
-    Refset initializeWorkflowStatus(final TerminologyService service, final Refset refset) throws Exception {
+    /**
+     * Initialize workflow status.
+     *
+     * @param service the service
+     * @param refset the refset
+     * @return the refset
+     * @throws Exception the exception
+     */
+    public Refset initializeWorkflowStatus(final TerminologyService service, final Refset refset) throws Exception {
 
         if (!isDeveloperEdition(refset.getEdition().getShortName())) {
             throw new Exception("Cannot modify the workflow status of anything other than the developer org");
@@ -461,7 +631,8 @@ public class SyncUtilities {
 
         try {
             // if the status is Published then create a new version of the refset that is ready to be edited
-            final Refset updatedRefset = WorkflowService.setWorkflowStatusByAction(service, SecurityService.getUserFromSession(), WorkflowService.FINISH_EDIT, refset, "");
+            final Refset updatedRefset =
+                WorkflowService.setWorkflowStatusByAction(service, SecurityService.getUserFromSession(), WorkflowService.FINISH_EDIT, refset, "");
 
             // if the status changed return the updated refset else return null
             if (!currentStatus.equals(updatedRefset.getWorkflowStatus())) {
@@ -482,6 +653,13 @@ public class SyncUtilities {
 
     }
 
+    /**
+     * Returns the processing minutes.
+     *
+     * @param operationType the operation type
+     * @param startTime the start time
+     * @return the processing minutes
+     */
     public long getProcessingMinutes(final String operationType, final Date startTime) {
 
         final Date end = new Date();

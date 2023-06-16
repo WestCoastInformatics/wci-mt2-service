@@ -1,6 +1,14 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 package org.ihtsdo.refsetservice.sync;
 
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -20,34 +28,51 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+/**
+ * The Class SyncAgent.
+ */
 public abstract class SyncAgent {
 
     /** The logger. */
     private static final Logger LOG = LoggerFactory.getLogger(SyncAgent.class);
 
-    protected static final SimpleDateFormat branchDateFormatter = new SimpleDateFormat("yyyy-MM-dd");
+    /** The Constant BRANCH_DATE_FORMAT. */
+    public static final String BRANCH_DATE_FORMAT = "yyyy-MM-dd";
 
-    protected static SyncUtilities utilities;
+    /** The utilities. */
+    private static SyncUtilities utilities;
 
-    protected static SyncDatabaseHandler dbHandler;
+    /** The db handler. */
+    private static SyncDatabaseHandler dbHandler;
 
-    protected static final SyncStatistics statistics = new SyncStatistics();
+    /** The Constant STATISTICS. */
+    protected static final SyncStatistics STATISTICS = new SyncStatistics();
 
-    protected abstract void syncComponent(TerminologyService service) throws Exception;
+    /**
+     * Sync component.
+     *
+     * @param service the service
+     * @throws Exception the exception
+     */
+    protected abstract void syncComponent(final TerminologyService service) throws Exception;
 
     /** Execution options. */
     private static Boolean isProductionSystem = null;
 
+    /** The is per version sync. */
     private static Boolean isPerVersionSync = null;
 
+    /** The is ignore core refsets. */
     private static Boolean isIgnoreCoreRefsets = null;
 
     /** Testing options. */
     private static boolean testing = false;
 
-    protected static String TESTING_EDITION_SHORT_NAME = "SNOMEDCT";
-    
-     protected static String testingRefset = "733991000"; // Core - Dentistry (in multiple projects in RTT)
+    /** The testing edition short name. */
+    private static String testingEditionShortName = "SNOMEDCT";
+
+    /** The testing refset. */
+    private static String testingRefset = "733991000"; // Core - Dentistry (in multiple projects in RTT)
 
     // protected static String testingRefset = null; // To test entire edition
     // protected static String testingRefset = "751000172100"; // 751000172100 - from Belgium
@@ -55,24 +80,143 @@ public abstract class SyncAgent {
     // protected static String testingRefset = "64641000052102"; // Tim's for ugprade testing (on Swedish)
     // protected static String testingRefset = "11000172109"; // Sync in the single Intensional refset available on dev-integeration (Belgium Editing)
 
-    protected static String developerTestingEditionShortName = null;
- 
-    protected static Organization develeperTestingOrganization = null;
+    /** The developer testing edition short name. */
+    private static String developerTestingEditionShortName = null;
 
-    /** Other process fields **/
-    // Owner Name to Organization Description
-    protected static final Set<JsonNode> filteredCodeSystems = new HashSet<>();
+    /** The develeper testing organization. */
+    private static Organization develeperTestingOrganization = null;
 
+    /** Other process fields. Owner Name to Organization Description. */
+    protected static final Set<JsonNode> FILTERED_CODE_SYSTEMS = new HashSet<>();
+
+    /** The Constant DEVELOPER_CODE_SYSTEM_SHORTNAME. */
     protected static final String DEVELOPER_CODE_SYSTEM_SHORTNAME = "SNOMEDCT-WCI";
 
+    /** The Constant SNOMED_ADMIN_USERNAME. */
     protected static final String SNOMED_ADMIN_USERNAME = "rdavidson";
 
+    /** The Constant DEVELOPER_ADMIN_USERNAME_PREFIX. */
     protected static final String DEVELOPER_ADMIN_USERNAME_PREFIX = "refset-";
 
-    protected static final Set<String> adminUsernames = new HashSet<>();
+    /** The Constant ADMIN_USERNAMES. */
+    protected static final Set<String> ADMIN_USERNAMES = new HashSet<>();
 
+    /**
+     * @return the utilities
+     */
+    protected static SyncUtilities getUtilities() {
+
+        return utilities;
+    }
+
+    /**
+     * @param utilities the utilities to set
+     */
+    protected static void setUtilities(final SyncUtilities utilities) {
+
+        SyncAgent.utilities = utilities;
+    }
+
+    /**
+     * @return the dbHandler
+     */
+    protected static SyncDatabaseHandler getDbHandler() {
+
+        return dbHandler;
+    }
+
+    /**
+     * @param dbHandler the dbHandler to set
+     */
+    protected static void setDbHandler(final SyncDatabaseHandler dbHandler) {
+
+        SyncAgent.dbHandler = dbHandler;
+    }
+
+    /**
+     * @return the testingEditionShortName
+     */
+    protected static String getTestingEditionShortName() {
+
+        return testingEditionShortName;
+    }
+
+    /**
+     * @param testingEditionShortName the testingEditionShortName to set
+     */
+    protected static void setTestingEditionShortName(final String testingEditionShortName) {
+
+        SyncAgent.testingEditionShortName = testingEditionShortName;
+    }
+
+    /**
+     * @return the testingRefset
+     */
+    protected static String getTestingRefset() {
+
+        return testingRefset;
+    }
+
+    /**
+     * @param testingRefset the testingRefset to set
+     */
+    protected static void setTestingRefset(final String testingRefset) {
+
+        SyncAgent.testingRefset = testingRefset;
+    }
+
+    /**
+     * @return the developerTestingEditionShortName
+     */
+    protected static String getDeveloperTestingEditionShortName() {
+
+        return developerTestingEditionShortName;
+    }
+
+    /**
+     * @param developerTestingEditionShortName the developerTestingEditionShortName to set
+     */
+    protected static void setDeveloperTestingEditionShortName(final String developerTestingEditionShortName) {
+
+        SyncAgent.developerTestingEditionShortName = developerTestingEditionShortName;
+    }
+
+    /**
+     * @return the develeperTestingOrganization
+     */
+    protected static Organization getDeveleperTestingOrganization() {
+
+        return develeperTestingOrganization;
+    }
+
+    /**
+     * @param develeperTestingOrganization the develeperTestingOrganization to set
+     */
+    protected static void setDeveleperTestingOrganization(final Organization develeperTestingOrganization) {
+
+        SyncAgent.develeperTestingOrganization = develeperTestingOrganization;
+    }
+
+    /**
+     * @return the branchdateformatter
+     */
+    protected static String getBranchdateformatter() {
+
+        return BRANCH_DATE_FORMAT;
+    }
+
+    /**
+     * Sync.
+     *
+     * @param service the service
+     * @param refsetPerVersionSync the refset per version sync
+     * @param runForProduction the run for production
+     * @param ignoreCoreRefsets the ignore core refsets
+     * @throws Exception the exception
+     */
     // Call when launching sync
-    public static void sync(final TerminologyService service, final boolean refsetPerVersionSync, final boolean runForProduction, final boolean ignoreCoreRefsets) throws Exception {
+    public static void sync(final TerminologyService service, final boolean refsetPerVersionSync, final boolean runForProduction,
+        final boolean ignoreCoreRefsets) throws Exception {
 
         if (isProductionSystem == null || !isProductionSystem) {
 
@@ -85,6 +229,12 @@ public abstract class SyncAgent {
 
     }
 
+    /**
+     * Sync.
+     *
+     * @param service the service
+     * @throws Exception the exception
+     */
     // Call when launching a sync service were launching sync is secondary i.e., resetRefset
     public static void sync(final TerminologyService service) throws Exception {
 
@@ -108,15 +258,20 @@ public abstract class SyncAgent {
         agent.syncComponent(service);
 
         // Post processing
-        //utilities.emailSyncResults(service);
+        // utilities.emailSyncResults(service);
 
-        LOG.info(statistics.printStatistics());
+        LOG.info(STATISTICS.printStatistics());
         LOG.info("Completed Syncing with Termserver");
 
         final long processingMinutes = utilities.getProcessingMinutes("FULL", startOperationStartTime);
         service.add(AuditEntryHelper.syncFinishEntry(new Date(), processingMinutes));
     }
 
+    /**
+     * Initialize.
+     *
+     * @param service the service
+     */
     private static void initialize(final TerminologyService service) {
 
         service.setModifiedBy("Sync");
@@ -132,33 +287,53 @@ public abstract class SyncAgent {
 
         dbHandler.setUtilities(utilities);
 
-        adminUsernames.add(SNOMED_ADMIN_USERNAME);
-        adminUsernames.add(DEVELOPER_ADMIN_USERNAME_PREFIX);
+        ADMIN_USERNAMES.add(SNOMED_ADMIN_USERNAME);
+        ADMIN_USERNAMES.add(DEVELOPER_ADMIN_USERNAME_PREFIX);
     }
 
+    /**
+     * Sets the refset to sync.
+     *
+     * @param refsetId the refset id
+     * @param editionShortName the edition short name
+     * @throws Exception the exception
+     */
     public static void setRefsetToSync(final String refsetId, final String editionShortName) throws Exception {
 
         setTesting(true);
         testingRefset = refsetId;
-        TESTING_EDITION_SHORT_NAME = editionShortName;
+        testingEditionShortName = editionShortName;
 
         RefsetMemberService.clearRefsetVersionsWithChanges(refsetId);
     }
 
+    /**
+     * Clear previous run.
+     */
     protected static void clearPreviousRun() {
 
         developerTestingEditionShortName = null;
 
-        filteredCodeSystems.clear();
+        FILTERED_CODE_SYSTEMS.clear();
 
-        statistics.clearStatistics();
+        STATISTICS.clearStatistics();
 
         if (utilities != null) {
             utilities.clearPreviousRun();
         }
     }
 
-    protected boolean isDifferentAttribute(final String shortName, final String attributeName, final Object databaseAttribute, final Object termserverAttribute) {
+    /**
+     * Indicates whether or not different attribute is the case.
+     *
+     * @param shortName the short name
+     * @param attributeName the attribute name
+     * @param databaseAttribute the database attribute
+     * @param termserverAttribute the termserver attribute
+     * @return <code>true</code> if so, <code>false</code> otherwise
+     */
+    protected boolean isDifferentAttribute(final String shortName, final String attributeName, final Object databaseAttribute,
+        final Object termserverAttribute) {
 
         if (termserverAttribute == null && databaseAttribute == null) {
             // Both null, no difference
@@ -171,64 +346,133 @@ public abstract class SyncAgent {
         // values are different. List them
         if (databaseAttribute instanceof Long) {
 
-            LOG.info(" inconsistency found on attribute " + attributeName + " for edition " + shortName + " where termserver has " + new Date((Long) termserverAttribute) + "' and DB is '"
-                    + new Date((Long) databaseAttribute) + "'");
+            LOG.info(" inconsistency found on attribute " + attributeName + " for edition " + shortName + " where termserver has "
+                + new Date((Long) termserverAttribute) + "' and DB is '" + new Date((Long) databaseAttribute) + "'");
         } else {
 
-            LOG.info(" inconsistency found on attribute " + attributeName + " for edition " + shortName + " where termserver has '" + termserverAttribute + "' and DB is '" + databaseAttribute + "'");
+            LOG.info(" inconsistency found on attribute " + attributeName + " for edition " + shortName + " where termserver has '" + termserverAttribute
+                + "' and DB is '" + databaseAttribute + "'");
         }
 
         return true;
     }
 
+    /**
+     * Returns the develeper testing edition short name.
+     *
+     * @return the develeper testing edition short name
+     */
     public static String getDeveleperTestingEditionShortName() {
 
         return developerTestingEditionShortName;
     }
 
+    /**
+     * Indicates whether or not testing is the case.
+     *
+     * @return <code>true</code> if so, <code>false</code> otherwise
+     */
     public static boolean isTesting() {
 
         return testing;
 
     }
 
+    /**
+     * Returns the is ignore core refsets.
+     *
+     * @return the is ignore core refsets
+     */
     public static Boolean getIsIgnoreCoreRefsets() {
+
         return isIgnoreCoreRefsets == null ? false : isIgnoreCoreRefsets;
     }
 
+    /**
+     * Returns the is production system.
+     *
+     * @return the is production system
+     */
     public static Boolean getIsProductionSystem() {
 
         return isProductionSystem == null ? false : isProductionSystem;
     }
 
+    /**
+     * Returns the is per version sync.
+     *
+     * @return the is per version sync
+     */
     public static Boolean getIsPerVersionSync() {
 
         return isPerVersionSync == null ? false : isPerVersionSync;
     }
 
-    public static void setTesting(boolean testing) {
+    /**
+     * Sets the testing.
+     *
+     * @param testing the testing
+     */
+    public static void setTesting(final boolean testing) {
 
         SyncAgent.testing = testing;
     }
 
+    /**
+     * Returns the admin usernames.
+     *
+     * @return the admin usernames
+     */
     public static Set<String> getAdminUsernames() {
-        return adminUsernames;
+
+        return ADMIN_USERNAMES;
     }
 
-    List<Organization> readDbOrganizations(final TerminologyService service) throws Exception {
+    /**
+     * Read db organizations.
+     *
+     * @param service the service
+     * @return the list
+     * @throws Exception the exception
+     */
+    public List<Organization> readDbOrganizations(final TerminologyService service) throws Exception {
 
         return service.getAll(Organization.class);
     }
 
-    List<Edition> readDbAllEditions(final TerminologyService service) throws Exception {
+    /**
+     * Read db all editions.
+     *
+     * @param service the service
+     * @return the list
+     * @throws Exception the exception
+     */
+    public List<Edition> readDbAllEditions(final TerminologyService service) throws Exception {
+
         return service.getAll(Edition.class);
     }
 
-    List<Edition> readDbActiveEditions(final TerminologyService service) throws Exception {
+    /**
+     * Read db active editions.
+     *
+     * @param service the service
+     * @return the list
+     * @throws Exception the exception
+     */
+    public List<Edition> readDbActiveEditions(final TerminologyService service) throws Exception {
+
         return readDbAllEditions(service).stream().filter(e -> e.isActive()).collect(Collectors.toList());
     }
 
-    List<Edition> readDbInactiveEditions(final TerminologyService service) throws Exception {
+    /**
+     * Read db inactive editions.
+     *
+     * @param service the service
+     * @return the list
+     * @throws Exception the exception
+     */
+    public List<Edition> readDbInactiveEditions(final TerminologyService service) throws Exception {
+
         return readDbAllEditions(service).stream().filter(e -> !e.isActive()).collect(Collectors.toList());
     }
 }

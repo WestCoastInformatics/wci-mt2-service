@@ -183,7 +183,6 @@ public class OrganizationService extends BaseService {
         return updatedOrganization;
     }
 
-
     /**
      * Returns the inactive organization.
      *
@@ -193,8 +192,9 @@ public class OrganizationService extends BaseService {
      * @param includeMembers the include members
      * @return the organization
      * @throws Exception the exception
-     */    
-    public static Organization getInactiveOrganization(final TerminologyService service, final User user, final String id, final boolean includeMembers) throws Exception {
+     */
+    public static Organization getInactiveOrganization(final TerminologyService service, final User user, final String id, final boolean includeMembers)
+        throws Exception {
 
         Organization organization = service.findSingle("id: " + id + " AND active:false", Organization.class, null);
 
@@ -208,7 +208,16 @@ public class OrganizationService extends BaseService {
 
         return organization;
     }
-    
+
+    /**
+     * Handle members.
+     *
+     * @param organization the organization
+     * @param user the user
+     * @param includeMembers the include members
+     * @return the organization
+     * @throws Exception the exception
+     */
     private static Organization handleMembers(final Organization organization, final User user, final boolean includeMembers) throws Exception {
 
         if (includeMembers) {
@@ -263,6 +272,7 @@ public class OrganizationService extends BaseService {
      * @param service the service
      * @param user the user
      * @param organizationId the organization id
+     * @return the organization
      * @throws Exception the exception
      */
     public static Organization inactivateOrganization(final TerminologyService service, final User user, final String organizationId) throws Exception {
@@ -309,7 +319,7 @@ public class OrganizationService extends BaseService {
         }
 
         organization.setActive(false);
-        
+
         final Organization updatedOrganization = service.update(organization);
         AuditEntryHelper.changeOrganizationStatusEntry(updatedOrganization);
 
@@ -499,6 +509,7 @@ public class OrganizationService extends BaseService {
      * @param authUser the auth user
      * @param organizationId the organization id
      * @param email the email
+     * @return the organization
      * @throws Exception the exception
      */
     public static Organization addUserToOrganization(final TerminologyService service, final User authUser, final String organizationId, final String email)
@@ -550,12 +561,14 @@ public class OrganizationService extends BaseService {
      * Adds the user to organization.
      *
      * @param service the Terminology Service
-     * @param user the user
+     * @param authUser the auth user
      * @param organizationId the organization id
-     * @param email the email
+     * @param userToAdd the user to add
+     * @return the organization
      * @throws Exception the exception
      */
-    public static Organization addUserToOrganization(final TerminologyService service, final User authUser, final String organizationId, final User userToAdd) throws Exception {
+    public static Organization addUserToOrganization(final TerminologyService service, final User authUser, final String organizationId, final User userToAdd)
+        throws Exception {
 
         // must return members in order to add another member.
         final Organization organization = OrganizationService.getOrganization(service, authUser, organizationId, true);
@@ -575,6 +588,7 @@ public class OrganizationService extends BaseService {
         return service.update(organization);
 
     }
+
     /**
      * Removes the user from organization.
      *
@@ -593,7 +607,7 @@ public class OrganizationService extends BaseService {
 
         if (userToRemove == null) {
 
-            final String message = "Unable to find user in RT2 database for id " + userId  + " in order to removeUserFromOrganization.";
+            final String message = "Unable to find user in RT2 database for id " + userId + " in order to removeUserFromOrganization.";
             LOG.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
@@ -601,7 +615,7 @@ public class OrganizationService extends BaseService {
         final Organization organization = service.get(organizationId, Organization.class);
         if (organization == null) {
 
-            final String message = "Unable to find organization in RT2 database for id " + organizationId  + " in order to removeUserFromOrganization.";
+            final String message = "Unable to find organization in RT2 database for id " + organizationId + " in order to removeUserFromOrganization.";
             LOG.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
@@ -814,7 +828,7 @@ public class OrganizationService extends BaseService {
         // TODO: move this URL to properties.
         final String accountSetupUrl = "https://confluence.ihtsdotools.org/display/ILS/Confluence+User+Accounts";
 
-        try (TerminologyService service = new TerminologyService()) {  
+        try (TerminologyService service = new TerminologyService()) {
             service.setModifiedFlag(true);
             service.setModifiedBy(SecurityService.getUserFromSession().getUserName());
 
@@ -1056,10 +1070,12 @@ public class OrganizationService extends BaseService {
                                 for (final String role : team.getRoles()) {
 
                                     try {
-                                        final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                                        final String groupName =
+                                            CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
                                         CrowdAPIClient.deleteMembership(groupName, userToRemove.getUserName());
                                     } catch (final Exception e) {
-                                        LOG.error("ERROR removing user {} from team {} for organization {}.", userToRemove.getUserName(), team.getId(), organizationId, e);
+                                        LOG.error("ERROR removing user {} from team {} for organization {}.", userToRemove.getUserName(), team.getId(),
+                                            organizationId, e);
                                     }
                                 }
                             }

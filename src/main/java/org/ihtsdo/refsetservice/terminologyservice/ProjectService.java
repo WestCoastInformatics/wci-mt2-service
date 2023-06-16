@@ -356,6 +356,7 @@ public class ProjectService extends BaseService {
      *
      * @param user the user
      * @param projectId the project id
+     * @return the project
      * @throws Exception the exception
      */
     public static Project inactivateProject(final User user, final String projectId) throws Exception {
@@ -416,7 +417,7 @@ public class ProjectService extends BaseService {
             final Project updatedProject = service.update(project);
             service.add(AuditEntryHelper.changeProjectStatusEntry(project));
             service.commit();
-            
+
             return updatedProject;
         }
 

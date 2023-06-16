@@ -226,9 +226,7 @@ checkstyle {
   checkstyleMain.exclude "**/package-info.java"
   checkstyleTest.exclude "**/package-info.java"
   // checkstyleIntegrationTest.exclude "**/package-info.java"
-  //temp
-  checkstyleMain.exclude "**/Sync*.java"
-  checkstyleTest.exclude "**/Sync*.java"
+  
   // end temp
   configProperties = [
     "checkstyle.cache.file"         : rootProject.file(".out/checkstyle/checkstyle.cache"),

@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 package org.ihtsdo.refsetservice.sync.util;
 
 import java.util.Arrays;
@@ -21,32 +30,50 @@ import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * The Class SyncTestingInitializer.
+ */
 public class SyncTestingInitializer {
 
-    private final Logger LOG = LoggerFactory.getLogger(SyncTestingInitializer.class);
+    /** The log. */
+    private static final Logger LOG = LoggerFactory.getLogger(SyncTestingInitializer.class);
 
+    /** The utilities. */
     private SyncUtilities utilities;
 
+    /** The db handler. */
     private SyncDatabaseHandler dbHandler;
 
+    /** The feedback initiatior user. */
     private static User feedbackInitiatiorUser = null;
 
+    /** The user responder user. */
     private static User userResponderUser = null;
 
-    static private Edition developerTestingEdition = null;
+    /** The developer testing edition. */
+    private static Edition developerTestingEdition = null;
 
-    static private Project testingProject = null;
+    /** The testing project. */
+    private static Project testingProject = null;
 
+    /** The Constant FEEDBACK_REFSET_NAME_BASE. */
     private static final String FEEDBACK_REFSET_NAME_BASE = "WCI Testing Feedback Refset ";
 
+    /** The Constant FEEDBACK_REFSET_ID_BASE. */
     private static final String FEEDBACK_REFSET_ID_BASE = "9999999";
 
+    /** The Constant INTENSIONAL_REFSET_NAME_BASE. */
     private static final String INTENSIONAL_REFSET_NAME_BASE = "WCI Testing Intensional Refset ";
 
+    /** The Constant INTENSIONAL_REFSET_ID_BASE. */
     private static final String INTENSIONAL_REFSET_ID_BASE = "8888888";
 
+    /** The Constant WCI_TESTING_PROJECT_NAME. */
     private static final String WCI_TESTING_PROJECT_NAME = "WCI Testing Project";
 
+    /**
+     * Instantiates an empty {@link SyncTestingInitializer}.
+     */
     public SyncTestingInitializer() {
 
         // Support one-off usages for specific testing cases i.e. adding an intensional refset
@@ -57,7 +84,13 @@ public class SyncTestingInitializer {
         }
     }
 
+    /**
+     * Initialize sync.
+     *
+     * @param service the service
+     */
     private void initializeSync(final TerminologyService service) {
+
         service.setModifiedBy("Sync");
         service.setModifiedFlag(true);
 
@@ -73,10 +106,10 @@ public class SyncTestingInitializer {
 
         try {
             // For Feedback Refset
-            feedbackInitiatiorUser =
-                    utilities.getUser(service, "feedbackInitiator", "feedbackInitiator", "feedbackInitiator@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
-            userResponderUser =
-                    utilities.getUser(service, "feedbackResponder", "feedbackResponder", "feedbackResponder@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
+            feedbackInitiatiorUser = utilities.getUser(service, "feedbackInitiator", "feedbackInitiator", "feedbackInitiator@westcoastinformatics.com",
+                new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
+            userResponderUser = utilities.getUser(service, "feedbackResponder", "feedbackResponder", "feedbackResponder@westcoastinformatics.com",
+                new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
         } catch (Exception e) {
 
             e.printStackTrace();
@@ -84,10 +117,14 @@ public class SyncTestingInitializer {
 
     }
 
-    /*
-     * Called when adding another instance of testing-feedback refset
+    /**
+     * Creates the testing feedback refset. Called when adding another instance of testing-feedback refset.
+     * 
+     * @return the refset
+     * @throws Exception the exception
      */
     public Refset createTestingFeedbackRefset() throws Exception {
+
         try (final TerminologyService service = new TerminologyService()) {
             initializeSync(service);
 
@@ -99,10 +136,14 @@ public class SyncTestingInitializer {
         }
     }
 
-    /*
-     * Called when adding another instance of testing-intensional refset
+    /**
+     * Creates the testing intensional refset. Called when adding another instance of testing-intensional refset.
+     *
+     * @return the refset
+     * @throws Exception the exception
      */
     public Refset createTestingIntensionalRefset() throws Exception {
+
         try (TerminologyService service = new TerminologyService()) {
             initializeSync(service);
 
@@ -114,11 +155,21 @@ public class SyncTestingInitializer {
         }
     }
 
+    /**
+     * Creates the testing refset.
+     *
+     * @param service the service
+     * @param testingRefsetName the testing refset name
+     * @param testingRefsetId the testing refset id
+     * @return the refset
+     * @throws Exception the exception
+     */
     private Refset createTestingRefset(final TerminologyService service, final String testingRefsetName, final String testingRefsetId) throws Exception {
 
         final Project developerTestingProject = getDeveloperTestingProject(service);
 
-        final List<Refset> projectRefsets = service.find("projectId:" + developerTestingProject.getId() + " AND active:true", null, Refset.class, null).getItems();
+        final List<Refset> projectRefsets =
+            service.find("projectId:" + developerTestingProject.getId() + " AND active:true", null, Refset.class, null).getItems();
 
         int latestVersion = 0;
 
@@ -145,15 +196,17 @@ public class SyncTestingInitializer {
         if (latestVersion == 0) {
 
             newTestingRefset = dbHandler.addWCIRefset(service, SecurityService.getUserFromSession(), testingRefsetName + "1", testingRefsetId + "01",
-                    getDeveloperTestingEdition(service).getModules().iterator().next(), new Date(), "", VersionStatus.PUBLISHED, WorkflowService.PUBLISHED, getDeveloperTestingProject(service));
+                getDeveloperTestingEdition(service).getModules().iterator().next(), new Date(), "", VersionStatus.PUBLISHED, WorkflowService.PUBLISHED,
+                getDeveloperTestingProject(service));
         } else {
 
             latestVersion++;
             final String tensValue = Integer.toString(latestVersion / 10);
             final String onesValue = Integer.toString(latestVersion % 10);
 
-            newTestingRefset = dbHandler.addWCIRefset(service, SecurityService.getUserFromSession(), testingRefsetName + latestVersion, testingRefsetId + tensValue + onesValue,
-                    getDeveloperTestingEdition(service).getModules().iterator().next(), new Date(), "", VersionStatus.PUBLISHED, WorkflowService.PUBLISHED, getDeveloperTestingProject(service));
+            newTestingRefset = dbHandler.addWCIRefset(service, SecurityService.getUserFromSession(), testingRefsetName + latestVersion,
+                testingRefsetId + tensValue + onesValue, getDeveloperTestingEdition(service).getModules().iterator().next(), new Date(), "",
+                VersionStatus.PUBLISHED, WorkflowService.PUBLISHED, getDeveloperTestingProject(service));
         }
 
         LOG.info("Creating new testing refset: newTestingRefset: " + newTestingRefset.getRefsetId() + " - " + newTestingRefset.getName());
@@ -161,6 +214,13 @@ public class SyncTestingInitializer {
         return newTestingRefset;
     }
 
+    /**
+     * Adds the intensional content.
+     *
+     * @param service the service
+     * @param refset the refset
+     * @throws Exception the exception
+     */
     private void addIntensionalContent(final TerminologyService service, final Refset refset) throws Exception {
 
         // Create ecl clause
@@ -178,6 +238,13 @@ public class SyncTestingInitializer {
 
     }
 
+    /**
+     * Adds the feedback content.
+     *
+     * @param service the service
+     * @param refset the refset
+     * @throws Exception the exception
+     */
     private void addFeedbackContent(final TerminologyService service, final Refset refset) throws Exception {
 
         // add feedback
@@ -238,6 +305,13 @@ public class SyncTestingInitializer {
 
     }
 
+    /**
+     * Returns the developer testing project.
+     *
+     * @param service the service
+     * @return the developer testing project
+     * @throws Exception the exception
+     */
     private Project getDeveloperTestingProject(final TerminologyService service) throws Exception {
 
         if (testingProject == null) {
@@ -263,6 +337,13 @@ public class SyncTestingInitializer {
         return testingProject;
     }
 
+    /**
+     * Returns the developer testing edition.
+     *
+     * @param service the service
+     * @return the developer testing edition
+     * @throws Exception the exception
+     */
     private Edition getDeveloperTestingEdition(final TerminologyService service) throws Exception {
 
         if (developerTestingEdition == null) {

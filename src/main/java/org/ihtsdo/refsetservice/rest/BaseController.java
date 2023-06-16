@@ -100,7 +100,7 @@ public class BaseController {
     public User authorizeUser() throws Exception {
 
         final User authUser = SecurityService.getUserFromSession();
-        
+
         if (authUser == null || (authUser.getId() == null && !PropertyUtility.getProperty("springProfiles").toLowerCase().contains("test"))) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }

@@ -15,10 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-
-import javax.persistence.Transient;
 
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
@@ -176,7 +173,7 @@ public class RefsetUnitTest extends BaseTest {
      *
      * @throws Exception the exception
      */
-    @Test 
+    @Test
     public void testModelCopy() throws Exception {
 
         final CopyConstructorTester tester = new CopyConstructorTester(object);
@@ -185,7 +182,7 @@ public class RefsetUnitTest extends BaseTest {
         tester.proxy("edition", 1, edition);
         tester.proxy("comboRefset", 1, true);
         tester.proxy("tagList", 1, "");
-        
+
         // exclude transient attributes
         tester.exclude("downloadable");
         tester.exclude("feedbackVisible");
@@ -201,7 +198,7 @@ public class RefsetUnitTest extends BaseTest {
         tester.exclude("descriptions");
         tester.exclude("versionList");
         tester.exclude("openDiscussionCount");
-        tester.exclude("resolvedDiscussionCount");        
+        tester.exclude("resolvedDiscussionCount");
 
         assertTrue(tester.testCopyConstructor(Refset.class));
     }

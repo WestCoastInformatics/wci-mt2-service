@@ -95,9 +95,10 @@ public class Edition extends AbstractHasModified {
     @JoinColumn(nullable = true)
     @Fetch(FetchMode.JOIN)
     private Organization organization;
-    
-    /** The modules and names for this edition. 
-     * TODO - This is a temporary field until we fix sync to add the module name to the main modules field */
+
+    /**
+     * The modules and names for this edition. TODO - This is a temporary field until we fix sync to add the module name to the main modules field
+     */
     @Transient
     private Map<String, String> moduleNames;
 
@@ -365,8 +366,8 @@ public class Edition extends AbstractHasModified {
 
                 if (languageCode.equals("en")) {
 
-                    qualifiedLanguageList.add(1, Map.of("languageRefset", languageRefsetCode, "languageCode", languageCode, "qualifiedLanguageRefset", languageRefsetCode + "FSN",
-                            "qualifiedLanguageCode", languageCode.toUpperCase() + " (FSN)"));
+                    qualifiedLanguageList.add(1, Map.of("languageRefset", languageRefsetCode, "languageCode", languageCode, "qualifiedLanguageRefset",
+                        languageRefsetCode + "FSN", "qualifiedLanguageCode", languageCode.toUpperCase() + " (FSN)"));
                 }
 
             } else {
@@ -471,7 +472,7 @@ public class Edition extends AbstractHasModified {
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     @IndexingDependency(derivedFrom = @ObjectPath({
-            @PropertyValue(propertyName = "organization")
+        @PropertyValue(propertyName = "organization")
     }))
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
     public String getOrganizationId() throws Exception {
@@ -508,7 +509,7 @@ public class Edition extends AbstractHasModified {
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     @IndexingDependency(derivedFrom = @ObjectPath({
-            @PropertyValue(propertyName = "organization")
+        @PropertyValue(propertyName = "organization")
     }))
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
     public String getOrganizationName() throws Exception {
@@ -635,7 +636,7 @@ public class Edition extends AbstractHasModified {
         } else if (!modules.equals(other.modules)) {
             return false;
         }
-        
+
         if (defaultLanguageRefsets == null) {
             if (other.defaultLanguageRefsets != null) {
                 return false;
@@ -684,7 +685,6 @@ public class Edition extends AbstractHasModified {
 
             return false;
         }
-
 
         return true;
     }

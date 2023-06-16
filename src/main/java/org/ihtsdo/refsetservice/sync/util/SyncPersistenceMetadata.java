@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 package org.ihtsdo.refsetservice.sync.util;
 
 import java.text.SimpleDateFormat;
@@ -20,8 +29,8 @@ public class SyncPersistenceMetadata {
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(SyncPersistenceMetadata.class);
 
-    /** The sdf. */
-    private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    /** The Constant ISO_DATE_TIME_FORMAT. */
+    public static final String ISO_DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
     /**
      * Instantiates a new metadata.
@@ -32,6 +41,8 @@ public class SyncPersistenceMetadata {
     public SyncPersistenceMetadata(final String modified, final String modifiedBy) {
 
         try {
+
+            final SimpleDateFormat sdf = new SimpleDateFormat(ISO_DATE_TIME_FORMAT);
 
             this.modifiedBy = modifiedBy;
 
@@ -92,8 +103,4 @@ public class SyncPersistenceMetadata {
         return modifiedBy;
     }
 
-    public SimpleDateFormat getSdf() {
-
-        return sdf;
-    }
 }

@@ -11,6 +11,7 @@
 package org.ihtsdo.refsetservice.rest.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.BufferedReader;
@@ -54,7 +55,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public abstract class AbstractRefsetTests extends BaseTest {
 
     /** The Constant SIMPLE_DATE_FORMAT. */
-    protected static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
+    protected static final String YYYYMMDD_FORMAT = "yyyyMMdd";
 
     /** The config properties. */
     protected static final Properties PROPERTIES = PropertyUtility.getProperties();
@@ -141,7 +142,7 @@ public abstract class AbstractRefsetTests extends BaseTest {
     protected static final String INACTIVE_CONCEPT_ACTIVE_MEMBER_PARENT_CONCEPT_ID = "76318008";
 
     /** The Constant REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_VERSION. */
-    protected static final String REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_VERSION = "2021-11-30";// "2021-07-31";
+    protected static final String REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_VERSION = "2021-11-30"; // "2021-07-31";
 
     /** The Constant REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_EARLIER_VERSION. */
     protected static final String REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_EARLIER_VERSION = "2020-07-31";
@@ -400,9 +401,11 @@ public abstract class AbstractRefsetTests extends BaseTest {
         assertThat(concept).isNotNull();
         assertThat(concept.getCode()).isEqualTo(conceptId);
 
+        final SimpleDateFormat sdf = new SimpleDateFormat(YYYYMMDD_FORMAT);
+
         if (memberEfectiveTime != null) {
 
-            assertThat(concept.getMemberEffectiveTime()).isEqualTo(SIMPLE_DATE_FORMAT.parseObject(memberEfectiveTime));
+            assertThat(concept.getMemberEffectiveTime()).isEqualTo(sdf.parseObject(memberEfectiveTime));
             assertThat(concept.isMemberOfRefset()).isEqualTo(isRefsetMember);
         }
 
@@ -497,12 +500,19 @@ public abstract class AbstractRefsetTests extends BaseTest {
         final String downloadedZipFile = exportRefsetPath + "/" + zipFileName;
         LOG.info("Zip File Path: " + downloadedZipFile);
         final Path unzippedPath = Files.createTempDirectory("exportTest-");
-        FileUtility.unzip(downloadedZipFile, unzippedPath.toFile().getAbsolutePath());
 
-        assertThat(1).isEqualTo(unzippedPath.toFile().list().length);
+        final File file = unzippedPath.toFile();
+        assertNotNull(file);
+
+        final File[] files = unzippedPath.toFile().listFiles();
+        assertNotNull(files);
+
+        FileUtility.unzip(downloadedZipFile, file.getAbsolutePath());
+
+        assertThat(1).isEqualTo(files.length);
 
         // Get generated File
-        final File generatedFile = unzippedPath.toFile().listFiles()[0];
+        final File generatedFile = files[0];
 
         try (final BufferedReader expectedFileReader = new BufferedReader(new FileReader(expectedFilePath));
             final BufferedReader generatedFileReader = new BufferedReader(new FileReader(generatedFile));) {
