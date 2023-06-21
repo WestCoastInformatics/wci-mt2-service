@@ -259,7 +259,7 @@ public class SyncUtilities {
         return languages.next();
     }
 
-    public Set<String> identifyDefaultLanguageRefsets(final JsonNode codeSystem, final String shortName) {
+    public Set<String> identifyDefaultLanguageRefsets(final JsonNode codeSystem, final String shortName, String branch) throws Exception {
 
         final Set<String> retSet = new HashSet<>();
 
@@ -282,6 +282,41 @@ public class SyncUtilities {
 
         // Ensure that DEFAULT_LANG_REFSET is always listed even if not explicitly listed
         retSet.add(DEFAULT_LANGUAGE_REFSET);
+
+        // Search for optional language refsets associated with the branch metadata
+        // https://dev-integration-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/branches/MAIN%2FSNOMEDCT-BE?includeInheritedMetadata=false
+        final String url = SnowstormConnection.getBaseUrl() + "branches/" + branch + "?includeInheritedMetadata=false";
+
+        try (final Response response = SnowstormConnection.getResponse(url)) {
+
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                throw new Exception("Failed to get branch information to obtain optional language refsets for edition's main branch");
+            }
+
+            final String resultString = response.readEntity(String.class);
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode root = mapper.readTree(resultString.toString());
+
+            // get RefSets from CORE as long as active
+            final JsonNode metadata = root.get("metadata");
+
+            if (metadata.has("optionalLanguageRefsets")) {
+                final Iterator<JsonNode> refsetIterator = metadata.get("optionalLanguageRefsets").iterator();
+
+                while (refsetIterator.hasNext()) {
+                    final JsonNode refset = refsetIterator.next();
+
+                    if (!refset.has("refsetId")) {
+                        LOG.error("Optional language refset must have a refsetId defined: " + refset);
+                    } else {
+                        LOG.info("Optional language refset: " + refset.get("refsetId").asText());
+                        retSet.add(refset.get("refsetId").asText());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            throw new Exception("Failed to process the optional language refsets defined for this branch: " + branch);
+        }
 
         return retSet;
     }
@@ -431,7 +466,7 @@ public class SyncUtilities {
         }
     }
 
-    public String determineMaintainerType(final JsonNode codeSystem, final String editionShortName) throws Exception {
+    public String identifyMaintainerType(final JsonNode codeSystem, final String editionShortName) throws Exception {
 
         String codeSystemType = codeSystem.has("maintainerType") ? codeSystem.get("maintainerType").asText() : "";
 
@@ -441,9 +476,12 @@ public class SyncUtilities {
             if (isInternationalEdition(editionShortName)) {
 
                 codeSystemType = "Managed Service";
+            } else if (editionShortName.endsWith("AFFILIATE")) {
+                // TODO: This should eventually be removed once populated in Snow
+                codeSystemType = "Affilitate";
             } else {
 
-                throw new Exception("Encountered non-CORE edition without a maintainerType specified in the corresponding Code System");
+                LOG.info("{} edition is missing a maintainerType {}", codeSystem, editionShortName);
             }
 
         }

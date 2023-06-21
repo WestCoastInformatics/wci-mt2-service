@@ -267,7 +267,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
                 final JsonNode codeSystem = termserverShortNameCodeSystemMap.get(shortName);
                 final String snowStormEditionName = codeSystem.has("name") ? codeSystem.get("name").asText() : "";
                 final String snowStormBranch = codeSystem.has("branchPath") ? codeSystem.get("branchPath").asText() : "";
-                final String snowStormMaintainerType = utilities.determineMaintainerType(codeSystem, snowStormEditionName);
+                final String snowStormMaintainerType = utilities.identifyMaintainerType(codeSystem, snowStormEditionName);
                 final Set<String> snowStormEditionModules = utilities.identifyModules(shortName, snowStormEditionName, snowStormBranch, codeSystem);
 
                 // start comparison
@@ -300,7 +300,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
                     modificationMade = true;
                 }
 
-                final Set<String> termserverDefaultLanguageRefsets = utilities.identifyDefaultLanguageRefsets(codeSystem, shortName);
+                final Set<String> termserverDefaultLanguageRefsets = utilities.identifyDefaultLanguageRefsets(codeSystem, shortName, modifyingEdition.getBranch());
                 if (!dbEdition.getDefaultLanguageRefsets().equals(termserverDefaultLanguageRefsets)) {
 
                     modifyingEdition.setDefaultLanguageRefsets(termserverDefaultLanguageRefsets);
@@ -371,7 +371,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
                 }
 
                 final String editionShortName = codeSystem.get("shortName").asText();
-                final String maintainerType = utilities.determineMaintainerType(codeSystem, editionShortName);
+                final String maintainerType = utilities.identifyMaintainerType(codeSystem, editionShortName);
 
                 // If not testing, process all editions. Otherwise, check if edition to test
                 if (isTesting() && !isTestingEditionToProcess(editionShortName)) {
