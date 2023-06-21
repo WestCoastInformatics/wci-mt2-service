@@ -154,8 +154,7 @@ public class SyncUtilities {
      * @return the user
      * @throws Exception the exception
      */
-    public User getUser(final TerminologyService service, final String name, final String userName, final String email, final Set<String> roles)
-        throws Exception {
+    public User getUser(final TerminologyService service, final String name, final String userName, final String email, final Set<String> roles) throws Exception {
 
         User user = getUser(service, userName);
 
@@ -266,8 +265,7 @@ public class SyncUtilities {
      * @return the sets the
      * @throws Exception the exception
      */
-    public Set<String> identifyModules(final String shortName, final String editionName, final String editionBranch, final JsonNode codeSystem)
-        throws Exception {
+    public Set<String> identifyModules(final String shortName, final String editionName, final String editionBranch, final JsonNode codeSystem) throws Exception {
 
         final Set<String> editionModules = new HashSet<>();
 
@@ -349,9 +347,10 @@ public class SyncUtilities {
      *
      * @param codeSystem the code system
      * @param shortName the short name
+     * @param branch the branch
      * @return the sets the
      */
-    public Set<String> identifyDefaultLanguageRefsets(final JsonNode codeSystem, final String shortName) {
+    public Set<String> identifyDefaultLanguageRefsets(final JsonNode codeSystem, final String shortName, String branch) throws Exception {
 
         final Set<String> retSet = new HashSet<>();
 
@@ -374,6 +373,41 @@ public class SyncUtilities {
 
         // Ensure that DEFAULT_LANG_REFSET is always listed even if not explicitly listed
         retSet.add(DEFAULT_LANGUAGE_REFSET);
+
+        // Search for optional language refsets associated with the branch metadata
+        // https://dev-integration-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/branches/MAIN%2FSNOMEDCT-BE?includeInheritedMetadata=false
+        final String url = SnowstormConnection.getBaseUrl() + "branches/" + branch + "?includeInheritedMetadata=false";
+
+        try (final Response response = SnowstormConnection.getResponse(url)) {
+
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                throw new Exception("Failed to get branch information to obtain optional language refsets for edition's main branch");
+            }
+
+            final String resultString = response.readEntity(String.class);
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode root = mapper.readTree(resultString.toString());
+
+            // get RefSets from CORE as long as active
+            final JsonNode metadata = root.get("metadata");
+
+            if (metadata.has("optionalLanguageRefsets")) {
+                final Iterator<JsonNode> refsetIterator = metadata.get("optionalLanguageRefsets").iterator();
+
+                while (refsetIterator.hasNext()) {
+                    final JsonNode refset = refsetIterator.next();
+
+                    if (!refset.has("refsetId")) {
+                        LOG.error("Optional language refset must have a refsetId defined: " + refset);
+                    } else {
+                        LOG.info("Optional language refset: " + refset.get("refsetId").asText());
+                        retSet.add(refset.get("refsetId").asText());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            throw new Exception("Failed to process the optional language refsets defined for this branch: " + branch);
+        }
 
         return retSet;
     }
@@ -406,7 +440,6 @@ public class SyncUtilities {
         }
 
     }
-
 
     /**
      * Returns the iso date time format.
@@ -505,8 +538,7 @@ public class SyncUtilities {
 
         try {
             final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
-            final String fileName = String.format(System.getProperty("java.io.tmpdir") + FileSystems.getDefault().getSeparator() + "refset-sync-results-%s.txt",
-                dateFormat.format(new Date()));
+            final String fileName = String.format(System.getProperty("java.io.tmpdir") + FileSystems.getDefault().getSeparator() + "refset-sync-results-%s.txt", dateFormat.format(new Date()));
             final Path path = Paths.get(fileName);
             final byte[] queryResultsToBytes = results.getBytes();
 
@@ -586,14 +618,14 @@ public class SyncUtilities {
     }
 
     /**
-     * Determine maintainer type.
+     * Identify maintainer type.
      *
      * @param codeSystem the code system
      * @param editionShortName the edition short name
      * @return the string
      * @throws Exception the exception
      */
-    public String determineMaintainerType(final JsonNode codeSystem, final String editionShortName) throws Exception {
+    public String identifyMaintainerType(final JsonNode codeSystem, final String editionShortName) throws Exception {
 
         String codeSystemType = codeSystem.has("maintainerType") ? codeSystem.get("maintainerType").asText() : "";
 
@@ -603,9 +635,12 @@ public class SyncUtilities {
             if (isInternationalEdition(editionShortName)) {
 
                 codeSystemType = "Managed Service";
+            } else if (editionShortName.endsWith("AFFILIATE")) {
+                // TODO: This should eventually be removed once populated in Snow
+                codeSystemType = "Affilitate";
             } else {
 
-                throw new Exception("Encountered non-CORE edition without a maintainerType specified in the corresponding Code System");
+                LOG.info("{} edition is missing a maintainerType {}", codeSystem, editionShortName);
             }
 
         }
@@ -631,8 +666,7 @@ public class SyncUtilities {
 
         try {
             // if the status is Published then create a new version of the refset that is ready to be edited
-            final Refset updatedRefset =
-                WorkflowService.setWorkflowStatusByAction(service, SecurityService.getUserFromSession(), WorkflowService.FINISH_EDIT, refset, "");
+            final Refset updatedRefset = WorkflowService.setWorkflowStatusByAction(service, SecurityService.getUserFromSession(), WorkflowService.FINISH_EDIT, refset, "");
 
             // if the status changed return the updated refset else return null
             if (!currentStatus.equals(updatedRefset.getWorkflowStatus())) {

@@ -86,7 +86,7 @@ public class SyncDatabaseHandler {
             final String shortName = codeSystem.get("shortName").asText();
             final String editionName = codeSystem.get("name").asText();
             final String branch = codeSystem.get("branchPath").asText();
-            final String maintainerType = utilities.determineMaintainerType(codeSystem, shortName);
+            final String maintainerType = utilities.identifyMaintainerType(codeSystem, shortName);
 
             // Identify Matching Organization
 
@@ -98,7 +98,7 @@ public class SyncDatabaseHandler {
 
             final String defaultLanguageCode = utilities.identifyDefaultLanguageCode(codeSystem, editionName);
 
-            final Set<String> defaultLanguageRefsets = utilities.identifyDefaultLanguageRefsets(codeSystem, shortName);
+            final Set<String> defaultLanguageRefsets = utilities.identifyDefaultLanguageRefsets(codeSystem, shortName, branch);
 
             // Case of no modules handled downstream
             final Set<String> editionModules = utilities.identifyModules(shortName, editionName, branch, codeSystem);
