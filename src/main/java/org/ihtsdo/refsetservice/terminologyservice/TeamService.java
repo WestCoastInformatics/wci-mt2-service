@@ -173,6 +173,10 @@ public class TeamService extends BaseService {
 
             if (includeMembers) {
 
+                final String systemUserList = PropertyUtility.getProperty("refset.service.system.accounts");
+                final Set<String> systemUsers =
+                    (StringUtils.isNotBlank(systemUserList)) ? new HashSet<>(Arrays.asList(systemUserList.split(","))) : new HashSet<>();
+
                 for (final String userId : team.getMembers()) {
 
                     final ResultList<User> users = service.find("id:" + userId, null, User.class, null);
@@ -181,6 +185,10 @@ public class TeamService extends BaseService {
 
                         for (final User user : users.getItems()) {
 
+                            if (systemUsers.contains(user.getUserName())) {
+                                continue;
+                            }
+
                             final SearchParameters sp = new SearchParameters();
                             sp.setQuery("members:" + user.getId());
                             final ResultList<Team> teamsResultList = TeamService.searchTeams(user, sp);
@@ -188,9 +196,10 @@ public class TeamService extends BaseService {
                             if (teamsResultList != null && teamsResultList.getItems() != null) {
                                 user.getTeams().addAll(teamsResultList.getItems());
                             }
+                            
+                            team.getMemberList().add(user);
                         }
 
-                        team.getMemberList().addAll(users.getItems());
                     }
                 }
             }
@@ -226,7 +235,7 @@ public class TeamService extends BaseService {
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
-            Team updatedTeam = service.update(existingTeam);
+            final Team updatedTeam = service.update(existingTeam);
             service.add(AuditEntryHelper.updateTeamEntry(updatedTeam));
             service.commit();
 
@@ -344,14 +353,12 @@ public class TeamService extends BaseService {
 
             final ResultList<Team> results = service.find(query, pfs, Team.class, null);
             final ResultList<Team> resultsToReturn = new ResultList<>();
-
+            
+            final String systemUserList = PropertyUtility.getProperty("refset.service.system.accounts");
+            final Set<String> systemUsers =
+                (StringUtils.isNotBlank(systemUserList)) ? new HashSet<>(Arrays.asList(systemUserList.split(","))) : new HashSet<>();
+                
             for (final Team team : results.getItems()) {
-
-                final String systemUserList = PropertyUtility.getProperty("refset.service.system.accounts");
-                Set<String> systemUserSet = new HashSet<>();
-                if (StringUtils.isNotBlank(systemUserList)) {
-                    systemUserSet = new HashSet<>(Arrays.asList(systemUserList.split(",")));
-                }
 
                 // if only the user's teams should be returned then make sure the user is an
                 // admin or a member of the team
@@ -364,7 +371,7 @@ public class TeamService extends BaseService {
                     for (final String userId : team.getMembers()) {
 
                         final User member = service.findSingle("id:" + userId, User.class, null);
-                        if (member == null || systemUserSet.contains(member.getUserName())) {
+                        if (member == null || systemUsers.contains(member.getUserName())) {
                             continue;
                         }
 
