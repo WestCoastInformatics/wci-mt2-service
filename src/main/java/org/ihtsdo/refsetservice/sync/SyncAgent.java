@@ -215,8 +215,7 @@ public abstract class SyncAgent {
      * @throws Exception the exception
      */
     // Call when launching sync
-    public static void sync(final TerminologyService service, final boolean refsetPerVersionSync, final boolean runForProduction,
-        final boolean ignoreCoreRefsets) throws Exception {
+    public static void sync(final TerminologyService service, final boolean refsetPerVersionSync, final boolean runForProduction, final boolean ignoreCoreRefsets) throws Exception {
 
         if (isProductionSystem == null || !isProductionSystem) {
 
@@ -278,7 +277,7 @@ public abstract class SyncAgent {
         service.setModifiedFlag(true);
 
         if (dbHandler == null) {
-            dbHandler = new SyncDatabaseHandler(null);
+            dbHandler = new SyncDatabaseHandler(null, STATISTICS);
         }
         if (utilities == null) {
 
@@ -332,8 +331,7 @@ public abstract class SyncAgent {
      * @param termserverAttribute the termserver attribute
      * @return <code>true</code> if so, <code>false</code> otherwise
      */
-    protected boolean isDifferentAttribute(final String shortName, final String attributeName, final Object databaseAttribute,
-        final Object termserverAttribute) {
+    protected boolean isDifferentAttribute(final String shortName, final String attributeName, final Object databaseAttribute, final Object termserverAttribute) {
 
         if (termserverAttribute == null && databaseAttribute == null) {
             // Both null, no difference
@@ -346,12 +344,11 @@ public abstract class SyncAgent {
         // values are different. List them
         if (databaseAttribute instanceof Long) {
 
-            LOG.info(" inconsistency found on attribute " + attributeName + " for edition " + shortName + " where termserver has "
-                + new Date((Long) termserverAttribute) + "' and DB is '" + new Date((Long) databaseAttribute) + "'");
+            LOG.info(" inconsistency found on attribute " + attributeName + " for edition " + shortName + " where termserver has " + new Date((Long) termserverAttribute) + "' and DB is '"
+                    + new Date((Long) databaseAttribute) + "'");
         } else {
 
-            LOG.info(" inconsistency found on attribute " + attributeName + " for edition " + shortName + " where termserver has '" + termserverAttribute
-                + "' and DB is '" + databaseAttribute + "'");
+            LOG.info(" inconsistency found on attribute " + attributeName + " for edition " + shortName + " where termserver has '" + termserverAttribute + "' and DB is '" + databaseAttribute + "'");
         }
 
         return true;
