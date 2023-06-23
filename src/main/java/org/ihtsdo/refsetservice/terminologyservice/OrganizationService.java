@@ -9,6 +9,7 @@
  */
 package org.ihtsdo.refsetservice.terminologyservice;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -31,6 +32,7 @@ import org.ihtsdo.refsetservice.model.ResultListUser;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.TeamType;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.model.UserRole;
 import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
@@ -87,22 +89,32 @@ public class OrganizationService extends BaseService {
      * @throws Exception the exception
      */
     public static Organization createOrganization(final TerminologyService service, final User user, final Organization organization) throws Exception {
-
-        checkEditPermissions(user, null);
-
-        final SearchParameters organizationsParameters = new SearchParameters();
-
-        List<Organization> organizationList = OrganizationService.searchOrganizations(service, user, organizationsParameters, false).getItems();
-
-        if (organizationList.size() > 0) {
-
-            final String errorMessage = "There is already an organization tied to that edition.";
-            LOG.error(errorMessage);
-            throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, errorMessage);
+  
+        // if this is an affiliate org being created any logged in user can create it
+        if (organization.isAffiliate()) {
+            
+            if (user.getUserName().equals(SecurityService.GUEST_USERNAME)) {
+                
+                final String message = "User does not have permission to perform this Organization action.";
+                LOG.error(message);
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, message);
+            }
+        } 
+        
+        // otherwise the user must have "all_all_admin" permission
+        else {
+            
+            checkEditPermissions(user, null);
+            
+            final String message = "These types of organizations can not be created through this tool.";
+            LOG.error(message);
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, message);
         }
-
+        
+        final SearchParameters organizationsParameters = new SearchParameters();
+        List<Organization> organizationList = null;
+        
         organizationsParameters.setQuery("name:" + organization.getName());
-
         organizationList = OrganizationService.searchOrganizations(service, user, organizationsParameters, false).getItems();
 
         if (organizationList.size() > 0) {
@@ -122,39 +134,41 @@ public class OrganizationService extends BaseService {
         service.add(AuditEntryHelper.addOrganizationEntry(newOrganization));
 
         // create admin team when creating an organization
-        final Team adminTeam = new Team();
-        adminTeam.setDescription("Application users which can administrator organization " + organization.getName());
-        adminTeam.setName("Administrator(s) for organization " + organization.getName());
+        Team adminTeam = new Team();
+        adminTeam.setDescription(TeamService.getOrganizationTeamDescription(organization));
+        adminTeam.setName(TeamService.generateOrganizationTeamName(organization));
         adminTeam.setPrimaryContactEmail(organization.getPrimaryContactEmail());
         adminTeam.getMembers().add(user.getId());
         adminTeam.setOrganization(newOrganization);
         adminTeam.setType(TeamType.ORGANIZATION.getText());
-        adminTeam.getRoles().add(User.ROLE_ADMIN);
 
-        TeamService.createTeam(user, adminTeam);
-
-        setRoles(user, newOrganization, newOrganization.getRoles());
-
-        if (crowdUnitTestSkip == null || !"true".equalsIgnoreCase(crowdUnitTestSkip)) {
-            LOG.info("CALLING CROWD API from OrganizationService createOrganization");
-
-            /*
-             * try { // TODO: Tim Whalen for Permissions // final String crowdGroupName =
-             * CrowdAPIClient.addAdminGroup(newOrganization.getEdition().getShortName(), "Organization Administrator(s)"); //
-             * CrowdAPIClient.addMembership(crowdGroupName, user.getUserName());
-             * 
-             * } catch (final Exception e) {
-             * 
-             * final String errorMessage = "Failed adding Crowd groups. Message: " + e.getMessage(); LOG.error(errorMessage, e); throw new
-             * ResponseStatusException(HttpStatus.EXPECTATION_FAILED, errorMessage); }
-             */
-
-        } else {
-            LOG.info("SKIP CALLING CROWD API");
+        adminTeam = service.add(adminTeam);
+        service.add(AuditEntryHelper.addTeamEntry(adminTeam));
+        
+        // create the groups for the admin team
+        CrowdAPIClient.addGroup(newOrganization.getName(), "all", "all", "Organization Administrators", false, false);
+        
+        // set all the roles on the admin team
+        for (final UserRole role : UserRole.getAllRoles()) {
+            adminTeam = TeamService.addRoleToTeam(user, adminTeam.getId(), UserRole.getRoleString(role).toUpperCase(), true);
         }
 
+        // load the user roles onto the organization
+        setRoles(user, newOrganization, newOrganization.getRoles());
+        
+        // create the affiliated editions for the organization
+        final List<Edition> editionList = EditionService.getAffiliateEditionList();
+
+        for (final Edition edition : editionList) {
+            
+            edition.setOrganization(newOrganization);
+            service.add(edition);
+            service.add(AuditEntryHelper.addEditionEntry(edition));
+        }
+        
         return newOrganization;
     }
+   
 
     /**
      * Returns the organization.
@@ -659,7 +673,7 @@ public class OrganizationService extends BaseService {
         service.add(AuditEntryHelper.removeUserFromOrganizationEntry(organization, userToRemove));
 
         removeUserFromTeams(service, organizationId, userToRemove, authUser);
-        final String crowdGroupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(edition.getShortName(), "all", User.ROLE_VIEWER);
+        final String crowdGroupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(organization.getName(), "all", "all", User.ROLE_VIEWER);
         CrowdAPIClient.deleteMembership(crowdGroupName, userToRemove.getUserName().replace(" ", "%20"));
 
         return organization;
@@ -708,25 +722,25 @@ public class OrganizationService extends BaseService {
 
         boolean giveViewerRole = false;
 
-        if (user.doesUserHavePermission(User.ROLE_AUTHOR, organization)) {
+        if (user.checkPermission(User.ROLE_AUTHOR, organization.getName(), null, null)) {
 
             roles.add(User.ROLE_AUTHOR);
             giveViewerRole = true;
         }
 
-        if (user.doesUserHavePermission(User.ROLE_REVIEWER, organization)) {
+        if (user.checkPermission(User.ROLE_REVIEWER, organization.getName(), null, null)) {
 
             roles.add(User.ROLE_REVIEWER);
             giveViewerRole = true;
         }
 
-        if (user.doesUserHavePermission(User.ROLE_ADMIN, organization)) {
+        if (user.checkPermission(User.ROLE_ADMIN, organization.getName(), null, null)) {
 
             roles.add(User.ROLE_ADMIN);
             giveViewerRole = true;
         }
 
-        if (user.doesUserHavePermission(User.ROLE_VIEWER, organization) || giveViewerRole) {
+        if (user.checkPermission(User.ROLE_VIEWER, organization.getName(), null, null) || giveViewerRole) {
 
             roles.add(User.ROLE_VIEWER);
         }
@@ -767,11 +781,7 @@ public class OrganizationService extends BaseService {
      * @throws Exception the exception
      */
     public static boolean canUserCreateOrganizations(final User user) throws Exception {
-
-        // Can't have null organization. user.doesUserHavePermission will throw an NPE.
-        // final Organization organization = null;
-        // return user.doesUserHavePermission(User.ROLE_ADMIN, organization);
-        return false;
+         return user.checkPermission(User.ROLE_ADMIN, "all", "all", null);
     }
 
     /**
@@ -1065,19 +1075,7 @@ public class OrganizationService extends BaseService {
                             final Team team = TeamService.getTeam(teamId, true);
 
                             if (team.getMembers() != null && team.getMembers().contains(userToRemove.getId())) {
-
                                 TeamService.removeUserFromTeam(authUser, teamId, userToRemove.getId());
-                                for (final String role : team.getRoles()) {
-
-                                    try {
-                                        final String groupName =
-                                            CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
-                                        CrowdAPIClient.deleteMembership(groupName, userToRemove.getUserName());
-                                    } catch (final Exception e) {
-                                        LOG.error("ERROR removing user {} from team {} for organization {}.", userToRemove.getUserName(), team.getId(),
-                                            organizationId, e);
-                                    }
-                                }
                             }
                         }
                     }
@@ -1090,7 +1088,6 @@ public class OrganizationService extends BaseService {
                     for (final Team team : orgTeams.getItems()) {
 
                         if (team.getMembers() != null && team.getMembers().contains(userToRemove.getId())) {
-
                             TeamService.removeUserFromTeam(authUser, team.getId(), userToRemove.getId());
                         }
                     }

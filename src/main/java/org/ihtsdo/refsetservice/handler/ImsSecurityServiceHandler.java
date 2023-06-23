@@ -9,6 +9,7 @@
  */
 package org.ihtsdo.refsetservice.handler;
 
+import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 
@@ -19,10 +20,16 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.ihtsdo.refsetservice.model.Edition;
+import org.ihtsdo.refsetservice.model.PfsParameter;
+import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.SecurityService;
+import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
+import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -60,19 +67,21 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
         final User user = CrowdAPIClient.getUser(userName);
         final Set<String> groupMemberships = CrowdAPIClient.getMembershipsForUser(userName);
         LOG.debug("Memberships {}", groupMemberships);
-
+        
         for (final String role : groupMemberships) {
             if (role.startsWith(RT2_ROLE_PREFIX)) {
                 user.getRoles().add(role.substring(RT2_ROLE_PREFIX.length()));
             }
         }
+        
+        convertRoles(user);
 
         if (userName.equals("twhalen")) {
 
-            user.getRoles().clear();
-            user.getRoles().add("snomedctus-all-viewer");
-            user.getRoles().add("snomedctse-inrp-reviewer");
-            user.getRoles().add("snomedctse-inrp-author");
+//            user.getRoles().clear();
+//            user.getRoles().add("snomedinternational-snomedctus-all-viewer");
+//            user.getRoles().add("swedishedition-snomedctse-inrp-reviewer");
+//            user.getRoles().add("swedishedition-snomedctse-inrp-author");
         }
 
         user.setModifiedBy(user.getUserName());
@@ -84,44 +93,135 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
     /**
      * Calls an IMS endpoint to make sure user is authenticated.
      *
+     * @param user The user
+     * @return the response
+     * @throws Exception the exception
+     */
+    private void convertRoles(final User user) throws Exception {
+
+        boolean needToConvert = true;
+            
+        for (final String role : user.getRoles()) {
+
+            if (role.split("-").length == 4) {
+                
+                needToConvert = false;
+                break;
+            }
+        }
+        
+        try (final TerminologyService service = new TerminologyService()) {
+            
+            final Set<String> originalRoles = new HashSet<>(user.getRoles());
+            
+            for (final String role : originalRoles) {
+
+                final String[] originalRoleParts = role.split("-");
+                
+                if (originalRoleParts.length < 4) {
+                    
+                    // convert old roles into the new role format
+                    if (needToConvert) {
+                        
+                        String organizationName = "";
+                        String groupDescription = "Organization Administrators";
+                        
+                        // if this is an application admin role the org name is 'all'
+                        if (originalRoleParts[0].equals("all")) {
+                            
+                            organizationName = "all";    
+                            groupDescription = "Application Administrators";
+                            
+                        } else {
+                            
+                            String reconsitutedEditionShortName = originalRoleParts[0];
+                            
+                            // turn the edition part of the role back to a valid edition short name so it can be searched
+                            if (reconsitutedEditionShortName.length() > 8) {
+                                reconsitutedEditionShortName = "snomedct" + "-" + reconsitutedEditionShortName.substring(8);
+                            }
+                            
+                            final ResultList<Edition> results = service.find("shortName:" + reconsitutedEditionShortName.toUpperCase(), new PfsParameter(), Edition.class, null);
+                            
+                            if (results.getItems().size() == 1) {
+                                
+                                final Edition edition = results.getItems().get(0);
+                                organizationName = edition.getOrganizationName();
+                            }
+                        }
+                        
+                        // add the group and permission to crowd as long as an org name is there
+                        if (!organizationName.isEmpty()) {
+                            
+                            // if this is a project role get the project description
+                            if (!originalRoleParts[1].equals("all")) {
+                                
+                                final Project project = service.findSingle("projectCrowdId:" + originalRoleParts[1], Project.class, null);
+                                
+                                if (project != null) {
+                                    groupDescription = project.getDescription();
+                                }
+                            }
+                            
+                            CrowdAPIClient.addGroup(organizationName, originalRoleParts[0], originalRoleParts[1], groupDescription, false, false);
+                            
+                            final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(organizationName, originalRoleParts[0], originalRoleParts[1], originalRoleParts[2]);
+                            CrowdAPIClient.addMembership(groupName, user.getUserName());
+                            
+                            // add the new role to the user object
+                            user.getRoles().add(CrowdGroupNameAlgorithm.getOrganizationString(organizationName) + "-" + role);
+                        }
+                    }
+                    
+                    // remove the old role string from the user object
+                    user.getRoles().remove(role);
+                }
+            }
+        }
+        
+    }
+    
+    /**
+     * Calls an IMS endpoint to make sure user is authenticated.
+     *
      * @param userName The userName passed in to the authenticate call
      * @return the response
      * @throws Exception the exception
      */
     protected boolean checkImsLogin(final String userName) throws Exception {
-
+        
         final String url = getAuthenticateUrl() + "account";
         boolean authenticated = false;
         final Cookie imsCookie = SecurityService.getImsCookie();
-
+        
         if (imsCookie == null) {
             return false;
         }
-
+        
         final Client client = ClientBuilder.newClient();
         final WebTarget target = client.target(url);
         final javax.ws.rs.core.Cookie newCookie = new javax.ws.rs.core.Cookie(imsCookie.getName(), imsCookie.getValue());
-
+        
         try (Response response = target.request(MediaType.APPLICATION_JSON).cookie(newCookie).get()) {
-
+            
             if (response.getStatus() == Response.Status.OK.getStatusCode()) {
-
+                
                 final String resultString = response.readEntity(String.class);
                 final ObjectMapper mapper = new ObjectMapper();
                 final JsonNode root = mapper.readTree(resultString.toString());
                 final String imsUserName = root.get("login").asText();
-
+                
                 // make sure that the passed in user name is the same as what IMS has authenticated
                 if (imsUserName.equals(userName)) {
                     authenticated = true;
                 }
             }
-
+            
         } catch (final Exception e) {
             LOG.error("IMS Authentication error: {} ", url, e);
             throw e;
         }
-
+        
         return authenticated;
     }
 

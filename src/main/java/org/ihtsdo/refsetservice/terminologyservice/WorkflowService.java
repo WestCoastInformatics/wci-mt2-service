@@ -1743,8 +1743,11 @@ public final class WorkflowService {
 
                     allowedActions.add(FAILS_RVF);
                 }
+                
+                final String organizationName = refset.getOrganizationName();
+                final String editionName = refset.getEdition().getShortName();
 
-                if (refset.isLocalSet() && user.checkPermission(User.ROLE_ADMIN, refset.getEdition(), null)) {
+                if (refset.isLocalSet() && user.checkPermission(User.ROLE_ADMIN, organizationName, editionName, null)) {
                     allowedActions.add(PUBLISH_REFSET);
                 }
 

@@ -280,6 +280,33 @@ public class SecurityService implements AutoCloseable {
         session.setAttribute(attributeName, value);
         return true;
     }
+    
+    /**
+     * Set the user into the session.
+     *
+     * @param user the user to store in the session
+     * @return true if the user was set in the session, otherwise false
+     * @throws Exception the exception
+     */
+    public static boolean setUserInSession(final User user) throws Exception {
+
+        final ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+
+        if (requestAttributes == null || requestAttributes.getRequest() == null) {
+
+            return false;
+        }
+
+        final HttpSession session = requestAttributes.getRequest().getSession();
+
+        if (session == null) {
+
+            return false;
+        }
+
+        session.setAttribute(SESSION_USER_OBJECT_KEY, user);
+        return true;
+    }
 
     /**
      * Remove the something from the session.

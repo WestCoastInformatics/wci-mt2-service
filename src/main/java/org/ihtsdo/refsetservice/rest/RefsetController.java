@@ -1079,7 +1079,7 @@ public class RefsetController extends BaseController {
 
         final User user = SecurityService.getUserFromSession();
 
-        if (!user.checkPermission(User.ROLE_ADMIN, null, null)) {
+        if (!user.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
             return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.UNAUTHORIZED);
         }
 
@@ -1208,12 +1208,12 @@ public class RefsetController extends BaseController {
 
                 typeToPublish = "localset";
 
-                if (!user.checkPermission(User.ROLE_ADMIN, edition, null)) {
+                if (!user.checkPermission(User.ROLE_ADMIN, edition.getOrganizationName(), edition.getShortName(), null)) {
                     return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.UNAUTHORIZED);
                 }
             } else {
 
-                if (!user.checkPermission(User.ROLE_ADMIN, null, null)) {
+                if (!user.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
                     return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.UNAUTHORIZED);
                 }
             }
@@ -1301,8 +1301,10 @@ public class RefsetController extends BaseController {
             service.setModifiedFlag(true);
 
             final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
-
-            if (!user.checkPermission(User.ROLE_ADMIN, refset.getEdition(), refset.getProject().getCrowdProjectId())) {
+            final String organizationName = refset.getOrganizationName();
+            final String editionName = refset.getEdition().getShortName();
+            
+            if (!user.checkPermission(User.ROLE_ADMIN, organizationName, editionName, refset.getProject().getCrowdProjectId())) {
                 return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.UNAUTHORIZED);
             }
 
@@ -1363,7 +1365,7 @@ public class RefsetController extends BaseController {
 
         final User user = SecurityService.getUserFromSession();
 
-        if (!user.checkPermission(User.ROLE_ADMIN, null, null)) {
+        if (!user.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
             return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.UNAUTHORIZED);
         }
 
@@ -2193,7 +2195,7 @@ public class RefsetController extends BaseController {
 
         final User user = SecurityService.getUserFromSession();
 
-        if (!user.checkPermission(User.ROLE_ADMIN, null, null)) {
+        if (!user.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
             return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.UNAUTHORIZED);
         }
 
@@ -2253,7 +2255,7 @@ public class RefsetController extends BaseController {
 
             final User user = SecurityService.getUserFromSession();
 
-            if (!user.checkPermission(User.ROLE_ADMIN, null, null)) {
+            if (!user.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
                 return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.UNAUTHORIZED);
             }
 
@@ -2289,7 +2291,7 @@ public class RefsetController extends BaseController {
 
             final User user = SecurityService.getUserFromSession();
 
-            if (!user.checkPermission(User.ROLE_ADMIN, null, null)) {
+            if (!user.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
                 return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.UNAUTHORIZED);
             }
 
@@ -3506,7 +3508,7 @@ public class RefsetController extends BaseController {
 
         final User user = SecurityService.getUserFromSession();
 
-        if (!user.checkPermission(User.ROLE_ADMIN, null, null)) {
+        if (!user.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
             return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.UNAUTHORIZED);
         }
 

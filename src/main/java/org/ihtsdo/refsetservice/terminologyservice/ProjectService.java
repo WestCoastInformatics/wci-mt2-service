@@ -454,6 +454,8 @@ public class ProjectService extends BaseService {
 
             LOG.info("CALLING CROWD API from ProjectService updateMemberships");
 
+            final String organizationName = project.getEdition().getOrganizationName();
+            final String editionName = project.getEdition().getShortName();
             final Set<String> copyOfOldTeams = (oldTeams != null) ? new HashSet<String>(oldTeams) : new HashSet<String>();
             final Set<String> copyOfNewTeams = (newTeams != null) ? new HashSet<String>(newTeams) : new HashSet<String>();
 
@@ -466,12 +468,12 @@ public class ProjectService extends BaseService {
                 for (final String teamId : copyOfNewTeams) {
                     final Team team = TeamService.getTeam(teamId, true);
                     // ignores 400 errors, if the group already exists
-                    CrowdAPIClient.addGroup(project.getEdition().getShortName(), project.getName(), project.getDescription(), true, false);
+                    CrowdAPIClient.addGroup(organizationName, editionName, project.getName(), project.getDescription(), true, false);
                     if (team != null && team.getMemberList() != null) {
                         for (final String role : team.getRoles()) {
                             for (final User user : team.getMemberList()) {
                                 final String groupName =
-                                    CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                                    CrowdGroupNameAlgorithm.buildCrowdGroupName(organizationName, editionName, project.getCrowdProjectId(), role);
                                 CrowdAPIClient.addMembership(groupName, user.getUserName());
                             }
                         }
@@ -490,7 +492,7 @@ public class ProjectService extends BaseService {
                         for (final String role : team.getRoles()) {
                             for (final User user : team.getMemberList()) {
                                 final String groupName =
-                                    CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                                    CrowdGroupNameAlgorithm.buildCrowdGroupName(organizationName, editionName, project.getCrowdProjectId(), role);
                                 CrowdAPIClient.deleteMembership(groupName, user.getUserName());
                             }
                         }
