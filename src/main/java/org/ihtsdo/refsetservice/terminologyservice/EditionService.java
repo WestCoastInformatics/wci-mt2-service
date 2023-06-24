@@ -197,7 +197,7 @@ public class EditionService extends BaseService {
                     }
 
                     final String editionShortName = codeSystem.get("shortName").asText();
-                    final String maintainerType = syncUtilities.determineMaintainerType(codeSystem, editionShortName);
+                    final String maintainerType = syncUtilities.identifyMaintainerType(codeSystem, editionShortName);
 
                     // Skip inactive code systems
                     if (codeSystem.has("active") && !codeSystem.get("active").asBoolean()) {
@@ -222,7 +222,7 @@ public class EditionService extends BaseService {
                     final String editionName = codeSystem.get("name").asText();
                     final String branch = codeSystem.get("branchPath").asText();
                     final String defaultLanguageCode = syncUtilities.identifyDefaultLanguageCode(codeSystem, editionName);
-                    final Set<String> defaultLanguageRefsets = syncUtilities.identifyDefaultLanguageRefsets(codeSystem, editionShortName);
+                    final Set<String> defaultLanguageRefsets = syncUtilities.identifyDefaultLanguageRefsets(codeSystem, editionShortName, branch);
                     final Set<String> editionModules = syncUtilities.identifyModules(editionShortName, editionName, branch, codeSystem);
                     final Edition edition = new Edition();
 

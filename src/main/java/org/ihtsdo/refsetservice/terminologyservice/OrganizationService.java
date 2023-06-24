@@ -146,7 +146,9 @@ public class OrganizationService extends BaseService {
         service.add(AuditEntryHelper.addTeamEntry(adminTeam));
         
         // create the groups for the admin team
-        CrowdAPIClient.addGroup(newOrganization.getName(), "all", "all", "Organization Administrators", false, false);
+        if (crowdUnitTestSkip == null || !"true".equalsIgnoreCase(crowdUnitTestSkip)) {
+            CrowdAPIClient.addGroup(newOrganization.getName(), "all", "all", "Organization Administrators", false, false);
+        }
         
         // set all the roles on the admin team
         for (final UserRole role : UserRole.getAllRoles()) {

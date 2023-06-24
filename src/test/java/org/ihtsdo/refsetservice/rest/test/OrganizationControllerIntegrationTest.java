@@ -112,6 +112,7 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
         tempEdition.setNamespace("orgTestNamespace");
         tempEdition.setIconUri("orgTestIconUri");
         tempEdition.setBranch("/SNOMEDCT");
+        tempEdition.setMaintainerType("Managed Service");
 
         try {
             edition = EditionService.createEdition(testUser, tempEdition);
@@ -169,13 +170,18 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
         // method not found
         mvc.perform(post(url + "xyz").content(originalOrg.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound()).andReturn();
 
+        // not an affiliate so will not be created
+        result = mvc.perform(post(url).content(originalOrg.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isForbidden()).andReturn();
+        
         // created
+        originalOrg.setAffiliate(true);
         result = mvc.perform(post(url).content(originalOrg.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();
 
         content = result.getResponse().getContentAsString();
         LOG.info(" content = {}", content);
         final Organization newOrg = new ObjectMapper().readValue(content, Organization.class);
         assertThat(compareOrganization(originalOrg, newOrg, true)).isTrue();
+        assertThat(newOrg.isAffiliate()).isTrue();
     }
 
     /**

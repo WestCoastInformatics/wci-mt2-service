@@ -635,9 +635,7 @@ public class SyncUtilities {
             if (isInternationalEdition(editionShortName)) {
 
                 codeSystemType = "Managed Service";
-            } else if (editionShortName.endsWith("AFFILIATE")) {
-                // TODO: This should eventually be removed once populated in Snow
-                codeSystemType = "Affilitate";
+                
             } else {
 
                 LOG.info("{} edition is missing a maintainerType {}", codeSystem, editionShortName);

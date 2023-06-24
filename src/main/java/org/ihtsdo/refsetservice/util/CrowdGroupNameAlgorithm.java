@@ -34,11 +34,11 @@ public final class CrowdGroupNameAlgorithm {
      * @param editionName the edition name
      * @param projectName the project name
      * @param role the role
-     * @param adminRole the admin role
+     * @param useProjectNameAsIs the should the project name be used as passed in (a crowd ID or "all"), or should it be generated
      * @return the string
      * @throws Exception the exception
      */
-    public static String generateCrowdGroupName(final String organizationName, final String editionName, final String projectName, final String role, final boolean adminRole)
+    public static String generateCrowdGroupName(final String organizationName, final String editionName, final String projectName, final String role, final boolean useProjectNameAsIs)
         throws Exception {
 
         if (StringUtils.isAnyBlank(editionName, projectName, role)) {
@@ -50,7 +50,7 @@ public final class CrowdGroupNameAlgorithm {
         groupName.append(getOrganizationString(organizationName)).append("-");
         groupName.append(getEditionString(editionName)).append("-");
 
-        if (!adminRole) {
+        if (!useProjectNameAsIs) {
             groupName.append(getProjectString(projectName)).append("-");
         } else {
             groupName.append(projectName).append("-");
