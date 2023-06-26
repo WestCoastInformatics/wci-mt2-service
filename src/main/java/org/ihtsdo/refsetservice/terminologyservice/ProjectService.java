@@ -183,7 +183,6 @@ public class ProjectService extends BaseService {
             final Team team = TeamService.getTeam(teamId, true);
             teams.getItems().add(team);
         }
-
         teams.setTotal(teams.getItems().size());
         teams.setTotalKnown(true);
 
