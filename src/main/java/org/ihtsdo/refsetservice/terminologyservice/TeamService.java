@@ -486,7 +486,6 @@ public class TeamService extends BaseService {
     public static Team addUserToTeam(final TerminologyService service, final User user, final Team team, final User userToAdd) throws Exception {
 
         final Organization organization = team.getOrganization();
-        final Edition edition = EditionService.getEditionForOrganization(organization.getId());
         final Set<User> organizationMembers = organization.getMembers();
 
         if (!organizationMembers.contains(userToAdd)) {
@@ -541,9 +540,9 @@ public class TeamService extends BaseService {
 
             if (team.getType().equalsIgnoreCase(TeamType.ORGANIZATION.getText())) {
 
-                CrowdAPIClient.addGroup(edition.getOrganizationName(), "all", "all", "Organization Administrators", false, false);
+                CrowdAPIClient.addGroup(organization.getName(), "all", "all", "Organization Administrators", false, false);
 
-                final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(edition.getOrganizationName(), "all", "all", "admin");
+                final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(organization.getName(), "all", "all", "admin");
 
                 CrowdAPIClient.addMembership(groupName, userToAdd.getUserName());
 
@@ -675,13 +674,11 @@ public class TeamService extends BaseService {
                 }
             }
 
-            final Edition edition = EditionService.getEditionForOrganization(updatedTeam.getOrganization().getId());
-
             if (updatedTeam.getType().equalsIgnoreCase(TeamType.ORGANIZATION.getText())) {
 
                 for (final String role : updatedTeam.getRoles()) {
                     
-                    final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(edition.getOrganizationName(), "all", "all", role);
+                    final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(updatedTeam.getOrganization().getName(), "all", "all", role);
                     CrowdAPIClient.deleteMembership(groupName, userToRemove.getUserName().replace(" ", "%20"));
                 }
             }

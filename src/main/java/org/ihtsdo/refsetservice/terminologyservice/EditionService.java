@@ -103,23 +103,6 @@ public class EditionService extends BaseService {
     }
 
     /**
-     * Returns the edition for organization.
-     *
-     * @param organizationId the organization id
-     * @return the edition for organization
-     * @throws Exception the exception
-     */
-    public static Edition getEditionForOrganization(final String organizationId) throws Exception {
-
-        try (final TerminologyService service = new TerminologyService()) {
-
-            final Edition edition = service.findSingle("organizationId:" + organizationId, Edition.class, null);
-
-            return edition;
-        }
-    }
-
-    /**
      * Search Editions.
      *
      * @param searchParameters the search parameters

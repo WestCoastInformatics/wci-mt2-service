@@ -30,6 +30,7 @@ import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.UserProjectRole;
 import org.ihtsdo.refsetservice.terminologyservice.EditionService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
+import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
 import org.ihtsdo.refsetservice.util.LocalException;
 import org.ihtsdo.refsetservice.util.ModelUtility;
@@ -470,11 +471,12 @@ public class SecurityService implements AutoCloseable {
             userFound.setRoles(authUser.getRoles());
             updateUser(userFound);
             userId = userFound.getId();
+        } 
+        
+        // if User not found but they have RT2 roles, create one for them
+        else if (!authUser.getRoles().isEmpty()) {
 
-        } else if (("rt2-dev-admin".equals(authUser.getUserName()) || "rt2-uat-admin".equals(authUser.getUserName())
-            || "rt2-prod-admin".equals(authUser.getUserName())) && userFound == null) {
-
-            LOG.info("add admin user {}", authUser);
+            LOG.info("add user {}", authUser);
             User newUser = new User();
             newUser.setEmail(authUser.getEmail());
             newUser.setName(authUser.getName());
@@ -482,7 +484,7 @@ public class SecurityService implements AutoCloseable {
             newUser.setRoles(authUser.getRoles());
             newUser = addUser(newUser);
             userId = newUser.getId();
-
+            
         } else {
             // if user not found, return not
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "You are not a member of an organization.  You can still browse public reference sets.");
@@ -661,6 +663,7 @@ public class SecurityService implements AutoCloseable {
 
             service.setModifiedBy(user.getUserName());
             user = service.addHasLastModified(user);
+            service.add(AuditEntryHelper.addUserEntry(user));
         }
 
         return user;

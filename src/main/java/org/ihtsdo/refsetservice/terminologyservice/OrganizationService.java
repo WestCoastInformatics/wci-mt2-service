@@ -659,15 +659,8 @@ public class OrganizationService extends BaseService {
 
         checkEditPermissions(authUser, organization);
 
-        final Edition edition = EditionService.getEditionForOrganization(organizationId);
-        final String crowdOrgName = CrowdGroupNameAlgorithm.getEditionString(edition.getShortName());
-        final ResultList<Project> orgProjects = OrganizationService.getOrganizationProjects(service, organization.getId());
-        if (orgProjects != null && orgProjects.getItems() != null && !orgProjects.getItems().isEmpty()) {
-            for (final Project project : orgProjects.getItems()) {
-                userToRemove.getRoles().removeIf(u -> u.startsWith(crowdOrgName + "-" + project.getCrowdProjectId()));
-            }
-        }
-        userToRemove.getRoles().removeIf(u -> u.startsWith(crowdOrgName + "-all"));
+        final String crowdOrgName = CrowdGroupNameAlgorithm.getOrganizationString(organization.getName());
+        userToRemove.getRoles().removeIf(u -> u.startsWith(crowdOrgName + "-"));
 
         service.update(userToRemove);
         organization.getMembers().removeIf(orgUser -> orgUser.getId().equals(userToRemove.getId()));

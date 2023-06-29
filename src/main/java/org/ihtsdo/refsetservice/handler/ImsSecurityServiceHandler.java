@@ -76,8 +76,15 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
         
         convertRoles(user);
 
-        if (userName.equals("twhalen")) {
+        if (userName.equals("twhalen") || userName.equals("jefron")) {
 
+            final Set<String> originalRoles = new HashSet<>(user.getRoles());
+            
+            for (final String role : originalRoles) {
+                if (role.startsWith("all-")) {
+                    user.getRoles().remove(role);
+                }
+            }
 //            user.getRoles().clear();
 //            user.getRoles().add("snomedinternational-snomedctus-all-viewer");
 //            user.getRoles().add("swedishedition-snomedctse-inrp-reviewer");
