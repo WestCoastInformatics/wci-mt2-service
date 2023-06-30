@@ -403,6 +403,7 @@ public class SyncDatabaseHandler {
             service.add(AuditEntryHelper.addTeamEntry(newTeam));
 
             LOG.info("Adding new Team: " + newTeam.getId() + " (" + newTeam.getName() + ") ");
+            STATISTICS.incrementTeamsAdded();
 
             return newTeam;
         } catch (Exception e) {
