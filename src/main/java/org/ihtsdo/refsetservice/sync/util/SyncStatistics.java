@@ -479,7 +479,7 @@ public class SyncStatistics {
      *
      * @param val the refset version pairs inactivated
      */
-    public void setRefsetInactivated(final int val) {
+    public void setRefsetIdsInactivated(final int val) {
 
         this.refsetIdsInactivated = val;
     }
