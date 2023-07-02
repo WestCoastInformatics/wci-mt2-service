@@ -93,7 +93,7 @@ public class ConceptResultListUnitTest extends BaseTest {
     }
 
     /**
-     * Test equals and hascode methods.
+     * Test equals and hashcode methods.
      *
      * @throws Exception the exception
      */

@@ -52,7 +52,7 @@ import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.sync.SyncService;
+import org.ihtsdo.refsetservice.sync.SyncAgent;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.DateUtility;
@@ -120,6 +120,9 @@ public class RefsetService {
 
     /** The Constant INVITE_DECLINED. */
     private static final String INVITE_DECLINED = "Invite declined";
+
+    /** The Constant AND_SUFFIX. */
+    private static final String AND_SUFFIX = " AND ";
 
     static {
 
@@ -1522,7 +1525,6 @@ public class RefsetService {
         throws Exception {
 
         final long start = System.currentTimeMillis();
-        ResultList<Refset> results = new ResultList<Refset>();
         String query = searchParameters.getQuery();
         final String elasticSearchReplaceRegEx = "[" + Pattern.quote("+=&|><!{}[]^\"~*?:\\/") + "]+?";
         final Set<String> refsetIdsFromMembers = new HashSet<>();
@@ -1556,10 +1558,10 @@ public class RefsetService {
 
             final List<String> directoryColumns = Arrays.asList("id", "refsetId", "name", "editionName", "organizationName", "versionStatus", "versionDate",
                 "modified", "privateRefset", "editionShortName", "assignedUser", "projectId", "workflowStatus");
-            final String[] queryParts = query.split(" AND ");
-            String filterQuery = "";
-            String termQuery = "";
-            String termQueryForRt2 = "";
+            final String[] queryParts = query.split(AND_SUFFIX);
+            StringBuilder termQuery = new StringBuilder();
+            StringBuilder termQueryForRt2 = new StringBuilder();
+            StringBuilder filterQuery = new StringBuilder();
 
             for (final String queryPart : queryParts) {
 
@@ -1569,22 +1571,24 @@ public class RefsetService {
 
                     final String value = (String.join(":", Arrays.copyOfRange(keyValue, 1, keyValue.length))).replaceAll(elasticSearchReplaceRegEx,
                         Matcher.quoteReplacement("\\") + "$0");
-                    filterQuery += keyValue[0] + ":" + value + " AND ";
+                    filterQuery.append(keyValue[0]).append(":").append(value).append(" AND ");
 
                 } else {
 
-                    termQuery += queryPart + "* AND ";
-                    termQueryForRt2 += queryPart.replaceAll(elasticSearchReplaceRegEx, Matcher.quoteReplacement("\\") + "$0") + "* AND ";
+                    termQuery.append(queryPart).append("*").append(AND_SUFFIX);
+                    termQueryForRt2.append(queryPart.replaceAll(elasticSearchReplaceRegEx, Matcher.quoteReplacement("\\") + "$0")).append("*")
+                        .append(AND_SUFFIX);
                 }
 
             }
 
-            // if the term query isn't empty then search members and build the full term query string
-            if (!termQuery.equals("")) {
+            // if the term query isn't empty then search members and build the full term
+            // query string
+            if (termQuery.length() > 0) {
 
                 final Set<String> refsetIdsFromTermServer = new HashSet<>();
-                termQuery = StringUtils.removeEnd(termQuery, " AND ");
-                termQueryForRt2 = StringUtils.removeEnd(termQueryForRt2, " AND ");
+                termQuery.setLength(termQuery.length() - 5);
+                termQueryForRt2.setLength(termQueryForRt2.length() - 5);
 
                 // if it was requested search member concepts
                 if (searchConcepts) {
@@ -1598,11 +1602,12 @@ public class RefsetService {
                         nonPublishedBranchPaths = getInDevelopmentBranchPaths(service);
                     }
 
-                    // search descriptions of Simple type reference set (foundation metadata concept) "<446609009"
+                    // search descriptions of Simple type reference set (foundation metadata
+                    // concept) "<446609009"
                     refsetIdsFromTermServer.addAll(RefsetMemberService.searchMultisearchDescriptions(searchParameters, "<446609009", nonPublishedBranchPaths));
                 }
 
-                termQueryForRt2 = "(tags: (" + termQueryForRt2 + ")";
+                termQueryForRt2.insert(0, "(tags: (").append(")");
 
                 if (!refsetIdsFromTermServer.isEmpty()) {
 
@@ -1610,34 +1615,38 @@ public class RefsetService {
                     refsetIdsFromTermServer.retainAll(UNIQUE_REFSET_IDS);
 
                     if (!refsetIdsFromTermServer.isEmpty()) {
-                        termQueryForRt2 += " OR refsetId:(" + String.join(" OR ", refsetIdsFromTermServer) + ")";
+                        termQueryForRt2.append(" OR refsetId:(").append(String.join(" OR ", refsetIdsFromTermServer)).append(")");
                     }
                 }
 
-                termQueryForRt2 += ")";
+                termQueryForRt2.append(")");
 
             }
 
             // if the filter query isn't empty then prepare the query with wildcards
-            if (!filterQuery.equals("")) {
+            if (filterQuery.length() > 0) {
 
-                filterQuery = "(" + StringUtils.removeEnd(filterQuery, " AND ") + ")";
-                filterQuery = IndexUtility.addWildcardsToQuery(filterQuery, Refset.class);
+                int index = filterQuery.lastIndexOf(AND_SUFFIX);
+                if (index != -1 && index == filterQuery.length() - AND_SUFFIX.length()) {
+                    filterQuery.delete(index, filterQuery.length());
+                }
+                filterQuery = new StringBuilder(IndexUtility.addWildcardsToQuery(filterQuery.toString(), Refset.class));
+                filterQuery.insert(0, "(").append(")");
 
                 // if the term query isn't empty then append an 'AND' to the filter query
-                if (!termQuery.equals("")) {
+                if (termQuery.length() > 0) {
 
-                    filterQuery += " AND ";
+                    filterQuery.append(AND_SUFFIX);
                 }
 
             }
 
-            query = filterQuery + termQueryForRt2;
+            query = filterQuery.toString() + termQueryForRt2.toString();
         }
 
         if (query != null && !query.equals("")) {
 
-            query += " AND ";
+            query += AND_SUFFIX;
         } else {
 
             query = "";
@@ -1652,21 +1661,24 @@ public class RefsetService {
 
             if (!project.isPrivateProject() || project.getRoles().contains(User.ROLE_VIEWER)) {
 
-                // if only including refsets the user has specific access to make sure they have access to this project
+                // if only including refsets the user has specific access to make sure they have
+                // access to this project
                 if (showOnlyPermitted && !project.getRoles().contains(User.ROLE_VIEWER)) {
                     continue;
                 }
 
                 projectFilter += "(projectId:" + project.getId();
 
-                // if the user isn't allowed to view private refsets for this project restrict them, otherwise show in development or the latest published
+                // if the user isn't allowed to view private refsets for this project restrict
+                // them, otherwise show in development or the latest published
                 // version
                 if (!project.getRoles().contains(User.ROLE_VIEWER)) {
 
                     projectFilter += " AND privateRefset: false AND latestPublishedVersion: true";
                 } else {
 
-                    // if this is the directory then only show the latest published version, if it is the projects then show in development or the latest
+                    // if this is the directory then only show the latest published version, if it
+                    // is the projects then show in development or the latest
                     // published version
                     if (showInDevelopment) {
                         projectFilter +=
@@ -1694,7 +1706,7 @@ public class RefsetService {
         }
 
         LOG.debug("searchRefsets query: " + query);
-        results = service.find(query, pfs, Refset.class, null);
+        final ResultList<Refset> results = service.find(query, pfs, Refset.class, null);
 
         if (setPermissions || setVersions) {
 
@@ -2100,7 +2112,6 @@ public class RefsetService {
     public static List<Map<String, String>> getSortedRefsetVersionList(final Refset refset, final TerminologyService service, final boolean sortAscending)
         throws Exception {
 
-        // NUNO DEAD CODE final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
         final List<Map<String, String>> versionList = new ArrayList<>();
         final PfsParameter pfs = new PfsParameter();
         pfs.setSort("versionDate");
@@ -2874,11 +2885,11 @@ public class RefsetService {
         }
 
         /** Now that refset deleted, resync **/
-        final boolean testingStatus = SyncService.isTesting();
+        final boolean testingStatus = SyncAgent.isTesting();
 
-        SyncService.setRefsetToSync(refsetId, latestVersion.getEditionShortName());
-        SyncService.sync(service);
-        SyncService.setTesting(testingStatus);
+        SyncAgent.setRefsetToSync(refsetId, latestVersion.getEditionShortName());
+        SyncAgent.sync(service);
+        SyncAgent.setTesting(testingStatus);
 
         LOG.info("Successfully reset all versions in database of refsetId: " + refsetId);
 

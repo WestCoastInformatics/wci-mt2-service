@@ -67,10 +67,6 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     @Column(nullable = true, length = 255)
     private String primaryContactEmail;
 
-    /** the type of code system. */
-    @Column(nullable = true, length = 255)
-    private String codeSystemType;
-
     /** The members. */
     @ManyToMany(fetch = FetchType.LAZY, cascade = {
         CascadeType.ALL
@@ -134,7 +130,6 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         iconUri = other.iconUri;
         members = other.getMembers();
         roles = other.getRoles();
-        codeSystemType = other.getCodeSystemType();
     }
 
     /**
@@ -150,7 +145,6 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         description = other.getDescription();
         primaryContactEmail = other.getPrimaryContactEmail();
         roles = other.getRoles();
-        codeSystemType = other.getCodeSystemType();
     }
 
     /**
@@ -193,26 +187,6 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     public void setDescription(final String description) {
 
         this.description = description;
-    }
-
-    /**
-     * Returns the type of code system.
-     *
-     * @return the code system type
-     */
-    public String getCodeSystemType() {
-
-        return codeSystemType;
-    }
-
-    /**
-     * Sets the type of code system.
-     *
-     * @param codeSystemType the type of code system to set
-     */
-    public void setCodeSystemType(final String codeSystemType) {
-
-        this.codeSystemType = codeSystemType;
     }
 
     /**
@@ -316,7 +290,6 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
 
         final int prime = 31;
         int result = super.hashCode();
-        result = prime * result + ((codeSystemType == null) ? 0 : codeSystemType.hashCode());
         result = prime * result + ((description == null) ? 0 : description.hashCode());
         result = prime * result + ((iconUri == null) ? 0 : iconUri.hashCode());
         result = prime * result + ((members == null) ? 0 : members.hashCode());
@@ -339,14 +312,9 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         if (!(obj instanceof Organization)) {
             return false;
         }
+
         Organization other = (Organization) obj;
-        if (codeSystemType == null) {
-            if (other.codeSystemType != null) {
-                return false;
-            }
-        } else if (!codeSystemType.equals(other.codeSystemType)) {
-            return false;
-        }
+
         if (description == null) {
             if (other.description != null) {
                 return false;

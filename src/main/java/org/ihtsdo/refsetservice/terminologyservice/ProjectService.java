@@ -78,7 +78,7 @@ public class ProjectService extends BaseService {
             service.beginTransaction();
 
             service.add(project);
-            service.add(AuditEntryHelper.newProjectEntry(project));
+            service.add(AuditEntryHelper.addProjectEntry(project));
             service.commit();
 
             // Return the response
@@ -183,7 +183,6 @@ public class ProjectService extends BaseService {
             final Team team = TeamService.getTeam(teamId, true);
             teams.getItems().add(team);
         }
-
         teams.setTotal(teams.getItems().size());
         teams.setTotalKnown(true);
 
@@ -356,9 +355,10 @@ public class ProjectService extends BaseService {
      *
      * @param user the user
      * @param projectId the project id
+     * @return the project
      * @throws Exception the exception
      */
-    public static void inactivateProject(final User user, final String projectId) throws Exception {
+    public static Project inactivateProject(final User user, final String projectId) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -413,9 +413,11 @@ public class ProjectService extends BaseService {
 
             }
 
-            service.update(project);
-            service.add(AuditEntryHelper.inactivateProjectEntry(project));
+            final Project updatedProject = service.update(project);
+            service.add(AuditEntryHelper.changeProjectStatusEntry(project));
             service.commit();
+
+            return updatedProject;
         }
 
     }

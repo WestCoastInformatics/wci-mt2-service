@@ -9,15 +9,20 @@
  */
 package org.ihtsdo.refsetservice.rest.client;
 
+import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import javax.ws.rs.core.MediaType;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.RestException;
@@ -26,6 +31,10 @@ import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -56,8 +65,8 @@ public class CrowdAPIClient extends CrowdClientAbstract {
     private static final String GET_DIRECT_GROUPS = "/rest/usermanagement/1/user/group/direct?username=";
 
     // GROUP
-    // /** Get group GET. */
-    // private static final String GET_GROUP = "/rest/usermanagement/1/group?groupname=";
+    /** Get group memberships GET. */
+    private static final String GET_MEMBERSHIPS = "/rest/usermanagement/1/group/membership";
 
     /** Add group POST. */
     private static final String ADD_GROUP = "/rest/usermanagement/1/group";
@@ -79,6 +88,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
     public static User getUser(final String userName) throws Exception {
 
         LOG.debug("Get information for user {}", userName);
+
         if (StringUtils.isEmpty(userName)) {
             throw new Exception("User name cannot be empty or null. Received username: " + userName);
         }
@@ -284,6 +294,172 @@ public class CrowdAPIClient extends CrowdClientAbstract {
     }
 
     /**
+     * Returns the all groups.
+     *
+     * @return the all groups
+     * @throws Exception the exception
+     */
+    public static Set<String> getAllGroups() throws Exception {
+
+        LOG.debug("Get all groups with url: " + getBaseUrl() + GET_MEMBERSHIPS);
+
+        final Set<String> userGroups = new HashSet<>();
+        final String xmlString = get(getBaseUrl() + GET_MEMBERSHIPS, MediaType.APPLICATION_XML);
+
+        try (final ByteArrayInputStream input = new ByteArrayInputStream(xmlString.toString().getBytes("UTF-8"));) {
+
+            // Load the input XML document, parse it and return an instance of the
+            // Document class.
+            final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            final DocumentBuilder builder = factory.newDocumentBuilder();
+
+            final Document document = builder.parse(input);
+
+            final NodeList groupList = document.getDocumentElement().getChildNodes();
+            final int groupListSize = groupList.getLength();
+
+            for (int i = 0; i < groupListSize; i++) {
+
+                final Node groupNode = groupList.item(i);
+
+                if (groupNode.getNodeType() == Node.ELEMENT_NODE) {
+
+                    // Get the value of the group name attribute.
+                    final String groupName = groupNode.getAttributes().getNamedItem("group").getNodeValue();
+                    LOG.debug("groupName1: " + groupName);
+
+                    if (groupName.startsWith(APP_PREFIX)) {
+                        userGroups.add(groupName);
+                    }
+
+                } else {
+                    LOG.error("groupNode Type2: " + groupNode.getNodeType());
+                }
+            }
+
+            return userGroups;
+
+        } catch (Exception e) {
+            throw new Exception(
+                "The groups could not be retrieved. Received HTTP " + xmlString + " from the API server with error Message--> " + e.getMessage());
+        }
+    }
+
+    /**
+     * Returns the all crowd rule members.
+     *
+     * @return the all crowd rule members
+     * @throws Exception the exception
+     */
+    public static Map<String, Set<String>> getAllCrowdRuleMembers() throws Exception {
+
+        LOG.debug("Get all groups' members {}");
+
+        final Map<String, Set<String>> groupMemberMap = new HashMap<>();
+        LOG.debug("url: " + getBaseUrl() + GET_MEMBERSHIPS);
+
+        final String xmlString = get(getBaseUrl() + GET_MEMBERSHIPS, MediaType.APPLICATION_XML);
+
+        try (final ByteArrayInputStream input = new ByteArrayInputStream(xmlString.toString().getBytes("UTF-8"));) {
+
+            // Load the input XML document, parse it and return an instance of the
+            // Document class.
+            final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            final DocumentBuilder builder = factory.newDocumentBuilder();
+
+            // Load the input XML document, parse it and return an instance of the
+            // Document class.
+            final Document document = builder.parse(input);
+
+            final NodeList membershipList = document.getDocumentElement().getChildNodes();
+            final int membershipListSize = membershipList.getLength();
+
+            for (int i = 0; i < membershipListSize; i++) {
+
+                final Node membershipNode = membershipList.item(i);
+
+                if (membershipNode.getNodeType() == Node.ELEMENT_NODE && membershipNode.getNodeName().equals("membership")) {
+
+                    final Element membership = (Element) membershipNode;
+                    // Get the value of the group name attribute.
+                    final String projectName = membershipNode.getAttributes().getNamedItem("group").getNodeValue();
+
+                    if (!projectName.startsWith(APP_PREFIX) || !membership.hasChildNodes()) {
+                        continue;
+                    }
+
+                    if (!groupMemberMap.containsKey(projectName)) {
+                        groupMemberMap.put(projectName, new HashSet<>());
+                    }
+
+                    final NodeList usersList = membership.getChildNodes();
+                    final int usersListSize = usersList.getLength();
+
+                    for (int j = 0; j < usersListSize; j++) {
+                        final Node usersNode = usersList.item(j);
+
+                        if (usersNode.getNodeType() == Node.ELEMENT_NODE && usersNode.getNodeName().equals("users")) {
+
+                            final Element users = (Element) usersNode;
+                            final NodeList userList = users.getChildNodes();
+                            final int userListSize = usersList.getLength();
+
+                            for (int k = 0; k < userListSize; k++) {
+
+                                final Node userNode = userList.item(k);
+
+                                if (usersNode.getNodeType() == Node.ELEMENT_NODE && userNode.getNodeName().equals("user")) {
+                                    // Get the user name
+                                    String userName = userNode.getAttributes().getNamedItem("name").getNodeValue();
+
+                                    groupMemberMap.get(projectName).add(userName);
+
+                                }
+                            }
+                        }
+                    }
+
+                }
+            }
+
+            return groupMemberMap;
+
+        } catch (Exception e) {
+            throw new Exception(
+                "The groups could not be retrieved. Received HTTP " + xmlString + " from the API server with error Message--> " + e.getMessage());
+        }
+
+    }
+
+    /**
+     * Calls a Crowd URL and returns the response with non-default MediaType (ACCEPT_DEFAULT) needed.
+     *
+     * @param url The Crowd URL to call
+     * @param mediaType the media type
+     * @return the response
+     * @throws Exception the exception
+     */
+    private static String get(final String url, final String mediaType) throws Exception {
+
+        final HttpClient httpClient = HttpClient.newBuilder().build();
+        final HttpRequest request =
+            HttpRequest.newBuilder().uri(URI.create(url)).GET().header("Authorization", getBasicAuthHeader()).header("Accept", mediaType).build();
+
+        LOG.debug("CROWD API GET Url: {}", url);
+
+        final HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
+
+        if (response.statusCode() == 200) {
+
+            return response.body();
+
+        }
+
+        LOG.error("CROWD GET ERROR url: {} : response code: {}", url, response.statusCode());
+        throw new Exception("CROWD GET ERROR url: " + url);
+    }
+
+    /**
      * Get list of user's group memberships.
      *
      * @param username the username
@@ -316,25 +492,6 @@ public class CrowdAPIClient extends CrowdClientAbstract {
             });
         }
         return userGroups;
-    }
-
-    /**
-     * Get list of all users in a group.
-     *
-     * @param groupname The name of the group.
-     * @return the memberships for group
-     * @throws Exception the exception
-     */
-    public static Set<String> getMembershipsForGroup(final String groupname) throws Exception {
-
-        if (StringUtils.isBlank(groupname)) {
-            throw new Exception("Group name cannot be empty or null. Received groupname: " + groupname);
-        }
-
-        final Set<String> users = new HashSet<>();
-
-        return users;
-
     }
 
     /**

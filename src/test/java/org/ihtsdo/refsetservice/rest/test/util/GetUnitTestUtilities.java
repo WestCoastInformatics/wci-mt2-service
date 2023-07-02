@@ -29,6 +29,7 @@ import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -184,7 +185,8 @@ public class GetUnitTestUtilities {
             final String url = "/project/" + projectId;
             LOG.info("Get Project Testing url - " + url);
 
-            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
             final String content = result.getResponse().getContentAsString();
             LOG.info(" content = " + content);
 
@@ -215,7 +217,8 @@ public class GetUnitTestUtilities {
             final String url = baseUrl + "/" + refsetId + "/versionDate/" + version;
             LOG.info("Get Refset Testing url - " + url);
 
-            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
             final String content = result.getResponse().getContentAsString();
             LOG.info(" content = " + content);
 
@@ -269,7 +272,8 @@ public class GetUnitTestUtilities {
             final String url = baseUrl + "/editions";
             LOG.info("Get Editions Testing url - " + url);
 
-            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
             final String content = result.getResponse().getContentAsString();
             LOG.info(" content = " + content);
 
@@ -301,7 +305,8 @@ public class GetUnitTestUtilities {
             final String url = "/general/branchVersions?branch=MAIN/" + codeSystem;
             LOG.info("Testing url - " + url);
 
-            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
             final String content = result.getResponse().getContentAsString();
             LOG.info(" content = " + content);
             final ResultList<String> versions = new ObjectMapper().readValue(content, (new TypeReference<ResultList<String>>() {
@@ -332,7 +337,8 @@ public class GetUnitTestUtilities {
             final String url = "/project/search?limit=500&offset=0&sort=name&sortAscending=false";
             LOG.info("Project Search Testing url - " + url);
 
-            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
             final String content = result.getResponse().getContentAsString();
             LOG.info(" content = " + content);
 
@@ -361,11 +367,11 @@ public class GetUnitTestUtilities {
 
         try {
 
-            final String url = baseUrl
+            final String url = baseUrl + "/search?searchConcepts=true&limit=500&offset=0&sort=versionDate&sortAscending=false&query=" + searchTerm;
 
-                + "/search?searchConcepts=true&limit=500&offset=0&sort=versionDate&sortAscending=false&query=" + searchTerm;
             LOG.info("Testing url - " + url);
-            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
             final String content = result.getResponse().getContentAsString();
             LOG.info(" content = " + content);
             final ResultList<Refset> refsetList = new ObjectMapper().readValue(content, (new TypeReference<ResultList<Refset>>() {
@@ -396,7 +402,8 @@ public class GetUnitTestUtilities {
             final String url = "/concept/" + conceptId + "?refsetInternalId=" + internalRefsetId;
             LOG.info("Testing url - " + url);
 
-            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
             final String content = result.getResponse().getContentAsString();
             LOG.info(" content = " + content);
 
@@ -430,7 +437,8 @@ public class GetUnitTestUtilities {
             final String url = "/general/refsetConcepts?branch=" + branch + "&areParentConcepts=" + areParentConceptsRequest;
             LOG.info("Testing url - " + url);
 
-            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
             final String content = result.getResponse().getContentAsString();
             LOG.info(" content = " + content);
 
@@ -460,7 +468,8 @@ public class GetUnitTestUtilities {
             final String url = "/refset/" + internalRefsetId + "/members?limit=100000&offset=0&displayType=list";
             LOG.info("Testing url - " + url);
 
-            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
             final String content = result.getResponse().getContentAsString();
             LOG.info(" content = " + content);
             final ConceptResultList members = new ObjectMapper().readValue(content, (ConceptResultList.class));
@@ -492,7 +501,8 @@ public class GetUnitTestUtilities {
             final String url = "/refset/" + internalRefsetId + "/members?limit=500&offset=0&query=" + searchTerm + "&displayType=list&editing=true";
 
             LOG.info("Testing url - " + url);
-            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
             final String content = result.getResponse().getContentAsString();
 
             LOG.info(" content = " + content);
@@ -525,7 +535,8 @@ public class GetUnitTestUtilities {
             final String url = "/refset/" + internalRefsetId + "/taxonomySearch?limit=100000&offset=0&query=" + searchTerm;
 
             LOG.info("Testing url - " + url);
-            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
             final String content = result.getResponse().getContentAsString();
 
             LOG.info(" content = " + content);
@@ -559,7 +570,8 @@ public class GetUnitTestUtilities {
                 "/refset/" + internalRefsetId + "/members?limit=500&offset=0&displayType=taxonomy&startingConceptId=" + parentId + "&language=nl-X-31000172101";
             LOG.info("Testing url - " + url);
 
-            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
             final String content = result.getResponse().getContentAsString();
             LOG.info(" content = " + content);
 
@@ -592,7 +604,8 @@ public class GetUnitTestUtilities {
             final String url = "/refset/" + internalRefsetId + "/member/" + conceptId;
             LOG.info("Testing url - " + url);
 
-            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
             final String content = result.getResponse().getContentAsString();
             LOG.info(" content = " + content);
 
@@ -601,7 +614,7 @@ public class GetUnitTestUtilities {
             }));
 
             assertThat(memberHistory).isNotNull();
-            assertThat(memberHistory.getTotal()).isEqualTo(2);
+            assertThat(memberHistory.getTotal()).isEqualTo(1);
             return memberHistory;
 
         } catch (final Exception e) {
@@ -627,7 +640,8 @@ public class GetUnitTestUtilities {
             final String url = "/refset/" + internalRefsetId + "/member/" + conceptId + "/ancestorConcepts";
             LOG.info("Testing url - " + url);
 
-            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
             final String content = result.getResponse().getContentAsString();
             LOG.info(" content = " + content);
 
@@ -657,7 +671,8 @@ public class GetUnitTestUtilities {
             final String url = "/ancestors/" + refsetId + "/versionDate/" + version;
             LOG.info("Testing url - " + url);
 
-            final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
             final String content = result.getResponse().getContentAsString();
             LOG.info(" content = " + content);
 

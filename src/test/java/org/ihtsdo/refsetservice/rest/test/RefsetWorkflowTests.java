@@ -12,6 +12,7 @@ package org.ihtsdo.refsetservice.rest.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -77,9 +78,11 @@ public class RefsetWorkflowTests extends AbstractRefsetTests {
     @BeforeEach
     public void setUp(final TestInfo info) throws Exception {
 
+        final SimpleDateFormat sdf = new SimpleDateFormat(YYYYMMDD_FORMAT);
+
         if (getGetUtil() == null) {
 
-            setGetUtil(new GetUnitTestUtilities(getMvc(), getBaseUrl(), SIMPLE_DATE_FORMAT));
+            setGetUtil(new GetUnitTestUtilities(getMvc(), getBaseUrl(), sdf));
             setExportUtil(new ExportUnitTestUtilities(getMvc()));
             setWorkflowUtil(new WorkflowUnitTestUtilities(getMvc(), getBaseUrl(), REFSET_FILE_PATH));
         }
@@ -94,7 +97,7 @@ public class RefsetWorkflowTests extends AbstractRefsetTests {
             setWciTestingProjectId(getGetUtil().getInternalProjectId(WCI_TESTING_PROJECT_NAME));
             setWciTestingEditionId(getGetUtil().getInternalEditionId(WCI_TESTING_EDITION_NAME));
 
-            setEditUtil(new EditUnitTestUtilities(getMvc(), getBaseUrl(), SIMPLE_DATE_FORMAT, getWciTestingProjectId(), getWciTestingEditionId()));
+            setEditUtil(new EditUnitTestUtilities(getMvc(), getBaseUrl(), sdf, getWciTestingProjectId(), getWciTestingEditionId()));
 
             firstTimeSetup = false;
         }

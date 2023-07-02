@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.test;
 
@@ -54,7 +63,7 @@ public class SerializationTester extends ProxyTester {
                 final Long id1 = (Long) method.invoke(obj, new Object[] {});
                 final Long id3 = (Long) method.invoke(obj3, new Object[] {});
                 if (!id1.equals(id3)) {
-                    LOG.debug("  id fields do not match " + id1 + ", " + id3);
+                    LOG.error("  id fields do not match " + id1 + ", " + id3);
                     return false;
                 }
             }
@@ -64,6 +73,7 @@ public class SerializationTester extends ProxyTester {
         if (obj.equals(obj3)) {
             return true;
         } else {
+            LOG.info("obj and obj3 are not equal");
             LOG.info("obj = " + obj);
             LOG.debug("json = " + json);
             LOG.info("obj3 = " + obj3);

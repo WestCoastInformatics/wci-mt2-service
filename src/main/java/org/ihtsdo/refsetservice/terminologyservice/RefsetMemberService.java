@@ -191,7 +191,7 @@ public final class RefsetMemberService {
     private static final String PREFERRED_TERM_EN = "900000000000509007PT";
 
     /** The Constant REFSET_TO_PUBLISHED_VERSION_MAP. */
-    private static final Map<String, List<Date>> REFSET_TO_PUBLISHED_VERSION_MAP = new HashMap<>();
+    private static final Map<String, List<Long>> REFSET_TO_PUBLISHED_VERSION_MAP = new HashMap<>();
 
     static {
 
@@ -288,7 +288,7 @@ public final class RefsetMemberService {
      * @return the list of member concepts
      * @throws Exception the exception
      */
-    public static List<Concept> getAllRefsetMembers(final TerminologyService service, final String refsetInternalId, String searchAfter,
+    public static List<Concept> getAllRefsetMembers(final TerminologyService service, final String refsetInternalId, final String searchAfter,
         final List<Concept> concepts) throws Exception {
 
         final Refset refset = service.get(refsetInternalId, Refset.class);
@@ -321,11 +321,10 @@ public final class RefsetMemberService {
             final ConceptResultList conceptList = populateConcepts(root, refset, lookupParameters);
             concepts.addAll(conceptList.getItems());
 
-            searchAfter = (root.get("searchAfter") != null ? root.get("searchAfter").asText() : "");
+            final String newSearchAfter = (root.get("searchAfter") != null ? root.get("searchAfter").asText() : "");
+            if (StringUtils.isNoneBlank(newSearchAfter)) {
 
-            if (!searchAfter.isEmpty()) {
-
-                getAllRefsetMembers(service, refsetInternalId, searchAfter, concepts);
+                getAllRefsetMembers(service, refsetInternalId, newSearchAfter, concepts);
             }
 
         }
@@ -385,15 +384,13 @@ public final class RefsetMemberService {
     private static List<Map<String, String>> sortConceptDescriptions(final String conceptId, final Set<Map<String, String>> descriptions, final Refset refset,
         final List<String> nonDefaultPreferredTerms) throws Exception {
 
-        /*-
-         * Sort descriptions in the order defined below.
-         * 
-         * 1)   PT � Default Lang Code
-         * 2)  FSN
-         * 3)  All other PTs 
-         *      a.  Order by language code
-         *      b.  If no translation, will be null
-         */
+        // Sort descriptions in the order defined below.
+        //
+        // 1) PT � Default Lang Code
+        // 2) FSN
+        // 3) All other PTs
+        // -- a. Order by language code
+        // -- b. If no translation, will be null
 
         // do this for each concept
         final List<Map<String, String>> sortedDescriptionList = new ArrayList<>();
@@ -1015,6 +1012,10 @@ public final class RefsetMemberService {
                 final List<String> fileContentsArray = new ArrayList<>();
 
                 for (final String versionInScope : versionsInScope) {
+
+                    if (versionInScope == null) {
+                        continue;
+                    }
 
                     dates.clear();
                     dates.add(versionInScope.replaceAll("-", ""));
@@ -3844,7 +3845,7 @@ public final class RefsetMemberService {
      * @return the latest changed version date
      * @throws Exception the exception
      */
-    public static Date getLatestChangedVersionDate(final String branch, final String refsetId) throws Exception {
+    public static Long getLatestChangedVersionDate(final String branch, final String refsetId) throws Exception {
 
         // Get all members
         // EG: https://dev-integration-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/browser/SNOMEDCT-BE/members?referenceSet=1235&offset=0&limit=10
@@ -3854,7 +3855,7 @@ public final class RefsetMemberService {
         final int limit = ELASTICSEARCH_MAX_RECORD_LENGTH;
         String searchAfter = "";
 
-        Date refsetLatestDate = null;
+        long refsetLatestVersion = -1;
         final long start = System.currentTimeMillis();
         boolean hasMorePages = true;
         final String acceptLanguage = SnowstormConnection.DEFAULT_ACCECPT_LANGUAGES;
@@ -3901,7 +3902,7 @@ public final class RefsetMemberService {
 
                 JsonNode memberNode = null;
 
-                Date versionLatestDate = null;
+                long versionLatestTime = -1;
 
                 while (iterator.hasNext()) {
 
@@ -3909,20 +3910,20 @@ public final class RefsetMemberService {
 
                     if (memberNode.has("releasedEffectiveTime")) {
 
-                        final Date memberEffectiveTime = simpleDateFormat.parse(memberNode.get("releasedEffectiveTime").asText());
+                        final long memberEffectiveTime = simpleDateFormat.parse(memberNode.get("releasedEffectiveTime").asText()).getTime();
 
-                        if (versionLatestDate == null || versionLatestDate.before(memberEffectiveTime)) {
+                        if (versionLatestTime < memberEffectiveTime) {
 
-                            versionLatestDate = memberEffectiveTime;
+                            versionLatestTime = memberEffectiveTime;
                         }
 
                     }
 
                 }
 
-                if (refsetLatestDate == null || refsetLatestDate.before(versionLatestDate)) {
+                if (refsetLatestVersion < versionLatestTime) {
 
-                    refsetLatestDate = versionLatestDate;
+                    refsetLatestVersion = versionLatestTime;
                 }
 
             } catch (final Exception e) {
@@ -3934,24 +3935,24 @@ public final class RefsetMemberService {
         }
 
         // No members with release dates, so use release date of refset concept itself.
-        if (refsetLatestDate == null) {
+        if (refsetLatestVersion < 0) {
 
-            refsetLatestDate = getRefsetConceptReleaseDate(refsetId, branch);
+            refsetLatestVersion = getRefsetConceptReleaseDate(refsetId, branch);
         }
 
         // See if version already exists.
         if (!REFSET_TO_PUBLISHED_VERSION_MAP.containsKey(refsetId)) {
 
-            REFSET_TO_PUBLISHED_VERSION_MAP.put(refsetId, new ArrayList<Date>());
+            REFSET_TO_PUBLISHED_VERSION_MAP.put(refsetId, new ArrayList<Long>());
         }
 
-        if (REFSET_TO_PUBLISHED_VERSION_MAP.get(refsetId).contains(refsetLatestDate)) {
+        if (REFSET_TO_PUBLISHED_VERSION_MAP.get(refsetId).contains(refsetLatestVersion)) {
 
             return null;
         } else {
 
-            REFSET_TO_PUBLISHED_VERSION_MAP.get(refsetId).add(refsetLatestDate);
-            return refsetLatestDate;
+            REFSET_TO_PUBLISHED_VERSION_MAP.get(refsetId).add(refsetLatestVersion);
+            return refsetLatestVersion;
         }
 
     }
@@ -3964,7 +3965,7 @@ public final class RefsetMemberService {
      * @return the refset concept release date
      * @throws Exception the exception
      */
-    private static Date getRefsetConceptReleaseDate(final String refsetId, final String branch) throws Exception {
+    private static Long getRefsetConceptReleaseDate(final String refsetId, final String branch) throws Exception {
 
         final String url = SnowstormConnection.getBaseUrl() + "browser/" + branch + "/" + "concepts/" + refsetId;
         final SimpleDateFormat simpleDateFormat = new SimpleDateFormat(DATE_FORMAT);
@@ -3997,7 +3998,7 @@ public final class RefsetMemberService {
 
             if (conceptNode.has("releasedEffectiveTime")) {
 
-                return simpleDateFormat.parse(conceptNode.get("releasedEffectiveTime").asText());
+                return simpleDateFormat.parse(conceptNode.get("releasedEffectiveTime").asText()).getTime();
             }
 
             return null;
@@ -4400,7 +4401,7 @@ public final class RefsetMemberService {
             String bodyConceptIds = "\"conceptIds\":[";
             Iterator<JsonNode> iterator = null;
             final List<String> conceptBatch = new ArrayList<>();
-            
+
             for (; searchIndex < permanentFullConceptList.size(); searchIndex++) {
 
                 // LOG.debug("addRefsetMembers searchIndex: " + searchIndex + " :: permanentFullConceptList.size(): " + permanentFullConceptList.size() + "
@@ -4526,32 +4527,33 @@ public final class RefsetMemberService {
                         final JsonNode conceptNode = iterator.next();
                         final String conceptId = conceptNode.get("referencedComponentId").asText();
                         final boolean active = conceptNode.get("active").asBoolean();
-                        
+
                         // if active remove from the list to add, else update the membership if the concept used to be a member
                         if (active) {
-                            
+
                             LOG.debug("addRefsetMembers removing already member conceptId: " + conceptId);
                             conceptIds.remove(conceptId);
 
                             final Map<String, String> status = new HashMap<>();
                             status.put("operation", "Added");
                             status.put("status", "Already Member");
-                            conceptsStatus.put(conceptId, status); 
+                            conceptsStatus.put(conceptId, status);
 
                         } else {
-                            
+
                             conceptIds.remove(conceptId);
-                            
-                            final ObjectNode memberBody = mapper.createObjectNode().put("active", true)
-                                .put("memberId", conceptNode.get("memberId").asText()).put("moduleId", conceptNode.get("moduleId").asText())
-                                .put("referencedComponentId", conceptNode.get("referencedComponentId").asText()).put("refsetId", conceptNode.get("refsetId").asText())
-                                .put("released", conceptNode.get("released").asBoolean()).put("releasedEffectiveTime", conceptNode.get("releasedEffectiveTime").asInt())
+
+                            final ObjectNode memberBody = mapper.createObjectNode().put("active", true).put("memberId", conceptNode.get("memberId").asText())
+                                .put("moduleId", conceptNode.get("moduleId").asText())
+                                .put("referencedComponentId", conceptNode.get("referencedComponentId").asText())
+                                .put("refsetId", conceptNode.get("refsetId").asText()).put("released", conceptNode.get("released").asBoolean())
+                                .put("releasedEffectiveTime", conceptNode.get("releasedEffectiveTime").asInt())
                                 .set("additionalFields", conceptNode.get("additionalFields"));
-                            
+
                             if (conceptNode.get("effectiveTime") != null) {
                                 memberBody.put("effectiveTime", conceptNode.get("effectiveTime").asText());
                             }
-                            
+
                             memberUpdateArray.add(memberBody);
                         }
                     }
@@ -4565,11 +4567,11 @@ public final class RefsetMemberService {
 
         if (conceptIds.size() == 1) {
             unaddedConcepts.addAll(callAddMemberSingle(refsetId, url, conceptIds.get(0), moduleId));
-            
+
         } else if (conceptIds.size() > 1) {
             unaddedConcepts.addAll(callAddMembersBulk(refsetId, url, conceptIds, moduleId));
         }
-        
+
         // re-add any concepts that used to be members
         if (!memberUpdateArray.isEmpty()) {
             callUpdateMembersBulk(refsetId, SnowstormConnection.getBaseUrl() + branchPath + "/members/bulk", memberUpdateArray);
@@ -6297,12 +6299,20 @@ public final class RefsetMemberService {
      *
      * @param refsetId the refset id
      */
-    public static void clearUniqueRefsetVersions(final String refsetId) {
+    public static void clearRefsetVersionsWithChanges(final String refsetId) {
 
         if (REFSET_TO_PUBLISHED_VERSION_MAP.containsKey(refsetId)) {
 
             REFSET_TO_PUBLISHED_VERSION_MAP.get(refsetId).clear();
         }
 
+    }
+
+    /**
+     * Clear versions with changes.
+     */
+    public static void clearVersionsWithChanges() {
+
+        REFSET_TO_PUBLISHED_VERSION_MAP.clear();
     }
 }

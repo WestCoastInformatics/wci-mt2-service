@@ -80,7 +80,7 @@ public final class AuditEntryHelper {
      * @return the audit entry
      */
     // Edition
-    public static AuditEntry newEditionEntry(final Edition edition) {
+    public static AuditEntry addEditionEntry(final Edition edition) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.EDITION.toString());
@@ -109,17 +109,23 @@ public final class AuditEntryHelper {
     }
 
     /**
-     * Inactivate edition entry.
+     * Change edition entry.
      *
      * @param edition the edition
      * @return the audit entry
      */
-    public static AuditEntry inactivateEditionEntry(final Edition edition) {
+    public static AuditEntry changeEditionStatusEntry(final Edition edition) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.EDITION.toString());
         entry.setEntityId(edition.getId());
-        entry.setMessage("INACTIVATE Edition");
+
+        if (edition.isActive()) {
+            entry.setMessage("REACTIVATE Edition");
+        } else {
+            entry.setMessage("INACTIVATE Edition");
+        }
+
         entry.setDetails(edition.getName());
         log(entry);
         return entry;
@@ -132,7 +138,7 @@ public final class AuditEntryHelper {
      * @return the audit entry
      */
     // Organization
-    public static AuditEntry newOrganizationEntry(final Organization organization) {
+    public static AuditEntry addOrganizationEntry(final Organization organization) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.ORGANIZATION.toString());
@@ -161,17 +167,23 @@ public final class AuditEntryHelper {
     }
 
     /**
-     * Inactivate organization entry.
+     * Change organization status entry.
      *
      * @param organization the organization
      * @return the audit entry
      */
-    public static AuditEntry inactivateOrganizationEntry(final Organization organization) {
+    public static AuditEntry changeOrganizationStatusEntry(final Organization organization) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.ORGANIZATION.toString());
         entry.setEntityId(organization.getId());
-        entry.setMessage("INACTIVATE Organization");
+
+        if (organization.isActive()) {
+            entry.setMessage("REACTIVATE Organization");
+        } else {
+            entry.setMessage("INACTIVATE Organization");
+        }
+
         entry.setDetails(organization.getName());
         log(entry);
         return entry;
@@ -297,7 +309,7 @@ public final class AuditEntryHelper {
      * @return the audit entry
      */
     // Project
-    public static AuditEntry newProjectEntry(final Project project) {
+    public static AuditEntry addProjectEntry(final Project project) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.PROJECT.toString());
@@ -326,17 +338,23 @@ public final class AuditEntryHelper {
     }
 
     /**
-     * Inactivate project entry.
+     * Change project status entry.
      *
      * @param project the project
      * @return the audit entry
      */
-    public static AuditEntry inactivateProjectEntry(final Project project) {
+    public static AuditEntry changeProjectStatusEntry(final Project project) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.PROJECT.toString());
         entry.setEntityId(project.getId());
-        entry.setMessage("INACTIVATE Project");
+
+        if (project.isActive()) {
+            entry.setMessage("REACTIVATE Project");
+        } else {
+            entry.setMessage("INACTIVATE Project");
+        }
+
         entry.setDetails(project.getName());
         log(entry);
         return entry;
@@ -349,7 +367,7 @@ public final class AuditEntryHelper {
      * @return the audit entry
      */
     // Team
-    public static AuditEntry newTeamEntry(final Team team) {
+    public static AuditEntry addTeamEntry(final Team team) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.TEAM.toString());
@@ -378,17 +396,23 @@ public final class AuditEntryHelper {
     }
 
     /**
-     * Inactivate team entry.
+     * Change team status entry.
      *
      * @param team the team
      * @return the audit entry
      */
-    public static AuditEntry inactivateTeamEntry(final Team team) {
+    public static AuditEntry changeTeamStatusEntry(final Team team) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.TEAM.toString());
         entry.setEntityId(team.getId());
-        entry.setMessage("INACTIVATE Team");
+
+        if (team.isActive()) {
+            entry.setMessage("REACTIVATE Team");
+        } else {
+            entry.setMessage("INACTIVATE Team");
+        }
+
         entry.setDetails(team.getName());
         log(entry);
         return entry;
@@ -473,7 +497,7 @@ public final class AuditEntryHelper {
      * @return the audit entry
      */
     // User
-    public static AuditEntry newUserEntry(final User user) {
+    public static AuditEntry addUserEntry(final User user) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.USER.toString());
@@ -502,17 +526,23 @@ public final class AuditEntryHelper {
     }
 
     /**
-     * Inactivate user entry.
+     * Change user status entry.
      *
      * @param user the user
      * @return the audit entry
      */
-    public static AuditEntry inactivateUserEntry(final User user) {
+    public static AuditEntry changeUserStatusEntry(final User user) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.USER.toString());
         entry.setEntityId(user.getId());
-        entry.setMessage("INACTIVATE User");
+
+        if (user.isActive()) {
+            entry.setMessage("REACTIVATE User");
+        } else {
+            entry.setMessage("INACTIVATE User");
+        }
+
         entry.setDetails(user.getName());
         log(entry);
         return entry;
@@ -525,7 +555,7 @@ public final class AuditEntryHelper {
      * @return the audit entry
      */
     // Refset
-    public static AuditEntry newRefsetEntry(final Refset refset) {
+    public static AuditEntry addRefsetVersionEntry(final Refset refset) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.REFSET.toString());
@@ -537,7 +567,41 @@ public final class AuditEntryHelper {
     }
 
     /**
-     * Inactivate refset entry.
+     * Update multiple refset versions entry.
+     *
+     * @param refsetList the refset list
+     * @return the checks for modified
+     */
+    public static HasModified updateMultipleRefsetVersionsEntry(final String refsetList) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(EntityType.REFSET.toString());
+        entry.setEntityId("Multiple refsets updated");
+        entry.setMessage("UPDATE Multiple Refsets");
+        entry.setDetails(refsetList);
+        log(entry);
+        return entry;
+    }
+
+    /**
+     * Update refset entry.
+     *
+     * @param refset the refset
+     * @return the audit entry
+     */
+    public static AuditEntry updateRefsetVersionEntry(final Refset refset) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(EntityType.REFSET.toString());
+        entry.setEntityId(refset.getId());
+        entry.setMessage("UPDATE Refset");
+        entry.setDetails(refset.getName());
+        log(entry);
+        return entry;
+    }
+
+    /**
+     * Change refset status entry.
      *
      * @param refset the refset
      * @return the audit entry
@@ -809,17 +873,35 @@ public final class AuditEntryHelper {
     }
 
     /**
-     * Sync entry.
+     * Sync begin entry.
      *
      * @param date the date
      * @return the checks for modified
      */
-    public static HasModified syncEntry(final Date date) {
+    public static HasModified syncBeginEntry(final Date date) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.SYNC.toString());
         entry.setEntityId("");
-        entry.setMessage("Sync completed successfully");
+        entry.setMessage("Sync starting");
+        entry.setDetails("Start date is " + date.getTime());
+        log(entry);
+        return entry;
+    }
+
+    /**
+     * Sync finish entry.
+     *
+     * @param date the date
+     * @param processingMinutes the processing minutes
+     * @return the checks for modified
+     */
+    public static HasModified syncFinishEntry(final Date date, final long processingMinutes) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(EntityType.SYNC.toString());
+        entry.setEntityId("");
+        entry.setMessage("Sync completed successfully in " + processingMinutes + " minutes");
         entry.setDetails("Finish date is " + date.getTime());
         log(entry);
         return entry;

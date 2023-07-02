@@ -290,7 +290,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      * @param other the other
      */
     public Refset(final Refset other) {
-
+        // Avoid lazy init erros
         populateFrom(other);
     }
 
@@ -664,7 +664,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @FullTextField(analyzer = "standard")
     @GenericField(name = "organizationNameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW, derivedFrom = @ObjectPath({
-        @PropertyValue(propertyName = "project"), @PropertyValue(propertyName = "edition"), @PropertyValue(propertyName = "organization")
+            @PropertyValue(propertyName = "project"), @PropertyValue(propertyName = "edition"), @PropertyValue(propertyName = "organization")
     }))
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
     public String getOrganizationName() {
@@ -741,7 +741,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW, derivedFrom = @ObjectPath({
-        @PropertyValue(propertyName = "project"), @PropertyValue(propertyName = "edition"), @PropertyValue(propertyName = "organization")
+            @PropertyValue(propertyName = "project"), @PropertyValue(propertyName = "edition"), @PropertyValue(propertyName = "organization")
     }))
     public String getEditionBranch() {
 
@@ -777,7 +777,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @FullTextField(analyzer = "standard")
     @GenericField(name = "editionNameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW, derivedFrom = @ObjectPath({
-        @PropertyValue(propertyName = "project"), @PropertyValue(propertyName = "edition"), @PropertyValue(propertyName = "organization")
+            @PropertyValue(propertyName = "project"), @PropertyValue(propertyName = "edition"), @PropertyValue(propertyName = "organization")
     }))
     public String getEditionName() {
 
@@ -812,7 +812,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW, derivedFrom = @ObjectPath({
-        @PropertyValue(propertyName = "project"), @PropertyValue(propertyName = "edition"), @PropertyValue(propertyName = "organization")
+            @PropertyValue(propertyName = "project"), @PropertyValue(propertyName = "edition"), @PropertyValue(propertyName = "organization")
     }))
     public String getEditionShortName() {
 
@@ -1299,7 +1299,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     @IndexingDependency(derivedFrom = @ObjectPath({
-        @PropertyValue(propertyName = "project")
+            @PropertyValue(propertyName = "project")
     }))
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
     public String getProjectId() {

@@ -86,13 +86,13 @@ public class TeamService extends BaseService {
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
-            service.add(team);
-            service.add(AuditEntryHelper.newTeamEntry(team));
+            Team addedTeam = service.add(team);
+            service.add(AuditEntryHelper.addTeamEntry(team));
             service.commit();
 
             setUserRoles(authUser, newTeam, newTeam.getUserRoles());
 
-            return team;
+            return addedTeam;
         }
     }
 
@@ -173,6 +173,10 @@ public class TeamService extends BaseService {
 
             if (includeMembers) {
 
+                final String systemUserList = PropertyUtility.getProperty("refset.service.system.accounts");
+                final Set<String> systemUsers =
+                    (StringUtils.isNotBlank(systemUserList)) ? new HashSet<>(Arrays.asList(systemUserList.split(","))) : new HashSet<>();
+
                 for (final String userId : team.getMembers()) {
 
                     final ResultList<User> users = service.find("id:" + userId, null, User.class, null);
@@ -181,6 +185,10 @@ public class TeamService extends BaseService {
 
                         for (final User user : users.getItems()) {
 
+                            if (systemUsers.contains(user.getUserName())) {
+                                continue;
+                            }
+
                             final SearchParameters sp = new SearchParameters();
                             sp.setQuery("members:" + user.getId());
                             final ResultList<Team> teamsResultList = TeamService.searchTeams(user, sp);
@@ -188,9 +196,10 @@ public class TeamService extends BaseService {
                             if (teamsResultList != null && teamsResultList.getItems() != null) {
                                 user.getTeams().addAll(teamsResultList.getItems());
                             }
+                            
+                            team.getMemberList().add(user);
                         }
 
-                        team.getMemberList().addAll(users.getItems());
                     }
                 }
             }
@@ -226,11 +235,11 @@ public class TeamService extends BaseService {
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
-            service.update(existingTeam);
-            service.add(AuditEntryHelper.updateTeamEntry(existingTeam));
+            final Team updatedTeam = service.update(existingTeam);
+            service.add(AuditEntryHelper.updateTeamEntry(updatedTeam));
             service.commit();
 
-            return existingTeam;
+            return updatedTeam;
         }
     }
 
@@ -239,9 +248,10 @@ public class TeamService extends BaseService {
      *
      * @param user the user
      * @param teamId the team id
+     * @return the team
      * @throws Exception the exception
      */
-    public static void inactivateTeam(final User user, final String teamId) throws Exception {
+    public static Team inactivateTeam(final User user, final String teamId) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -250,7 +260,7 @@ public class TeamService extends BaseService {
             service.beginTransaction();
 
             // Find the object
-            final Team team = getTeam(teamId, true);
+            Team team = getTeam(teamId, true);
 
             checkEditPermissions(user, team);
 
@@ -262,22 +272,25 @@ public class TeamService extends BaseService {
             }
 
             for (final User teamMember : team.getMemberList()) {
-                removeUserFromTeam(service, user, team, teamMember);
+
+                team = removeUserFromTeam(service, user, team, teamMember);
             }
 
             team.setActive(false);
-            service.update(team);
-            service.add(AuditEntryHelper.inactivateTeamEntry(team));
+            final Team updatedTeam = service.update(team);
+            service.add(AuditEntryHelper.changeTeamStatusEntry(updatedTeam));
 
-            final List<Project> teamProjects = getTeamProjects(team);
+            final List<Project> teamProjects = getTeamProjects(updatedTeam);
 
             for (final Project teamProject : teamProjects) {
 
-                teamProject.getTeams().remove(team.getId());
+                teamProject.getTeams().remove(updatedTeam.getId());
                 service.update(teamProject);
             }
 
             service.commit();
+
+            return updatedTeam;
         }
     }
 
@@ -340,14 +353,12 @@ public class TeamService extends BaseService {
 
             final ResultList<Team> results = service.find(query, pfs, Team.class, null);
             final ResultList<Team> resultsToReturn = new ResultList<>();
-
+            
+            final String systemUserList = PropertyUtility.getProperty("refset.service.system.accounts");
+            final Set<String> systemUsers =
+                (StringUtils.isNotBlank(systemUserList)) ? new HashSet<>(Arrays.asList(systemUserList.split(","))) : new HashSet<>();
+                
             for (final Team team : results.getItems()) {
-
-                final String systemUserList = PropertyUtility.getProperty("refset.service.system.accounts");
-                Set<String> systemUserSet = new HashSet<>();
-                if (StringUtils.isNotBlank(systemUserList)) {
-                    systemUserSet = new HashSet<>(Arrays.asList(systemUserList.split(",")));
-                }
 
                 // if only the user's teams should be returned then make sure the user is an
                 // admin or a member of the team
@@ -360,7 +371,7 @@ public class TeamService extends BaseService {
                     for (final String userId : team.getMembers()) {
 
                         final User member = service.findSingle("id:" + userId, User.class, null);
-                        if (member == null || systemUserSet.contains(member.getUserName())) {
+                        if (member == null || systemUsers.contains(member.getUserName())) {
                             continue;
                         }
 
@@ -495,17 +506,17 @@ public class TeamService extends BaseService {
         team.getMembers().add(userToAdd.getId());
 
         service.beginTransaction();
-        service.update(team);
-        service.add(AuditEntryHelper.addUserToTeamEntry(team, userToAdd));
+        final Team updatedTeam = service.update(team);
+        service.add(AuditEntryHelper.addUserToTeamEntry(updatedTeam, userToAdd));
         service.commit();
 
-        setUserRoles(userToAdd, team, team.getUserRoles());
+        setUserRoles(userToAdd, updatedTeam, updatedTeam.getUserRoles());
 
         // add user to crowd groups
         if (crowdUnitTestSkip == null || !"true".equalsIgnoreCase(crowdUnitTestSkip)) {
 
             LOG.info("CALLING CROWD API");
-            final String teamsQuery = "teams:" + team.getId();
+            final String teamsQuery = "teams:" + updatedTeam.getId();
             final SearchParameters searchParameters = new SearchParameters();
             searchParameters.setQuery(teamsQuery);
             final ResultList<Project> projectList = ProjectService.searchProjects(user, searchParameters);
@@ -516,7 +527,7 @@ public class TeamService extends BaseService {
 
                     CrowdAPIClient.addGroup(project.getEdition().getShortName(), project.getName(), project.getDescription(), true, false);
 
-                    for (final String role : team.getRoles()) {
+                    for (final String role : updatedTeam.getRoles()) {
 
                         final String groupName =
                             CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
@@ -539,7 +550,7 @@ public class TeamService extends BaseService {
             LOG.info("SKIP CALLING CROWD API");
         }
 
-        return team;
+        return updatedTeam;
     }
 
     /**
@@ -620,7 +631,6 @@ public class TeamService extends BaseService {
                 throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
             }
         }
-
         if (team.getMembers() != null) {
 
             if (team.getMembers().contains(userToRemove.getId())) {
@@ -637,8 +647,8 @@ public class TeamService extends BaseService {
 
         service.setModifiedBy(user.getUserName());
 
-        service.update(team);
-        service.add(AuditEntryHelper.removeUserFromTeamEntry(team, userToRemove));
+        Team updatedTeam = service.update(team);
+        service.add(AuditEntryHelper.removeUserFromTeamEntry(updatedTeam, userToRemove));
 
         // remove user from crowd groups
         if (crowdUnitTestSkip == null || !"true".equalsIgnoreCase(crowdUnitTestSkip)) {
@@ -651,7 +661,7 @@ public class TeamService extends BaseService {
 
             if (projectList != null && projectList.getItems() != null) {
                 for (final Project project : projectList.getItems()) {
-                    for (final String role : team.getRoles()) {
+                    for (final String role : updatedTeam.getRoles()) {
                         final String groupName =
                             CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
                         CrowdAPIClient.deleteMembership(groupName, userToRemove.getUserName());
@@ -659,12 +669,12 @@ public class TeamService extends BaseService {
                 }
             }
 
-            final Edition edition = EditionService.getEditionForOrganization(team.getOrganization().getId());
+            final Edition edition = EditionService.getEditionForOrganization(updatedTeam.getOrganization().getId());
 
-            if (team.getType().equalsIgnoreCase(TeamType.ORGANIZATION.getText())) {
+            if (updatedTeam.getType().equalsIgnoreCase(TeamType.ORGANIZATION.getText())) {
 
                 final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(edition.getShortName(), "all", "admin");
-                CrowdAPIClient.deleteMembership(groupName, userToRemove.getUserName());
+                CrowdAPIClient.deleteMembership(groupName, userToRemove.getUserName().replace(" ", "%20"));
 
             }
 
@@ -672,7 +682,7 @@ public class TeamService extends BaseService {
             LOG.info("SKIP CALLING CROWD API");
         }
 
-        return team;
+        return updatedTeam;
     }
 
     /**
@@ -681,9 +691,10 @@ public class TeamService extends BaseService {
      * @param authUser the auth user
      * @param teamId the team id
      * @param role the role
+     * @return the team
      * @throws Exception the exception
      */
-    public static void addRoleToTeam(final User authUser, final String teamId, final String role) throws Exception {
+    public static Team addRoleToTeam(final User authUser, final String teamId, final String role) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -712,19 +723,22 @@ public class TeamService extends BaseService {
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
-            service.update(team);
-            service.add(AuditEntryHelper.addRoleToTeamEntry(team, role));
+            final Team updatedTeam = service.update(team);
+            service.add(AuditEntryHelper.addRoleToTeamEntry(updatedTeam, role));
             service.commit();
 
             // add user to crowd groups if team is assigned to projects.
             if (crowdUnitTestSkip == null || !"true".equalsIgnoreCase(crowdUnitTestSkip)) {
                 LOG.info("CALLING CROWD API from ProjectService updateMemberships");
 
-                final List<Project> projects = getTeamProjects(team);
+                final List<Project> projects = getTeamProjects(updatedTeam);
+
                 if (projects != null) {
                     for (final Project project : projects) {
-                        if (team != null && team.getMemberList() != null) {
-                            for (final User user : team.getMemberList()) {
+
+                        if (updatedTeam.getMemberList() != null) {
+                            for (final User user : updatedTeam.getMemberList()) {
+
                                 final String groupName =
                                     CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
                                 CrowdAPIClient.addMembership(groupName, user.getUserName());
@@ -733,6 +747,8 @@ public class TeamService extends BaseService {
                     }
                 }
             }
+
+            return updatedTeam;
         }
     }
 
@@ -742,9 +758,10 @@ public class TeamService extends BaseService {
      * @param authUser the auth user
      * @param teamId the team id
      * @param role the role
+     * @return the team
      * @throws Exception the exception
      */
-    public static void removeRoleFromTeam(final User authUser, final String teamId, final String role) throws Exception {
+    public static Team removeRoleFromTeam(final User authUser, final String teamId, final String role) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -773,7 +790,7 @@ public class TeamService extends BaseService {
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
-            service.update(team);
+            final Team updatedTeam = service.update(team);
             service.add(AuditEntryHelper.removeRoleFromTeamEntry(team, role));
             service.commit();
 
@@ -794,6 +811,8 @@ public class TeamService extends BaseService {
                     }
                 }
             }
+
+            return updatedTeam;
         }
     }
 

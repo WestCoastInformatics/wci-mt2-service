@@ -155,7 +155,7 @@ public class DiscussionPost extends AbstractHasModified {
     public int hashCode() {
 
         final int prime = 31;
-        int result = super.hashCode();
+        int result = 1;
         result = prime * result + ((user == null) ? 0 : user.hashCode());
         result = prime * result + ((message == null) ? 0 : message.hashCode());
         result = prime * result + (privatePost ? 1 : 0);

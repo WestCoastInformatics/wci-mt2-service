@@ -371,7 +371,7 @@ public class DiscussionThread extends AbstractHasModified {
     public int hashCode() {
 
         final int prime = 31;
-        int result = super.hashCode();
+        int result = 1;
         result = prime * result + ((conceptId == null) ? 0 : conceptId.hashCode());
         result = prime * result + ((lastPost == null) ? 0 : lastPost.hashCode());
         result = prime * result + numberReplies;

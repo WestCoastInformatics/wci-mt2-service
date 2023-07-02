@@ -14,7 +14,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,6 +32,7 @@ import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.TeamType;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
+import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
@@ -119,7 +119,7 @@ public class OrganizationService extends BaseService {
         newOrganization.getMembers().add(userToAdd);
 
         service.add(newOrganization);
-        service.add(AuditEntryHelper.newOrganizationEntry(newOrganization));
+        service.add(AuditEntryHelper.addOrganizationEntry(newOrganization));
 
         // create admin team when creating an organization
         final Team adminTeam = new Team();
@@ -178,6 +178,48 @@ public class OrganizationService extends BaseService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
 
+        Organization updatedOrganization = handleMembers(organization, user, includeMembers);
+
+        return updatedOrganization;
+    }
+
+    /**
+     * Returns the inactive organization.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param id the id
+     * @param includeMembers the include members
+     * @return the organization
+     * @throws Exception the exception
+     */
+    public static Organization getInactiveOrganization(final TerminologyService service, final User user, final String id, final boolean includeMembers)
+        throws Exception {
+
+        Organization organization = service.findSingle("id: " + id + " AND active:false", Organization.class, null);
+
+        if (organization == null) {
+
+            final String message = "Unable to find organization for id " + id + " in order to getInactiveOrganization.";
+            LOG.error(message);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
+        }
+        organization = handleMembers(organization, user, includeMembers);
+
+        return organization;
+    }
+
+    /**
+     * Handle members.
+     *
+     * @param organization the organization
+     * @param user the user
+     * @param includeMembers the include members
+     * @return the organization
+     * @throws Exception the exception
+     */
+    private static Organization handleMembers(final Organization organization, final User user, final boolean includeMembers) throws Exception {
+
         if (includeMembers) {
             organization.getMembers();
         } else {
@@ -209,7 +251,7 @@ public class OrganizationService extends BaseService {
 
         if (originalOrganization == null) {
 
-            final String message = "Unable to find organization for id " + organization.getId() + ".";
+            final String message = "Unable to find organization for id " + organization.getId() + " in order to updateOrganization.";
             LOG.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
@@ -230,16 +272,17 @@ public class OrganizationService extends BaseService {
      * @param service the service
      * @param user the user
      * @param organizationId the organization id
+     * @return the organization
      * @throws Exception the exception
      */
-    public static void inactivateOrganization(final TerminologyService service, final User user, final String organizationId) throws Exception {
+    public static Organization inactivateOrganization(final TerminologyService service, final User user, final String organizationId) throws Exception {
 
         // Find the object
         final Organization organization = getOrganization(service, user, organizationId, false);
 
         if (organization == null) {
 
-            final String message = "Unable to find organization for id " + organizationId + ".";
+            final String message = "Unable to find organization for id " + organizationId + " in order to inactivateOrganization.";
             LOG.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
@@ -276,9 +319,11 @@ public class OrganizationService extends BaseService {
         }
 
         organization.setActive(false);
-        service.update(organization);
-        service.add(AuditEntryHelper.inactivateOrganizationEntry(organization));
 
+        final Organization updatedOrganization = service.update(organization);
+        AuditEntryHelper.changeOrganizationStatusEntry(updatedOrganization);
+
+        return updatedOrganization;
     }
 
     /**
@@ -364,7 +409,7 @@ public class OrganizationService extends BaseService {
 
         if (organization == null) {
 
-            final String message = "Unable to find organization for id " + organizationId + ".";
+            final String message = "Unable to find organization for id " + organizationId + " in order to getOrganizationUsers.";
             LOG.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
@@ -464,9 +509,10 @@ public class OrganizationService extends BaseService {
      * @param authUser the auth user
      * @param organizationId the organization id
      * @param email the email
+     * @return the organization
      * @throws Exception the exception
      */
-    public static void addUserToOrganization(final TerminologyService service, final User authUser, final String organizationId, final String email)
+    public static Organization addUserToOrganization(final TerminologyService service, final User authUser, final String organizationId, final String email)
         throws Exception {
 
         User userToAdd = service.findSingle("email:" + email, User.class, null);
@@ -476,7 +522,7 @@ public class OrganizationService extends BaseService {
             // find user in crowd
             final User user = CrowdAPIClient.findUserByEmail(email);
             if (user == null) {
-                LOG.error("Unable to find user for email " + email + ".");
+                LOG.error("Unable to find user via Crowd for email " + email + " in order to addUserToOrganization.");
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "User not found in IMS. Please make sure you entered their email correctly. If the email address entered is correct,"
                         + " the user being added has never been added to IMS before. Instead of \"Add User\", click the \"Invite to Join\"");
@@ -487,7 +533,7 @@ public class OrganizationService extends BaseService {
             userToAdd = service.findSingle("email:" + email, User.class, null);
 
             if (userToAdd == null) {
-                final String message = "Unable to find user for email " + email + ".";
+                final String message = "Unable to find user via RT2 database for email " + email + " in order to addUserToOrganization.";
                 LOG.error(message);
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
             }
@@ -498,7 +544,7 @@ public class OrganizationService extends BaseService {
 
         if (organization == null) {
 
-            final String message = "Unable to find organization for " + organizationId + ".";
+            final String message = "Unable to find organization for " + organizationId + " in order to addUserToOrganization.";
             LOG.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
@@ -508,12 +554,39 @@ public class OrganizationService extends BaseService {
         organization.getMembers().add(userToAdd);
         service.add(AuditEntryHelper.addUserToOrganizationEntry(organization, userToAdd));
 
-        service.update(organization);
+        return service.update(organization);
+    }
 
-        final Edition edition = EditionService.getEditionForOrganization(organizationId);
-        final String crowdGroupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(edition.getShortName(), "all", User.ROLE_VIEWER);
-        CrowdAPIClient.addGroup(edition.getShortName(), "all", "Organization user", false, false);
-        CrowdAPIClient.addMembership(crowdGroupName, userToAdd.getUserName());
+    /**
+     * Adds the user to organization.
+     *
+     * @param service the Terminology Service
+     * @param authUser the auth user
+     * @param organizationId the organization id
+     * @param userToAdd the user to add
+     * @return the organization
+     * @throws Exception the exception
+     */
+    public static Organization addUserToOrganization(final TerminologyService service, final User authUser, final String organizationId, final User userToAdd)
+        throws Exception {
+
+        // must return members in order to add another member.
+        final Organization organization = OrganizationService.getOrganization(service, authUser, organizationId, true);
+
+        if (organization == null) {
+
+            final String message = "Unable to find organization for " + organizationId + "." + " in order to addUserToOrganization.";
+            LOG.error(message);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
+        }
+
+        checkEditPermissions(authUser, organization);
+
+        organization.getMembers().add(userToAdd);
+        AuditEntryHelper.addUserToOrganizationEntry(organization, userToAdd);
+
+        return service.update(organization);
+
     }
 
     /**
@@ -534,7 +607,7 @@ public class OrganizationService extends BaseService {
 
         if (userToRemove == null) {
 
-            final String message = "Unable to find user for id " + userId + ".";
+            final String message = "Unable to find user in RT2 database for id " + userId + " in order to removeUserFromOrganization.";
             LOG.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
@@ -542,7 +615,7 @@ public class OrganizationService extends BaseService {
         final Organization organization = service.get(organizationId, Organization.class);
         if (organization == null) {
 
-            final String message = "Unable to find organization for id " + organizationId + ".";
+            final String message = "Unable to find organization in RT2 database for id " + organizationId + " in order to removeUserFromOrganization.";
             LOG.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
@@ -587,7 +660,7 @@ public class OrganizationService extends BaseService {
 
         removeUserFromTeams(service, organizationId, userToRemove, authUser);
         final String crowdGroupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(edition.getShortName(), "all", User.ROLE_VIEWER);
-        CrowdAPIClient.deleteMembership(crowdGroupName, userToRemove.getUserName());
+        CrowdAPIClient.deleteMembership(crowdGroupName, userToRemove.getUserName().replace(" ", "%20"));
 
         return organization;
     }
@@ -755,7 +828,9 @@ public class OrganizationService extends BaseService {
         // TODO: move this URL to properties.
         final String accountSetupUrl = "https://confluence.ihtsdotools.org/display/ILS/Confluence+User+Accounts";
 
-        try (final TerminologyService service = new TerminologyService()) {
+        try (TerminologyService service = new TerminologyService()) {
+            service.setModifiedFlag(true);
+            service.setModifiedBy(SecurityService.getUserFromSession().getUserName());
 
             final Organization organization = getOrganization(service, authUser, organizationId, true);
 
@@ -780,7 +855,7 @@ public class OrganizationService extends BaseService {
             request.setRecipientEmail(recipientEmail);
             request.setPayload("organization:" + organizationId);
 
-            service.setModifiedBy(authUser.getUserName());
+            service.setModifiedBy(SecurityService.getUserFromSession().getUserName());
             service.add(request);
 
             final String acceptUrl = appUrlRoot + "/invite/response?ir=" + request.getId() + "&r=true";
@@ -845,8 +920,7 @@ public class OrganizationService extends BaseService {
 
             LOG.info("INVITE request - from {} to {} for organization {}", authUser.getEmail(), recipients, organizationId);
 
-            AuditEntryHelper.sendOrganizationInvite(organization, authUser, recipientEmail.trim());
-
+            service.add(AuditEntryHelper.sendOrganizationInvite(organization, authUser, recipientEmail.trim()));
         }
 
     }
@@ -963,7 +1037,7 @@ public class OrganizationService extends BaseService {
 
         }
 
-        AuditEntryHelper.responseForOrganizationInvite(organization, requesterUser, inviteRequest.getRecipientEmail(), acceptance);
+        service.add(AuditEntryHelper.responseForOrganizationInvite(organization, requesterUser, inviteRequest.getRecipientEmail(), acceptance));
 
     }
 
@@ -983,19 +1057,26 @@ public class OrganizationService extends BaseService {
             try {
                 // teams associated with projects for removal from crowd too.
                 final ResultList<Project> projects = getOrganizationProjects(service, organizationId);
+
                 if (projects != null && projects.getItems() != null) {
                     for (final Project project : projects.getItems()) {
+
                         for (final String teamId : project.getTeams()) {
                             final Team team = TeamService.getTeam(teamId, true);
-                            TeamService.removeUserFromTeam(authUser, teamId, userToRemove.getId());
-                            for (final String role : team.getRoles()) {
-                                try {
-                                    final String groupName =
-                                        CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
-                                    CrowdAPIClient.deleteMembership(groupName, userToRemove.getUserName());
-                                } catch (final Exception e) {
-                                    LOG.error("ERROR removing user {} from team {} for organization {}.", userToRemove.getUserName(), team.getId(),
-                                        organizationId, e);
+
+                            if (team.getMembers() != null && team.getMembers().contains(userToRemove.getId())) {
+
+                                TeamService.removeUserFromTeam(authUser, teamId, userToRemove.getId());
+                                for (final String role : team.getRoles()) {
+
+                                    try {
+                                        final String groupName =
+                                            CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                                        CrowdAPIClient.deleteMembership(groupName, userToRemove.getUserName());
+                                    } catch (final Exception e) {
+                                        LOG.error("ERROR removing user {} from team {} for organization {}.", userToRemove.getUserName(), team.getId(),
+                                            organizationId, e);
+                                    }
                                 }
                             }
                         }
@@ -1004,9 +1085,12 @@ public class OrganizationService extends BaseService {
 
                 // teams not associated with project that are would not be in crowd.
                 final ResultList<Team> orgTeams = OrganizationService.getOrganizationTeams(service, organizationId);
+
                 if (orgTeams != null && orgTeams.getItems() != null) {
                     for (final Team team : orgTeams.getItems()) {
+
                         if (team.getMembers() != null && team.getMembers().contains(userToRemove.getId())) {
+
                             TeamService.removeUserFromTeam(authUser, team.getId(), userToRemove.getId());
                         }
                     }

@@ -17,6 +17,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import org.ihtsdo.refsetservice.app.RecordMetric;
+import org.ihtsdo.refsetservice.model.IdName;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
@@ -178,17 +179,22 @@ public class ProjectController extends BaseController {
             paramType = "query", defaultValue = "false"),
         @ApiImplicitParam(name = "includeModuleNames", value = "Include names of modules for the edition", required = false, dataTypeClass = Boolean.class,
             paramType = "query", defaultValue = "false"),
+        @ApiImplicitParam(name = "includeTeamDetails", value = "Include id and name of assigned teams", required = false, dataTypeClass = Boolean.class,
+            paramType = "query", defaultValue = "false"),
     })
     @RecordMetric
     @RequestMapping(method = RequestMethod.GET, value = "/project/search", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     public @ResponseBody ResponseEntity<ResultList<Project>> getProjects(@ModelAttribute final SearchParameters searchParameters,
         final BindingResult bindingResult, @QueryParam(value = "includeMembers") final boolean includeMembers,
-        @RequestParam(required = false) final Boolean includeModuleNames) throws Exception {
+        @RequestParam(required = false) final Boolean includeModuleNames, @RequestParam(required = false) final Boolean includeTeamDetails) throws Exception {
 
         authorizeUser();
 
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
+
+        final boolean addModuleName = includeModuleNames != null && includeModuleNames;
+        final boolean addTeamDetails = includeTeamDetails != null && includeTeamDetails;
 
         try {
 
@@ -197,25 +203,37 @@ public class ProjectController extends BaseController {
             final User user = SecurityService.getUserFromSession();
             final ResultList<Project> results = ProjectService.searchProjects(user, searchParameters);
 
-            if (includeMembers && results != null && results.getItems() != null) {
+            if (results == null || results.getItems() == null || results.getItems().isEmpty()) {
+                return new ResponseEntity<>(results, HttpStatus.OK);
+            }
+            
+            if (includeMembers || addTeamDetails || addModuleName) {
 
                 for (final Project project : results.getItems()) {
+
+                    if (addModuleName) {
+                        project.getEdition().setModuleNames(ProjectService.getModuleNames(project));
+                    }
 
                     final Set<User> members = new HashSet<>();
 
                     for (final String teamId : project.getTeams()) {
 
                         final Team team = TeamService.getTeam(teamId, includeMembers);
-                        members.addAll(team.getMemberList());
+
+                        if (includeMembers) {
+                            members.addAll(team.getMemberList());
+                        }
+
+                        if (addTeamDetails) {
+                            project.getTeamDetails().add(new IdName(team.getId(), team.getName()));
+                        }
                     }
 
-                    if (includeModuleNames != null && includeModuleNames) {
-                        project.getEdition().setModuleNames(ProjectService.getModuleNames(project));
+                    if (includeMembers) {
+                        project.getMemberList().addAll(members);
                     }
-
-                    project.getMemberList().addAll(members);
                 }
-
             }
 
             return new ResponseEntity<>(results, HttpStatus.OK);

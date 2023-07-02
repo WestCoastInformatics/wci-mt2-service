@@ -66,7 +66,7 @@ public class WorkflowUnitTestUtilities {
     private static final String WORKFLOW_PERMUTATIONS_FILE_NAME = "workflowPermutationsToFinalAction.txt";
 
     /** The workflow permutations file path. */
-    private static String workflowPermutationsFilePath;
+    private String workflowPermutationsFilePath;
 
     /** The actions . */
     private static List<String> actions = WorkflowService.WORKFLOW_ACTIONS;

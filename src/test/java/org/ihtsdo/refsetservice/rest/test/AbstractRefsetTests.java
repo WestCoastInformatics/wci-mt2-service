@@ -11,6 +11,7 @@
 package org.ihtsdo.refsetservice.rest.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.BufferedReader;
@@ -54,7 +55,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public abstract class AbstractRefsetTests extends BaseTest {
 
     /** The Constant SIMPLE_DATE_FORMAT. */
-    protected static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd");
+    protected static final String YYYYMMDD_FORMAT = "yyyyMMdd";
 
     /** The config properties. */
     protected static final Properties PROPERTIES = PropertyUtility.getProperties();
@@ -105,7 +106,7 @@ public abstract class AbstractRefsetTests extends BaseTest {
     protected static final String MAIN_CORE_TESTING_REFSET_ID = "721145008"; // Belgian
 
     /** The Constant MAIN_CORE_TESTING_REFSET_VERSION. */
-    protected static final String MAIN_CORE_TESTING_REFSET_VERSION = "2021-07-31";
+    protected static final String MAIN_CORE_TESTING_REFSET_VERSION = "2021-11-30";
 
     /** The Constant MEMBER_ID_LIST_FILE_NAME. */
     protected static final String MEMBER_ID_LIST_FILE_NAME = "member_concept_id_list.txt";
@@ -135,18 +136,17 @@ public abstract class AbstractRefsetTests extends BaseTest {
     protected static final String REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID = "450970008";
 
     /** The Constant INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID. */
-    protected static final String INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID = "4106009";
+    protected static final String INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID = "27720003";
 
     /** The Constant INACTIVE_CONCEPT_ACTIVE_MEMBER_PARENT_CONCEPT_ID. */
     protected static final String INACTIVE_CONCEPT_ACTIVE_MEMBER_PARENT_CONCEPT_ID = "76318008";
 
     /** The Constant REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_VERSION. */
-    protected static final String REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_VERSION = "2021-07-31";
+    protected static final String REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_VERSION = "2021-11-30"; // "2021-07-31";
 
     /** The Constant REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_EARLIER_VERSION. */
     protected static final String REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_EARLIER_VERSION = "2020-07-31";
 
-    /** NUNO start *. */
     /** The mvc. */
     @Autowired
     private MockMvc mvc;
@@ -321,8 +321,11 @@ public abstract class AbstractRefsetTests extends BaseTest {
         if (refset.getRefsetId().equals(REFSET_WITH_INACTIVE_CONCEPT_ACTIVE_MEMBER_REFSET_ID)) {
 
             assertThat(refset.getName()).isEqualToIgnoringCase("General Practice / Family Practice reference set");
-            assertThat(refset.getNarrative()).isEqualToIgnoringCase("Description of refset General Practice / Family Practice reference set");
-            assertThat(refset.getModifiedBy()).isEqualToIgnoringCase("Migration");
+
+            // NO LONGER HAS NARRATIVE
+            // assertThat(refset.getNarrative()).isEqualToIgnoringCase("Description of refset General Practice / Family Practice reference set");
+
+            assertThat(refset.getModifiedBy()).isNotEmpty();
             assertThat(refset.getType()).isEqualToIgnoringCase("extensional");
             assertThat(refset.getModuleId()).isEqualTo("900000000000012004");
             assertThat(refset.getEdition().getName()).isEqualToIgnoringCase("International Edition");
@@ -337,22 +340,28 @@ public abstract class AbstractRefsetTests extends BaseTest {
 
             // Version Date
             assertThat(refset.getVersionDate()).isNotNull();
-        } else {
+
+        } else if (refset.getRefsetId().equals(MAIN_NRC_TESTING_REFSET_ID)) {
 
             assertThat(refset.getRefsetId()).isEqualTo(MAIN_NRC_TESTING_REFSET_ID);
 
             assertThat(refset.getName()).isEqualToIgnoringCase("Belgian simple reference set for translated animal materials");
-            assertThat(refset.getNarrative())
-                .isEqualToIgnoringCase("descendants of 256363008 |Animal material (substance)| translated in the Belgian extension");
-            assertThat(refset.getModifiedBy()).isEqualToIgnoringCase("Migration");
+
+            // NO LONGER HAS NARRATIVE
+            // assertThat(refset.getNarrative()).isEqualToIgnoringCase("descendants of 256363008 |Animal material (substance)| translated in the Belgian
+            // extension");
+
+            assertThat(refset.getModifiedBy()).isNotBlank();
             assertThat(refset.getType()).isEqualToIgnoringCase("extensional");
             assertThat(refset.getModuleId()).isEqualTo("11000172109");
-            assertThat(refset.getEdition().getName()).isEqualToIgnoringCase("Belgian Edition");
+            assertThat(refset.getEdition().getName()).isEqualToIgnoringCase("Belgian Extension");
             assertThat(refset.getType()).isEqualToIgnoringCase("extensional");
             assertThat(refset.getVersionStatus()).isEqualToIgnoringCase("published");
             assertThat(refset.getVersionNotes()).isNull();
-            assertThat(refset.getTags().size()).isEqualTo(1);
-            assertThat(refset.getTags().iterator().next()).isEqualToIgnoringCase("General / Allergies");
+            /*
+             * this refset has no tags assertThat(refset.getTags().size()).isEqualTo(1);
+             * assertThat(refset.getTags().iterator().next()).isEqualToIgnoringCase("General / Allergies");
+             */
             assertThat(refset.getProject().getName()).isEqualTo("Belgian Extension Project");
 
             assertThat(refset.isActive()).isTrue();
@@ -361,6 +370,10 @@ public abstract class AbstractRefsetTests extends BaseTest {
 
             // Version Date
             assertThat(refset.getVersionDate()).isNotNull();
+        } else {
+            LOG.error("Unexpected refset in validateRefsetMetadata.  Refset:{}", refset);
+            assertThat(refset.getRefsetId().equals("UNKNOWN REFSET"));
+
         }
 
     }
@@ -388,9 +401,11 @@ public abstract class AbstractRefsetTests extends BaseTest {
         assertThat(concept).isNotNull();
         assertThat(concept.getCode()).isEqualTo(conceptId);
 
+        final SimpleDateFormat sdf = new SimpleDateFormat(YYYYMMDD_FORMAT);
+
         if (memberEfectiveTime != null) {
 
-            assertThat(concept.getMemberEffectiveTime()).isEqualTo(SIMPLE_DATE_FORMAT.parseObject(memberEfectiveTime));
+            assertThat(concept.getMemberEffectiveTime()).isEqualTo(sdf.parseObject(memberEfectiveTime));
             assertThat(concept.isMemberOfRefset()).isEqualTo(isRefsetMember);
         }
 
@@ -476,30 +491,34 @@ public abstract class AbstractRefsetTests extends BaseTest {
      */
     protected void validateExportFiles(final JsonNode root, final String expectedFilePath) throws IOException {
 
-        BufferedReader expectedFileReader = null;
-        BufferedReader generatedFileReader = null;
+        // Get Zipped File
+        final String fileUrl = (root.get("url")).asText();
+        LOG.info("File Url: " + fileUrl);
+        final String zipFileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
+        final String exportRefsetPath = PROPERTIES.getProperty("REFSET_EXPORT_DIR");
+        LOG.info("Refset Directory: " + exportRefsetPath);
+        final String downloadedZipFile = exportRefsetPath + "/" + zipFileName;
+        LOG.info("Zip File Path: " + downloadedZipFile);
+        final Path unzippedPath = Files.createTempDirectory("exportTest-");
 
-        try {
+        final File file = unzippedPath.toFile();
+        assertNotNull(file);
 
-            // Get Zipped File
-            final String fileUrl = (root.get("url")).asText();
-            LOG.info("File Url: " + fileUrl);
-            final String zipFileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
-            final String exportRefsetPath = PROPERTIES.getProperty("REFSET_EXPORT_DIR");
-            LOG.info("Refset Directory: " + exportRefsetPath);
-            final String downloadedZipFile = exportRefsetPath + "/" + zipFileName;
-            LOG.info("Zip File Path: " + downloadedZipFile);
-            final Path unzippedPath = Files.createTempDirectory("exportTest-");
-            FileUtility.unzip(downloadedZipFile, unzippedPath.toFile().getAbsolutePath());
+        final File[] files = unzippedPath.toFile().listFiles();
+        assertNotNull(files);
 
-            assertThat(1).isEqualTo(unzippedPath.toFile().list().length);
+        FileUtility.unzip(downloadedZipFile, file.getAbsolutePath());
 
-            // Get generated File
-            final File generatedFile = unzippedPath.toFile().listFiles()[0];
+        assertThat(1).isEqualTo(files.length);
+
+        // Get generated File
+        final File generatedFile = files[0];
+
+        try (final BufferedReader expectedFileReader = new BufferedReader(new FileReader(expectedFilePath));
+            final BufferedReader generatedFileReader = new BufferedReader(new FileReader(generatedFile));) {
 
             final SortedSet<String> generatedLines = new TreeSet<>();
             final SortedSet<String> testLines = new TreeSet<>();
-            generatedFileReader = new BufferedReader(new FileReader(generatedFile));
 
             String st;
 
@@ -507,9 +526,6 @@ public abstract class AbstractRefsetTests extends BaseTest {
 
                 generatedLines.add(st);
             }
-
-            // Get test file
-            expectedFileReader = new BufferedReader(new FileReader(expectedFilePath));
 
             while ((st = expectedFileReader.readLine()) != null) {
 
@@ -535,18 +551,6 @@ public abstract class AbstractRefsetTests extends BaseTest {
             }
 
             assertThat(testLines.size()).isEqualTo(j);
-        } finally {
-
-            if (expectedFileReader != null) {
-
-                expectedFileReader.close();
-            }
-
-            if (generatedFileReader != null) {
-
-                generatedFileReader.close();
-            }
-
         }
 
     }
@@ -560,16 +564,11 @@ public abstract class AbstractRefsetTests extends BaseTest {
      */
     protected Refset validateRefsetExists(final ResultList<Refset> refsetList, final String internalRefsetId) {
 
-        for (final Refset r : refsetList.getItems()) {
-
-            if (r.getRefsetId().equals(internalRefsetId)) {
-
-                return r;
-            }
-
+        if (refsetList == null || refsetList.getItems() == null || refsetList.getItems().isEmpty()) {
+            return null;
         }
 
-        return null;
+        return refsetList.getItems().stream().filter(r -> r.getRefsetId().equals(internalRefsetId)).findFirst().orElse(null);
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -9,7 +9,7 @@
  */
 package org.ihtsdo.refsetservice.model;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -34,7 +34,7 @@ public enum UserRole {
     private String value;
 
     /** Enums as list. */
-    private static final List<UserRole> ALL_ROLES = Arrays.asList(UserRole.values());
+    private static final List<UserRole> ALL_ROLES = new ArrayList<>();
 
     /**
      * Instantiates a {@link UserRole} from the specified parameters.
@@ -63,31 +63,25 @@ public enum UserRole {
      */
     public static List<UserRole> getAllRoles() {
 
+        if (ALL_ROLES.isEmpty()) {
+
+            ALL_ROLES.add(ADMIN);
+            ALL_ROLES.add(AUTHOR);
+            ALL_ROLES.add(REVIEWER);
+            ALL_ROLES.add(VIEWER);
+        }
         return ALL_ROLES;
     }
 
-    // /**
-    // * Checks for privileges of.
-    // *
-    // * @param role the role
-    // * @return true, if successful
-    // */
-    // public boolean hasPrivilegesOf(UserRole role) {
-    // if (this == UserRole.VIEWER && role == UserRole.VIEWER)
-    // return true;
-    // else if (this == UserRole.AUTHOR && (role == UserRole.VIEWER || role == UserRole.AUTHOR))
-    // return true;
-    // else if (this == UserRole.REVIEWER && (role == UserRole.VIEWER || role == UserRole.USER
-    // || role == UserRole.AUTHOR || role == UserRole.REVIEWER))
-    // return true;
-    // else if (this == UserRole.USER && (role == UserRole.VIEWER || role == UserRole.USER || role == UserRole.AUTHOR))
-    // return true;
-    // else if (this == UserRole.LEAD && (role == UserRole.VIEWER || role == UserRole.USER || role == UserRole.AUTHOR
-    // || role == UserRole.REVIEWER || role == UserRole.LEAD))
-    // return true;
-    // else if (this == UserRole.ADMIN)
-    // return true;
-    // else
-    // return false;
-    // }
+    /**
+     * Returns the role string.
+     *
+     * @param userRole the user role
+     * @return the UserRole as a string
+     */
+    public static String getRoleString(final UserRole userRole) {
+
+        return (userRole != null) ? userRole.getValue() : null;
+
+    }
 }

@@ -1,52 +1,112 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 package org.ihtsdo.refsetservice.sync.util;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import org.ihtsdo.refsetservice.model.Project;
-import org.ihtsdo.refsetservice.model.Team;
-
+/**
+ * The Class SyncStatistics.
+ */
 public class SyncStatistics {
 
+    /** The code systems synced. */
     // Code Systems
-    private static int codeSystemsSynced = 0;
+    private int codeSystemsSynced = 0;
 
-    private static int codeSystemsFiltered = 0;
+    /** The code systems filtered. */
+    private int codeSystemsFiltered = 0;
 
+    /** The organizations added. */
     // Orgs
     private int organizationsAdded = 0;
 
-    private static int organizationsUnchanged = 0;
+    /** The organizations inactivated. */
+    private int organizationsInactivated = 0;
 
+    /** The organizations activated. */
+    private int organizationsActivated = 0;
+
+    /** The editions added. */
     // Editions
-    private static int editionsAdded = 0;
+    private int editionsAdded = 0;
 
-    private static int editionsRemoved = 0;;
+    /** The editions inactivated. */
+    private int editionsInactivated = 0;;
 
-    private static int editionsUnchanged = 0;
+    /** The editions activated. */
+    private int editionsActivated = 0;
 
-    private static int editionsRecreated = 0;;
+    /** The editions unchanged. */
+    private int editionsUnchanged = 0;
 
+    /** The editions modified. */
+    private int editionsModified = 0;;
+
+    /** The editions activated and modified. */
+    private int editionsActivatedAndModified = 0;;
+
+    /** The edition organization map changed. */
+    private int editionOrganizationMapChanged = 0;
+
+    /** The refset ids added. */
     // Refsets
-    private static int refsetVersionsAdded = 0;
+    private int refsetIdsAdded = 0;
 
-    private static int refsetVersionsRemoved = 0;;
+    /** The refset ids inactivated. */
+    private int refsetIdsInactivated = 0;;
 
-    private static int refsetVersionsUnchanged = 0;
+    /** The refset ids activated. */
+    private int refsetIdsActivated = 0;
 
-    private static int refsetVersionsRecreated = 0;;
+    /** The refset ids synced. */
+    private int refsetIdsSynced = 0;
 
-    private static int refsetVersionsSynced = 0;
+    /** The refset ids activated and modified. */
+    private int refsetIdsActivatedAndModified = 0;
 
-    // Processing Only as we don't sync these with Snowstorm
-    private static final Set<Project> projectsProcessed = new HashSet<>();;
+    /** The refset versions added. */
+    private int refsetVersionsAdded = 0;
 
-    private static final Set<Team> teamsProcessed = new HashSet<>();
+    /** The refset versions inactivated. */
+    private int refsetVersionsInactivated = 0;;
 
+    /** The refset versions activated. */
+    private int refsetVersionsActivated = 0;
+
+    /** The refset versions unchanged. */
+    private int refsetVersionsUnchanged = 0;
+
+    /** The refset versions modified. */
+    private int refsetVersionsModified = 0;
+
+    /** The refset versions activated and modified. */
+    private int refsetVersionsActivatedAndModified = 0;
+
+    /** The refset versions synced. */
+    private int refsetVersionsSynced = 0;
+
+    /** The projects added. */
+    private int projectsAdded = 0;
+
+    /** The teams added. */
+    private int teamsAdded = 0;
+
+    /** The Constant CHANGED. */
     public static final String CHANGED = "Changed";
 
+    /** The Constant UNCHANGED. */
     public static final String UNCHANGED = "Unchanged";
 
+    /**
+     * Prints the statistics.
+     *
+     * @return the string
+     */
     public String printStatistics() {
 
         final StringBuffer buf = new StringBuffer();
@@ -55,191 +115,653 @@ public class SyncStatistics {
 
         buf.append("Code systems encountered: " + codeSystemsSynced + ". Syncing " + codeSystemsFiltered + " after filtered them"
             + System.getProperty("line.separator"));
+        buf.append(System.getProperty("line.separator"));
 
-        buf.append("ORGANIZATIONS Added: " + organizationsAdded + " / Unchanged: " + organizationsUnchanged + System.getProperty("line.separator"));
+        // Organizations
+        buf.append("*** Organizations --> Added: " + organizationsAdded + " / Inactivated: " + organizationsInactivated + " / Activated: "
+            + organizationsActivated + System.getProperty("line.separator"));
+        buf.append(System.getProperty("line.separator"));
 
-        buf.append("EDITIONS Added: " + editionsAdded + " / Removed: " + editionsRemoved + " / Recreated: " + editionsRecreated + " / Unchanged: "
-            + editionsUnchanged + System.getProperty("line.separator"));
+        // Editions
+        buf.append("*** EDITIONS --> Added: " + editionsAdded + " / Inactivated: " + editionsInactivated + " / Activated: " + editionsActivated
+            + " / Unchanged: " + editionsUnchanged + " / Modified: " + editionsModified + " / ActivatedAndModified: " + editionsActivatedAndModified
+            + System.getProperty("line.separator"));
 
-        buf.append("REFSET VERSION PAIRs Synced " + refsetVersionsSynced + " Added: " + refsetVersionsAdded + " / Removed: " + refsetVersionsRemoved
-            + " / Recreated: " + refsetVersionsRecreated + " / Unchanged: " + refsetVersionsUnchanged + System.getProperty("line.separator"));
+        buf.append("*** EDITIONS to ORGANIZATION MAP --> Changes: " + editionOrganizationMapChanged + System.getProperty("line.separator"));
+        buf.append(System.getProperty("line.separator"));
 
-        buf.append("Projects " + projectsProcessed.size() + " Processed " + System.getProperty("line.separator"));
-        buf.append("Teams " + teamsProcessed.size() + " Processed" + System.getProperty("line.separator"));
+        // Refsets
+        buf.append("*** REFSET FULLY NEW, INACTIVATED, or (RE)ACTIVATED ON ALL VERSIONS (" + refsetIdsSynced + " Synced" + ") --> Added: " + refsetIdsAdded
+            + " / Inactivated: " + refsetIdsInactivated + " / ActivatedAndModified: " + refsetIdsActivatedAndModified + " / Activated: " + refsetIdsActivated
+            + System.getProperty("line.separator"));
+
+        buf.append(
+            "*** REFSET VERSIONs (" + refsetVersionsSynced + " Synced" + ") --> Added: " + refsetVersionsAdded + " / Inactivated: " + refsetVersionsInactivated
+                + " / Modified: " + refsetVersionsModified + " / Unchanged: " + refsetVersionsUnchanged + System.getProperty("line.separator"));
+        buf.append(System.getProperty("line.separator"));
+
+        // Othera
+        buf.append("*** Projects --> " + projectsAdded + " Processed " + System.getProperty("line.separator"));
+        buf.append("*** Teams --> " + teamsAdded + " Processed" + System.getProperty("line.separator"));
 
         return buf.toString();
     }
 
+    /**
+     * Clear statistics.
+     */
     public void clearStatistics() {
 
         codeSystemsSynced = 0;
         codeSystemsFiltered = 0;
 
         organizationsAdded = 0;
-        organizationsUnchanged = 0;
+        organizationsActivated = 0;
+        organizationsInactivated = 0;
 
         editionsAdded = 0;
-        editionsRemoved = 0;
+        editionsInactivated = 0;
+        editionsActivated = 0;
         editionsUnchanged = 0;
-        editionsRecreated = 0;
+        editionsModified = 0;
+        editionsActivatedAndModified = 0;
+
+        editionOrganizationMapChanged = 0;
+
+        refsetIdsAdded = 0;
+        refsetIdsInactivated = 0;
+        refsetIdsActivated = 0;
+        refsetIdsActivatedAndModified = 0;
+        refsetIdsSynced = 0;
 
         refsetVersionsAdded = 0;
-        refsetVersionsRemoved = 0;
+        refsetVersionsInactivated = 0;
+        refsetVersionsActivated = 0;
         refsetVersionsUnchanged = 0;
-        refsetVersionsRecreated = 0;
+        refsetVersionsModified = 0;
+        refsetVersionsActivatedAndModified = 0;
         refsetVersionsSynced = 0;
 
-        projectsProcessed.clear();
-        teamsProcessed.clear();
+        projectsAdded = 0;
+        teamsAdded = 0;
 
     }
 
-    public int getOrganizationsAdded() {
-
-        return organizationsAdded;
-    }
-
-    public int getOrganizationsUnchanged() {
-
-        return organizationsUnchanged;
-    }
+    /**
+     * Getters *.
+     *
+     * @return the code systems synced
+     */
+    // Code Systems
 
     public int getCodeSystemsSynced() {
 
         return codeSystemsSynced;
     }
 
+    /**
+     * Returns the code systems filtered.
+     *
+     * @return the code systems filtered
+     */
     public int getCodeSystemsFiltered() {
 
         return codeSystemsFiltered;
     }
 
+    /**
+     * Returns the organizations added.
+     *
+     * @return the organizations added
+     */
+    // Organizations
+    public int getOrganizationsAdded() {
+
+        return organizationsAdded;
+    }
+
+    /**
+     * Returns the organizations inactivated.
+     *
+     * @return the organizations inactivated
+     */
+    public int getOrganizationsInactivated() {
+
+        return organizationsInactivated;
+    }
+
+    /**
+     * Returns the organizations activated.
+     *
+     * @return the organizations activated
+     */
+    public int getOrganizationsActivated() {
+
+        return organizationsActivated;
+    }
+
+    /**
+     * Returns the editions added.
+     *
+     * @return the editions added
+     */
+    // Editions
     public int getEditionsAdded() {
 
         return editionsAdded;
     }
 
+    /**
+     * Returns the editions inactivated.
+     *
+     * @return the editions inactivated
+     */
+    public int getEditionsInactivated() {
+
+        return editionsInactivated;
+    }
+
+    /**
+     * Returns the editions activated.
+     *
+     * @return the editions activated
+     */
+    public int getEditionsActivated() {
+
+        return editionsActivated;
+    }
+
+    /**
+     * Returns the editions unchanged.
+     *
+     * @return the editions unchanged
+     */
     public int getEditionsUnchanged() {
 
         return editionsUnchanged;
     }
 
-    public int getEditionsRecreated() {
+    /**
+     * Returns the editions modified.
+     *
+     * @return the editions modified
+     */
+    public int getEditionsModified() {
 
-        return editionsRecreated;
+        return editionsModified;
     }
 
+    /**
+     * Returns the editions activated and modified.
+     *
+     * @return the editions activated and modified
+     */
+    public int getEditionsActivatedAndModified() {
+
+        return editionsActivatedAndModified;
+    }
+
+    /**
+     * Returns the edition organization map changed.
+     *
+     * @return the edition organization map changed
+     */
+    public int getEditionOrganizationMapChanged() {
+
+        return editionOrganizationMapChanged;
+    }
+
+    /**
+     * Returns the refset ids added.
+     *
+     * @return the refset ids added
+     */
+    // Refsets
+    public int getRefsetIdsAdded() {
+
+        return refsetIdsAdded;
+    }
+
+    /**
+     * Returns the refset ids inactivated.
+     *
+     * @return the refset ids inactivated
+     */
+    public int getRefsetIdsInactivated() {
+
+        return refsetIdsInactivated;
+    }
+
+    /**
+     * Returns the refset ids activated.
+     *
+     * @return the refset ids activated
+     */
+    public int getRefsetIdsActivated() {
+
+        return refsetIdsActivated;
+    }
+
+    /**
+     * Returns the refset ids activated and modified.
+     *
+     * @return the refset ids activated and modified
+     */
+    public int getRefsetIdsActivatedAndModified() {
+
+        return refsetIdsActivatedAndModified;
+    }
+
+    /**
+     * Returns the refset ids synced.
+     *
+     * @return the refset ids synced
+     */
+    public int getRefsetIdsSynced() {
+
+        return refsetIdsSynced;
+    }
+
+    /**
+     * Returns the refset versions added.
+     *
+     * @return the refset versions added
+     */
     public int getRefsetVersionsAdded() {
 
         return refsetVersionsAdded;
     }
 
-    public int getRefsetVersionsRemoved() {
+    /**
+     * Returns the refset versions inactivated.
+     *
+     * @return the refset versions inactivated
+     */
+    public int getRefsetVersionsInactivated() {
 
-        return refsetVersionsRemoved;
+        return refsetVersionsInactivated;
     }
 
+    /**
+     * Returns the refset versions activated.
+     *
+     * @return the refset versions activated
+     */
+    public int getRefsetVersionsActivated() {
+
+        return refsetVersionsActivated;
+    }
+
+    /**
+     * Returns the refset versions unchanged.
+     *
+     * @return the refset versions unchanged
+     */
     public int getRefsetVersionsUnchanged() {
 
         return refsetVersionsUnchanged;
     }
 
-    public int getRefsetVersionsRecreated() {
+    /**
+     * Returns the refset versions modified.
+     *
+     * @return the refset versions modified
+     */
+    public int getRefsetVersionsModified() {
 
-        return refsetVersionsRecreated;
+        return refsetVersionsModified;
     }
 
+    /**
+     * Returns the refset versions activated and modified.
+     *
+     * @return the refset versions activated and modified
+     */
+    public int getRefsetVersionsActivatedAndModified() {
+
+        return refsetVersionsActivatedAndModified;
+    }
+
+    /**
+     * Returns the refset versions synced.
+     *
+     * @return the refset versions synced
+     */
     public int getRefsetVersionsSynced() {
 
         return refsetVersionsSynced;
     }
 
-    // Increments
+    /**
+     * Setters *.
+     *
+     * @param val the code systems synced
+     */
+    // Code Systems
     public void setCodeSystemsSynced(final int val) {
 
         codeSystemsSynced = val;
     }
 
+    /**
+     * Sets the code systems filtered.
+     *
+     * @param val the code systems filtered
+     */
     public void setCodeSystemsFiltered(final int val) {
 
         codeSystemsFiltered = val;
     }
 
-    public void incrementOrganizationsAdded() {
+    /**
+     * Sets the organizations added.
+     *
+     * @param val the organizations added
+     */
+    // Organizations
+    public void setOrganizationsAdded(final int val) {
 
-        organizationsAdded++;
+        organizationsAdded = val;
+
     }
 
-    public void incrementOrganizationsUnchanged() {
+    /**
+     * Sets the organizations inactivated.
+     *
+     * @param val the organizations inactivated
+     */
+    public void setOrganizationsInactivated(final int val) {
 
-        organizationsUnchanged++;
+        organizationsInactivated = val;
+
     }
 
-    public void incrementRefsetVersionsAdded() {
+    /**
+     * Sets the organizations activated.
+     *
+     * @param organizationsActivated the organizations activated
+     */
+    public void setOrganizationsActivated(final int organizationsActivated) {
 
-        refsetVersionsAdded++;
+        this.organizationsActivated = organizationsActivated;
     }
 
-    public void incrementRefsetVersionsRemoved() {
-
-        refsetVersionsRemoved++;
-    }
-
-    // SETTERS
+    /**
+     * Sets the editions added.
+     *
+     * @param val the editions added
+     */
+    // Editions
     public void setEditionsAdded(final int val) {
 
         editionsAdded = val;
     }
 
-    public void setEditionsRemoved(final int val) {
+    /**
+     * Sets the editions inactivated.
+     *
+     * @param val the editions inactivated
+     */
+    public void setEditionsInactivated(final int val) {
 
-        editionsRemoved = val;
+        editionsInactivated = val;
     }
 
+    /**
+     * Sets the editions activated.
+     *
+     * @param val the editions activated
+     */
+    public void setEditionsActivated(final int val) {
+
+        editionsActivated = val;
+
+    }
+
+    /**
+     * Sets the editions unchanged.
+     *
+     * @param val the editions unchanged
+     */
     public void setEditionsUnchanged(final int val) {
 
         editionsUnchanged = val;
     }
 
-    public void setEditionsRecreated(final int val) {
+    /**
+     * Sets the editions modified.
+     *
+     * @param val the editions modified
+     */
+    public void setEditionsModified(final int val) {
 
-        editionsRecreated = val;
+        editionsModified = val;
     }
 
-    public void setRefsetVersionsRemoved(final int val) {
+    /**
+     * Sets the editions activated and modified.
+     *
+     * @param val the editions activated and modified
+     */
+    public void setEditionsActivatedAndModified(final int val) {
 
-        refsetVersionsRemoved = val;
+        editionsActivatedAndModified = val;
+
     }
 
+    /**
+     * Sets the refset ids added.
+     *
+     * @param val the refset ids added
+     */
+    // Refset Ids
+    public void setRefsetIdsAdded(final int val) {
+
+        refsetIdsAdded = val;
+    }
+
+    /**
+     * Sets the refset version pairs inactivated.
+     *
+     * @param val the refset version pairs inactivated
+     */
+    public void setRefsetVersionPairsInactivated(final int val) {
+
+        refsetIdsInactivated = val;
+    }
+
+    /**
+     * Sets the refset ids activated.
+     *
+     * @param val the refset ids activated
+     */
+    public void setRefsetIdsActivated(final int val) {
+
+        this.refsetIdsActivated = val;
+    }
+
+    /**
+     * Sets the refset ids activated and modified.
+     *
+     * @param val the refset ids activated and modified
+     */
+    public void setRefsetIdsActivatedAndModified(final int val) {
+
+        this.refsetIdsActivatedAndModified = val;
+    }
+
+    /**
+     * Sets the refset ids synced.
+     *
+     * @param val the refset ids synced
+     */
+    public void setRefsetIdsSynced(final int val) {
+
+        this.refsetIdsSynced = val;
+    }
+
+    /**
+     * Sets the refset versions added.
+     *
+     * @param val the refset versions added
+     */
+    // Refset Version Pairs
+    public void setRefsetVersionsAdded(final int val) {
+
+        refsetVersionsAdded = val;
+    }
+
+    /**
+     * Increment refset versions added.
+     */
+    public void incrementRefsetVersionsAdded() {
+
+        refsetVersionsAdded++;
+
+    }
+
+    /**
+     * Increment refset versions inactivated.
+     *
+     * @param val the val
+     */
+    public void incrementRefsetVersionsInactivated(final int val) {
+
+        refsetVersionsInactivated += val;
+    }
+
+    /**
+     * Sets the refset versions inactivated.
+     *
+     * @param val the refset versions inactivated
+     */
+    public void setRefsetVersionsInactivated(final int val) {
+
+        refsetVersionsInactivated = val;
+    }
+
+    /**
+     * Increment refset versions activated.
+     *
+     * @param val the val
+     */
+    public void incrementRefsetVersionsActivated(final int val) {
+
+        this.refsetVersionsActivated += val;
+    }
+
+    /**
+     * Increment refset versions unchanged.
+     *
+     * @param val the val
+     */
+    public void incrementRefsetVersionsUnchanged(final int val) {
+
+        this.refsetVersionsUnchanged = +val;
+    }
+
+    /**
+     * Increment refset versions modified.
+     *
+     * @param val the val
+     */
+    public void incrementRefsetVersionsModified(final int val) {
+
+        this.refsetVersionsModified = +val;
+    }
+
+    /**
+     * Increment refset versions activated and modified.
+     *
+     * @param val the val
+     */
+    public void incrementRefsetVersionsActivatedAndModified(final int val) {
+
+        this.refsetVersionsActivatedAndModified += val;
+    }
+
+    /**
+     * Increment refset versions synced.
+     */
+    public void incrementRefsetVersionsSynced() {
+
+        refsetVersionsSynced += 1;
+    }
+
+    /**
+     * Increment edition organization map changed.
+     */
+    // Increments
+    public void incrementEditionOrganizationMapChanged() {
+
+        editionOrganizationMapChanged++;
+
+    }
+
+    /**
+     * Increment refset versions unchanged.
+     */
     public void incrementRefsetVersionsUnchanged() {
 
         refsetVersionsUnchanged++;
 
     }
 
-    public void incrementRefsetVersionsRecreated() {
+    /**
+     * Increment refset versions modified.
+     */
+    public void incrementRefsetVersionsModified() {
 
-        refsetVersionsRecreated++;
+        refsetVersionsModified++;
     }
 
-    public void setRefsetVersionsSynced(final int val) {
+    /**
+     * Increment refset versions inactivated.
+     */
+    public void incrementRefsetVersionsInactivated() {
 
-        refsetVersionsSynced = val;
+        refsetVersionsInactivated++;
     }
 
-    public void setRefsetVersionsAdded(final int val) {
+    /**
+     * Returns the projects added.
+     *
+     * @return the projects added
+     */
+    public int getProjectsAdded() {
 
-        refsetVersionsAdded = val;
+        return projectsAdded;
+
     }
 
-    public Set<Project> getProjectsProcessed() {
+    /**
+     * Returns the teams processed.
+     *
+     * @return the teams processed
+     */
+    public int getTeamsProcessed() {
 
-        return projectsProcessed;
+        return teamsAdded;
     }
 
-    public Set<Team> getTeamsProcessed() {
+    /**
+     * Sets the teams added.
+     *
+     * @param val the teams added
+     */
+    public void setTeamsAdded(final int val) {
 
-        return teamsProcessed;
+        teamsAdded = val;
+
+    }
+
+    /**
+     * Increment projects added.
+     */
+    public void incrementProjectsAdded() {
+
+        projectsAdded++;
+
     }
 
 }

@@ -44,8 +44,8 @@ import org.ihtsdo.refsetservice.model.VersionStatus;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.sync.SyncOperationsInitializer;
-import org.ihtsdo.refsetservice.sync.SyncService;
+import org.ihtsdo.refsetservice.sync.SyncAgent;
+import org.ihtsdo.refsetservice.sync.util.SyncTestingInitializer;
 import org.ihtsdo.refsetservice.terminologyservice.DiscussionService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.ProjectService;
@@ -1636,16 +1636,9 @@ public class RefsetController extends BaseController {
 
         // no auth required
         final User user = SecurityService.getUserFromSession();
-        final boolean includeInDevelopment = !(showInDevelopment != null && !showInDevelopment);
-        final boolean onlyShowPermitted = !(showOnlyPermitted != null && showOnlyPermitted);
 
-        // if (showInDevelopment != null && showInDevelopment == false) {
-        // includeInDevelopment = false;
-        // }
-        //
-        // if (showOnlyPermitted != null && showOnlyPermitted == true) {
-        // onlyShowPermitted = true;
-        // }
+        final boolean includeInDevelopment = (showInDevelopment != null) ? showInDevelopment : true;
+        final boolean onlyShowPermitted = (showOnlyPermitted != null) ? showOnlyPermitted : false;
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -2232,7 +2225,7 @@ public class RefsetController extends BaseController {
 
             try (final TerminologyService service = new TerminologyService()) {
 
-                SyncService.sync(service, refsetPerVersionSync, runForProduction, isIgnoreCoreRefsets);
+                SyncAgent.sync(service, refsetPerVersionSync, runForProduction, isIgnoreCoreRefsets);
 
                 return new ResponseEntity<>(message + "RT2 synced with Snowstorm successfully", HttpStatus.OK);
             }
@@ -2266,7 +2259,7 @@ public class RefsetController extends BaseController {
 
             final String status = "Feedback testing refset created successfully";
             LOG.info("Create new refset, initialized with feedback, for testing purposes");
-            final SyncOperationsInitializer initializer = new SyncOperationsInitializer();
+            final SyncTestingInitializer initializer = new SyncTestingInitializer();
             final Refset refset = initializer.createTestingFeedbackRefset();
 
             LOG.info("New Feedback testing refset created succesffully with internal/SctiId pair: " + refset.getId() + "/" + refset.getRefsetId());
@@ -2302,7 +2295,7 @@ public class RefsetController extends BaseController {
 
             final String status = "Intensional testing refset created successfully";
             LOG.info("Create new intensional refset for testing purposes");
-            final SyncOperationsInitializer initializer = new SyncOperationsInitializer();
+            final SyncTestingInitializer initializer = new SyncTestingInitializer();
             final Refset refset = initializer.createTestingIntensionalRefset();
 
             LOG.info("New Feedback testing refset created succesffully with internal/SctiId pair: " + refset.getId() + "/" + refset.getRefsetId());
@@ -2342,7 +2335,7 @@ public class RefsetController extends BaseController {
 
                 for (final VersionStatus value : VersionStatus.values()) {
 
-                    final TypeKeyValue typeKeyValue = new TypeKeyValue("status", value.getLable(), value.getLable());
+                    final TypeKeyValue typeKeyValue = new TypeKeyValue("status", value.getLabel(), value.getLabel());
                     versionStatuses.add(typeKeyValue);
                 }
 
@@ -3521,7 +3514,7 @@ public class RefsetController extends BaseController {
 
             LOG.debug("resetRefset: refsetId: " + refsetId);
 
-            if (!SyncService.getIsProductionSystem()) {
+            if (!SyncAgent.getIsProductionSystem()) {
 
                 service.setModifiedBy(user.getUserName());
 

@@ -85,6 +85,7 @@ public abstract class CrowdClientAbstract {
      * @return the string
      * @throws Exception the exception
      */
+
     protected static String get(final String url) throws Exception {
 
         final HttpClient httpClient = HttpClient.newBuilder().build();
