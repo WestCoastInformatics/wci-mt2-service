@@ -9,7 +9,17 @@
  */
 package org.ihtsdo.refsetservice.handler;
 
+import java.io.ByteArrayInputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
@@ -19,7 +29,10 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
@@ -28,12 +41,16 @@ import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
+import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -48,6 +65,14 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 
     /** The Constant LOG. */
     private static final String RT2_ROLE_PREFIX = "rt2-";
+    
+    /** TODO - REMOVE AFTER PERMISSIONS CONVERTED. */
+    private static final Set<String> PERMISSION_CONVERT_ADDED_GROUPS = new HashSet<>();
+    private static int PERMISSION_CONVERT_NUMBER_USERS_CONVERTED = 0;
+    private static int PERMISSION_CONVERT_NUMBER_USERS_PREVIOUSLY_CONVERTED = 0;
+    private static int PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_ADDED = 0;
+    private static int PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED = 0;
+    private static int PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED_WITHOUT_ADD = 0;
 
     /** The properties. */
     @SuppressWarnings("unused")
@@ -74,7 +99,8 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
             }
         }
         
-        convertRoles(user);
+        // TODO - REMOVE AFTER PERMISSIONS CONVERTED
+        convertRoles(user, false);
 
         if (userName.equals("twhalen") || userName.equals("jefron")) {
 
@@ -98,13 +124,141 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
     }
 
     /**
-     * Calls an IMS endpoint to make sure user is authenticated.
+     * TODO - REMOVE AFTER PERMISSIONS CONVERTED.
      *
      * @param user The user
      * @return the response
      * @throws Exception the exception
      */
-    private void convertRoles(final User user) throws Exception {
+    public String convertRolesForAllUsers() throws Exception {
+        
+        PERMISSION_CONVERT_ADDED_GROUPS.clear();
+        PERMISSION_CONVERT_NUMBER_USERS_CONVERTED = 0;
+        PERMISSION_CONVERT_NUMBER_USERS_PREVIOUSLY_CONVERTED = 0;
+        PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_ADDED = 0;
+        PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED = 0;
+        PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED_WITHOUT_ADD = 0;
+        
+        final String baseUrl = StringUtils.trim(PropertyUtility.getProperty("crowd.baseUrl"));
+        final String crowdUsername = StringUtils.trim(PropertyUtility.getProperty("crowd.username"));
+        final String password = StringUtils.trim(PropertyUtility.getProperty("crowd.password"));
+        final String auth = crowdUsername + ":" + password;
+        final byte[] encodedAuth = Base64.getEncoder().encode(auth.getBytes(StandardCharsets.UTF_8));
+        final String authHeader = "Basic " + new String(encodedAuth, StandardCharsets.UTF_8);
+        final String appPrefix = "rt2-";
+        final Set<String> usernames = new HashSet<>();
+        //final Set<String> groups = CrowdAPIClient.getAllGroups();
+        
+        final HttpClient httpClient = HttpClient.newBuilder().build();
+        final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(baseUrl + "/rest/usermanagement/1/group/membership")).GET()
+            .header("Authorization", authHeader).header("Accept", MediaType.APPLICATION_XML).build();
+        final HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
+
+        if (response.statusCode() == 200) {
+
+            final String xmlString = response.body();
+            
+            try (final ByteArrayInputStream input = new ByteArrayInputStream(xmlString.toString().getBytes("UTF-8"));) {
+
+                // Load the input XML document, parse it and return an instance of the Document class.
+                final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                final DocumentBuilder builder = factory.newDocumentBuilder();
+
+                final Document document = builder.parse(input);
+
+                final NodeList groupList = document.getDocumentElement().getChildNodes();
+                final int groupListSize = groupList.getLength();
+
+                // look thru membership groups
+                for (int i = 0; i < groupListSize; i++) {
+
+                    final Node groupNode = groupList.item(i);
+
+                    if (groupNode.getNodeType() == Node.ELEMENT_NODE) {
+
+                        // Get the value of the group name attribute.
+                        final String groupName = groupNode.getAttributes().getNamedItem("group").getNodeValue();
+
+                        // if the group is an RT2 group
+                        if (groupName.startsWith(appPrefix)) {
+                            
+                            final NodeList usersNodeList = groupNode.getChildNodes();
+                            final int usersNodeListSize = usersNodeList.getLength();
+                            
+                            // get the users node
+                            for (int j = 0; j < usersNodeListSize; j++) {
+                                
+                                if (usersNodeList.item(j).getNodeName().equals("users")) {
+                                    
+                                    final NodeList groupUsersList = usersNodeList.item(j).getChildNodes();
+                                    final int groupUsersListSize = groupUsersList.getLength();
+                                    
+                                    // loop through the users and collect the user names
+                                    for (int k = 0; k < groupUsersListSize; k++) {
+        
+                                        if (groupUsersList.item(k).getNodeName().equals("user")) {
+                                            
+                                            final Node groupUserNode = groupUsersList.item(k);
+                                            final String groupUserName = groupUserNode.getAttributes().getNamedItem("name").getNodeValue();
+                                            usernames.add(groupUserName);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                    } else {
+                        groupNode.getNodeType();
+                    }
+                }
+            }
+            
+            // go thru all users and convert their roles
+            for (final String username : usernames) {
+                
+                final User user = new User();
+                user.setUserName(username);
+                
+                final Set<String> groupMemberships = CrowdAPIClient.getMembershipsForUser(username);
+                
+                for (final String role : groupMemberships) {
+                    if (role.startsWith(RT2_ROLE_PREFIX)) {
+                        user.getRoles().add(role.substring(RT2_ROLE_PREFIX.length()));
+                    }
+                }
+                
+                convertRoles(user, true);
+            }
+            
+            LOG.info("PERMISSION_CONVERT_ADDED_GROUPS: " + PERMISSION_CONVERT_ADDED_GROUPS.size());
+            LOG.info("PERMISSION_CONVERT_NUMBER_USERS_CONVERTED: " + PERMISSION_CONVERT_NUMBER_USERS_CONVERTED);
+            LOG.info("PERMISSION_CONVERT_NUMBER_USERS_PREVIOUSLY_CONVERTED: " + PERMISSION_CONVERT_NUMBER_USERS_PREVIOUSLY_CONVERTED);
+            LOG.info("PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_ADDED: " + PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_ADDED);
+            LOG.info("PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED: " + PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED);
+            LOG.info("PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED_WITHOUT_ADD: " + PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED_WITHOUT_ADD);
+            
+            final List<String> results = new ArrayList<>();
+            results.add("PERMISSION_CONVERT_ADDED_GROUPS: " + PERMISSION_CONVERT_ADDED_GROUPS.size());
+            results.add("PERMISSION_CONVERT_NUMBER_USERS_CONVERTED: " + PERMISSION_CONVERT_NUMBER_USERS_CONVERTED);
+            results.add("PERMISSION_CONVERT_NUMBER_USERS_PREVIOUSLY_CONVERTED: " + PERMISSION_CONVERT_NUMBER_USERS_PREVIOUSLY_CONVERTED);
+            results.add("PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_ADDED: " + PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_ADDED);
+            results.add("PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED: " + PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED);
+            results.add("PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED_WITHOUT_ADD: " + PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED_WITHOUT_ADD);
+            
+            return ModelUtility.toJson(results);
+        } else {
+            throw new Exception("There was a problem: " + response.statusCode());
+        }
+    }
+        
+        /**
+         * TODO - REMOVE AFTER PERMISSIONS CONVERTED.
+         *
+         * @param user The user
+         * @param removeOldMembeships should old permission style memberships be removed
+         * @throws Exception the exception
+         */
+        private void convertRoles(final User user, final boolean removeOldMembeships) throws Exception {
 
         boolean needToConvert = true;
             
@@ -112,9 +266,16 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 
             if (role.split("-").length == 4) {
                 
+                PERMISSION_CONVERT_NUMBER_USERS_PREVIOUSLY_CONVERTED++;
                 needToConvert = false;
                 break;
             }
+        }
+        
+        if (needToConvert) {
+            
+            PERMISSION_CONVERT_NUMBER_USERS_CONVERTED++;
+            LOG.info("PERMISSION CLEANUP - Converting user: " + user.getUserName());
         }
         
         try (final TerminologyService service = new TerminologyService()) {
@@ -170,13 +331,34 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
                                 }
                             }
                             
-                            CrowdAPIClient.addGroup(organizationName, originalRoleParts[0], originalRoleParts[1], groupDescription, false, false);
+                            final String crowdOrganizationName = CrowdGroupNameAlgorithm.getOrganizationString(organizationName);
+                            final String newGroupName = crowdOrganizationName + "-" + originalRoleParts[0] + "-" + originalRoleParts[1];
+                            
+                            if (!PERMISSION_CONVERT_ADDED_GROUPS.contains(newGroupName)) {
+                                
+                                LOG.info("    PERMISSION CLEANUP - Adding Group: rt2-" + crowdOrganizationName + "-" + originalRoleParts[0] + "-" + originalRoleParts[1]);
+                                //CrowdAPIClient.addGroup(organizationName, originalRoleParts[0], originalRoleParts[1], groupDescription, false, false);
+                                PERMISSION_CONVERT_ADDED_GROUPS.add(newGroupName);
+                            }
                             
                             final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(organizationName, originalRoleParts[0], originalRoleParts[1], originalRoleParts[2]);
-                            CrowdAPIClient.addMembership(groupName, user.getUserName());
+                            LOG.info("    PERMISSION CLEANUP - Adding membership: " + groupName);
+                            //CrowdAPIClient.addMembership(groupName, user.getUserName());
+                            PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_ADDED++;
                             
                             // add the new role to the user object
-                            user.getRoles().add(CrowdGroupNameAlgorithm.getOrganizationString(organizationName) + "-" + role);
+                            user.getRoles().add(crowdOrganizationName + "-" + role);
+                            
+                        } else {
+                            PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED_WITHOUT_ADD++;
+                        }
+                        
+                        // if we are removing old memberships do it now
+                        if (removeOldMembeships) {
+                            
+                            LOG.info("    PERMISSION CLEANUP - removing membership: rt2-" + role);
+                            //CrowdAPIClient.deleteMembership("rt2-" + role, user.getUserName());
+                            PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED++;
                         }
                     }
                     
@@ -186,6 +368,7 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
             }
         }
         
+        LOG.info("PERMISSION CLEANUP - **** USER: " + user.getUserName() + " NUMBER ROLES: " + user.getRoles().size());
     }
     
     /**
