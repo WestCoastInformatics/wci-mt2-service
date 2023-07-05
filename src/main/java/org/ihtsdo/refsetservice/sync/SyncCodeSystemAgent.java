@@ -125,6 +125,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
                         s.append("inactive");
                         break;
                     case IGNORED_PER_FILE_EDITION:
+                        // TODO: Update to be based on maintainerType
                         s.append("listed in ignoredCodeSystems.txt");
                         break;
                     case TYPE_THREE_EDITION:

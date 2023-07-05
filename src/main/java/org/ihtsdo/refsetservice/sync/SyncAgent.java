@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
+import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.util.SyncDatabaseHandler;
 import org.ihtsdo.refsetservice.sync.util.SyncStatistics;
@@ -100,6 +101,54 @@ public abstract class SyncAgent {
 
     /** The Constant ADMIN_USERNAMES. */
     protected static final Set<String> ADMIN_USERNAMES = new HashSet<>();
+
+    /**
+     * Sync.
+     *
+     * @param service the service
+     * @throws Exception the exception
+     */
+    // Call when launching a sync service were launching sync is secondary i.e., resetRefset
+    public static void sync(final TerminologyService service) throws Exception {
+
+        final Date startOperationStartTime = new Date();
+
+        initialize(service);
+
+        LOG.info("Starting Syncing of Users, Projects, Code System, Branches, and Refsets from Termserver");
+
+        service.add(AuditEntryHelper.syncBeginEntry(startOperationStartTime));
+
+        // Only identify branches on filtered code systems and on runShortSync value
+        LOG.info("Running sync on organizations & editions.");
+        SyncAgent agent = new SyncCodeSystemAgent();
+        agent.syncComponent(service);
+
+        if (isCleanDatabase(service)) {
+            // If first time processing, then and only then update users, teams, and projects based on crowd.
+            LOG.info("Running sync on an empty database. Thus add users to orgs, users to admin teams, and new projects");
+
+            agent = new SyncCrowdAgent();
+            agent.syncComponent(service);
+        }
+
+        // Find all refsets from filtered branches
+        LOG.info("Running sync on refsets.");
+        agent = new SyncRefsetAgent();
+        agent.syncComponent(service);
+
+        // Post processing
+
+        LOG.info(STATISTICS.printStatistics());
+        
+        // TODO: Replace
+        // utilities.emailSyncResults(service);
+
+        final long processingMinutes = utilities.getProcessingMinutes("FULL", startOperationStartTime);
+        service.add(AuditEntryHelper.syncFinishEntry(new Date(), processingMinutes));
+
+        LOG.info("Completed Syncing with Termserver");
+    }
 
     /**
      * @return the utilities
@@ -228,42 +277,8 @@ public abstract class SyncAgent {
 
     }
 
-    /**
-     * Sync.
-     *
-     * @param service the service
-     * @throws Exception the exception
-     */
-    // Call when launching a sync service were launching sync is secondary i.e., resetRefset
-    public static void sync(final TerminologyService service) throws Exception {
-
-        final Date startOperationStartTime = new Date();
-
-        initialize(service);
-
-        LOG.info("Starting Syncing of Users, Projects, Code System, Branches, and Refsets from Termserver");
-
-        service.add(AuditEntryHelper.syncBeginEntry(startOperationStartTime));
-
-        // Only identify branches on filtered code systems and on runShortSync value
-        SyncAgent agent = new SyncCodeSystemAgent();
-        agent.syncComponent(service);
-
-        agent = new SyncCrowdAgent();
-        agent.syncComponent(service);
-
-        // Find all refsets from filtered branches
-        agent = new SyncRefsetAgent();
-        agent.syncComponent(service);
-
-        // Post processing
-        // utilities.emailSyncResults(service);
-
-        LOG.info(STATISTICS.printStatistics());
-        LOG.info("Completed Syncing with Termserver");
-
-        final long processingMinutes = utilities.getProcessingMinutes("FULL", startOperationStartTime);
-        service.add(AuditEntryHelper.syncFinishEntry(new Date(), processingMinutes));
+    private static boolean isCleanDatabase(TerminologyService service) throws Exception {
+        return service.getAll(Project.class).isEmpty();
     }
 
     /**

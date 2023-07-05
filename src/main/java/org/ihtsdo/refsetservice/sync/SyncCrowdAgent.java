@@ -65,19 +65,13 @@ public class SyncCrowdAgent extends SyncAgent {
         // EditionId to Rules
         final Map<String, Set<String>> filteredEditionRulesMap = identifyEditionRules(service, crowdRulesMembersMap.keySet());
 
-        // If first time processing, then and only then update users, teams, and projects based on crowd.
-        if (service.getAll(Project.class).isEmpty()) {
+        // TODO: Handle Remove case?
+        assignUsersToOrganizations(service, crowdRulesMembersMap, userMap, filteredEditionRulesMap);
 
-            LOG.info("RUnning sync on an empty database. Thus add users to orgs, users to admin teams, and new projects");
+        // TODO: Handle Remove case?
+        assignUsersToAdminTeams(service, userMap, filteredEditionRulesMap);
 
-            // TODO: Handle Remove case?
-            assignUsersToOrganizations(service, crowdRulesMembersMap, userMap, filteredEditionRulesMap);
-
-            // TODO: Handle Remove case?
-            assignUsersToAdminTeams(service, userMap, filteredEditionRulesMap);
-
-            addNewProjects(service, crowdRulesMembersMap, userMap, filteredEditionRulesMap);
-        }
+        addNewProjects(service, crowdRulesMembersMap, userMap, filteredEditionRulesMap);
 
         LOG.info("Finished syncing SyncCrowdAgent");
     }
