@@ -917,7 +917,8 @@ public final class IndexUtility {
         int matchIndexCounter = 0;
 
         // remove specific fields that should not have wildcards applied
-        stringFieldNames.removeAll(Arrays.asList("editionShortName", "editionBranch"));
+        stringFieldNames
+            .removeAll(Arrays.asList("editionShortName", "editionBranch", "id", "organizationId", "projectId", "editBranchId", "refsetBranchId", "moduleId"));
 
         while (regexMatcher.find()) {
 

@@ -93,6 +93,10 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     @Transient
     private List<User> memberList;
 
+    /** team id and name. */
+    @Transient
+    private Set<IdName> teamDetails;
+
     /**
      * Instantiates an empty {@link Project}.
      */
@@ -421,6 +425,32 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
         this.memberList = memberList;
     }
 
+    /**
+     * Returns the team details.
+     *
+     * @return the team details
+     */
+    @JsonGetter()
+    public Set<IdName> getTeamDetails() {
+
+        if (teamDetails == null) {
+
+            teamDetails = new HashSet<>();
+        }
+
+        return teamDetails;
+    }
+
+    /**
+     * Sets the team details.
+     *
+     * @param teamDetails the team details
+     */
+    public void setTeamDetails(final Set<IdName> teamDetails) {
+
+        this.teamDetails = teamDetails;
+    }
+
     /* see superclass */
     @Override
     public int hashCode() {
@@ -570,6 +600,7 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     public void lazyInit() {
 
         // n/a
+
     }
 
     /* see superclass */
