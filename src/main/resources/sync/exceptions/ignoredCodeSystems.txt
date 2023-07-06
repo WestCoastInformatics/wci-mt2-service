@@ -14,5 +14,4 @@ SNOMEDCT-EDQM	EDQM Extension
 SNOMEDCT-WCI	WCI Testing Extension
 
 SNOMEDCT-AM	Armenian Extension
-SNOMEDCT-AT	Austrian Extension
 SNOMEDCT-VN	Vietnam Extension
