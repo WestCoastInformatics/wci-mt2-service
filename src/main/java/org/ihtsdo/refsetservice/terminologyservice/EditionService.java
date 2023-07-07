@@ -23,6 +23,7 @@ import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.SyncCodeSystemAgent.ReasonEditionSkipped;
 import org.ihtsdo.refsetservice.sync.util.SyncDatabaseHandler;
+import org.ihtsdo.refsetservice.sync.util.SyncStatistics;
 import org.ihtsdo.refsetservice.sync.util.SyncUtilities;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.IndexUtility;
@@ -164,7 +165,7 @@ public class EditionService extends BaseService {
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode organizationJsonRootNode = mapper.readTree(resultString.toString());
             final Iterator<JsonNode> organizationIterator = organizationJsonRootNode.iterator();
-            final SyncUtilities syncUtilities = new SyncUtilities(new SyncDatabaseHandler(null));
+            final SyncUtilities syncUtilities = new SyncUtilities(new SyncDatabaseHandler(null, new SyncStatistics()));
             
             while (organizationIterator.hasNext()) {
 

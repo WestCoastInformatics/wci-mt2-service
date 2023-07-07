@@ -337,13 +337,13 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
                             if (!PERMISSION_CONVERT_ADDED_GROUPS.contains(newGroupName)) {
                                 
                                 LOG.info("    PERMISSION CLEANUP - Adding Group: rt2-" + crowdOrganizationName + "-" + originalRoleParts[0] + "-" + originalRoleParts[1]);
-                                //CrowdAPIClient.addGroup(organizationName, originalRoleParts[0], originalRoleParts[1], groupDescription, false, false);
+                                CrowdAPIClient.addGroup(organizationName, originalRoleParts[0], originalRoleParts[1], groupDescription, false, false);
                                 PERMISSION_CONVERT_ADDED_GROUPS.add(newGroupName);
                             }
                             
                             final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(organizationName, originalRoleParts[0], originalRoleParts[1], originalRoleParts[2]);
                             LOG.info("    PERMISSION CLEANUP - Adding membership: " + groupName);
-                            //CrowdAPIClient.addMembership(groupName, user.getUserName());
+                            CrowdAPIClient.addMembership(groupName, user.getUserName());
                             PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_ADDED++;
                             
                             // add the new role to the user object
@@ -357,7 +357,7 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
                         if (removeOldMembeships) {
                             
                             LOG.info("    PERMISSION CLEANUP - removing membership: rt2-" + role);
-                            //CrowdAPIClient.deleteMembership("rt2-" + role, user.getUserName());
+                            CrowdAPIClient.deleteMembership("rt2-" + role, user.getUserName());
                             PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED++;
                         }
                     }
