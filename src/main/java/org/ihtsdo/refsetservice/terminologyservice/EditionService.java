@@ -135,7 +135,7 @@ public class EditionService extends BaseService {
             }
 
             if (query != null && !query.equals("")) {
-                query = IndexUtility.addWildcardsToQuery(query, Refset.class);
+                query = IndexUtility.addWildcardsToQuery(query, Edition.class);
             }
 
             final ResultList<Edition> results = service.find(query, pfs, Edition.class, null);
