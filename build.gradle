@@ -1,6 +1,6 @@
 buildscript {
   ext {
-    springBootVersion = "2.4.2"
+    springBootVersion = "2.4.3"
   }
   repositories {
     mavenLocal()
@@ -16,7 +16,7 @@ buildscript {
     classpath "org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}"
     classpath "gradle.plugin.com.github.spotbugs.snom:spotbugs-gradle-plugin:4.7.0"
     classpath "com.netflix.nebula:gradle-ospackage-plugin:8.4.1"
-    
+
   }
 }
 
@@ -30,7 +30,7 @@ repositories {
 
 // Project.version info (upgrade version when needed)
 group = "org.ihtsdo.refsetservice"
-version = "1.0.12" 
+version = "1.0.12"
 
 // Extra Properties
 ext {
@@ -38,18 +38,18 @@ ext {
 	// always use "-SNAPSHOT" for versionTag except for release commits
 	versionTag = "-SNAPSHOT"
 	versionNumber = version
-	
+
 	if (!project.hasProperty("debAppName")) {
-	
+
 		if (System.getenv("DEB_APP_NAME") != null) {
 			debAppName = System.getenv("DEB_APP_NAME")
 		} else {
 			debAppName = "snomed-refset-service"
 		}
 	}
-	
+
 	if (!project.hasProperty("buildNumber")) {
-	
+
 		if (System.getenv("BUILD_NUMBER") != null) {
 			buildNumber = "~" + System.getenv("BUILD_NUMBER")
 		} else {
@@ -58,12 +58,12 @@ ext {
 	} else {
 		buildNumber = "~" + buildNumber
 	}
-	
+
 	// ignore the build number if this is not a Snapshot version
 	if (versionTag != "-SNAPSHOT") {
 		buildNumber = ""
 	}
-	
+
 	// Parameters
 	if (!project.hasProperty("inputName")) {
     	inputName = "na"
@@ -101,7 +101,7 @@ targetCompatibility = 11
 springBoot {
     // generate file META-INF/build-info.properties during the build
     // TODO: need an explanation of why/what this is for
-    buildInfo()          
+    buildInfo()
 }
 
 configurations.all {
@@ -113,14 +113,14 @@ ospackage {
 	packageName = debAppName
 	// apply the build number to the ospackage.version
     version = versionNumber + buildNumber
-    
+
 	println '***** project.name: ' + project.name
 	println '***** project.version: ' + project.version
 	println '***** debAppName: ' + debAppName
 	println '***** versionNumber: ' + versionNumber
 	println '***** buildNumber: ' + buildNumber
 	println '***** ospackage version: ' + version
-	
+
     from('build/libs') {
 	    into "/opt/${debAppName}/"
 	    rename { String fileName ->
@@ -128,11 +128,11 @@ ospackage {
 	            fileName.replace("-${project.version}", "")
     	}
  	}
-  
+
 	from('src/debian/control') {
 		into '/DEBIAN/'
 	}
-  
+
 	link("var/log/${debAppName}", "/var/opt/${debAppName}/log")
 }
 
@@ -146,21 +146,24 @@ dependencies {
   implementation "org.springframework.boot:spring-boot-starter-web"
   implementation "org.springframework.boot:spring-boot-starter-log4j2"
   implementation "org.springframework.boot:spring-boot-devtools"
-  implementation "org.springframework.boot:spring-boot-starter-actuator"  
+  implementation "org.springframework.boot:spring-boot-starter-actuator"
   implementation "org.springframework.boot:spring-boot-starter-cache"
   implementation "org.springframework.boot:spring-boot-starter-jersey"
   implementation "org.springframework.boot:spring-boot-properties-migrator"
-  implementation "org.springframework.boot:spring-boot-starter-jdbc" 
+  implementation "org.springframework.boot:spring-boot-starter-jdbc"
   implementation "org.springframework.session:spring-session-core"
   implementation "org.springframework.session:spring-session-jdbc"
   implementation "org.springframework.security:spring-security-core"
   implementation "org.springframework.security:spring-security-web"
+  implementation "org.springframework.cloud:spring-cloud-starter-consul-config"
+  implementation "org.springframework.cloud:spring-cloud-starter-consul-discovery"
+  implementation "org.springframework.cloud:spring-cloud-starter-vault-config"
   implementation "org.springframework:spring-aop"
   implementation "org.springframework.boot:spring-boot-starter-tomcat"
   implementation "org.apache.commons:commons-lang3:3.4"
   implementation "commons-io:commons-io:2.6"
   implementation "com.google.guava:guava:30.1-jre"
-  implementation "io.springfox:springfox-boot-starter:3.0.0" 
+  implementation "io.springfox:springfox-boot-starter:3.0.0"
   implementation "io.springfox:springfox-swagger-ui:3.0.0"
   implementation "org.aspectj:aspectjweaver:1.9.2"
   implementation "org.apache.commons:commons-text:1.8"
@@ -182,7 +185,7 @@ dependencies {
   implementation "commons-cli:commons-cli:1.4"
   implementation "cglib:cglib:2.2.2"
   implementation "com.amazonaws:aws-java-sdk-s3:1.11.989"
-  
+
   // runtime only
   runtimeOnly "com.h2database:h2"
 
@@ -194,6 +197,12 @@ dependencies {
   testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:5.6.0"
 }
 
+dependencyManagement {
+  imports {
+    mavenBom "org.springframework.cloud:spring-cloud-dependencies:2020.0.3"
+
+  }
+}
 
 // SpotBugs and CheckStyle
 spotbugs {
@@ -228,7 +237,7 @@ checkstyle {
   checkstyleMain.exclude "**/package-info.java"
   checkstyleTest.exclude "**/package-info.java"
   // checkstyleIntegrationTest.exclude "**/package-info.java"
-  
+
   // end temp
   configProperties = [
     "checkstyle.cache.file"         : rootProject.file(".out/checkstyle/checkstyle.cache"),

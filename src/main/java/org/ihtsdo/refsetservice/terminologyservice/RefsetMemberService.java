@@ -48,6 +48,7 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
+import org.ihtsdo.refsetservice.model.RestException;
 
 import javax.persistence.Query;
 import javax.ws.rs.core.Response;
@@ -3194,9 +3195,15 @@ public final class RefsetMemberService {
 
             return concept;
 
+        } catch (final RestException ex) {
+
+            //throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", message);
+            throw new RestException(false, ex.getError().getStatus(), ex.getMessage(), "Could not get Reference Set children for concept " + conceptId + ".");
+
         } catch (final Exception ex) {
 
             throw new Exception("Could not get Reference Set children for concept " + conceptId + " from snowstorm: " + ex.getMessage(), ex);
+
         }
 
     }
@@ -3297,8 +3304,9 @@ public final class RefsetMemberService {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
-                throw new Exception(
-                    "call to url '" + url + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
+                LOG.error("Call to url '" + url + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
+                throw new RestException(false, response.getStatusInfo().getStatusCode(), 
+                   "Message: " + response.getStatusInfo().getReasonPhrase(), "Error looking up concept(s).");
             }
 
             final String resultString = response.readEntity(String.class);
