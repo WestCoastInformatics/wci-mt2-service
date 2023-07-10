@@ -9,7 +9,6 @@
  */
 package org.ihtsdo.refsetservice.terminologyservice;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -89,31 +88,31 @@ public class OrganizationService extends BaseService {
      * @throws Exception the exception
      */
     public static Organization createOrganization(final TerminologyService service, final User user, final Organization organization) throws Exception {
-  
+
         // if this is an affiliate org being created any logged in user can create it
         if (organization.isAffiliate()) {
-            
+
             if (user.getUserName().equals(SecurityService.GUEST_USERNAME)) {
-                
+
                 final String message = "User does not have permission to perform this Organization action.";
                 LOG.error(message);
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, message);
             }
-        } 
-        
+        }
+
         // otherwise the user must have "all_all_admin" permission
         else {
-            
+
             checkEditPermissions(user, null);
-            
+
             final String message = "These types of organizations can not be created through this tool.";
             LOG.error(message);
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, message);
         }
-        
+
         final SearchParameters organizationsParameters = new SearchParameters();
         List<Organization> organizationList = null;
-        
+
         organizationsParameters.setQuery("name:" + organization.getName());
         organizationList = OrganizationService.searchOrganizations(service, user, organizationsParameters, false).getItems();
 
@@ -144,12 +143,12 @@ public class OrganizationService extends BaseService {
 
         adminTeam = service.add(adminTeam);
         service.add(AuditEntryHelper.addTeamEntry(adminTeam));
-        
+
         // create the groups for the admin team
         if (crowdUnitTestSkip == null || !"true".equalsIgnoreCase(crowdUnitTestSkip)) {
             CrowdAPIClient.addGroup(newOrganization.getName(), "all", "all", "Organization Administrators", false, false);
         }
-        
+
         // set all the roles on the admin team
         for (final UserRole role : UserRole.getAllRoles()) {
             adminTeam = TeamService.addRoleToTeam(user, adminTeam.getId(), UserRole.getRoleString(role).toUpperCase(), true);
@@ -157,20 +156,19 @@ public class OrganizationService extends BaseService {
 
         // load the user roles onto the organization
         setRoles(user, newOrganization, newOrganization.getRoles());
-        
+
         // create the affiliated editions for the organization
         final List<Edition> editionList = EditionService.getAffiliateEditionList();
 
         for (final Edition edition : editionList) {
-            
+
             edition.setOrganization(newOrganization);
             service.add(edition);
             service.add(AuditEntryHelper.addEditionEntry(edition));
         }
-        
+
         return newOrganization;
     }
-   
 
     /**
      * Returns the organization.
@@ -306,30 +304,57 @@ public class OrganizationService extends BaseService {
         checkEditPermissions(user, organization);
 
         // inactivate projects, clear teams, and inactivate refsets
-        final ResultList<Project> orgProjects = service.find("organization.id:" + organizationId + " AND active:true", null, Project.class, null);
+        final ResultList<Edition> editions = service.find("*", null, Edition.class, null);
 
-        if (orgProjects.getItems() != null && !orgProjects.getItems().isEmpty()) {
-            for (final Project project : orgProjects.getItems()) {
-                project.setActive(false);
-                if (project.getTeams() != null) {
-                    for (final String teamId : project.getTeams()) {
-                        final Team team = service.get(teamId, Team.class);
-                        if (team != null && !team.getMembers().isEmpty()) {
-                            team.getMembers().clear();
-                            service.update(team);
+        if (editions.getItems() != null && !editions.getItems().isEmpty()) {
+
+            for (final Edition edition : editions.getItems()) {
+                if (!organizationId.equals(edition.getOrganizationId())) {
+                    continue;
+                }
+
+                final ResultList<Project> editionProjects = service.find("editionId:" + edition.getId(), null, Project.class, null);
+
+                if (editionProjects.getItems() != null && !editionProjects.getItems().isEmpty()) {
+                    for (final Project project : editionProjects.getItems()) {
+                        project.setActive(false);
+                        if (project.getTeams() != null) {
+                            for (final String teamId : project.getTeams()) {
+                                final Team team = service.get(teamId, Team.class);
+                                if (team != null && !team.getMembers().isEmpty()) {
+                                    team.setActive(false);
+                                    team.getMembers().clear();
+                                    service.update(team);
+                                }
+                            }
+                            project.getTeams().clear();
+                        }
+                        service.update(project);
+
+                        final ResultList<Refset> projRefsets = service.find("projectId:" + project.getId() + " AND active:true", null, Refset.class, null);
+                        if (projRefsets.getItems() != null && !projRefsets.getItems().isEmpty()) {
+                            for (final Refset refset : projRefsets.getItems()) {
+                                if (refset != null && !projRefsets.getItems().isEmpty()) {
+                                    refset.setActive(false);
+                                    service.update(refset);
+                                }
+                            }
                         }
                     }
                 }
-                service.update(project);
+                edition.setActive(false);
+                service.update(edition);
+            }
+        }
 
-                final ResultList<Refset> projRefsets = service.find("projectId:" + project.getId() + " AND active:true", null, Refset.class, null);
-                if (projRefsets.getItems() != null && !projRefsets.getItems().isEmpty()) {
-                    for (final Refset refset : projRefsets.getItems()) {
-                        if (refset != null && !projRefsets.getItems().isEmpty()) {
-                            refset.setActive(false);
-                            service.update(refset);
-                        }
-                    }
+        final ResultList<Team> orgTeams = service.find("organizationId: + " + organizationId + " AND active:true", null, Team.class, null);
+
+        if (orgTeams.getItems() != null && !orgTeams.getItems().isEmpty()) {
+            for (final Team team : orgTeams.getItems()) {
+                if (team != null && !team.getMembers().isEmpty()) {
+                    team.setActive(false);
+                    team.getMembers().clear();
+                    service.update(team);
                 }
             }
         }
@@ -776,7 +801,8 @@ public class OrganizationService extends BaseService {
      * @throws Exception the exception
      */
     public static boolean canUserCreateOrganizations(final User user) throws Exception {
-         return user.checkPermission(User.ROLE_ADMIN, "all", "all", null);
+
+        return user.checkPermission(User.ROLE_ADMIN, "all", "all", null);
     }
 
     /**
