@@ -67,7 +67,7 @@ public abstract class SyncAgent {
     private static Boolean isIgnoreCoreRefsets = null;
 
     /** Testing options. */
-    private static boolean testing = false;
+    private static boolean testing = true;
 
     /** The testing edition short name. */
     private static String testingEditionShortName = "SNOMEDCT-BE";
@@ -96,7 +96,8 @@ public abstract class SyncAgent {
     /** The Constant SNOMED_ADMIN_USERNAME. */
     protected static final String SNOMED_ADMIN_USERNAME = "rdavidson";
 
-    protected static final String SUPER_USER_NAME = "refset-dev";
+    private static final String SUPER_USERNAME = "refset-dev";
+    private static final String DEVELOPER_ADMIN_USERNAME = "rt2-dev-admin";
 
     /** The Constant ADMIN_USERNAMES. */
     protected static final Set<String> ADMIN_USERNAMES = new HashSet<>();
@@ -119,8 +120,6 @@ public abstract class SyncAgent {
             isProductionSystem = runForProduction;
             isIgnoreCoreRefsets = ignoreCoreRefsets;
         }
-        
-        isIgnoreCoreRefsets = true;
         
         sync(service);
 
@@ -302,7 +301,8 @@ public abstract class SyncAgent {
         dbHandler.setUtilities(utilities);
 
         ADMIN_USERNAMES.add(SNOMED_ADMIN_USERNAME);
-        ADMIN_USERNAMES.add(SUPER_USER_NAME);
+        ADMIN_USERNAMES.add(SUPER_USERNAME);
+        ADMIN_USERNAMES.add(DEVELOPER_ADMIN_USERNAME);
     }
 
     /**

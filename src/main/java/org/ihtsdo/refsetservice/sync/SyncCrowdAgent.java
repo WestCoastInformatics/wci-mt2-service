@@ -392,11 +392,9 @@ public class SyncCrowdAgent extends SyncAgent {
         final Map<String, Set<String>> crowdEditionProjectsMap = new HashMap<>();
 
         final List<Edition> dbEditions = readDbAllEditions(service);
-        LOG.debug("FFF1 {}", dbEditions);
 
         // Sort crowdProjects by edition/groupName/Set<Role>
         for (final String group : crowdGroups) {
-            LOG.debug("FFF2 {}", group);
 
             if (isTesting() && getTestingEditionShortName() != null && !getTestingEditionShortName().isEmpty()
                     && !group.startsWith("rt2-" + getEditionShortNameToEdition(getDeveloperTestingEditionShortName()) + "-")) {
@@ -406,7 +404,6 @@ public class SyncCrowdAgent extends SyncAgent {
             final String[] groupCoordinates = group.split("-");
 
             final String editionShortName = groupCoordinates[EDITION_SHORTNAME];
-            LOG.debug("FFF3 {}", editionShortName);
 
             // Specific edition specified
             // Identify crowd projects & edition's projectss in DB (via Org)
@@ -420,7 +417,6 @@ public class SyncCrowdAgent extends SyncAgent {
                 }
 
                 final String crowdProject = groupCoordinates[PROJECT_NAME];
-                LOG.debug("FFF4 {}", crowdProject);
                 crowdEditionProjectsMap.get(editions.iterator().next().getId()).add(crowdProject);
             } else if (getUtilities().getPropertyReader().getCodeSystemsToIgnore().stream().noneMatch(s -> editionShortName.equals(getEditionShortNameToEdition(s)))) {
                 // Group does not reference an ignored code system
