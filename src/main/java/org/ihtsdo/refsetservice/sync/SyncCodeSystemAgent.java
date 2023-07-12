@@ -28,7 +28,6 @@ import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.UserRole;
-import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
@@ -122,6 +121,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
                     organizationToInactivate =
                             OrganizationService.removeUserFromOrganization(service, SecurityService.getUserFromSession(), organizationUser.getId(), organizationToInactivate.getId());
                 }
+
             }
         }
     }

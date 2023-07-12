@@ -613,7 +613,7 @@ public class SyncUtilities {
         if (items.isEmpty()) {
             throw new Exception("Cannot find an element to matching value: " + matchingValueDescription);
         } else {
-            throw new Exception("Found multiple elements with same matching value: " + matchingValueDescription);
+            throw new Exception("Found multiple elements with same matching value: " + matchingValueDescription + " has items:  " + items);
         }
     }
 
@@ -635,7 +635,7 @@ public class SyncUtilities {
             if (isInternationalEdition(editionShortName)) {
 
                 codeSystemType = "Managed Service";
-                
+
             } else {
 
                 LOG.info("{} edition is missing a maintainerType {}", codeSystem, editionShortName);

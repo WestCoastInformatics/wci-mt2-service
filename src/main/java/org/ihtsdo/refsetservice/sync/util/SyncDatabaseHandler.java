@@ -9,6 +9,7 @@
  */
 package org.ihtsdo.refsetservice.sync.util;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -52,6 +53,8 @@ public class SyncDatabaseHandler {
     private SyncUtilities utilities;
 
     private SyncStatistics STATISTICS;
+
+    final SimpleDateFormat sdfPrintDate = new SimpleDateFormat(utilities.getIsoDateTimeFormat());
 
     /**
      * Instantiates a {@link SyncDatabaseHandler} from the specified parameters.
@@ -245,11 +248,11 @@ public class SyncDatabaseHandler {
 
             STATISTICS.incrementRefsetVersionsAdded();
 
-            LOG.info("Adding new Refset-Version Pair for : " + newRefset.getId() + " (" + newRefset.getName() + ") on: " + newRefset.getVersionDate());
+            LOG.info("Adding new Refset-Version Pair for : " + newRefset.getId() + " (" + newRefset.getName() + ") on: " + sdfPrintDate.format(newRefset.getVersionDate()));
 
             return newRefset;
         } catch (Exception e) {
-            LOG.error("Failed to add refset: " + name + " (" + versionDate + ") " + " with Exception --> " + e.getMessage());
+            LOG.error("Failed to add refset: " + name + " (" + sdfPrintDate.format(versionDate) + ") " + " with Exception --> " + e.getMessage());
 
             e.printStackTrace();
 
@@ -368,7 +371,7 @@ public class SyncDatabaseHandler {
             }
 
         } catch (Exception e) {
-            LOG.error("Failed to add WCI refset: " + name + " (" + versionDate + ") with Exception --> " + e.getMessage());
+            LOG.error("Failed to add WCI refset: " + name + " (" + sdfPrintDate.format(versionDate + ") with Exception --> " + e.getMessage()));
 
             e.printStackTrace();
 
@@ -593,12 +596,12 @@ public class SyncDatabaseHandler {
 
             service.add(AuditEntryHelper.updateRefsetVersionEntry(updatedRefset));
 
-            LOG.info("Updated Refset-Version Pair for : " + updatedRefset.getId() + " (" + updatedRefset.getName() + ") on: " + updatedRefset.getVersionDate());
+            LOG.info("Updated Refset-Version Pair for : " + updatedRefset.getId() + " (" + updatedRefset.getName() + ") on: " + sdfPrintDate.format(updatedRefset.getVersionDate()));
 
             return updatedRefset;
 
         } catch (Exception e) {
-            LOG.error("Failed to update refset: " + refset.getName() + " (" + refset.getVersionDate() + ") with Exception --> " + e.getMessage());
+            LOG.error("Failed to update refset: " + refset.getName() + " (" + sdfPrintDate.format(refset.getVersionDate() + ") with Exception --> " + e.getMessage()));
 
             e.printStackTrace();
 
@@ -638,7 +641,7 @@ public class SyncDatabaseHandler {
             STATISTICS.setRefsetVersionsModified(STATISTICS.getRefsetVersionsModified() + refsets.size());
 
             StringBuffer updatedRefsetInfo = new StringBuffer();
-            updatedRefsets.stream().forEach(r -> updatedRefsetInfo.append("Pair Added: " + r.getName() + " - " + r.getVersionDate() + ", "));
+            updatedRefsets.stream().forEach(r -> updatedRefsetInfo.append("Pair Added: " + r.getName() + " - " + sdfPrintDate.format(r.getVersionDate() + ", ")));
 
             LOG.info("Updated multiple refset versions: " + updatedRefsetInfo.toString());
             service.add(AuditEntryHelper.updateMultipleRefsetVersionsEntry("updated " + refsets.size() + " refset/version pairs."));
@@ -683,11 +686,11 @@ public class SyncDatabaseHandler {
 
             service.add(AuditEntryHelper.changeRefsetStatusEntry(updatedRefset));
 
-            LOG.info("Updated status of refset version: " + updatedRefset.getId() + "  (" + updatedRefset.getName() + ") " + updatedRefset.getVersionDate());
+            LOG.info("Updated status of refset version: " + updatedRefset.getId() + "  (" + updatedRefset.getName() + ") " + sdfPrintDate.format(updatedRefset.getVersionDate()));
 
             return updatedRefset;
         } catch (Exception e) {
-            LOG.error("Failed to update status of refset: " + refset.getName() + " (" + refset.getVersionDate() + ") to " + isActive + " with Exception --> " + e.getMessage());
+            LOG.error("Failed to update status of refset: " + refset.getName() + " (" + sdfPrintDate.format(refset.getVersionDate() + ") to " + isActive + " with Exception --> " + e.getMessage()));
 
             e.printStackTrace();
 
@@ -709,12 +712,13 @@ public class SyncDatabaseHandler {
 
         try {
             final List<Refset> allRefsets = service.getAll(Refset.class);
+
             final Stream<Refset> refsetStream = allRefsets.stream().filter(r -> r.getRefsetId().equals(refsetId) && r.getVersionDate().getTime() == versionDate);
-            final Refset matchingRefset = (Refset) utilities.validateMatches(refsetStream, refsetId + " / " + versionDate);
+            final Refset matchingRefset = (Refset) utilities.validateMatches(refsetStream, refsetId + " / " + sdfPrintDate.format(versionDate));
 
             return updateRefset(service, matchingRefset);
         } catch (Exception e) {
-            LOG.error("Failed to update status of refset version: " + refsetId + " (" + versionDate + ") to " + isActive + " with Exception --> " + e.getMessage());
+            LOG.error("Failed to update status of refset version: " + refsetId + " (" + sdfPrintDate.format(new Date(versionDate)) + ") to " + isActive + " with Exception --> " + e.getMessage());
 
             e.printStackTrace();
 
@@ -873,8 +877,8 @@ public class SyncDatabaseHandler {
                     STATISTICS.incrementRefsetVersionsReactivated();
                 }
 
-                LOG.info("Updated refset version status: " + updatedRefsetVersion.getId() + " to " + isActive + "  (" + updatedRefsetVersion.getName() + " / " + updatedRefsetVersion.getVersionDate()
-                        + ") ");
+                LOG.info("Updated refset version status: " + updatedRefsetVersion.getId() + " to " + isActive + "  (" + updatedRefsetVersion.getName() + " / "
+                        + sdfPrintDate.format(updatedRefsetVersion.getVersionDate()) + ") ");
 
                 updatedRefsetVersions.add(updatedRefsetVersion);
             }

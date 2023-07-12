@@ -642,6 +642,7 @@ public class SyncRefsetAgent extends SyncAgent {
             if (versionDate < JAN_FIRST_2016) {
                 continue;
             }
+
             final Iterator<JsonNode> refsetIterator = getTermserverRefsetVersionMembers(edition.getName(), edition.getBranch(), termserverVersionBranchMap.get(versionDate), versionDate);
 
             while (refsetIterator != null && refsetIterator.hasNext()) {
@@ -1168,17 +1169,21 @@ public class SyncRefsetAgent extends SyncAgent {
 
             throw new Exception("Getting unexpected Refset info from node: " + refsetNode.toString());
         }
+
         final String refsetId = refsetNode.get("conceptId").asText();
 
+        // Though core refsets show up in extensions, ignore them
         if (!getUtilities().isInternationalEdition(shortName) && getUtilities().getCoreRefsets().contains(refsetId)) {
             return null;
         }
 
+        // Ignored refsets based on # of members
         if (getUtilities().getPropertyReader().getRefsetsToIgnore().contains(refsetId)) {
             LOG.info("Found refsetId: " + refsetId + ", but will not add it per property file refsetsToIgnore.txt");
             return null;
         }
 
+        // Return if not testing or is testing & (refest is testingRefset OR is testingRefset is null/empty)
         if (!isTesting() || (isTesting() && (getTestingRefset() == null || getTestingRefset().isEmpty()) || refsetId.equals(getTestingRefset()))) {
             return refsetNode;
         }
