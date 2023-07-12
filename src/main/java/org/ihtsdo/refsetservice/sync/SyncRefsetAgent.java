@@ -118,21 +118,23 @@ public class SyncRefsetAgent extends SyncAgent {
 
         // Determine new, inactivated, and existing refsets (Based on refsetId and version/branch info)
         // Determine and create new refsets (where db versions are needed). These are identified by those not in active nor in inactive DB refsets)
-        final List<String> addedRefsetIds = termserverRefsetIds.stream()
+        final List<String> addedRefsetSctIds = termserverRefsetIds.stream()
                 .filter(refsetId -> !dbActiveRefsetIdToVersionRefsetMap.containsKey(refsetId) && !dbInactiveRefsetIdToVersionRefsetMap.containsKey(refsetId)).collect(Collectors.toList());
 
-        addMultipleRefsets(service, addedRefsetIds);
-
-        addedRefsetIds.stream().filter(refsetId -> termserverRefsetIdToRefsetVersionsDataMap.containsKey(refsetId))
+        addMultipleRefsets(service, addedRefsetSctIds);
+        STATISTICS.setRefsetIdsAdded(addedRefsetSctIds.size());
+        
+        addedRefsetSctIds.stream().filter(refsetId -> termserverRefsetIdToRefsetVersionsDataMap.containsKey(refsetId))
                 .forEach(refsetId -> newlyCreatedAndUnchangedRefsetToVersionsMap.put(refsetId, termserverRefsetIdToRefsetVersionsDataMap.get(refsetId).keySet()));
 
         // Activate previously inactivated refsets. Note: Will log and update stats after remove those that were activatedAndModified
-        final List<String> activatedRefsetIds = termserverRefsetIds.stream()
+        final List<String> activatedRefsetSctIds = termserverRefsetIds.stream()
                 .filter(refsetId -> dbInactiveRefsetIdToVersionRefsetMap.containsKey(refsetId) && (!dbActiveRefsetIdToVersionRefsetMap.containsKey(refsetId)
                         || (dbActiveRefsetIdToVersionRefsetMap.get(refsetId).keySet().stream().noneMatch(version -> dbActiveRefsetIdToVersionRefsetMap.get(refsetId).get(version).isActive()))))
                 .collect(Collectors.toList());
 
-        activatedRefsetIds.stream().forEach(refsetId -> getDbHandler().updateRefsetStatusAllVersions(service, refsetId, true));
+        activatedRefsetSctIds.stream().forEach(refsetId -> getDbHandler().updateRefsetStatusAllVersions(service, refsetId, true));
+        STATISTICS.setRefsetIdsActivated(activatedRefsetSctIds.size());
 
         // Inactivate active DB refsets that are not in termserver
         final Map<String, Set<Long>> inactivatedRefsetIds = new HashMap<>();
@@ -164,13 +166,14 @@ public class SyncRefsetAgent extends SyncAgent {
 
         inactivatedRefsetIds.keySet().stream()
                 .forEach(refsetId -> inactivatedRefsetIds.get(refsetId).stream().forEach(version -> getDbHandler().updateRefsetVersionStatus(service, refsetId, version, false)));
+        STATISTICS.setRefsetIdsInactivated(inactivatedRefsetIds.size());
 
         // Determine refsetIds that were just activated to see if there are any other changes necessary
         final List<String> activatedAndModifiedRefsetIds = new ArrayList<>();
 
         final List<Refset> dbRefsets = getAllPublishedRefsets(service);
 
-        for (final String refsetId : activatedRefsetIds) {
+        for (final String refsetId : activatedRefsetSctIds) {
 
             final List<Long> activatedVersionDates = new ArrayList<>(termserverRefsetIdToRefsetVersionsDataMap.get(refsetId).keySet());
             java.util.Collections.sort(activatedVersionDates);
@@ -185,9 +188,9 @@ public class SyncRefsetAgent extends SyncAgent {
         }
 
         // Finalize those refset versions that were only activated (and not further modified)
-        activatedAndModifiedRefsetIds.stream().forEach(n -> activatedRefsetIds.remove(n));
+        activatedAndModifiedRefsetIds.stream().forEach(n -> activatedRefsetSctIds.remove(n));
 
-        addedOrInactivatedRefsetIds.addAll(addedRefsetIds);
+        addedOrInactivatedRefsetIds.addAll(addedRefsetSctIds);
         addedOrInactivatedRefsetIds.addAll(inactivatedRefsetIds.keySet());
 
         return addedOrInactivatedRefsetIds;

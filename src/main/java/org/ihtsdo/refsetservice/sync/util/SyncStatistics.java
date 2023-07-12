@@ -119,15 +119,15 @@ public class SyncStatistics {
         buf.append("*** EDITIONS --> Added: " + editionsAdded + " / Inactivated: " + editionsInactivated + " / Activated: " + editionsReactivated + " / Modified: " + editionsModified
                 + System.getProperty("line.separator"));
 
-        buf.append("*** EDITIONS to ORGANIZATION MAP --> Changes: " + editionOrganizationMapChanged + System.getProperty("line.separator"));
+        buf.append("*** Reassignment of editions-to-organization map --> Changes: " + editionOrganizationMapChanged + System.getProperty("line.separator"));
         buf.append(System.getProperty("line.separator"));
 
         // Refsets
         buf.append("*** REFSET FULLY NEW, INACTIVATED, or (RE)ACTIVATED ON ALL VERSIONS (" + refsetIdsSynced + " Synced" + ") --> Added: " + refsetIdsAdded + " / Inactivated: " + refsetIdsInactivated
                 + " / Activated: " + refsetIdsActivated + System.getProperty("line.separator"));
 
-        buf.append("*** REFSET VERSIONs (" + refsetVersionsSynced + " Synced" + ") --> Added: " + refsetVersionsAdded + " / Inactivated: " + refsetVersionsInactivated + " / Modified: "
-                + refsetVersionsModified + System.getProperty("line.separator"));
+        buf.append("*** REFSET VERSIONs (" + refsetVersionsSynced + " Synced" + ") --> Added: " + refsetVersionsAdded + " / Inactivated: " + refsetVersionsInactivated + " / Activated: "
+                + refsetVersionsActivated + " / Modified: " + refsetVersionsModified + System.getProperty("line.separator"));
         buf.append(System.getProperty("line.separator"));
 
         // Othera
@@ -421,15 +421,15 @@ public class SyncStatistics {
         this.organizationsReactivated = organizationsActivated;
     }
 
+    // Editions
     /**
      * Sets the editions added.
      *
      * @param val the editions added
      */
-    // Editions
     public void setEditionsAdded(final int val) {
 
-        editionsAdded = val;
+        this.editionsAdded = val;
     }
 
     /**
@@ -463,15 +463,15 @@ public class SyncStatistics {
         editionsModified = val;
     }
 
+    // Refset Ids
     /**
      * Sets the refset ids added.
      *
      * @param val the refset ids added
      */
-    // Refset Ids
     public void setRefsetIdsAdded(final int val) {
 
-        refsetIdsAdded = val;
+        this.refsetIdsAdded = val;
     }
 
     /**
@@ -479,9 +479,9 @@ public class SyncStatistics {
      *
      * @param val the refset version pairs inactivated
      */
-    public void setRefsetVersionPairsInactivated(final int val) {
+    public void setRefsetIdsInactivated(final int val) {
 
-        refsetIdsInactivated = val;
+        this.refsetIdsInactivated = val;
     }
 
     /**
@@ -504,12 +504,12 @@ public class SyncStatistics {
         this.refsetIdsSynced = val;
     }
 
+    // Refset Version Pairs
     /**
      * Sets the refset versions added.
      *
      * @param val the refset versions added
      */
-    // Refset Version Pairs
     public void setRefsetVersionsAdded(final int val) {
 
         refsetVersionsAdded = val;
@@ -565,6 +565,7 @@ public class SyncStatistics {
         this.refsetVersionsModified = val;
     }
 
+    // Increments
     /**
      * Increment refset versions synced.
      */
@@ -576,7 +577,6 @@ public class SyncStatistics {
     /**
      * Increment edition organization map changed.
      */
-    // Increments
     public void incrementEditionOrganizationMapChanged() {
 
         editionOrganizationMapChanged++;
@@ -637,6 +637,15 @@ public class SyncStatistics {
     public void incrementProjectsAdded() {
 
         projectsAdded++;
+
+    }
+
+    /**
+     * Increment projects added.
+     */
+    public void incrementTeamsAdded() {
+
+        teamsAdded++;
 
     }
 
