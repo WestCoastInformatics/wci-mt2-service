@@ -67,7 +67,7 @@ public abstract class SyncAgent {
     private static Boolean isIgnoreCoreRefsets = null;
 
     /** Testing options. */
-    private static boolean testing = true;
+    private static boolean testing = false;
 
     /** The testing edition short name. */
     private static String testingEditionShortName = "SNOMEDCT-BE";
@@ -97,6 +97,7 @@ public abstract class SyncAgent {
     protected static final String SNOMED_ADMIN_USERNAME = "rdavidson";
 
     private static final String SUPER_USERNAME = "refset-dev";
+
     private static final String DEVELOPER_ADMIN_USERNAME = "rt2-dev-admin";
 
     /** The Constant ADMIN_USERNAMES. */
@@ -120,7 +121,7 @@ public abstract class SyncAgent {
             isProductionSystem = runForProduction;
             isIgnoreCoreRefsets = ignoreCoreRefsets;
         }
-        
+
         sync(service);
 
     }
@@ -156,9 +157,9 @@ public abstract class SyncAgent {
         }
 
         // Find all refsets from filtered branches
-        // LOG.info("Running sync on refsets.");
-        // agent = new SyncRefsetAgent();
-        // agent.syncComponent(service);
+        LOG.info("Running sync on refsets.");
+        agent = new SyncRefsetAgent();
+        agent.syncComponent(service);
 
         // Post processing
         LOG.info(STATISTICS.printStatistics());
