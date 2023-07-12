@@ -133,7 +133,6 @@ public class SyncDatabaseHandler {
             final Organization organization = (Organization) utilities.validateMatches(organizationStream, organizationName);
 
             // Create a single Admin team per Edition when we first discover it
-            LOG.debug("DDD - Create edition adminOrg");
             createAdminOrganizationTeam(service, organization);
 
             final String defaultLanguageCode = utilities.identifyDefaultLanguageCode(codeSystem, editionName);
@@ -910,7 +909,7 @@ public class SyncDatabaseHandler {
 
             for (final UserRole role : UserRole.getAllRoles()) {
 
-                adminTeam = TeamService.addRoleToTeam(SecurityService.getUserFromSession(), adminTeam.getId(), UserRole.getRoleString(role));
+                adminTeam = TeamService.addRoleToTeam(SecurityService.getUserFromSession(), adminTeam.getId(), UserRole.getRoleString(role).toUpperCase());
             }
 
             return adminTeam;

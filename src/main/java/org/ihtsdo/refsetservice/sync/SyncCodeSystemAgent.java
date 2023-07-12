@@ -106,7 +106,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     private void inactivateOrganizations(TerminologyService service, List<String> organizationsToInactivate) throws Exception {
         List<Organization> activeDbOrganizations = readDbOrganizations(service).stream().filter(o -> o.isActive()).collect(Collectors.toList());
-LOG.debug("JJJ1 {} ", activeDbOrganizations);
+        LOG.debug("JJJ1 {} ", activeDbOrganizations);
         for (String organizationName : organizationsToInactivate) {
             LOG.debug("JJJ2 {} ", organizationName);
             Stream<Organization> matchingOrganizationsStream = activeDbOrganizations.stream().filter(o -> o.getName().equals(organizationName));
@@ -115,11 +115,11 @@ LOG.debug("JJJ1 {} ", activeDbOrganizations);
             LOG.debug("JJJ4 {} ", organizationToInactivate);
 
             OrganizationService.inactivateOrganization(service, SecurityService.getUserFromSession(), organizationToInactivate.getId());
-            
+
             LOG.debug("JJJ5");
         }
         LOG.debug("JJJ6");
-   }
+    }
 
     /**
      * Analyze term server code systems.
@@ -210,7 +210,6 @@ LOG.debug("JJJ1 {} ", activeDbOrganizations);
         LOG.debug("AAA2 {}", dbInactiveOrganizationNameIdMaps.keySet());
 
         FILTERED_CODE_SYSTEMS.stream().forEach(codeSystem -> {
-            termserverOrganizationNames.add(determineOrganizationName(codeSystem));
             termserverOrganizationNames.add(determineOrganizationName(codeSystem));
         });
 
@@ -361,9 +360,8 @@ LOG.debug("JJJ1 {} ", activeDbOrganizations);
 
         Organization newOrganization = targetOrganization;
 
-        LOG.info("migrating edition " + editionToMove.getName() + " from org: " + editionToMove.getOrganizationName() + "(" + editionToMove.getOrganizationId() + ") to org: " + newOrganization.getName() + "("
-                + newOrganization.getId());
-        
+        LOG.info("migrating edition " + editionToMove.getName() + " from org: " + editionToMove.getOrganizationName() + "(" + editionToMove.getOrganizationId() + ") to org: "
+                + newOrganization.getName() + "(" + newOrganization.getId());
 
         LOG.debug("bbb1a {}", editionToMove);
         LOG.debug("bbb1b {}", newOrganization);
@@ -377,7 +375,7 @@ LOG.debug("JJJ1 {} ", activeDbOrganizations);
 
         LOG.debug("GGG0a {}", existingUsers);
         LOG.debug("GGG0b {}", newOrganization.getMembers());
-        LOG.debug("GGG0c {}",  SecurityService.getUserFromSession());
+        LOG.debug("GGG0c {}", SecurityService.getUserFromSession());
         // Ensure all users in existing organization are also in target organization
         LOG.debug("GGG1 with new Organization {}  ", newOrganization);
         for (final User user : existingUsers) {
@@ -393,27 +391,19 @@ LOG.debug("JJJ1 {} ", activeDbOrganizations);
                     e.printStackTrace();
                 }
 
-                
-                // JESSE : ISSUE BEFORE BREAK: SNOMED International doesn't ahve an owner, so a deafulat one is created. Add special handling on SI to avoid this nonesense and move forward.
+                // JESSE : ISSUE BEFORE BREAK: SNOMED International doesn't ahve an owner, so a deafulat one is created. Add special handling on SI to avoid this nonesense and
+                // move forward.
             }
         }
-        LOG.debug("GGG3b {}",  SecurityService.getUserFromSession());
-/*
-        Set<User> usersToAdd = new HashSet<>();
-        // Ensure admin users are also in target organization
-        for (String username : SyncAgent.getAdminUsernames()) {
-            LOG.debug("bbb2a {}", username);
-            User user = getUtilities().getUser(service, username);
-            usersToAdd.add(user);
-            LOG.debug("bbb2b {}", user);
-            
-            if (user != null && (newOrganization.getMembers().stream().noneMatch(u -> u.getId().equals(user.getId())))) {
-                LOG.debug("bbb2c {}", user);
-                newOrganization = OrganizationService.addUserToOrganization(service, SecurityService.getUserFromSession(), newOrganization.getId(), user);
-            }
-            LOG.debug("bbb2d {}", newOrganization.getMembers());
-        }
-      */  
+        LOG.debug("GGG3b {}", SecurityService.getUserFromSession());
+        /*
+         * Set<User> usersToAdd = new HashSet<>(); // Ensure admin users are also in target organization for (String username : SyncAgent.getAdminUsernames()) {
+         * LOG.debug("bbb2a {}", username); User user = getUtilities().getUser(service, username); usersToAdd.add(user); LOG.debug("bbb2b {}", user);
+         * 
+         * if (user != null && (newOrganization.getMembers().stream().noneMatch(u -> u.getId().equals(user.getId())))) { LOG.debug("bbb2c {}", user); newOrganization =
+         * OrganizationService.addUserToOrganization(service, SecurityService.getUserFromSession(), newOrganization.getId(), user); } LOG.debug("bbb2d {}",
+         * newOrganization.getMembers()); }
+         */
 
         // Move the existing edition's teams
         LOG.debug("bbb3a {}", existingTeams);
@@ -433,7 +423,6 @@ LOG.debug("JJJ1 {} ", activeDbOrganizations);
         // TODO: Remove crowd membership in groups where org made inactive
         editionToMove.setOrganization(newOrganization);
         final Edition migratedEdition = service.update(editionToMove);
-
 
         LOG.debug("DDD2 - Finished migrating edition: " + migratedEdition.getName());
 
@@ -607,7 +596,6 @@ LOG.debug("JJJ1 {} ", activeDbOrganizations);
      * @return the string
      */
     private String determineOrganizationName(final JsonNode codeSystem) {
-
         // If owner defined, return it as organization name
         if (codeSystem.has("owner") && !codeSystem.get("owner").asText().trim().isBlank()) {
             return codeSystem.get("owner").asText();
@@ -657,31 +645,33 @@ LOG.debug("JJJ1 {} ", activeDbOrganizations);
                 final String maintainerType = getUtilities().identifyMaintainerType(codeSystem, editionShortName);
 
                 // If not testing, process all editions. Otherwise, check if edition to test
-                if (isTesting() && !isTestingEditionToProcess(editionShortName)) {
-                    ignoredReasonMap.get(ReasonEditionSkipped.WRONG_TESTING_EDITION).add(editionShortName);
-
-                } else if (codeSystem.has("active") && !codeSystem.get("active").asBoolean()) {
-                    // Skipping inactive code system
-                    ignoredReasonMap.get(ReasonEditionSkipped.INACTIVE_EDITION).add(editionShortName);
-
-                } else if (codeSystem.has("maintainerType") && MANAGED_SERVICE_CONTAINER_TYPE.equals(codeSystem.get("maintainerType").asText())) {
-                    // Skipping inactive code system
-                    ignoredReasonMap.get(ReasonEditionSkipped.NON_MANAGED_SERVICE).add(editionShortName);
-
-                } else if (getUtilities().getPropertyReader().getCodeSystemsToIgnore().contains(editionShortName)) {
-                    // Code System has been defined as to-be-ignored (either by specifying name or shortname).
-                    ignoredReasonMap.get(ReasonEditionSkipped.IGNORED_PER_FILE_EDITION).add(editionShortName);
-
-                } else if (!maintainerType.equalsIgnoreCase("Managed Service")) {
-                    // TODO: Handle Type-3 (non-Managed Service only)
-                    ignoredReasonMap.get(ReasonEditionSkipped.TYPE_THREE_EDITION).add(editionShortName);
-
-                } else {
+                if (getUtilities().isInternationalEdition(editionShortName)) {
                     FILTERED_CODE_SYSTEMS.add(codeSystem);
+                } else {
+                    if (isTesting() && !isTestingEditionToProcess(editionShortName)) {
+                        ignoredReasonMap.get(ReasonEditionSkipped.WRONG_TESTING_EDITION).add(editionShortName);
+
+                    } else if (codeSystem.has("active") && !codeSystem.get("active").asBoolean()) {
+                        // Skipping inactive code system
+                        ignoredReasonMap.get(ReasonEditionSkipped.INACTIVE_EDITION).add(editionShortName);
+
+                    } else if (!codeSystem.has("maintainerType") || !MANAGED_SERVICE_CONTAINER_TYPE.equals(codeSystem.get("maintainerType").asText())) {
+                        // Skipping inactive code system
+                        ignoredReasonMap.get(ReasonEditionSkipped.NON_MANAGED_SERVICE).add(editionShortName);
+
+                    } else if (getUtilities().getPropertyReader().getCodeSystemsToIgnore().contains(editionShortName)) {
+                        // Code System has been defined as to-be-ignored (either by specifying name or shortname).
+                        ignoredReasonMap.get(ReasonEditionSkipped.IGNORED_PER_FILE_EDITION).add(editionShortName);
+
+                    } else if (!maintainerType.equalsIgnoreCase("Managed Service")) {
+                        // TODO: Handle Type-3 (non-Managed Service only)
+                        ignoredReasonMap.get(ReasonEditionSkipped.TYPE_THREE_EDITION).add(editionShortName);
+
+                    } else {
+                        FILTERED_CODE_SYSTEMS.add(codeSystem);
+                    }
                 }
-
             }
-
         }
 
         return ignoredReasonMap;

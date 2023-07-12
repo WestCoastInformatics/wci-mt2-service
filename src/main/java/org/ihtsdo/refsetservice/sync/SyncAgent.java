@@ -67,7 +67,7 @@ public abstract class SyncAgent {
     private static Boolean isIgnoreCoreRefsets = null;
 
     /** Testing options. */
-    private static boolean testing = true;
+    private static boolean testing = false;
 
     /** The testing edition short name. */
     private static String testingEditionShortName = "SNOMEDCT-BE";
@@ -100,6 +100,31 @@ public abstract class SyncAgent {
 
     /** The Constant ADMIN_USERNAMES. */
     protected static final Set<String> ADMIN_USERNAMES = new HashSet<>();
+
+    /**
+     * Sync.
+     *
+     * @param service the service
+     * @param refsetPerVersionSync the refset per version sync
+     * @param runForProduction the run for production
+     * @param ignoreCoreRefsets the ignore core refsets
+     * @throws Exception the exception
+     */
+    // Call when launching sync
+    public static void sync(final TerminologyService service, final boolean refsetPerVersionSync, final boolean runForProduction, final boolean ignoreCoreRefsets) throws Exception {
+
+        if (isProductionSystem == null || !isProductionSystem) {
+
+            isPerVersionSync = refsetPerVersionSync;
+            isProductionSystem = runForProduction;
+            isIgnoreCoreRefsets = ignoreCoreRefsets;
+        }
+        
+        isIgnoreCoreRefsets = true;
+        
+        sync(service);
+
+    }
 
     /**
      * Sync.
@@ -250,29 +275,6 @@ public abstract class SyncAgent {
     protected static String getBranchdateformatter() {
 
         return BRANCH_DATE_FORMAT;
-    }
-
-    /**
-     * Sync.
-     *
-     * @param service the service
-     * @param refsetPerVersionSync the refset per version sync
-     * @param runForProduction the run for production
-     * @param ignoreCoreRefsets the ignore core refsets
-     * @throws Exception the exception
-     */
-    // Call when launching sync
-    public static void sync(final TerminologyService service, final boolean refsetPerVersionSync, final boolean runForProduction, final boolean ignoreCoreRefsets) throws Exception {
-
-        if (isProductionSystem == null || !isProductionSystem) {
-
-            isPerVersionSync = refsetPerVersionSync;
-            isProductionSystem = runForProduction;
-            isIgnoreCoreRefsets = ignoreCoreRefsets;
-        }
-        isIgnoreCoreRefsets = true;
-        sync(service);
-
     }
 
     private static boolean isCleanDatabase(TerminologyService service) throws Exception {

@@ -387,12 +387,12 @@ public class SyncCrowdAgent extends SyncAgent {
     // Returns a map from an editionId to a set of project names representing projects to add
     private Map<String, Set<String>> identifyCrowdEditionProjects(final TerminologyService service, final Set<String> crowdGroups) throws Exception {
 
-        LOG.debug("FFF1 {}", crowdGroups);
 
         // Organization to list of Projects
         final Map<String, Set<String>> crowdEditionProjectsMap = new HashMap<>();
 
         final List<Edition> dbEditions = readDbAllEditions(service);
+        LOG.debug("FFF1 {}", dbEditions);
 
         // Sort crowdProjects by edition/groupName/Set<Role>
         for (final String group : crowdGroups) {
@@ -406,7 +406,7 @@ public class SyncCrowdAgent extends SyncAgent {
             final String[] groupCoordinates = group.split("-");
 
             final String editionShortName = groupCoordinates[EDITION_SHORTNAME];
-            final String crowdProject = groupCoordinates[PROJECT_NAME];
+            LOG.debug("FFF3 {}", editionShortName);
 
             // Specific edition specified
             // Identify crowd projects & edition's projectss in DB (via Org)
@@ -419,9 +419,13 @@ public class SyncCrowdAgent extends SyncAgent {
                     crowdEditionProjectsMap.put(editionId, new HashSet<>());
                 }
 
+                final String crowdProject = groupCoordinates[PROJECT_NAME];
+                LOG.debug("FFF4 {}", crowdProject);
                 crowdEditionProjectsMap.get(editions.iterator().next().getId()).add(crowdProject);
             } else if (getUtilities().getPropertyReader().getCodeSystemsToIgnore().stream().noneMatch(s -> editionShortName.equals(getEditionShortNameToEdition(s)))) {
                 // Group does not reference an ignored code system
+                LOG.debug("editions.size(): " + editions.size());
+                LOG.debug("editions: " + editions);
                 LOG.error("Unexpected number of editions (expected 1) for {}: {} ", editionShortName, editions.size());
             }
         }
