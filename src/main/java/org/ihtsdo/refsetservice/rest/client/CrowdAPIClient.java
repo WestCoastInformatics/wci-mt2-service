@@ -353,6 +353,8 @@ public class CrowdAPIClient extends CrowdClientAbstract {
 
     /**
      * Returns the all crowd rule members.
+     * 
+     * As rule-to-users map
      *
      * @return the all crowd rule members
      * @throws Exception the exception
@@ -388,14 +390,14 @@ public class CrowdAPIClient extends CrowdClientAbstract {
 
                     final Element membership = (Element) membershipNode;
                     // Get the value of the group name attribute.
-                    final String projectName = membershipNode.getAttributes().getNamedItem("group").getNodeValue();
+                    final String rule = membershipNode.getAttributes().getNamedItem("group").getNodeValue();
 
-                    if (!projectName.startsWith(APP_PREFIX) || !membership.hasChildNodes()) {
+                    if (!rule.startsWith(APP_PREFIX) || !membership.hasChildNodes()) {
                         continue;
                     }
 
-                    if (!groupMemberMap.containsKey(projectName)) {
-                        groupMemberMap.put(projectName, new HashSet<>());
+                    if (!groupMemberMap.containsKey(rule)) {
+                        groupMemberMap.put(rule, new HashSet<>());
                     }
 
                     final NodeList usersList = membership.getChildNodes();
@@ -418,7 +420,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
                                     // Get the user name
                                     String userName = userNode.getAttributes().getNamedItem("name").getNodeValue();
 
-                                    groupMemberMap.get(projectName).add(userName);
+                                    groupMemberMap.get(rule).add(userName);
 
                                 }
                             }

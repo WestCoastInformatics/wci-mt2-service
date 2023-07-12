@@ -214,7 +214,7 @@ public class AuditController extends BaseController {
                         return ResponseEntity.status(HttpStatus.OK).body(null);
                     }
 
-                    final ResultList<Team> orgTeams = OrganizationService.getOrganizationTeams(service, entityId);
+                    final ResultList<Team> orgTeams = OrganizationService.getActiveOrganizationTeams(service, entityId);
                     final ResultList<Project> orgProjects = OrganizationService.getOrganizationProjects(service, entityId);
 
                     final StringBuilder additionalQuery = new StringBuilder();

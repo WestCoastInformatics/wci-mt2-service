@@ -11,6 +11,7 @@
 package org.ihtsdo.refsetservice.model;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import javax.persistence.Column;
@@ -430,6 +431,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
 
                 final String lowerCasedRole = role.toLowerCase();
                 final int indexFirstHyphen = lowerCasedRole.indexOf("-");
+
                 final String organizationPart = lowerCasedRole.substring(0, indexFirstHyphen);
                 // LOG.debug("doesUserHavePermission organizationName: " + organizationCrowdName + " ; organization part of role: " + organizationPart);
                 

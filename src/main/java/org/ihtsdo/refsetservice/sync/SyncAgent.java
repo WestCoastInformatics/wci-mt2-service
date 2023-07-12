@@ -67,15 +67,15 @@ public abstract class SyncAgent {
     private static Boolean isIgnoreCoreRefsets = null;
 
     /** Testing options. */
-    private static boolean testing = false;
+    private static boolean testing = true;
 
     /** The testing edition short name. */
-    private static String testingEditionShortName = "SNOMEDCT";
+    private static String testingEditionShortName = "SNOMEDCT-BE";
 
     /** The testing refset. */
-    private static String testingRefset = "733991000"; // Core - Dentistry (in multiple projects in RTT)
 
-    // protected static String testingRefset = null; // To test entire edition
+    protected static String testingRefset = null; // To test entire edition
+    // private static String testingRefset = "733991000"; // Core - Dentistry (in multiple projects in RTT)
     // protected static String testingRefset = "751000172100"; // 751000172100 - from Belgium
     // protected static String testingRefset = "723264001"; // 723264001 - TAGS (only one today) - from sct-core
     // protected static String testingRefset = "64641000052102"; // Tim's for ugprade testing (on Swedish)
@@ -96,8 +96,7 @@ public abstract class SyncAgent {
     /** The Constant SNOMED_ADMIN_USERNAME. */
     protected static final String SNOMED_ADMIN_USERNAME = "rdavidson";
 
-    /** The Constant DEVELOPER_ADMIN_USERNAME_PREFIX. */
-    protected static final String DEVELOPER_ADMIN_USERNAME_PREFIX = "refset-";
+    protected static final String SUPER_USER_NAME = "refset-dev";
 
     /** The Constant ADMIN_USERNAMES. */
     protected static final Set<String> ADMIN_USERNAMES = new HashSet<>();
@@ -133,14 +132,13 @@ public abstract class SyncAgent {
         }
 
         // Find all refsets from filtered branches
-        LOG.info("Running sync on refsets.");
-        agent = new SyncRefsetAgent();
-        agent.syncComponent(service);
+        // LOG.info("Running sync on refsets.");
+        // agent = new SyncRefsetAgent();
+        // agent.syncComponent(service);
 
         // Post processing
-
         LOG.info(STATISTICS.printStatistics());
-        
+
         // TODO: Replace
         // utilities.emailSyncResults(service);
 
@@ -272,7 +270,7 @@ public abstract class SyncAgent {
             isProductionSystem = runForProduction;
             isIgnoreCoreRefsets = ignoreCoreRefsets;
         }
-
+        isIgnoreCoreRefsets = true;
         sync(service);
 
     }
@@ -302,7 +300,7 @@ public abstract class SyncAgent {
         dbHandler.setUtilities(utilities);
 
         ADMIN_USERNAMES.add(SNOMED_ADMIN_USERNAME);
-        ADMIN_USERNAMES.add(DEVELOPER_ADMIN_USERNAME_PREFIX);
+        ADMIN_USERNAMES.add(SUPER_USER_NAME);
     }
 
     /**

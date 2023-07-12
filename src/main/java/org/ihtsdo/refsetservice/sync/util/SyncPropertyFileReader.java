@@ -75,6 +75,8 @@ public class SyncPropertyFileReader {
     /** The team membership resource. */
     private final ClassPathResource teamMembershipResource = new ClassPathResource("sync/initial-teams/teamMembership.txt");
 
+    private final ClassPathResource uatMigrateCleanResource = new ClassPathResource("sync/system-migration/uatProjectNameIds.txt");
+
     /** The Constant SPLIT_CHARACTER. */
     public static final String SPLIT_CHARACTER = "\t";
 
@@ -116,6 +118,8 @@ public class SyncPropertyFileReader {
 
     /** The rtt refset to effective date map. */
     private final Map<String, String> rttRefsetToEffectiveDateMap = new HashMap<>();
+
+    private final Map<String, Map<String, String>> uatEditionProjectInfo = readUatEditionProjectInfo();
 
     /** The metadata map. */
     private final Map<String, SyncPersistenceMetadata> metadataMap = new HashMap<>();
@@ -533,6 +537,42 @@ public class SyncPropertyFileReader {
     }
 
     /**
+     * Read rtt project info.
+     * @return
+     */
+    private Map<String, Map<String, String>> readUatEditionProjectInfo() {
+        final Map<String, Map<String, String>> projectInfo = new HashMap<>();
+
+        try {
+
+            final BufferedReader reader = new BufferedReader(new InputStreamReader(uatMigrateCleanResource.getInputStream()));
+
+            // crowdProjectId, projectName, editionShortName
+            String line = reader.readLine();
+
+            while (line != null && !line.isEmpty()) {
+
+                final String[] columns = line.split(SPLIT_CHARACTER);
+
+                if (!projectInfo.containsKey(columns[2])) {
+                    projectInfo.put(columns[2], new HashMap<>());
+                }
+
+                projectInfo.get(columns[2]).put(columns[0], columns[1]);
+
+                line = reader.readLine();
+            }
+
+            reader.close();
+        } catch (final IOException e) {
+
+            e.printStackTrace();
+        }
+
+        return projectInfo;
+    }
+
+    /**
      * Generate json from sql file.
      *
      * @param classPathResource the input resource
@@ -696,8 +736,7 @@ public class SyncPropertyFileReader {
                 narrative = updatedLine.substring(descStartIdx + 1, descStartIdx + descEndIdx + 1);
 
                 // Cleanup updateLine to remove ',' in narrative
-                updatedLine =
-                    updatedLine.substring(0, descStartIdx) + narrative.replaceAll(SPLIT_CHARACTER, "") + updatedLine.substring(descStartIdx + descEndIdx + 2);
+                updatedLine = updatedLine.substring(0, descStartIdx) + narrative.replaceAll(SPLIT_CHARACTER, "") + updatedLine.substring(descStartIdx + descEndIdx + 2);
             } else {
 
                 narrative = updatedLine.split(SPLIT_CHARACTER)[9];
@@ -974,5 +1013,9 @@ public class SyncPropertyFileReader {
     public Map<String, String> getProjectOrganizationMap() {
 
         return projectOrganizationMap;
+    }
+
+    public Map<String, String> getUatEditionProjectInfoMap(String editionShortName) {
+        return uatEditionProjectInfo.get(editionShortName);
     }
 }

@@ -40,6 +40,7 @@ import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
+import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -123,7 +124,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
         addMultipleRefsets(service, addedRefsetSctIds);
         STATISTICS.setRefsetIdsAdded(addedRefsetSctIds.size());
-        
+
         addedRefsetSctIds.stream().filter(refsetId -> termserverRefsetIdToRefsetVersionsDataMap.containsKey(refsetId))
                 .forEach(refsetId -> newlyCreatedAndUnchangedRefsetToVersionsMap.put(refsetId, termserverRefsetIdToRefsetVersionsDataMap.get(refsetId).keySet()));
 
@@ -927,7 +928,8 @@ public class SyncRefsetAgent extends SyncAgent {
                         final String rttProjectDescription = rttProjectInfo.get(rttProjectName);
 
                         // Create project
-                        final Project addedProject = getDbHandler().addProject(service, rttProjectName, rttProjectDescription, metadata.getEdition());
+                        final Project addedProject =
+                                getDbHandler().addProject(service, rttProjectName, rttProjectDescription, metadata.getEdition(), CrowdGroupNameAlgorithm.getProjectString(rttProjectName));
 
                         refsetProjectMap.put(metadata.getRefsetId(), addedProject);
                     }
@@ -945,6 +947,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
                     Project projectToAdd = null;
 
+                    // TODO: Handle all
                     Optional<Project> defaultProject = projects.stream().filter(p -> p.getName().equalsIgnoreCase("all") && p.getEditionId().equals(metadata.getEdition().getId())).findAny();
 
                     if (defaultProject.isEmpty()) {

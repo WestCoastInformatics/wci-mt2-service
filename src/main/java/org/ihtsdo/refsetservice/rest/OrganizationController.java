@@ -359,7 +359,7 @@ public class OrganizationController extends BaseController {
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            final ResultList<Team> orgTeams = OrganizationService.getOrganizationTeams(service, id);
+            final ResultList<Team> orgTeams = OrganizationService.getActiveOrganizationTeams(service, id);
             return new ResponseEntity<>(new ResultListTeam(orgTeams), HttpStatus.OK);
 
         } catch (final Exception e) {

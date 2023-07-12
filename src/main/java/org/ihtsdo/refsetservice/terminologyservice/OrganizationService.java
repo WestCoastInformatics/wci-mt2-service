@@ -290,7 +290,6 @@ public class OrganizationService extends BaseService {
      * @throws Exception the exception
      */
     public static Organization inactivateOrganization(final TerminologyService service, final User user, final String organizationId) throws Exception {
-
         // Find the object
         final Organization organization = getOrganization(service, user, organizationId, false);
 
@@ -443,17 +442,7 @@ public class OrganizationService extends BaseService {
      * @return the organization users
      * @throws Exception the exception
      */
-    public static ResultListUser getOrganizationUsers(final TerminologyService service, final String organizationId, final boolean includeTeams)
-        throws Exception {
-
-        final Organization organization = service.findSingle("id: " + organizationId + " AND active:true", Organization.class, null);
-
-        if (organization == null) {
-
-            final String message = "Unable to find organization for id " + organizationId + " in order to getOrganizationUsers.";
-            LOG.error(message);
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
-        }
+    public static ResultListUser getOrganizationUsers(final TerminologyService service, final Organization organization, final boolean includeTeams) throws Exception {
 
         final ResultListUser usersResultList = new ResultListUser();
         usersResultList.getItems().addAll(organization.getMembers());
@@ -495,7 +484,7 @@ public class OrganizationService extends BaseService {
      * @return the organization teams
      * @throws Exception the exception
      */
-    public static ResultList<Team> getOrganizationTeams(final TerminologyService service, final String organizationId) throws Exception {
+    public static ResultList<Team> getActiveOrganizationTeams(final TerminologyService service, final String organizationId) throws Exception {
 
         final PfsParameter pfs = new PfsParameter();
         final QueryParameter query = new QueryParameter();
@@ -514,7 +503,7 @@ public class OrganizationService extends BaseService {
      */
     public static Team getOrganizationAdminTeam(final TerminologyService service, final String organizationId) throws Exception {
 
-        final ResultList<Team> teams = getOrganizationTeams(service, organizationId);
+        final ResultList<Team> teams = getActiveOrganizationTeams(service, organizationId);
 
         for (final Team team : new ArrayList<Team>(teams.getItems())) {
 
@@ -621,13 +610,18 @@ public class OrganizationService extends BaseService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
 
-        checkEditPermissions(authUser, organization);
+        if (!organization.getMembers().contains(userToAdd)) {
 
-        organization.getMembers().add(userToAdd);
-        AuditEntryHelper.addUserToOrganizationEntry(organization, userToAdd);
+            checkEditPermissions(authUser, organization);
 
-        return service.update(organization);
+            organization.getMembers().add(userToAdd);
+            AuditEntryHelper.addUserToOrganizationEntry(organization, userToAdd);
 
+            return service.update(organization);
+
+        }
+
+        return organization;
     }
 
     /**
@@ -787,7 +781,7 @@ public class OrganizationService extends BaseService {
 
         if (!canUserEdit) {
 
-            final String message = "User does not have permission to perform this Organization action.";
+            final String message = "User " + user.getId() + " does not have permission to perform this Organization action on " + organization.getId();
             LOG.error(message);
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, message);
         }
@@ -1103,7 +1097,7 @@ public class OrganizationService extends BaseService {
                 }
 
                 // teams not associated with project that are would not be in crowd.
-                final ResultList<Team> orgTeams = OrganizationService.getOrganizationTeams(service, organizationId);
+                final ResultList<Team> orgTeams = OrganizationService.getActiveOrganizationTeams(service, organizationId);
 
                 if (orgTeams != null && orgTeams.getItems() != null) {
                     for (final Team team : orgTeams.getItems()) {
@@ -1118,5 +1112,46 @@ public class OrganizationService extends BaseService {
                 LOG.error("ERROR removing user {} from CROWD groups.", userToRemove.getUserName(), e);
             }
         }
+    }
+
+    /**
+     * Returns the organization users.
+     *
+     * @param service the Terminology Service
+     * @param organizationId the organization id
+     * @param includeTeams the include teams
+     * @return the organization users
+     * @throws Exception the exception
+     */
+    public static ResultListUser getOrganizationUsers(final TerminologyService service, final String organizationId, final boolean includeTeams) throws Exception {
+
+        final Organization organization = service.findSingle("id: " + organizationId + " AND active:true", Organization.class, null);
+
+        if (organization == null) {
+
+            final String message = "Unable to find organization for id " + organizationId + " in order to getOrganizationUsers.";
+            LOG.error(message);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
+        }
+
+        return getOrganizationUsers(service, organizationId, includeTeams);
+    }
+
+    public static ResultList<Edition> getOrganizationEditions(TerminologyService service, String organizationId) throws Exception {
+
+        final PfsParameter pfs = new PfsParameter();
+        final QueryParameter query = new QueryParameter();
+        query.setQuery("organizationId:" + organizationId);
+
+        return service.find(query, pfs, Edition.class, null);
+    }
+
+    public static ResultList<Team> getAllOrganizationTeams(TerminologyService service, Organization organization) throws Exception {
+
+        final PfsParameter pfs = new PfsParameter();
+        final QueryParameter query = new QueryParameter();
+        query.setQuery("organizationId:" + organization.getId());
+
+        return service.find(query, pfs, Team.class, null);
     }
 }

@@ -65,9 +65,8 @@ public class TeamService extends BaseService {
     }
 
     /**
-     * Creates the team. (Required are name, description, organization, primaryContactEmail and roles); Members (Users) can be included but must already exist
-     * in the application. Do not use setMemberList or setUserRoles. These are not persisted and are meant to return additional information to the user
-     * interface.
+     * Creates the team. (Required are name, description, organization, primaryContactEmail and roles); Members (Users) can be included but must already exist in the
+     * application. Do not use setMemberList or setUserRoles. These are not persisted and are meant to return additional information to the user interface.
      *
      * @param authUser the auth user
      * @param team the team
@@ -174,8 +173,7 @@ public class TeamService extends BaseService {
             if (includeMembers) {
 
                 final String systemUserList = PropertyUtility.getProperty("refset.service.system.accounts");
-                final Set<String> systemUsers =
-                    (StringUtils.isNotBlank(systemUserList)) ? new HashSet<>(Arrays.asList(systemUserList.split(","))) : new HashSet<>();
+                final Set<String> systemUsers = (StringUtils.isNotBlank(systemUserList)) ? new HashSet<>(Arrays.asList(systemUserList.split(","))) : new HashSet<>();
 
                 for (final String userId : team.getMembers()) {
 
@@ -196,7 +194,7 @@ public class TeamService extends BaseService {
                             if (teamsResultList != null && teamsResultList.getItems() != null) {
                                 user.getTeams().addAll(teamsResultList.getItems());
                             }
-                            
+
                             team.getMemberList().add(user);
                         }
 
@@ -211,8 +209,8 @@ public class TeamService extends BaseService {
     }
 
     /**
-     * Update the team. Required are name, description, organization, primaryContactEmail and roles); Members (Users) can be included but must already exist in
-     * the application. Do not use setMemberList or setUserRoles. These are not persisted and are meant to return additional information to the user interface.
+     * Update the team. Required are name, description, organization, primaryContactEmail and roles); Members (Users) can be included but must already exist in the
+     * application. Do not use setMemberList or setUserRoles. These are not persisted and are meant to return additional information to the user interface.
      *
      *
      * @param authUser the auth user
@@ -318,8 +316,8 @@ public class TeamService extends BaseService {
      * @return the list of projects
      * @throws Exception the exception
      */
-    public static ResultList<Team> searchTeams(final User user, final SearchParameters searchParameters, final boolean includeMembers,
-        final boolean onlyUsersTeams, final boolean hideOrganizationTeams) throws Exception {
+    public static ResultList<Team> searchTeams(final User user, final SearchParameters searchParameters, final boolean includeMembers, final boolean onlyUsersTeams,
+        final boolean hideOrganizationTeams) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -353,11 +351,10 @@ public class TeamService extends BaseService {
 
             final ResultList<Team> results = service.find(query, pfs, Team.class, null);
             final ResultList<Team> resultsToReturn = new ResultList<>();
-            
+
             final String systemUserList = PropertyUtility.getProperty("refset.service.system.accounts");
-            final Set<String> systemUsers =
-                (StringUtils.isNotBlank(systemUserList)) ? new HashSet<>(Arrays.asList(systemUserList.split(","))) : new HashSet<>();
-                
+            final Set<String> systemUsers = (StringUtils.isNotBlank(systemUserList)) ? new HashSet<>(Arrays.asList(systemUserList.split(","))) : new HashSet<>();
+
             for (final Team team : results.getItems()) {
 
                 // if only the user's teams should be returned then make sure the user is an
@@ -533,6 +530,7 @@ public class TeamService extends BaseService {
 
                         final String groupName =
                             CrowdGroupNameAlgorithm.buildCrowdGroupName(organizationName, editionName, project.getCrowdProjectId(), role);
+
                         CrowdAPIClient.addMembership(groupName, userToAdd.getUserName());
                     }
                 }
@@ -621,13 +619,11 @@ public class TeamService extends BaseService {
 
             final SearchParameters sp = new SearchParameters();
             final String projectIds = "(" + projectsForTeam.stream().map(Project::getId).collect(Collectors.joining(" OR ", "projectId: ", "")) + ")";
-            sp.setQuery("assignedUser: " + userToRemove.getUserName()
-                + " AND versionStatus:IN DEVELOPMENT AND (workflowStatus: IN_EDIT OR workflowStatus: IN_REVIEW) AND " + projectIds);
+            sp.setQuery("assignedUser: " + userToRemove.getUserName() + " AND versionStatus:IN DEVELOPMENT AND (workflowStatus: IN_EDIT OR workflowStatus: IN_REVIEW) AND " + projectIds);
             final ResultList<Refset> refsets = service.find(sp.getQuery(), null, Refset.class, null);
 
             if (!refsets.getItems().isEmpty()) {
-                final String message =
-                    "User " + userToRemove.getName() + " has a reference set \"In Edit\" or \"In Review\" assigned to them. As the admin, you are able "
+                final String message = "User " + userToRemove.getName() + " has a reference set \"In Edit\" or \"In Review\" assigned to them. As the admin, you are able "
                         + " to un-assign the reference set(s) first before inactivating user.";
                 LOG.error(message);
                 throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
@@ -745,6 +741,7 @@ public class TeamService extends BaseService {
             service.beginTransaction();
 
             final Team updatedTeam = service.update(team);
+            
             service.add(AuditEntryHelper.addRoleToTeamEntry(updatedTeam, role));
             service.commit();
 
@@ -779,6 +776,7 @@ public class TeamService extends BaseService {
                                     
                                     CrowdAPIClient.addMembership(groupName, user.getUserName());
                                 }
+
                             }
                         }
                     }
@@ -915,8 +913,7 @@ public class TeamService extends BaseService {
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            final ResultList<Project> allOrganizationProjects =
-                service.find("active: true AND organizationId: " + team.getOrganizationId(), null, Project.class, null);
+            final ResultList<Project> allOrganizationProjects = service.find("active: true AND organizationId: " + team.getOrganizationId(), null, Project.class, null);
             final List<Project> projects = new ArrayList<>();
 
             for (final Project organizationProject : allOrganizationProjects.getItems()) {

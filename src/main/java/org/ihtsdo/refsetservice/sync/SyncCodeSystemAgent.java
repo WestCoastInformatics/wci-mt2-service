@@ -24,8 +24,20 @@ import javax.ws.rs.core.Response;
 
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
+import org.ihtsdo.refsetservice.model.Project;
+import org.ihtsdo.refsetservice.model.ResultListUser;
+import org.ihtsdo.refsetservice.model.Team;
+import org.ihtsdo.refsetservice.model.TeamType;
+import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
+import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
+import org.ihtsdo.refsetservice.terminologyservice.ProjectService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
+import org.ihtsdo.refsetservice.terminologyservice.TeamService;
+import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
+import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +58,8 @@ public class SyncCodeSystemAgent extends SyncAgent {
     /** The Constant DEFAULT_ORGANIZATION_PREFACE. */
     private static final String DEFAULT_ORGANIZATION_PREFACE = "Owner of ";
 
+    private static final String MANAGED_SERVICE_CONTAINER_TYPE = "Managed Service";
+
     /**
      * The Enum ReasonEditionSkipped.
      */
@@ -58,7 +72,9 @@ public class SyncCodeSystemAgent extends SyncAgent {
         /** The ignored per file edition. */
         IGNORED_PER_FILE_EDITION,
         /** The type three edition. */
-        TYPE_THREE_EDITION
+        TYPE_THREE_EDITION,
+        /** A non-managed service maintainer type. */
+        NON_MANAGED_SERVICE
     };
 
     /* see superclass */
@@ -73,31 +89,52 @@ public class SyncCodeSystemAgent extends SyncAgent {
         final JsonNode organizationJsonRootNode = getSnowstormCodeSystems();
 
         // Determine code systems to sync
-        analyzeTermServerCodeSystems(organizationJsonRootNode);
+        analyzeTermServerCodeSystems(service, organizationJsonRootNode);
 
         // Sync Organizations reviewing which are new (creating them), missing (removing them), and unchanged.
-        syncOrganizations(service);
+        List<String> organizationsToInactivate = syncOrganizations(service);
 
         // Sync Editions reviewing which are new (creating them), missing (removing them), modified (removing them and then creating them), and unchanged.
         List<String> existingInBothShortNames = syncEditions(service);
 
         // Review both DB & Snowstorm editon-to-org map to ensure consistency
-        syncEditionOrganizationMaps(service, existingInBothShortNames);
+        syncEditionOrganizationAssociation(service, existingInBothShortNames);
+
+        inactivateOrganizations(service, organizationsToInactivate);
+
     }
+
+    private void inactivateOrganizations(TerminologyService service, List<String> organizationsToInactivate) throws Exception {
+        List<Organization> activeDbOrganizations = readDbOrganizations(service).stream().filter(o -> o.isActive()).collect(Collectors.toList());
+LOG.debug("JJJ1 {} ", activeDbOrganizations);
+        for (String organizationName : organizationsToInactivate) {
+            LOG.debug("JJJ2 {} ", organizationName);
+            Stream<Organization> matchingOrganizationsStream = activeDbOrganizations.stream().filter(o -> o.getName().equals(organizationName));
+            LOG.debug("JJJ3 {} ", matchingOrganizationsStream);
+            Organization organizationToInactivate = (Organization) getUtilities().validateMatches(matchingOrganizationsStream, organizationName);
+            LOG.debug("JJJ4 {} ", organizationToInactivate);
+
+            OrganizationService.inactivateOrganization(service, SecurityService.getUserFromSession(), organizationToInactivate.getId());
+            
+            LOG.debug("JJJ5");
+        }
+        LOG.debug("JJJ6");
+   }
 
     /**
      * Analyze term server code systems.
+     * @param service
      *
      * @param organizationJsonRootNode the organization json root node
      * @throws Exception the exception
      */
-    private void analyzeTermServerCodeSystems(final JsonNode organizationJsonRootNode) throws Exception {
+    private void analyzeTermServerCodeSystems(final TerminologyService service, final JsonNode organizationJsonRootNode) throws Exception {
 
         final Iterator<JsonNode> organizationIterator = organizationJsonRootNode.iterator();
         LOG.info("Found " + countCodeSystems(organizationIterator) + " + Code Systems on term server: ");
 
         // Filter code systems (based on active-setting, ignoredCS list, testing situation, and bad data)
-        final Map<ReasonEditionSkipped, Set<String>> ignoredReasonsMap = filterCodeSystems(organizationJsonRootNode);
+        final Map<ReasonEditionSkipped, Set<String>> ignoredReasonsMap = filterCodeSystems(service, organizationJsonRootNode);
         LOG.info("Will be processing these " + FILTERED_CODE_SYSTEMS.size() + " Code Systems found on the term server: ");
 
         FILTERED_CODE_SYSTEMS.stream().forEach(c -> LOG.info(c.get("shortName").asText()));
@@ -131,12 +168,15 @@ public class SyncCodeSystemAgent extends SyncAgent {
                     case TYPE_THREE_EDITION:
                         s.append("Type-3");
                         break;
+                    case NON_MANAGED_SERVICE:
+                        s.append("not managed service");
+                        break;
                     default:
                         break;
                 }
 
                 s.append(": ");
-                ignoredReasonsMap.get(reason).stream().forEach(edition -> s.append(edition + ","));
+                ignoredReasonsMap.get(reason).stream().forEach(editionShortName -> s.append(editionShortName + ","));
                 LOG.info(s.substring(0, s.toString().length()));
             }
         }
@@ -150,41 +190,48 @@ public class SyncCodeSystemAgent extends SyncAgent {
      * Sync organizations.
      *
      * @param service the service
+     * @return
      * @throws Exception the exception
      */
-    private void syncOrganizations(final TerminologyService service) throws Exception {
+    private List<String> syncOrganizations(final TerminologyService service) throws Exception {
 
-        final Set<String> dbActiveOrganizationNames = new HashSet<>();
-        final Set<String> dbInactiveOrganizationNames = new HashSet<>();
+        final Map<String, String> dbActiveOrganizationNameIdMaps = new HashMap<>();
+        final Map<String, String> dbInactiveOrganizationNameIdMaps = new HashMap<>();
         final Set<String> termserverOrganizationNames = new HashSet<>();
 
         // Populate organization names lists of a) termserver code system names, b) rt2 database active organization names, and c) rt2 database inactive
         // organization names
         final List<Organization> dbOrganizations = service.getAll(Organization.class);
 
-        dbOrganizations.stream().filter(o -> o.isActive()).forEach(o -> dbActiveOrganizationNames.add(o.getName()));
-        dbOrganizations.stream().filter(o -> !o.isActive()).forEach(o -> dbInactiveOrganizationNames.add(o.getName()));
+        dbOrganizations.stream().filter(o -> o.isActive()).forEach(o -> dbActiveOrganizationNameIdMaps.put(o.getName(), o.getId()));
+        dbOrganizations.stream().filter(o -> !o.isActive()).forEach(o -> dbInactiveOrganizationNameIdMaps.put(o.getName(), o.getId()));
 
-        FILTERED_CODE_SYSTEMS.stream().forEach(codeSystem -> termserverOrganizationNames.add(determineOrganizationName(codeSystem)));
+        LOG.debug("AAA1 {}", dbActiveOrganizationNameIdMaps.keySet());
+        LOG.debug("AAA2 {}", dbInactiveOrganizationNameIdMaps.keySet());
+
+        FILTERED_CODE_SYSTEMS.stream().forEach(codeSystem -> {
+            termserverOrganizationNames.add(determineOrganizationName(codeSystem));
+            termserverOrganizationNames.add(determineOrganizationName(codeSystem));
+        });
 
         // See if any termserver organizations are new
-        final List<String> addedOrganizations =
-                termserverOrganizationNames.stream().filter(o -> !dbActiveOrganizationNames.contains(o)).filter(o -> !dbInactiveOrganizationNames.contains(o)).collect(Collectors.toList());
+        final List<String> addedOrganizations = termserverOrganizationNames.stream().filter(o -> !dbActiveOrganizationNameIdMaps.keySet().contains(o))
+                .filter(o -> !dbInactiveOrganizationNameIdMaps.keySet().contains(o)).collect(Collectors.toList());
+        LOG.debug("AAA3 {}", addedOrganizations);
         addedOrganizations.stream().forEach(name -> getDbHandler().addOrganziation(service, name, determineOrganizationDescription(name)));
 
         // Activate previously inactivated organizations. Note: Will log and update stats after remove those that were activatedAndModified
-        final List<String> activatedOrganizations = termserverOrganizationNames.stream().filter(c -> dbInactiveOrganizationNames.contains(c)).collect(Collectors.toList());
-        activatedOrganizations.stream().forEach(n -> getDbHandler().updateOrganizationStatus(service, n, true));
+        final List<String> activatedOrganizations = termserverOrganizationNames.stream().filter(c -> dbInactiveOrganizationNameIdMaps.keySet().contains(c)).collect(Collectors.toList());
+        LOG.debug("AAA4 {}", activatedOrganizations);
+        activatedOrganizations.stream().forEach(n -> getDbHandler().updateOrganizationStatus(service, dbInactiveOrganizationNameIdMaps.get(n), true));
 
-        // If have active organizations inactivate any active DB organizations that are not returned from termserver
-        // Note: No need for 'existing in both' case as only value to compare against termserver (owner) is also the primary key. Thus activating/inactivating
-        // is
-        // sufficient
-        final List<String> inactivatedOrganizations =
-                dbActiveOrganizationNames.stream().filter(c -> !termserverOrganizationNames.contains(c)).filter(c -> !dbInactiveOrganizationNames.contains(c)).collect(Collectors.toList());
+        // If have active organizations inactivate any active DB organizations that are not returned from termserver.
+        // Note: No need for 'existing in both' case as only value to compare against termserver (owner) is also the primary key. Thus activating/inactivating is sufficient
+        final List<String> inactivatedOrganizations = dbActiveOrganizationNameIdMaps.keySet().stream().filter(c -> !termserverOrganizationNames.contains(c))
+                .filter(c -> !dbInactiveOrganizationNameIdMaps.keySet().contains(c)).collect(Collectors.toList());
+        LOG.debug("AAA5 {}", inactivatedOrganizations);
 
-        inactivatedOrganizations.stream().forEach(n -> getDbHandler().updateOrganizationStatus(service, n, false));
-
+        return inactivatedOrganizations;
     }
 
     /**
@@ -262,44 +309,196 @@ public class SyncCodeSystemAgent extends SyncAgent {
      * @param existingShortNames the existing short names
      * @throws Exception the exception
      */
-    private void syncEditionOrganizationMaps(final TerminologyService service, final List<String> existingShortNames) throws Exception {
-
-        final List<String> updatedEditionOrganizationMaps = new ArrayList<>();
-
-        service.setTransactionPerOperation(false);
-        service.beginTransaction();
+    private void syncEditionOrganizationAssociation(final TerminologyService service, final List<String> existingShortNames) throws Exception {
 
         List<Edition> activeDbRefsets = readDbActiveEditions(service);
         List<Organization> allDbOrganizations = service.getAll(Organization.class);
+        LOG.debug("CCC0 {}", existingShortNames);
 
         for (final String shortName : existingShortNames) {
+            LOG.debug("CCC1 {}", shortName);
 
             // Prepare DB edition for analysis
             final Stream<Edition> editionStream = activeDbRefsets.stream().filter(e -> e.getShortName().equals(shortName));
             final Edition dbEdition = (Edition) getUtilities().validateMatches(editionStream, shortName);
+
             final String dbOrganizationName = dbEdition.getOrganizationName();
+            LOG.debug("CCC2 {}", dbOrganizationName);
 
             // Prepare termserver edition for analysis
             String termserverOrganizationName = TERMSERVER_EDITION_TO_ORGANIZATION_MAP.get(shortName);
+            LOG.debug("CCC3 {}", termserverOrganizationName);
 
             // compare and update if needed
             if (!dbOrganizationName.equals(termserverOrganizationName)) {
+                LOG.debug("CCC4");
 
-                final Stream<Organization> organizationStream = allDbOrganizations.stream().filter(o -> o.getName().equals(termserverOrganizationName));
-                final Organization dbOrganization = (Organization) getUtilities().validateMatches(organizationStream, termserverOrganizationName);
+                // Edition pointing to a different org. Update edition and udpate CROWD
+                final List<Organization> termServerOrganizations = allDbOrganizations.stream().filter(o -> o.getName().equals(termserverOrganizationName)).collect(Collectors.toList());
 
-                dbEdition.setOrganization(dbOrganization);
+                if (termServerOrganizations.isEmpty() || termServerOrganizations.size() > 1) {
+                    throw new Exception("Can't be empty or with multiple with same name (" + termServerOrganizations + "), nor can it be the case that the organziation wasn't already created");
+                } else {
+                    // Existing org associated with edition
+                    final Organization termServerOrganization = termServerOrganizations.iterator().next();
+                    LOG.debug("CCC5 {}", termServerOrganization);
 
-                getDbHandler().updateEdition(service, dbEdition);
-                updatedEditionOrganizationMaps.add(shortName);
+                    // Update CROWD with new rules
+                    migrateOrganization(service, dbEdition, termServerOrganization);
 
-                STATISTICS.incrementEditionOrganizationMapChanged();
+                    STATISTICS.incrementEditionOrganizationMapChanged();
+                }
             }
         }
 
-        service.commit();
-        service.setTransactionPerOperation(true);
+    }
+    // Move edition to new org. Projects will move with edition, but users and teams won't.
+    // So need to see if they exist in new org, and if not create teams and add users
 
+    private void migrateOrganization(final TerminologyService service, final Edition editionToMove, final Organization targetOrganization) throws Exception {
+        final List<User> existingUsers = OrganizationService.getOrganizationUsers(service, editionToMove.getOrganization(), false).getItems();
+        final List<Team> existingTeams = OrganizationService.getActiveOrganizationTeams(service, editionToMove.getOrganizationId()).getItems();
+
+        Organization newOrganization = targetOrganization;
+
+        LOG.info("migrating edition " + editionToMove.getName() + " from org: " + editionToMove.getOrganizationName() + "(" + editionToMove.getOrganizationId() + ") to org: " + newOrganization.getName() + "("
+                + newOrganization.getId());
+        
+
+        LOG.debug("bbb1a {}", editionToMove);
+        LOG.debug("bbb1b {}", newOrganization);
+
+        final Map<String, List<Project>> existingTeamToProjectsMap = new HashMap<>();
+        for (Team team : existingTeams) {
+            List<Project> projects = TeamService.getTeamProjects(team);
+
+            existingTeamToProjectsMap.put(team.getId(), projects);
+        }
+
+        LOG.debug("GGG0a {}", existingUsers);
+        LOG.debug("GGG0b {}", newOrganization.getMembers());
+        LOG.debug("GGG0c {}",  SecurityService.getUserFromSession());
+        // Ensure all users in existing organization are also in target organization
+        LOG.debug("GGG1 with new Organization {}  ", newOrganization);
+        for (final User user : existingUsers) {
+
+            LOG.debug("GGG2 {}", user);
+
+            if (newOrganization.getMembers().stream().noneMatch(u -> u.getId().equals(user.getId()))) {
+
+                try {
+                    LOG.debug("GGG3a");
+                    newOrganization = OrganizationService.addUserToOrganization(service, SecurityService.getUserFromSession(), newOrganization.getId(), user);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                
+                // JESSE : ISSUE BEFORE BREAK: SNOMED International doesn't ahve an owner, so a deafulat one is created. Add special handling on SI to avoid this nonesense and move forward.
+            }
+        }
+        LOG.debug("GGG3b {}",  SecurityService.getUserFromSession());
+/*
+        Set<User> usersToAdd = new HashSet<>();
+        // Ensure admin users are also in target organization
+        for (String username : SyncAgent.getAdminUsernames()) {
+            LOG.debug("bbb2a {}", username);
+            User user = getUtilities().getUser(service, username);
+            usersToAdd.add(user);
+            LOG.debug("bbb2b {}", user);
+            
+            if (user != null && (newOrganization.getMembers().stream().noneMatch(u -> u.getId().equals(user.getId())))) {
+                LOG.debug("bbb2c {}", user);
+                newOrganization = OrganizationService.addUserToOrganization(service, SecurityService.getUserFromSession(), newOrganization.getId(), user);
+            }
+            LOG.debug("bbb2d {}", newOrganization.getMembers());
+        }
+      */  
+
+        // Move the existing edition's teams
+        LOG.debug("bbb3a {}", existingTeams);
+        Set<Team> updatedTeams = new HashSet<>();
+        for (final Team team : existingTeams) {
+            if (newOrganization.getMembers().stream().noneMatch(t -> t.getId().equals(team.getId()))) {
+                team.setOrganization(newOrganization);
+                final Team updatedTeam = service.update(team);
+                updatedTeams.add(updatedTeam);
+            }
+        }
+        LOG.debug("bbb3b {}", updatedTeams);
+        LOG.debug("bbb3c");
+
+        // TODO: add Teams to org based on project.getTeams() and add members/roles
+
+        // TODO: Remove crowd membership in groups where org made inactive
+        editionToMove.setOrganization(newOrganization);
+        final Edition migratedEdition = service.update(editionToMove);
+
+
+        LOG.debug("DDD2 - Finished migrating edition: " + migratedEdition.getName());
+
+        /*
+         * // Add a new crowd groups and assign members for (final String teamId : existingTeamToProjectsMap.keySet()) { final Team existingTeam = service.get(teamId,
+         * Team.class); LOG.debug("bbb4 {}", existingTeam);
+         * 
+         * Set<User> teamUsers = new HashSet<>(); Set<String> projectsProcessed = new HashSet<>(); for (Project project : existingTeamToProjectsMap.get(existingTeam.getId()))
+         * { if (!projectsProcessed.contains(project.getId())) { LOG.debug("bbb5 {}", project);
+         * 
+         * CrowdAPIClient.addGroup(project.getEdition().getShortName(), project.getName(), project.getDescription(), true, false);
+         * 
+         * for (final String role : existingTeam.getRoles()) { LOG.debug("bbb6 {}", role);
+         * 
+         * final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role); LOG.debug("bbb7 {}",
+         * groupName);
+         * 
+         * for (final String userId : existingTeam.getMembers()) { final User user = service.get(userId, User.class); teamUsers.add(user); LOG.debug("bbb8 {}", user);
+         * 
+         * try { CrowdAPIClient.addMembership(groupName, user.getUserName()); } catch (Exception e) { LOG.error(e.getMessage()); } } }
+         * 
+         * projectsProcessed.add(project.getId()); } } LOG.debug("bbb9"); // Handle CROWD for admin groups and assign members if
+         * (existingTeam.getType().equalsIgnoreCase(TeamType.ORGANIZATION.getText())) { LOG.debug("bbb10");
+         * 
+         * CrowdAPIClient.addGroup(editionToMove.getShortName(), "all", "Organization Administrators", false, true);
+         * 
+         * final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(editionToMove.getShortName(), "all", "admin"); LOG.debug("bbb11 {}", groupName);
+         * 
+         * for (User user : teamUsers) {
+         * 
+         * LOG.debug("bbb12 {}", user); CrowdAPIClient.addMembership(groupName, user.getUserName()); } } }
+         * 
+         * LOG.debug("bbb Crowd Rules: {}", CrowdAPIClient.getAllCrowdRuleMembers());
+         */
+
+        /*
+         * 
+         * // Add a new crowd group per project for (final String teamId : existingTeamToProjectsMap.keySet()) { final Team existingTeam = service.get(teamId, Team.class);
+         * LOG.debug("bbb4 {}", existingTeam);
+         * 
+         * if (existingTeam.getType().equalsIgnoreCase(TeamType.ORGANIZATION.getText())) { LOG.debug("bbb5");
+         * 
+         * CrowdAPIClient.addGroup(editionToMove.getShortName(), "all", "Organization Administrators", false, true); final String groupName =
+         * CrowdGroupNameAlgorithm.buildCrowdGroupName(editionToMove.getShortName(), "all", "admin");
+         * 
+         * for (final User user : existingTeam.getMemberList()) {
+         * 
+         * CrowdAPIClient.addMembership(groupName, user.getUserName()); } } else { LOG.debug("bbb6 {}", existingTeamToProjectsMap); LOG.debug("bbb6a {}",
+         * existingTeamToProjectsMap.get(existingTeam.getId()));
+         * 
+         * for (Project project : existingTeamToProjectsMap.get(existingTeam.getId())) { LOG.debug("bbb66b {}", project);
+         * 
+         * CrowdAPIClient.addGroup(editionToMove.getShortName(), project.getName(), project.getDescription(), true, false);
+         * 
+         * for (final String role : existingTeam.getRoles()) { LOG.debug("bbb7 {}", role);
+         * 
+         * final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(editionToMove.getShortName(), project.getCrowdProjectId(), role); LOG.debug("bbb8 {}",
+         * groupName);
+         * 
+         * for (final String userId : existingTeam.getMembers()) { final User user = service.get(userId, User.class); LOG.debug("bbb9 {}", user);
+         * 
+         * // 400 Returned if the user could not be found or groupName is not specified or // user has no name.
+         * 
+         * CrowdAPIClient.addMembership(groupName, user.getUserName()); } } } } }
+         */
     }
 
     /**
@@ -421,12 +620,13 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     /**
      * Filter code systems.
+     * @param service
      *
      * @param organizationJsonRootNode the organization json root node
      * @return the map
      * @throws Exception the exception
      */
-    private Map<ReasonEditionSkipped, Set<String>> filterCodeSystems(final JsonNode organizationJsonRootNode) throws Exception {
+    private Map<ReasonEditionSkipped, Set<String>> filterCodeSystems(TerminologyService service, final JsonNode organizationJsonRootNode) throws Exception {
 
         final Iterator<JsonNode> organizationIterator = organizationJsonRootNode.iterator();
         final Map<ReasonEditionSkipped, Set<String>> ignoredReasonMap = new EnumMap<>(ReasonEditionSkipped.class);
@@ -435,6 +635,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
         ignoredReasonMap.put(ReasonEditionSkipped.INACTIVE_EDITION, new HashSet<>());
         ignoredReasonMap.put(ReasonEditionSkipped.IGNORED_PER_FILE_EDITION, new HashSet<>());
         ignoredReasonMap.put(ReasonEditionSkipped.TYPE_THREE_EDITION, new HashSet<>());
+        ignoredReasonMap.put(ReasonEditionSkipped.NON_MANAGED_SERVICE, new HashSet<>());
 
         while (organizationIterator.hasNext()) {
 
@@ -462,6 +663,10 @@ public class SyncCodeSystemAgent extends SyncAgent {
                 } else if (codeSystem.has("active") && !codeSystem.get("active").asBoolean()) {
                     // Skipping inactive code system
                     ignoredReasonMap.get(ReasonEditionSkipped.INACTIVE_EDITION).add(editionShortName);
+
+                } else if (codeSystem.has("maintainerType") && MANAGED_SERVICE_CONTAINER_TYPE.equals(codeSystem.get("maintainerType").asText())) {
+                    // Skipping inactive code system
+                    ignoredReasonMap.get(ReasonEditionSkipped.NON_MANAGED_SERVICE).add(editionShortName);
 
                 } else if (getUtilities().getPropertyReader().getCodeSystemsToIgnore().contains(editionShortName)) {
                     // Code System has been defined as to-be-ignored (either by specifying name or shortname).

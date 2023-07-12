@@ -133,6 +133,7 @@ public class SyncDatabaseHandler {
             final Organization organization = (Organization) utilities.validateMatches(organizationStream, organizationName);
 
             // Create a single Admin team per Edition when we first discover it
+            LOG.debug("DDD - Create edition adminOrg");
             createAdminOrganizationTeam(service, organization);
 
             final String defaultLanguageCode = utilities.identifyDefaultLanguageCode(codeSystem, editionName);
@@ -267,14 +268,14 @@ public class SyncDatabaseHandler {
      * @param edition the edition
      * @return the project
      */
-    public Project addProject(final TerminologyService service, final String projectName, final String projectDescription, final Edition edition) {
+    public Project addProject(final TerminologyService service, final String projectName, final String projectDescription, final Edition edition, final String crowdProjectId) {
 
         try {
             final Project project = new Project();
             project.setName(projectName);
             project.setDescription(projectDescription);
             project.setPrivateProject(false);
-            project.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(projectName));
+            project.setCrowdProjectId(crowdProjectId);
             project.setEdition(edition);
             project.setPrimaryContactEmail(edition.getOrganization().getPrimaryContactEmail());
 
@@ -407,7 +408,7 @@ public class SyncDatabaseHandler {
 
             return newTeam;
         } catch (Exception e) {
-            LOG.error("Failed to add team: " + teamName + " with Exception --> " + e.getMessage());
+            LOG.error("Failed to add team: " + teamName + " to " + organization.getName() + " with Exception --> " + e.getMessage());
 
             e.printStackTrace();
 
@@ -505,16 +506,13 @@ public class SyncDatabaseHandler {
      * @param isActive the is active
      * @return the organization
      */
-    public Organization updateOrganizationStatus(final TerminologyService service, final String organizationName, final boolean isActive) {
+    public Organization updateOrganizationStatus(final TerminologyService service, final String organizationId, final boolean isActive) {
 
         try {
-            final List<Organization> allOrganizations = service.getAll(Organization.class);
-
-            final Stream<Organization> organizationStream = allOrganizations.stream().filter(o -> o.getName().equals(organizationName));
-            final Organization organization = (Organization) utilities.validateMatches(organizationStream, organizationName);
+            final Organization organization = service.get(organizationId, Organization.class);
 
             if (isActive == organization.isActive()) {
-                LOG.error("Attempting to set active status to " + isActive + " for an organization " + organizationName + " whose status is already that");
+                LOG.error("Attempting to set active status to " + isActive + " for an organization " + organizationId + " whose status is already that");
                 return organization;
             }
 
@@ -543,7 +541,7 @@ public class SyncDatabaseHandler {
             return updatedOrganization;
 
         } catch (Exception e) {
-            LOG.error("Failed to update status of organziation: " + organizationName + " to " + isActive + " with Exception --> " + e.getMessage());
+            LOG.error("Failed to update status of organziation: " + organizationId + " to " + isActive + " with Exception --> " + e.getMessage());
 
             e.printStackTrace();
 
@@ -921,5 +919,37 @@ public class SyncDatabaseHandler {
 
             return null;
         }
+    }
+
+    public Team addTeam(TerminologyService service, Team originalTeam, Organization organization) {
+
+        try {
+            final Team team = new Team();
+            team.setName(originalTeam.getName());
+            team.setDescription(originalTeam.getDescription());
+            team.setOrganization(organization);
+            team.setPrimaryContactEmail(originalTeam.getPrimaryContactEmail());
+            team.setType(originalTeam.getType());
+            team.setActive(originalTeam.isActive());
+            originalTeam.getRoles().stream().forEach(r -> team.getRoles().add(UserRole.valueOf(r).toString()));
+
+            // Persist
+            final Team newTeam = service.add(team);
+
+            service.add(AuditEntryHelper.addTeamEntry(newTeam));
+
+            LOG.info("Adding new Team based on an existing team (" + originalTeam.getId() + "): " + newTeam.getId() + " (" + newTeam.getName() + ") ");
+            STATISTICS.incrementTeamsAdded();
+
+            return newTeam;
+        } catch (Exception e) {
+            LOG.error("Failed to add a new team based on an existing team (" + originalTeam.getId() + "): " + originalTeam.getName() + " to " + organization.getName() + " with Exception --> "
+                    + e.getMessage());
+
+            e.printStackTrace();
+
+            return null;
+        }
+
     }
 }
