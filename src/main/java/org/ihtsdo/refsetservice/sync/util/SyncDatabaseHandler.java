@@ -641,14 +641,14 @@ public class SyncDatabaseHandler {
             STATISTICS.setRefsetVersionsModified(STATISTICS.getRefsetVersionsModified() + refsets.size());
 
             StringBuffer updatedRefsetInfo = new StringBuffer();
-            updatedRefsets.stream().forEach(r -> updatedRefsetInfo.append("Pair Added: " + r.getName() + " - " + sdfPrintDate.format(r.getVersionDate() + ", ")));
+            updatedRefsets.stream().forEach(r -> updatedRefsetInfo.append("Pair Added: " + r.getName() + " - " + sdfPrintDate.format(r.getVersionDate()) + ", "));
 
             LOG.info("Updated multiple refset versions: " + updatedRefsetInfo.toString());
             service.add(AuditEntryHelper.updateMultipleRefsetVersionsEntry("updated " + refsets.size() + " refset/version pairs."));
 
             return updatedRefsets;
         } catch (Exception e) {
-            LOG.error("Failed to update multiple refests failing on : " + refsets + " with Exception --> " + e.getMessage());
+            LOG.error("Failed to update multiple refests failing on : " + refsets.size() + " refsets with Exception --> " + e.getMessage());
 
             e.printStackTrace();
 

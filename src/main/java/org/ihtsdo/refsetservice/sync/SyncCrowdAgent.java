@@ -9,7 +9,6 @@
  */
 package org.ihtsdo.refsetservice.sync;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -26,10 +25,11 @@ import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
-import org.ihtsdo.refsetservice.terminologyservice.ProjectService;
 import org.ihtsdo.refsetservice.terminologyservice.TeamService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * The Class SyncCrowdAgent.
@@ -50,6 +50,12 @@ public class SyncCrowdAgent extends SyncAgent {
     private static final String IGNORED_SYNC_KEYWORD = "all";
 
     private final Map<String, User> userIdMap = new HashMap<>();
+
+    private Set<JsonNode> FILTERED_CODE_SYSTEMS;
+
+    public SyncCrowdAgent(Set<JsonNode> filteredCodeSystems) {
+        this.FILTERED_CODE_SYSTEMS = filteredCodeSystems;
+    }
 
     /* see superclass */
     @Override
@@ -387,7 +393,6 @@ public class SyncCrowdAgent extends SyncAgent {
     // Returns a map from an editionId to a set of project names representing projects to add
     private Map<String, Set<String>> identifyCrowdEditionProjects(final TerminologyService service, final Set<String> crowdGroups) throws Exception {
 
-
         // Organization to list of Projects
         final Map<String, Set<String>> crowdEditionProjectsMap = new HashMap<>();
 
@@ -396,7 +401,7 @@ public class SyncCrowdAgent extends SyncAgent {
         // Sort crowdProjects by edition/groupName/Set<Role>
         for (final String group : crowdGroups) {
 
-            if (isTesting() && getTestingEditionShortName() != null && !getTestingEditionShortName().isEmpty()
+            if (isTesting() && testingEditionShortName != null && !testingEditionShortName.isEmpty()
                     && !group.startsWith("rt2-" + getEditionShortNameToEdition(getDeveloperTestingEditionShortName()) + "-")) {
                 continue;
             }

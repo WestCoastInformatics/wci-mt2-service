@@ -41,6 +41,7 @@ import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.sync.SyncAgent;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
@@ -105,6 +106,11 @@ public class SyncUtilities {
 
     /** The Constant SIMPLE_REFSET_TYPE_CONCEPT. */
     static final String SIMPLE_REFSET_TYPE_CONCEPT = "446609009";
+
+    /** The Constant DEFAULT_ORGANIZATION_PREFACE. */
+    private static final String DEFAULT_ORGANIZATION_PREFACE = "Owner of ";
+
+    private static String developerTestingEditionShortName = null;
 
     /**
      * Instantiates a {@link SyncUtilities} from the specified parameters.
@@ -410,6 +416,43 @@ public class SyncUtilities {
         }
 
         return retSet;
+    }
+
+    /**
+     * Determine organization name.
+     *
+     * @param codeSystem the code system
+     * @return the string
+     */
+    public String determineOrganizationName(final JsonNode codeSystem) {
+        // If owner defined, return it as organization name
+        if (codeSystem.has("owner") && !codeSystem.get("owner").asText().trim().isBlank()) {
+            return codeSystem.get("owner").asText();
+        }
+
+        // Create generic organization name
+        final String editionName = codeSystem.has("name") ? codeSystem.get("name").asText() : "";
+        return DEFAULT_ORGANIZATION_PREFACE + editionName;
+    }
+
+    /**
+     * Determine organization description.
+     *
+     * @param organizationName the organization name
+     * @return the string
+     */
+    public String determineOrganizationDescription(final String organizationName) {
+
+        if (organizationName.startsWith(DEFAULT_ORGANIZATION_PREFACE)) {
+
+            return "Organizational administrators can update this edition's default description.";
+        } else {
+
+            return "Two things to change." + System.lineSeparator()
+                    + "1) Your organization name isn't defined on Snowstorm yet, so we have provided you with a temporary one that matches your edition name." + System.lineSeparator()
+                    + "Have your organization's administrator(s) contact SNOMED International to have it changed." + System.lineSeparator()
+                    + "2) Organizational administrator(s) can update this default description at any time";
+        }
     }
 
     /**

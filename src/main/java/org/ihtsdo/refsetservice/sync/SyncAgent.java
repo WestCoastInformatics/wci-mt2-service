@@ -10,6 +10,7 @@
 package org.ihtsdo.refsetservice.sync;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -19,6 +20,7 @@ import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.sync.util.SyncCodeSystemConsumer;
 import org.ihtsdo.refsetservice.sync.util.SyncDatabaseHandler;
 import org.ihtsdo.refsetservice.sync.util.SyncStatistics;
 import org.ihtsdo.refsetservice.sync.util.SyncUtilities;
@@ -70,11 +72,12 @@ public abstract class SyncAgent {
     private static boolean testing = false;
 
     /** The testing edition short name. */
-    private static String testingEditionShortName = "SNOMEDCT-BE";
+    protected static String testingEditionShortName = "SNOMEDCT-BE";
 
     /** The testing refset. */
 
-    protected static String testingRefset = null; // To test entire edition
+    // protected static String testingRefset = null; // To test entire edition
+    private static String testingRefset = "450970008";
     // private static String testingRefset = "733991000"; // Core - Dentistry (in multiple projects in RTT)
     // protected static String testingRefset = "751000172100"; // 751000172100 - from Belgium
     // protected static String testingRefset = "723264001"; // 723264001 - TAGS (only one today) - from sct-core
@@ -83,12 +86,6 @@ public abstract class SyncAgent {
 
     /** The developer testing edition short name. */
     private static String developerTestingEditionShortName = null;
-
-    /** The develeper testing organization. */
-    private static Organization develeperTestingOrganization = null;
-
-    /** Other process fields. Owner Name to Organization Description. */
-    protected static final Set<JsonNode> FILTERED_CODE_SYSTEMS = new HashSet<>();
 
     /** The Constant DEVELOPER_CODE_SYSTEM_SHORTNAME. */
     protected static final String DEVELOPER_CODE_SYSTEM_SHORTNAME = "SNOMEDCT-WCI";
@@ -138,6 +135,10 @@ public abstract class SyncAgent {
         final Date startOperationStartTime = new Date();
 
         initialize(service);
+        SyncCodeSystemConsumer termServerCodeSystemConsumer = new SyncCodeSystemConsumer(service, getUtilities(), STATISTICS, isTesting(), testingEditionShortName);
+
+        Set<JsonNode> filteredCodeSystems = termServerCodeSystemConsumer.identifyCodeSystemsToProcess();
+        final HashMap<String, String> termServerEditionToOrganizationMap = termServerCodeSystemConsumer.getEditionToOrganizationMap(filteredCodeSystems);
 
         LOG.info("Starting Syncing of Users, Projects, Code System, Branches, and Refsets from Termserver");
 
@@ -145,20 +146,23 @@ public abstract class SyncAgent {
 
         // Only identify branches on filtered code systems and on runShortSync value
         LOG.info("Running sync on organizations & editions.");
-        SyncAgent agent = new SyncCodeSystemAgent();
+        SyncAgent agent = new SyncCodeSystemAgent(filteredCodeSystems, termServerEditionToOrganizationMap);
         agent.syncComponent(service);
+
+        // Update available code systems due to potential migrations
+        filteredCodeSystems = termServerCodeSystemConsumer.identifyCodeSystemsToProcess();
 
         if (isCleanDatabase(service)) {
             // If first time processing, then and only then update users, teams, and projects based on crowd.
             LOG.info("Running sync on an empty database. Thus add users to orgs, users to admin teams, and new projects");
 
-            agent = new SyncCrowdAgent();
+            agent = new SyncCrowdAgent(filteredCodeSystems);
             agent.syncComponent(service);
         }
 
         // Find all refsets from filtered branches
         LOG.info("Running sync on refsets.");
-        agent = new SyncRefsetAgent();
+        agent = new SyncRefsetAgent(filteredCodeSystems);
         agent.syncComponent(service);
 
         // Post processing
@@ -205,20 +209,21 @@ public abstract class SyncAgent {
         SyncAgent.dbHandler = dbHandler;
     }
 
-    /**
-     * @return the testingEditionShortName
-     */
-    protected static String getTestingEditionShortName() {
 
-        return testingEditionShortName;
+    /**
+     * @param developerTestingEditionShortName the developerTestingEditionShortName to set
+     */
+    public void setDeveloperTestingEditionShortName(final String editionShortName) {
+
+        developerTestingEditionShortName = editionShortName;
     }
 
     /**
-     * @param testingEditionShortName the testingEditionShortName to set
+     * @return the developerTestingEditionShortName
      */
-    protected static void setTestingEditionShortName(final String testingEditionShortName) {
+    public String getDeveloperTestingEditionShortName() {
 
-        SyncAgent.testingEditionShortName = testingEditionShortName;
+        return developerTestingEditionShortName;
     }
 
     /**
@@ -235,38 +240,6 @@ public abstract class SyncAgent {
     protected static void setTestingRefset(final String testingRefset) {
 
         SyncAgent.testingRefset = testingRefset;
-    }
-
-    /**
-     * @return the developerTestingEditionShortName
-     */
-    protected static String getDeveloperTestingEditionShortName() {
-
-        return developerTestingEditionShortName;
-    }
-
-    /**
-     * @param developerTestingEditionShortName the developerTestingEditionShortName to set
-     */
-    protected static void setDeveloperTestingEditionShortName(final String developerTestingEditionShortName) {
-
-        SyncAgent.developerTestingEditionShortName = developerTestingEditionShortName;
-    }
-
-    /**
-     * @return the develeperTestingOrganization
-     */
-    protected static Organization getDeveleperTestingOrganization() {
-
-        return develeperTestingOrganization;
-    }
-
-    /**
-     * @param develeperTestingOrganization the develeperTestingOrganization to set
-     */
-    protected static void setDeveleperTestingOrganization(final Organization develeperTestingOrganization) {
-
-        SyncAgent.develeperTestingOrganization = develeperTestingOrganization;
     }
 
     /**
@@ -328,8 +301,6 @@ public abstract class SyncAgent {
     protected static void clearPreviousRun() {
 
         developerTestingEditionShortName = null;
-
-        FILTERED_CODE_SYSTEMS.clear();
 
         STATISTICS.clearStatistics();
 

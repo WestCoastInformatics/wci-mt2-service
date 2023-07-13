@@ -76,6 +76,12 @@ public class SyncRefsetAgent extends SyncAgent {
     /** The default organization project map. */
     private final Map<String, Project> defaultOrganizationProjectMap = new HashMap<>();
 
+    private final Set<JsonNode> filteredCodeSystems;
+
+    public SyncRefsetAgent(Set<JsonNode> filteredCodeSystems) {
+        this.filteredCodeSystems = filteredCodeSystems;
+    }
+
     /* see superclass */
     @Override
     public void syncComponent(final TerminologyService service) throws Exception {
@@ -417,7 +423,7 @@ public class SyncRefsetAgent extends SyncAgent {
     private void analyzeCodeSystemBranches(final TerminologyService service) throws Exception {
 
         // Determine all version dates, per edition, and mapped with the associated publication branch
-        final Map<String, SortedMap<Long, String>> filteredTermserverShortNameToVersionBranchMap = determineEditionBranches(service, FILTERED_CODE_SYSTEMS);
+        final Map<String, SortedMap<Long, String>> filteredTermserverShortNameToVersionBranchMap = determineEditionBranches(service, filteredCodeSystems);
 
         LOG.info("Gather refset data for each refset available with each edition's version for: " + filteredTermserverShortNameToVersionBranchMap.keySet());
         for (final String editionShortName : filteredTermserverShortNameToVersionBranchMap.keySet()) {
