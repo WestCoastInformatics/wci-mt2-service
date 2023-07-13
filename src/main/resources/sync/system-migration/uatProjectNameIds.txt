@@ -1,0 +1,25 @@
+crowdProjectId	name	shortName
+iedp	International Edition Default Project	SNOMEDCT
+sip	SNOMED International Project	SNOMEDCT
+siwp	SNOMED International WIP Project	SNOMEDCT
+aedp	Austrian Extension Default Project	SNOMEDCT-AT
+aedp	Australian Extension Default Project	SNOMEDCT-AU
+bedp	Belgian Extension Default Project	SNOMEDCT-BE
+wtp	WCI Test Project	SNOMEDCT-BE
+bep	Belgian Extension Project	SNOMEDCT-BE
+sedp	Swiss Edition Default Project	SNOMEDCT-CH
+dedp	Danish Edition Default Project	SNOMEDCT-DK
+enp	Estonian NRC Project	SNOMEDCT-EE
+eedp	Estonian Edition Default Project	SNOMEDCT-EE
+iedp	Irish Edition Default Project	SNOMEDCT-IE
+kedp	Korean Extension Default Project	SNOMEDCT-KR
+wtp	WCI Test project	SNOMEDCT-NL
+m	Microbiology	SNOMEDCT-NL
+nedp	Netherlands Extension Default Project	SNOMEDCT-NL
+nedp	Norwegian Edition Default Project	SNOMEDCT-NO
+nzedp	New Zealand Edition Default Project	SNOMEDCT-NZ
+nzrp	New Zealand Refset Project	SNOMEDCT-NZ
+sedp	Swedish Edition Default Project	SNOMEDCT-SE
+snp	Sweden NRC Project	SNOMEDCT-SE=
+inrp	Inera National Refset Project	SNOMEDCT-SE
+usedp	United States Edition Default Project	SNOMEDCT-US
