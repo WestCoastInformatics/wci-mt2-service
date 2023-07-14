@@ -119,8 +119,6 @@ public abstract class SyncAgent {
             isIgnoreCoreRefsets = ignoreCoreRefsets;
         }
 
-        isIgnoreCoreRefsets = true;
-
         sync(service);
 
     }
