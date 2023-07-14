@@ -164,7 +164,7 @@ public abstract class SyncAgent {
         // Find all refsets from filtered branches
         LOG.info("Running sync on refsets.");
         agent = new SyncRefsetAgent(filteredCodeSystems);
-        // agent.syncComponent(service);
+        agent.syncComponent(service);
 
         // Post processing
         LOG.info(STATISTICS.printStatistics());
