@@ -28,6 +28,10 @@ import org.springframework.core.io.ClassPathResource;
 /**
  * The Class SyncPropertyFileReader.
  */
+/**
+ * @author jesseefron
+ *
+ */
 public class SyncPropertyFileReader {
 
     /** The Constant LOG. */
@@ -233,13 +237,19 @@ public class SyncPropertyFileReader {
         if (refsetsToIgnore.isEmpty()) {
 
             try (final BufferedReader reader = new BufferedReader(new InputStreamReader(ignoredRefsetsResource.getInputStream()));) {
+
                 String line;
+
                 while ((line = reader.readLine()) != null) {
+
                     refsetsToIgnore.add(line);
                 }
+
             } catch (IOException e) {
+
                 e.printStackTrace();
             }
+
         }
 
         return refsetsToIgnore;
@@ -322,6 +332,7 @@ public class SyncPropertyFileReader {
 
             e.printStackTrace();
         }
+
     }
 
     /**
@@ -352,8 +363,10 @@ public class SyncPropertyFileReader {
 
                     refsetToTagsInfoMap.get(columns[0]).add(stripQuotes(columns[1]));
                 } else {
+
                     LOG.info("Skipping this line in readRttRefsetsToTagsMap(): " + line);
                 }
+
                 line = reader.readLine();
             }
 
@@ -510,11 +523,13 @@ public class SyncPropertyFileReader {
 
             defaultLanguageRefsetMap = new HashMap<>();
         }
+
         if (defaultLanguageRefsetMap.isEmpty()) {
 
             try (final BufferedReader reader = new BufferedReader(new InputStreamReader(undefinedDefaultLangRefsetsResource.getInputStream()));) {
 
                 String line;
+
                 while ((line = reader.readLine()) != null) {
 
                     final String[] columns = line.split("\t");
@@ -524,6 +539,7 @@ public class SyncPropertyFileReader {
 
                         defaultLanguageRefsetMap.get(columns[0]).add(columns[i]);
                     }
+
                 }
 
             } catch (final IOException e) {
@@ -541,6 +557,7 @@ public class SyncPropertyFileReader {
      * @return
      */
     private Map<String, Map<String, String>> readUatEditionProjectInfo() {
+
         final Map<String, Map<String, String>> projectInfo = new HashMap<>();
 
         try {
@@ -555,6 +572,7 @@ public class SyncPropertyFileReader {
                 final String[] columns = line.split(SPLIT_CHARACTER);
 
                 if (!projectInfo.containsKey(columns[2])) {
+
                     projectInfo.put(columns[2], new HashMap<>());
                 }
 
@@ -725,7 +743,9 @@ public class SyncPropertyFileReader {
 
         String updatedLine = line;
         String narrative;
+
         try {
+
             // Clean up narrative if has commas which some do
             if (updatedLine.split(SPLIT_CHARACTER)[9].startsWith("\"")) {
 
@@ -759,6 +779,7 @@ public class SyncPropertyFileReader {
             final String[] values = updatedLine.split(SPLIT_CHARACTER);
 
             if (projectsToIgnore.contains(values[27])) {
+
                 // Don't add refsets from ignored projects (just WCI projects for now)
                 return null;
             } else if (!values[8].matches("\\b\\d*\\b")) {
@@ -841,6 +862,7 @@ public class SyncPropertyFileReader {
         }
 
         try {
+
             if (line.split(SPLIT_CHARACTER)[1].startsWith("\"")) {
 
                 // If description has commas (and some do), can't rely on
@@ -885,6 +907,7 @@ public class SyncPropertyFileReader {
     public Map<String, Map<String, String>> getProjectIdToProjectInfoMap() {
 
         if (projectIdToProjectInfoMap.isEmpty()) {
+
             readRttProjectInfo();
         }
 
@@ -899,6 +922,7 @@ public class SyncPropertyFileReader {
     public Map<String, String> getSctIdToProjectIdMap() {
 
         if (sctIdToProjectIdMap.isEmpty()) {
+
             readRttProjectInfo();
         }
 
@@ -995,11 +1019,6 @@ public class SyncPropertyFileReader {
         return teamToProjects;
     }
 
-    /**
-     * Returns the team membership.
-     *
-     * @return the team membership
-     */
     public Map<String, Set<String>> getTeamMembership() {
 
         return teamMembership;
@@ -1016,6 +1035,7 @@ public class SyncPropertyFileReader {
     }
 
     public Map<String, String> getUatEditionProjectInfoMap(String editionShortName) {
+
         return uatEditionProjectInfo.get(editionShortName);
     }
 }

@@ -18,7 +18,8 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class SyncCodeSystemConsumer {
+public class SyncCodeSystemDeterminer {
+
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(SyncCodeSystemAgent.class);
 
@@ -34,8 +35,8 @@ public class SyncCodeSystemConsumer {
 
     private String testingEditionShortName;
 
-    public SyncCodeSystemConsumer(final TerminologyService service, final SyncUtilities syncUtilities, final SyncStatistics syncStatistics, final boolean isTesting,
-            final String testingEditionShortName) {
+    public SyncCodeSystemDeterminer(final TerminologyService service, final SyncUtilities syncUtilities, final SyncStatistics syncStatistics, final boolean isTesting,
+        final String testingEditionShortName) {
 
         this.service = service;
         this.syncUtilities = syncUtilities;
@@ -44,7 +45,8 @@ public class SyncCodeSystemConsumer {
         this.testingEditionShortName = testingEditionShortName;
     }
 
-    public Set<JsonNode> identifyCodeSystemsToProcess() throws Exception {
+    public Set<JsonNode> determineCodeSystemsToProcess() throws Exception {
+
         final Set<JsonNode> filteredCodeSystems = new HashSet<>();
 
         // Get all code systems from Snowstorm
@@ -66,10 +68,12 @@ public class SyncCodeSystemConsumer {
     }
 
     public HashMap<String, String> getEditionToOrganizationMap(final Set<JsonNode> filteredCodeSystems) {
+
         final HashMap<String, String> termServerEditionToOrganizationMap = new HashMap<>();
 
         // Determine Snow edition-to-orgName map
         for (final JsonNode codeSystem : filteredCodeSystems) {
+
             final String shortName = codeSystem.get("shortName").asText();
             final String organizationName = syncUtilities.determineOrganizationName(codeSystem);
 
@@ -106,32 +110,40 @@ public class SyncCodeSystemConsumer {
                 final String maintainerType = syncUtilities.identifyMaintainerType(codeSystem, editionShortName);
 
                 if (isTesting && !isTestingEditionToProcess(editionShortName, syncUtilities)) {
+
                     ignoredReasonEditionMap.get(ReasonEditionSkipped.WRONG_TESTING_EDITION).add(editionShortName);
 
                 } else if (codeSystem.has("active") && !codeSystem.get("active").asBoolean()) {
+
                     // Skipping inactive code system
                     ignoredReasonEditionMap.get(ReasonEditionSkipped.INACTIVE_EDITION).add(editionShortName);
 
                 } else if (!syncUtilities.isInternationalEdition(editionShortName) && !MANAGED_SERVICE_CONTAINER_TYPE.equals(maintainerType)) {
+
                     // Skipping inactive code system
                     ignoredReasonEditionMap.get(ReasonEditionSkipped.NON_MANAGED_SERVICE).add(editionShortName);
 
                 } else if (syncUtilities.getPropertyReader().getCodeSystemsToIgnore().contains(editionShortName)) {
+
                     // Code System has been defined as to-be-ignored (either by specifying name or shortname).
                     ignoredReasonEditionMap.get(ReasonEditionSkipped.IGNORED_PER_FILE_EDITION).add(editionShortName);
 
                 }
+
             }
+
         }
 
         // Log why each edition that isn't being processed is being skipped
         for (final ReasonEditionSkipped reason : ignoredReasonEditionMap.keySet()) {
 
             if (!ignoredReasonEditionMap.get(reason).isEmpty()) {
+
                 final StringBuffer s = new StringBuffer("Ignoring these editions as they are: ");
                 s.append(System.lineSeparator());
 
                 switch (reason) {
+
                     case WRONG_TESTING_EDITION:
                         s.append("not the testing edition specified");
                         break;
@@ -153,6 +165,7 @@ public class SyncCodeSystemConsumer {
                 ignoredReasonEditionMap.get(reason).stream().forEach(editionShortName -> s.append(editionShortName + ","));
                 LOG.info(s.substring(0, s.toString().length()));
             }
+
         }
 
         return ignoredReasonEditionMap;
@@ -197,10 +210,15 @@ public class SyncCodeSystemConsumer {
 
                 final String editionShortName = codeSystem.get("shortName").asText();
 
+                // if ( editionShortName.equals("SNOMEDCT-NO") || editionShortName.equals("SNOMEDCT-SE") ) {
+
                 if (!ignoredEditions.contains(editionShortName)) {
 
                     filteredCodeSystems.add(codeSystem);
                 }
+
+                // }
+
             }
 
         }
@@ -215,6 +233,7 @@ public class SyncCodeSystemConsumer {
      * @return the int
      */
     private int countCodeSystems(final JsonNode organizationJsonRootNode) {
+
         final Iterator<JsonNode> organizationIterator = organizationJsonRootNode.iterator();
 
         int counter = 0;

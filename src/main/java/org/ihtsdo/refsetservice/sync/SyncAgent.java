@@ -20,7 +20,7 @@ import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.sync.util.SyncCodeSystemConsumer;
+import org.ihtsdo.refsetservice.sync.util.SyncCodeSystemDeterminer;
 import org.ihtsdo.refsetservice.sync.util.SyncDatabaseHandler;
 import org.ihtsdo.refsetservice.sync.util.SyncStatistics;
 import org.ihtsdo.refsetservice.sync.util.SyncUtilities;
@@ -72,7 +72,7 @@ public abstract class SyncAgent {
     private static boolean testing = false;
 
     /** The testing edition short name. */
-    protected static String testingEditionShortName = "SNOMEDCT-BE";
+    protected static String testingEditionShortName = "SNOMEDCT-NO";
 
     /** The testing refset. */
 
@@ -119,6 +119,8 @@ public abstract class SyncAgent {
             isIgnoreCoreRefsets = ignoreCoreRefsets;
         }
 
+        isIgnoreCoreRefsets = true;
+
         sync(service);
 
     }
@@ -135,9 +137,9 @@ public abstract class SyncAgent {
         final Date startOperationStartTime = new Date();
 
         initialize(service);
-        SyncCodeSystemConsumer termServerCodeSystemConsumer = new SyncCodeSystemConsumer(service, getUtilities(), STATISTICS, isTesting(), testingEditionShortName);
+        SyncCodeSystemDeterminer termServerCodeSystemConsumer = new SyncCodeSystemDeterminer(service, getUtilities(), STATISTICS, isTesting(), testingEditionShortName);
 
-        Set<JsonNode> filteredCodeSystems = termServerCodeSystemConsumer.identifyCodeSystemsToProcess();
+        Set<JsonNode> filteredCodeSystems = termServerCodeSystemConsumer.determineCodeSystemsToProcess();
         final HashMap<String, String> termServerEditionToOrganizationMap = termServerCodeSystemConsumer.getEditionToOrganizationMap(filteredCodeSystems);
 
         LOG.info("Starting Syncing of Users, Projects, Code System, Branches, and Refsets from Termserver");
@@ -150,9 +152,10 @@ public abstract class SyncAgent {
         agent.syncComponent(service);
 
         // Update available code systems due to potential migrations
-        filteredCodeSystems = termServerCodeSystemConsumer.identifyCodeSystemsToProcess();
+        filteredCodeSystems = termServerCodeSystemConsumer.determineCodeSystemsToProcess();
 
         if (isCleanDatabase(service)) {
+
             // If first time processing, then and only then update users, teams, and projects based on crowd.
             LOG.info("Running sync on an empty database. Thus add users to orgs, users to admin teams, and new projects");
 
@@ -163,7 +166,7 @@ public abstract class SyncAgent {
         // Find all refsets from filtered branches
         LOG.info("Running sync on refsets.");
         agent = new SyncRefsetAgent(filteredCodeSystems);
-        agent.syncComponent(service);
+        // agent.syncComponent(service);
 
         // Post processing
         LOG.info(STATISTICS.printStatistics());
@@ -209,7 +212,6 @@ public abstract class SyncAgent {
         SyncAgent.dbHandler = dbHandler;
     }
 
-
     /**
      * @param developerTestingEditionShortName the developerTestingEditionShortName to set
      */
@@ -251,6 +253,7 @@ public abstract class SyncAgent {
     }
 
     private static boolean isCleanDatabase(TerminologyService service) throws Exception {
+
         return service.getAll(Project.class).isEmpty();
     }
 
@@ -265,8 +268,10 @@ public abstract class SyncAgent {
         service.setModifiedFlag(true);
 
         if (dbHandler == null) {
+
             dbHandler = new SyncDatabaseHandler(null, STATISTICS);
         }
+
         if (utilities == null) {
 
             utilities = new SyncUtilities(dbHandler);
@@ -305,8 +310,10 @@ public abstract class SyncAgent {
         STATISTICS.clearStatistics();
 
         if (utilities != null) {
+
             utilities.clearPreviousRun();
         }
+
     }
 
     /**
@@ -321,9 +328,11 @@ public abstract class SyncAgent {
     protected boolean isDifferentAttribute(final String shortName, final String attributeName, final Object databaseAttribute, final Object termserverAttribute) {
 
         if (termserverAttribute == null && databaseAttribute == null) {
+
             // Both null, no difference
             return false;
         } else if (termserverAttribute != null && databaseAttribute != null && databaseAttribute.equals(termserverAttribute)) {
+
             // Both not null with identical value, no difference
             return false;
         }
@@ -332,7 +341,7 @@ public abstract class SyncAgent {
         if (databaseAttribute instanceof Long) {
 
             LOG.info(" inconsistency found on attribute " + attributeName + " for edition " + shortName + " where termserver has " + new Date((Long) termserverAttribute) + "' and DB is '"
-                    + new Date((Long) databaseAttribute) + "'");
+                + new Date((Long) databaseAttribute) + "'");
         } else {
 
             LOG.info(" inconsistency found on attribute " + attributeName + " for edition " + shortName + " where termserver has '" + termserverAttribute + "' and DB is '" + databaseAttribute + "'");

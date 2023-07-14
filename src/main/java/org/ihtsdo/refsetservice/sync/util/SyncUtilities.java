@@ -41,7 +41,6 @@ import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.sync.SyncAgent;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
@@ -165,6 +164,7 @@ public class SyncUtilities {
         User user = getUser(service, userName);
 
         if (user == null) {
+
             user = dbHandler.addUser(service, name, userName, email);
         }
 
@@ -181,6 +181,7 @@ public class SyncUtilities {
     public Set<String> getCoreRefsets() throws Exception {
 
         if (CORE_REFSETS != null && !CORE_REFSETS.isEmpty()) {
+
             return CORE_REFSETS;
         }
 
@@ -190,6 +191,7 @@ public class SyncUtilities {
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+
                 throw new Exception("Failed calling concept-descendents on Simple Refset Concept in SI-CORE (to identify international refsets)");
             }
 
@@ -201,16 +203,22 @@ public class SyncUtilities {
             final Iterator<JsonNode> refsetIterator = root.get("items").iterator();
 
             while (refsetIterator.hasNext()) {
+
                 final JsonNode refset = refsetIterator.next();
 
                 if (!refset.has("conceptId")) {
+
                     LOG.error("Refset must have conceptId: " + refset);
                 } else {
+
                     LOG.info("Core Refset: " + refset.get("conceptId").asText());
                     CORE_REFSETS.add(refset.get("conceptId").asText());
                 }
+
             }
+
         } catch (Exception e) {
+
             throw new Exception("Failed finding descendents on Simple Refset Concept in SI-CORE to identify international refsets");
         }
 
@@ -226,6 +234,7 @@ public class SyncUtilities {
     public Set<String> getCoreModules() throws Exception {
 
         if (CORE_MODULES != null && !CORE_MODULES.isEmpty()) {
+
             return CORE_MODULES;
         }
 
@@ -235,6 +244,7 @@ public class SyncUtilities {
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+
                 throw new Exception("Failed calling concept-descendents on CORE MModule Parent in MAIN (to identify international modules)");
             }
 
@@ -246,15 +256,21 @@ public class SyncUtilities {
             final Iterator<JsonNode> moduleIterator = root.get("items").iterator();
 
             while (moduleIterator.hasNext()) {
+
                 final JsonNode module = moduleIterator.next();
 
                 if (!module.has("conceptId")) {
+
                     LOG.error("Module must have conceptId: " + module);
                 } else {
+
                     CORE_MODULES.add(module.get("conceptId").asText());
                 }
+
             }
+
         } catch (final Exception e) {
+
             throw new Exception("Failed finding descendents of CORE MModule Parent in MAIN to identify international modules");
         }
 
@@ -311,6 +327,7 @@ public class SyncUtilities {
             if (editionModules.isEmpty()) {
 
                 if (!isDeveloperEdition(editionName)) {
+
                     // All non-core code systems must have a non-core module.
                     // throw new Exception("Did not find any modules for code system " + editionName);
                     LOG.error("Did not find any edition-specific modules for code system: " + editionName + ". Will default to CORE modules");
@@ -387,6 +404,7 @@ public class SyncUtilities {
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+
                 throw new Exception("Failed to get branch information to obtain optional language refsets for edition's main branch");
             }
 
@@ -398,20 +416,28 @@ public class SyncUtilities {
             final JsonNode metadata = root.get("metadata");
 
             if (metadata.has("optionalLanguageRefsets")) {
+
                 final Iterator<JsonNode> refsetIterator = metadata.get("optionalLanguageRefsets").iterator();
 
                 while (refsetIterator.hasNext()) {
+
                     final JsonNode refset = refsetIterator.next();
 
                     if (!refset.has("refsetId")) {
+
                         LOG.error("Optional language refset must have a refsetId defined: " + refset);
                     } else {
+
                         LOG.info("Optional language refset: " + refset.get("refsetId").asText());
                         retSet.add(refset.get("refsetId").asText());
                     }
+
                 }
+
             }
+
         } catch (Exception e) {
+
             throw new Exception("Failed to process the optional language refsets defined for this branch: " + branch);
         }
 
@@ -425,8 +451,10 @@ public class SyncUtilities {
      * @return the string
      */
     public String determineOrganizationName(final JsonNode codeSystem) {
+
         // If owner defined, return it as organization name
         if (codeSystem.has("owner") && !codeSystem.get("owner").asText().trim().isBlank()) {
+
             return codeSystem.get("owner").asText();
         }
 
@@ -449,10 +477,11 @@ public class SyncUtilities {
         } else {
 
             return "Two things to change." + System.lineSeparator()
-                    + "1) Your organization name isn't defined on Snowstorm yet, so we have provided you with a temporary one that matches your edition name." + System.lineSeparator()
-                    + "Have your organization's administrator(s) contact SNOMED International to have it changed." + System.lineSeparator()
-                    + "2) Organizational administrator(s) can update this default description at any time";
+                + "1) Your organization name isn't defined on Snowstorm yet, so we have provided you with a temporary one that matches your edition name." + System.lineSeparator()
+                + "Have your organization's administrator(s) contact SNOMED International to have it changed." + System.lineSeparator()
+                + "2) Organizational administrator(s) can update this default description at any time";
         }
+
     }
 
     /**
@@ -532,12 +561,17 @@ public class SyncUtilities {
             String line = reader.readLine();
 
             while (line != null) {
+
                 if (StringUtils.isNoneBlank(line)) {
+
                     sqlQueries.add(line);
                 }
+
                 line = reader.readLine();
             }
+
         } catch (IOException e) {
+
             e.printStackTrace();
         }
 
@@ -546,6 +580,7 @@ public class SyncUtilities {
         // Collect results
 
         for (final String query : sqlQueries) {
+
             if (query != null && !query.contains("--") && query.contains("select ")) {
 
                 @SuppressWarnings("unchecked")
@@ -553,15 +588,22 @@ public class SyncUtilities {
                 result.append(query).append("\r\n");
 
                 if (rows != null) {
+
                     for (final Object[] row : rows) {
+
                         for (final Object field : row) {
+
                             result.append(field).append("|");
                         }
+
                         result.append("\r\n");
                     }
+
                 }
+
                 result.append("\r\n");
             }
+
         }
 
         LOG.info("DONE POST SYNC DATA QUERIES");
@@ -580,6 +622,7 @@ public class SyncUtilities {
         final String results = getSyncResults(service);
 
         try {
+
             final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
             final String fileName = String.format(System.getProperty("java.io.tmpdir") + FileSystems.getDefault().getSeparator() + "refset-sync-results-%s.txt", dateFormat.format(new Date()));
             final Path path = Paths.get(fileName);
@@ -587,6 +630,7 @@ public class SyncUtilities {
 
             Files.write(path, queryResultsToBytes);
         } catch (IOException e) {
+
             LOG.error("Error occured writing post sync report to file", e);
         }
 
@@ -596,6 +640,7 @@ public class SyncUtilities {
         final String emailReceipients = PropertyUtility.getProperties().getProperty("mail.smtp.postsync.report.to");
 
         if (StringUtils.isNotBlank(emailReceipients)) {
+
             EmailUtility.sendEmail("RT2 Post Sync Report", null, emailReceipients, results);
         }
 
@@ -650,14 +695,18 @@ public class SyncUtilities {
         final List<?> items = stream.collect(Collectors.toList());
 
         if (items.size() == 1) {
+
             return items.get(0);
         }
 
         if (items.isEmpty()) {
+
             throw new Exception("Cannot find an element to matching value: " + matchingValueDescription);
         } else {
+
             throw new Exception("Found multiple elements with same matching value: " + matchingValueDescription + " has items:  " + items);
         }
+
     }
 
     /**
@@ -700,12 +749,14 @@ public class SyncUtilities {
     public Refset initializeWorkflowStatus(final TerminologyService service, final Refset refset) throws Exception {
 
         if (!isDeveloperEdition(refset.getEdition().getShortName())) {
+
             throw new Exception("Cannot modify the workflow status of anything other than the developer org");
         }
 
         final String currentStatus = refset.getWorkflowStatus();
 
         try {
+
             // if the status is Published then create a new version of the refset that is ready to be edited
             final Refset updatedRefset = WorkflowService.setWorkflowStatusByAction(service, SecurityService.getUserFromSession(), WorkflowService.FINISH_EDIT, refset, "");
 
@@ -719,6 +770,7 @@ public class SyncUtilities {
             }
 
         } catch (Exception e) {
+
             LOG.error("Failed to initialize workflow on developer refset: " + refset + " with Exception --> " + e.getMessage());
 
             e.printStackTrace();
