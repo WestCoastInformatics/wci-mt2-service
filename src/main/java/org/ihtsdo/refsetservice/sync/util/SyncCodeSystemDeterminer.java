@@ -284,7 +284,7 @@ public class SyncCodeSystemDeterminer {
      */
     private boolean isTestingEditionToProcess(final String codeSystem, SyncUtilities syncUtilities) {
 
-        return ((testingEditionShortName == null || testingEditionShortName.isEmpty()) || codeSystem.equalsIgnoreCase(testingEditionShortName) || syncUtilities.isInternationalEdition(codeSystem));
+        return ((testingEditionShortName == null || testingEditionShortName.isEmpty()) || codeSystem.equalsIgnoreCase(testingEditionShortName) );
 
     }
 }
