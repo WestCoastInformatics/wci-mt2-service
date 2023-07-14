@@ -134,7 +134,10 @@ public class SyncRefsetAgent extends SyncAgent {
         addedRefsetSctIds.stream().filter(refsetId -> termserverRefsetIdToRefsetVersionsDataMap.containsKey(refsetId))
                 .forEach(refsetId -> newlyCreatedAndUnchangedRefsetToVersionsMap.put(refsetId, termserverRefsetIdToRefsetVersionsDataMap.get(refsetId).keySet()));
 
-        // Activate previously inactivated refsets. Note: Will log and update stats after remove those that were activatedAndModified
+        // Activate previously inactivated refsets. Note: Will log and update stats after remove those that were activatedAndModified\
+
+        // TODO: No reason to support activated/inactivated in sync as will be handled strictly within RT2 DB?
+        /*
         final List<String> activatedRefsetSctIds = termserverRefsetIds.stream()
                 .filter(refsetId -> dbInactiveRefsetIdToVersionRefsetMap.containsKey(refsetId) && (!dbActiveRefsetIdToVersionRefsetMap.containsKey(refsetId)
                         || (dbActiveRefsetIdToVersionRefsetMap.get(refsetId).keySet().stream().noneMatch(version -> dbActiveRefsetIdToVersionRefsetMap.get(refsetId).get(version).isActive()))))
@@ -199,7 +202,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
         addedOrInactivatedRefsetIds.addAll(addedRefsetSctIds);
         addedOrInactivatedRefsetIds.addAll(inactivatedRefsetIds.keySet());
-
+*/
         return addedOrInactivatedRefsetIds;
     }
 
@@ -232,6 +235,12 @@ public class SyncRefsetAgent extends SyncAgent {
         // Perform analysis on one version at a time.
         // Dev note: Stream ignores those that are listed in the new or inactivated refsetId list (activated will be processed for changes)
 
+        if (addedOrInactivatedRefsetIds.isEmpty()) {
+        
+            // Nothing to do if there are no added/inactivated refsets
+            return;
+        }
+        
         LOG.info(("analyze refset versions"));
 
         Map<String, Map<Long, Refset>> dbActiveRefsetIdToVersionRefsetMap = new HashMap<>();
