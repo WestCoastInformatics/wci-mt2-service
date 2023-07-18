@@ -2589,7 +2589,7 @@ public class RefsetService {
             // if there are no teams add organization admin team
             if (allTeams.size() == 0) {
 
-                final Team organizationAdminTeam = OrganizationService.getOrganizationAdminTeam(service, organization.getId());
+                final Team organizationAdminTeam = OrganizationService.getActiveOrganizationAdminTeam(service, organization.getId());
 
                 if (organizationAdminTeam != null) {
                     allTeams.add(organizationAdminTeam);

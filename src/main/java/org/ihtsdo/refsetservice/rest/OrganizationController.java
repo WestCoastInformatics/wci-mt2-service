@@ -287,7 +287,7 @@ public class OrganizationController extends BaseController {
         try (final TerminologyService service = new TerminologyService()) {
 
             service.setModifiedBy(authUser.getUserName());
-            OrganizationService.inactivateOrganization(service, authUser, id);
+            OrganizationService.updateOrganizationStatus(service, authUser, id, false);
 
             return new ResponseEntity<>(HttpStatus.ACCEPTED);
 

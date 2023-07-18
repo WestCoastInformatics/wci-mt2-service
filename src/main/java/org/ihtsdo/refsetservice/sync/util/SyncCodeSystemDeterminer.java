@@ -54,7 +54,7 @@ public class SyncCodeSystemDeterminer {
         LOG.info("Found " + countCodeSystems(organizationJsonRootNode) + " + Code Systems on term server: ");
 
         // Filter code systems (based on active-setting, ignoredCS list, testing situation, and bad data)
-        final Map<ReasonEditionSkipped, Set<String>> ignoredReasonsEditionMap = identifyEditionsToSkip(service, organizationJsonRootNode, syncUtilities, isTesting);
+        final Map<SyncReasonEditionSkipped, Set<String>> ignoredReasonsEditionMap = identifyEditionsToSkip(service, organizationJsonRootNode, syncUtilities, isTesting);
 
         filteredCodeSystems.addAll(filterValidCodeSystems(service, organizationJsonRootNode, ignoredReasonsEditionMap, syncUtilities));
         LOG.info("Will be processing these " + filteredCodeSystems.size() + " Code Systems found on the term server: ");
@@ -83,12 +83,12 @@ public class SyncCodeSystemDeterminer {
         return termServerEditionToOrganizationMap;
     }
 
-    private Map<ReasonEditionSkipped, Set<String>> identifyEditionsToSkip(final TerminologyService service, final JsonNode organizationJsonRootNode, SyncUtilities syncUtilities,
+    private Map<SyncReasonEditionSkipped, Set<String>> identifyEditionsToSkip(final TerminologyService service, final JsonNode organizationJsonRootNode, SyncUtilities syncUtilities,
         final boolean isTesting) throws Exception {
 
         final Iterator<JsonNode> organizationIterator = organizationJsonRootNode.iterator();
-        final Map<ReasonEditionSkipped, Set<String>> ignoredReasonEditionMap = new EnumMap<>(ReasonEditionSkipped.class);
-        ReasonEditionSkipped.getAllReasons().stream().forEach(reason -> ignoredReasonEditionMap.put(reason, new HashSet<>()));
+        final Map<SyncReasonEditionSkipped, Set<String>> ignoredReasonEditionMap = new EnumMap<>(SyncReasonEditionSkipped.class);
+        SyncReasonEditionSkipped.getAllReasons().stream().forEach(reason -> ignoredReasonEditionMap.put(reason, new HashSet<>()));
 
         while (organizationIterator.hasNext()) {
 
@@ -111,22 +111,22 @@ public class SyncCodeSystemDeterminer {
 
                 if (isTesting && !isTestingEditionToProcess(editionShortName, syncUtilities)) {
 
-                    ignoredReasonEditionMap.get(ReasonEditionSkipped.WRONG_TESTING_EDITION).add(editionShortName);
+                    ignoredReasonEditionMap.get(SyncReasonEditionSkipped.WRONG_TESTING_EDITION).add(editionShortName);
 
                 } else if (codeSystem.has("active") && !codeSystem.get("active").asBoolean()) {
 
                     // Skipping inactive code system
-                    ignoredReasonEditionMap.get(ReasonEditionSkipped.INACTIVE_EDITION).add(editionShortName);
+                    ignoredReasonEditionMap.get(SyncReasonEditionSkipped.INACTIVE_EDITION).add(editionShortName);
 
                 } else if (!syncUtilities.isInternationalEdition(editionShortName) && !MANAGED_SERVICE_CONTAINER_TYPE.equals(maintainerType)) {
 
                     // Skipping inactive code system
-                    ignoredReasonEditionMap.get(ReasonEditionSkipped.NON_MANAGED_SERVICE).add(editionShortName);
+                    ignoredReasonEditionMap.get(SyncReasonEditionSkipped.NON_MANAGED_SERVICE).add(editionShortName);
 
                 } else if (syncUtilities.getPropertyReader().getCodeSystemsToIgnore().contains(editionShortName)) {
 
                     // Code System has been defined as to-be-ignored (either by specifying name or shortname).
-                    ignoredReasonEditionMap.get(ReasonEditionSkipped.IGNORED_PER_FILE_EDITION).add(editionShortName);
+                    ignoredReasonEditionMap.get(SyncReasonEditionSkipped.IGNORED_PER_FILE_EDITION).add(editionShortName);
 
                 }
 
@@ -135,7 +135,7 @@ public class SyncCodeSystemDeterminer {
         }
 
         // Log why each edition that isn't being processed is being skipped
-        for (final ReasonEditionSkipped reason : ignoredReasonEditionMap.keySet()) {
+        for (final SyncReasonEditionSkipped reason : ignoredReasonEditionMap.keySet()) {
 
             if (!ignoredReasonEditionMap.get(reason).isEmpty()) {
 
@@ -181,7 +181,7 @@ public class SyncCodeSystemDeterminer {
      * @return the map
      * @throws Exception the exception
      */
-    private Set<JsonNode> filterValidCodeSystems(TerminologyService service, final JsonNode organizationJsonRootNode, Map<ReasonEditionSkipped, Set<String>> ignoredReasonsEditionMap,
+    private Set<JsonNode> filterValidCodeSystems(TerminologyService service, final JsonNode organizationJsonRootNode, Map<SyncReasonEditionSkipped, Set<String>> ignoredReasonsEditionMap,
         SyncUtilities syncUtilities) throws Exception {
 
         final Set<JsonNode> filteredCodeSystems = new HashSet<>();
@@ -284,7 +284,7 @@ public class SyncCodeSystemDeterminer {
      */
     private boolean isTestingEditionToProcess(final String codeSystem, SyncUtilities syncUtilities) {
 
-        return ((testingEditionShortName == null || testingEditionShortName.isEmpty()) || codeSystem.equalsIgnoreCase(testingEditionShortName) );
+        return ((testingEditionShortName == null || testingEditionShortName.isEmpty()) || codeSystem.equalsIgnoreCase(testingEditionShortName));
 
     }
 }

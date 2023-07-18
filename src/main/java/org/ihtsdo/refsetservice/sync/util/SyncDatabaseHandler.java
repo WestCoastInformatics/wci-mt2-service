@@ -290,9 +290,9 @@ public class SyncDatabaseHandler {
             project.setEdition(edition);
             project.setPrimaryContactEmail(edition.getOrganization().getPrimaryContactEmail());
 
-            if (OrganizationService.getOrganizationAdminTeam(service, edition.getOrganizationId()) != null) {
+            if (OrganizationService.getActiveOrganizationAdminTeam(service, edition.getOrganizationId()) != null) {
 
-                project.getTeams().add(OrganizationService.getOrganizationAdminTeam(service, edition.getOrganizationId()).getId());
+                project.getTeams().add(OrganizationService.getActiveOrganizationAdminTeam(service, edition.getOrganizationId()).getId());
             }
 
             // Persist
@@ -405,8 +405,8 @@ public class SyncDatabaseHandler {
      * @param teamType the team type
      * @return the team
      */
-    public Team addTeam(final TerminologyService service, final String teamName, final String teamDescription, final Organization organization, final String teamType) {
-
+    private Team addTeam(final TerminologyService service, final String teamName, final String teamDescription, final Organization organization, final String teamType) {
+        
         try {
 
             final Team team = new Team();
@@ -545,17 +545,13 @@ public class SyncDatabaseHandler {
 
             Organization updatedOrganization = null;
 
-            if (!isActive) {
+            updatedOrganization = OrganizationService.updateOrganizationStatus(service, SecurityService.getUserFromSession(), organization.getId(), isActive);
 
-                updatedOrganization = OrganizationService.inactivateOrganization(service, SecurityService.getUserFromSession(), organization.getId());
+            if (!isActive) {
 
                 STATISTICS.incrementOrganizationsInactivated();
 
             } else {
-
-                // For now, just activate organization and adminTeam. Rest is up to admins
-                organization.setActive(isActive);
-                updatedOrganization = service.update(organization);
 
                 STATISTICS.incrementOrganizationsReactivated();
             }
@@ -909,6 +905,7 @@ public class SyncDatabaseHandler {
     public Set<Refset> updateRefsetStatusAllVersions(final TerminologyService service, final String refsetId, final boolean isActive) {
 
         final Set<Refset> updatedRefsetVersions = new HashSet<>();
+        Refset testingVersion = null;
 
         try {
 
@@ -923,7 +920,7 @@ public class SyncDatabaseHandler {
                 }
 
                 refsetVersion.setActive(isActive);
-
+                testingVersion = refsetVersion;
                 final Refset updatedRefsetVersion = updateRefset(service, refsetVersion);
 
                 if (!isActive) {
@@ -944,6 +941,7 @@ public class SyncDatabaseHandler {
         } catch (Exception e) {
 
             LOG.error("Failed to update status of all versions of refsetId: " + refsetId + " to " + isActive + " with Exception --> " + e.getMessage());
+            LOG.error("Failed refset: " + testingVersion);
 
             return null;
         }
@@ -959,16 +957,27 @@ public class SyncDatabaseHandler {
      * @throws Exception the exception
      */
     public Team createAdminOrganizationTeam(final TerminologyService service, final Organization organization) throws Exception {
-
         try {
 
-            Team adminTeam = OrganizationService.getOrganizationAdminTeam(service, organization.getId());
+            Team adminTeam = OrganizationService.getActiveOrganizationAdminTeam(service, organization.getId());
 
-            if (adminTeam == null) {
+            if (adminTeam != null) {
 
+                LOG.error("SHouldn't be creating admin team if one for this organization already exists");
+            }
+            
+            
+            Team inactiveAdminTeam = OrganizationService.getOrganizationAdminTeam(service, organization.getId());
+            
+            if (inactiveAdminTeam == null) {
                 adminTeam =
                     addTeam(service, TeamService.generateOrganizationTeamName(organization), TeamService.getOrganizationTeamDescription(organization), organization, TeamType.ORGANIZATION.getText());
 
+            } else if (!inactiveAdminTeam.isActive()) {
+                inactiveAdminTeam.setActive(true);
+                adminTeam = service.update(inactiveAdminTeam);
+            } else {
+                throw new Exception("Odd state for existing admin team: " + inactiveAdminTeam);
             }
 
             for (final UserRole role : UserRole.getAllRoles()) {
@@ -986,37 +995,5 @@ public class SyncDatabaseHandler {
 
     }
 
-    public Team addTeam(TerminologyService service, Team originalTeam, Organization organization) {
 
-        try {
-
-            final Team team = new Team();
-            team.setName(originalTeam.getName());
-            team.setDescription(originalTeam.getDescription());
-            team.setOrganization(organization);
-            team.setPrimaryContactEmail(originalTeam.getPrimaryContactEmail());
-            team.setType(originalTeam.getType());
-            team.setActive(originalTeam.isActive());
-            originalTeam.getRoles().stream().forEach(r -> team.getRoles().add(UserRole.valueOf(r).toString()));
-
-            // Persist
-            final Team newTeam = service.add(team);
-
-            service.add(AuditEntryHelper.addTeamEntry(newTeam));
-
-            LOG.info("Adding new Team based on an existing team (" + originalTeam.getId() + "): " + newTeam.getId() + " (" + newTeam.getName() + ") ");
-            STATISTICS.incrementTeamsAdded();
-
-            return newTeam;
-        } catch (Exception e) {
-
-            LOG.error("Failed to add a new team based on an existing team (" + originalTeam.getId() + "): " + originalTeam.getName() + " to " + organization.getName() + " with Exception --> "
-                + e.getMessage());
-
-            e.printStackTrace();
-
-            return null;
-        }
-
-    }
 }

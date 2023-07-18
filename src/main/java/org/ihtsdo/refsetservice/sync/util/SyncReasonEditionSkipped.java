@@ -6,7 +6,7 @@ import java.util.List;
 /**
  * The Enum ReasonEditionSkipped.
  */
-public enum ReasonEditionSkipped {
+public enum SyncReasonEditionSkipped {
 
     /** The wrong testing edition. */
     WRONG_TESTING_EDITION,
@@ -18,14 +18,14 @@ public enum ReasonEditionSkipped {
     NON_MANAGED_SERVICE;
 
     /** Enums as list. */
-    public static final List<ReasonEditionSkipped> ALL_REASONS = new ArrayList<>();
+    public static final List<SyncReasonEditionSkipped> ALL_REASONS = new ArrayList<>();
 
     /**
      * Returns the all roles.
      *
      * @return the all roles
      */
-    public static List<ReasonEditionSkipped> getAllReasons() {
+    public static List<SyncReasonEditionSkipped> getAllReasons() {
 
         if (ALL_REASONS.isEmpty()) {
 
@@ -34,6 +34,7 @@ public enum ReasonEditionSkipped {
             ALL_REASONS.add(IGNORED_PER_FILE_EDITION);
             ALL_REASONS.add(NON_MANAGED_SERVICE);
         }
+
         return ALL_REASONS;
     }
 

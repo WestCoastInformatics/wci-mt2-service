@@ -22,12 +22,14 @@ import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Team;
+import org.ihtsdo.refsetservice.model.TeamType;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.UserRole;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.TeamService;
+import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,10 +48,29 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     private HashMap<String, String> TERM_SERVER_EDITION_TO_ORGANIZATION_MAP;
 
-    public SyncCodeSystemAgent(Set<JsonNode> filteredCodeSystems, HashMap<String, String> termServerEditionToOrganizationMap) {
+    private Set<User> systemAdminUsers = new HashSet<>();
+
+    public SyncCodeSystemAgent(Set<JsonNode> filteredCodeSystems, HashMap<String, String> termServerEditionToOrganizationMap) throws Exception {
 
         this.FILTERED_CODE_SYSTEMS = filteredCodeSystems;
         this.TERM_SERVER_EDITION_TO_ORGANIZATION_MAP = termServerEditionToOrganizationMap;
+
+        systemAdminUsers.clear();
+
+        try (TerminologyService service = new TerminologyService()) {
+
+            for (String username : SyncAgent.getAdminUsernames()) {
+
+                User user = getUtilities().getUser(service, username);
+
+                if (user != null) {
+
+                    systemAdminUsers.add(user);
+                }
+
+            }
+
+        }
 
     }
 
@@ -66,37 +87,30 @@ public class SyncCodeSystemAgent extends SyncAgent {
         List<String> existingInBothShortNames = syncEditions(service);
 
         // Review both DB & Snowstorm editon-to-org map to ensure consistency
-        syncEditionOrganizationAssociation(service, existingInBothShortNames);
+        syncEditionOrganizationAssociations(service, existingInBothShortNames);
 
-        inactivateOrganizations(service, migrationActivationMap.get(false));
-
-        // TODO: MigrateToActive ultimately using this call as well:
-        // activatedOrganizations.stream().forEach(n -> getDbHandler().updateOrganizationStatus(service, dbInactiveOrganizationNameIdMaps.get(n), true));
+        toggleOrganizationStatus(service, migrationActivationMap);
 
     }
 
-    private void inactivateOrganizations(TerminologyService service, List<String> organizationsToInactivate) throws Exception {
+    private void toggleOrganizationStatus(TerminologyService service, Map<Boolean, List<String>> migrationActivationMap) throws Exception {
 
         List<Organization> activeDbOrganizations = readDbOrganizations(service).stream().filter(o -> o.isActive()).collect(Collectors.toList());
 
-        for (String organizationName : organizationsToInactivate) {
+        for (boolean migrationDirection : migrationActivationMap.keySet()) {
 
-            Stream<Organization> matchingOrganizationsStream = activeDbOrganizations.stream().filter(o -> o.getName().equals(organizationName));
+            for (String organizationName : migrationActivationMap.get(migrationDirection)) {
 
-            Organization organizationToInactivate = (Organization) getUtilities().validateMatches(matchingOrganizationsStream, organizationName);
+                Stream<Organization> matchingOrganizationsStream = activeDbOrganizations.stream().filter(o -> o.getName().equals(organizationName));
 
-            // Only inactivate those organizations that aren't pointing to an edition anymore
-            if (OrganizationService.getOrganizationEditions(service, organizationToInactivate.getId()).getTotal() == 0) {
+                Organization organizationToMigrate = (Organization) getUtilities().validateMatches(matchingOrganizationsStream, organizationName);
 
-                OrganizationService.inactivateOrganization(service, SecurityService.getUserFromSession(), organizationToInactivate.getId());
+                // Only inactivate those organizations that aren't pointing to an edition anymore
+                if ((migrationDirection && !organizationToMigrate.isActive())
+                    || (!migrationDirection && OrganizationService.getOrganizationEditions(service, organizationToMigrate.getId()).getTotal() == 0)) {
 
-                // TODO: SHouldnt' the below be moved to ORgService.inactivateOrg()?
-                List<User> users = OrganizationService.getOrganizationUsers(service, organizationToInactivate, false).getItems();
-
-                for (User organizationUser : users) {
-
-                    organizationToInactivate =
-                        OrganizationService.removeUserFromOrganization(service, SecurityService.getUserFromSession(), organizationUser.getId(), organizationToInactivate.getId());
+                    // TODO: Add (in migrationOrganization) the removal of users from crowd groups (check with Tim on timing)
+                    OrganizationService.updateOrganizationStatus(service, SecurityService.getUserFromSession(), organizationToMigrate.getId(), migrationDirection);
                 }
 
             }
@@ -185,6 +199,9 @@ public class SyncCodeSystemAgent extends SyncAgent {
         final List<String> addedShortNames =
             termserverShortNames.stream().filter(c -> !dbActiveEditionShortNames.contains(c)).filter(c -> !dbInactiveEditionShortNames.contains(c)).collect(Collectors.toList());
 
+        LOG.debug("AAA1== Added editions");
+        addedShortNames.stream().filter(shortName -> termserverShortNameCodeSystemMap.containsKey(shortName)).forEach(shortName -> LOG.debug("AAA1 - " + shortName));
+
         addedShortNames.stream().filter(shortName -> termserverShortNameCodeSystemMap.containsKey(shortName))
             .forEach(shortName -> getDbHandler().addEdition(service, termserverShortNameCodeSystemMap.get(shortName), TERM_SERVER_EDITION_TO_ORGANIZATION_MAP.get(shortName)));
 
@@ -236,7 +253,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
      * @param existingShortNames the existing short names
      * @throws Exception the exception
      */
-    private void syncEditionOrganizationAssociation(final TerminologyService service, final List<String> existingShortNames) throws Exception {
+    private void syncEditionOrganizationAssociations(final TerminologyService service, final List<String> existingShortNames) throws Exception {
 
         List<Edition> activeDbRefsets = readDbActiveEditions(service);
         List<Organization> allDbOrganizations = service.getAll(Organization.class);
@@ -282,27 +299,36 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     private void migrateOrganization(final TerminologyService service, final Edition editionToMove, final Organization targetOrganization) throws Exception {
 
+        OrganizationService.checkEditPermissions(SecurityService.getUserFromSession(), targetOrganization);
+
         final List<User> existingUsers = OrganizationService.getOrganizationUsers(service, editionToMove.getOrganization(), false).getItems();
-        final List<Team> existingTeams = OrganizationService.getActiveOrganizationTeams(service, editionToMove.getOrganizationId()).getItems();
+        final List<Team> existingOrganizationTeams = OrganizationService.getOrganizationTeams(service, editionToMove.getOrganization()).getItems();
 
         Organization newOrganization = targetOrganization;
 
         LOG.info("Start migrating edition " + editionToMove.getName() + " from org: " + editionToMove.getOrganizationName() + "(" + editionToMove.getOrganizationId() + ") to org: "
             + newOrganization.getName() + "(" + newOrganization.getId());
 
-        if (!newOrganization.isActive()) {
+        // Ensure target organization (and it's admin team) are active before proceeding
+        if (!targetOrganization.isActive()) {
 
-            newOrganization = getDbHandler().updateOrganizationStatus(service, newOrganization.getId(), true);
+            targetOrganization.setActive(true);
+
+            newOrganization = service.update(targetOrganization);
+            AuditEntryHelper.changeOrganizationStatusEntry(newOrganization);
+
+            final Team adminTeam = OrganizationService.getOrganizationAdminTeam(service, targetOrganization.getId());
+
+            if (!adminTeam.isActive()) {
+
+                adminTeam.setActive(true);
+
+                service.update(adminTeam);
+            }
+
         }
 
-        final Map<String, List<Project>> existingTeamToProjectsMap = new HashMap<>();
-
-        for (Team team : existingTeams) {
-
-            List<Project> projects = TeamService.getTeamProjects(team);
-
-            existingTeamToProjectsMap.put(team.getId(), projects);
-        }
+        /* Add users to new organization */
 
         // Ensure all users in existing organization are also in target organization
         for (final User user : existingUsers) {
@@ -324,27 +350,40 @@ public class SyncCodeSystemAgent extends SyncAgent {
         }
 
         // Ensure admin users are also in target organization
-        for (String username : SyncAgent.getAdminUsernames()) {
+        for (User adminUser : systemAdminUsers) {
 
-            User user = getUtilities().getUser(service, username);
+            if (newOrganization.getMembers().stream().noneMatch(u -> u.getId().equals(adminUser.getId()))) {
 
-            if (user != null && (newOrganization.getMembers().stream().noneMatch(u -> u.getId().equals(user.getId())))) {
-
-                newOrganization = OrganizationService.addUserToOrganization(service, SecurityService.getUserFromSession(), newOrganization.getId(), user);
+                newOrganization = OrganizationService.addUserToOrganization(service, SecurityService.getUserFromSession(), newOrganization.getId(), adminUser);
             }
 
         }
 
-        // Move the existing edition's teams
-        Set<Team> updatedTeams = new HashSet<>();
+        /* Move the existing organization's teams */
+        final Set<Team> updatedTeams = new HashSet<>();
+        final Map<String, List<Project>> existingTeamToProjectsMap = new HashMap<>();
 
-        for (final Team team : existingTeams) {
+        for (final Team team : existingOrganizationTeams) {
 
-            if (newOrganization.getMembers().stream().noneMatch(t -> t.getId().equals(team.getId()))) {
+            // Move all but admin team
+            if (!TeamType.ORGANIZATION.getText().equals(team.getType())) {
+
+                final List<Project> projects = TeamService.getTeamProjects(team);
+                existingTeamToProjectsMap.put(team.getId(), projects);
 
                 team.setOrganization(newOrganization);
+
                 final Team updatedTeam = service.update(team);
                 updatedTeams.add(updatedTeam);
+
+            } else {
+
+                // Inactivate existing admin team prior to inactivating organization
+                team.setActive(false);
+
+                final Team updatedTeam = service.update(team);
+                updatedTeams.add(updatedTeam);
+
             }
 
         }

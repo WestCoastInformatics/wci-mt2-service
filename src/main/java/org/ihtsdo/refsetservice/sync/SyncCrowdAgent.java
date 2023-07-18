@@ -114,7 +114,7 @@ public class SyncCrowdAgent extends SyncAgent {
         for (Organization dbOrganization : dbOrganizations) {
 
             // Setup return map of organizations to crowd users
-            Team adminTeam = OrganizationService.getOrganizationAdminTeam(service, dbOrganization.getId());
+            Team adminTeam = OrganizationService.getActiveOrganizationAdminTeam(service, dbOrganization.getId());
 
             if (adminTeam == null) {
 
