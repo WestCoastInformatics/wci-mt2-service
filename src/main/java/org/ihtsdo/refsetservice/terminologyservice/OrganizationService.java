@@ -665,6 +665,7 @@ public class OrganizationService extends BaseService {
             LOG.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         } else if (!organization.isActive()) {
+
             final String message = "Unable to add users to inactive organization for " + organizationId;
             LOG.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
@@ -700,10 +701,11 @@ public class OrganizationService extends BaseService {
             LOG.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         } else if (!organization.isActive()) {
+
             final String message = "Unable to add users to inactive organization for " + organizationId;
             LOG.error(message);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
-      }
+        }
 
         if (!organization.getMembers().contains(userToAdd)) {
 
@@ -1269,5 +1271,25 @@ public class OrganizationService extends BaseService {
         query.setQuery("organizationId:" + organization.getId());
 
         return service.find(query, pfs, Team.class, null);
+    }
+
+    public static Map<String, Set<Edition>> getOrganizationNameToEditionsMap(TerminologyService service) throws Exception {
+
+        final Map<String, Set<Edition>> retMap = new HashMap<>();
+
+        List<Edition> editions = service.getAll(Edition.class);
+
+        for (Edition edition : editions) {
+
+            if (!retMap.containsKey(edition.getOrganizationId())) {
+
+                retMap.put(edition.getOrganizationId(), new HashSet<>());
+            }
+
+            retMap.get(edition.getOrganizationId()).add(edition);
+
+        }
+
+        return retMap;
     }
 }
