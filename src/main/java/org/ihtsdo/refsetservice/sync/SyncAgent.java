@@ -72,12 +72,12 @@ public abstract class SyncAgent {
     private static boolean testing = false;
 
     /** The testing edition short name. */
-    protected static String testingEditionShortName = "SNOMEDCT-NO";
+    protected static String testingEditionShortName = "SNOMEDCT-DK";
 
     /** The testing refset. */
 
-    // protected static String testingRefset = null; // To test entire edition
-    private static String testingRefset = "450970008";
+    protected static String testingRefset = null; // To test entire edition
+    // private static String testingRefset = "450970008";
     // private static String testingRefset = "733991000"; // Core - Dentistry (in multiple projects in RTT)
     // protected static String testingRefset = "751000172100"; // 751000172100 - from Belgium
     // protected static String testingRefset = "723264001"; // 723264001 - TAGS (only one today) - from sct-core
@@ -135,14 +135,14 @@ public abstract class SyncAgent {
         final Date startOperationStartTime = new Date();
 
         initialize(service);
+        service.add(AuditEntryHelper.syncBeginEntry(startOperationStartTime));
+
         SyncCodeSystemDeterminer termServerCodeSystemConsumer = new SyncCodeSystemDeterminer(service, getUtilities(), STATISTICS, isTesting(), testingEditionShortName);
 
         Set<JsonNode> filteredCodeSystems = termServerCodeSystemConsumer.determineCodeSystemsToProcess();
         final HashMap<String, String> termServerEditionToOrganizationMap = termServerCodeSystemConsumer.getEditionToOrganizationMap(filteredCodeSystems);
 
         LOG.info("Starting Syncing of Users, Projects, Code System, Branches, and Refsets from Termserver");
-
-        service.add(AuditEntryHelper.syncBeginEntry(startOperationStartTime));
 
         // Only identify branches on filtered code systems and on runShortSync value
         LOG.info("Running sync on organizations & editions.");

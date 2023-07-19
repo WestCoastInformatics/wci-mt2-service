@@ -79,7 +79,7 @@ public class SyncPropertyFileReader {
     /** The team membership resource. */
     private final ClassPathResource teamMembershipResource = new ClassPathResource("sync/initial-teams/teamMembership.txt");
 
-    private final ClassPathResource uatMigrateCleanResource = new ClassPathResource("sync/system-migration/uatProjectNameIds.txt");
+    private final ClassPathResource existingMigrateCleanResource = new ClassPathResource("sync/system-migration/existingProjectNameIds.txt");
 
     /** The Constant SPLIT_CHARACTER. */
     public static final String SPLIT_CHARACTER = "\t";
@@ -123,7 +123,7 @@ public class SyncPropertyFileReader {
     /** The rtt refset to effective date map. */
     private final Map<String, String> rttRefsetToEffectiveDateMap = new HashMap<>();
 
-    private final Map<String, Map<String, String>> uatEditionProjectInfo = readUatEditionProjectInfo();
+    private final Map<String, Map<String, String>> existingEditionProjectInfo = readExistingEditionProjectInfo();
 
     /** The metadata map. */
     private final Map<String, SyncPersistenceMetadata> metadataMap = new HashMap<>();
@@ -556,16 +556,17 @@ public class SyncPropertyFileReader {
      * Read rtt project info.
      * @return
      */
-    private Map<String, Map<String, String>> readUatEditionProjectInfo() {
+    private Map<String, Map<String, String>> readExistingEditionProjectInfo() {
 
         final Map<String, Map<String, String>> projectInfo = new HashMap<>();
 
         try {
 
-            final BufferedReader reader = new BufferedReader(new InputStreamReader(uatMigrateCleanResource.getInputStream()));
+            final BufferedReader reader = new BufferedReader(new InputStreamReader(existingMigrateCleanResource.getInputStream()));
 
             // crowdProjectId, projectName, editionShortName
             String line = reader.readLine();
+            line = reader.readLine();
 
             while (line != null && !line.isEmpty()) {
 
@@ -1034,8 +1035,8 @@ public class SyncPropertyFileReader {
         return projectOrganizationMap;
     }
 
-    public Map<String, String> getUatEditionProjectInfoMap(String editionShortName) {
+    public Map<String, Map<String, String>> getExistingEditionProjectInfoMap() {
 
-        return uatEditionProjectInfo.get(editionShortName);
+        return existingEditionProjectInfo;
     }
 }

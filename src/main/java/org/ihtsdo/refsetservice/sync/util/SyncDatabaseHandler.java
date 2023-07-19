@@ -406,7 +406,7 @@ public class SyncDatabaseHandler {
      * @return the team
      */
     private Team addTeam(final TerminologyService service, final String teamName, final String teamDescription, final Organization organization, final String teamType) {
-        
+
         try {
 
             final Team team = new Team();
@@ -957,6 +957,7 @@ public class SyncDatabaseHandler {
      * @throws Exception the exception
      */
     public Team createAdminOrganizationTeam(final TerminologyService service, final Organization organization) throws Exception {
+
         try {
 
             Team adminTeam = OrganizationService.getActiveOrganizationAdminTeam(service, organization.getId());
@@ -965,18 +966,20 @@ public class SyncDatabaseHandler {
 
                 LOG.error("SHouldn't be creating admin team if one for this organization already exists");
             }
-            
-            
+
             Team inactiveAdminTeam = OrganizationService.getOrganizationAdminTeam(service, organization.getId());
-            
+
             if (inactiveAdminTeam == null) {
+
                 adminTeam =
                     addTeam(service, TeamService.generateOrganizationTeamName(organization), TeamService.getOrganizationTeamDescription(organization), organization, TeamType.ORGANIZATION.getText());
 
             } else if (!inactiveAdminTeam.isActive()) {
+
                 inactiveAdminTeam.setActive(true);
                 adminTeam = service.update(inactiveAdminTeam);
             } else {
+
                 throw new Exception("Odd state for existing admin team: " + inactiveAdminTeam);
             }
 
@@ -994,6 +997,5 @@ public class SyncDatabaseHandler {
         }
 
     }
-
 
 }

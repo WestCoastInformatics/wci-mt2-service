@@ -1273,23 +1273,4 @@ public class OrganizationService extends BaseService {
         return service.find(query, pfs, Team.class, null);
     }
 
-    public static Map<String, Set<Edition>> getOrganizationNameToEditionsMap(TerminologyService service) throws Exception {
-
-        final Map<String, Set<Edition>> retMap = new HashMap<>();
-
-        List<Edition> editions = service.getAll(Edition.class);
-
-        for (Edition edition : editions) {
-
-            if (!retMap.containsKey(edition.getOrganizationId())) {
-
-                retMap.put(edition.getOrganizationId(), new HashSet<>());
-            }
-
-            retMap.get(edition.getOrganizationId()).add(edition);
-
-        }
-
-        return retMap;
-    }
 }

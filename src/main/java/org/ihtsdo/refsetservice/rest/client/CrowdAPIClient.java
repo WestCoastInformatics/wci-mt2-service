@@ -79,6 +79,8 @@ public class CrowdAPIClient extends CrowdClientAbstract {
     /** Remove user from group DELETE. */
     private static final String REMOVE_USER_FROM_GROUP = "/rest/usermanagement/1/user/group/direct";
 
+    private static final int VALID_RULE_PARTS = 5;
+
     /**
      * Returns the user from Crowd.
      *
@@ -392,7 +394,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
                     // Get the value of the group name attribute.
                     final String rule = membershipNode.getAttributes().getNamedItem("group").getNodeValue();
 
-                    if (!rule.startsWith(APP_PREFIX) || !membership.hasChildNodes()) {
+                    if (!rule.startsWith(APP_PREFIX) || !membership.hasChildNodes() || rule.split("-").length != VALID_RULE_PARTS) {
                         continue;
                     }
 

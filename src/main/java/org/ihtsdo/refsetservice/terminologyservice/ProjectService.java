@@ -72,7 +72,11 @@ public class ProjectService extends BaseService {
             RefsetService.setProjectPermissions(user, project);
             checkPermissions(user, project);
 
-            project.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(project.getName()));
+            // Allow for defining the 
+            if (project.getCrowdProjectId() == null || project.getCrowdProjectId().isEmpty()) {
+                project.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(project.getName()));
+            }
+            
             service.setModifiedBy(user.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();

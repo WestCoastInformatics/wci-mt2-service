@@ -443,6 +443,24 @@ public class SyncUtilities {
 
         return retSet;
     }
+    
+    /**
+     * Determine organization name.
+     *
+     * @param codeSystem the code system
+     * @return the string
+     * @throws Exception 
+     */
+    public String determineEditionShortName(final JsonNode codeSystem) throws Exception {
+
+        // If owner defined, return it as organization name
+        if (codeSystem.has("shortName") && !codeSystem.get("shortName").asText().trim().isBlank()) {
+
+            return codeSystem.get("shortName").asText();
+        }
+
+        throw new Exception("Code system " + codeSystem + " doesn't have a shortName");
+    }
 
     /**
      * Determine organization name.
