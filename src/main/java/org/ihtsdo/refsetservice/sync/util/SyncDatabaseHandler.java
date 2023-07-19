@@ -138,7 +138,7 @@ public class SyncDatabaseHandler {
             final Organization organization = (Organization) utilities.validateMatches(organizationStream, organizationName);
 
             // Create a single Admin team per Edition when we first discover it
-            createAdminOrganizationTeam(service, organization);
+            getOrCreateAdminOrganizationTeam(service, organization);
 
             final String defaultLanguageCode = utilities.identifyDefaultLanguageCode(codeSystem, editionName);
 
@@ -956,7 +956,7 @@ public class SyncDatabaseHandler {
      * @return the team
      * @throws Exception the exception
      */
-    public Team createAdminOrganizationTeam(final TerminologyService service, final Organization organization) throws Exception {
+    public Team getOrCreateAdminOrganizationTeam(final TerminologyService service, final Organization organization) throws Exception {
 
         try {
 
@@ -964,7 +964,8 @@ public class SyncDatabaseHandler {
 
             if (adminTeam != null) {
 
-                LOG.error("SHouldn't be creating admin team if one for this organization already exists");
+                LOG.info("Using existing team '{}' ({}) for {}", adminTeam.getName(), adminTeam.getId(), organization.getName());
+                return adminTeam;
             }
 
             Team inactiveAdminTeam = OrganizationService.getOrganizationAdminTeam(service, organization.getId());

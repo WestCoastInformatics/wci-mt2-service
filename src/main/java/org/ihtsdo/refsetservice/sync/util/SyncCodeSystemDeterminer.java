@@ -25,6 +25,8 @@ public class SyncCodeSystemDeterminer {
 
     private static final String MANAGED_SERVICE_CONTAINER_TYPE = "Managed Service";
 
+    private static final String AFFILIATE_OWNER = "Affiliates";
+
     private TerminologyService service;
 
     private SyncUtilities syncUtilities;
@@ -51,7 +53,7 @@ public class SyncCodeSystemDeterminer {
 
         // Get all code systems from Snowstorm
         final JsonNode organizationJsonRootNode = getSnowstormCodeSystems();
-        LOG.info("Found " + countCodeSystems(organizationJsonRootNode) + " + Code Systems on term server: ");
+        LOG.info("Found " + countCodeSystems(organizationJsonRootNode) + " + Code Systems on term server ");
 
         // Filter code systems (based on active-setting, ignoredCS list, testing situation, and bad data)
         final Map<SyncReasonEditionSkipped, Set<String>> ignoredReasonsEditionMap = identifyEditionsToSkip(service, organizationJsonRootNode, syncUtilities, isTesting);
@@ -107,6 +109,7 @@ public class SyncCodeSystemDeterminer {
                 }
 
                 final String editionShortName = codeSystem.get("shortName").asText();
+                final String organizationName = codeSystem.has("owner") ? codeSystem.get("owner").asText() : "";
                 final String maintainerType = syncUtilities.identifyMaintainerType(codeSystem, editionShortName);
 
                 if (isTesting && !isTestingEditionToProcess(editionShortName, syncUtilities)) {
@@ -118,10 +121,10 @@ public class SyncCodeSystemDeterminer {
                     // Skipping inactive code system
                     ignoredReasonEditionMap.get(SyncReasonEditionSkipped.INACTIVE_EDITION).add(editionShortName);
 
-                } else if (!syncUtilities.isInternationalEdition(editionShortName) && !MANAGED_SERVICE_CONTAINER_TYPE.equals(maintainerType)) {
+                } else if (!syncUtilities.isInternationalEdition(editionShortName) && !MANAGED_SERVICE_CONTAINER_TYPE.equals(maintainerType) && !AFFILIATE_OWNER.equals(organizationName)) {
 
                     // Skipping inactive code system
-                    ignoredReasonEditionMap.get(SyncReasonEditionSkipped.NON_MANAGED_SERVICE).add(editionShortName);
+                    ignoredReasonEditionMap.get(SyncReasonEditionSkipped.NON_SUPPORTED_TYPE).add(editionShortName);
 
                 } else if (syncUtilities.getPropertyReader().getCodeSystemsToIgnore().contains(editionShortName)) {
 
@@ -154,8 +157,8 @@ public class SyncCodeSystemDeterminer {
                         // TODO: Update to be based on maintainerType
                         s.append("listed in ignoredCodeSystems.txt");
                         break;
-                    case NON_MANAGED_SERVICE:
-                        s.append("not managed service");
+                    case NON_SUPPORTED_TYPE:
+                        s.append("not supported code system type");
                         break;
                     default:
                         break;

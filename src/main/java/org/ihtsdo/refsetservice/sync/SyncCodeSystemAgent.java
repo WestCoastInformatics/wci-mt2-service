@@ -135,6 +135,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
         // Populate organization names lists of a) termserver code system names, b) rt2 database active organization names, and c) rt2 database inactive
         // organization names
         final List<Organization> dbOrganizations = service.getAll(Organization.class);
+        final List<Edition> dbEditions = service.getAll(Edition.class);
 
         dbOrganizations.stream().filter(o -> o.isActive()).forEach(o -> dbActiveOrganizationNameIdMaps.put(o.getName(), o.getId()));
         dbOrganizations.stream().filter(o -> !o.isActive()).forEach(o -> dbInactiveOrganizationNameIdMaps.put(o.getName(), o.getId()));
@@ -144,8 +145,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
             termserverOrganizationNameToEditionShortNameMap.put(getUtilities().determineOrganizationName(codeSystem), getUtilities().determineEditionShortName(codeSystem));
         }
 
-        LOG.debug("AAA {}", termserverOrganizationNameToEditionShortNameMap);
-
         // See if any termserver organizations are new
         final List<String> addedOrganizations = termserverOrganizationNameToEditionShortNameMap.keySet().stream()
             .filter(orgName -> !isTesting() || (isTesting() && termserverOrganizationNameToEditionShortNameMap.get(orgName).equals(testingEditionShortName)))
@@ -153,26 +152,25 @@ public class SyncCodeSystemAgent extends SyncAgent {
         addedOrganizations.stream().forEach(orgName -> getDbHandler().addOrganziation(service, orgName, getUtilities().determineOrganizationDescription(orgName)));
 
         // Activate previously inactivated organizations. Note: Will log and update stats after remove those that were activatedAndModified
-        final List<String> activatedOrganizations = termserverOrganizationNameToEditionShortNameMap.keySet().stream()
+        final List<String> organizationsToActivate = termserverOrganizationNameToEditionShortNameMap.keySet().stream()
             .filter(orgName -> !isTesting() || (isTesting() && termserverOrganizationNameToEditionShortNameMap.get(orgName).equals(testingEditionShortName)))
             .filter(c -> dbInactiveOrganizationNameIdMaps.keySet().contains(c)).collect(Collectors.toList());
 
         // If have active organizations inactivate any active DB organizations that are not returned from termserver.
         // Note: No need for 'existing in both' case as only value to compare against termserver (owner) is also the primary key. Thus activating/inactivating is sufficient
-        final List<String> inactivatedOrganizations = dbActiveOrganizationNameIdMaps.keySet().stream()
-            .filter(orgName -> !isTesting() || (isTesting() && termserverOrganizationNameToEditionShortNameMap.get(orgName).equals(testingEditionShortName)))
-            .filter(c -> !termserverOrganizationNameToEditionShortNameMap.keySet().contains(c)).filter(c -> !dbInactiveOrganizationNameIdMaps.keySet().contains(c)).collect(Collectors.toList());
+        final List<String> organizationsToInactivate =
+            dbActiveOrganizationNameIdMaps.keySet().stream().filter(c -> !termserverOrganizationNameToEditionShortNameMap.keySet().contains(c)).collect(Collectors.toList());
 
-        LOG.debug("AAA1 ( {} active orgs) {}", dbActiveOrganizationNameIdMaps.keySet().size(), dbActiveOrganizationNameIdMaps.keySet());
-        LOG.debug("AAA2 ( {} inactive orgs) {}", dbInactiveOrganizationNameIdMaps.keySet().size(), dbInactiveOrganizationNameIdMaps.keySet());
-        LOG.debug("AAA3 ( {} Term Server orgs) {}", termserverOrganizationNameToEditionShortNameMap.size(), termserverOrganizationNameToEditionShortNameMap);
+        LOG.debug("AAA1 ( {} Term Server orgs) {}", termserverOrganizationNameToEditionShortNameMap.size(), termserverOrganizationNameToEditionShortNameMap);
+        LOG.debug("AAA2 ( {} active orgs) {}", dbActiveOrganizationNameIdMaps.keySet().size(), dbActiveOrganizationNameIdMaps.keySet());
+        LOG.debug("AAA3 ( {} inactive orgs) {}", dbInactiveOrganizationNameIdMaps.keySet().size(), dbInactiveOrganizationNameIdMaps.keySet());
         LOG.debug("AAA4 ( {} added orgs) {}", addedOrganizations.size(), addedOrganizations);
-        LOG.debug("AAA5 ( {} reactivated orgs) {}", activatedOrganizations.size(), activatedOrganizations);
-        LOG.debug("AAA6 {}", inactivatedOrganizations);
+        LOG.debug("AAA5 ( {} reactivated orgs) {}", organizationsToActivate.size(), organizationsToActivate);
+        LOG.debug("AAA6 {}", organizationsToInactivate);
 
         Map<Boolean, List<String>> migrationActivationMap = new HashMap<>();
-        migrationActivationMap.put(true, activatedOrganizations);
-        migrationActivationMap.put(false, inactivatedOrganizations);
+        migrationActivationMap.put(true, organizationsToActivate);
+        migrationActivationMap.put(false, organizationsToInactivate);
 
         return migrationActivationMap;
     }
@@ -201,21 +199,29 @@ public class SyncCodeSystemAgent extends SyncAgent {
         termserverShortNames.addAll(termserverShortNameCodeSystemMap.keySet());
         termserverShortNames.stream().filter(shortName -> DEVELOPER_CODE_SYSTEM_SHORTNAME.equalsIgnoreCase(shortName)).forEach(shortName -> setDeveloperTestingEditionShortName(shortName));
 
+        
+        LOG.debug("BBB2a {}", termserverShortNameCodeSystemMap);
+        LOG.debug("BBB2b {}", TERM_SERVER_EDITION_TO_ORGANIZATION_MAP);
+        
         // Determine and create new editions (not in active nor in inactive DB editions)
         final List<String> addedShortNames = termserverShortNames.stream().filter(c -> !isTesting() || (isTesting() && c.equals(testingEditionShortName)))
             .filter(c -> !dbActiveEditionShortNames.contains(c)).filter(c -> !dbInactiveEditionShortNames.contains(c)).collect(Collectors.toList());
 
-        LOG.debug("AAA1== Added editions");
-        addedShortNames.stream().filter(shortName -> termserverShortNameCodeSystemMap.containsKey(shortName)).forEach(shortName -> LOG.debug("AAA1 - " + shortName));
+        for (String shortName : addedShortNames) {
 
-        addedShortNames.stream().filter(shortName -> termserverShortNameCodeSystemMap.containsKey(shortName))
-            .forEach(shortName -> getDbHandler().addEdition(service, termserverShortNameCodeSystemMap.get(shortName), TERM_SERVER_EDITION_TO_ORGANIZATION_MAP.get(shortName)));
+            getDbHandler().addEdition(service, termserverShortNameCodeSystemMap.get(shortName), TERM_SERVER_EDITION_TO_ORGANIZATION_MAP.get(shortName));
+        }
+
+        addedShortNames.stream().forEach(shortName -> getDbHandler().addEdition(service, termserverShortNameCodeSystemMap.get(shortName), TERM_SERVER_EDITION_TO_ORGANIZATION_MAP.get(shortName)));
 
         // Activate previously inactivated editions. Note: Will log and update stats after remove those that were activatedAndModified
         final List<String> activatedShortNames = termserverShortNames.stream().filter(c -> !isTesting() || (isTesting() && c.equals(testingEditionShortName)))
             .filter(c -> dbInactiveEditionShortNames.contains(c)).collect(Collectors.toList());
 
         activatedShortNames.stream().forEach(n -> getDbHandler().updateEditionStatus(service, n, true));
+
+        LOG.debug("BBB2c {}", addedShortNames);
+        LOG.debug("BBB2d {}", activatedShortNames);
 
         // If have active editions:
         // 1) Inactivate any active DB editions that are not in termserver
@@ -226,6 +232,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
                 .filter(c -> !termserverShortNames.contains(c)).filter(c -> dbActiveEditionShortNames.contains(c)).collect(Collectors.toList());
 
             inactivatedShortNames.stream().forEach(n -> getDbHandler().updateEditionStatus(service, n, false));
+            LOG.debug("BBBc {}", inactivatedShortNames);
 
             // Determine editions that are active in DB and found in termserver and compare for changes
             existingInBothShortNames.addAll(dbActiveEditionShortNames.stream().filter(c -> termserverShortNames.contains(c)).collect(Collectors.toList()));

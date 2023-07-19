@@ -10,6 +10,7 @@ SNOMEDCT-TM	Traditional Medicine
 SNOMEDCT-COMDE	Common German Translation
 SNOMEDCT-NLFIX	Netherlands Extension Fix
 SNOMEDCT-EDQM	EDQM Extension
+SNOMEDCT-CHFIX	Swiss Extension Fix
 
 SNOMEDCT-WCI	WCI Testing Extension
 

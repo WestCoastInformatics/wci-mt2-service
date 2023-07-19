@@ -14,8 +14,8 @@ public enum SyncReasonEditionSkipped {
     INACTIVE_EDITION,
     /** The ignored per file edition. */
     IGNORED_PER_FILE_EDITION,
-    /** A non-managed service maintainer type. */
-    NON_MANAGED_SERVICE;
+    /** A non-supported maintainer type. */
+    NON_SUPPORTED_TYPE;
 
     /** Enums as list. */
     public static final List<SyncReasonEditionSkipped> ALL_REASONS = new ArrayList<>();
@@ -32,7 +32,7 @@ public enum SyncReasonEditionSkipped {
             ALL_REASONS.add(WRONG_TESTING_EDITION);
             ALL_REASONS.add(INACTIVE_EDITION);
             ALL_REASONS.add(IGNORED_PER_FILE_EDITION);
-            ALL_REASONS.add(NON_MANAGED_SERVICE);
+            ALL_REASONS.add(NON_SUPPORTED_TYPE);
         }
 
         return ALL_REASONS;
