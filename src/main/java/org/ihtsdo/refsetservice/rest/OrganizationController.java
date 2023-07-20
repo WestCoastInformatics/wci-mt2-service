@@ -324,8 +324,11 @@ public class OrganizationController extends BaseController {
         authorizeUser();
 
         try (final TerminologyService service = new TerminologyService()) {
+            final User authUser = authorizeUser();
 
-            final ResultListUser usersResultList = OrganizationService.getOrganizationUsers(service, id, includeTeams);
+            final Organization organization = OrganizationService.getOrganization(service, authUser, id, false);
+            
+            final ResultListUser usersResultList = OrganizationService.getOrganizationUsers(service, organization, includeTeams);
             return new ResponseEntity<>(usersResultList, HttpStatus.OK);
 
         } catch (final Exception e) {

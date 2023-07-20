@@ -1232,29 +1232,6 @@ public class OrganizationService extends BaseService {
 
     }
 
-    /**
-     * Returns the organization users.
-     *
-     * @param service the Terminology Service
-     * @param organizationId the organization id
-     * @param includeTeams the include teams
-     * @return the organization users
-     * @throws Exception the exception
-     */
-    public static ResultListUser getOrganizationUsers(final TerminologyService service, final String organizationId, final boolean includeTeams) throws Exception {
-
-        final Organization organization = service.findSingle("id: " + organizationId + " AND active:true", Organization.class, null);
-
-        if (organization == null) {
-
-            final String message = "Unable to find organization for id " + organizationId + " in order to getOrganizationUsers.";
-            LOG.error(message);
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
-        }
-
-        return getOrganizationUsers(service, organizationId, includeTeams);
-    }
-
     public static ResultList<Edition> getOrganizationEditions(TerminologyService service, String organizationId) throws Exception {
 
         final PfsParameter pfs = new PfsParameter();
