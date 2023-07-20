@@ -84,7 +84,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
         Map<Boolean, List<String>> migrationActivationMap = syncOrganizations(service);
 
         // Sync Editions reviewing which are new (creating them), missing (removing them), modified (removing them and then creating them), and unchanged.
-        List<String> existingInBothShortNames = syncEditions(service);
+        List<String> existingInBothShortNames = syncEditions(service, migrationActivationMap.get(false));
 
         // Review both DB & Snowstorm editon-to-org map to ensure consistency
         syncEditionOrganizationAssociations(service, existingInBothShortNames);
@@ -156,17 +156,17 @@ public class SyncCodeSystemAgent extends SyncAgent {
             .filter(orgName -> !isTesting() || (isTesting() && termserverOrganizationNameToEditionShortNameMap.get(orgName).equals(testingEditionShortName)))
             .filter(c -> dbInactiveOrganizationNameIdMaps.keySet().contains(c)).collect(Collectors.toList());
 
-        // If have active organizations inactivate any active DB organizations that are not returned from termserver.
+        // Inactivate any active DB organizations that are not returned from termserver.
         // Note: No need for 'existing in both' case as only value to compare against termserver (owner) is also the primary key. Thus activating/inactivating is sufficient
         final List<String> organizationsToInactivate =
-            dbActiveOrganizationNameIdMaps.keySet().stream().filter(c -> !termserverOrganizationNameToEditionShortNameMap.keySet().contains(c)).collect(Collectors.toList());
+            dbActiveOrganizationNameIdMaps.keySet().stream().filter(orgName -> !termserverOrganizationNameToEditionShortNameMap.keySet().contains(orgName)).collect(Collectors.toList());
 
-        LOG.debug("AAA1 ( {} Term Server orgs) {}", termserverOrganizationNameToEditionShortNameMap.size(), termserverOrganizationNameToEditionShortNameMap);
-        LOG.debug("AAA2 ( {} active orgs) {}", dbActiveOrganizationNameIdMaps.keySet().size(), dbActiveOrganizationNameIdMaps.keySet());
-        LOG.debug("AAA3 ( {} inactive orgs) {}", dbInactiveOrganizationNameIdMaps.keySet().size(), dbInactiveOrganizationNameIdMaps.keySet());
-        LOG.debug("AAA4 ( {} added orgs) {}", addedOrganizations.size(), addedOrganizations);
-        LOG.debug("AAA5 ( {} reactivated orgs) {}", organizationsToActivate.size(), organizationsToActivate);
-        LOG.debug("AAA6 {}", organizationsToInactivate);
+        LOG.info("Term Server orgs: {}", termserverOrganizationNameToEditionShortNameMap.size(), termserverOrganizationNameToEditionShortNameMap);
+        LOG.info("DB active orgs: {}", dbActiveOrganizationNameIdMaps.keySet().size(), dbActiveOrganizationNameIdMaps.keySet());
+        LOG.info("DB inactive orgs: {}", dbInactiveOrganizationNameIdMaps.keySet().size(), dbInactiveOrganizationNameIdMaps.keySet());
+        LOG.info("{} added orgs: {}", addedOrganizations.size(), addedOrganizations);
+        LOG.info("{} reactivated orgs: {}", organizationsToActivate.size(), organizationsToActivate);
+        LOG.info("{} inactivated orgs: {}", organizationsToInactivate.size(), organizationsToInactivate);
 
         Map<Boolean, List<String>> migrationActivationMap = new HashMap<>();
         migrationActivationMap.put(true, organizationsToActivate);
@@ -179,10 +179,11 @@ public class SyncCodeSystemAgent extends SyncAgent {
      * Sync editions.
      *
      * @param service the service
+     * @param organizationNamesToInactivate
      * @return the list
      * @throws Exception the exception
      */
-    private List<String> syncEditions(final TerminologyService service) throws Exception {
+    private List<String> syncEditions(final TerminologyService service, List<String> organizationNamesToInactivate) throws Exception {
 
         final Map<String, JsonNode> termserverShortNameCodeSystemMap = new HashMap<>();
         final List<String> existingInBothShortNames = new ArrayList<>();
@@ -199,10 +200,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
         termserverShortNames.addAll(termserverShortNameCodeSystemMap.keySet());
         termserverShortNames.stream().filter(shortName -> DEVELOPER_CODE_SYSTEM_SHORTNAME.equalsIgnoreCase(shortName)).forEach(shortName -> setDeveloperTestingEditionShortName(shortName));
 
-        
-        LOG.debug("BBB2a {}", termserverShortNameCodeSystemMap);
-        LOG.debug("BBB2b {}", TERM_SERVER_EDITION_TO_ORGANIZATION_MAP);
-        
         // Determine and create new editions (not in active nor in inactive DB editions)
         final List<String> addedShortNames = termserverShortNames.stream().filter(c -> !isTesting() || (isTesting() && c.equals(testingEditionShortName)))
             .filter(c -> !dbActiveEditionShortNames.contains(c)).filter(c -> !dbInactiveEditionShortNames.contains(c)).collect(Collectors.toList());
@@ -215,19 +212,17 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         activatedShortNames.stream().forEach(n -> getDbHandler().updateEditionStatus(service, n, true));
 
-        LOG.debug("BBB2c {}", addedShortNames);
-        LOG.debug("BBB2d {}", activatedShortNames);
+        List<String> inactivatedShortNames = new ArrayList<>();
 
         // If have active editions:
         // 1) Inactivate any active DB editions that are not in termserver
         // 2) Compare against termserver to identify any changes in attributes defined on term server
         if (!dbActiveEditionShortNames.isEmpty()) {
 
-            final List<String> inactivatedShortNames = dbActiveEditionShortNames.stream().filter(c -> !isTesting() || (isTesting() && c.equals(testingEditionShortName)))
-                .filter(c -> !termserverShortNames.contains(c)).filter(c -> dbActiveEditionShortNames.contains(c)).collect(Collectors.toList());
+            inactivatedShortNames = dbActiveEditionShortNames.stream().filter(c -> !isTesting() || (isTesting() && c.equals(testingEditionShortName))).filter(c -> !termserverShortNames.contains(c))
+                .collect(Collectors.toList());
 
             inactivatedShortNames.stream().forEach(n -> getDbHandler().updateEditionStatus(service, n, false));
-            LOG.debug("BBBc {}", inactivatedShortNames);
 
             // Determine editions that are active in DB and found in termserver and compare for changes
             existingInBothShortNames.addAll(dbActiveEditionShortNames.stream().filter(c -> termserverShortNames.contains(c)).collect(Collectors.toList()));
@@ -235,7 +230,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
             // Compare editions in termserver & active in db
             if (!existingInBothShortNames.isEmpty()) {
 
-                final List<String> modifiedShortNames = compareAndModifyEditions(service, existingInBothShortNames, termserverShortNameCodeSystemMap);
+                final List<String> modifiedShortNames = compareAndModifyEditions(service, existingInBothShortNames, termserverShortNameCodeSystemMap, organizationNamesToInactivate);
                 final List<String> unchangedShortNames = existingInBothShortNames.stream().filter(e -> !modifiedShortNames.contains(e)).collect(Collectors.toList());
 
                 // Have modified... now revisit acivated to see if they too are modified
@@ -243,10 +238,18 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         }
 
+        LOG.info("{} Term Server shortNames: {}", termserverShortNameCodeSystemMap.keySet().size(), termserverShortNameCodeSystemMap.keySet());
+        LOG.info("{} Term Server editionToOrganizations {}", TERM_SERVER_EDITION_TO_ORGANIZATION_MAP.size(), TERM_SERVER_EDITION_TO_ORGANIZATION_MAP);
+        LOG.info("{} DB active editions: {}", dbActiveEditionShortNames.size(), dbActiveEditionShortNames);
+        LOG.info("{} DB inactive editions: {}", inactivatedShortNames.size(), inactivatedShortNames);
+        LOG.info("{} added editions: {}", addedShortNames.size(), addedShortNames);
+        LOG.info("{} reactivated editions: {}", activatedShortNames.size(), activatedShortNames);
+        LOG.info("{} inactivated editions: {}", inactivatedShortNames.size(), inactivatedShortNames);
+
         // Compare editions in termserver & newly actived in db
         if (!activatedShortNames.isEmpty()) {
 
-            final List<String> activatedAndModifiedShortNames = compareAndModifyEditions(service, activatedShortNames, termserverShortNameCodeSystemMap);
+            final List<String> activatedAndModifiedShortNames = compareAndModifyEditions(service, activatedShortNames, termserverShortNameCodeSystemMap, organizationNamesToInactivate);
 
             // Finalize those editions that were only activated (and not further modified)
             activatedAndModifiedShortNames.stream().forEach(n -> activatedShortNames.remove(n));
@@ -436,11 +439,12 @@ public class SyncCodeSystemAgent extends SyncAgent {
      * @param service the service
      * @param matchingEditionShortNames the matching edition short names
      * @param termserverShortNameCodeSystemMap the termserver short name code system map
+     * @param organizationNamesToInactivate
      * @return the list
      * @throws Exception the exception
      */
-    private List<String> compareAndModifyEditions(final TerminologyService service, final List<String> matchingEditionShortNames, final Map<String, JsonNode> termserverShortNameCodeSystemMap)
-        throws Exception {
+    private List<String> compareAndModifyEditions(final TerminologyService service, final List<String> matchingEditionShortNames, final Map<String, JsonNode> termserverShortNameCodeSystemMap,
+        List<String> organizationNamesToInactivate) throws Exception {
 
         final List<String> modifiedShortNames = new ArrayList<>();
 
@@ -449,9 +453,28 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
             if (termserverShortNameCodeSystemMap.containsKey(shortName)) {
 
+                List<Edition> dbEditions = readDbActiveEditions(service);
+
                 // Find associated DB edition
-                final Stream<Edition> editionStream = readDbActiveEditions(service).stream().filter(e -> e.getShortName().equals(shortName));
-                final Edition dbEdition = (Edition) getUtilities().validateMatches(editionStream, shortName);
+                final List<Edition> matchingEditions = new ArrayList<>();
+
+                // If have multiple editions that are ALL inactive, ignore issue entirely as will inactivate these later anyway
+                for (Edition edition : dbEditions) {
+
+                    if (edition.getShortName().equals(shortName)) {
+
+                        matchingEditions.add(edition);
+                    }
+
+                }
+
+                // See if the edition's organization is set to be inactivated. If so, no need to review the edition now as its fields will be updated if/when reactivated
+                if (matchingEditions.size() > 1) {
+
+                    throw new Exception("May only have a single edition per shortName " + shortName + ", but have multiple: " + matchingEditions);
+                }
+
+                final Edition dbEdition = matchingEditions.iterator().next();
                 final Edition modifyingEdition = new Edition(dbEdition);
 
                 // Find values for Snowstorm Edition
