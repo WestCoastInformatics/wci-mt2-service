@@ -110,6 +110,7 @@ public class SyncCodeSystemDeterminer {
 
                 final String editionShortName = codeSystem.get("shortName").asText();
                 final String organizationName = codeSystem.has("owner") ? codeSystem.get("owner").asText() : "";
+
                 final String maintainerType = syncUtilities.identifyMaintainerType(codeSystem, editionShortName);
 
                 if (isTesting && !isTestingEditionToProcess(editionShortName, syncUtilities)) {
@@ -121,10 +122,15 @@ public class SyncCodeSystemDeterminer {
                     // Skipping inactive code system
                     ignoredReasonEditionMap.get(SyncReasonEditionSkipped.INACTIVE_EDITION).add(editionShortName);
 
-                } else if (!syncUtilities.isInternationalEdition(editionShortName) && !MANAGED_SERVICE_CONTAINER_TYPE.equals(maintainerType) && !AFFILIATE_OWNER.equals(organizationName)) {
+                } else if (!syncUtilities.isInternationalEdition(editionShortName) && !MANAGED_SERVICE_CONTAINER_TYPE.equals(maintainerType)) {
 
                     // Skipping inactive code system
-                    ignoredReasonEditionMap.get(SyncReasonEditionSkipped.NON_SUPPORTED_TYPE).add(editionShortName);
+                    ignoredReasonEditionMap.get(SyncReasonEditionSkipped.NON_SUPPORTED_MAINTAINER_TYPE).add(editionShortName);
+
+                } else if (AFFILIATE_OWNER.equals(organizationName)) {
+
+                    // Skipping inactive code system
+                    ignoredReasonEditionMap.get(SyncReasonEditionSkipped.AFFILIATE_CODE_SYSTEM).add(editionShortName);
 
                 } else if (syncUtilities.getPropertyReader().getCodeSystemsToIgnore().contains(editionShortName)) {
 
@@ -157,8 +163,11 @@ public class SyncCodeSystemDeterminer {
                         // TODO: Update to be based on maintainerType
                         s.append("listed in ignoredCodeSystems.txt");
                         break;
-                    case NON_SUPPORTED_TYPE:
-                        s.append("not supported code system type");
+                    case NON_SUPPORTED_MAINTAINER_TYPE:
+                        s.append("not supported maintainer type");
+                        break;
+                    case AFFILIATE_CODE_SYSTEM:
+                        s.append("affiliate code system");
                         break;
                     default:
                         break;
