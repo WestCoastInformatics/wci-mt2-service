@@ -188,8 +188,11 @@ public class SyncRefsetAgent extends SyncAgent {
          * // Finalize those refset versions that were only activated (and not further modified) activatedAndModifiedRefsetIds.stream().forEach(n ->
          * activatedRefsetSctIds.remove(n));
          * 
-         * addedOrInactivatedRefsetIds.addAll(addedRefsetSctIds); addedOrInactivatedRefsetIds.addAll(inactivatedRefsetIds.keySet());
+         * addedOrInactivatedRefsetIds.addAll(inactivatedRefsetIds.keySet());
          */
+
+        addedOrInactivatedRefsetIds.addAll(addedRefsetSctIds);
+
         return addedOrInactivatedRefsetIds;
     }
 
@@ -697,33 +700,37 @@ public class SyncRefsetAgent extends SyncAgent {
 
             while (refsetIterator != null && refsetIterator.hasNext()) {
 
-                JsonNode refsetNode;
-
-                final JsonNode node = refsetIterator.next();
+                final JsonNode refsetNode = refsetIterator.next();
 
                 // Check if should process Refset
-                refsetNode = isRefsetToProcess(node, edition.getShortName());
 
                 if (refsetNode != null) {
 
                     final String refsetId = refsetNode.get("conceptId").asText();
+                    final String moduleId = determineConceptModuleId(refsetId, edition.getBranch());
 
-                    if (!refsetToModuleMap.containsKey(refsetId)) {
+                    if (isRefsetToProcess(refsetId, moduleId, edition)) {
 
-                        final String moduleId = determineConceptModuleId(refsetId, edition.getBranch());
-                        refsetToModuleMap.put(refsetId, moduleId);
-                    }
+                        boolean firstTime = false;
 
-                    final String termserverRefsetBranchPath = termserverVersionBranchMap.get(versionDate);
-                    final Set<Long> termserverEditionBranchDates = termserverVersionBranchMap.keySet();
+                        if (!refsetToModuleMap.containsKey(refsetId)) {
 
-                    // If perVersionSync, then create version per branch and return. Otherwise, determine if changes exist in this version
-                    if (getIsPerVersionSync() || versionHasChanges(refsetId, versionDate, termserverRefsetBranchPath, edition.getName(), termserverEditionBranchDates)) {
+                            firstTime = true;
+                            refsetToModuleMap.put(refsetId, moduleId);
+                        }
 
-                        final SyncRefsetMetadata refsetMetadata = new SyncRefsetMetadata(refsetNode, edition, termserverVersionBranchMap.keySet(), versionDate, termserverRefsetBranchPath);
+                        final String termserverRefsetBranchPath = termserverVersionBranchMap.get(versionDate);
+                        final Set<Long> termserverEditionBranchDates = termserverVersionBranchMap.keySet();
 
-                        // Found a refset to process later on
-                        filteredRefsets.add(refsetMetadata);
+                        // If perVersionSync, then create version per branch and return. Otherwise, determine if changes exist in this version
+                        if (firstTime || getIsPerVersionSync() || versionHasChanges(refsetId, versionDate, termserverRefsetBranchPath, edition.getName(), termserverEditionBranchDates)) {
+
+                            final SyncRefsetMetadata refsetMetadata = new SyncRefsetMetadata(refsetNode, edition, termserverVersionBranchMap.keySet(), versionDate, termserverRefsetBranchPath);
+
+                            // Found a refset to process later on
+                            filteredRefsets.add(refsetMetadata);
+
+                        }
 
                     }
 
@@ -1064,23 +1071,19 @@ public class SyncRefsetAgent extends SyncAgent {
 
             for (final long version : dbActiveRefsetIdToVersionRefsetMap.get(refsetId).keySet()) {
 
-                if (isRefsetToProcess(refsetId, dbActiveRefsetIdToVersionRefsetMap.get(refsetId).get(version).getEditionShortName())) {
+                try {
 
-                    try {
+                    final Refset refset = dbActiveRefsetIdToVersionRefsetMap.get(refsetId).get(version);
 
-                        final Refset refset = dbActiveRefsetIdToVersionRefsetMap.get(refsetId).get(version);
+                    // Actually process the refset here
+                    final Refset updatedRefset = finalizeRefset(service, refset, latestVersionCache);
 
-                        // Actually process the refset here
-                        final Refset updatedRefset = finalizeRefset(service, refset, latestVersionCache);
+                    refsetsUpdated.add(updatedRefset);
 
-                        refsetsUpdated.add(updatedRefset);
+                } catch (Exception e) {
 
-                    } catch (Exception e) {
-
-                        e.printStackTrace();
-                        LOG.error("Failed on refsetVersion: " + refsetId + " / " + version + " --- with message: " + e.getMessage());
-                    }
-
+                    e.printStackTrace();
+                    LOG.error("Failed on refsetVersion: " + refsetId + " / " + version + " --- with message: " + e.getMessage());
                 }
 
             }
@@ -1232,55 +1235,24 @@ public class SyncRefsetAgent extends SyncAgent {
     }
 
     /**
-     * Is refset to process.
-     *
-     * @param refsetNode the refset node
-     * @param shortName the short name
-     * @return the json node
-     * @throws Exception the exception
-     */
-    protected JsonNode isRefsetToProcess(final JsonNode refsetNode, final String shortName) throws Exception {
-
-        if (!refsetNode.has("conceptId") || !refsetNode.has("active")) {
-
-            throw new Exception("Getting unexpected Refset info from node: " + refsetNode.toString());
-        }
-
-        final String refsetId = refsetNode.get("conceptId").asText();
-
-        // Though core refsets show up in extensions, ignore them
-        if (!getUtilities().isInternationalEdition(shortName) && getUtilities().getCoreRefsets().contains(refsetId)) {
-
-            return null;
-        }
-
-        // Ignored refsets based on # of members
-        if (getUtilities().getPropertyReader().getRefsetsToIgnore().contains(refsetId)) {
-
-            LOG.info("Found refsetId: " + refsetId + ", but will not add it per property file refsetsToIgnore.txt");
-            return null;
-        }
-
-        // Return if not testing or is testing & (refest is testingRefset OR is testingRefset is null/empty)
-        if (!isTesting() || (isTesting() && (getTestingRefset() == null || getTestingRefset().isEmpty()) || refsetId.equals(getTestingRefset()))) {
-
-            return refsetNode;
-        }
-
-        return null;
-    }
-
-    /**
      * Indicates whether or not refset to process is the case.
      *
      * @param refsetId the refset id
-     * @param shortName the short name
+     * @param moduleId
+     * @param edition the short name
      * @return <code>true</code> if so, <code>false</code> otherwise
      * @throws Exception the exception
      */
-    protected boolean isRefsetToProcess(final String refsetId, final String shortName) throws Exception {
+    protected boolean isRefsetToProcess(final String refsetId, String moduleId, final Edition edition) throws Exception {
 
-        if (!getUtilities().isInternationalEdition(shortName) && getUtilities().getCoreRefsets().contains(refsetId)) {
+        // Refset is a testing refset, so use
+        if (!isTesting() || (isTesting() && (getTestingRefset() == null || getTestingRefset().isEmpty()) || refsetId.equals(getTestingRefset()))) {
+
+            return true;
+        }
+
+        // If not international ensure, ensure refset is not from CORE
+        if (!getUtilities().isInternationalEdition(edition.getShortName()) && getUtilities().getCoreRefsets().contains(refsetId)) {
 
             return false;
         }
@@ -1291,7 +1263,8 @@ public class SyncRefsetAgent extends SyncAgent {
             return false;
         }
 
-        if (!isTesting() || (isTesting() && (getTestingRefset() == null || getTestingRefset().isEmpty()) || refsetId.equals(getTestingRefset()))) {
+        // Only continue processing refset if it is created within the current edition's modules
+        if (edition.getModules().contains(moduleId)) {
 
             return true;
         }
