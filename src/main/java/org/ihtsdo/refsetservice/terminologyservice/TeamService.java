@@ -484,8 +484,18 @@ public class TeamService extends BaseService {
 
         final Organization organization = team.getOrganization();
         final Set<User> organizationMembers = organization.getMembers();
+        boolean memberOfOrganization = false;
+        
+        for (final User organizationMember : organizationMembers) {
+            
+            if (organizationMember.getId().equals(userToAdd.getId())) {
+                
+                memberOfOrganization = true;
+                break;
+            }
+        }
 
-        if (!organizationMembers.contains(userToAdd)) {
+        if (!memberOfOrganization) {
 
             final String message = "User with " + userToAdd.getEmail() + " is not a member of organization " + organization.getName() + ".";
             LOG.error(message);

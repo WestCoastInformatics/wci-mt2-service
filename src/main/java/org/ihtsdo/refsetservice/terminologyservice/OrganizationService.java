@@ -139,7 +139,6 @@ public class OrganizationService extends BaseService {
         adminTeam.setDescription(TeamService.getOrganizationTeamDescription(organization));
         adminTeam.setName(TeamService.generateOrganizationTeamName(organization));
         adminTeam.setPrimaryContactEmail(organization.getPrimaryContactEmail());
-        adminTeam.getMembers().add(user.getId());
         adminTeam.setOrganization(newOrganization);
         adminTeam.setType(TeamType.ORGANIZATION.getText());
 
@@ -157,6 +156,9 @@ public class OrganizationService extends BaseService {
 
             adminTeam = TeamService.addRoleToTeam(user, adminTeam.getId(), UserRole.getRoleString(role).toUpperCase(), true);
         }
+        
+        // add the user to the admin team
+        adminTeam = TeamService.addUserToTeam(service, user, adminTeam, user);
 
         // load the user roles onto the organization
         setRoles(user, newOrganization, newOrganization.getRoles());
