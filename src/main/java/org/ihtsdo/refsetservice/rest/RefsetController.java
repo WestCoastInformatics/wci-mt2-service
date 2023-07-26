@@ -949,6 +949,8 @@ public class RefsetController extends BaseController {
 
             final User user = SecurityService.getUserFromSession();
             Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+            WorkflowService.canUserPerformWorkflowAction(user, refset, action);
+
             final String currentStatus = refset.getWorkflowStatus();
 
             service.setModifiedBy(user.getUserName());
@@ -1303,7 +1305,7 @@ public class RefsetController extends BaseController {
             final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
             final String organizationName = refset.getOrganizationName();
             final String editionName = refset.getEdition().getShortName();
-            
+
             if (!user.checkPermission(User.ROLE_ADMIN, organizationName, editionName, refset.getProject().getCrowdProjectId())) {
                 return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.UNAUTHORIZED);
             }
@@ -1442,6 +1444,7 @@ public class RefsetController extends BaseController {
             // service.setTransactionPerOperation(false);
             // service.beginTransaction();
 
+            WorkflowService.canUserPerformWorkflowAction(user, null, refsetInternalId);
             final String newRefsetInternalId = RefsetService.createNewRefsetVersion(service, user, refsetInternalId, true);
             // service.commit();
 
