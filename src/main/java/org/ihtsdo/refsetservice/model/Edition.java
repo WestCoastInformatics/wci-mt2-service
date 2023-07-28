@@ -296,6 +296,8 @@ public class Edition extends AbstractHasModified {
      *
      * @return the code system type
      */
+    @FullTextField(analyzer = "standard")
+    @GenericField(name = "mantainerType", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getMaintainerType() {
 
         return maintainerType;
