@@ -48,7 +48,6 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
-import org.ihtsdo.refsetservice.model.RestException;
 
 import javax.persistence.Query;
 import javax.ws.rs.core.Response;
@@ -62,6 +61,7 @@ import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RefsetMemberComparison;
+import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
 import org.ihtsdo.refsetservice.model.User;
@@ -174,7 +174,7 @@ public final class RefsetMemberService {
     private static final Map<String, Map<String, Set<String>>> ANCESTORS_CACHE = new HashMap<>();
 
     /** The Constant CONCEPT_DESCRIPTIONS_PER_CALL. */
-    private static final int CONCEPT_DESCRIPTIONS_PER_CALL = 386;
+    private static final int CONCEPT_DESCRIPTIONS_PER_CALL = 250;
 
     /** The Constant URL_MAX_CHAR_LENGTH - URLs will error if larger. */
     private static final int URL_MAX_CHAR_LENGTH = 6000;
@@ -1950,28 +1950,15 @@ public final class RefsetMemberService {
      */
     public static void populateAllLanguageDescriptions(final Refset refset, final List<Concept> conceptsToProcess) throws Exception {
 
-        final StringBuffer conceptIds = new StringBuffer();
-
-        // Create Snowstorm URL
-        final String url = SnowstormConnection.getBaseUrl() + getBranchPath(refset) + "/descriptions?limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH;
-
-        boolean firstTime = true;
-
-        for (final Concept concept : conceptsToProcess) {
-
-            if (firstTime) {
-
-                firstTime = false;
-            } else {
-
-                conceptIds.append(",");
-            }
-
-            conceptIds.append(concept.getCode());
+        if (conceptsToProcess == null || conceptsToProcess.isEmpty()) {
+            return;
         }
 
+        // Create Snowstorm URL
+        final String fullSnowstormUrl = SnowstormConnection.getBaseUrl() + getBranchPath(refset) + "/descriptions?limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH
+            + "&conceptIds=" + conceptsToProcess.stream().map(Concept::getCode).collect(Collectors.joining(","));
+
         // Call Snowstorm
-        final String fullSnowstormUrl = url + "&conceptIds=" + conceptIds;
         try (final Response response = SnowstormConnection.getResponse(fullSnowstormUrl)) {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
@@ -3197,7 +3184,7 @@ public final class RefsetMemberService {
 
         } catch (final RestException ex) {
 
-            //throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", message);
+            // throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", message);
             throw new RestException(false, ex.getError().getStatus(), ex.getMessage(), "Could not get Reference Set children for concept " + conceptId + ".");
 
         } catch (final Exception ex) {
@@ -3304,9 +3291,10 @@ public final class RefsetMemberService {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
-                LOG.error("Call to url '" + url + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
-                throw new RestException(false, response.getStatusInfo().getStatusCode(), 
-                   "Message: " + response.getStatusInfo().getReasonPhrase(), "Error looking up concept(s).");
+                LOG.error(
+                    "Call to url '" + url + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
+                throw new RestException(false, response.getStatusInfo().getStatusCode(), "Message: " + response.getStatusInfo().getReasonPhrase(),
+                    "Error looking up concept(s).");
             }
 
             final String resultString = response.readEntity(String.class);
