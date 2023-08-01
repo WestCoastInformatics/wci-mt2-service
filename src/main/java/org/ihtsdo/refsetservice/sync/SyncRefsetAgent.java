@@ -460,7 +460,7 @@ public class SyncRefsetAgent extends SyncAgent {
             // Have valid edition. Filter refsets to process
             if (edition != null) {
 
-                final Set<SyncRefsetMetadata> refsetVersions = filterEditionRefsetVerions(edition, filteredTermserverShortNameToVersionBranchMap.get(editionShortName));
+                final Set<SyncRefsetMetadata> refsetVersions = filterEditionRefsetVersions(edition, filteredTermserverShortNameToVersionBranchMap.get(editionShortName));
                 filteredRefsets.addAll(refsetVersions);
 
             }
@@ -678,14 +678,14 @@ public class SyncRefsetAgent extends SyncAgent {
     }
 
     /**
-     * Filter edition refset verions.
+     * Filter edition refset versions.
      *
      * @param edition the edition
      * @param filteredRefsets
      * @param termserverVersionBranchMap the termserver version branch map
      * @throws Exception the exception
      */
-    private Set<SyncRefsetMetadata> filterEditionRefsetVerions(final Edition edition, final SortedMap<Long, String> termserverVersionBranchMap) throws Exception {
+    private Set<SyncRefsetMetadata> filterEditionRefsetVersions(final Edition edition, final SortedMap<Long, String> termserverVersionBranchMap) throws Exception {
 
         final Set<SyncRefsetMetadata> filteredRefsets = new HashSet<>();
 
@@ -1245,10 +1245,13 @@ public class SyncRefsetAgent extends SyncAgent {
      */
     protected boolean isRefsetToProcess(final String refsetId, String moduleId, final Edition edition) throws Exception {
 
-        // Refset is a testing refset, so use
-        if (!isTesting() || (isTesting() && (getTestingRefset() == null || getTestingRefset().isEmpty()) || refsetId.equals(getTestingRefset()))) {
 
-            return true;
+        // First check for obvious reasons not to process: listed as ignored || is a CORE refset in a non-CORE edition
+        // THESE TWO OPERATION MUST GO FIRST
+        if (getUtilities().getPropertyReader().getRefsetsToIgnore().contains(refsetId)) {
+
+            LOG.info("Found refsetId: " + refsetId + ", but will not add it per property file refsetsToIgnore.txt");
+            return false;
         }
 
         // If not international ensure, ensure refset is not from CORE
@@ -1257,10 +1260,10 @@ public class SyncRefsetAgent extends SyncAgent {
             return false;
         }
 
-        if (getUtilities().getPropertyReader().getRefsetsToIgnore().contains(refsetId)) {
+        // Refset is a testing refset, so use
+        if (!isTesting() || (isTesting() && (getTestingRefset() == null || getTestingRefset().isEmpty()) || refsetId.equals(getTestingRefset()))) {
 
-            LOG.info("Found refsetId: " + refsetId + ", but will not add it per property file refsetsToIgnore.txt");
-            return false;
+            return true;
         }
 
         // Only continue processing refset if it is created within the current edition's modules
