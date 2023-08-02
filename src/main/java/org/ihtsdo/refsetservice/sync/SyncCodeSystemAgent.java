@@ -132,7 +132,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
         // Populate organization names lists of a) termserver code system names, b) rt2 database active organization names, and c) rt2 database inactive
         // organization names
         final List<Organization> dbOrganizations = service.getAll(Organization.class);
-        final List<Edition> dbEditions = service.getAll(Edition.class);
 
         dbOrganizations.stream().filter(o -> o.isActive()).forEach(o -> dbActiveOrganizationNameIdMaps.put(o.getName(), o.getId()));
         dbOrganizations.stream().filter(o -> !o.isActive()).forEach(o -> dbInactiveOrganizationNameIdMaps.put(o.getName(), o.getId()));
@@ -146,7 +145,6 @@ public class SyncCodeSystemAgent extends SyncAgent {
         final List<String> addedOrganizations = termserverOrganizationNameToEditionShortNameMap.keySet().stream()
             .filter(orgName -> !isTesting() || (isTesting() && termserverOrganizationNameToEditionShortNameMap.get(orgName).equals(testingEditionShortName)))
             .filter(orgName -> !dbActiveOrganizationNameIdMaps.keySet().contains(orgName)).filter(orgName -> !dbInactiveOrganizationNameIdMaps.keySet().contains(orgName)).collect(Collectors.toList());
-
         // Create new org
         addedOrganizations.stream().forEach(orgName -> getDbHandler().addOrganziation(service, orgName, getUtilities().determineOrganizationDescription(orgName)));
 
@@ -157,6 +155,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         // Inactivate any active DB organizations that are not returned from termserver.
         // Note: No need for 'existing in both' case as only value to compare against termserver (owner) is also the primary key. Thus activating/inactivating is sufficient
+        // TODO: Make sure to filter on the testing refset (but compare testingEditionShortName against DB, not term server
         final List<String> organizationsToInactivate =
             dbActiveOrganizationNameIdMaps.keySet().stream().filter(orgName -> !termserverOrganizationNameToEditionShortNameMap.keySet().contains(orgName)).collect(Collectors.toList());
 

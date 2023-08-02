@@ -637,6 +637,10 @@ public class SyncUtilities {
      */
     public void emailSyncResults(final TerminologyService service) throws Exception {
 
+        if (!PropertyUtility.getProperties().containsKey("refset.service.env") || !PropertyUtility.getProperties().getProperty("refset.service.env").equals("LOCAL")) {
+            return;
+        }
+        
         final String results = getSyncResults(service);
 
         try {

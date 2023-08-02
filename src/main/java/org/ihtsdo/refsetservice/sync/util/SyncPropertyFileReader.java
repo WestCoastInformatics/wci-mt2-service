@@ -64,9 +64,7 @@ public class SyncPropertyFileReader {
     /** The ignored code systems resource. */
     private ClassPathResource ignoredCodeSystemsResource = new ClassPathResource(IGNORED_CODE_SYSTEMS_PATH);
 
-    /** The ignored refsets resource. */
-    private final ClassPathResource ignoredRefsetsResource = new ClassPathResource("sync/exceptions/ignoredRefsets.txt");
-
+    // TODO: Review the existing needs for these remaining resources files as they may have been created to deal with bad data
     /** The undefined default lang refsets resource. */
     private final ClassPathResource undefinedDefaultLangRefsetsResource = new ClassPathResource("sync/exceptions/undefinedDefaultLangRefsets.txt");
 
@@ -136,9 +134,6 @@ public class SyncPropertyFileReader {
 
     /** The default language refset map. */
     private static Map<String, Set<String>> defaultLanguageRefsetMap = new HashMap<>();
-
-    /** The refsets to ignore. */
-    private static List<String> refsetsToIgnore = new ArrayList<>();
 
     /**
      * The Enum FileProcessType.
@@ -220,39 +215,6 @@ public class SyncPropertyFileReader {
         }
 
         return codeSystemShortNames;
-    }
-
-    /**
-     * Returns the refsets to ignore.
-     *
-     * @return the refsets to ignore
-     */
-    public List<String> getRefsetsToIgnore() {
-
-        if (refsetsToIgnore == null) {
-
-            refsetsToIgnore = new ArrayList<>();
-        }
-
-        if (refsetsToIgnore.isEmpty()) {
-
-            try (final BufferedReader reader = new BufferedReader(new InputStreamReader(ignoredRefsetsResource.getInputStream()));) {
-
-                String line;
-
-                while ((line = reader.readLine()) != null) {
-
-                    refsetsToIgnore.add(line);
-                }
-
-            } catch (IOException e) {
-
-                e.printStackTrace();
-            }
-
-        }
-
-        return refsetsToIgnore;
     }
 
     /**

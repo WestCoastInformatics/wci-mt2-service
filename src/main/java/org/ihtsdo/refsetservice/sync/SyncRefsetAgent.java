@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
@@ -57,6 +58,8 @@ public class SyncRefsetAgent extends SyncAgent {
 
     /** The log. */
     private static final Logger LOG = LoggerFactory.getLogger(SyncRefsetAgent.class);
+
+    private static final Integer MAX_MEMBERS_SUPPORTED = 10000;
 
     /** The refset to module map. */
     private final Map<String, String> refsetToModuleMap = new HashMap<String, String>();
@@ -137,59 +140,7 @@ public class SyncRefsetAgent extends SyncAgent {
         // Activate previously inactivated refsets. Note: Will log and update stats after remove those that were activatedAndModified\
 
         // TODO: No reason to support activated/inactivated in sync as will be handled strictly within RT2 DB?
-        /*
-         * final List<String> activatedRefsetSctIds = termserverRefsetIds.stream() .filter(refsetId -> dbInactiveRefsetIdToVersionRefsetMap.containsKey(refsetId) &&
-         * (!dbActiveRefsetIdToVersionRefsetMap.containsKey(refsetId) || (dbActiveRefsetIdToVersionRefsetMap.get(refsetId).keySet().stream().noneMatch(version ->
-         * dbActiveRefsetIdToVersionRefsetMap.get(refsetId).get(version).isActive())))) .collect(Collectors.toList());
-         * 
-         * activatedRefsetSctIds.stream().forEach(refsetId -> getDbHandler().updateRefsetStatusAllVersions(service, refsetId, true));
-         * STATISTICS.setRefsetIdsActivated(activatedRefsetSctIds.size());
-         * 
-         * // Inactivate active DB refsets that are not in termserver final Map<String, Set<Long>> inactivatedRefsetIds = new HashMap<>();
-         * 
-         * for (final String refsetId : dbActiveRefsetIdToVersionRefsetMap.keySet()) {
-         * 
-         * if (isTesting() && getTestingRefset() != null && !getTestingRefset().equals(refsetId)) { continue; }
-         * 
-         * for (final long dbVersion : dbActiveRefsetIdToVersionRefsetMap.get(refsetId).keySet()) {
-         * 
-         * if (!termserverRefsetIdToRefsetVersionsDataMap.containsKey(refsetId) ||
-         * termserverRefsetIdToRefsetVersionsDataMap.get(refsetId).keySet().stream().noneMatch(tsVersion -> isRefsetVersionMatches(tsVersion, dbVersion))) {
-         * 
-         * // Only consider published refsets for inactivation (when not found on termserver) as anything else is still strictly managed within RT2 if
-         * (VersionStatus.PUBLISHED.getLabel().equals(dbActiveRefsetIdToVersionRefsetMap.get(refsetId).get(dbVersion).getVersionStatus())) {
-         * 
-         * if (!inactivatedRefsetIds.containsKey(refsetId)) { inactivatedRefsetIds.put(refsetId, new HashSet<>()); }
-         * 
-         * inactivatedRefsetIds.get(refsetId).add(dbVersion); } }
-         * 
-         * } }
-         * 
-         * inactivatedRefsetIds.keySet().stream() .forEach(refsetId -> inactivatedRefsetIds.get(refsetId).stream().forEach(version ->
-         * getDbHandler().updateRefsetVersionStatus(service, refsetId, version, false))); STATISTICS.setRefsetIdsInactivated(inactivatedRefsetIds.size());
-         * 
-         * // Determine refsetIds that were just activated to see if there are any other changes necessary final List<String> activatedAndModifiedRefsetIds = new
-         * ArrayList<>();
-         * 
-         * final List<Refset> dbRefsets = getAllPublishedRefsets(service);
-         * 
-         * for (final String refsetId : activatedRefsetSctIds) {
-         * 
-         * final List<Long> activatedVersionDates = new ArrayList<>(termserverRefsetIdToRefsetVersionsDataMap.get(refsetId).keySet());
-         * java.util.Collections.sort(activatedVersionDates);
-         * 
-         * final List<Long> activatedAndModifiedVersionDates = compareAndModifyRefsetVersions(service, dbRefsets, refsetId, activatedVersionDates,
-         * termserverRefsetIdToRefsetVersionsDataMap.get(refsetId));
-         * 
-         * if (!activatedAndModifiedVersionDates.isEmpty()) {
-         * 
-         * activatedAndModifiedRefsetIds.add(refsetId); } }
-         * 
-         * // Finalize those refset versions that were only activated (and not further modified) activatedAndModifiedRefsetIds.stream().forEach(n ->
-         * activatedRefsetSctIds.remove(n));
-         * 
-         * addedOrInactivatedRefsetIds.addAll(inactivatedRefsetIds.keySet());
-         */
+        
 
         addedOrInactivatedRefsetIds.addAll(addedRefsetSctIds);
 
@@ -689,6 +640,8 @@ public class SyncRefsetAgent extends SyncAgent {
 
         final Set<SyncRefsetMetadata> filteredRefsets = new HashSet<>();
 
+        Map<String, Integer> refsetCountMap = determineRefsetCounts(edition, termserverVersionBranchMap);
+        
         for (final long versionDate : termserverVersionBranchMap.keySet()) {
 
             if (versionDate < PRE_SNOMED_SUPPORTED_RELEASES) {
@@ -696,7 +649,8 @@ public class SyncRefsetAgent extends SyncAgent {
                 continue;
             }
 
-            final Iterator<JsonNode> refsetIterator = getTermserverRefsetVersionMembers(edition.getName(), edition.getBranch(), termserverVersionBranchMap.get(versionDate), versionDate);
+            final JsonNode root = getTermserverRefsetVersionMembers(edition.getName(), edition.getBranch(), termserverVersionBranchMap, versionDate);
+            final Iterator<JsonNode> refsetIterator = root.get("referenceSets").iterator();
 
             while (refsetIterator != null && refsetIterator.hasNext()) {
 
@@ -709,7 +663,7 @@ public class SyncRefsetAgent extends SyncAgent {
                     final String refsetId = refsetNode.get("conceptId").asText();
                     final String moduleId = determineConceptModuleId(refsetId, edition.getBranch());
 
-                    if (isRefsetToProcess(refsetId, moduleId, edition)) {
+                    if (isRefsetToProcess(refsetId, moduleId, edition, refsetCountMap)) {
 
                         boolean firstTime = false;
 
@@ -744,19 +698,45 @@ public class SyncRefsetAgent extends SyncAgent {
 
     }
 
+    private Map<String, Integer> determineRefsetCounts(Edition edition, SortedMap<Long, String> termserverVersionBranchMap) throws Exception {
+        Map<String, Integer> refsetCountMap = new HashMap<>();
+        
+        Long latestEditionVersion = termserverVersionBranchMap.keySet().stream().sorted().iterator().next();
+        
+        final JsonNode refsetCountsRoot = getTermserverRefsetVersionMembers(edition.getName(), edition.getBranch(), termserverVersionBranchMap, latestEditionVersion);
+        JsonNode refsetCountsMap = refsetCountsRoot.get("memberCountsByReferenceSet");
+        Iterator<Entry<String, JsonNode>> refsetCountsIterator = refsetCountsMap.fields();
+        
+        while (refsetCountsIterator != null && refsetCountsIterator.hasNext()) {
+
+            final Entry<String, JsonNode> refsetCountNode = refsetCountsIterator.next();
+
+            // Check if should process Refset
+            String refsetId = refsetCountNode.getKey();
+            Integer memberCount = refsetCountNode.getValue().asInt();
+            
+            refsetCountMap.put(refsetId, memberCount);
+        }
+        
+        return refsetCountMap;
+    }
+
     /**
      * Returns the termserver refset version members.
      *
      * @param editionName the edition name
      * @param editionBranchPath the edition branch path
-     * @param refsetBranchPath the refset branch path
+     * @param termserverVersionBranchMap the refset branch path
      * @param branchVersion the branch version
      * @return the termserver refset version members
      * @throws Exception the exception
      */
-    private Iterator<JsonNode> getTermserverRefsetVersionMembers(final String editionName, final String editionBranchPath, final String refsetBranchPath, final long branchVersion) throws Exception {
+    private JsonNode getTermserverRefsetVersionMembers(final String editionName, final String editionBranchPath, final SortedMap<Long, String> termserverVersionBranchMap, final long branchVersion)
+        throws Exception {
 
         // Process edition
+
+        final String refsetBranchPath = termserverVersionBranchMap.get(branchVersion);
         final String url = SnowstormConnection.getBaseUrl() + "browser/{branch}/members?active=true&referenceSet=%3C" + RefsetService.SIMPLE_TYPE_REFERENCE_SET;
 
         try (final Response response = SnowstormConnection.getResponse(url.replace("{branch}", refsetBranchPath))) {
@@ -778,12 +758,8 @@ public class SyncRefsetAgent extends SyncAgent {
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode root = mapper.readTree(resultString.toString());
 
-            final Iterator<JsonNode> refsetIterator = root.get("referenceSets").iterator();
-            LOG.info("getUrl (edition version refsets): " + url.replace("{branch}", refsetBranchPath));
-
-            return refsetIterator;
+            return root;
         }
-
     }
 
     /**
@@ -1240,39 +1216,39 @@ public class SyncRefsetAgent extends SyncAgent {
      * @param refsetId the refset id
      * @param moduleId
      * @param edition the short name
+     * @param refsetCountMap 
      * @return <code>true</code> if so, <code>false</code> otherwise
      * @throws Exception the exception
      */
-    protected boolean isRefsetToProcess(final String refsetId, String moduleId, final Edition edition) throws Exception {
+    protected boolean isRefsetToProcess(final String refsetId, String moduleId, final Edition edition, Map<String, Integer> refsetCountMap) throws Exception {
 
-
-        // First check for obvious reasons not to process: listed as ignored || is a CORE refset in a non-CORE edition
-        // THESE TWO OPERATION MUST GO FIRST
-        if (getUtilities().getPropertyReader().getRefsetsToIgnore().contains(refsetId)) {
-
-            LOG.info("Found refsetId: " + refsetId + ", but will not add it per property file refsetsToIgnore.txt");
-            return false;
-        }
-
-        // If not international ensure, ensure refset is not from CORE
+        // First check if refset is a CORE refset in a non-CORE edition
         if (!getUtilities().isInternationalEdition(edition.getShortName()) && getUtilities().getCoreRefsets().contains(refsetId)) {
 
             return false;
         }
 
         // Refset is a testing refset, so use
-        if (!isTesting() || (isTesting() && (getTestingRefset() == null || getTestingRefset().isEmpty()) || refsetId.equals(getTestingRefset()))) {
+        if (isTesting() && (getTestingRefset() == null || getTestingRefset().isEmpty()) || refsetId.equals(getTestingRefset())) {
 
             return true;
         }
 
         // Only continue processing refset if it is created within the current edition's modules
-        if (edition.getModules().contains(moduleId)) {
-
-            return true;
+        if (!edition.getModules().contains(moduleId)) {
+            //TODO: Remove this case?
+            return false;
         }
 
-        return false;
+        // Finally, ensure there aren't other special refset considerations.
+        // Current restriction: Don't import any version of those refsets whose latest version contains more than 10k members
+        if (refsetCountMap.get(refsetId) > MAX_MEMBERS_SUPPORTED) {
+
+            LOG.info("Ignoring refset: " + refsetId + " given it contains more than 10,000 members");
+            return false;
+        }
+
+        return true;
     }
 
     /**

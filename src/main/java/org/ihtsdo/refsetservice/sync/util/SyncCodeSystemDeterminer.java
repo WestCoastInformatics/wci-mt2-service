@@ -59,6 +59,7 @@ public class SyncCodeSystemDeterminer {
         final Map<SyncReasonEditionSkipped, Set<String>> ignoredReasonsEditionMap = identifyEditionsToSkip(service, organizationJsonRootNode, syncUtilities, isTesting);
 
         filteredCodeSystems.addAll(filterValidCodeSystems(service, organizationJsonRootNode, ignoredReasonsEditionMap, syncUtilities));
+      
         LOG.info("Will be processing these " + filteredCodeSystems.size() + " Code Systems found on the term server: ");
         filteredCodeSystems.stream().forEach(c -> LOG.info(c.get("shortName").asText()));
 

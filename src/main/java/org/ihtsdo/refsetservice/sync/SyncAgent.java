@@ -69,10 +69,10 @@ public abstract class SyncAgent {
     private static Boolean isIgnoreCoreRefsets = null;
 
     /** Testing options. */
-    private static boolean testing = false;
+    private static boolean testing = true;
 
     /** The testing edition short name. */
-    protected static String testingEditionShortName = "SNOMEDCT-DK";
+    protected static String testingEditionShortName = "SNOMEDCT";
 
     /** The testing refset. */
 
@@ -149,7 +149,7 @@ public abstract class SyncAgent {
         SyncAgent agent = new SyncCodeSystemAgent(service, filteredCodeSystems, termServerEditionToOrganizationMap);
         agent.syncComponent(service);
 
-        // Update available code systems due to potential migrations
+        // Update available code systems due to potential migrations (edition move from one org to another) and reactivations
         filteredCodeSystems = termServerCodeSystemConsumer.determineCodeSystemsToProcess();
 
         if (isCleanDatabase(service)) {
@@ -170,7 +170,7 @@ public abstract class SyncAgent {
         LOG.info(STATISTICS.printStatistics());
 
         // TODO: Replace
-        // utilities.emailSyncResults(service);
+        utilities.emailSyncResults(service);
 
         final long processingMinutes = utilities.getProcessingMinutes("FULL", startOperationStartTime);
         service.add(AuditEntryHelper.syncFinishEntry(new Date(), processingMinutes));

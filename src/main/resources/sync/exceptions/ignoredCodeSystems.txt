@@ -16,4 +16,4 @@ SNOMEDCT-WCI	WCI Testing Extension
 
 SNOMEDCT-AM	Armenian Extension	## Until have module
 SNOMEDCT-VN	Vietnam Extension	## Until have module
-SNOMEDCT-AU	Ausssie Extension	## Until there is a solution for refset size > 10k
+SNOMEDCT-AU	Australian Extension	## Until have non-all project defined in crowd
