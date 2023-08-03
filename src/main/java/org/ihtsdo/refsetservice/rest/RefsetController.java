@@ -2230,6 +2230,9 @@ public class RefsetController extends BaseController {
 
             try (final TerminologyService service = new TerminologyService()) {
 
+                service.setModifiedBy("Sync");
+                service.setModifiedFlag(true);
+
                 SyncAgent.sync(service, refsetPerVersionSync, runForProduction, isIgnoreCoreRefsets);
 
                 return new ResponseEntity<>(message + "RT2 synced with Snowstorm successfully", HttpStatus.OK);

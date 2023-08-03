@@ -984,9 +984,12 @@ public class SyncDatabaseHandler {
                 throw new Exception("Odd state for existing admin team: " + inactiveAdminTeam);
             }
 
+            final User syncUser = SecurityService.getUserFromSession();
+            syncUser.setUserName("Sync");
+
             for (final UserRole role : UserRole.getAllRoles()) {
 
-                adminTeam = TeamService.addRoleToTeam(SecurityService.getUserFromSession(), adminTeam.getId(), UserRole.getRoleString(role).toUpperCase());
+                adminTeam = TeamService.addRoleToTeam(syncUser, adminTeam.getId(), UserRole.getRoleString(role).toUpperCase());
             }
 
             return adminTeam;

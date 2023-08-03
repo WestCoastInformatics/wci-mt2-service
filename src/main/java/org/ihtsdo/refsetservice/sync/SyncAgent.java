@@ -146,7 +146,7 @@ public abstract class SyncAgent {
 
         // Only identify branches on filtered code systems and on runShortSync value
         LOG.info("Running sync on organizations & editions.");
-        SyncAgent agent = new SyncCodeSystemAgent(filteredCodeSystems, termServerEditionToOrganizationMap);
+        SyncAgent agent = new SyncCodeSystemAgent(service, filteredCodeSystems, termServerEditionToOrganizationMap);
         agent.syncComponent(service);
 
         // Update available code systems due to potential migrations
