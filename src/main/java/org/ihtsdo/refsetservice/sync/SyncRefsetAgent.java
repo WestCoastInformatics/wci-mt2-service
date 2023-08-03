@@ -700,7 +700,10 @@ public class SyncRefsetAgent extends SyncAgent {
 
     private Map<String, Integer> determineRefsetCounts(Edition edition, SortedMap<Long, String> termserverVersionBranchMap) throws Exception {
         Map<String, Integer> refsetCountMap = new HashMap<>();
-        
+                
+        if (termserverVersionBranchMap.isEmpty()) {
+            return null;
+        }
         Long latestEditionVersion = termserverVersionBranchMap.keySet().stream().sorted().iterator().next();
         
         final JsonNode refsetCountsRoot = getTermserverRefsetVersionMembers(edition.getName(), edition.getBranch(), termserverVersionBranchMap, latestEditionVersion);
@@ -1240,6 +1243,16 @@ public class SyncRefsetAgent extends SyncAgent {
             return false;
         }
 
+        if (refsetCountMap == null || refsetCountMap.isEmpty()) {
+            LOG.info("Ignoring refset: " + refsetId + " given it null or empty");
+            return false;
+        }
+        
+        if (refsetCountMap.get(refsetId) == null) {
+            LOG.info("Ignoring refset: refsetCountMap does not contain refsetId:" + refsetId);
+            return false;
+        }
+        
         // Finally, ensure there aren't other special refset considerations.
         // Current restriction: Don't import any version of those refsets whose latest version contains more than 10k members
         if (refsetCountMap.get(refsetId) > MAX_MEMBERS_SUPPORTED) {

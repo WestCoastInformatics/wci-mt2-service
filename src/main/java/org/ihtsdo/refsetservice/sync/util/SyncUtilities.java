@@ -599,26 +599,25 @@ public class SyncUtilities {
 
         for (final String query : sqlQueries) {
 
-            if (query != null && !query.contains("--") && query.contains("select ")) {
+            if (query == null || query.contains("--") || !query.contains("select ")) {
+                continue;
+            }
+            
+            LOG.debug("excuting query: {}", query);
 
-                @SuppressWarnings("unchecked")
-                final List<Object[]> rows = service.getEntityManager().createNativeQuery(query).getResultList();
-                result.append(query).append("\r\n");
+            @SuppressWarnings("unchecked")
+            final List<Object[]> rows = service.getEntityManager().createNativeQuery(query).getResultList();
+            result.append(query).append("\r\n");
 
-                if (rows != null) {
+            if (rows == null) {
+                result.append("\r\n");
+                continue;
+            }
 
-                    for (final Object[] row : rows) {
-
-                        for (final Object field : row) {
-
-                            result.append(field).append("|");
-                        }
-
-                        result.append("\r\n");
-                    }
-
+            for (final Object[] row : rows) {
+                for (final Object field : row) {
+                    result.append(field).append("|");
                 }
-
                 result.append("\r\n");
             }
 
