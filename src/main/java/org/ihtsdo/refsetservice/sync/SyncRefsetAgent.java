@@ -140,7 +140,6 @@ public class SyncRefsetAgent extends SyncAgent {
         // Activate previously inactivated refsets. Note: Will log and update stats after remove those that were activatedAndModified\
 
         // TODO: No reason to support activated/inactivated in sync as will be handled strictly within RT2 DB?
-        
 
         addedOrInactivatedRefsetIds.addAll(addedRefsetSctIds);
 
@@ -228,7 +227,11 @@ public class SyncRefsetAgent extends SyncAgent {
 
                 final List<Long> results = termserverVersions.stream().filter(version -> dbInactiveRefsetIdToVersionRefsetMap.get(refsetId).containsKey(version)).collect(Collectors.toList());
                 activatedVersions.addAll(results);
-                activatedVersions.stream().forEach(version -> getDbHandler().updateRefsetVersionStatus(service, refsetId, version, true));
+                activatedVersions.stream().forEach(version -> {
+
+                    getDbHandler().updateRefsetVersionStatus(service, refsetId, version, true);
+                    STATISTICS.incrementRefsetVersionsReactivated();
+                });
             }
 
             // Inactivate active DB refsetVersions that are not in termserver
@@ -256,7 +259,11 @@ public class SyncRefsetAgent extends SyncAgent {
 
                 }
 
-                inactivatedVersions.stream().forEach(version -> getDbHandler().updateRefsetVersionStatus(service, refsetId, version, false));
+                inactivatedVersions.stream().forEach(version -> {
+
+                    getDbHandler().updateRefsetVersionStatus(service, refsetId, version, false);
+                    STATISTICS.incrementRefsetVersionsInactivated();
+                });
 
                 // Determine Versions that are active in DB and found in termserver and compare for changes
                 for (final long dbVersion : dbActiveRefsetIdToVersionRefsetMap.get(refsetId).keySet()) {
@@ -641,7 +648,7 @@ public class SyncRefsetAgent extends SyncAgent {
         final Set<SyncRefsetMetadata> filteredRefsets = new HashSet<>();
 
         Map<String, Integer> refsetCountMap = determineRefsetCounts(edition, termserverVersionBranchMap);
-        
+
         for (final long versionDate : termserverVersionBranchMap.keySet()) {
 
             if (versionDate < PRE_SNOMED_SUPPORTED_RELEASES) {
@@ -699,17 +706,20 @@ public class SyncRefsetAgent extends SyncAgent {
     }
 
     private Map<String, Integer> determineRefsetCounts(Edition edition, SortedMap<Long, String> termserverVersionBranchMap) throws Exception {
+
         Map<String, Integer> refsetCountMap = new HashMap<>();
-                
+
         if (termserverVersionBranchMap.isEmpty()) {
+
             return null;
         }
+
         Long latestEditionVersion = termserverVersionBranchMap.keySet().stream().sorted().iterator().next();
-        
+
         final JsonNode refsetCountsRoot = getTermserverRefsetVersionMembers(edition.getName(), edition.getBranch(), termserverVersionBranchMap, latestEditionVersion);
         JsonNode refsetCountsMap = refsetCountsRoot.get("memberCountsByReferenceSet");
         Iterator<Entry<String, JsonNode>> refsetCountsIterator = refsetCountsMap.fields();
-        
+
         while (refsetCountsIterator != null && refsetCountsIterator.hasNext()) {
 
             final Entry<String, JsonNode> refsetCountNode = refsetCountsIterator.next();
@@ -717,10 +727,10 @@ public class SyncRefsetAgent extends SyncAgent {
             // Check if should process Refset
             String refsetId = refsetCountNode.getKey();
             Integer memberCount = refsetCountNode.getValue().asInt();
-            
+
             refsetCountMap.put(refsetId, memberCount);
         }
-        
+
         return refsetCountMap;
     }
 
@@ -763,6 +773,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
             return root;
         }
+
     }
 
     /**
@@ -781,7 +792,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
-                throw new Exception("Unable to retrieve concept " + refsetId + " on branch " + branch + " in order to determine its moduleId");
+                throw new Exception("Unable to retrieve refset concept in order to determine its moduleId" + refsetId + " via url: " + url);
 
             }
 
@@ -790,7 +801,7 @@ public class SyncRefsetAgent extends SyncAgent {
             final JsonNode root = mapper.readTree(resultString.toString());
 
             // get RefSets from edition as long as a) active & b)
-            // within edition's moduleˇ
+            // within edition's module
             return root.get("moduleId").asText();
 
         }
@@ -1106,6 +1117,8 @@ public class SyncRefsetAgent extends SyncAgent {
 
         // Persist changes across all Refsets
         refsetsUpdated.addAll(refsetsFinalized);
+
+        // Updsates to metadata, not necessarily modified refsets in true sense
         getDbHandler().updateMultipleRefsets(service, refsetsUpdated);
 
     }
@@ -1219,7 +1232,7 @@ public class SyncRefsetAgent extends SyncAgent {
      * @param refsetId the refset id
      * @param moduleId
      * @param edition the short name
-     * @param refsetCountMap 
+     * @param refsetCountMap
      * @return <code>true</code> if so, <code>false</code> otherwise
      * @throws Exception the exception
      */
@@ -1239,20 +1252,23 @@ public class SyncRefsetAgent extends SyncAgent {
 
         // Only continue processing refset if it is created within the current edition's modules
         if (!edition.getModules().contains(moduleId)) {
-            //TODO: Remove this case?
+
+            // TODO: Remove this case?
             return false;
         }
 
         if (refsetCountMap == null || refsetCountMap.isEmpty()) {
+
             LOG.info("Ignoring refset: " + refsetId + " given it null or empty");
             return false;
         }
-        
+
         if (refsetCountMap.get(refsetId) == null) {
+
             LOG.info("Ignoring refset: refsetCountMap does not contain refsetId:" + refsetId);
             return false;
         }
-        
+
         // Finally, ensure there aren't other special refset considerations.
         // Current restriction: Don't import any version of those refsets whose latest version contains more than 10k members
         if (refsetCountMap.get(refsetId) > MAX_MEMBERS_SUPPORTED) {
@@ -1319,8 +1335,6 @@ public class SyncRefsetAgent extends SyncAgent {
 
                     // Since grabbing all children branches, avoid
                     // attempting to parse extensions i.e. MAIN/SNOMEDCT-US
-                    boolean childAdded = false;
-
                     if (childDate.matches("^\\d{4}-\\d{2}-\\d{2}$")) {
 
                         final long branchDate = branchDateFormat.parse(childDate).getTime();
@@ -1328,7 +1342,6 @@ public class SyncRefsetAgent extends SyncAgent {
                         if (branchDate < new Date().getTime()) {
 
                             children.put(branchDate, childBranch);
-                            childAdded = true;
                         }
 
                     } else {
@@ -1340,13 +1353,6 @@ public class SyncRefsetAgent extends SyncAgent {
 
                         ignoredBranches.get(editionName).add(childDate);
                     }
-
-                    // if (!childAdded) {
-
-                    // logger.info("Skipping over childBranch/branchDate pair " + edition.getBranch() + "/" + childDate + " as the branch isn't an official
-                    // release
-                    // branch");
-                    // }
 
                 }
 

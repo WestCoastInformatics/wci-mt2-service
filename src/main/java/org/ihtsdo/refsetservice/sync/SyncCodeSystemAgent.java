@@ -94,20 +94,30 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         List<Organization> activeDbOrganizations = readDbOrganizations(service).stream().filter(o -> o.isActive()).collect(Collectors.toList());
 
-        for (boolean migrationDirection : migrationActivationMap.keySet()) {
+        for (boolean migrationOrganizationStatus : migrationActivationMap.keySet()) {
 
-            for (String organizationName : migrationActivationMap.get(migrationDirection)) {
+            for (String organizationName : migrationActivationMap.get(migrationOrganizationStatus)) {
 
                 Stream<Organization> matchingOrganizationsStream = activeDbOrganizations.stream().filter(o -> o.getName().equals(organizationName));
 
                 Organization organizationToMigrate = (Organization) getUtilities().validateMatches(matchingOrganizationsStream, organizationName);
 
                 // Only inactivate those organizations that aren't pointing to an edition anymore
-                if ((migrationDirection && !organizationToMigrate.isActive())
-                    || (!migrationDirection && OrganizationService.getOrganizationEditions(service, organizationToMigrate.getId()).getTotal() == 0)) {
+                if ((migrationOrganizationStatus && !organizationToMigrate.isActive())
+                    || (!migrationOrganizationStatus && OrganizationService.getOrganizationEditions(service, organizationToMigrate.getId()).getTotal() == 0)) {
 
                     // TODO: Add (in migrationOrganization) the removal of users from crowd groups (check with Tim on timing)
-                    OrganizationService.updateOrganizationStatus(service, SecurityService.getUserFromSession(), organizationToMigrate.getId(), migrationDirection);
+                    OrganizationService.updateOrganizationStatus(service, SecurityService.getUserFromSession(), organizationToMigrate.getId(), migrationOrganizationStatus);
+
+                    if (!migrationOrganizationStatus) {
+
+                        STATISTICS.incrementOrganizationsInactivated();
+
+                    } else {
+
+                        STATISTICS.incrementOrganizationsReactivated();
+                    }
+
                 }
 
             }
@@ -145,6 +155,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
         final List<String> addedOrganizations = termserverOrganizationNameToEditionShortNameMap.keySet().stream()
             .filter(orgName -> !isTesting() || (isTesting() && termserverOrganizationNameToEditionShortNameMap.get(orgName).equals(testingEditionShortName)))
             .filter(orgName -> !dbActiveOrganizationNameIdMaps.keySet().contains(orgName)).filter(orgName -> !dbInactiveOrganizationNameIdMaps.keySet().contains(orgName)).collect(Collectors.toList());
+
         // Create new org
         addedOrganizations.stream().forEach(orgName -> getDbHandler().addOrganziation(service, orgName, getUtilities().determineOrganizationDescription(orgName)));
 
@@ -208,7 +219,11 @@ public class SyncCodeSystemAgent extends SyncAgent {
         final List<String> activatedShortNames = termserverShortNames.stream().filter(c -> !isTesting() || (isTesting() && c.equals(testingEditionShortName)))
             .filter(c -> dbInactiveEditionShortNames.contains(c)).collect(Collectors.toList());
 
-        activatedShortNames.stream().forEach(n -> getDbHandler().updateEditionStatus(service, n, true));
+        activatedShortNames.stream().forEach(n -> {
+
+            getDbHandler().updateEditionStatus(service, n, true);
+            STATISTICS.incrementEditionsReactivated();
+        });
 
         List<String> inactivatedShortNames = new ArrayList<>();
         List<String> modifiedShortNames = new ArrayList<>();
@@ -222,7 +237,11 @@ public class SyncCodeSystemAgent extends SyncAgent {
             inactivatedShortNames = dbActiveEditionShortNames.stream().filter(c -> !isTesting() || (isTesting() && c.equals(testingEditionShortName))).filter(c -> !termserverShortNames.contains(c))
                 .collect(Collectors.toList());
 
-            inactivatedShortNames.stream().forEach(n -> getDbHandler().updateEditionStatus(service, n, false));
+            inactivatedShortNames.stream().forEach(n -> {
+
+                getDbHandler().updateEditionStatus(service, n, false);
+                STATISTICS.incrementEditionsInactivated();
+            });
 
             // Determine editions that are active in DB and found in termserver and compare for changes
             existingInBothShortNames.addAll(dbActiveEditionShortNames.stream().filter(c -> termserverShortNames.contains(c)).collect(Collectors.toList()));

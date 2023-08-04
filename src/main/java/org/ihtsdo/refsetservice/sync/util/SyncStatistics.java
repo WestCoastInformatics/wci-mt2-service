@@ -123,10 +123,10 @@ public class SyncStatistics {
         buf.append(System.getProperty("line.separator"));
 
         // Refsets
-        buf.append("*** REFSET FULLY NEW, INACTIVATED, or (RE)ACTIVATED ON ALL VERSIONS (" + refsetIdsSynced + " Synced" + ") --> Added: " + refsetIdsAdded + " / Inactivated: " + refsetIdsInactivated
+        buf.append("*** Unique REFSET Ids (" + refsetIdsSynced + " Synced" + ") --> Added: " + refsetIdsAdded + " / Inactivated: " + refsetIdsInactivated
                 + " / Activated: " + refsetIdsActivated + System.getProperty("line.separator"));
 
-        buf.append("*** REFSET VERSIONs (" + refsetVersionsSynced + " Synced" + ") --> Added: " + refsetVersionsAdded + " / Inactivated: " + refsetVersionsInactivated + " / Activated: "
+        buf.append("*** REFSET VERSION Pairs (" + refsetVersionsSynced + " Synced" + ") --> Added: " + refsetVersionsAdded + " / Inactivated: " + refsetVersionsInactivated + " / Activated: "
                 + refsetVersionsActivated + " / Modified: " + refsetVersionsModified + System.getProperty("line.separator"));
         buf.append(System.getProperty("line.separator"));
 

@@ -130,7 +130,7 @@ public class SyncCodeSystemDeterminer {
 
                 } else if (AFFILIATE_OWNER.equals(organizationName)) {
 
-                    // Skipping inactive code system
+                    // Skipping affiliate code systems
                     ignoredReasonEditionMap.get(SyncReasonEditionSkipped.AFFILIATE_CODE_SYSTEM).add(editionShortName);
 
                 } else if (syncUtilities.getPropertyReader().getCodeSystemsToIgnore().contains(editionShortName)) {

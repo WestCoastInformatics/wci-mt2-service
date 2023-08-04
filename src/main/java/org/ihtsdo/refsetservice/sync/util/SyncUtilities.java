@@ -33,17 +33,22 @@ import javax.ws.rs.core.Response.Status.Family;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.Edition;
+import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.QueryParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.Team;
+import org.ihtsdo.refsetservice.model.TeamType;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.model.UserRole;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
+import org.ihtsdo.refsetservice.terminologyservice.TeamService;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
 import org.ihtsdo.refsetservice.util.EmailUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
@@ -443,13 +448,13 @@ public class SyncUtilities {
 
         return retSet;
     }
-    
+
     /**
      * Determine organization name.
      *
      * @param codeSystem the code system
      * @return the string
-     * @throws Exception 
+     * @throws Exception
      */
     public String determineEditionShortName(final JsonNode codeSystem) throws Exception {
 
@@ -600,9 +605,10 @@ public class SyncUtilities {
         for (final String query : sqlQueries) {
 
             if (query == null || query.contains("--") || !query.contains("select ")) {
+
                 continue;
             }
-            
+
             LOG.debug("excuting query: {}", query);
 
             @SuppressWarnings("unchecked")
@@ -610,14 +616,18 @@ public class SyncUtilities {
             result.append(query).append("\r\n");
 
             if (rows == null) {
+
                 result.append("\r\n");
                 continue;
             }
 
             for (final Object[] row : rows) {
+
                 for (final Object field : row) {
+
                     result.append(field).append("|");
                 }
+
                 result.append("\r\n");
             }
 
@@ -637,9 +647,10 @@ public class SyncUtilities {
     public void emailSyncResults(final TerminologyService service) throws Exception {
 
         if (!PropertyUtility.getProperties().containsKey("refset.service.env") || !PropertyUtility.getProperties().getProperty("refset.service.env").equals("LOCAL")) {
+
             return;
         }
-        
+
         final String results = getSyncResults(service);
 
         try {
@@ -820,6 +831,58 @@ public class SyncUtilities {
         LOG.info("Operation took " + differenceInMinutes + " minutes to run");
 
         return differenceInMinutes;
+
+    }
+
+    /**
+     * Creates the admin organization team.
+     *
+     * @param syncDatabaseHandler TODO
+     * @param service the service
+     * @param organization the organization
+     * @return the team
+     * @throws Exception the exception
+     */
+    public Team getOrCreateAdminOrganizationTeam(SyncDatabaseHandler syncDatabaseHandler, final TerminologyService service, final Organization organization) throws Exception {
+
+        try {
+
+            Team adminTeam = OrganizationService.getActiveOrganizationAdminTeam(service, organization.getId());
+
+            if (adminTeam != null) {
+
+                SyncDatabaseHandler.LOG.info("Using existing team '{}' ({}) for {}", adminTeam.getName(), adminTeam.getId(), organization.getName());
+                return adminTeam;
+            }
+
+            Team inactiveAdminTeam = OrganizationService.getOrganizationAdminTeam(service, organization.getId());
+
+            if (inactiveAdminTeam == null) {
+
+                adminTeam = syncDatabaseHandler.addTeam(service, TeamService.generateOrganizationTeamName(organization), TeamService.getOrganizationTeamDescription(organization), organization,
+                    TeamType.ORGANIZATION.getText());
+
+            } else if (!inactiveAdminTeam.isActive()) {
+
+                inactiveAdminTeam.setActive(true);
+                adminTeam = service.update(inactiveAdminTeam);
+            } else {
+
+                throw new Exception("Odd state for existing admin team: " + inactiveAdminTeam);
+            }
+
+            for (final UserRole role : UserRole.getAllRoles()) {
+
+                adminTeam = TeamService.addRoleToTeam(SecurityService.getUserFromSession(), adminTeam.getId(), UserRole.getRoleString(role).toUpperCase());
+            }
+
+            return adminTeam;
+        } catch (Exception e) {
+
+            SyncDatabaseHandler.LOG.error("Failed to create admin team with Exception --> " + e.getMessage());
+
+            return null;
+        }
 
     }
 }

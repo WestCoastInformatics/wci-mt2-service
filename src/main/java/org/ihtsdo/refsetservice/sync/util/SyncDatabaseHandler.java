@@ -14,7 +14,6 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.ihtsdo.refsetservice.model.DefinitionClause;
@@ -23,16 +22,13 @@ import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.Team;
-import org.ihtsdo.refsetservice.model.TeamType;
 import org.ihtsdo.refsetservice.model.User;
-import org.ihtsdo.refsetservice.model.UserRole;
 import org.ihtsdo.refsetservice.model.VersionStatus;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.ProjectService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
-import org.ihtsdo.refsetservice.terminologyservice.TeamService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.slf4j.Logger;
@@ -46,10 +42,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 public class SyncDatabaseHandler {
 
     /** The log. */
-    private static final Logger LOG = LoggerFactory.getLogger(SyncDatabaseHandler.class);
+    static final Logger LOG = LoggerFactory.getLogger(SyncDatabaseHandler.class);
 
     /** The utilities. */
-    private SyncUtilities utilities;
+    public SyncUtilities utilities;
 
     private SyncStatistics STATISTICS;
 
@@ -138,7 +134,7 @@ public class SyncDatabaseHandler {
             final Organization organization = (Organization) utilities.validateMatches(organizationStream, organizationName);
 
             // Create a single Admin team per Edition when we first discover it
-            getOrCreateAdminOrganizationTeam(service, organization);
+            utilities.getOrCreateAdminOrganizationTeam(this, service, organization);
 
             final String defaultLanguageCode = utilities.identifyDefaultLanguageCode(codeSystem, editionName);
 
@@ -405,7 +401,7 @@ public class SyncDatabaseHandler {
      * @param teamType the team type
      * @return the team
      */
-    private Team addTeam(final TerminologyService service, final String teamName, final String teamDescription, final Organization organization, final String teamType) {
+    Team addTeam(final TerminologyService service, final String teamName, final String teamDescription, final Organization organization, final String teamType) {
 
         try {
 
@@ -500,14 +496,6 @@ public class SyncDatabaseHandler {
 
             final Edition updatedEdition = service.update(edition);
 
-            if (!isActive) {
-
-                STATISTICS.incrementEditionsInactivated();
-            } else {
-
-                STATISTICS.incrementEditionsReactivated();
-            }
-
             LOG.info("Updated edition: " + updatedEdition.getId() + " to " + isActive + "  (" + updatedEdition.getName() + ") ");
 
             service.add(AuditEntryHelper.updateEditionEntry(updatedEdition));
@@ -546,15 +534,6 @@ public class SyncDatabaseHandler {
             Organization updatedOrganization = null;
 
             updatedOrganization = OrganizationService.updateOrganizationStatus(service, SecurityService.getUserFromSession(), organization.getId(), isActive);
-
-            if (!isActive) {
-
-                STATISTICS.incrementOrganizationsInactivated();
-
-            } else {
-
-                STATISTICS.incrementOrganizationsReactivated();
-            }
 
             service.add(AuditEntryHelper.updateOrganizationEntry(updatedOrganization));
 
@@ -668,8 +647,6 @@ public class SyncDatabaseHandler {
             service.commit();
             service.setTransactionPerOperation(true);
 
-            STATISTICS.setRefsetVersionsModified(STATISTICS.getRefsetVersionsModified() + refsets.size());
-
             StringBuffer updatedRefsetInfo = new StringBuffer();
             updatedRefsets.stream().forEach(r -> updatedRefsetInfo.append("Pair Added: " + r.getName() + " - " + sdfPrintDate.format(r.getVersionDate()) + ", "));
 
@@ -680,53 +657,6 @@ public class SyncDatabaseHandler {
         } catch (Exception e) {
 
             LOG.error("Failed to update multiple refests failing on : " + refsets.size() + " refsets with Exception --> " + e.getMessage());
-
-            e.printStackTrace();
-
-            return null;
-        }
-
-    }
-
-    /**
-     * Update refset version status.
-     *
-     * @param service the service
-     * @param refset the refset
-     * @param isActive the is active
-     * @return the refset
-     */
-    public Refset updateRefsetVersionStatus(final TerminologyService service, final Refset refset, final boolean isActive) {
-
-        try {
-
-            if (isActive == refset.isActive()) {
-
-                LOG.error("Attempting to set active status to " + isActive + " for an refset " + refset.getName() + " whose status is already that");
-                return refset;
-            }
-
-            refset.setActive(isActive);
-
-            // Persist
-            final Refset updatedRefset = service.update(refset);
-
-            if (!isActive) {
-
-                STATISTICS.incrementRefsetVersionsInactivated();
-            } else {
-
-                STATISTICS.incrementRefsetVersionsReactivated();
-            }
-
-            service.add(AuditEntryHelper.changeRefsetStatusEntry(updatedRefset));
-
-            LOG.info("Updated status of refset version: " + updatedRefset.getId() + "  (" + updatedRefset.getName() + ") " + sdfPrintDate.format(updatedRefset.getVersionDate()));
-
-            return updatedRefset;
-        } catch (Exception e) {
-
-            LOG.error("Failed to update status of refset: " + refset.getName() + " (" + sdfPrintDate.format(refset.getVersionDate() + ") to " + isActive + " with Exception --> " + e.getMessage()));
 
             e.printStackTrace();
 
@@ -893,113 +823,4 @@ public class SyncDatabaseHandler {
         }
 
     }
-
-    /**
-     * Update refset status all versions.
-     *
-     * @param service the service
-     * @param refsetId the refset id
-     * @param isActive the is active
-     * @return the sets the
-     */
-    public Set<Refset> updateRefsetStatusAllVersions(final TerminologyService service, final String refsetId, final boolean isActive) {
-
-        final Set<Refset> updatedRefsetVersions = new HashSet<>();
-        Refset testingVersion = null;
-
-        try {
-
-            final List<Refset> matchingRefsetVersions = service.getAll(Refset.class).stream().filter(r -> r.getRefsetId().equals(refsetId)).collect(Collectors.toList());
-
-            for (final Refset refsetVersion : matchingRefsetVersions) {
-
-                if (isActive == refsetVersion.isActive()) {
-
-                    LOG.error("Attempting to set active status to " + isActive + " for an refset " + refsetVersion.getName() + " whose status is already that");
-                    continue;
-                }
-
-                refsetVersion.setActive(isActive);
-                testingVersion = refsetVersion;
-                final Refset updatedRefsetVersion = updateRefset(service, refsetVersion);
-
-                if (!isActive) {
-
-                    STATISTICS.incrementRefsetVersionsInactivated();
-                } else {
-
-                    STATISTICS.incrementRefsetVersionsReactivated();
-                }
-
-                LOG.info("Updated refset version status: " + updatedRefsetVersion.getId() + " to " + isActive + "  (" + updatedRefsetVersion.getName() + " / "
-                    + sdfPrintDate.format(updatedRefsetVersion.getVersionDate()) + ") ");
-
-                updatedRefsetVersions.add(updatedRefsetVersion);
-            }
-
-            return updatedRefsetVersions;
-        } catch (Exception e) {
-
-            LOG.error("Failed to update status of all versions of refsetId: " + refsetId + " to " + isActive + " with Exception --> " + e.getMessage());
-            LOG.error("Failed refset: " + testingVersion);
-
-            return null;
-        }
-
-    }
-
-    /**
-     * Creates the admin organization team.
-     *
-     * @param service the service
-     * @param organization the organization
-     * @return the team
-     * @throws Exception the exception
-     */
-    public Team getOrCreateAdminOrganizationTeam(final TerminologyService service, final Organization organization) throws Exception {
-
-        try {
-
-            Team adminTeam = OrganizationService.getActiveOrganizationAdminTeam(service, organization.getId());
-
-            if (adminTeam != null) {
-
-                LOG.info("Using existing team '{}' ({}) for {}", adminTeam.getName(), adminTeam.getId(), organization.getName());
-                return adminTeam;
-            }
-
-            Team inactiveAdminTeam = OrganizationService.getOrganizationAdminTeam(service, organization.getId());
-
-            if (inactiveAdminTeam == null) {
-
-                adminTeam =
-                    addTeam(service, TeamService.generateOrganizationTeamName(organization), TeamService.getOrganizationTeamDescription(organization), organization, TeamType.ORGANIZATION.getText());
-
-            } else if (!inactiveAdminTeam.isActive()) {
-
-                inactiveAdminTeam.setActive(true);
-                adminTeam = service.update(inactiveAdminTeam);
-            } else {
-
-                throw new Exception("Odd state for existing admin team: " + inactiveAdminTeam);
-            }
-
-            final User syncUser = SecurityService.getUserFromSession();
-            syncUser.setUserName("Sync");
-
-            for (final UserRole role : UserRole.getAllRoles()) {
-
-                adminTeam = TeamService.addRoleToTeam(syncUser, adminTeam.getId(), UserRole.getRoleString(role).toUpperCase());
-            }
-
-            return adminTeam;
-        } catch (Exception e) {
-
-            LOG.error("Failed to create admin team with Exception --> " + e.getMessage());
-
-            return null;
-        }
-
-    }
-
 }

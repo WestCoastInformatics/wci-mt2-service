@@ -156,7 +156,7 @@ public class OrganizationService extends BaseService {
 
             adminTeam = TeamService.addRoleToTeam(user, adminTeam.getId(), UserRole.getRoleString(role).toUpperCase(), true);
         }
-        
+
         // add the user to the admin team
         adminTeam = TeamService.addUserToTeam(service, user, adminTeam, user);
 
@@ -298,7 +298,7 @@ public class OrganizationService extends BaseService {
      * @return the organization
      * @throws Exception the exception
      */
-    public static Organization updateOrganizationStatus(final TerminologyService service, final User user, final String organizationId, final boolean direction) throws Exception {
+    public static Organization updateOrganizationStatus(final TerminologyService service, final User user, final String organizationId, final boolean organizationStatus) throws Exception {
 
         // Find the object
         final Organization organization = getOrganization(service, user, organizationId, false);
@@ -310,10 +310,10 @@ public class OrganizationService extends BaseService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
         }
 
-        if (organization.isActive() == direction) {
+        if (organization.isActive() == organizationStatus) {
 
-            throw new Exception(
-                "Attempting to modify status of organization " + organization.getName() + " (" + organizationId + ") " + direction + " but it is already that, so an unexecpted state has arisen .");
+            throw new Exception("Attempting to modify status of organization " + organization.getName() + " (" + organizationId + ") " + organizationStatus
+                + " but it is already that, so an unexecpted state has arisen .");
         }
 
         checkEditPermissions(user, organization);
@@ -335,7 +335,7 @@ public class OrganizationService extends BaseService {
 
                     for (final Project project : editionProjects.getItems()) {
 
-                        project.setActive(direction);
+                        project.setActive(organizationStatus);
 
                         if (project.getTeams() != null) {
 
@@ -345,7 +345,7 @@ public class OrganizationService extends BaseService {
 
                                 if (team != null && !team.getMembers().isEmpty()) {
 
-                                    team.setActive(direction);
+                                    team.setActive(organizationStatus);
                                     service.update(team);
                                 }
 
@@ -355,7 +355,7 @@ public class OrganizationService extends BaseService {
 
                         service.update(project);
 
-                        final ResultList<Refset> projRefsets = service.find("projectId:" + project.getId() + " AND active:" + direction, null, Refset.class, null);
+                        final ResultList<Refset> projRefsets = service.find("projectId:" + project.getId() + " AND active:" + organizationStatus, null, Refset.class, null);
 
                         if (projRefsets.getItems() != null && !projRefsets.getItems().isEmpty()) {
 
@@ -363,7 +363,7 @@ public class OrganizationService extends BaseService {
 
                                 if (refset != null && !projRefsets.getItems().isEmpty()) {
 
-                                    refset.setActive(direction);
+                                    refset.setActive(organizationStatus);
                                     service.update(refset);
                                 }
 
@@ -375,13 +375,13 @@ public class OrganizationService extends BaseService {
 
                 }
 
-                edition.setActive(direction);
+                edition.setActive(organizationStatus);
                 service.update(edition);
             }
 
         }
 
-        final ResultList<Team> orgTeams = service.find("organizationId: + " + organizationId + " AND active:" + !direction, null, Team.class, null);
+        final ResultList<Team> orgTeams = service.find("organizationId: + " + organizationId + " AND active:" + !organizationStatus, null, Team.class, null);
 
         if (orgTeams.getItems() != null && !orgTeams.getItems().isEmpty()) {
 
@@ -389,7 +389,7 @@ public class OrganizationService extends BaseService {
 
                 if (team != null && !team.getMembers().isEmpty()) {
 
-                    team.setActive(direction);
+                    team.setActive(organizationStatus);
                     service.update(team);
                 }
 
@@ -397,7 +397,7 @@ public class OrganizationService extends BaseService {
 
         }
 
-        organization.setActive(direction);
+        organization.setActive(organizationStatus);
 
         final Organization updatedOrganization = service.update(organization);
         AuditEntryHelper.changeOrganizationStatusEntry(updatedOrganization);
@@ -966,9 +966,6 @@ public class OrganizationService extends BaseService {
             final boolean isCrowdMember = (crowdUser != null);
 
             if (isCrowdMember) {
-
-                final Set<String> memberships = CrowdAPIClient.getMembershipsForUser(crowdUser.getUserName());
-                // final boolean hasMemberships = (memberships != null) ? memberships.stream().anyMatch(m -> m.startsWith("rt2-")) : false;
 
                 // Ensure not already members of the organization
                 if (organization.getMembers().stream().anyMatch(u -> u.getId().equals(crowdUser.getId()))) {
