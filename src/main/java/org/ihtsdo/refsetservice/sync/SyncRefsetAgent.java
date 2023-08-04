@@ -1000,11 +1000,11 @@ public class SyncRefsetAgent extends SyncAgent {
                     // TODO: Handle all
                     Optional<Project> defaultProject = projects.stream().filter(p -> p.getName().equalsIgnoreCase("all") && p.getEditionId().equals(metadata.getEdition().getId())).findAny();
 
-                    if (defaultProject.isEmpty()) {
+                    if (defaultProject.isPresent() && defaultProject.isEmpty()) {
 
                         defaultProject = projects.stream().filter(p -> p.getEditionId().equals(metadata.getEdition().getId())).findAny();
 
-                        if (defaultProject.isEmpty()) {
+                        if (!defaultProject.isPresent() || defaultProject.isEmpty()) {
 
                             throw new Exception("Trying tro create refset " + metadata.getRefsetId() + " (" + metadata.getVersion() + ") on edition " + metadata.getEdition().getName()
                                 + ", but there are no projects in crowd to support this.");
