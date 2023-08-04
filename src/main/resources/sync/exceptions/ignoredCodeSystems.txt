@@ -16,4 +16,4 @@ SNOMEDCT-WCI	WCI Testing Extension
 
 SNOMEDCT-AM	Armenian Extension	## Until have module
 SNOMEDCT-VN	Vietnam Extension	## Until have module
-SNOMEDCT-AU	Australian Extension	## Until have non-all project defined in crowd
+
