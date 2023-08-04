@@ -651,6 +651,10 @@ public class SyncRefsetAgent extends SyncAgent {
 
         for (final long versionDate : termserverVersionBranchMap.keySet()) {
 
+            final SimpleDateFormat sdf = new SimpleDateFormat(getUtilities().getIsoDateTimeFormat());
+
+            LOG.debug("AAA-1 {}", sdf.format(new Date(versionDate)));
+
             if (versionDate < PRE_SNOMED_SUPPORTED_RELEASES) {
 
                 continue;
@@ -667,24 +671,35 @@ public class SyncRefsetAgent extends SyncAgent {
 
                 if (refsetNode != null) {
 
+                    boolean firstTime = false;
+                    boolean updatedModule = false;
+
                     final String refsetId = refsetNode.get("conceptId").asText();
-                    final String moduleId = determineConceptModuleId(refsetId, edition.getBranch());
+                    LOG.debug("AAA-2 {}", refsetId);
+                    final String moduleId = determineConceptModuleId(refsetId, termserverVersionBranchMap.get(versionDate));
+                    LOG.debug("AAA-3 {}", moduleId);
+
+                    if (!refsetToModuleMap.containsKey(refsetId)) {
+
+                        firstTime = true;
+
+                    } else if (!refsetToModuleMap.get(refsetId).equals(moduleId)) {
+
+                        updatedModule = true;
+
+                    }
+
+                    refsetToModuleMap.put(refsetId, moduleId);
 
                     if (isRefsetToProcess(refsetId, moduleId, edition, refsetCountMap)) {
-
-                        boolean firstTime = false;
-
-                        if (!refsetToModuleMap.containsKey(refsetId)) {
-
-                            firstTime = true;
-                            refsetToModuleMap.put(refsetId, moduleId);
-                        }
 
                         final String termserverRefsetBranchPath = termserverVersionBranchMap.get(versionDate);
                         final Set<Long> termserverEditionBranchDates = termserverVersionBranchMap.keySet();
 
                         // If perVersionSync, then create version per branch and return. Otherwise, determine if changes exist in this version
-                        if (firstTime || getIsPerVersionSync() || versionHasChanges(refsetId, versionDate, termserverRefsetBranchPath, edition.getName(), termserverEditionBranchDates)) {
+                        // TODO: Handle refset moving to different module?
+                        if (firstTime || updatedModule || getIsPerVersionSync()
+                            || versionHasChanges(refsetId, versionDate, termserverRefsetBranchPath, edition.getName(), termserverEditionBranchDates)) {
 
                             final SyncRefsetMetadata refsetMetadata = new SyncRefsetMetadata(refsetNode, edition, termserverVersionBranchMap.keySet(), versionDate, termserverRefsetBranchPath);
 
@@ -751,6 +766,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
         final String refsetBranchPath = termserverVersionBranchMap.get(branchVersion);
         final String url = SnowstormConnection.getBaseUrl() + "browser/{branch}/members?active=true&referenceSet=%3C" + RefsetService.SIMPLE_TYPE_REFERENCE_SET;
+        LOG.debug("getRefsetMembes URL: " + url);
 
         try (final Response response = SnowstormConnection.getResponse(url.replace("{branch}", refsetBranchPath))) {
 
@@ -787,6 +803,7 @@ public class SyncRefsetAgent extends SyncAgent {
     private String determineConceptModuleId(final String refsetId, final String branch) throws Exception {
 
         final String url = SnowstormConnection.getBaseUrl() + branch + "/concepts/" + refsetId;
+        LOG.debug("getConcept URL: " + url);
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
@@ -857,8 +874,8 @@ public class SyncRefsetAgent extends SyncAgent {
 
             if (earliestPublishedVersionDate < 0) {
 
-                throw new Exception("Bad content likely brought us here as unable to find a valid earliest w/ refsetId: " + refsetId + " & branchVersion: " + versionDate + " & versionDate: "
-                    + versionDate + " & branchPath: " + termserverRefsetBranchPath);
+                throw new Exception("Bad content likely brought us here as unable to find a valid earliest w/ refsetId: " + refsetId + " & versionDate: " + versionDate + " & branchPath: "
+                    + termserverRefsetBranchPath);
             }
 
             refsetVersionDate = earliestPublishedVersionDate;
