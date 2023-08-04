@@ -69,10 +69,10 @@ public abstract class SyncAgent {
     private static Boolean isIgnoreCoreRefsets = null;
 
     /** Testing options. */
-    private static boolean testing = true;
+    private static boolean testing = false;
 
     /** The testing edition short name. */
-    protected static String testingEditionShortName = "SNOMEDCT";
+    protected static String testingEditionShortName = "";
 
     /** The testing refset. */
 
