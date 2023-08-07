@@ -61,6 +61,8 @@ public class SyncRefsetAgent extends SyncAgent {
 
     private static final Integer MAX_MEMBERS_SUPPORTED = 10000;
 
+    private static final String TRAINING_PROJECT_NAME = "training";
+
     /** The refset to module map. */
     private final Map<String, String> refsetToModuleMap = new HashMap<String, String>();
 
@@ -653,8 +655,6 @@ public class SyncRefsetAgent extends SyncAgent {
 
             final SimpleDateFormat sdf = new SimpleDateFormat(getUtilities().getIsoDateTimeFormat());
 
-            LOG.debug("AAA-1 {}", sdf.format(new Date(versionDate)));
-
             if (versionDate < PRE_SNOMED_SUPPORTED_RELEASES) {
 
                 continue;
@@ -675,9 +675,7 @@ public class SyncRefsetAgent extends SyncAgent {
                     boolean updatedModule = false;
 
                     final String refsetId = refsetNode.get("conceptId").asText();
-                    LOG.debug("AAA-2 {}", refsetId);
                     final String moduleId = determineConceptModuleId(refsetId, termserverVersionBranchMap.get(versionDate));
-                    LOG.debug("AAA-3 {}", moduleId);
 
                     if (!refsetToModuleMap.containsKey(refsetId)) {
 
@@ -1021,12 +1019,16 @@ public class SyncRefsetAgent extends SyncAgent {
                 // project
                 final List<Project> projects = OrganizationService.getOrganizationProjects(service, metadata.getEdition().getOrganizationId()).getItems();
 
+                if (projects == null || projects.isEmpty()) {
+
+                    throw new Exception("Adding refset to an organization " + metadata.getEdition().getOrganizationName() + " without any associated projects");
+                }
+
                 if (!defaultOrganizationProjectMap.containsKey(metadata.getEdition().getOrganizationId())) {
 
-                    Project projectToAdd = null;
-
                     // TODO: Handle all
-                    Optional<Project> defaultProject = projects.stream().filter(p -> p.getName().equalsIgnoreCase("all") && p.getEditionId().equals(metadata.getEdition().getId())).findAny();
+                    Optional<Project> defaultProject =
+                        projects.stream().filter(p -> p.getName().equalsIgnoreCase(TRAINING_PROJECT_NAME) && p.getEditionId().equals(metadata.getEdition().getId())).findAny();
 
                     if (defaultProject.isPresent() && defaultProject.isEmpty()) {
 
@@ -1040,9 +1042,18 @@ public class SyncRefsetAgent extends SyncAgent {
 
                     }
 
-                    projectToAdd = defaultProject.get();
+                    Project projectToAdd = null;
+
+                    if (!defaultProject.isPresent()) {
+
+                        projectToAdd = projects.iterator().next();
+                    } else {
+
+                        projectToAdd = defaultProject.get();
+                    }
 
                     defaultOrganizationProjectMap.put(metadata.getEdition().getOrganizationId(), projectToAdd);
+
                 }
 
                 final Project projectToUse = defaultOrganizationProjectMap.get(metadata.getEdition().getOrganizationId());
