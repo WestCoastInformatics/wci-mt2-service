@@ -6271,8 +6271,10 @@ public final class RefsetMemberService {
             returnMap.put("hasChildren", "false"); // comparisonConcept.getHasChildren() + "");
             returnMap.put("membership", "Comparison Reference Set");
             refsetMemberComparison.getComparisonRefsetDistinctMembers().add(comparisonConceptId);
+                        
             final Map<String, String> preferedTermEnglish =
-                comparisonConcept.getDescriptions().stream().filter(f -> PREFERRED_TERM_EN.equals(f.get(LANGUAGE_ID))).findFirst().get();            
+                comparisonConcept.getDescriptions().stream().filter(f -> f != null && PREFERRED_TERM_EN.equals(f.get(LANGUAGE_ID))).findFirst().orElse(null);
+
             returnMap.put("name", (preferedTermEnglish != null) ? preferedTermEnglish.get(DESCRIPTION_TERM).strip() : comparisonConcept.getName().strip());
 
             refsetMemberComparison.getItems().add(returnMap);
