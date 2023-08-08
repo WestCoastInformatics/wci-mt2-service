@@ -6272,7 +6272,7 @@ public final class RefsetMemberService {
             returnMap.put("membership", "Comparison Reference Set");
             refsetMemberComparison.getComparisonRefsetDistinctMembers().add(comparisonConceptId);
             final Map<String, String> preferedTermEnglish =
-                comparisonConcept.getDescriptions().stream().filter(f -> f.get(LANGUAGE_ID).equals(PREFERRED_TERM_EN)).findFirst().get();
+                comparisonConcept.getDescriptions().stream().filter(f -> PREFERRED_TERM_EN.equals(f.get(LANGUAGE_ID))).findFirst().get();            
             returnMap.put("name", (preferedTermEnglish != null) ? preferedTermEnglish.get(DESCRIPTION_TERM).strip() : comparisonConcept.getName().strip());
 
             refsetMemberComparison.getItems().add(returnMap);
