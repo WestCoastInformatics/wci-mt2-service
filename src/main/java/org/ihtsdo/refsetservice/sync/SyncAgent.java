@@ -90,13 +90,6 @@ public abstract class SyncAgent {
     /** The Constant DEVELOPER_CODE_SYSTEM_SHORTNAME. */
     protected static final String DEVELOPER_CODE_SYSTEM_SHORTNAME = "SNOMEDCT-WCI";
 
-    /** The Constant SNOMED_ADMIN_USERNAME. */
-    protected static final String SNOMED_ADMIN_USERNAME = "rdavidson";
-
-    private static final String SUPER_USERNAME = "refset-dev";
-
-    private static final String DEVELOPER_ADMIN_USERNAME = "rt2-dev-admin";
-
     /** The Constant ADMIN_USERNAMES. */
     protected static final Set<String> ADMIN_USERNAMES = new HashSet<>();
 
@@ -276,10 +269,6 @@ public abstract class SyncAgent {
         }
 
         dbHandler.setUtilities(utilities);
-
-        ADMIN_USERNAMES.add(SNOMED_ADMIN_USERNAME);
-        ADMIN_USERNAMES.add(SUPER_USERNAME);
-        ADMIN_USERNAMES.add(DEVELOPER_ADMIN_USERNAME);
     }
 
     /**

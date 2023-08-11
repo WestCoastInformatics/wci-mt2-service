@@ -9,12 +9,9 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
-import java.util.Properties;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 
-import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.handler.ImsSecurityServiceHandler;
 import org.ihtsdo.refsetservice.handler.SecurityServiceHandler;
@@ -22,7 +19,6 @@ import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
-import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -60,8 +56,7 @@ public class SecurityController extends BaseController {
      * TODO - REMOVE AFTER PERMISSIONS CONVERTED.
      */
     @GetMapping("/internalSecurity/convertPermissions")
-    public @ResponseBody ResponseEntity<String> convertPermissions(final HttpServletRequest request)
-        throws Exception {
+    public @ResponseBody ResponseEntity<String> convertPermissions(final HttpServletRequest request) throws Exception {
 
         LOG.info("PERMISSION CLEANUP START");
 
@@ -69,13 +64,14 @@ public class SecurityController extends BaseController {
 
             final User user = SecurityService.getUserFromSession();
             String results = "Didn't work";
-            
+
             if (user.getUserName().equals("refset-dev") || user.getUserName().equals("twhalen")) {
-                
-                ImsSecurityServiceHandler handler = (ImsSecurityServiceHandler)HandlerUtility.newStandardHandlerInstanceWithConfiguration("security.handler", "IMS", SecurityServiceHandler.class);
+
+                ImsSecurityServiceHandler handler = (ImsSecurityServiceHandler) HandlerUtility.newStandardHandlerInstanceWithConfiguration("security.handler",
+                    "IMS", SecurityServiceHandler.class);
                 results = handler.convertRolesForAllUsers();
             }
-            
+
             LOG.info("PERMISSION CLEANUP FINISH");
             return new ResponseEntity<>(results, new HttpHeaders(), HttpStatus.OK);
 
@@ -83,7 +79,7 @@ public class SecurityController extends BaseController {
             return handleException(e);
         }
     }
-    
+
     /**
      * Returns the user.
      *

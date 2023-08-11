@@ -17,9 +17,12 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
@@ -61,7 +64,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 
     /** The Constant LOG. */
-    private static final Logger LOG = LoggerFactory.getLogger(DefaultSearchHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ImsSecurityServiceHandler.class);
 
     /** The Constant LOG. */
     private static final String RT2_ROLE_PREFIX = "rt2-";
@@ -74,8 +77,7 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
     private static int PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED = 0;
     private static int PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED_WITHOUT_ADD = 0;
 
-    /** The properties. */
-    @SuppressWarnings("unused")
+    /**  The properties. */
     private Properties properties;
 
     /* see superclass */
@@ -101,28 +103,78 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
         
         // TODO - REMOVE AFTER PERMISSIONS CONVERTED
         convertRoles(user, false);
+        // END
 
-        if (userName.equals("twhalen") || userName.equals("jefron")) {
+        final Map<String, Set<String>> configUsers = getDefaultUsersFromConfigFile();
 
-            final Set<String> originalRoles = new HashSet<>(user.getRoles());
-            
-            for (final String role : originalRoles) {
-                if (role.startsWith("all-")) {
-                    user.getRoles().remove(role);
-                }
-            }
-//            user.getRoles().clear();
-//            user.getRoles().add("snomedinternational-snomedctus-all-viewer");
-//            user.getRoles().add("swedishedition-snomedctse-inrp-reviewer");
-//            user.getRoles().add("swedishedition-snomedctse-inrp-author");
+        final Set<String> rolesToAdd = new HashSet<>();
+        if (configUsers.containsKey("admin") && configUsers.get("admin").contains(user.getUserName())) {
+            rolesToAdd.add("all-all-all-admin");
         }
-
+        
+        if (configUsers.containsKey("author") && configUsers.get("author").contains(user.getUserName())) {
+            rolesToAdd.add("all-all-all-author");
+        }
+        
+        if (configUsers.containsKey("reviewer") && configUsers.get("reviewer").contains(user.getUserName())) {
+            rolesToAdd.add("all-all-all-reviewer");
+        }
+        
+        if (!rolesToAdd.isEmpty()) {
+            user.getRoles().clear();
+            user.getRoles().add("all-all-all-reviewer");    
+        }
+        
         user.setModifiedBy(user.getUserName());
 
         LOG.debug("authenticate user is: " + user);
         return user;
     }
 
+    
+    
+    /**
+     * Returns the admin users from config file.
+     *
+     * @return the admin users from config file
+     */
+    private Map<String, Set<String>> getDefaultUsersFromConfigFile() {
+
+        final Map<String, Set<String>> userList = new HashMap<>();
+
+        if (!properties.containsKey("users.admin")) {
+            LOG.warn("Could not retrieve config parameter users.admin for security handler IMS");
+        } else {
+            final String adminUserList = properties.getProperty("users.admin");
+            if (StringUtils.isNotBlank(adminUserList)) {
+                final Set<String> admins = new HashSet<>(Arrays.asList(adminUserList.split(",")));
+                userList.put("admin", admins);
+            }
+        }
+
+        if (!properties.containsKey("users.author")) {
+            LOG.warn("Could not retrieve config parameter users.author for security handler IMS");
+        } else {
+            final String authorUserList = properties.getProperty("users.author");
+            if (StringUtils.isNotBlank(authorUserList)) {
+                final Set<String> authors = new HashSet<>(Arrays.asList(authorUserList.split(",")));
+                userList.put("author", authors);
+            }
+        }
+
+        if (!properties.containsKey("users.reviewer")) {
+            LOG.warn("Could not retrieve config parameter users.reviewer for security handler IMS");
+        } else {
+            final String reviewerUserList = properties.getProperty("users.reviewer");
+            if (StringUtils.isNotBlank(reviewerUserList)) {
+                final Set<String> reviewers = new HashSet<>(Arrays.asList(reviewerUserList.split(",")));
+                userList.put("reviewer", reviewers);
+            }
+        }
+
+        return userList;
+    }
+    
     /**
      * TODO - REMOVE AFTER PERMISSIONS CONVERTED.
      *
