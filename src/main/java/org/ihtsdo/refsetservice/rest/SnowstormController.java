@@ -9,10 +9,13 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
+import java.util.stream.Collectors;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import io.swagger.annotations.Api;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -49,18 +53,55 @@ public class SnowstormController extends BaseController {
     public @ResponseBody ResponseEntity<String> getFromSnowstorm(final HttpServletRequest request) throws Exception {
 
         try {
-            final String url = request.getRequestURI().replace("/refsetservice/snowstorm", "");
+            final String url = request.getRequestURI().replace("/refsetservice/snowstorm/", "");
             final String query = request.getQueryString();
 
-            final String fullUrl = SnowstormConnection.getBaseUrl() + ((SnowstormConnection.getBaseUrl().endsWith("/")) ? "" : "/") + url + "?" + query;
+            final String fullUrl = SnowstormConnection.getBaseUrl() + url + "?" + query;
 
-            LOG.info("full url: {}", fullUrl);
+            LOG.info("Snowstorm full url: {}", fullUrl);
 
             final Response response = SnowstormConnection.getResponse(fullUrl);
 
             if (response.getStatus() != 200) {
                 LOG.info("ERROR from snowstorm server {}", response.getStatus());
                 LOG.info("{}", response.readEntity(String.class));
+                throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, "Error occured performing lookup.");
+            }
+            final String json = response.readEntity(String.class);
+            return new ResponseEntity<>(json, HttpStatus.OK);
+
+        } catch (final Exception e) {
+            return handleException(e);
+        }
+    }
+    
+    /**
+     * Returns the from snowstorm.
+     *
+     * @param request the request
+     * @return the from snowstorm
+     * @throws Exception the exception
+     */
+    @Hidden
+    @RequestMapping(method = RequestMethod.POST, value = "/snowstorm/**")
+    public @ResponseBody ResponseEntity<String> postToSnowstorm(final HttpServletRequest request) throws Exception {
+
+        try {
+            final String url = request.getRequestURI().replace("/refsetservice/snowstorm/", "");
+            final String query = request.getQueryString();
+            final String body = request.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
+
+            final String fullUrl = SnowstormConnection.getBaseUrl() + url + "?" + query;
+
+            LOG.info("full url: {}", fullUrl);
+            LOG.info("body: {}", body);
+
+            final Response response = SnowstormConnection.postResponse(fullUrl, body);
+
+            if (response.getStatus() < 200 && response.getStatus() > 399) {
+                LOG.info("ERROR from snowstorm server {}", response.getStatus());
+                LOG.info("{}", response.readEntity(String.class));
+                throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, "Error occured performing lookup.");
             }
             final String json = response.readEntity(String.class);
             return new ResponseEntity<>(json, HttpStatus.OK);
