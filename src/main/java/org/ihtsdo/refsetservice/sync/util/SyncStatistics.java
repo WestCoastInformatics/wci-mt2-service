@@ -33,8 +33,6 @@ public class SyncStatistics {
     /** The organizations activated. */
     private int organizationsReactivated = 0;
 
-    private int organizationsModified = 0;
-
     // Editions
     /** The editions added. */
     private int editionsAdded = 0;
@@ -111,22 +109,22 @@ public class SyncStatistics {
         buf.append(System.getProperty("line.separator"));
 
         // Organizations
-        buf.append(
-            "*** Organizations --> Added: " + organizationsAdded + " / Inactivated: " + organizationsInactivated + " / Activated: " + organizationsReactivated + System.getProperty("line.separator"));
+        buf.append("*** Organizations (Synced " + codeSystemsFiltered + " --> Added: " + organizationsAdded + " / Inactivated: " + organizationsInactivated + " / Activated: "
+            + organizationsReactivated + System.getProperty("line.separator"));
         buf.append(System.getProperty("line.separator"));
 
         // Editions
-        buf.append("*** EDITIONS --> Added: " + editionsAdded + " / Inactivated: " + editionsInactivated + " / Activated: " + editionsReactivated + " / Modified: " + editionsModified
-            + System.getProperty("line.separator"));
+        buf.append("*** Editions (Synced " + codeSystemsFiltered + " --> Added: " + editionsAdded + " / Inactivated: " + editionsInactivated + " / Activated: " + editionsReactivated + " / Modified: "
+            + editionsModified + " / Modified And : " + editionsModified + System.getProperty("line.separator"));
 
         buf.append("*** Reassignment of editions-to-organization map --> Changes: " + editionOrganizationMapChanged + System.getProperty("line.separator"));
         buf.append(System.getProperty("line.separator"));
 
         // Refsets
-        buf.append("*** Unique REFSET Ids (" + refsetIdsSynced + " Synced" + ") --> Added: " + refsetIdsAdded + " / Inactivated: " + refsetIdsInactivated + " / Activated: " + refsetIdsActivated
+        buf.append("*** Unique Refset Ids (" + refsetIdsSynced + " Synced" + ") --> Added: " + refsetIdsAdded + " / Inactivated: " + refsetIdsInactivated + " / Activated: " + refsetIdsActivated
             + System.getProperty("line.separator"));
 
-        buf.append("*** REFSET VERSION Pairs (" + refsetVersionsSynced + " Synced" + ") --> Added: " + refsetVersionsAdded + " / Inactivated: " + refsetVersionsInactivated + " / Activated: "
+        buf.append("*** Refset Version Pairs (" + refsetVersionsSynced + " Synced" + ") --> Added: " + refsetVersionsAdded + " / Inactivated: " + refsetVersionsInactivated + " / Activated: "
             + refsetVersionsActivated + " / Modified: " + refsetVersionsModified + System.getProperty("line.separator"));
         buf.append(System.getProperty("line.separator"));
 
@@ -685,11 +683,6 @@ public class SyncStatistics {
     public void incrementEditionsReactivated() {
 
         editionsReactivated++;
-    }
-
-    public void incrementOrganizationsModified() {
-
-        organizationsModified++;
     }
 
     public void incrementProjectsModified() {

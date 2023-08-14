@@ -745,8 +745,6 @@ public class SyncDatabaseHandler {
 
             final Organization updatedOrganization = service.update(organization);
 
-            STATISTICS.incrementOrganizationsModified();
-
             service.add(AuditEntryHelper.updateOrganizationEntry(updatedOrganization));
 
             LOG.info("Updated organization: " + updatedOrganization.getId() + "  (" + updatedOrganization.getName() + ") ");
