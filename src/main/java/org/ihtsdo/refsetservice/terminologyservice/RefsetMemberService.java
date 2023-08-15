@@ -1271,7 +1271,7 @@ public final class RefsetMemberService {
             final String snowGeneratedRf2FilePath = sourceFiles.iterator().next();
             removeEffectiveTime(snowGeneratedRf2FilePath);
         }
-        
+
         // if exportMetadata requested, add it
         if (exportMetadata) {
 
@@ -1288,7 +1288,7 @@ public final class RefsetMemberService {
 
         return exportFileDir;
     }
-    
+
     /**
      * Removes the effective time.
      *
@@ -6322,7 +6322,7 @@ public final class RefsetMemberService {
             returnMap.put("hasChildren", "false"); // comparisonConcept.getHasChildren() + "");
             returnMap.put("membership", "Comparison Reference Set");
             refsetMemberComparison.getComparisonRefsetDistinctMembers().add(comparisonConceptId);
-                        
+
             final Map<String, String> preferedTermEnglish =
                 comparisonConcept.getDescriptions().stream().filter(f -> f != null && PREFERRED_TERM_EN.equals(f.get(LANGUAGE_ID))).findFirst().orElse(null);
 

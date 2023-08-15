@@ -56,7 +56,7 @@ public class BaseController {
         } else if (exception instanceof RestException) {
 
             final RestException restException = (RestException) exception;
-            final String message = (restException.getError().getMessage() != null ? restException.getError().getMessage(): restException.getMessage());            
+            final String message = (restException.getError().getMessage() != null ? restException.getError().getMessage() : restException.getMessage());
             return ResponseEntity.status(restException.getError().getStatus()).body(message);
 
         } else {

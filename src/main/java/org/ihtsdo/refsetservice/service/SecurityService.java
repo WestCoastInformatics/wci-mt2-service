@@ -281,7 +281,7 @@ public class SecurityService implements AutoCloseable {
         session.setAttribute(attributeName, value);
         return true;
     }
-    
+
     /**
      * Set the user into the session.
      *
@@ -471,8 +471,8 @@ public class SecurityService implements AutoCloseable {
             userFound.setRoles(authUser.getRoles());
             updateUser(userFound);
             userId = userFound.getId();
-        } 
-        
+        }
+
         // if User not found but they have RT2 roles, create one for them
         else if (!authUser.getRoles().isEmpty()) {
 
@@ -484,7 +484,7 @@ public class SecurityService implements AutoCloseable {
             newUser.setRoles(authUser.getRoles());
             newUser = addUser(newUser);
             userId = newUser.getId();
-            
+
         } else {
             // if user not found, return not
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "You are not a member of an organization.  You can still browse public reference sets.");

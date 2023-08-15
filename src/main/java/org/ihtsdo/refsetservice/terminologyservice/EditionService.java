@@ -38,8 +38,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class EditionService extends BaseService {
 
-     /** The Constant LOG. */
-     private static final Logger LOG = LoggerFactory.getLogger(EditionService.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(EditionService.class);
 
     /**
      * Creates the edition.
@@ -101,7 +101,6 @@ public class EditionService extends BaseService {
         }
     }
 
- 
     /**
      * Search Editions.
      *
@@ -144,7 +143,7 @@ public class EditionService extends BaseService {
             return results;
         }
     }
-    
+
     /**
      * Populate new editions based on affiliated code systems from the terminology server.
      *
@@ -165,7 +164,7 @@ public class EditionService extends BaseService {
             final JsonNode organizationJsonRootNode = mapper.readTree(resultString.toString());
             final Iterator<JsonNode> organizationIterator = organizationJsonRootNode.iterator();
             final SyncUtilities syncUtilities = new SyncUtilities(new SyncDatabaseHandler(null, new SyncStatistics()));
-            
+
             while (organizationIterator.hasNext()) {
 
                 final Iterator<JsonNode> codeSystems = organizationIterator.next().iterator();
@@ -185,23 +184,23 @@ public class EditionService extends BaseService {
                     // Skip inactive code systems
                     if (codeSystem.has("active") && !codeSystem.get("active").asBoolean()) {
                         continue;
-                    } 
-                    
+                    }
+
                     // Code System has been defined as to-be-ignored (either by specifying name or shortname).
                     else if (syncUtilities.getPropertyReader().getCodeSystemsToIgnore().contains(editionShortName)) {
                         continue;
-                    } 
-                    
+                    }
+
                     // deal only with Type-3 (non-Managed Service)
-//                    else if (!maintainerType.equalsIgnoreCase("Managed Service")) {
-//                        continue;
-//                    } 
-                    
+                    // else if (!maintainerType.equalsIgnoreCase("Managed Service")) {
+                    // continue;
+                    // }
+
                     // deal only with official affiliate code systems
                     else if (!editionShortName.toLowerCase().contains("-affiliate")) {
                         continue;
-                    } 
-                        
+                    }
+
                     final String editionName = codeSystem.get("name").asText();
                     final String branch = codeSystem.get("branchPath").asText();
                     final String defaultLanguageCode = syncUtilities.identifyDefaultLanguageCode(codeSystem, editionName);

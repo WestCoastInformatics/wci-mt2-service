@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -172,7 +172,7 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
 
         // not an affiliate so will not be created
         result = mvc.perform(post(url).content(originalOrg.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isForbidden()).andReturn();
-        
+
         // created
         originalOrg.setAffiliate(true);
         result = mvc.perform(post(url).content(originalOrg.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isCreated()).andReturn();

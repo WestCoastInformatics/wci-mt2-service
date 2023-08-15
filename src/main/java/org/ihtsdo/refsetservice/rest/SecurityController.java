@@ -54,6 +54,10 @@ public class SecurityController extends BaseController {
 
     /**
      * TODO - REMOVE AFTER PERMISSIONS CONVERTED.
+     *
+     * @param request the request
+     * @return the response entity
+     * @throws Exception the exception
      */
     @GetMapping("/internalSecurity/convertPermissions")
     public @ResponseBody ResponseEntity<String> convertPermissions(final HttpServletRequest request) throws Exception {

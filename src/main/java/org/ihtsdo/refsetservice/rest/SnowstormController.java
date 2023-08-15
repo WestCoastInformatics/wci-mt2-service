@@ -15,7 +15,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +73,7 @@ public class SnowstormController extends BaseController {
             return handleException(e);
         }
     }
-    
+
     /**
      * Returns the from snowstorm.
      *

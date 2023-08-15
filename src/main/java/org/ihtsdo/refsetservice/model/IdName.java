@@ -10,8 +10,7 @@
 package org.ihtsdo.refsetservice.model;
 
 /**
- * The Class IdName.  Use in other modules when collections of id and name are
- * required and not the full object.
+ * The Class IdName. Use in other modules when collections of id and name are required and not the full object.
  * 
  */
 public class IdName {
@@ -28,7 +27,7 @@ public class IdName {
      * @param id the id
      * @param name the name
      */
-    public IdName(String id, String name) {
+    public IdName(final String id, final String name) {
 
         super();
         this.id = id;
@@ -50,7 +49,7 @@ public class IdName {
      *
      * @param id the id to set
      */
-    public void setId(String id) {
+    public void setId(final String id) {
 
         this.id = id;
     }
@@ -70,7 +69,7 @@ public class IdName {
      *
      * @param name the name to set
      */
-    public void setName(String name) {
+    public void setName(final String name) {
 
         this.name = name;
     }
@@ -88,7 +87,7 @@ public class IdName {
 
     /* see superclass */
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
 
         if (this == obj) {
             return true;

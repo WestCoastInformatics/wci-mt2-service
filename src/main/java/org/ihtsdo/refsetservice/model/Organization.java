@@ -82,7 +82,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     /** The icon uri. */
     @Column(nullable = true, length = 255)
     private String iconUri;
-    
+
     /** The affiliate flag. */
     @Column(nullable = false)
     private boolean affiliate;
@@ -289,7 +289,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
 
         this.roles = roles;
     }
-    
+
     /**
      * Checks if is an affiliate organization.
      *

@@ -68,16 +68,26 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 
     /** The Constant LOG. */
     private static final String RT2_ROLE_PREFIX = "rt2-";
-    
+
     /** TODO - REMOVE AFTER PERMISSIONS CONVERTED. */
     private static final Set<String> PERMISSION_CONVERT_ADDED_GROUPS = new HashSet<>();
-    private static int PERMISSION_CONVERT_NUMBER_USERS_CONVERTED = 0;
-    private static int PERMISSION_CONVERT_NUMBER_USERS_PREVIOUSLY_CONVERTED = 0;
-    private static int PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_ADDED = 0;
-    private static int PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED = 0;
-    private static int PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED_WITHOUT_ADD = 0;
 
-    /**  The properties. */
+    /**  The permission convert number users converted. */
+    private static int permissionConvertNumberUsersConverted = 0;
+
+    /**  The permission convert number users previously converted. */
+    private static int permissionConvertNumberUsersPreviouslyConverted = 0;
+
+    /**  The permission convert number memberships added. */
+    private static int permissionConvertNumberMembershipsAdded = 0;
+
+    /**  The permission convert number memberships removed. */
+    private static int permissionConvertNumberMembershipsRemoved = 0;
+
+    /**  The permission convert number memberships removed without add. */
+    private static int permissionConvertNumberMembershipsRemovedWithoutAdd = 0;
+
+    /** The properties. */
     private Properties properties;
 
     /* see superclass */
@@ -94,13 +104,13 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
         final User user = CrowdAPIClient.getUser(userName);
         final Set<String> groupMemberships = CrowdAPIClient.getMembershipsForUser(userName);
         LOG.debug("Memberships {}", groupMemberships);
-        
+
         for (final String role : groupMemberships) {
             if (role.startsWith(RT2_ROLE_PREFIX)) {
                 user.getRoles().add(role.substring(RT2_ROLE_PREFIX.length()));
             }
         }
-        
+
         // TODO - REMOVE AFTER PERMISSIONS CONVERTED
         convertRoles(user, false);
         // END
@@ -111,28 +121,26 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
         if (configUsers.containsKey("admin") && configUsers.get("admin").contains(user.getUserName())) {
             rolesToAdd.add("all-all-all-admin");
         }
-        
+
         if (configUsers.containsKey("author") && configUsers.get("author").contains(user.getUserName())) {
             rolesToAdd.add("all-all-all-author");
         }
-        
+
         if (configUsers.containsKey("reviewer") && configUsers.get("reviewer").contains(user.getUserName())) {
             rolesToAdd.add("all-all-all-reviewer");
         }
-        
+
         if (!rolesToAdd.isEmpty()) {
             user.getRoles().clear();
-            user.getRoles().add("all-all-all-reviewer");    
+            user.getRoles().add("all-all-all-reviewer");
         }
-        
+
         user.setModifiedBy(user.getUserName());
 
         LOG.debug("authenticate user is: " + user);
         return user;
     }
 
-    
-    
     /**
      * Returns the admin users from config file.
      *
@@ -174,23 +182,22 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 
         return userList;
     }
-    
+
     /**
      * TODO - REMOVE AFTER PERMISSIONS CONVERTED.
      *
-     * @param user The user
      * @return the response
      * @throws Exception the exception
      */
     public String convertRolesForAllUsers() throws Exception {
-        
+
         PERMISSION_CONVERT_ADDED_GROUPS.clear();
-        PERMISSION_CONVERT_NUMBER_USERS_CONVERTED = 0;
-        PERMISSION_CONVERT_NUMBER_USERS_PREVIOUSLY_CONVERTED = 0;
-        PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_ADDED = 0;
-        PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED = 0;
-        PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED_WITHOUT_ADD = 0;
-        
+        permissionConvertNumberUsersConverted = 0;
+        permissionConvertNumberUsersPreviouslyConverted = 0;
+        permissionConvertNumberMembershipsAdded = 0;
+        permissionConvertNumberMembershipsRemoved = 0;
+        permissionConvertNumberMembershipsRemovedWithoutAdd = 0;
+
         final String baseUrl = StringUtils.trim(PropertyUtility.getProperty("crowd.baseUrl"));
         final String crowdUsername = StringUtils.trim(PropertyUtility.getProperty("crowd.username"));
         final String password = StringUtils.trim(PropertyUtility.getProperty("crowd.password"));
@@ -199,8 +206,8 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
         final String authHeader = "Basic " + new String(encodedAuth, StandardCharsets.UTF_8);
         final String appPrefix = "rt2-";
         final Set<String> usernames = new HashSet<>();
-        //final Set<String> groups = CrowdAPIClient.getAllGroups();
-        
+        // final Set<String> groups = CrowdAPIClient.getAllGroups();
+
         final HttpClient httpClient = HttpClient.newBuilder().build();
         final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(baseUrl + "/rest/usermanagement/1/group/membership")).GET()
             .header("Authorization", authHeader).header("Accept", MediaType.APPLICATION_XML).build();
@@ -209,7 +216,7 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
         if (response.statusCode() == 200) {
 
             final String xmlString = response.body();
-            
+
             try (final ByteArrayInputStream input = new ByteArrayInputStream(xmlString.toString().getBytes("UTF-8"));) {
 
                 // Load the input XML document, parse it and return an instance of the Document class.
@@ -233,23 +240,23 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 
                         // if the group is an RT2 group
                         if (groupName.startsWith(appPrefix)) {
-                            
+
                             final NodeList usersNodeList = groupNode.getChildNodes();
                             final int usersNodeListSize = usersNodeList.getLength();
-                            
+
                             // get the users node
                             for (int j = 0; j < usersNodeListSize; j++) {
-                                
+
                                 if (usersNodeList.item(j).getNodeName().equals("users")) {
-                                    
+
                                     final NodeList groupUsersList = usersNodeList.item(j).getChildNodes();
                                     final int groupUsersListSize = groupUsersList.getLength();
-                                    
+
                                     // loop through the users and collect the user names
                                     for (int k = 0; k < groupUsersListSize; k++) {
-        
+
                                         if (groupUsersList.item(k).getNodeName().equals("user")) {
-                                            
+
                                             final Node groupUserNode = groupUsersList.item(k);
                                             final String groupUserName = groupUserNode.getAttributes().getNamedItem("name").getNodeValue();
                                             usernames.add(groupUserName);
@@ -264,165 +271,168 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
                     }
                 }
             }
-            
+
             // go thru all users and convert their roles
             for (final String username : usernames) {
-                
+
                 final User user = new User();
                 user.setUserName(username);
-                
+
                 final Set<String> groupMemberships = CrowdAPIClient.getMembershipsForUser(username);
-                
+
                 for (final String role : groupMemberships) {
                     if (role.startsWith(RT2_ROLE_PREFIX)) {
                         user.getRoles().add(role.substring(RT2_ROLE_PREFIX.length()));
                     }
                 }
-                
+
                 convertRoles(user, true);
             }
-            
+
             LOG.info("PERMISSION_CONVERT_ADDED_GROUPS: " + PERMISSION_CONVERT_ADDED_GROUPS.size());
-            LOG.info("PERMISSION_CONVERT_NUMBER_USERS_CONVERTED: " + PERMISSION_CONVERT_NUMBER_USERS_CONVERTED);
-            LOG.info("PERMISSION_CONVERT_NUMBER_USERS_PREVIOUSLY_CONVERTED: " + PERMISSION_CONVERT_NUMBER_USERS_PREVIOUSLY_CONVERTED);
-            LOG.info("PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_ADDED: " + PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_ADDED);
-            LOG.info("PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED: " + PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED);
-            LOG.info("PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED_WITHOUT_ADD: " + PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED_WITHOUT_ADD);
-            
+            LOG.info("PERMISSION_CONVERT_NUMBER_USERS_CONVERTED: " + permissionConvertNumberUsersConverted);
+            LOG.info("PERMISSION_CONVERT_NUMBER_USERS_PREVIOUSLY_CONVERTED: " + permissionConvertNumberUsersPreviouslyConverted);
+            LOG.info("PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_ADDED: " + permissionConvertNumberMembershipsAdded);
+            LOG.info("PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED: " + permissionConvertNumberMembershipsRemoved);
+            LOG.info("PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED_WITHOUT_ADD: " + permissionConvertNumberMembershipsRemovedWithoutAdd);
+
             final List<String> results = new ArrayList<>();
             results.add("PERMISSION_CONVERT_ADDED_GROUPS: " + PERMISSION_CONVERT_ADDED_GROUPS.size());
-            results.add("PERMISSION_CONVERT_NUMBER_USERS_CONVERTED: " + PERMISSION_CONVERT_NUMBER_USERS_CONVERTED);
-            results.add("PERMISSION_CONVERT_NUMBER_USERS_PREVIOUSLY_CONVERTED: " + PERMISSION_CONVERT_NUMBER_USERS_PREVIOUSLY_CONVERTED);
-            results.add("PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_ADDED: " + PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_ADDED);
-            results.add("PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED: " + PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED);
-            results.add("PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED_WITHOUT_ADD: " + PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED_WITHOUT_ADD);
-            
+            results.add("PERMISSION_CONVERT_NUMBER_USERS_CONVERTED: " + permissionConvertNumberUsersConverted);
+            results.add("PERMISSION_CONVERT_NUMBER_USERS_PREVIOUSLY_CONVERTED: " + permissionConvertNumberUsersPreviouslyConverted);
+            results.add("PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_ADDED: " + permissionConvertNumberMembershipsAdded);
+            results.add("PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED: " + permissionConvertNumberMembershipsRemoved);
+            results.add("PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED_WITHOUT_ADD: " + permissionConvertNumberMembershipsRemovedWithoutAdd);
+
             return ModelUtility.toJson(results);
         } else {
             throw new Exception("There was a problem: " + response.statusCode());
         }
     }
-        
-        /**
-         * TODO - REMOVE AFTER PERMISSIONS CONVERTED.
-         *
-         * @param user The user
-         * @param removeOldMembeships should old permission style memberships be removed
-         * @throws Exception the exception
-         */
-        private void convertRoles(final User user, final boolean removeOldMembeships) throws Exception {
+
+    /**
+     * TODO - REMOVE AFTER PERMISSIONS CONVERTED.
+     *
+     * @param user The user
+     * @param removeOldMembeships should old permission style memberships be removed
+     * @throws Exception the exception
+     */
+    private void convertRoles(final User user, final boolean removeOldMembeships) throws Exception {
 
         boolean needToConvert = true;
-            
+
         for (final String role : user.getRoles()) {
 
             if (role.split("-").length == 4) {
-                
-                PERMISSION_CONVERT_NUMBER_USERS_PREVIOUSLY_CONVERTED++;
+
+                permissionConvertNumberUsersPreviouslyConverted++;
                 needToConvert = false;
                 break;
             }
         }
-        
+
         if (needToConvert) {
-            
-            PERMISSION_CONVERT_NUMBER_USERS_CONVERTED++;
+
+            permissionConvertNumberUsersConverted++;
             LOG.info("PERMISSION CLEANUP - Converting user: " + user.getUserName());
         }
-        
+
         try (final TerminologyService service = new TerminologyService()) {
-            
+
             final Set<String> originalRoles = new HashSet<>(user.getRoles());
-            
+
             for (final String role : originalRoles) {
 
                 final String[] originalRoleParts = role.split("-");
-                
+
                 if (originalRoleParts.length < 4) {
-                    
+
                     // convert old roles into the new role format
                     if (needToConvert) {
-                        
+
                         String organizationName = "";
                         String groupDescription = "Organization Administrators";
-                        
+
                         // if this is an application admin role the org name is 'all'
                         if (originalRoleParts[0].equals("all")) {
-                            
-                            organizationName = "all";    
+
+                            organizationName = "all";
                             groupDescription = "Application Administrators";
-                            
+
                         } else {
-                            
+
                             String reconsitutedEditionShortName = originalRoleParts[0];
-                            
+
                             // turn the edition part of the role back to a valid edition short name so it can be searched
                             if (reconsitutedEditionShortName.length() > 8) {
                                 reconsitutedEditionShortName = "snomedct" + "-" + reconsitutedEditionShortName.substring(8);
                             }
-                            
-                            final ResultList<Edition> results = service.find("shortName:" + reconsitutedEditionShortName.toUpperCase(), new PfsParameter(), Edition.class, null);
-                            
+
+                            final ResultList<Edition> results =
+                                service.find("shortName:" + reconsitutedEditionShortName.toUpperCase(), new PfsParameter(), Edition.class, null);
+
                             if (results.getItems().size() == 1) {
-                                
+
                                 final Edition edition = results.getItems().get(0);
                                 organizationName = edition.getOrganizationName();
                             }
                         }
-                        
+
                         // add the group and permission to crowd as long as an org name is there
                         if (!organizationName.isEmpty()) {
-                            
+
                             // if this is a project role get the project description
                             if (!originalRoleParts[1].equals("all")) {
-                                
+
                                 final Project project = service.findSingle("projectCrowdId:" + originalRoleParts[1], Project.class, null);
-                                
+
                                 if (project != null) {
                                     groupDescription = project.getDescription();
                                 }
                             }
-                            
+
                             final String crowdOrganizationName = CrowdGroupNameAlgorithm.getOrganizationString(organizationName);
                             final String newGroupName = crowdOrganizationName + "-" + originalRoleParts[0] + "-" + originalRoleParts[1];
-                            
+
                             if (!PERMISSION_CONVERT_ADDED_GROUPS.contains(newGroupName)) {
-                                
-                                LOG.info("    PERMISSION CLEANUP - Adding Group: rt2-" + crowdOrganizationName + "-" + originalRoleParts[0] + "-" + originalRoleParts[1]);
+
+                                LOG.info("    PERMISSION CLEANUP - Adding Group: rt2-" + crowdOrganizationName + "-" + originalRoleParts[0] + "-"
+                                    + originalRoleParts[1]);
                                 CrowdAPIClient.addGroup(organizationName, originalRoleParts[0], originalRoleParts[1], groupDescription, false, false);
                                 PERMISSION_CONVERT_ADDED_GROUPS.add(newGroupName);
                             }
-                            
-                            final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(organizationName, originalRoleParts[0], originalRoleParts[1], originalRoleParts[2]);
+
+                            final String groupName =
+                                CrowdGroupNameAlgorithm.buildCrowdGroupName(organizationName, originalRoleParts[0], originalRoleParts[1], originalRoleParts[2]);
                             LOG.info("    PERMISSION CLEANUP - Adding membership: " + groupName);
                             CrowdAPIClient.addMembership(groupName, user.getUserName());
-                            PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_ADDED++;
-                            
+                            permissionConvertNumberMembershipsAdded++;
+
                             // add the new role to the user object
                             user.getRoles().add(crowdOrganizationName + "-" + role);
-                            
+
                         } else {
-                            PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED_WITHOUT_ADD++;
+                            permissionConvertNumberMembershipsRemovedWithoutAdd++;
                         }
-                        
+
                         // if we are removing old memberships do it now
                         if (removeOldMembeships) {
-                            
+
                             LOG.info("    PERMISSION CLEANUP - removing membership: rt2-" + role);
                             CrowdAPIClient.deleteMembership("rt2-" + role, user.getUserName());
-                            PERMISSION_CONVERT_NUMBER_MEMBERSHIPS_REMOVED++;
+                            permissionConvertNumberMembershipsRemoved++;
                         }
                     }
-                    
+
                     // remove the old role string from the user object
                     user.getRoles().remove(role);
                 }
             }
         }
-        
+
         LOG.info("PERMISSION CLEANUP - **** USER: " + user.getUserName() + " NUMBER ROLES: " + user.getRoles().size());
     }
-    
+
     /**
      * Calls an IMS endpoint to make sure user is authenticated.
      *
@@ -431,39 +441,39 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
      * @throws Exception the exception
      */
     protected boolean checkImsLogin(final String userName) throws Exception {
-        
+
         final String url = getAuthenticateUrl() + "account";
         boolean authenticated = false;
         final Cookie imsCookie = SecurityService.getImsCookie();
-        
+
         if (imsCookie == null) {
             return false;
         }
-        
+
         final Client client = ClientBuilder.newClient();
         final WebTarget target = client.target(url);
         final javax.ws.rs.core.Cookie newCookie = new javax.ws.rs.core.Cookie(imsCookie.getName(), imsCookie.getValue());
-        
+
         try (Response response = target.request(MediaType.APPLICATION_JSON).cookie(newCookie).get()) {
-            
+
             if (response.getStatus() == Response.Status.OK.getStatusCode()) {
-                
+
                 final String resultString = response.readEntity(String.class);
                 final ObjectMapper mapper = new ObjectMapper();
                 final JsonNode root = mapper.readTree(resultString.toString());
                 final String imsUserName = root.get("login").asText();
-                
+
                 // make sure that the passed in user name is the same as what IMS has authenticated
                 if (imsUserName.equals(userName)) {
                     authenticated = true;
                 }
             }
-            
+
         } catch (final Exception e) {
             LOG.error("IMS Authentication error: {} ", url, e);
             throw e;
         }
-        
+
         return authenticated;
     }
 

@@ -38,8 +38,8 @@ public final class CrowdGroupNameAlgorithm {
      * @return the string
      * @throws Exception the exception
      */
-    public static String generateCrowdGroupName(final String organizationName, final String editionName, final String projectName, final String role, final boolean useProjectNameAsIs)
-        throws Exception {
+    public static String generateCrowdGroupName(final String organizationName, final String editionName, final String projectName, final String role,
+        final boolean useProjectNameAsIs) throws Exception {
 
         if (StringUtils.isAnyBlank(editionName, projectName, role)) {
             throw new Exception("Parameters cannot be empty or null");
@@ -71,7 +71,8 @@ public final class CrowdGroupNameAlgorithm {
      * @return the string
      * @throws Exception the exception
      */
-    public static String buildCrowdGroupName(final String organizationName, final String editionName, final String crowdProjectId, final String role) throws Exception {
+    public static String buildCrowdGroupName(final String organizationName, final String editionName, final String crowdProjectId, final String role)
+        throws Exception {
 
         if (StringUtils.isAnyBlank(editionName, crowdProjectId, role)) {
             throw new Exception("Parameters cannot be empty or null");
@@ -86,7 +87,7 @@ public final class CrowdGroupNameAlgorithm {
 
         return groupName.toString();
     }
-    
+
     /**
      * Returns the organization string.
      *

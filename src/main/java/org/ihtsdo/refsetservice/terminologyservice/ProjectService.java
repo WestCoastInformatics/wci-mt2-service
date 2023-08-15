@@ -72,11 +72,11 @@ public class ProjectService extends BaseService {
             RefsetService.setProjectPermissions(user, project);
             checkPermissions(user, project);
 
-            // Allow for defining the 
+            // Allow for defining the
             if (project.getCrowdProjectId() == null || project.getCrowdProjectId().isEmpty()) {
                 project.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(project.getName()));
             }
-            
+
             service.setModifiedBy(user.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
@@ -148,6 +148,7 @@ public class ProjectService extends BaseService {
      * @throws Exception the exception
      */
     public static Set<String> getProjectNamesForEdition(final String editionId) throws Exception {
+
         final Set<String> projectNames = new HashSet<>();
 
         final List<Project> projects = getProjectsForEdition(editionId);
@@ -161,7 +162,15 @@ public class ProjectService extends BaseService {
 
     }
 
-    public static List<Project> getProjectsForEdition(String editionId) throws Exception {
+    /**
+     * Returns the projects for edition.
+     *
+     * @param editionId the edition id
+     * @return the projects for edition
+     * @throws Exception the exception
+     */
+    public static List<Project> getProjectsForEdition(final String editionId) throws Exception {
+
         try (final TerminologyService service = new TerminologyService()) {
 
             final ResultList<Project> projects = service.find("edition.id: " + editionId + " AND active:true", null, Project.class, null);
@@ -296,8 +305,8 @@ public class ProjectService extends BaseService {
             // Only process payload if Rest call is successful
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
-                throw new Exception(
-                        "call to url '" + conceptSearchUrl + "' for module name lookup wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
+                throw new Exception("call to url '" + conceptSearchUrl + "' for module name lookup wasn't successful. Status: " + response.getStatus()
+                    + " Message: " + response.getStatusInfo().getReasonPhrase());
             }
 
             final JsonNode root = mapper.readTree(resultString.toString());

@@ -35,7 +35,8 @@ public class CrowdGroupNameAlgorithmTest {
         result = CrowdGroupNameAlgorithm.generateCrowdGroupName("Netherlands Extension", "SNOMEDCT-NL", "WCI Testing Project", "admin", false);
         assertThat(result).isEqualTo("rt2-netherlandsextension-snomedctnl-wtp-admin");
 
-        result = CrowdGroupNameAlgorithm.generateCrowdGroupName("Belgian Extension", "SNOMEDCT-BE", "Belgian Edition Upgrade dedicated UAT Training Project", "reviewer", false);
+        result = CrowdGroupNameAlgorithm.generateCrowdGroupName("Belgian Extension", "SNOMEDCT-BE", "Belgian Edition Upgrade dedicated UAT Training Project",
+            "reviewer", false);
         assertThat(result).isEqualTo("rt2-belgianextension-snomedctbe-beudutp-reviewer");
 
         assertThrows(Exception.class, () -> {
@@ -51,7 +52,7 @@ public class CrowdGroupNameAlgorithmTest {
         });
 
     }
-    
+
     /**
      * Test organization.
      *
@@ -70,7 +71,7 @@ public class CrowdGroupNameAlgorithmTest {
 
         result = CrowdGroupNameAlgorithm.getEditionString("United States Edition");
         assertThat(result).isEqualTo("unitedstatesedition");
-        
+
         result = CrowdGroupNameAlgorithm.getEditionString("Affiliate Test 1");
         assertThat(result).isEqualTo("affiliatetest1");
 

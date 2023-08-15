@@ -163,6 +163,7 @@ public class ProjectController extends BaseController {
      * @param bindingResult the binding result
      * @param includeMembers the include members
      * @param includeModuleNames Include names of modules for the edition
+     * @param includeTeamDetails the include team details
      * @return the string
      * @throws Exception the exception
      */
@@ -206,7 +207,7 @@ public class ProjectController extends BaseController {
             if (results == null || results.getItems() == null || results.getItems().isEmpty()) {
                 return new ResponseEntity<>(results, HttpStatus.OK);
             }
-            
+
             if (includeMembers || addTeamDetails || addModuleName) {
 
                 for (final Project project : results.getItems()) {
@@ -303,7 +304,7 @@ public class ProjectController extends BaseController {
 
                     final String organizationName = project.getEdition().getOrganizationName();
                     final String editionName = project.getEdition().getShortName();
-                    
+
                     CrowdAPIClient.addGroup(organizationName, editionName, localProject.getName(), localProject.getDescription(), true, false);
 
                 } catch (final Exception e) {

@@ -1743,7 +1743,7 @@ public final class WorkflowService {
 
                     allowedActions.add(FAILS_RVF);
                 }
-                
+
                 final String organizationName = refset.getOrganizationName();
                 final String editionName = refset.getEdition().getShortName();
 
