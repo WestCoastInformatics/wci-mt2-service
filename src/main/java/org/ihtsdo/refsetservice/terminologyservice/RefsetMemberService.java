@@ -22,6 +22,7 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1265,6 +1266,12 @@ public final class RefsetMemberService {
             sourceFiles.add(builderRf2FilePath);
         }
 
+        // remove effectiveTime
+        if (!"PUBLISHED".equalsIgnoreCase(refset.getVersionStatus())) {
+            final String snowGeneratedRf2FilePath = sourceFiles.iterator().next();
+            removeEffectiveTime(snowGeneratedRf2FilePath);
+        }
+        
         // if exportMetadata requested, add it
         if (exportMetadata) {
 
@@ -1280,6 +1287,50 @@ public final class RefsetMemberService {
         FileUtility.deleteDirectory(builderDirectoryTempDir.toFile());
 
         return exportFileDir;
+    }
+    
+    /**
+     * Removes the effective time.
+     *
+     * @param origFilePath the orig file path
+     * @throws Exception the exception
+     */
+    private static void removeEffectiveTime(final String origFilePath) throws Exception {
+
+        LOG.debug("Removing effectiveTime for non-PUBLISHED refsets.");
+        try {
+            final Path tempFilePath = Files.createTempFile("temp", ".txt");
+
+            try (final BufferedReader br = new BufferedReader(new FileReader(new File(origFilePath)));
+                final BufferedWriter writer = new BufferedWriter(new FileWriter(tempFilePath.toFile()))) {
+
+                String line;
+                while ((line = br.readLine()) != null) {
+                    if (StringUtils.isEmpty(line)) {
+                        continue;
+                    }
+                    if (line.startsWith("id")) {
+                        writer.write(line);
+                        writer.newLine();
+                        continue;
+                    }
+
+                    final String[] tokens = line.split("\t");
+                    tokens[1] = "";
+                    final String updatedLine = String.join("\t", tokens);
+                    writer.write(updatedLine);
+                    writer.newLine();
+
+                }
+            }
+
+            // Replace the original file with the modified temporary file
+            Files.move(tempFilePath, Path.of(origFilePath), StandardCopyOption.REPLACE_EXISTING);
+
+        } catch (IOException e) {
+            LOG.error("ERROR removing effectiveTime from file {}", origFilePath);
+            throw e;
+        }
     }
 
     /**
