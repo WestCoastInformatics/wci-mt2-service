@@ -103,7 +103,8 @@ public abstract class SyncAgent {
      * @throws Exception the exception
      */
     // Call when launching sync
-    public static void sync(final TerminologyService service, final boolean refsetPerVersionSync, final boolean runForProduction, final boolean ignoreCoreRefsets) throws Exception {
+    public static void sync(final TerminologyService service, final boolean refsetPerVersionSync, final boolean runForProduction,
+        final boolean ignoreCoreRefsets) throws Exception {
 
         if (isProductionSystem == null || !isProductionSystem) {
 
@@ -130,7 +131,8 @@ public abstract class SyncAgent {
         initialize(service);
         service.add(AuditEntryHelper.syncBeginEntry(startOperationStartTime));
 
-        SyncCodeSystemDeterminer termServerCodeSystemConsumer = new SyncCodeSystemDeterminer(service, getUtilities(), STATISTICS, isTesting(), testingEditionShortName);
+        SyncCodeSystemDeterminer termServerCodeSystemConsumer =
+            new SyncCodeSystemDeterminer(service, getUtilities(), STATISTICS, isTesting(), testingEditionShortName);
 
         Set<JsonNode> filteredCodeSystems = termServerCodeSystemConsumer.determineCodeSystemsToProcess();
         final HashMap<String, String> termServerEditionToOrganizationMap = termServerCodeSystemConsumer.getEditionToOrganizationMap(filteredCodeSystems);
@@ -172,6 +174,8 @@ public abstract class SyncAgent {
     }
 
     /**
+     * Returns the utilities.
+     *
      * @return the utilities
      */
     protected static SyncUtilities getUtilities() {
@@ -180,6 +184,8 @@ public abstract class SyncAgent {
     }
 
     /**
+     * Sets the utilities.
+     *
      * @param utilities the utilities to set
      */
     protected static void setUtilities(final SyncUtilities utilities) {
@@ -188,6 +194,8 @@ public abstract class SyncAgent {
     }
 
     /**
+     * Returns the db handler.
+     *
      * @return the dbHandler
      */
     protected static SyncDatabaseHandler getDbHandler() {
@@ -196,6 +204,8 @@ public abstract class SyncAgent {
     }
 
     /**
+     * Sets the db handler.
+     *
      * @param dbHandler the dbHandler to set
      */
     protected static void setDbHandler(final SyncDatabaseHandler dbHandler) {
@@ -204,7 +214,9 @@ public abstract class SyncAgent {
     }
 
     /**
-     * @param developerTestingEditionShortName the developerTestingEditionShortName to set
+     * Sets the developer testing edition short name.
+     *
+     * @param editionShortName the developer testing edition short name
      */
     public void setDeveloperTestingEditionShortName(final String editionShortName) {
 
@@ -212,6 +224,8 @@ public abstract class SyncAgent {
     }
 
     /**
+     * Returns the developer testing edition short name.
+     *
      * @return the developerTestingEditionShortName
      */
     public String getDeveloperTestingEditionShortName() {
@@ -220,6 +234,8 @@ public abstract class SyncAgent {
     }
 
     /**
+     * Returns the testing refset.
+     *
      * @return the testingRefset
      */
     protected static String getTestingRefset() {
@@ -228,6 +244,8 @@ public abstract class SyncAgent {
     }
 
     /**
+     * Sets the testing refset.
+     *
      * @param testingRefset the testingRefset to set
      */
     protected static void setTestingRefset(final String testingRefset) {
@@ -236,6 +254,8 @@ public abstract class SyncAgent {
     }
 
     /**
+     * Returns the branchdateformatter.
+     *
      * @return the branchdateformatter
      */
     protected static String getBranchdateformatter() {
@@ -243,7 +263,14 @@ public abstract class SyncAgent {
         return BRANCH_DATE_FORMAT;
     }
 
-    private static boolean isCleanDatabase(TerminologyService service) throws Exception {
+    /**
+     * Indicates whether or not clean database is the case.
+     *
+     * @param service the service
+     * @return <code>true</code> if so, <code>false</code> otherwise
+     * @throws Exception the exception
+     */
+    private static boolean isCleanDatabase(final TerminologyService service) throws Exception {
 
         return service.getAll(Project.class).isEmpty();
     }
@@ -312,7 +339,8 @@ public abstract class SyncAgent {
      * @param termserverAttribute the termserver attribute
      * @return <code>true</code> if so, <code>false</code> otherwise
      */
-    protected boolean isDifferentAttribute(final String shortName, final String attributeName, final Object databaseAttribute, final Object termserverAttribute) {
+    protected boolean isDifferentAttribute(final String shortName, final String attributeName, final Object databaseAttribute,
+        final Object termserverAttribute) {
 
         if (termserverAttribute == null && databaseAttribute == null) {
 
@@ -327,11 +355,12 @@ public abstract class SyncAgent {
         // values are different. List them
         if (databaseAttribute instanceof Long) {
 
-            LOG.info(" inconsistency found on attribute " + attributeName + " for edition " + shortName + " where termserver has " + new Date((Long) termserverAttribute) + "' and DB is '"
-                + new Date((Long) databaseAttribute) + "'");
+            LOG.info(" inconsistency found on attribute " + attributeName + " for edition " + shortName + " where termserver has "
+                + new Date((Long) termserverAttribute) + "' and DB is '" + new Date((Long) databaseAttribute) + "'");
         } else {
 
-            LOG.info(" inconsistency found on attribute " + attributeName + " for edition " + shortName + " where termserver has '" + termserverAttribute + "' and DB is '" + databaseAttribute + "'");
+            LOG.info(" inconsistency found on attribute " + attributeName + " for edition " + shortName + " where termserver has '" + termserverAttribute
+                + "' and DB is '" + databaseAttribute + "'");
         }
 
         return true;

@@ -106,10 +106,10 @@ public class SyncTestingInitializer {
 
         try {
             // For Feedback Refset
-            feedbackInitiatiorUser =
-                    utilities.getUser(service, "feedbackInitiator", "feedbackInitiator", "feedbackInitiator@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
-            userResponderUser =
-                    utilities.getUser(service, "feedbackResponder", "feedbackResponder", "feedbackResponder@westcoastinformatics.com", new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
+            feedbackInitiatiorUser = utilities.getUser(service, "feedbackInitiator", "feedbackInitiator", "feedbackInitiator@westcoastinformatics.com",
+                new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
+            userResponderUser = utilities.getUser(service, "feedbackResponder", "feedbackResponder", "feedbackResponder@westcoastinformatics.com",
+                new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
         } catch (Exception e) {
 
             e.printStackTrace();
@@ -168,7 +168,8 @@ public class SyncTestingInitializer {
 
         final Project developerTestingProject = getDeveloperTestingProject(service);
 
-        final List<Refset> projectRefsets = service.find("projectId:" + developerTestingProject.getId() + " AND active:true", null, Refset.class, null).getItems();
+        final List<Refset> projectRefsets =
+            service.find("projectId:" + developerTestingProject.getId() + " AND active:true", null, Refset.class, null).getItems();
 
         int latestVersion = 0;
 
@@ -195,15 +196,17 @@ public class SyncTestingInitializer {
         if (latestVersion == 0) {
 
             newTestingRefset = dbHandler.addWCIRefset(service, SecurityService.getUserFromSession(), testingRefsetName + "1", testingRefsetId + "01",
-                    getDeveloperTestingEdition(service).getModules().iterator().next(), new Date(), "", VersionStatus.PUBLISHED, WorkflowService.PUBLISHED, getDeveloperTestingProject(service));
+                getDeveloperTestingEdition(service).getModules().iterator().next(), new Date(), "", VersionStatus.PUBLISHED, WorkflowService.PUBLISHED,
+                getDeveloperTestingProject(service));
         } else {
 
             latestVersion++;
             final String tensValue = Integer.toString(latestVersion / 10);
             final String onesValue = Integer.toString(latestVersion % 10);
 
-            newTestingRefset = dbHandler.addWCIRefset(service, SecurityService.getUserFromSession(), testingRefsetName + latestVersion, testingRefsetId + tensValue + onesValue,
-                    getDeveloperTestingEdition(service).getModules().iterator().next(), new Date(), "", VersionStatus.PUBLISHED, WorkflowService.PUBLISHED, getDeveloperTestingProject(service));
+            newTestingRefset = dbHandler.addWCIRefset(service, SecurityService.getUserFromSession(), testingRefsetName + latestVersion,
+                testingRefsetId + tensValue + onesValue, getDeveloperTestingEdition(service).getModules().iterator().next(), new Date(), "",
+                VersionStatus.PUBLISHED, WorkflowService.PUBLISHED, getDeveloperTestingProject(service));
         }
 
         LOG.info("Creating new testing refset: newTestingRefset: " + newTestingRefset.getRefsetId() + " - " + newTestingRefset.getName());

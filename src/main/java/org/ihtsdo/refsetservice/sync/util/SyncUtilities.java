@@ -114,6 +114,7 @@ public class SyncUtilities {
     /** The Constant DEFAULT_ORGANIZATION_PREFACE. */
     private static final String DEFAULT_ORGANIZATION_PREFACE = "Owner of ";
 
+    /** The developer testing edition short name. */
     private static String developerTestingEditionShortName = null;
 
     /**
@@ -164,7 +165,8 @@ public class SyncUtilities {
      * @return the user
      * @throws Exception the exception
      */
-    public User getUser(final TerminologyService service, final String name, final String userName, final String email, final Set<String> roles) throws Exception {
+    public User getUser(final TerminologyService service, final String name, final String userName, final String email, final Set<String> roles)
+        throws Exception {
 
         User user = getUser(service, userName);
 
@@ -292,7 +294,8 @@ public class SyncUtilities {
      * @return the sets the
      * @throws Exception the exception
      */
-    public Set<String> identifyModules(final String shortName, final String editionName, final String editionBranch, final JsonNode codeSystem) throws Exception {
+    public Set<String> identifyModules(final String shortName, final String editionName, final String editionBranch, final JsonNode codeSystem)
+        throws Exception {
 
         final Set<String> editionModules = new HashSet<>();
 
@@ -377,8 +380,9 @@ public class SyncUtilities {
      * @param shortName the short name
      * @param branch the branch
      * @return the sets the
+     * @throws Exception the exception
      */
-    public Set<String> identifyDefaultLanguageRefsets(final JsonNode codeSystem, final String shortName, String branch) throws Exception {
+    public Set<String> identifyDefaultLanguageRefsets(final JsonNode codeSystem, final String shortName, final String branch) throws Exception {
 
         final Set<String> retSet = new HashSet<>();
 
@@ -454,7 +458,7 @@ public class SyncUtilities {
      *
      * @param codeSystem the code system
      * @return the string
-     * @throws Exception
+     * @throws Exception the exception
      */
     public String determineEditionShortName(final JsonNode codeSystem) throws Exception {
 
@@ -500,8 +504,8 @@ public class SyncUtilities {
         } else {
 
             return "Two things to change." + System.lineSeparator()
-                + "1) Your organization name isn't defined on Snowstorm yet, so we have provided you with a temporary one that matches your edition name." + System.lineSeparator()
-                + "Have your organization's administrator(s) contact SNOMED International to have it changed." + System.lineSeparator()
+                + "1) Your organization name isn't defined on Snowstorm yet, so we have provided you with a temporary one that matches your edition name."
+                + System.lineSeparator() + "Have your organization's administrator(s) contact SNOMED International to have it changed." + System.lineSeparator()
                 + "2) Organizational administrator(s) can update this default description at any time";
         }
 
@@ -646,7 +650,8 @@ public class SyncUtilities {
      */
     public void emailSyncResults(final TerminologyService service) throws Exception {
 
-        if (!PropertyUtility.getProperties().containsKey("refset.service.env") || !PropertyUtility.getProperties().getProperty("refset.service.env").equals("LOCAL")) {
+        if (!PropertyUtility.getProperties().containsKey("refset.service.env")
+            || !PropertyUtility.getProperties().getProperty("refset.service.env").equals("LOCAL")) {
 
             return;
         }
@@ -656,7 +661,8 @@ public class SyncUtilities {
         try {
 
             final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
-            final String fileName = String.format(System.getProperty("java.io.tmpdir") + FileSystems.getDefault().getSeparator() + "refset-sync-results-%s.txt", dateFormat.format(new Date()));
+            final String fileName = String.format(System.getProperty("java.io.tmpdir") + FileSystems.getDefault().getSeparator() + "refset-sync-results-%s.txt",
+                dateFormat.format(new Date()));
             final Path path = Paths.get(fileName);
             final byte[] queryResultsToBytes = results.getBytes();
 
@@ -790,7 +796,8 @@ public class SyncUtilities {
         try {
 
             // if the status is Published then create a new version of the refset that is ready to be edited
-            final Refset updatedRefset = WorkflowService.setWorkflowStatusByAction(service, SecurityService.getUserFromSession(), WorkflowService.FINISH_EDIT, refset, "");
+            final Refset updatedRefset =
+                WorkflowService.setWorkflowStatusByAction(service, SecurityService.getUserFromSession(), WorkflowService.FINISH_EDIT, refset, "");
 
             // if the status changed return the updated refset else return null
             if (!currentStatus.equals(updatedRefset.getWorkflowStatus())) {
@@ -843,7 +850,8 @@ public class SyncUtilities {
      * @return the team
      * @throws Exception the exception
      */
-    public Team getOrCreateAdminOrganizationTeam(SyncDatabaseHandler syncDatabaseHandler, final TerminologyService service, final Organization organization) throws Exception {
+    public Team getOrCreateAdminOrganizationTeam(final SyncDatabaseHandler syncDatabaseHandler, final TerminologyService service,
+        final Organization organization) throws Exception {
 
         try {
 
@@ -851,7 +859,7 @@ public class SyncUtilities {
 
             if (adminTeam != null) {
 
-                SyncDatabaseHandler.LOG.info("Using existing team '{}' ({}) for {}", adminTeam.getName(), adminTeam.getId(), organization.getName());
+                LOG.info("Using existing team '{}' ({}) for {}", adminTeam.getName(), adminTeam.getId(), organization.getName());
                 return adminTeam;
             }
 
@@ -859,8 +867,8 @@ public class SyncUtilities {
 
             if (inactiveAdminTeam == null) {
 
-                adminTeam = syncDatabaseHandler.addTeam(service, TeamService.generateOrganizationTeamName(organization), TeamService.getOrganizationTeamDescription(organization), organization,
-                    TeamType.ORGANIZATION.getText());
+                adminTeam = syncDatabaseHandler.addTeam(service, TeamService.generateOrganizationTeamName(organization),
+                    TeamService.getOrganizationTeamDescription(organization), organization, TeamType.ORGANIZATION.getText());
 
             } else if (!inactiveAdminTeam.isActive()) {
 
@@ -879,7 +887,7 @@ public class SyncUtilities {
             return adminTeam;
         } catch (Exception e) {
 
-            SyncDatabaseHandler.LOG.error("Failed to create admin team with Exception --> " + e.getMessage());
+            LOG.error("Failed to create admin team with Exception --> " + e.getMessage());
 
             return null;
         }

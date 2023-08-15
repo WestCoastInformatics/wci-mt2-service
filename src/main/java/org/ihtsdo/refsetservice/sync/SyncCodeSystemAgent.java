@@ -44,23 +44,35 @@ public class SyncCodeSystemAgent extends SyncAgent {
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(SyncCodeSystemAgent.class);
 
-    final private Set<JsonNode> FILTERED_CODE_SYSTEMS;
+    /** The filtered code systems. */
+    private Set<JsonNode> filteredCodySystems;
 
-    final private HashMap<String, String> TERM_SERVER_EDITION_TO_ORGANIZATION_MAP;
+    /** The term server edition to organization map. */
+    private HashMap<String, String> termServerEditionToOrganizationMap;
 
+    /** The system admin users. */
     private Set<User> systemAdminUsers = new HashSet<>();
 
-    public SyncCodeSystemAgent(TerminologyService service, Set<JsonNode> filteredCodeSystems, HashMap<String, String> termServerEditionToOrganizationMap) throws Exception {
+    /**
+     * Instantiates a {@link SyncCodeSystemAgent} from the specified parameters.
+     *
+     * @param service the service
+     * @param filteredCodeSystems the filtered code systems
+     * @param termServerEditionToOrganizationMap the term server edition to organization map
+     * @throws Exception the exception
+     */
+    public SyncCodeSystemAgent(final TerminologyService service, final Set<JsonNode> filteredCodeSystems,
+        final HashMap<String, String> termServerEditionToOrganizationMap) throws Exception {
 
-        this.FILTERED_CODE_SYSTEMS = filteredCodeSystems;
-        this.TERM_SERVER_EDITION_TO_ORGANIZATION_MAP = termServerEditionToOrganizationMap;
+        this.filteredCodySystems = filteredCodeSystems;
+        this.termServerEditionToOrganizationMap = termServerEditionToOrganizationMap;
 
         // TODO: DOn't clear admin users nor define them from config file
         systemAdminUsers.clear();
 
-        for (String username : SyncAgent.getAdminUsernames()) {
+        for (final String username : SyncAgent.getAdminUsernames()) {
 
-            User user = getUtilities().getUser(service, username);
+            final User user = getUtilities().getUser(service, username);
 
             if (user != null) {
 
@@ -78,10 +90,10 @@ public class SyncCodeSystemAgent extends SyncAgent {
         LOG.info("Starting sync of CodeSystemAgent");
 
         // Sync Organizations reviewing which are new (creating them), missing (removing them), and unchanged.
-        Map<Boolean, List<String>> migrationActivationMap = syncOrganizations(service);
+        final Map<Boolean, List<String>> migrationActivationMap = syncOrganizations(service);
 
         // Sync Editions reviewing which are new (creating them), missing (removing them), modified (removing them and then creating them), and unchanged.
-        List<String> existingInBothShortNames = syncEditions(service, migrationActivationMap.get(false));
+        final List<String> existingInBothShortNames = syncEditions(service, migrationActivationMap.get(false));
 
         // Review both DB & Snowstorm editon-to-org map to ensure consistency
         syncEditionOrganizationAssociations(service, existingInBothShortNames);
@@ -90,24 +102,32 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     }
 
-    private void toggleOrganizationStatus(TerminologyService service, Map<Boolean, List<String>> migrationActivationMap) throws Exception {
+    /**
+     * Toggle organization status.
+     *
+     * @param service the service
+     * @param migrationActivationMap the migration activation map
+     * @throws Exception the exception
+     */
+    private void toggleOrganizationStatus(final TerminologyService service, final Map<Boolean, List<String>> migrationActivationMap) throws Exception {
 
-        List<Organization> activeDbOrganizations = readDbOrganizations(service).stream().filter(o -> o.isActive()).collect(Collectors.toList());
+        final List<Organization> activeDbOrganizations = readDbOrganizations(service).stream().filter(o -> o.isActive()).collect(Collectors.toList());
 
         for (boolean migrationOrganizationStatus : migrationActivationMap.keySet()) {
 
-            for (String organizationName : migrationActivationMap.get(migrationOrganizationStatus)) {
+            for (final String organizationName : migrationActivationMap.get(migrationOrganizationStatus)) {
 
-                Stream<Organization> matchingOrganizationsStream = activeDbOrganizations.stream().filter(o -> o.getName().equals(organizationName));
+                final Stream<Organization> matchingOrganizationsStream = activeDbOrganizations.stream().filter(o -> o.getName().equals(organizationName));
 
-                Organization organizationToMigrate = (Organization) getUtilities().validateMatches(matchingOrganizationsStream, organizationName);
+                final Organization organizationToMigrate = (Organization) getUtilities().validateMatches(matchingOrganizationsStream, organizationName);
 
                 // Only inactivate those organizations that aren't pointing to an edition anymore
                 if ((migrationOrganizationStatus && !organizationToMigrate.isActive())
                     || (!migrationOrganizationStatus && OrganizationService.getOrganizationEditions(service, organizationToMigrate.getId()).getTotal() == 0)) {
 
                     // TODO: Add (in migrationOrganization) the removal of users from crowd groups (check with Tim on timing)
-                    OrganizationService.updateOrganizationStatus(service, SecurityService.getUserFromSession(), organizationToMigrate.getId(), migrationOrganizationStatus);
+                    OrganizationService.updateOrganizationStatus(service, SecurityService.getUserFromSession(), organizationToMigrate.getId(),
+                        migrationOrganizationStatus);
 
                     if (!migrationOrganizationStatus) {
 
@@ -130,7 +150,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
      * Sync organizations.
      *
      * @param service the service
-     * @return
+     * @return the map
      * @throws Exception the exception
      */
     private Map<Boolean, List<String>> syncOrganizations(final TerminologyService service) throws Exception {
@@ -146,18 +166,21 @@ public class SyncCodeSystemAgent extends SyncAgent {
         dbOrganizations.stream().filter(o -> o.isActive()).forEach(o -> dbActiveOrganizationNameIdMaps.put(o.getName(), o.getId()));
         dbOrganizations.stream().filter(o -> !o.isActive()).forEach(o -> dbInactiveOrganizationNameIdMaps.put(o.getName(), o.getId()));
 
-        for (JsonNode codeSystem : FILTERED_CODE_SYSTEMS) {
+        for (JsonNode codeSystem : filteredCodySystems) {
 
-            termserverOrganizationNameToEditionShortNameMap.put(getUtilities().determineOrganizationName(codeSystem), getUtilities().determineEditionShortName(codeSystem));
+            termserverOrganizationNameToEditionShortNameMap.put(getUtilities().determineOrganizationName(codeSystem),
+                getUtilities().determineEditionShortName(codeSystem));
         }
 
         // See if any termserver organizations are new
         final List<String> addedOrganizations = termserverOrganizationNameToEditionShortNameMap.keySet().stream()
             .filter(orgName -> !isTesting() || (isTesting() && termserverOrganizationNameToEditionShortNameMap.get(orgName).equals(testingEditionShortName)))
-            .filter(orgName -> !dbActiveOrganizationNameIdMaps.keySet().contains(orgName)).filter(orgName -> !dbInactiveOrganizationNameIdMaps.keySet().contains(orgName)).collect(Collectors.toList());
+            .filter(orgName -> !dbActiveOrganizationNameIdMaps.keySet().contains(orgName))
+            .filter(orgName -> !dbInactiveOrganizationNameIdMaps.keySet().contains(orgName)).collect(Collectors.toList());
 
         // Create new org
-        addedOrganizations.stream().forEach(orgName -> getDbHandler().addOrganziation(service, orgName, getUtilities().determineOrganizationDescription(orgName)));
+        addedOrganizations.stream()
+            .forEach(orgName -> getDbHandler().addOrganziation(service, orgName, getUtilities().determineOrganizationDescription(orgName)));
 
         // Activate previously inactivated organizations. Note: Will log and update stats after remove those that were activatedAndModified
         final List<String> organizationsToActivate = termserverOrganizationNameToEditionShortNameMap.keySet().stream()
@@ -165,10 +188,11 @@ public class SyncCodeSystemAgent extends SyncAgent {
             .filter(c -> dbInactiveOrganizationNameIdMaps.keySet().contains(c)).collect(Collectors.toList());
 
         // Inactivate any active DB organizations that are not returned from termserver.
-        // Note: No need for 'existing in both' case as only value to compare against termserver (owner) is also the primary key. Thus activating/inactivating is sufficient
+        // Note: No need for 'existing in both' case as only value to compare against termserver (owner) is also the primary key. Thus activating/inactivating
+        // is sufficient
         // TODO: Make sure to filter on the testing refset (but compare testingEditionShortName against DB, not term server
-        final List<String> organizationsToInactivate =
-            dbActiveOrganizationNameIdMaps.keySet().stream().filter(orgName -> !termserverOrganizationNameToEditionShortNameMap.keySet().contains(orgName)).collect(Collectors.toList());
+        final List<String> organizationsToInactivate = dbActiveOrganizationNameIdMaps.keySet().stream()
+            .filter(orgName -> !termserverOrganizationNameToEditionShortNameMap.keySet().contains(orgName)).collect(Collectors.toList());
 
         LOG.info("Term Server orgs: {}", termserverOrganizationNameToEditionShortNameMap.size(), termserverOrganizationNameToEditionShortNameMap);
         LOG.info("DB active orgs: {}", dbActiveOrganizationNameIdMaps.keySet().size(), dbActiveOrganizationNameIdMaps.keySet());
@@ -188,11 +212,11 @@ public class SyncCodeSystemAgent extends SyncAgent {
      * Sync editions.
      *
      * @param service the service
-     * @param organizationNamesToInactivate
+     * @param organizationNamesToInactivate the organization names to inactivate
      * @return the list
      * @throws Exception the exception
      */
-    private List<String> syncEditions(final TerminologyService service, List<String> organizationNamesToInactivate) throws Exception {
+    private List<String> syncEditions(final TerminologyService service, final List<String> organizationNamesToInactivate) throws Exception {
 
         final Map<String, JsonNode> termserverShortNameCodeSystemMap = new HashMap<>();
         final List<String> existingInBothShortNames = new ArrayList<>();
@@ -205,15 +229,17 @@ public class SyncCodeSystemAgent extends SyncAgent {
         dbEditions.stream().filter(e -> !e.isActive()).forEach(e -> dbInactiveEditionShortNames.add(e.getShortName()));
 
         // Based on FILTERED_CODE_SYSTEMS which already filtered for active code systems
-        FILTERED_CODE_SYSTEMS.stream().forEach(cs -> termserverShortNameCodeSystemMap.put(cs.get("shortName").asText(), cs));
+        filteredCodySystems.stream().forEach(cs -> termserverShortNameCodeSystemMap.put(cs.get("shortName").asText(), cs));
         termserverShortNames.addAll(termserverShortNameCodeSystemMap.keySet());
-        termserverShortNames.stream().filter(shortName -> DEVELOPER_CODE_SYSTEM_SHORTNAME.equalsIgnoreCase(shortName)).forEach(shortName -> setDeveloperTestingEditionShortName(shortName));
+        termserverShortNames.stream().filter(shortName -> DEVELOPER_CODE_SYSTEM_SHORTNAME.equalsIgnoreCase(shortName))
+            .forEach(shortName -> setDeveloperTestingEditionShortName(shortName));
 
         // Determine and create new editions (not in active nor in inactive DB editions)
         final List<String> addedShortNames = termserverShortNames.stream().filter(c -> !isTesting() || (isTesting() && c.equals(testingEditionShortName)))
             .filter(c -> !dbActiveEditionShortNames.contains(c)).filter(c -> !dbInactiveEditionShortNames.contains(c)).collect(Collectors.toList());
 
-        addedShortNames.stream().forEach(shortName -> getDbHandler().addEdition(service, termserverShortNameCodeSystemMap.get(shortName), TERM_SERVER_EDITION_TO_ORGANIZATION_MAP.get(shortName)));
+        addedShortNames.stream().forEach(shortName -> getDbHandler().addEdition(service, termserverShortNameCodeSystemMap.get(shortName),
+            termServerEditionToOrganizationMap.get(shortName)));
 
         // Activate previously inactivated editions. Note: Will log and update stats after remove those that were activatedAndModified
         final List<String> activatedShortNames = termserverShortNames.stream().filter(c -> !isTesting() || (isTesting() && c.equals(testingEditionShortName)))
@@ -234,8 +260,8 @@ public class SyncCodeSystemAgent extends SyncAgent {
         // 2) Compare against termserver to identify any changes in attributes defined on term server
         if (!dbActiveEditionShortNames.isEmpty()) {
 
-            inactivatedShortNames = dbActiveEditionShortNames.stream().filter(c -> !isTesting() || (isTesting() && c.equals(testingEditionShortName))).filter(c -> !termserverShortNames.contains(c))
-                .collect(Collectors.toList());
+            inactivatedShortNames = dbActiveEditionShortNames.stream().filter(c -> !isTesting() || (isTesting() && c.equals(testingEditionShortName)))
+                .filter(c -> !termserverShortNames.contains(c)).collect(Collectors.toList());
 
             inactivatedShortNames.stream().forEach(n -> {
 
@@ -249,7 +275,8 @@ public class SyncCodeSystemAgent extends SyncAgent {
             // Compare editions in termserver & active in db
             if (!existingInBothShortNames.isEmpty()) {
 
-                modifiedShortNames = compareAndModifyEditions(service, existingInBothShortNames, termserverShortNameCodeSystemMap, organizationNamesToInactivate);
+                modifiedShortNames =
+                    compareAndModifyEditions(service, existingInBothShortNames, termserverShortNameCodeSystemMap, organizationNamesToInactivate);
                 STATISTICS.setEditionsModified(modifiedShortNames.size());
             }
 
@@ -258,7 +285,8 @@ public class SyncCodeSystemAgent extends SyncAgent {
         // Now review just-activated editions to see if they need modification
         if (!activatedShortNames.isEmpty()) {
 
-            activatedAndModifiedShortNames = compareAndModifyEditions(service, activatedShortNames, termserverShortNameCodeSystemMap, organizationNamesToInactivate);
+            activatedAndModifiedShortNames =
+                compareAndModifyEditions(service, activatedShortNames, termserverShortNameCodeSystemMap, organizationNamesToInactivate);
 
             // Finalize those editions that were only activated (and not further modified)
             activatedAndModifiedShortNames.stream().forEach(n -> activatedShortNames.remove(n));
@@ -267,7 +295,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
         }
 
         LOG.info("{} Term Server shortNames: {}", termserverShortNameCodeSystemMap.keySet().size(), termserverShortNameCodeSystemMap.keySet());
-        LOG.info("{} Term Server editionToOrganizations {}", TERM_SERVER_EDITION_TO_ORGANIZATION_MAP.size(), TERM_SERVER_EDITION_TO_ORGANIZATION_MAP);
+        LOG.info("{} Term Server editionToOrganizations {}", termServerEditionToOrganizationMap.size(), termServerEditionToOrganizationMap);
         LOG.info("{} DB active editions: {}", dbActiveEditionShortNames.size(), dbActiveEditionShortNames);
         LOG.info("{} DB inactive editions: {}", inactivatedShortNames.size(), inactivatedShortNames);
         LOG.info("{} added editions: {}", addedShortNames.size(), addedShortNames);
@@ -289,8 +317,8 @@ public class SyncCodeSystemAgent extends SyncAgent {
      */
     private void syncEditionOrganizationAssociations(final TerminologyService service, final List<String> existingShortNames) throws Exception {
 
-        List<Edition> activeDbRefsets = readDbActiveEditions(service);
-        List<Organization> allDbOrganizations = service.getAll(Organization.class);
+        final List<Edition> activeDbRefsets = readDbActiveEditions(service);
+        final List<Organization> allDbOrganizations = service.getAll(Organization.class);
 
         for (final String shortName : existingShortNames) {
 
@@ -301,17 +329,19 @@ public class SyncCodeSystemAgent extends SyncAgent {
             final String dbOrganizationName = dbEdition.getOrganizationName();
 
             // Prepare termserver edition for analysis
-            String termserverOrganizationName = TERM_SERVER_EDITION_TO_ORGANIZATION_MAP.get(shortName);
+            final String termserverOrganizationName = termServerEditionToOrganizationMap.get(shortName);
 
             // compare and update if needed
             if (!dbOrganizationName.equals(termserverOrganizationName)) {
 
                 // Edition pointing to a different org. Update edition and udpate CROWD
-                final List<Organization> termServerOrganizations = allDbOrganizations.stream().filter(o -> o.getName().equals(termserverOrganizationName)).collect(Collectors.toList());
+                final List<Organization> termServerOrganizations =
+                    allDbOrganizations.stream().filter(o -> o.getName().equals(termserverOrganizationName)).collect(Collectors.toList());
 
                 if (termServerOrganizations.isEmpty() || termServerOrganizations.size() > 1) {
 
-                    throw new Exception("Can't be empty or with multiple with same name (" + termServerOrganizations + "), nor can it be the case that the organziation wasn't already created");
+                    throw new Exception("Can't be empty or with multiple with same name (" + termServerOrganizations
+                        + "), nor can it be the case that the organziation wasn't already created");
                 } else {
 
                     // Existing org associated with edition
@@ -328,9 +358,17 @@ public class SyncCodeSystemAgent extends SyncAgent {
         }
 
     }
+
     // Move edition to new org. Projects will move with edition, but users and teams won't.
     // So need to see if they exist in new org, and if not create teams and add users
-
+    /**
+     * Migrate organization.
+     *
+     * @param service the service
+     * @param editionToMove the edition to move
+     * @param targetOrganization the target organization
+     * @throws Exception the exception
+     */
     private void migrateOrganization(final TerminologyService service, final Edition editionToMove, final Organization targetOrganization) throws Exception {
 
         OrganizationService.checkEditPermissions(SecurityService.getUserFromSession(), targetOrganization);
@@ -340,8 +378,8 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         Organization newOrganization = targetOrganization;
 
-        LOG.info("Start migrating edition " + editionToMove.getName() + " from org: " + editionToMove.getOrganizationName() + "(" + editionToMove.getOrganizationId() + ") to org: "
-            + newOrganization.getName() + "(" + newOrganization.getId());
+        LOG.info("Start migrating edition " + editionToMove.getName() + " from org: " + editionToMove.getOrganizationName() + "("
+            + editionToMove.getOrganizationId() + ") to org: " + newOrganization.getName() + "(" + newOrganization.getId());
 
         // Ensure target organization (and it's admin team) are active before proceeding
         if (!targetOrganization.isActive()) {
@@ -377,14 +415,14 @@ public class SyncCodeSystemAgent extends SyncAgent {
                     e.printStackTrace();
                 }
 
-                // TODO: SNOMED International doesn't ahve an owner, so a deafulat one is created. Add special handling on SI to avoid this nonesense and
+                // TODO: SNOMED International doesn't have an owner, so a default owner is created. Add special handling on SI to avoid this nonesense and
                 // move forward.
             }
 
         }
 
         // Ensure admin users are also in target organization
-        for (User adminUser : systemAdminUsers) {
+        for (final User adminUser : systemAdminUsers) {
 
             if (newOrganization.getMembers().stream().noneMatch(u -> u.getId().equals(adminUser.getId()))) {
 
@@ -423,19 +461,20 @@ public class SyncCodeSystemAgent extends SyncAgent {
         }
 
         // Remove all users from Org's CROWD to ensure don't clog up crowd entries for a given user
-        Set<Project> organizationProjects = new HashSet<>();
+        final Set<Project> organizationProjects = new HashSet<>();
         existingTeamToProjectsMap.values().stream().forEach(projectList -> organizationProjects.addAll(projectList));
 
-        for (Project organizationProject : organizationProjects) {
+        for (final Project organizationProject : organizationProjects) {
 
             for (UserRole role : UserRole.getAllRoles()) {
 
-                String groupName = CrowdGroupNameAlgorithm.generateCrowdGroupName(editionToMove.getOrganizationName(), organizationProject.getEdition().getName(), organizationProject.getName(),
-                    role.getValue().toUpperCase(), true);
+                final String groupName = CrowdGroupNameAlgorithm.generateCrowdGroupName(editionToMove.getOrganizationName(),
+                    organizationProject.getEdition().getName(), organizationProject.getName(), role.getValue().toUpperCase(), true);
 
-                for (User user : existingUsers) {
+                for (final User user : existingUsers) {
 
-                    LOG.info("Would be deleting membership for user {} on group {}, but will have unintended consiquences if I do", user.getUserName(), groupName);
+                    LOG.info("Would be deleting membership for user {} on group {}, but will have unintended consiquences if I do", user.getUserName(),
+                        groupName);
                     // TODO: actually call deleteMembership when this works
                     // CrowdAPIClient.deleteMembership(groupName,user.getUserName());
                 }
@@ -460,12 +499,12 @@ public class SyncCodeSystemAgent extends SyncAgent {
      * @param service the service
      * @param matchingEditionShortNames the matching edition short names
      * @param termserverShortNameCodeSystemMap the termserver short name code system map
-     * @param organizationNamesToInactivate
+     * @param organizationNamesToInactivate the organization names to inactivate
      * @return the list
      * @throws Exception the exception
      */
-    private List<String> compareAndModifyEditions(final TerminologyService service, final List<String> matchingEditionShortNames, final Map<String, JsonNode> termserverShortNameCodeSystemMap,
-        List<String> organizationNamesToInactivate) throws Exception {
+    private List<String> compareAndModifyEditions(final TerminologyService service, final List<String> matchingEditionShortNames,
+        final Map<String, JsonNode> termserverShortNameCodeSystemMap, final List<String> organizationNamesToInactivate) throws Exception {
 
         final List<String> modifiedShortNames = new ArrayList<>();
 
@@ -474,7 +513,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
             if (termserverShortNameCodeSystemMap.containsKey(shortName)) {
 
-                List<Edition> dbEditions = readDbActiveEditions(service);
+                final List<Edition> dbEditions = readDbActiveEditions(service);
 
                 // Find associated DB edition
                 final List<Edition> matchingEditions = new ArrayList<>();
@@ -489,7 +528,8 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
                 }
 
-                // See if the edition's organization is set to be inactivated. If so, no need to review the edition now as its fields will be updated if/when reactivated
+                // See if the edition's organization is set to be inactivated. If so, no need to review the edition now as its fields will be updated if/when
+                // reactivated
                 if (matchingEditions.size() > 1) {
 
                     throw new Exception("May only have a single edition per shortName " + shortName + ", but have multiple: " + matchingEditions);
@@ -534,13 +574,15 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
                 final String termserverDefaultLanguageCode = getUtilities().identifyDefaultLanguageCode(codeSystem, snowStormEditionName);
 
-                if (isDifferentAttribute(dbEdition.getShortName(), "Edition defaultLanguageCode ", dbEdition.getDefaultLanguageCode(), termserverDefaultLanguageCode)) {
+                if (isDifferentAttribute(dbEdition.getShortName(), "Edition defaultLanguageCode ", dbEdition.getDefaultLanguageCode(),
+                    termserverDefaultLanguageCode)) {
 
                     modifyingEdition.setDefaultLanguageCode(termserverDefaultLanguageCode);
                     modificationMade = true;
                 }
 
-                final Set<String> termserverDefaultLanguageRefsets = getUtilities().identifyDefaultLanguageRefsets(codeSystem, shortName, modifyingEdition.getBranch());
+                final Set<String> termserverDefaultLanguageRefsets =
+                    getUtilities().identifyDefaultLanguageRefsets(codeSystem, shortName, modifyingEdition.getBranch());
 
                 if (!dbEdition.getDefaultLanguageRefsets().equals(termserverDefaultLanguageRefsets)) {
 

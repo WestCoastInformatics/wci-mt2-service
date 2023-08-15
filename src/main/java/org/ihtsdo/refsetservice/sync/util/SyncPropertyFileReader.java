@@ -77,6 +77,7 @@ public class SyncPropertyFileReader {
     /** The team membership resource. */
     private final ClassPathResource teamMembershipResource = new ClassPathResource("sync/initial-teams/teamMembership.txt");
 
+    /**  The existing migrate clean resource. */
     private final ClassPathResource existingMigrateCleanResource = new ClassPathResource("sync/system-migration/existingProjectNameIds.txt");
 
     /** The Constant SPLIT_CHARACTER. */
@@ -121,6 +122,7 @@ public class SyncPropertyFileReader {
     /** The rtt refset to effective date map. */
     private final Map<String, String> rttRefsetToEffectiveDateMap = new HashMap<>();
 
+    /**  The existing edition project info. */
     private final Map<String, Map<String, String>> existingEditionProjectInfo = readExistingEditionProjectInfo();
 
     /** The metadata map. */
@@ -516,7 +518,8 @@ public class SyncPropertyFileReader {
 
     /**
      * Read rtt project info.
-     * @return
+     *
+     * @return the map
      */
     private Map<String, Map<String, String>> readExistingEditionProjectInfo() {
 
@@ -719,7 +722,8 @@ public class SyncPropertyFileReader {
                 narrative = updatedLine.substring(descStartIdx + 1, descStartIdx + descEndIdx + 1);
 
                 // Cleanup updateLine to remove ',' in narrative
-                updatedLine = updatedLine.substring(0, descStartIdx) + narrative.replaceAll(SPLIT_CHARACTER, "") + updatedLine.substring(descStartIdx + descEndIdx + 2);
+                updatedLine =
+                    updatedLine.substring(0, descStartIdx) + narrative.replaceAll(SPLIT_CHARACTER, "") + updatedLine.substring(descStartIdx + descEndIdx + 2);
             } else {
 
                 narrative = updatedLine.split(SPLIT_CHARACTER)[9];
@@ -982,6 +986,11 @@ public class SyncPropertyFileReader {
         return teamToProjects;
     }
 
+    /**
+     * Returns the team membership.
+     *
+     * @return the team membership
+     */
     public Map<String, Set<String>> getTeamMembership() {
 
         return teamMembership;
@@ -997,6 +1006,11 @@ public class SyncPropertyFileReader {
         return projectOrganizationMap;
     }
 
+    /**
+     * Returns the existing edition project info map.
+     *
+     * @return the existing edition project info map
+     */
     public Map<String, Map<String, String>> getExistingEditionProjectInfoMap() {
 
         return existingEditionProjectInfo;

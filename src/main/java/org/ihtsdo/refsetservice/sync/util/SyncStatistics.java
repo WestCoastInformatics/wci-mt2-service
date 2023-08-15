@@ -49,6 +49,7 @@ public class SyncStatistics {
     /** The edition organization map changed. */
     private int editionOrganizationMapChanged = 0;
 
+    /**  The refset ids added. */
     // Refsets Ids
     private int refsetIdsAdded = 0;
 
@@ -105,27 +106,29 @@ public class SyncStatistics {
 
         buf.append(System.getProperty("line.separator") + "*********    Syncing Results    *************" + System.getProperty("line.separator"));
 
-        buf.append("Code systems encountered: " + codeSystemsSynced + ". Syncing " + codeSystemsFiltered + " after filtered them" + System.getProperty("line.separator"));
+        buf.append("Code systems encountered: " + codeSystemsSynced + ". Syncing " + codeSystemsFiltered + " after filtered them"
+            + System.getProperty("line.separator"));
         buf.append(System.getProperty("line.separator"));
 
         // Organizations
-        buf.append("*** Organizations (Synced " + codeSystemsFiltered + " --> Added: " + organizationsAdded + " / Inactivated: " + organizationsInactivated + " / Activated: "
-            + organizationsReactivated + System.getProperty("line.separator"));
+        buf.append("*** Organizations (Synced " + codeSystemsFiltered + " --> Added: " + organizationsAdded + " / Inactivated: " + organizationsInactivated
+            + " / Activated: " + organizationsReactivated + System.getProperty("line.separator"));
         buf.append(System.getProperty("line.separator"));
 
         // Editions
-        buf.append("*** Editions (Synced " + codeSystemsFiltered + " --> Added: " + editionsAdded + " / Inactivated: " + editionsInactivated + " / Activated: " + editionsReactivated + " / Modified: "
-            + editionsModified + " / Modified And : " + editionsModified + System.getProperty("line.separator"));
+        buf.append("*** Editions (Synced " + codeSystemsFiltered + " --> Added: " + editionsAdded + " / Inactivated: " + editionsInactivated + " / Activated: "
+            + editionsReactivated + " / Modified: " + editionsModified + " / Modified And : " + editionsModified + System.getProperty("line.separator"));
 
         buf.append("*** Reassignment of editions-to-organization map --> Changes: " + editionOrganizationMapChanged + System.getProperty("line.separator"));
         buf.append(System.getProperty("line.separator"));
 
         // Refsets
-        buf.append("*** Unique Refset Ids (" + refsetIdsSynced + " Synced" + ") --> Added: " + refsetIdsAdded + " / Inactivated: " + refsetIdsInactivated + " / Activated: " + refsetIdsActivated
-            + System.getProperty("line.separator"));
+        buf.append("*** Unique Refset Ids (" + refsetIdsSynced + " Synced" + ") --> Added: " + refsetIdsAdded + " / Inactivated: " + refsetIdsInactivated
+            + " / Activated: " + refsetIdsActivated + System.getProperty("line.separator"));
 
-        buf.append("*** Refset Version Pairs (" + refsetVersionsSynced + " Synced" + ") --> Added: " + refsetVersionsAdded + " / Inactivated: " + refsetVersionsInactivated + " / Activated: "
-            + refsetVersionsActivated + " / Modified: " + refsetVersionsModified + System.getProperty("line.separator"));
+        buf.append("*** Refset Version Pairs (" + refsetVersionsSynced + " Synced" + ") --> Added: " + refsetVersionsAdded + " / Inactivated: "
+            + refsetVersionsInactivated + " / Activated: " + refsetVersionsActivated + " / Modified: " + refsetVersionsModified
+            + System.getProperty("line.separator"));
         buf.append(System.getProperty("line.separator"));
 
         // Othera
@@ -544,8 +547,6 @@ public class SyncStatistics {
 
     /**
      * Increment refset versions activated.
-     *
-     * @param val the val
      */
     public void incrementRefsetVersionsReactivated() {
 
@@ -647,44 +648,68 @@ public class SyncStatistics {
 
     }
 
+    /**
+     * Increment organizations added.
+     */
     public void incrementOrganizationsAdded() {
 
         organizationsAdded++;
     }
 
+    /**
+     * Increment editions added.
+     */
     public void incrementEditionsAdded() {
 
         editionsAdded++;
     }
 
+    /**
+     * Increment editions modified.
+     */
     public void incrementEditionsModified() {
 
         editionsModified++;
 
     }
 
+    /**
+     * Increment organizations inactivated.
+     */
     public void incrementOrganizationsInactivated() {
 
         organizationsInactivated++;
 
     }
 
+    /**
+     * Increment organizations reactivated.
+     */
     public void incrementOrganizationsReactivated() {
 
         organizationsReactivated++;
     }
 
+    /**
+     * Increment editions inactivated.
+     */
     public void incrementEditionsInactivated() {
 
         editionsInactivated++;
 
     }
 
+    /**
+     * Increment editions reactivated.
+     */
     public void incrementEditionsReactivated() {
 
         editionsReactivated++;
     }
 
+    /**
+     * Increment projects modified.
+     */
     public void incrementProjectsModified() {
 
         projectsModified++;
