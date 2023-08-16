@@ -2630,15 +2630,22 @@ public class RefsetController extends BaseController {
         try {
 
             // no auth required
-            SecurityService.getUserFromSession();
+            final User user = SecurityService.getUserFromSession();
 
             try (final TerminologyService service = new TerminologyService()) {
 
                 final long start = System.currentTimeMillis();
                 ResultList<Organization> results = new ResultList<Organization>();
                 final PfsParameter pfs = new PfsParameter();
-                final QueryParameter query = new QueryParameter();
-                query.setQuery("active:true");
+
+                String query = "active:true";
+
+                if (SecurityService.GUEST_USERNAME.equals(user.getUserName())) {
+                    query += " AND affiliate:false ";
+                }
+
+                final QueryParameter queryParameter = new QueryParameter();
+                queryParameter.setQuery(query);
 
                 results = service.find(query, pfs, Organization.class, null);
 

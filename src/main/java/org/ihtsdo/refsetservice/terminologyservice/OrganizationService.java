@@ -424,7 +424,13 @@ public class OrganizationService extends BaseService {
         final boolean includeMembers) throws Exception {
 
         final long start = System.currentTimeMillis();
+
         String query = getQueryForActiveOnly(searchParameters);
+
+        if (SecurityService.GUEST_USERNAME.equals(user.getUserName())) {
+            query += " AND affiliate:false ";
+        }
+
         final PfsParameter pfs = new PfsParameter();
 
         if (searchParameters.getOffset() != null) {
