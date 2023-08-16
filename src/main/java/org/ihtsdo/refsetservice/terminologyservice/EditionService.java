@@ -10,6 +10,8 @@
 package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -205,7 +207,10 @@ public class EditionService extends BaseService {
                     final String branch = codeSystem.get("branchPath").asText();
                     final String defaultLanguageCode = syncUtilities.identifyDefaultLanguageCode(codeSystem, editionName);
                     final Set<String> defaultLanguageRefsets = syncUtilities.identifyDefaultLanguageRefsets(codeSystem, editionShortName, branch);
-                    final Set<String> editionModules = syncUtilities.identifyModules(editionShortName, editionName, branch, codeSystem);
+
+                    // Affiliates (on any extension) should not have the ability to choose modules.
+                    // Fix to 1201891009 |SNOMED CT Community content module (core metadata concept)| for all affiliate refsets
+                    final Set<String> editionModules = new HashSet<>(Arrays.asList("1201891009"));
                     final Edition edition = new Edition();
 
                     edition.setShortName(editionShortName);
