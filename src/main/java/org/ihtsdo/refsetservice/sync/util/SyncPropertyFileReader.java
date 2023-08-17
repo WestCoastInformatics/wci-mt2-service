@@ -77,11 +77,15 @@ public class SyncPropertyFileReader {
     /** The team membership resource. */
     private final ClassPathResource teamMembershipResource = new ClassPathResource("sync/initial-teams/teamMembership.txt");
 
-    /**  The existing migrate clean resource. */
+    /** The existing migrate clean resource. */
     private final ClassPathResource existingMigrateCleanResource = new ClassPathResource("sync/system-migration/existingProjectNameIds.txt");
 
     /** The Constant SPLIT_CHARACTER. */
     public static final String SPLIT_CHARACTER = "\t";
+
+    private static final String OLD_SNOMED_CORE_NAME = "IHTSDO";
+
+    private static final String NEW_SNOMED_CORE_NAME = "SNOMEDCT";
 
     /** The refset to description map. */
     private final Map<String, String> refsetToDescriptionMap = readRttRefsetsToDescriptionMap();
@@ -110,8 +114,8 @@ public class SyncPropertyFileReader {
     /** The rtt refset to clauses map. */
     private final Map<String, ArrayList<String>> refsetSctIdToClausesMap = new HashMap<>();
 
-    /** The project organization map. */
-    private final Map<String, String> projectOrganizationMap = new HashMap<>();
+    /** The project data map of project line to name to description. */
+    private final Set<SyncProjectMetadata> projectData = new HashSet<>();
 
     /** The projects to ignore. */
     private final Set<String> projectsToIgnore = new HashSet<>();
@@ -122,7 +126,7 @@ public class SyncPropertyFileReader {
     /** The rtt refset to effective date map. */
     private final Map<String, String> rttRefsetToEffectiveDateMap = new HashMap<>();
 
-    /**  The existing edition project info. */
+    /** The existing edition project info. */
     private final Map<String, Map<String, String>> existingEditionProjectInfo = readExistingEditionProjectInfo();
 
     /** The metadata map. */
@@ -523,13 +527,14 @@ public class SyncPropertyFileReader {
      */
     private Map<String, Map<String, String>> readExistingEditionProjectInfo() {
 
+        // edition to map of project name to crowd id
         final Map<String, Map<String, String>> projectInfo = new HashMap<>();
 
         try {
 
             final BufferedReader reader = new BufferedReader(new InputStreamReader(existingMigrateCleanResource.getInputStream()));
 
-            // crowdProjectId, projectName, editionShortName
+            // Line contents: crowdProjectId, projectName, editionShortName
             String line = reader.readLine();
             line = reader.readLine();
 
@@ -542,7 +547,7 @@ public class SyncPropertyFileReader {
                     projectInfo.put(columns[2], new HashMap<>());
                 }
 
-                projectInfo.get(columns[2]).put(columns[0], columns[1]);
+                projectInfo.get(columns[2]).put(columns[1], columns[0]);
 
                 line = reader.readLine();
             }
@@ -722,8 +727,7 @@ public class SyncPropertyFileReader {
                 narrative = updatedLine.substring(descStartIdx + 1, descStartIdx + descEndIdx + 1);
 
                 // Cleanup updateLine to remove ',' in narrative
-                updatedLine =
-                    updatedLine.substring(0, descStartIdx) + narrative.replaceAll(SPLIT_CHARACTER, "") + updatedLine.substring(descStartIdx + descEndIdx + 2);
+                updatedLine = updatedLine.substring(0, descStartIdx) + narrative.replaceAll(SPLIT_CHARACTER, "") + updatedLine.substring(descStartIdx + descEndIdx + 2);
             } else {
 
                 narrative = updatedLine.split(SPLIT_CHARACTER)[9];
@@ -819,9 +823,12 @@ public class SyncPropertyFileReader {
      */
     private void parseProjectLine(final String line, final int lineNumber) throws Exception {
 
-        String organizationName;
+        String projectName;
+        String projectDescription;
         String modified;
         String modifiedBy;
+        String editionShortName;
+        String crowdId = null;
 
         if (line.toLowerCase().contains(SyncUtilities.DEVELOPER_ORGANIZATION_NAME_KEYWORD)) {
 
@@ -831,6 +838,7 @@ public class SyncPropertyFileReader {
         try {
 
             if (line.split(SPLIT_CHARACTER)[1].startsWith("\"")) {
+                // TODO: Remove this right?
 
                 // If description has commas (and some do), can't rely on
                 // splitting
@@ -840,19 +848,51 @@ public class SyncPropertyFileReader {
                 final int descEndIdx = line.substring(descStartIdx + 1).indexOf("\"");
                 final String[] values = line.substring(descStartIdx + descEndIdx + 3).split(SPLIT_CHARACTER);
 
-                organizationName = values[7].replaceAll("\"", "");
+                projectName = values[7].replaceAll("\"", "");
+                projectDescription = values[1];
                 modified = values[2];
                 modifiedBy = values[3];
+                editionShortName = values[9];
             } else {
 
                 final String[] values = line.split(SPLIT_CHARACTER);
 
-                organizationName = values[9].replaceAll("\"", "");
+                projectName = values[7].replaceAll("\"", "");
+                projectDescription = values[1];
+                editionShortName = values[9].replaceAll("\"", "");
                 modified = values[4];
                 modifiedBy = values[5];
+
+                if (editionShortName.equals(OLD_SNOMED_CORE_NAME)) {
+
+                    editionShortName = NEW_SNOMED_CORE_NAME;
+                }
+
             }
 
-            projectOrganizationMap.put(line.split(SPLIT_CHARACTER)[0], organizationName);
+            if (existingEditionProjectInfo.containsKey(editionShortName) && existingEditionProjectInfo.get(editionShortName).containsKey(projectName)) {
+
+                crowdId = existingEditionProjectInfo.get(editionShortName).get(projectName);
+            }
+
+            // TODO: Create new project on crowd (without users but that gets added with project=ALL
+            if (crowdId == null || crowdId.isEmpty()) {
+
+                StringBuffer s = new StringBuffer();
+
+                String[] nameParts = projectName.split(" ");
+
+                for (int i = 0; i < nameParts.length; i++) {
+
+                    s.append(nameParts[i].toLowerCase().charAt(0));
+                }
+
+                crowdId = s.toString();
+            }
+
+            SyncProjectMetadata newProject = new SyncProjectMetadata(line.split(SPLIT_CHARACTER)[0], crowdId, projectName, projectDescription, editionShortName);
+
+            projectData.add(newProject);
 
             metadataMap.put("project-" + line.split(SPLIT_CHARACTER)[0], new SyncPersistenceMetadata(modified, modifiedBy));
         } catch (final Exception e) {
@@ -997,22 +1037,12 @@ public class SyncPropertyFileReader {
     }
 
     /**
-     * Returns the project organization map.
+     * Returns the project data map.
      *
-     * @return the project organization map
+     * @return the project data map
      */
-    public Map<String, String> getProjectOrganizationMap() {
+    public Set<SyncProjectMetadata> getProjectData() {
 
-        return projectOrganizationMap;
-    }
-
-    /**
-     * Returns the existing edition project info map.
-     *
-     * @return the existing edition project info map
-     */
-    public Map<String, Map<String, String>> getExistingEditionProjectInfoMap() {
-
-        return existingEditionProjectInfo;
+        return projectData;
     }
 }

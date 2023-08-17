@@ -24,6 +24,7 @@ import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.sync.util.SyncProjectMetadata;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.TeamService;
 import org.slf4j.Logger;
@@ -40,7 +41,7 @@ public class SyncCrowdAgent extends SyncAgent {
     private static final Logger LOG = LoggerFactory.getLogger(SyncCrowdAgent.class);
 
     /** The Constant EDITION_SHORTNAME. */
-    private static final int ORGANIZATION_SHORTNAME = 1;
+    private static final int ORGANIZATION_NAME = 1;
 
     /** The Constant EDITION_SHORTNAME. */
     private static final int EDITION_SHORTNAME = 2;
@@ -82,20 +83,22 @@ public class SyncCrowdAgent extends SyncAgent {
         // Identify changes to existing users and/or add new users information (from CROWD)
         crowdRulesMembersMap.keySet().stream().forEach(group -> uniqueCrowdUsers.addAll(crowdRulesMembersMap.get(group)));
 
-        final Map<String, User> usernameMap = processUsers(service, uniqueCrowdUsers);
-
         // EditionId to Rules
-        final Map<String, Set<String>> crowdEditionRulesMap = identifyEditionRules(service, crowdRulesMembersMap.keySet());
+        final Map<String, Set<String>> organizationEditionRulesMap = identifyOrganizationEditionRules(service, crowdRulesMembersMap.keySet());
+
+        // Identify and cache users to add
+        final Map<String, User> usernameMap = preProcessUsers(service, uniqueCrowdUsers);
 
         // OrgId to member usernames
-        final Map<String, Set<String>> crowdOrganizationUsernamesMap =
-            identifyCrowdOrganizationUsersFromEditions(service, crowdRulesMembersMap, crowdEditionRulesMap);
+        final Map<String, Set<String>> crowdOrganizationUsernamesMap = identifyCrowdOrganizationUsersFromEditions(service, crowdRulesMembersMap, organizationEditionRulesMap);
 
+        // Assign users to orgs and admin teams
         assignUsersToOrganizations(service, usernameMap, crowdOrganizationUsernamesMap);
 
-        assignUsersToAdminTeams(service, usernameMap, crowdEditionRulesMap);
+        assignUsersToAdminTeams(service, usernameMap, organizationEditionRulesMap);
 
-        addNewProjects(service, crowdRulesMembersMap, usernameMap, crowdEditionRulesMap);
+        // Add new projects
+        addNewProjects(service, crowdRulesMembersMap, usernameMap, organizationEditionRulesMap);
 
         // TODO: Add Teams? How?
         LOG.info("Finished syncing SyncCrowdAgent");
@@ -109,8 +112,7 @@ public class SyncCrowdAgent extends SyncAgent {
      * @param crowdEditionRulesMap the filtered edition rules map
      * @throws Exception the exception
      */
-    private void assignUsersToAdminTeams(final TerminologyService service, final Map<String, User> userMap, final Map<String, Set<String>> crowdEditionRulesMap)
-        throws Exception {
+    private void assignUsersToAdminTeams(final TerminologyService service, final Map<String, User> userMap, final Map<String, Set<String>> crowdEditionRulesMap) throws Exception {
 
         // LOG.info("Adding users to admin teams based on updates to CROWD-defined roles {}", crowdEditionRulesMap);
 
@@ -155,7 +157,7 @@ public class SyncCrowdAgent extends SyncAgent {
      * @throws Exception the exception
      */
     // Important: If issues arise in missing or unexpected aspects of a users, first place to look is CROWD for inconsistencies across members in users
-    private Map<String, User> processUsers(final TerminologyService service, final Set<String> uniqueUsers) throws Exception {
+    private Map<String, User> preProcessUsers(final TerminologyService service, final Set<String> uniqueUsers) throws Exception {
 
         // Create or update users based on Crowd values
         final Map<String, User> userMap = new HashMap<>();
@@ -225,8 +227,7 @@ public class SyncCrowdAgent extends SyncAgent {
      * @param crowdOrganizationUsernamesMap the crowd organization usernames map
      * @throws Exception the exception
      */
-    private void assignUsersToOrganizations(final TerminologyService service, final Map<String, User> usernameMap,
-        final Map<String, Set<String>> crowdOrganizationUsernamesMap) throws Exception {
+    private void assignUsersToOrganizations(final TerminologyService service, final Map<String, User> usernameMap, final Map<String, Set<String>> crowdOrganizationUsernamesMap) throws Exception {
 
         // Important: If issues arise in missing or unexpected members of organizations, first place to look is CROWD for inconsistencies across members in
         // organizations
@@ -237,19 +238,17 @@ public class SyncCrowdAgent extends SyncAgent {
         for (final Organization dbOrganization : dbOrganizations) {
 
             Organization addedOrganization = dbOrganization;
-            LOG.info("add local users (including admin ones) to organization {}: {} {}", addedOrganization.getName(),
-                crowdOrganizationUsernamesMap.get(addedOrganization.getId()), crowdOrganizationUsernamesMap.get(IGNORED_SYNC_KEYWORD));
+            LOG.info("add local users (including admin ones) to organization {}: {} {}", addedOrganization.getName(), crowdOrganizationUsernamesMap.get(addedOrganization.getId()),
+                crowdOrganizationUsernamesMap.get(IGNORED_SYNC_KEYWORD));
 
             for (final String username : crowdOrganizationUsernamesMap.get(addedOrganization.getId())) {
 
-                addedOrganization = OrganizationService.addUserToOrganization(service, SecurityService.getUserFromSession(), addedOrganization.getId(),
-                    usernameMap.get(username));
+                addedOrganization = OrganizationService.addUserToOrganization(service, SecurityService.getUserFromSession(), addedOrganization.getId(), usernameMap.get(username));
             }
 
             for (String username : crowdOrganizationUsernamesMap.get(IGNORED_SYNC_KEYWORD)) {
 
-                addedOrganization = OrganizationService.addUserToOrganization(service, SecurityService.getUserFromSession(), addedOrganization.getId(),
-                    usernameMap.get(username));
+                addedOrganization = OrganizationService.addUserToOrganization(service, SecurityService.getUserFromSession(), addedOrganization.getId(), usernameMap.get(username));
             }
 
         }
@@ -266,8 +265,8 @@ public class SyncCrowdAgent extends SyncAgent {
      * @return the map of orgId to members
      * @throws Exception the exception
      */
-    private Map<String, Set<String>> identifyCrowdOrganizationUsersFromEditions(final TerminologyService service,
-        final Map<String, Set<String>> crowdRulesMembersMap, final Map<String, Set<String>> crowdEditionRulesMap) throws Exception {
+    private Map<String, Set<String>> identifyCrowdOrganizationUsersFromEditions(final TerminologyService service, final Map<String, Set<String>> crowdRulesMembersMap,
+        final Map<String, Set<String>> crowdEditionRulesMap) throws Exception {
 
         final Map<String, Set<String>> retMap = new HashMap<>();
 
@@ -282,7 +281,7 @@ public class SyncCrowdAgent extends SyncAgent {
             for (final String rule : crowdEditionRulesMap.get(editionId)) {
 
                 final String[] groupCoordinates = rule.split("-");
-                final String ruleOrganization = groupCoordinates[ORGANIZATION_SHORTNAME];
+                final String ruleOrganization = groupCoordinates[ORGANIZATION_NAME];
                 final String ruleEdition = groupCoordinates[EDITION_SHORTNAME];
 
                 if (IGNORED_SYNC_KEYWORD.equals(ruleOrganization) || IGNORED_SYNC_KEYWORD.equals(ruleEdition)) {
@@ -315,10 +314,12 @@ public class SyncCrowdAgent extends SyncAgent {
      * @throws Exception the exception
      */
     // Map of those organizations to sync and their set of crowd rules
-    private Map<String, Set<String>> identifyEditionRules(final TerminologyService service, final Set<String> crowdRules) throws Exception {
+    private Map<String, Set<String>> identifyOrganizationEditionRules(final TerminologyService service, final Set<String> crowdRules) throws Exception {
 
         final Map<String, Set<String>> retMap = new HashMap<>();
         final Set<String> editionsToSync = new HashSet<>();
+        final Map<String, Set<String>> organizationNameToEditionIdMap = new HashMap<>();
+        final Set<String> ignoredRules = new HashSet<>();
 
         final Map<String, Edition> dbNameEditionMap = new HashMap<>();
         final Map<String, Edition> dbIdEditionMap = new HashMap<>();
@@ -333,12 +334,28 @@ public class SyncCrowdAgent extends SyncAgent {
 
             if (filteredCodeSystems.stream().anyMatch(cs -> cs.get("shortName").asText().equals(edition.getShortName()))) {
 
-                editionsToSync.add(edition.getId());
+                // Only sync if no projects in database. This signifies first time processing a code system and thus must rely upon Crowd to define users & projects
+                if (OrganizationService.getOrganizationProjects(service, edition.getOrganizationId()).size() == 0) {
+
+                    // Add to editions to sync
+                    editionsToSync.add(edition.getId());
+
+                    final String organizationRuleName = getOrganizationNameToOrganizationRule(edition.getOrganizationName());
+
+                    // Prepare for rules where for edition = "all" while organization specified
+                    if (!organizationNameToEditionIdMap.containsKey(edition.getOrganization().getName())) {
+
+                        organizationNameToEditionIdMap.put(organizationRuleName, new HashSet<>());
+                    }
+
+                    organizationNameToEditionIdMap.get(organizationRuleName).add(edition.getId());
+                }
+
             }
 
         }
 
-        editionsToSync.add(IGNORED_SYNC_KEYWORD);
+        // Must also apply the "all" rules to any edition being encountered for first time
         editionsToSync.stream().forEach(id -> retMap.put(id, new HashSet<>()));
 
         // For each rule in crowd
@@ -346,21 +363,48 @@ public class SyncCrowdAgent extends SyncAgent {
 
             final String[] groupCoordinates = rule.split("-");
             final String ruleEdition = groupCoordinates[EDITION_SHORTNAME];
-
+            final String ruleOrganization = groupCoordinates[ORGANIZATION_NAME];
             // Identify Edition(s) to process using the "all" ignored_sync_keyword differently
-            String editionId = null;
 
-            if (IGNORED_SYNC_KEYWORD.equals(ruleEdition)) {
+            boolean ruleIgnored = true;
 
-                editionId = ruleEdition;
-            } else if (dbNameEditionMap.containsKey(ruleEdition)) {
+            if (!IGNORED_SYNC_KEYWORD.equals(ruleEdition)) {
 
-                editionId = dbNameEditionMap.get(ruleEdition).getId();
+                if (IGNORED_SYNC_KEYWORD.equals(ruleOrganization)) {
+
+                    throw new Exception("Can't have a rule with 'rt2-IGNORED_SYNC_KEYWORD-<edition>-' starting the crowd rule");
+                } else if (dbNameEditionMap.containsKey(ruleEdition)) {
+
+                    String editionId = dbNameEditionMap.get(ruleEdition).getId();
+
+                    if (editionsToSync.contains(editionId)) {
+
+                        ruleIgnored = false;
+                        retMap.get(editionId).add(rule);
+                    }
+
+                }
+
+            } else {
+
+                // edition is IGNORED_SYNC_KEYWORD
+                if (IGNORED_SYNC_KEYWORD.equals(ruleOrganization)) {
+
+                    // All-All (org/edition rules) so apply rule to all organizations' editions
+                    organizationNameToEditionIdMap.keySet().stream().forEach(orgName -> organizationNameToEditionIdMap.get(orgName).stream().forEach(eId -> retMap.get(eId).add(rule)));
+                    ruleIgnored = false;
+                } else if (organizationNameToEditionIdMap.containsKey(ruleOrganization)) {
+
+                    // Identify the organization's editions and apply the rule to all of them
+                    organizationNameToEditionIdMap.get(ruleOrganization).stream().forEach(eId -> retMap.get(eId).add(rule));
+                    ruleIgnored = false;
+                }
+
             }
 
-            if (editionsToSync.contains(editionId)) {
+            if (ruleIgnored) {
 
-                retMap.get(editionId).add(rule);
+                ignoredRules.add(rule);
             }
 
         }
@@ -375,62 +419,76 @@ public class SyncCrowdAgent extends SyncAgent {
      * @param service the service
      * @param crowdGroupMembersMap the crowd group members map
      * @param userMap the user map
-     * @param organizationGroupsMap the organization groups map
+     * @param f the organization groups map
      * @return the map
      * @throws Exception the exception
      */
     // Important: If issues arise in missing or unexpected aspects of a project, first place to look is CROWD for inconsistencies across members in projects
-    private Map<String, Set<Project>> addNewProjects(final TerminologyService service, final Map<String, Set<String>> crowdGroupMembersMap,
-        final Map<String, User> userMap, final Map<String, Set<String>> organizationGroupsMap) throws Exception {
+    private Map<String, Set<Project>> addNewProjects(final TerminologyService service, final Map<String, Set<String>> crowdGroupMembersMap, final Map<String, User> userMap,
+        final Map<String, Set<String>> organizationEditionRulesMap) throws Exception {
 
         final Map<String, Set<Project>> addedProjectMap = new HashMap<>();
 
-        final Map<String, Set<String>> crowdEditionProjectNamesMap = identifyCrowdEditionProjects(service, crowdGroupMembersMap.keySet());
-        LOG.info("Adding projects based on updates to CROWD-defined projects {}", crowdEditionProjectNamesMap);
+        LOG.info("Adding projects based on updates to CROWD-defined projects {}", organizationEditionRulesMap);
+        getUtilities().getPropertyReader().parseRttData();
 
-        for (final String editionId : crowdEditionProjectNamesMap.keySet()) {
+        for (final String editionId : organizationEditionRulesMap.keySet()) {
 
             final Edition edition = service.get(editionId, Edition.class);
 
-            final Map<String, Map<String, String>> existingEditionProjectInfoMap = getUtilities().getPropertyReader().getExistingEditionProjectInfoMap();
+            final Set<SyncProjectMetadata> rttProjectData = getUtilities().getPropertyReader().getProjectData();
 
-            final Set<String> crowdProjectNames = crowdEditionProjectNamesMap.get(editionId);
+            final Set<String> editionRules = organizationEditionRulesMap.get(editionId);
 
-            for (final String crowdProjectName : crowdProjectNames) {
+            for (final String rule : editionRules) {
 
+                final String[] groupCoordinates = rule.split("-");
+                final String crowdProjectName = groupCoordinates[PROJECT_NAME];
+
+                // TODO: Handle rules such as rt2-all-all-all-admin
                 if (!IGNORED_SYNC_KEYWORD.equals(crowdProjectName)) {
 
                     String projectName = null;
+                    String projectDescription = null;
 
-                    if (existingEditionProjectInfoMap.containsKey(edition.getShortName())) {
+                    // Try finding project info from RTT
+                    List<SyncProjectMetadata> rttProjectInfo = rttProjectData.stream().filter(m -> m.getEditionShortName().equals(edition.getShortName())).collect(Collectors.toList());
 
-                        for (String existingProjectCrowdId : existingEditionProjectInfoMap.get(edition.getShortName()).keySet()) {
+                    for (SyncProjectMetadata singleProjectInfo : rttProjectInfo) {
 
-                            if (existingProjectCrowdId.equals(crowdProjectName)) {
+                        if (singleProjectInfo.getCrowdId().equals(crowdProjectName)) {
 
-                                projectName = existingEditionProjectInfoMap.get(edition.getShortName()).get(crowdProjectName);
-                            }
+                            projectName = singleProjectInfo.getName();
+                            projectDescription = singleProjectInfo.getDescription();
 
+                            LOG.info("Adding new project '{}' to {} based on RTT info has crowd rule '{}' with description {}", projectName, edition.getName(), crowdProjectName, projectDescription);
                         }
 
                     }
 
+                    // Nothing on RTT. Just create project based on crowd given name
                     if (projectName == null) {
 
                         projectName = crowdProjectName;
+                        projectDescription = "Default description for crowd-defined project: " + projectName;
+                        LOG.info("Adding new project '{}' to {} based on crowd rule {} with default description: ", projectName, edition.getName(), crowdProjectName, projectDescription);
                     }
 
-                    LOG.info("Adding new project just found on crowd for first time {} in {}", crowdProjectName, edition.getName());
+                    // Only add if the project-name hasn't yet been added to the edition
+                    final String testName = projectName;
 
-                    final Project newProject = getDbHandler().addProject(service, projectName,
-                        "Default description for crowd-defined project: " + crowdProjectName, edition, crowdProjectName);
+                    if (!addedProjectMap.containsKey(editionId) || addedProjectMap.get(editionId).stream().noneMatch(p -> testName.equals(p.getName()))) {
 
-                    if (!addedProjectMap.containsKey(editionId)) {
+                        final Project newProject = getDbHandler().addProject(service, projectName, projectDescription, edition, crowdProjectName);
 
-                        addedProjectMap.put(editionId, new HashSet<>());
+                        if (!addedProjectMap.containsKey(editionId)) {
+
+                            addedProjectMap.put(editionId, new HashSet<>());
+                        }
+
+                        addedProjectMap.get(editionId).add(newProject);
                     }
 
-                    addedProjectMap.get(editionId).add(newProject);
                 }
 
             }
@@ -441,100 +499,14 @@ public class SyncCrowdAgent extends SyncAgent {
     }
 
     /**
-     * Identify crowd edition projects.
+     * Returns the edition short name to edition.
      *
-     * @param service the service
-     * @param crowdGroups the crowd groups
-     * @return the map
-     * @throws Exception the exception
+     * @param editionShortName the edition short name
+     * @return the edition short name to edition
      */
-    // Returns a map from an editionId to a set of project names representing projects to add
-    private Map<String, Set<String>> identifyCrowdEditionProjects(final TerminologyService service, final Set<String> crowdGroups) throws Exception {
+    private String getOrganizationNameToOrganizationRule(final String name) {
 
-        // Organization to list of Projects
-        final Map<String, Set<String>> crowdEditionProjectsMap = new HashMap<>();
-
-        final List<Edition> dbEditions = readDbAllEditions(service);
-
-        // Sort crowdProjects by edition/groupName/Set<Role>
-        for (final String group : crowdGroups) {
-
-            if (isTesting() && testingEditionShortName != null && !testingEditionShortName.isEmpty()
-                && (!group.startsWith("rt2-") || !group.contains("-" + getEditionShortNameToEdition(testingEditionShortName) + "-"))) {
-
-                continue;
-            }
-
-            final String[] groupCoordinates = group.split("-");
-            final String crowdProject = groupCoordinates[PROJECT_NAME];
-
-            final String crowdEditionShortName = groupCoordinates[EDITION_SHORTNAME];
-
-            final Set<Edition> editions = new HashSet<>();
-
-            if (IGNORED_SYNC_KEYWORD.equals(crowdEditionShortName)) {
-
-                editions.addAll(dbEditions);
-            } else {
-
-                // Specific edition specified
-                // Identify crowd projects & edition's projectss in DB (via Org)
-                final List<Edition> filteredEditions =
-                    dbEditions.stream().filter(e -> getEditionShortNameToEdition(e.getShortName()).equals(crowdEditionShortName)).collect(Collectors.toList());
-
-                if (filteredEditions.size() == 1) {
-
-                    final Edition edition = filteredEditions.iterator().next();
-
-                    editions.add(edition);
-                } else if (filteredEditions.size() > 1) {
-
-                    LOG.error("Expected single edition, but have {} for {}: {}", filteredEditions.size(), crowdEditionShortName, filteredEditions);
-                } else if (getUtilities().getPropertyReader().getCodeSystemsToIgnore().stream()
-                    .anyMatch(s -> crowdEditionShortName.equals(getEditionShortNameToEdition(s)))) {
-
-                    // Have none b/c editionShortName is in ignored text file
-                    LOG.info("Ignoring crowdProject as based on ignored edition: {}", crowdEditionShortName);
-
-                } else {
-
-                    // Have none so unable to add rule for editionShortName
-                    LOG.info("Ignoring crowdProject as don't have edition in RT2 database: {} ", crowdEditionShortName);
-                }
-
-            }
-
-            // Will update for either single matching edition or all for the IGNORED_SYNC_KEYWORD keyword
-            editions.stream().filter(e -> !crowdEditionProjectsMap.keySet().contains(e.getId()))
-                .forEach(e -> crowdEditionProjectsMap.put(e.getId(), new HashSet<>()));
-            editions.stream().forEach(e -> crowdEditionProjectsMap.get(e.getId()).add(crowdProject));
-        }
-
-        // Based on crowdEditionProjectsMap, populate the organizationProjectsToUpdateMap object
-        final Map<String, Set<String>> organizationProjectsToUpdateMap = new HashMap<>();
-
-        for (final String editionId : crowdEditionProjectsMap.keySet()) {
-
-            final Edition edition = service.get(editionId, Edition.class);
-            final List<Project> dbEditionProjects = OrganizationService.getOrganizationProjects(service, edition.getOrganizationId()).getItems();
-
-            for (final String crowdProjectName : crowdEditionProjectsMap.get(editionId)) {
-
-                if (dbEditionProjects.stream().noneMatch(p -> p.getName().equals(crowdProjectName))) {
-
-                    if (!organizationProjectsToUpdateMap.containsKey(editionId)) {
-
-                        organizationProjectsToUpdateMap.put(editionId, new HashSet<>());
-                    }
-
-                    organizationProjectsToUpdateMap.get(editionId).add(crowdProjectName);
-                }
-
-            }
-
-        }
-
-        return organizationProjectsToUpdateMap;
+        return name.toLowerCase().replaceAll(" ", "").replaceAll("-", "");
     }
 
     /**

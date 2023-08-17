@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
-import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.util.SyncCodeSystemDeterminer;
 import org.ihtsdo.refsetservice.sync.util.SyncDatabaseHandler;
@@ -77,7 +76,7 @@ public abstract class SyncAgent {
     /** The testing refset. */
 
     protected static String testingRefset = null; // To test entire edition
-    // private static String testingRefset = "450970008";
+    // private static String testingRefset = "421000210109"; // NZ with def clauses
     // private static String testingRefset = "733991000"; // Core - Dentistry (in multiple projects in RTT)
     // protected static String testingRefset = "751000172100"; // 751000172100 - from Belgium
     // protected static String testingRefset = "723264001"; // 723264001 - TAGS (only one today) - from sct-core
@@ -147,14 +146,10 @@ public abstract class SyncAgent {
         // Update available code systems due to potential migrations (edition move from one org to another) and reactivations
         filteredCodeSystems = termServerCodeSystemConsumer.determineCodeSystemsToProcess();
 
-        if (isCleanDatabase(service)) {
-
-            // If first time processing, then and only then update users, teams, and projects based on crowd.
-            LOG.info("Running sync on an empty database. Thus add users to orgs, users to admin teams, and new projects");
-
-            agent = new SyncCrowdAgent(filteredCodeSystems);
-            agent.syncComponent(service);
-        }
+        // If first time processing a code system with projects, then and only then update users, teams, and projects based on crowd.
+        LOG.info("Review projects on crowd when encountering a code system without existing projects in system");
+        agent = new SyncCrowdAgent(filteredCodeSystems);
+        agent.syncComponent(service);
 
         // Find all refsets from filtered branches
         LOG.info("Running sync on refsets.");
@@ -261,18 +256,6 @@ public abstract class SyncAgent {
     protected static String getBranchdateformatter() {
 
         return BRANCH_DATE_FORMAT;
-    }
-
-    /**
-     * Indicates whether or not clean database is the case.
-     *
-     * @param service the service
-     * @return <code>true</code> if so, <code>false</code> otherwise
-     * @throws Exception the exception
-     */
-    private static boolean isCleanDatabase(final TerminologyService service) throws Exception {
-
-        return service.getAll(Project.class).isEmpty();
     }
 
     /**
