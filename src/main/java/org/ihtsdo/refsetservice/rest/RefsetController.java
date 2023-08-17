@@ -2654,6 +2654,13 @@ public class RefsetController extends BaseController {
 
                 // LOG.debug("results: " + ModelUtility.toJson(results));
                 final List<Organization> organizationList = results.getItems();
+
+                organizationList.removeIf(org -> {
+                    return org.isAffiliate() && !org.getMembers().stream().anyMatch(m -> m.getId().equals(user.getId()));
+                });
+
+                results.setTotal(organizationList.size());
+
                 organizationList.sort(new Comparator<Organization>() {
 
                     @Override

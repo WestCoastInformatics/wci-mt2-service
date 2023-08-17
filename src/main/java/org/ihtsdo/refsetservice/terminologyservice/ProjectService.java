@@ -22,6 +22,7 @@ import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
+import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
@@ -257,6 +258,12 @@ public class ProjectService extends BaseService {
             final List<Project> projectList = new ArrayList<>(results.getItems());
 
             for (Project project : projectList) {
+
+                final Organization organization = OrganizationService.getOrganization(service, user, project.getOrganizationId(), true);
+                if (organization.isAffiliate() && !organization.getMembers().stream().anyMatch(m -> m.getId().equals(user.getId()))) {
+                    results.getItems().remove(project);
+                    continue;
+                }
 
                 project = RefsetService.setProjectPermissions(user, project);
 

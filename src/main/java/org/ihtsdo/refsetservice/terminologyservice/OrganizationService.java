@@ -467,6 +467,11 @@ public class OrganizationService extends BaseService {
 
         for (final Organization organization : results.getItems()) {
 
+            // if user is not a member of an affiliate they cannot view.
+            if (organization.isAffiliate() && !organization.getMembers().stream().anyMatch(m -> m.getId().equals(user.getId()))) {
+                continue;
+            }
+
             setRoles(user, organization, organization.getRoles());
 
             if (includeMembers) {
@@ -976,7 +981,7 @@ public class OrganizationService extends BaseService {
         // TODO: move this URL to properties.
         final String accountSetupUrl = "https://confluence.ihtsdotools.org/display/ILS/Confluence+User+Accounts";
 
-        try (TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
             service.setModifiedFlag(true);
             service.setModifiedBy(SecurityService.getUserFromSession().getUserName());

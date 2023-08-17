@@ -359,6 +359,11 @@ public class TeamService extends BaseService {
 
             for (final Team team : results.getItems()) {
 
+                final Organization organization = OrganizationService.getOrganization(service, user, team.getOrganizationId(), true);
+                if (organization.isAffiliate() && !organization.getMembers().stream().anyMatch(m -> m.getId().equals(user.getId()))) {
+                    continue;
+                }
+
                 // if only the user's teams should be returned then make sure the user is an
                 // admin or a member of the team
                 if ((onlyUsersTeams && !canUserViewTeam(user, team, false)) || (hideOrganizationTeams && isOrganizationTeam(team))) {
