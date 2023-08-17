@@ -139,7 +139,12 @@ public class SyncCrowdAgent extends SyncAgent {
 
                 if (SyncAgent.getAdminUsernames().stream().noneMatch(username -> adminUser.getUserName().equals(username))) {
 
-                    TeamService.addUserToTeam(service, SecurityService.getUserFromSession(), adminTeam, adminUser);
+                    // Don't try adding if already member of team
+                    if (adminTeam.getMembers() != null && adminTeam.getMembers().contains(adminUser.getId())) {
+
+                        TeamService.addUserToTeam(service, SecurityService.getUserFromSession(), adminTeam, adminUser);
+                    }
+
                 }
 
             }
