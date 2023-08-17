@@ -487,7 +487,7 @@ public class TeamService extends BaseService {
      * @return the team
      * @throws Exception the exception
      */
-    public static Team f(final TerminologyService service, final User user, final Team team, final User userToAdd) throws Exception {
+    public static Team addUserToTeam(final TerminologyService service, final User user, final Team team, final User userToAdd) throws Exception {
 
         final Organization organization = team.getOrganization();
         final Set<User> organizationMembers = organization.getMembers();
