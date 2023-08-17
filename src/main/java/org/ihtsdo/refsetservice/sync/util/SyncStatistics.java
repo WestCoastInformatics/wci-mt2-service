@@ -85,6 +85,11 @@ public class SyncStatistics {
     /** The projects modified. */
     private int projectsModified;
 
+    private int eclClausesAdded;
+
+    /** The projects modified. */
+    private int tagsAdded;
+
     // Teams
     /** The teams added. */
     private int teamsAdded = 0;
@@ -132,8 +137,9 @@ public class SyncStatistics {
         buf.append(System.getProperty("line.separator"));
 
         // Othera
-        buf.append("*** Projects --> " + projectsAdded + " Processed " + System.getProperty("line.separator"));
-        buf.append("*** Teams --> " + teamsAdded + " Processed" + System.getProperty("line.separator"));
+        buf.append("*** Projects --> " + projectsAdded + " Added and " + projectsModified + " modified " + System.getProperty("line.separator"));
+        buf.append("*** Teams --> " + teamsAdded + " Added" + System.getProperty("line.separator"));
+        buf.append("*** From RTT: --> " + eclClausesAdded + " ECL Clauses added and " + tagsAdded + " tags added" + System.getProperty("line.separator"));
 
         return buf.toString();
     }
@@ -170,7 +176,8 @@ public class SyncStatistics {
 
         projectsAdded = 0;
         teamsAdded = 0;
-
+        eclClausesAdded = 0;
+        tagsAdded = 0;
     }
 
     /**
@@ -610,27 +617,6 @@ public class SyncStatistics {
     }
 
     /**
-     * Returns the teams processed.
-     *
-     * @return the teams processed
-     */
-    public int getTeamsProcessed() {
-
-        return teamsAdded;
-    }
-
-    /**
-     * Sets the teams added.
-     *
-     * @param val the teams added
-     */
-    public void setTeamsAdded(final int val) {
-
-        teamsAdded = val;
-
-    }
-
-    /**
      * Increment projects added.
      */
     public void incrementProjectsAdded() {
@@ -713,6 +699,16 @@ public class SyncStatistics {
     public void incrementProjectsModified() {
 
         projectsModified++;
+    }
+
+    public void incrementEclClausesAdded() {
+
+        eclClausesAdded++;
+    }
+
+    public void incrementTagsAdded() {
+
+        tagsAdded++;
     }
 
 }
