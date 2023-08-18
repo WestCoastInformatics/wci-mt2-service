@@ -27,10 +27,13 @@ import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.UserRole;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.terminologyservice.EditionService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.TeamService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
+import org.ihtsdo.refsetservice.util.ResultList;
+import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -178,9 +181,10 @@ public class SyncCodeSystemAgent extends SyncAgent {
             .filter(orgName -> !dbActiveOrganizationNameIdMaps.keySet().contains(orgName))
             .filter(orgName -> !dbInactiveOrganizationNameIdMaps.keySet().contains(orgName)).collect(Collectors.toList());
 
-        // Create new org
-        addedOrganizations.stream()
-            .forEach(orgName -> getDbHandler().addOrganziation(service, orgName, getUtilities().determineOrganizationDescription(orgName)));
+        for (final String orgName : addedOrganizations) {
+            final Organization newOrganization = getDbHandler().addOrganziation(service, orgName, getUtilities().determineOrganizationDescription(orgName));
+            addOrganizationToAffiliateEdition(service, newOrganization);
+        }
 
         // Activate previously inactivated organizations. Note: Will log and update stats after remove those that were activatedAndModified
         final List<String> organizationsToActivate = termserverOrganizationNameToEditionShortNameMap.keySet().stream()
@@ -602,6 +606,40 @@ public class SyncCodeSystemAgent extends SyncAgent {
         }
 
         return modifiedShortNames;
+    }
+
+    /**
+     * Adds the organization to all affiliate organizations.
+     *
+     * @param service the service
+     * @param organization the organization
+     * @throws Exception the exception
+     */
+    private void addOrganizationToAffiliateEdition(final TerminologyService service, final Organization organization) throws Exception {
+
+        final ResultList<Organization> affiliateOrganizations = service.find("active: true AND affiliate:true", null, Organization.class, null);
+
+        // when adding a new edition, add for affiliates too.
+        // create the affiliated editions for the organization
+        for (final Organization affiliateOrg : affiliateOrganizations.getItems()) {
+
+            final List<Edition> editionList = EditionService.getAffiliateEditionList();
+            final SearchParameters sp = new SearchParameters();
+            sp.setQuery("organizationId: " + affiliateOrg.getId());
+            final ResultList<Edition> existingEditions = EditionService.searchEditions(sp);
+
+            for (final Edition edition : editionList) {
+
+                boolean found = existingEditions.getItems().stream().anyMatch(e -> edition.getBranch().equals(e.getBranch()));
+
+                if (!found) {
+                    LOG.info("ADD new organization to affiliate edition name:{} organization name: {}", edition.getName(), affiliateOrg.getName());
+                    edition.setOrganization(affiliateOrg);
+                    service.add(edition);
+                    service.add(AuditEntryHelper.addEditionEntry(edition));
+                }
+            }
+        }
     }
 
 }

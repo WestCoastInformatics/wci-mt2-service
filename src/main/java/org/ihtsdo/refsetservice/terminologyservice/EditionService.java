@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -211,8 +211,8 @@ public class EditionService extends BaseService {
                     // Affiliates (on any extension) should not have the ability to choose modules.
                     // Fix to 1201891009 |SNOMED CT Community content module (core metadata concept)| for all affiliate refsets
                     final Set<String> editionModules = new HashSet<>(Arrays.asList("1201891009"));
-                    final Edition edition = new Edition();
 
+                    final Edition edition = new Edition();
                     edition.setShortName(editionShortName);
                     edition.setName(editionName);
                     edition.setBranch(branch);
