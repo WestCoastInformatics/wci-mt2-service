@@ -65,6 +65,8 @@ public class SyncRefsetAgent extends SyncAgent {
     /** The Constant TRAINING_PROJECT_NAME. */
     private static final String TRAINING_PROJECT_NAME = "training";
 
+    private static final String LATERALITY_CORE_REFSET = "723264001";
+
     /** The refset to module map. */
     private final Map<String, String> refsetToModuleMap = new HashMap<String, String>();
 
@@ -661,13 +663,6 @@ public class SyncRefsetAgent extends SyncAgent {
 
         for (final long versionDate : termserverVersionBranchMap.keySet()) {
 
-            final SimpleDateFormat sdf = new SimpleDateFormat(getUtilities().getIsoDateTimeFormat());
-
-            if (versionDate < PRE_SNOMED_SUPPORTED_RELEASES) {
-
-                continue;
-            }
-
             final JsonNode root = getTermserverRefsetVersionMembers(edition.getName(), edition.getBranch(), termserverVersionBranchMap, versionDate);
             final Iterator<JsonNode> refsetIterator = root.get("referenceSets").iterator();
 
@@ -743,7 +738,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
         final Map<String, Integer> refsetCountMap = new HashMap<>();
 
-        final Long latestEditionVersion = termserverVersionBranchMap.keySet().stream().sorted().iterator().next();
+        final Long latestEditionVersion = termserverVersionBranchMap.lastKey();
 
         final JsonNode refsetCountsRoot = getTermserverRefsetVersionMembers(edition.getName(), edition.getBranch(), termserverVersionBranchMap, latestEditionVersion);
         final JsonNode refsetCountsMap = refsetCountsRoot.get("memberCountsByReferenceSet");
@@ -780,7 +775,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
         final String refsetBranchPath = termserverVersionBranchMap.get(branchVersion);
         final String url = SnowstormConnection.getBaseUrl() + "browser/{branch}/members?active=true&referenceSet=%3C" + RefsetService.SIMPLE_TYPE_REFERENCE_SET;
-        LOG.info("getRefsetMembes URL: " + url);
+        LOG.info("getRefsetMembes URL: " + url.replace("{branch}", refsetBranchPath));
 
         try (final Response response = SnowstormConnection.getResponse(url.replace("{branch}", refsetBranchPath))) {
 
@@ -1313,7 +1308,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
         // Finally, ensure there aren't other special refset considerations.
         // Current restriction: Don't import any version of those refsets whose latest version contains more than 10k members
-        if (refsetCountMap.get(refsetId) > MAX_MEMBERS_SUPPORTED) {
+        if (refsetCountMap.get(refsetId) > MAX_MEMBERS_SUPPORTED && !refsetId.equals(LATERALITY_CORE_REFSET)) {
 
             LOG.info("Ignoring refset: " + refsetId + " given it contains more than 10,000 members");
             return false;
@@ -1380,6 +1375,11 @@ public class SyncRefsetAgent extends SyncAgent {
                     if (childDate.matches("^\\d{4}-\\d{2}-\\d{2}$")) {
 
                         final long branchDate = branchDateFormat.parse(childDate).getTime();
+
+                        if (branchDate < PRE_SNOMED_SUPPORTED_RELEASES) {
+
+                            continue;
+                        }
 
                         if (branchDate < new Date().getTime()) {
 
