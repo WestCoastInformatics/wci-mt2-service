@@ -212,7 +212,7 @@ public class SyncCodeSystemDeterminer {
                         s.append("inactive");
                         break;
                     case IGNORED_PER_FILE_EDITION:
-                        // TODO: Update to be based on maintainerType
+                        // Ideally, we don't rely on this, but rather programmatically calculate based on code system attributes 
                         s.append("listed in ignoredCodeSystems.txt");
                         break;
                     case NON_SUPPORTED_MAINTAINER_TYPE:

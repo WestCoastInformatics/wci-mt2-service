@@ -64,7 +64,7 @@ public class SyncPropertyFileReader {
     /** The ignored code systems resource. */
     private ClassPathResource ignoredCodeSystemsResource = new ClassPathResource(IGNORED_CODE_SYSTEMS_PATH);
 
-    // TODO: Review the existing needs for these remaining resources files as they may have been created to deal with bad data
+    // TODO: JESSE - Review the existing needs for these remaining resources files as they may have been created to deal with bad data
     /** The undefined default lang refsets resource. */
     private final ClassPathResource undefinedDefaultLangRefsetsResource = new ClassPathResource("sync/exceptions/undefinedDefaultLangRefsets.txt");
 
@@ -837,37 +837,17 @@ public class SyncPropertyFileReader {
 
         try {
 
-            if (line.split(SPLIT_CHARACTER)[1].startsWith("\"")) {
-                // TODO: Remove this right?
+            final String[] values = line.split(SPLIT_CHARACTER);
 
-                // If description has commas (and some do), can't rely on
-                // splitting
-                // on comma. Must identify Description and then remove from line
-                // before finding other values
-                final int descStartIdx = line.indexOf("\"");
-                final int descEndIdx = line.substring(descStartIdx + 1).indexOf("\"");
-                final String[] values = line.substring(descStartIdx + descEndIdx + 3).split(SPLIT_CHARACTER);
+            projectName = values[7].replaceAll("\"", "");
+            projectDescription = values[1];
+            editionShortName = values[9].replaceAll("\"", "");
+            modified = values[4];
+            modifiedBy = values[5];
 
-                projectName = values[7].replaceAll("\"", "");
-                projectDescription = values[1];
-                modified = values[2];
-                modifiedBy = values[3];
-                editionShortName = values[9];
-            } else {
+            if (editionShortName.equals(OLD_SNOMED_CORE_NAME)) {
 
-                final String[] values = line.split(SPLIT_CHARACTER);
-
-                projectName = values[7].replaceAll("\"", "");
-                projectDescription = values[1];
-                editionShortName = values[9].replaceAll("\"", "");
-                modified = values[4];
-                modifiedBy = values[5];
-
-                if (editionShortName.equals(OLD_SNOMED_CORE_NAME)) {
-
-                    editionShortName = NEW_SNOMED_CORE_NAME;
-                }
-
+                editionShortName = NEW_SNOMED_CORE_NAME;
             }
 
             if (existingEditionProjectInfo.containsKey(editionShortName) && existingEditionProjectInfo.get(editionShortName).containsKey(projectName)) {
@@ -875,7 +855,7 @@ public class SyncPropertyFileReader {
                 crowdId = existingEditionProjectInfo.get(editionShortName).get(projectName);
             }
 
-            // TODO: Create new project on crowd (without users but that gets added with project=ALL
+            // TODO: TESTING - Create new project on crowd (without users but that gets added with project=ALL
             if (crowdId == null || crowdId.isEmpty()) {
 
                 StringBuffer s = new StringBuffer();

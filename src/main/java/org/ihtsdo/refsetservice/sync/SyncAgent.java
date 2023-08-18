@@ -68,17 +68,17 @@ public abstract class SyncAgent {
     private static Boolean isIgnoreCoreRefsets = null;
 
     /** Testing options. */
-    private static boolean testing = false;
+    private static boolean testing = true;
 
     /** The testing edition short name. */
-    protected static String testingEditionShortName = "";
+    protected static String testingEditionShortName = "SNOMEDCT-BE";
 
     /** The testing refset. */
 
-    protected static String testingRefset = null; // To test entire edition
+//    protected static String testingRefset = null; // To test entire edition
     // private static String testingRefset = "421000210109"; // NZ with def clauses
-    // private static String testingRefset = "733991000"; // Core - Dentistry (in multiple projects in RTT)
-    // protected static String testingRefset = "751000172100"; // 751000172100 - from Belgium
+//     private static String testingRefset = "733991000"; // Core - Dentistry (in multiple projects in RTT)
+     protected static String testingRefset = "751000172100"; // 751000172100 - from Belgium
     // protected static String testingRefset = "723264001"; // 723264001 - TAGS (only one today) - from sct-core
     // protected static String testingRefset = "64641000052102"; // Tim's for ugprade testing (on Swedish)
     // protected static String testingRefset = "11000172109"; // Sync in the single Intensional refset available on dev-integeration (Belgium Editing)
@@ -159,7 +159,6 @@ public abstract class SyncAgent {
         // Post processing
         LOG.info(STATISTICS.printStatistics());
 
-        // TODO: Replace
         utilities.emailSyncResults(service);
 
         final long processingMinutes = utilities.getProcessingMinutes("FULL", startOperationStartTime);

@@ -146,7 +146,7 @@ public class SyncDatabaseHandler {
             final Organization organization = (Organization) utilities.validateMatches(organizationStream, organizationName);
 
             // Create a single Admin team per Edition when we first discover it
-            utilities.getOrCreateAdminOrganizationTeam(this, service, organization);
+            utilities.getOrCreateAdminOrganizationTeam(service, organization);
 
             final String defaultLanguageCode = utilities.identifyDefaultLanguageCode(codeSystem, editionName);
 
