@@ -646,7 +646,7 @@ public class SyncUtilities {
      */
     public void emailSyncResults(final TerminologyService service) throws Exception {
 
-        if (!PropertyUtility.getProperties().containsKey("refset.service.env") || !PropertyUtility.getProperties().getProperty("refset.service.env").equals("LOCAL")) {
+        if (!PropertyUtility.getProperties().containsKey("refset.service.env") || PropertyUtility.getProperties().getProperty("refset.service.env").equals("LOCAL")) {
 
             return;
         }
@@ -837,13 +837,12 @@ public class SyncUtilities {
     /**
      * Creates the admin organization team.
      *
-     * @param syncDatabaseHandler TODO
      * @param service the service
      * @param organization the organization
      * @return the team
      * @throws Exception the exception
      */
-    public Team getOrCreateAdminOrganizationTeam(final SyncDatabaseHandler syncDatabaseHandler, final TerminologyService service, final Organization organization) throws Exception {
+    public Team getOrCreateAdminOrganizationTeam(final TerminologyService service, final Organization organization) throws Exception {
 
         try {
 
@@ -859,7 +858,7 @@ public class SyncUtilities {
 
             if (inactiveAdminTeam == null) {
 
-                adminTeam = syncDatabaseHandler.addTeam(service, TeamService.generateOrganizationTeamName(organization), TeamService.getOrganizationTeamDescription(organization), organization,
+                adminTeam = dbHandler.addTeam(service, TeamService.generateOrganizationTeamName(organization), TeamService.getOrganizationTeamDescription(organization), organization,
                     TeamType.ORGANIZATION.getText());
 
             } else if (!inactiveAdminTeam.isActive()) {
