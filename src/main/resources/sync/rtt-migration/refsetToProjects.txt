@@ -1,66 +1,17 @@
 rtt_project_id	refset_sctid	project_name	project_desc
 1	1119410008	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	1119410008	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	1157358007	SNOMED International Project	This project is the production area for official SNOMED International reference sets
 1	1157358007	SNOMED International Project	This project is the production area for official SNOMED International reference sets
 1	450970008	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	450970008	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	450970008	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	450970008	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	450970008	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	450970008	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	450970008	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	450970008	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	450970008	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	450970008	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	5491000003105	SNOMED International Project	This project is the production area for official SNOMED International reference sets
 1	5491000003105	SNOMED International Project	This project is the production area for official SNOMED International reference sets
 1	5581000003109	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	5581000003109	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	5581000003109	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	5601000003101	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	5601000003101	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	5601000003101	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	5601000003101	SNOMED International Project	This project is the production area for official SNOMED International reference sets
 1	5601000003101	SNOMED International Project	This project is the production area for official SNOMED International reference sets
 1	5871000003109	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	5871000003109	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	5871000003109	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	5871000003109	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	5871000003109	SNOMED International Project	This project is the production area for official SNOMED International reference sets
 1	721144007	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	721144007	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	721144007	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	721144007	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	721144007	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	721144007	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	721144007	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	721144007	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	721145008	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	721145008	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	721145008	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	721145008	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	721145008	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	721145008	SNOMED International Project	This project is the production area for official SNOMED International reference sets
 1	721145008	SNOMED International Project	This project is the production area for official SNOMED International reference sets
 1	733990004	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	733990004	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	733990004	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	733990004	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	733990004	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	733990004	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	733991000	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	733991000	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	733991000	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	733991000	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	733991000	SNOMED International Project	This project is the production area for official SNOMED International reference sets
 1	733991000	SNOMED International Project	This project is the production area for official SNOMED International reference sets
 1	787778008	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	787778008	SNOMED International Project	This project is the production area for official SNOMED International reference sets
 1	816080008	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	816080008	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	816080008	SNOMED International Project	This project is the production area for official SNOMED International reference sets
-1	894081003	SNOMED International Project	This project is the production area for official SNOMED International reference sets
 1	894081003	SNOMED International Project	This project is the production area for official SNOMED International reference sets
 1001	23645832341	Inera National Refset Project (do not use)	Inera National Refset Project for the Swedish NRC
 1001	500091000057101	Inera National Refset Project (do not use)	Inera National Refset Project for the Swedish NRC
@@ -69,29 +20,15 @@ rtt_project_id	refset_sctid	project_name	project_desc
 1203	TMP-hmj5ah	Demo for St Pierre	Demo for St Pierre
 1203	TMP-neo7m9	Demo for St Pierre	Demo for St Pierre
 1203	TMP-s7h9oo	Demo for St Pierre	Demo for St Pierre
-1203	TMP-s7h9oo	Demo for St Pierre	Demo for St Pierre
 1251	1041000003106	Project for MKatz	Project for MKatz
 155	4226871000052111	Sweden NRC Project (do not use)	Swedish NRC Project
 155	4226911000052113	Sweden NRC Project (do not use)	Swedish NRC Project
 155	46051000052106	Sweden NRC Project (do not use)	Swedish NRC Project
-155	46051000052106	Sweden NRC Project (do not use)	Swedish NRC Project
-155	46051000052106	Sweden NRC Project (do not use)	Swedish NRC Project
-155	53351000052100	Sweden NRC Project (do not use)	Swedish NRC Project
-155	53351000052100	Sweden NRC Project (do not use)	Swedish NRC Project
 155	53351000052100	Sweden NRC Project (do not use)	Swedish NRC Project
 155	53361000052102	Sweden NRC Project (do not use)	Swedish NRC Project
-155	53361000052102	Sweden NRC Project (do not use)	Swedish NRC Project
-155	53361000052102	Sweden NRC Project (do not use)	Swedish NRC Project
-155	53371000052106	Sweden NRC Project (do not use)	Swedish NRC Project
-155	53371000052106	Sweden NRC Project (do not use)	Swedish NRC Project
 155	53371000052106	Sweden NRC Project (do not use)	Swedish NRC Project
 155	53381000052108	Sweden NRC Project (do not use)	Swedish NRC Project
-155	53381000052108	Sweden NRC Project (do not use)	Swedish NRC Project
-155	53381000052108	Sweden NRC Project (do not use)	Swedish NRC Project
 155	53611000052108	Sweden NRC Project (do not use)	Swedish NRC Project
-155	53611000052108	Sweden NRC Project (do not use)	Swedish NRC Project
-155	53611000052108	Sweden NRC Project (do not use)	Swedish NRC Project
-155	56421000052109	Sweden NRC Project (do not use)	Swedish NRC Project
 155	56421000052109	Sweden NRC Project (do not use)	Swedish NRC Project
 155	56431000052106	Sweden NRC Project (do not use)	Swedish NRC Project
 155	58181000052100	Sweden NRC Project (do not use)	Swedish NRC Project
@@ -108,787 +45,134 @@ rtt_project_id	refset_sctid	project_name	project_desc
 155	62181000052107	Sweden NRC Project (do not use)	Swedish NRC Project
 155	62191000052109	Sweden NRC Project (do not use)	Swedish NRC Project
 1701	141000181108	Estonian NRC Project	Project for the Estonian NRC
-1701	141000181108	Estonian NRC Project	Project for the Estonian NRC
-1701	141000181108	Estonian NRC Project	Project for the Estonian NRC
-1701	141000181108	Estonian NRC Project	Project for the Estonian NRC
-1701	141000181108	Estonian NRC Project	Project for the Estonian NRC
-1701	141000181108	Estonian NRC Project	Project for the Estonian NRC
-1701	141000181108	Estonian NRC Project	Project for the Estonian NRC
-1701	141000181108	Estonian NRC Project	Project for the Estonian NRC
-1701	14751000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	14751000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	14751000181109	Estonian NRC Project	Project for the Estonian NRC
 1701	14751000181109	Estonian NRC Project	Project for the Estonian NRC
 1701	161000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	161000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	161000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	161000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	161000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	161000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	161000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	161000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	181000181102	Estonian NRC Project	Project for the Estonian NRC
-1701	181000181102	Estonian NRC Project	Project for the Estonian NRC
-1701	181000181102	Estonian NRC Project	Project for the Estonian NRC
-1701	181000181102	Estonian NRC Project	Project for the Estonian NRC
-1701	181000181102	Estonian NRC Project	Project for the Estonian NRC
-1701	181000181102	Estonian NRC Project	Project for the Estonian NRC
-1701	181000181102	Estonian NRC Project	Project for the Estonian NRC
 1701	181000181102	Estonian NRC Project	Project for the Estonian NRC
 1701	201000181103	Estonian NRC Project	Project for the Estonian NRC
-1701	201000181103	Estonian NRC Project	Project for the Estonian NRC
-1701	201000181103	Estonian NRC Project	Project for the Estonian NRC
-1701	201000181103	Estonian NRC Project	Project for the Estonian NRC
-1701	201000181103	Estonian NRC Project	Project for the Estonian NRC
-1701	201000181103	Estonian NRC Project	Project for the Estonian NRC
-1701	201000181103	Estonian NRC Project	Project for the Estonian NRC
-1701	201000181103	Estonian NRC Project	Project for the Estonian NRC
 1701	221000181105	Estonian NRC Project	Project for the Estonian NRC
-1701	221000181105	Estonian NRC Project	Project for the Estonian NRC
-1701	221000181105	Estonian NRC Project	Project for the Estonian NRC
-1701	221000181105	Estonian NRC Project	Project for the Estonian NRC
-1701	221000181105	Estonian NRC Project	Project for the Estonian NRC
-1701	221000181105	Estonian NRC Project	Project for the Estonian NRC
-1701	221000181105	Estonian NRC Project	Project for the Estonian NRC
-1701	221000181105	Estonian NRC Project	Project for the Estonian NRC
-1701	231000181107	Estonian NRC Project	Project for the Estonian NRC
-1701	231000181107	Estonian NRC Project	Project for the Estonian NRC
-1701	231000181107	Estonian NRC Project	Project for the Estonian NRC
-1701	231000181107	Estonian NRC Project	Project for the Estonian NRC
-1701	231000181107	Estonian NRC Project	Project for the Estonian NRC
-1701	231000181107	Estonian NRC Project	Project for the Estonian NRC
-1701	231000181107	Estonian NRC Project	Project for the Estonian NRC
 1701	231000181107	Estonian NRC Project	Project for the Estonian NRC
 1701	2361000181104	Estonian NRC Project	Project for the Estonian NRC
-1701	2361000181104	Estonian NRC Project	Project for the Estonian NRC
-1701	2361000181104	Estonian NRC Project	Project for the Estonian NRC
-1701	2361000181104	Estonian NRC Project	Project for the Estonian NRC
-1701	2361000181104	Estonian NRC Project	Project for the Estonian NRC
-1701	2361000181104	Estonian NRC Project	Project for the Estonian NRC
-1701	2361000181104	Estonian NRC Project	Project for the Estonian NRC
 1701	241000181100	Estonian NRC Project	Project for the Estonian NRC
-1701	241000181100	Estonian NRC Project	Project for the Estonian NRC
-1701	241000181100	Estonian NRC Project	Project for the Estonian NRC
-1701	241000181100	Estonian NRC Project	Project for the Estonian NRC
-1701	241000181100	Estonian NRC Project	Project for the Estonian NRC
-1701	241000181100	Estonian NRC Project	Project for the Estonian NRC
-1701	241000181100	Estonian NRC Project	Project for the Estonian NRC
-1701	241000181100	Estonian NRC Project	Project for the Estonian NRC
-1701	251000181102	Estonian NRC Project	Project for the Estonian NRC
-1701	251000181102	Estonian NRC Project	Project for the Estonian NRC
-1701	251000181102	Estonian NRC Project	Project for the Estonian NRC
-1701	251000181102	Estonian NRC Project	Project for the Estonian NRC
-1701	251000181102	Estonian NRC Project	Project for the Estonian NRC
-1701	251000181102	Estonian NRC Project	Project for the Estonian NRC
-1701	251000181102	Estonian NRC Project	Project for the Estonian NRC
 1701	251000181102	Estonian NRC Project	Project for the Estonian NRC
 1701	2551000181106	Estonian NRC Project	Project for the Estonian NRC
-1701	2551000181106	Estonian NRC Project	Project for the Estonian NRC
-1701	2551000181106	Estonian NRC Project	Project for the Estonian NRC
-1701	2551000181106	Estonian NRC Project	Project for the Estonian NRC
-1701	2551000181106	Estonian NRC Project	Project for the Estonian NRC
-1701	2551000181106	Estonian NRC Project	Project for the Estonian NRC
-1701	2551000181106	Estonian NRC Project	Project for the Estonian NRC
-1701	2561000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	2561000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	2561000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	2561000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	2561000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	2561000181109	Estonian NRC Project	Project for the Estonian NRC
 1701	2561000181109	Estonian NRC Project	Project for the Estonian NRC
 1701	2571000181104	Estonian NRC Project	Project for the Estonian NRC
-1701	2571000181104	Estonian NRC Project	Project for the Estonian NRC
-1701	2571000181104	Estonian NRC Project	Project for the Estonian NRC
-1701	2571000181104	Estonian NRC Project	Project for the Estonian NRC
-1701	2571000181104	Estonian NRC Project	Project for the Estonian NRC
-1701	2571000181104	Estonian NRC Project	Project for the Estonian NRC
-1701	2571000181104	Estonian NRC Project	Project for the Estonian NRC
-1701	261000181104	Estonian NRC Project	Project for the Estonian NRC
-1701	261000181104	Estonian NRC Project	Project for the Estonian NRC
-1701	261000181104	Estonian NRC Project	Project for the Estonian NRC
-1701	261000181104	Estonian NRC Project	Project for the Estonian NRC
-1701	261000181104	Estonian NRC Project	Project for the Estonian NRC
-1701	261000181104	Estonian NRC Project	Project for the Estonian NRC
-1701	261000181104	Estonian NRC Project	Project for the Estonian NRC
 1701	261000181104	Estonian NRC Project	Project for the Estonian NRC
 1701	271000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	271000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	271000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	271000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	271000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	271000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	271000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	271000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	281000181106	Estonian NRC Project	Project for the Estonian NRC
-1701	281000181106	Estonian NRC Project	Project for the Estonian NRC
-1701	281000181106	Estonian NRC Project	Project for the Estonian NRC
-1701	281000181106	Estonian NRC Project	Project for the Estonian NRC
-1701	281000181106	Estonian NRC Project	Project for the Estonian NRC
-1701	281000181106	Estonian NRC Project	Project for the Estonian NRC
-1701	281000181106	Estonian NRC Project	Project for the Estonian NRC
 1701	281000181106	Estonian NRC Project	Project for the Estonian NRC
 1701	291000181108	Estonian NRC Project	Project for the Estonian NRC
-1701	291000181108	Estonian NRC Project	Project for the Estonian NRC
-1701	291000181108	Estonian NRC Project	Project for the Estonian NRC
-1701	291000181108	Estonian NRC Project	Project for the Estonian NRC
-1701	291000181108	Estonian NRC Project	Project for the Estonian NRC
-1701	291000181108	Estonian NRC Project	Project for the Estonian NRC
-1701	291000181108	Estonian NRC Project	Project for the Estonian NRC
-1701	291000181108	Estonian NRC Project	Project for the Estonian NRC
-1701	301000181107	Estonian NRC Project	Project for the Estonian NRC
-1701	301000181107	Estonian NRC Project	Project for the Estonian NRC
-1701	301000181107	Estonian NRC Project	Project for the Estonian NRC
-1701	301000181107	Estonian NRC Project	Project for the Estonian NRC
-1701	301000181107	Estonian NRC Project	Project for the Estonian NRC
-1701	301000181107	Estonian NRC Project	Project for the Estonian NRC
-1701	301000181107	Estonian NRC Project	Project for the Estonian NRC
 1701	301000181107	Estonian NRC Project	Project for the Estonian NRC
 1701	311000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	311000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	311000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	311000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	311000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	311000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	311000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	311000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	321000181100	Estonian NRC Project	Project for the Estonian NRC
-1701	321000181100	Estonian NRC Project	Project for the Estonian NRC
-1701	321000181100	Estonian NRC Project	Project for the Estonian NRC
-1701	321000181100	Estonian NRC Project	Project for the Estonian NRC
-1701	321000181100	Estonian NRC Project	Project for the Estonian NRC
-1701	321000181100	Estonian NRC Project	Project for the Estonian NRC
-1701	321000181100	Estonian NRC Project	Project for the Estonian NRC
 1701	321000181100	Estonian NRC Project	Project for the Estonian NRC
 1701	3221000181107	Estonian NRC Project	Project for the Estonian NRC
-1701	3221000181107	Estonian NRC Project	Project for the Estonian NRC
-1701	3221000181107	Estonian NRC Project	Project for the Estonian NRC
-1701	3221000181107	Estonian NRC Project	Project for the Estonian NRC
-1701	3221000181107	Estonian NRC Project	Project for the Estonian NRC
-1701	3221000181107	Estonian NRC Project	Project for the Estonian NRC
 1701	3231000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	3231000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	3231000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	3231000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	3231000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	3231000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	331000181103	Estonian NRC Project	Project for the Estonian NRC
-1701	331000181103	Estonian NRC Project	Project for the Estonian NRC
-1701	331000181103	Estonian NRC Project	Project for the Estonian NRC
-1701	331000181103	Estonian NRC Project	Project for the Estonian NRC
-1701	331000181103	Estonian NRC Project	Project for the Estonian NRC
-1701	331000181103	Estonian NRC Project	Project for the Estonian NRC
-1701	331000181103	Estonian NRC Project	Project for the Estonian NRC
 1701	331000181103	Estonian NRC Project	Project for the Estonian NRC
 1701	3591000181107	Estonian NRC Project	Project for the Estonian NRC
-1701	3591000181107	Estonian NRC Project	Project for the Estonian NRC
-1701	3591000181107	Estonian NRC Project	Project for the Estonian NRC
-1701	3591000181107	Estonian NRC Project	Project for the Estonian NRC
-1701	3591000181107	Estonian NRC Project	Project for the Estonian NRC
-1701	361000181106	Estonian NRC Project	Project for the Estonian NRC
-1701	361000181106	Estonian NRC Project	Project for the Estonian NRC
-1701	361000181106	Estonian NRC Project	Project for the Estonian NRC
-1701	361000181106	Estonian NRC Project	Project for the Estonian NRC
-1701	361000181106	Estonian NRC Project	Project for the Estonian NRC
-1701	361000181106	Estonian NRC Project	Project for the Estonian NRC
-1701	361000181106	Estonian NRC Project	Project for the Estonian NRC
 1701	361000181106	Estonian NRC Project	Project for the Estonian NRC
 1701	3631000181107	Estonian NRC Project	Project for the Estonian NRC
-1701	3631000181107	Estonian NRC Project	Project for the Estonian NRC
-1701	3631000181107	Estonian NRC Project	Project for the Estonian NRC
-1701	3631000181107	Estonian NRC Project	Project for the Estonian NRC
-1701	3631000181107	Estonian NRC Project	Project for the Estonian NRC
-1701	3661000181104	Estonian NRC Project	Project for the Estonian NRC
-1701	3661000181104	Estonian NRC Project	Project for the Estonian NRC
-1701	3661000181104	Estonian NRC Project	Project for the Estonian NRC
-1701	3661000181104	Estonian NRC Project	Project for the Estonian NRC
 1701	3661000181104	Estonian NRC Project	Project for the Estonian NRC
 1701	3671000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	3671000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	3671000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	3671000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	3671000181109	Estonian NRC Project	Project for the Estonian NRC
-1701	36731000181102	Estonian NRC Project	Project for the Estonian NRC
-1701	36731000181102	Estonian NRC Project	Project for the Estonian NRC
 1701	36731000181102	Estonian NRC Project	Project for the Estonian NRC
 1701	78051000181107	Estonian NRC Project	Project for the Estonian NRC
 1701	78061000181105	Estonian NRC Project	Project for the Estonian NRC
 1701	86791000181105	Estonian NRC Project	Project for the Estonian NRC
 1801	TMP-swtaub	IMO Test	Test
 2051	1051000202108	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
-2051	1051000202108	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
-2051	1051000202108	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
-2051	1091000202103	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
-2051	1091000202103	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
-2051	1091000202103	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
-2051	1091000202103	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
-2051	1091000202103	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
-2051	1091000202103	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
-2051	1091000202103	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
-2051	1091000202103	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
 2051	1091000202103	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
 2051	1271000202107	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
 2051	1281000202109	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
-2051	1681000202107	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
-2051	1681000202107	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
 2051	1681000202107	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
 2051	1761000202108	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
 2051	1771000202104	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
 2051	1971000202101	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
 2051	1981000202104	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
-2051	1981000202104	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
-2051	1991000202102	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
-2051	1991000202102	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
-2051	1991000202102	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
-2051	1991000202102	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
-2051	1991000202102	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
-2051	1991000202102	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
-2051	1991000202102	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
-2051	1991000202102	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
-2051	1991000202102	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
-2051	1991000202102	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
 2051	1991000202102	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
 2051	2001000202104	HelseNorge.no plukklister	Plukklister for sykdom, symptomer/plager, behandlinger osv
 2052	1000391000202108	Referansesett for Helsedirektoratet	Testprosjekt for Helsedirektoratets antibiotikaretningslinje
 2052	1081000202100	Referansesett for Helsedirektoratet	Testprosjekt for Helsedirektoratets antibiotikaretningslinje
-2052	1081000202100	Referansesett for Helsedirektoratet	Testprosjekt for Helsedirektoratets antibiotikaretningslinje
 2052	12711000202103	Referansesett for Helsedirektoratet	Testprosjekt for Helsedirektoratets antibiotikaretningslinje
 2052	12881000202101	Referansesett for Helsedirektoratet	Testprosjekt for Helsedirektoratets antibiotikaretningslinje
-2052	12881000202101	Referansesett for Helsedirektoratet	Testprosjekt for Helsedirektoratets antibiotikaretningslinje
-2052	12881000202101	Referansesett for Helsedirektoratet	Testprosjekt for Helsedirektoratets antibiotikaretningslinje
 2052	1291000202106	Referansesett for Helsedirektoratet	Testprosjekt for Helsedirektoratets antibiotikaretningslinje
-2052	1291000202106	Referansesett for Helsedirektoratet	Testprosjekt for Helsedirektoratets antibiotikaretningslinje
-2052	1311000202107	Referansesett for Helsedirektoratet	Testprosjekt for Helsedirektoratets antibiotikaretningslinje
-2052	1311000202107	Referansesett for Helsedirektoratet	Testprosjekt for Helsedirektoratets antibiotikaretningslinje
-2052	1311000202107	Referansesett for Helsedirektoratet	Testprosjekt for Helsedirektoratets antibiotikaretningslinje
-2052	1311000202107	Referansesett for Helsedirektoratet	Testprosjekt for Helsedirektoratets antibiotikaretningslinje
-2052	1311000202107	Referansesett for Helsedirektoratet	Testprosjekt for Helsedirektoratets antibiotikaretningslinje
 2052	1311000202107	Referansesett for Helsedirektoratet	Testprosjekt for Helsedirektoratets antibiotikaretningslinje
 2052	2081000202106	Referansesett for Helsedirektoratet	Testprosjekt for Helsedirektoratets antibiotikaretningslinje
 2052	23911000202104	Referansesett for Helsedirektoratet	Testprosjekt for Helsedirektoratets antibiotikaretningslinje
-2052	23911000202104	Referansesett for Helsedirektoratet	Testprosjekt for Helsedirektoratets antibiotikaretningslinje
 2052	23921000202107	Referansesett for Helsedirektoratet	Testprosjekt for Helsedirektoratets antibiotikaretningslinje
-2052	23921000202107	Referansesett for Helsedirektoratet	Testprosjekt for Helsedirektoratets antibiotikaretningslinje
-2052	23921000202107	Referansesett for Helsedirektoratet	Testprosjekt for Helsedirektoratets antibiotikaretningslinje
-2052	23961000202102	Referansesett for Helsedirektoratet	Testprosjekt for Helsedirektoratets antibiotikaretningslinje
 2052	23961000202102	Referansesett for Helsedirektoratet	Testprosjekt for Helsedirektoratets antibiotikaretningslinje
 2052	5751000202107	Referansesett for Helsedirektoratet	Testprosjekt for Helsedirektoratets antibiotikaretningslinje
 2053	103491000052103	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	103491000052103	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	103491000052103	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	103491000052103	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	113471000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	113471000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	113471000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	113471000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	46051000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	46051000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	46051000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	46051000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	46051000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	46051000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	46051000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	46051000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53351000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53351000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53351000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53351000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53351000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53351000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53351000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	53351000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	53361000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53361000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53361000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53361000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53361000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53361000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53361000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53361000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53371000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53371000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53371000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53371000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53371000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53371000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53371000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	53371000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	53381000052108	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53381000052108	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53381000052108	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53381000052108	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53381000052108	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53381000052108	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53381000052108	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53381000052108	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53611000052108	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53611000052108	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53611000052108	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53611000052108	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53611000052108	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53611000052108	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	53611000052108	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	53611000052108	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	56421000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	56421000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	56421000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	56421000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	56421000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	56421000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	56421000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	56421000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	56431000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	56431000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	56431000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	56431000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	56431000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	56431000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	56431000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	56431000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	58181000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	58181000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	58181000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	58181000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	58181000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	58181000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	58181000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	58181000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59761000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59761000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59761000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59761000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59761000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59761000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59761000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	59761000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	59771000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59771000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59771000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59771000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59771000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59771000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59771000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59771000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59771000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59781000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59781000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59781000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59781000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59781000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59781000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59781000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	59781000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	59811000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59811000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59811000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59811000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59811000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59811000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59811000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59811000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59821000052101	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59821000052101	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59821000052101	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59821000052101	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59821000052101	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59821000052101	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59821000052101	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	59821000052101	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	59831000052104	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59831000052104	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59831000052104	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59831000052104	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59831000052104	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59831000052104	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59831000052104	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59831000052104	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59841000052105	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59841000052105	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59841000052105	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59841000052105	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59841000052105	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59841000052105	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59841000052105	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	59841000052105	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	59851000052108	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59851000052108	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59851000052108	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59851000052108	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59851000052108	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59851000052108	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59851000052108	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59851000052108	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59861000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59861000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59861000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59861000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59861000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59861000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59861000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	59861000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	59871000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59871000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59871000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59871000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59871000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59871000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59871000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59871000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	59881000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59881000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59881000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59881000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59881000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59881000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59881000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59881000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59901000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59901000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59901000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	59901000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	59901000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	60001000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60001000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60001000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60001000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60041000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60041000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60041000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60041000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60041000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60041000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60041000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	60041000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	60381000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60381000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60381000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60381000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60381000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60381000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60381000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60381000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60391000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60391000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60391000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60391000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60391000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60391000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60391000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	60391000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	60401000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60401000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60401000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60401000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60401000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60401000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60401000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60401000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	60411000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60411000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60411000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60411000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60411000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60411000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60411000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60411000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60421000052103	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60421000052103	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60421000052103	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60421000052103	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60421000052103	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60421000052103	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60421000052103	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	60421000052103	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	60661000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60661000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60661000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60661000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60661000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60661000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60661000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60691000052103	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60691000052103	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60691000052103	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60691000052103	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60691000052103	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60691000052103	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	60691000052103	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	60691000052103	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	62151000052104	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62151000052104	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62151000052104	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62151000052104	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62151000052104	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62151000052104	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62151000052104	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62151000052104	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62161000052101	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62161000052101	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62161000052101	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62161000052101	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62161000052101	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62161000052101	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62161000052101	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	62161000052101	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	62171000052105	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62171000052105	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62171000052105	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62171000052105	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62171000052105	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62171000052105	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62171000052105	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62171000052105	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62181000052107	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62181000052107	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62181000052107	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62181000052107	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62181000052107	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62181000052107	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62181000052107	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	62181000052107	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	62191000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62191000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62191000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62191000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62191000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62191000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62191000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62191000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	62201000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62201000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62201000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62201000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62201000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62201000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62201000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	62201000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	63421000052107	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	63421000052107	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	63421000052107	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	63421000052107	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	63421000052107	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	63421000052107	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	63421000052107	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	63421000052107	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	64511000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	64511000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	64511000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	64511000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	64511000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	64511000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	64511000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	64641000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	64641000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	64641000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	64641000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	64641000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	64641000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	64641000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	66831000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	66831000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	66831000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	66831000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	66831000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	66831000052100	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	67031000052107	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	67031000052107	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	67031000052107	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	67031000052107	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	67031000052107	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	67031000052107	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	67051000052103	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	67051000052103	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	67051000052103	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	67051000052103	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	67051000052103	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	67051000052103	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	67071000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	67071000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	67071000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	67071000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	67071000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	67071000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	67081000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	67081000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	67081000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	67081000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	67081000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	67081000052106	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	68581000052104	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	68581000052104	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	68581000052104	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	68581000052104	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	68581000052104	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	68581000052104	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	68591000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	68591000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	68591000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	68591000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	68591000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	68591000052102	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	68661000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	68661000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	68661000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	68661000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	68661000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	68661000052109	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
 2053	73171000052105	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	73171000052105	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	73171000052105	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	73171000052105	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2053	73171000052105	Sweden NRC Project	This project is linked directly to the MS Authoring platform and therefore contains unpublished content in the current authoring cycle.
-2101	500041000057108	Inera National Refset Project	New project using Snowowl
-2101	500041000057108	Inera National Refset Project	New project using Snowowl
-2101	500041000057108	Inera National Refset Project	New project using Snowowl
-2101	500041000057108	Inera National Refset Project	New project using Snowowl
-2101	500041000057108	Inera National Refset Project	New project using Snowowl
-2101	500041000057108	Inera National Refset Project	New project using Snowowl
-2101	500041000057108	Inera National Refset Project	New project using Snowowl
 2101	500041000057108	Inera National Refset Project	New project using Snowowl
 2101	500051000057105	Inera National Refset Project	New project using Snowowl
-2101	500051000057105	Inera National Refset Project	New project using Snowowl
-2101	500051000057105	Inera National Refset Project	New project using Snowowl
-2101	500051000057105	Inera National Refset Project	New project using Snowowl
-2101	500051000057105	Inera National Refset Project	New project using Snowowl
-2101	500051000057105	Inera National Refset Project	New project using Snowowl
-2101	500051000057105	Inera National Refset Project	New project using Snowowl
-2101	500051000057105	Inera National Refset Project	New project using Snowowl
-2101	500061000057107	Inera National Refset Project	New project using Snowowl
-2101	500061000057107	Inera National Refset Project	New project using Snowowl
-2101	500061000057107	Inera National Refset Project	New project using Snowowl
-2101	500061000057107	Inera National Refset Project	New project using Snowowl
-2101	500061000057107	Inera National Refset Project	New project using Snowowl
-2101	500061000057107	Inera National Refset Project	New project using Snowowl
-2101	500061000057107	Inera National Refset Project	New project using Snowowl
 2101	500061000057107	Inera National Refset Project	New project using Snowowl
 2101	500071000057102	Inera National Refset Project	New project using Snowowl
-2101	500071000057102	Inera National Refset Project	New project using Snowowl
-2101	500071000057102	Inera National Refset Project	New project using Snowowl
-2101	500071000057102	Inera National Refset Project	New project using Snowowl
-2101	500071000057102	Inera National Refset Project	New project using Snowowl
-2101	500071000057102	Inera National Refset Project	New project using Snowowl
-2101	500071000057102	Inera National Refset Project	New project using Snowowl
-2101	500071000057102	Inera National Refset Project	New project using Snowowl
-2101	500081000057104	Inera National Refset Project	New project using Snowowl
-2101	500081000057104	Inera National Refset Project	New project using Snowowl
-2101	500081000057104	Inera National Refset Project	New project using Snowowl
-2101	500081000057104	Inera National Refset Project	New project using Snowowl
-2101	500081000057104	Inera National Refset Project	New project using Snowowl
-2101	500081000057104	Inera National Refset Project	New project using Snowowl
-2101	500081000057104	Inera National Refset Project	New project using Snowowl
 2101	500081000057104	Inera National Refset Project	New project using Snowowl
 2101	500091000057101	Inera National Refset Project	New project using Snowowl
-2101	500091000057101	Inera National Refset Project	New project using Snowowl
-2101	500091000057101	Inera National Refset Project	New project using Snowowl
-2101	500091000057101	Inera National Refset Project	New project using Snowowl
-2101	500091000057101	Inera National Refset Project	New project using Snowowl
-2101	500091000057101	Inera National Refset Project	New project using Snowowl
-2101	500091000057101	Inera National Refset Project	New project using Snowowl
-2101	500091000057101	Inera National Refset Project	New project using Snowowl
-2101	500101000057105	Inera National Refset Project	New project using Snowowl
-2101	500101000057105	Inera National Refset Project	New project using Snowowl
-2101	500101000057105	Inera National Refset Project	New project using Snowowl
-2101	500101000057105	Inera National Refset Project	New project using Snowowl
-2101	500101000057105	Inera National Refset Project	New project using Snowowl
-2101	500101000057105	Inera National Refset Project	New project using Snowowl
-2101	500101000057105	Inera National Refset Project	New project using Snowowl
 2101	500101000057105	Inera National Refset Project	New project using Snowowl
 2101	500111000057108	Inera National Refset Project	New project using Snowowl
-2101	500111000057108	Inera National Refset Project	New project using Snowowl
-2101	500111000057108	Inera National Refset Project	New project using Snowowl
-2101	500111000057108	Inera National Refset Project	New project using Snowowl
-2101	500111000057108	Inera National Refset Project	New project using Snowowl
-2101	500111000057108	Inera National Refset Project	New project using Snowowl
-2101	500111000057108	Inera National Refset Project	New project using Snowowl
-2101	500111000057108	Inera National Refset Project	New project using Snowowl
 2101	500121000057102	Inera National Refset Project	New project using Snowowl
-2101	500121000057102	Inera National Refset Project	New project using Snowowl
-2101	500121000057102	Inera National Refset Project	New project using Snowowl
-2101	500121000057102	Inera National Refset Project	New project using Snowowl
-2101	500121000057102	Inera National Refset Project	New project using Snowowl
-2101	500121000057102	Inera National Refset Project	New project using Snowowl
-2101	500121000057102	Inera National Refset Project	New project using Snowowl
-2101	500121000057102	Inera National Refset Project	New project using Snowowl
-2101	500201000057102	Inera National Refset Project	New project using Snowowl
-2101	500201000057102	Inera National Refset Project	New project using Snowowl
-2101	500201000057102	Inera National Refset Project	New project using Snowowl
-2101	500201000057102	Inera National Refset Project	New project using Snowowl
-2101	500201000057102	Inera National Refset Project	New project using Snowowl
-2101	500201000057102	Inera National Refset Project	New project using Snowowl
-2101	500201000057102	Inera National Refset Project	New project using Snowowl
 2101	500201000057102	Inera National Refset Project	New project using Snowowl
 2101	500221000057105	Inera National Refset Project	New project using Snowowl
-2101	500221000057105	Inera National Refset Project	New project using Snowowl
-2101	500221000057105	Inera National Refset Project	New project using Snowowl
-2101	500221000057105	Inera National Refset Project	New project using Snowowl
-2101	63181000052104	Inera National Refset Project	New project using Snowowl
-2101	63181000052104	Inera National Refset Project	New project using Snowowl
-2101	63181000052104	Inera National Refset Project	New project using Snowowl
-2101	63181000052104	Inera National Refset Project	New project using Snowowl
-2101	63181000052104	Inera National Refset Project	New project using Snowowl
 2101	63181000052104	Inera National Refset Project	New project using Snowowl
 2153	101000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	101000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	101000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	101000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	101000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	101000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	101000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	121000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	121000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	121000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	121000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	121000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	121000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	121521000210105	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	121521000210105	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	121521000210105	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	121531000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	121531000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	121531000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	131000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	131000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	131000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	131000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	131000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	131000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	131000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	141000210106	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	141000210106	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	141000210106	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	141000210106	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	141000210106	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	141000210106	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	141000210106	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	181000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	181000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	181000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	181000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	181000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	181000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	181000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	191000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	191000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	191000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	191000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	191000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	191000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	192071000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	192071000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	192081000210101	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	192081000210101	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	192091000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	192091000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	241000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	241000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	241000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	241000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	241000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	241000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	251000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	251000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	251000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	251000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	251000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	251000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	251621000210109	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	251631000210106	New Zealand Refset Project	New Project linked to MS Authoring Platform
@@ -961,11 +245,6 @@ rtt_project_id	refset_sctid	project_name	project_desc
 2153	253861000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	253871000210105	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	261000210101	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	261000210101	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	261000210101	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	261000210101	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	261000210101	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	261000210101	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	263301000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	263311000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	263321000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
@@ -976,355 +255,104 @@ rtt_project_id	refset_sctid	project_name	project_desc
 2153	263511000210105	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	263581000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	321000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	321000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	321000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	321000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	321000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	321000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	321000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	351000210106	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	351000210106	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	351000210106	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	351000210106	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	351000210106	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	351000210106	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	351000210106	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	391000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	391000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	391000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	391000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	391000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	391000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	391000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	421000210109	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	421000210109	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	421000210109	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	421000210109	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	421000210109	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	421000210109	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	441000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	441000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	441000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	441000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	441000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	441000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	451000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	451000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	451000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	451000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	451000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	451000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	461000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	461000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	461000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	461000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	461000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	461000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	461000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	471000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	471000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	471000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	471000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	471000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	471000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	481000210105	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	481000210105	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	481000210105	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	481000210105	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	481000210105	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	481000210105	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	501000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	501000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	501000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	501000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	501000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	501000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	501000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	50931000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	50931000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	50931000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	50931000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	50931000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	50931000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	50941000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	50941000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	50941000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	50941000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	50941000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	50941000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	51000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	51000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	51000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	61000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	61231000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61231000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61231000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61231000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61231000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61241000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61241000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61241000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61241000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	61241000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	61251000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61251000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61251000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61251000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61251000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61261000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61261000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61261000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61261000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	61261000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	61271000210105	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61271000210105	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61271000210105	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61271000210105	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61271000210105	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61281000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61281000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61281000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61281000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	61281000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	61291000210109	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61291000210109	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61291000210109	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61291000210109	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	61291000210109	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	71000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	71000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	71000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	71000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	71000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	71000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	71000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	72501000210101	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72501000210101	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72501000210101	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72501000210101	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72511000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72511000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72511000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	72511000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	72521000210109	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72521000210109	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72521000210109	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72521000210109	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72531000210106	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72531000210106	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72531000210106	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	72531000210106	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	72541000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72541000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72541000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72541000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72551000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72551000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72551000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	72551000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	72561000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72561000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72561000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72561000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72571000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72571000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72571000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	72571000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	72581000210105	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72581000210105	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72581000210105	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72581000210105	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72591000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72591000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72591000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	72591000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	72601000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72601000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72601000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72601000210102	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72611000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72611000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72611000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	72611000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	72621000210105	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72621000210105	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72621000210105	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72621000210105	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72631000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72631000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72631000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	72631000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	72641000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72641000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72641000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72641000210104	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72651000210101	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72651000210101	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72651000210101	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	72651000210101	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	72661000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72661000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72661000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72661000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72671000210109	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72671000210109	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72671000210109	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	72671000210109	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	72681000210106	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72681000210106	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72681000210106	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72681000210106	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72691000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72691000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72691000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	72691000210108	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	72721000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72721000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72721000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72721000210100	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72731000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72731000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72731000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	72731000210103	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	72741000210106	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72741000210106	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72741000210106	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	72741000210106	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	91000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	91000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	91000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	91000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
-2153	91000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2153	91000210107	New Zealand Refset Project	New Project linked to MS Authoring Platform
 2453	1281000245109	Training project	To be deleted
 2705	40811000172108	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	40811000172108	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	40811000172108	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	50831000172102	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
 2705	50831000172102	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
 2705	50841000172109	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	50841000172109	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	50851000172106	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
 2705	50851000172106	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
 2705	50861000172108	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	50861000172108	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	541000172109	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	541000172109	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	541000172109	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	541000172109	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	541000172109	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	541000172109	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
 2705	541000172109	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
 2705	551000172106	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	551000172106	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	551000172106	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	551000172106	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	551000172106	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	551000172106	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	551000172106	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
 2705	561000172108	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	561000172108	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	561000172108	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	561000172108	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	561000172108	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	561000172108	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	561000172108	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	721000172106	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	721000172106	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	721000172106	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
-2705	721000172106	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
 2705	721000172106	Belgian Extension Project	Project containing all the refsets for the official Belgian Extension
 2957	683861000189108	Patient Instructions Extension	Patient Friendly Terms Extension
-2957	683861000189108	Patient Instructions Extension	Patient Friendly Terms Extension
-301	1001000189107	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1001000189107	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1011000189109	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1011000189109	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1021000189101	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1021000189101	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1031000189104	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1031000189104	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1041000189105	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1041000189105	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1051000189108	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1051000189108	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1061000189106	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1061000189106	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1071000189102	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1071000189102	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1081000189100	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1081000189100	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1091000189103	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1091000189103	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1101000189108	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1101000189108	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1111000189105	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1111000189105	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1131000189100	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1131000189100	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1141000189106	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1141000189106	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1151000189109	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1151000189109	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1161000189107	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1161000189107	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1171000189103	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1171000189103	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1181000189101	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1181000189101	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1191000189104	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1191000189104	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1201000189102	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1201000189102	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1211000189100	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1211000189100	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1221000189108	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1221000189108	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1231000189105	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1231000189105	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1241000189104	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1241000189104	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1251000189101	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1251000189101	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1261000189103	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1261000189103	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1271000189107	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1271000189107	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1281000189109	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1281000189109	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1291000189106	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1291000189106	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 301	1301000189105	NRCeS Project	Project for NRCeS, C-DAC Pune in India
-301	1301000189105	NRCeS Project	Project for NRCeS, C-DAC Pune in India
 303	101000210108	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
-303	101000210108	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
-303	121000210100	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
 303	121000210100	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
 303	131000210103	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
-303	141000210106	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
 303	141000210106	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
 303	181000210104	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
 303	191000210102	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
 303	241000210102	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
-303	241000210102	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
-303	251000210104	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
 303	251000210104	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
 303	261000210101	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
-303	261000210101	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
-303	321000210102	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
-303	321000210102	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
 303	321000210102	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
 303	351000210106	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
-303	351000210106	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
 303	391000210104	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
-303	391000210104	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
-303	421000210109	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
 303	421000210109	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
 303	441000210103	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
 303	451000210100	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
@@ -1334,248 +362,190 @@ rtt_project_id	refset_sctid	project_name	project_desc
 303	491000210107	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
 303	501000210102	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
 303	51000210100	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
-303	51000210100	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
-303	51000210100	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
 303	61000210102	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
-303	61000210102	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
-303	61000210102	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
-303	71000210108	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
-303	71000210108	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
 303	71000210108	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
 303	81000210105	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
 303	91000210107	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
-303	91000210107	NZ Project	(ARCHIVED) Replaced by New Zealand refset Project which is linked to MS AP
-3153	997321000189101	Ayurveda SCT Project	Translation project to grossly cover cover Anatomy, findings, disorders, etc in Ayurveda
-3153	997321000189101	Ayurveda SCT Project	Translation project to grossly cover cover Anatomy, findings, disorders, etc in Ayurveda
-3153	997321000189101	Ayurveda SCT Project	Translation project to grossly cover cover Anatomy, findings, disorders, etc in Ayurveda
-3153	997321000189101	Ayurveda SCT Project	Translation project to grossly cover cover Anatomy, findings, disorders, etc in Ayurveda
-3153	997321000189101	Ayurveda SCT Project	Translation project to grossly cover cover Anatomy, findings, disorders, etc in Ayurveda
-3153	997321000189101	Ayurveda SCT Project	Translation project to grossly cover cover Anatomy, findings, disorders, etc in Ayurveda
-3153	997321000189101	Ayurveda SCT Project	Translation project to grossly cover cover Anatomy, findings, disorders, etc in Ayurveda
-3153	997321000189101	Ayurveda SCT Project	Translation project to grossly cover cover Anatomy, findings, disorders, etc in Ayurveda
 3153	997321000189101	Ayurveda SCT Project	Translation project to grossly cover cover Anatomy, findings, disorders, etc in Ayurveda
 3203	672381000189106	SNOMED CT Value Set	SNOMED CT value set covering MDDS patient demographics code directories
 3558	125061000220102	Irish Refset Project	Irish Refset Project
-3558	125061000220102	Irish Refset Project	Irish Refset Project
-3558	125321000220105	Irish Refset Project	Irish Refset Project
 3558	125321000220105	Irish Refset Project	Irish Refset Project
 3558	1531000220102	Irish Refset Project	Irish Refset Project
-3558	1531000220102	Irish Refset Project	Irish Refset Project
-3558	1531000220102	Irish Refset Project	Irish Refset Project
-3558	1531000220102	Irish Refset Project	Irish Refset Project
-3558	1531000220102	Irish Refset Project	Irish Refset Project
 3558	1541000220106	Irish Refset Project	Irish Refset Project
-3558	1541000220106	Irish Refset Project	Irish Refset Project
-3558	1541000220106	Irish Refset Project	Irish Refset Project
-3558	1541000220106	Irish Refset Project	Irish Refset Project
-3558	1541000220106	Irish Refset Project	Irish Refset Project
-3558	1551000220108	Irish Refset Project	Irish Refset Project
-3558	1551000220108	Irish Refset Project	Irish Refset Project
-3558	1551000220108	Irish Refset Project	Irish Refset Project
-3558	1551000220108	Irish Refset Project	Irish Refset Project
 3558	1551000220108	Irish Refset Project	Irish Refset Project
 3558	155351000220103	Irish Refset Project	Irish Refset Project
 3558	1561000220105	Irish Refset Project	Irish Refset Project
-3558	1561000220105	Irish Refset Project	Irish Refset Project
-3558	1561000220105	Irish Refset Project	Irish Refset Project
-3558	1561000220105	Irish Refset Project	Irish Refset Project
-3558	1561000220105	Irish Refset Project	Irish Refset Project
-3558	41661000220104	Irish Refset Project	Irish Refset Project
 3558	41661000220104	Irish Refset Project	Irish Refset Project
 3558	61671000220102	Irish Refset Project	Irish Refset Project
-3558	61671000220102	Irish Refset Project	Irish Refset Project
-3558	61671000220102	Irish Refset Project	Irish Refset Project
-3558	61681000220104	Irish Refset Project	Irish Refset Project
-3558	61681000220104	Irish Refset Project	Irish Refset Project
 3558	61681000220104	Irish Refset Project	Irish Refset Project
 3558	73041000220108	Irish Refset Project	Irish Refset Project
-3558	73041000220108	Irish Refset Project	Irish Refset Project
-3558	73041000220108	Irish Refset Project	Irish Refset Project
-3558	74921000220101	Irish Refset Project	Irish Refset Project
-3558	74921000220101	Irish Refset Project	Irish Refset Project
 3558	74921000220101	Irish Refset Project	Irish Refset Project
 3558	74931000220103	Irish Refset Project	Irish Refset Project
-3558	74931000220103	Irish Refset Project	Irish Refset Project
-3558	74931000220103	Irish Refset Project	Irish Refset Project
-3558	811000220108	Irish Refset Project	Irish Refset Project
-3558	811000220108	Irish Refset Project	Irish Refset Project
-3558	811000220108	Irish Refset Project	Irish Refset Project
-3558	811000220108	Irish Refset Project	Irish Refset Project
-3558	811000220108	Irish Refset Project	Irish Refset Project
 3558	811000220108	Irish Refset Project	Irish Refset Project
 3558	821000220101	Irish Refset Project	Irish Refset Project
-3558	821000220101	Irish Refset Project	Irish Refset Project
-3558	821000220101	Irish Refset Project	Irish Refset Project
-3558	821000220101	Irish Refset Project	Irish Refset Project
-3558	821000220101	Irish Refset Project	Irish Refset Project
-3558	821000220101	Irish Refset Project	Irish Refset Project
 3558	831000220103	Irish Refset Project	Irish Refset Project
-3558	831000220103	Irish Refset Project	Irish Refset Project
-3558	831000220103	Irish Refset Project	Irish Refset Project
-3558	831000220103	Irish Refset Project	Irish Refset Project
-3558	831000220103	Irish Refset Project	Irish Refset Project
-3558	831000220103	Irish Refset Project	Irish Refset Project
-3558	841000220107	Irish Refset Project	Irish Refset Project
-3558	841000220107	Irish Refset Project	Irish Refset Project
-3558	841000220107	Irish Refset Project	Irish Refset Project
-3558	841000220107	Irish Refset Project	Irish Refset Project
-3558	841000220107	Irish Refset Project	Irish Refset Project
 3558	841000220107	Irish Refset Project	Irish Refset Project
 3558	84731000220109	Irish Refset Project	Irish Refset Project
-3558	84731000220109	Irish Refset Project	Irish Refset Project
-3558	84731000220109	Irish Refset Project	Irish Refset Project
 3954	997341000189105	Unani SCT Project	Translation project covering gross body organs, findings and disorders
-3954	997341000189105	Unani SCT Project	Translation project covering gross body organs, findings and disorders
-3954	997341000189105	Unani SCT Project	Translation project covering gross body organs, findings and disorders
-3954	997341000189105	Unani SCT Project	Translation project covering gross body organs, findings and disorders
-3954	997341000189105	Unani SCT Project	Translation project covering gross body organs, findings and disorders
-3954	997341000189105	Unani SCT Project	Translation project covering gross body organs, findings and disorders
-3954	997341000189105	Unani SCT Project	Translation project covering gross body organs, findings and disorders
-3954	997341000189105	Unani SCT Project	Translation project covering gross body organs, findings and disorders
-3954	997341000189105	Unani SCT Project	Translation project covering gross body organs, findings and disorders
-3955	997331000189104	Siddha SCT Project	It is an translation project covering gross body structures, required qualifiers, substances, etc.
-3955	997331000189104	Siddha SCT Project	It is an translation project covering gross body structures, required qualifiers, substances, etc.
-3955	997331000189104	Siddha SCT Project	It is an translation project covering gross body structures, required qualifiers, substances, etc.
-3955	997331000189104	Siddha SCT Project	It is an translation project covering gross body structures, required qualifiers, substances, etc.
-3955	997331000189104	Siddha SCT Project	It is an translation project covering gross body structures, required qualifiers, substances, etc.
-3955	997331000189104	Siddha SCT Project	It is an translation project covering gross body structures, required qualifiers, substances, etc.
-3955	997331000189104	Siddha SCT Project	It is an translation project covering gross body structures, required qualifiers, substances, etc.
-3955	997331000189104	Siddha SCT Project	It is an translation project covering gross body structures, required qualifiers, substances, etc.
 3955	997331000189104	Siddha SCT Project	It is an translation project covering gross body structures, required qualifiers, substances, etc.
 4105	1000001000202102	Test - språk fastlege	Test av kontekstspesifikt språkrefset for fastleger
 4105	47351000202107	Test - språk fastlege	Test av kontekstspesifikt språkrefset for fastleger
 52	456847345	WCI test BROWSER project	test BROWSER project
-52	456847345	WCI test BROWSER project	test BROWSER project
 5353	1234567789	IST Testing	A project for testing by the Implementation Support Team
 6703	110851000146103	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	110851000146103	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	110851000146103	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	110861000146100	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	110861000146100	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	110861000146100	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	110871000146106	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	110871000146106	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	110871000146106	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	110881000146108	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	110881000146108	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	110881000146108	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	110891000146105	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	110891000146105	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	110891000146105	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	110901000146106	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	110901000146106	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	110901000146106	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	110911000146108	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	110911000146108	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	110911000146108	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	11721000146100	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	11721000146100	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	11721000146100	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	117701000146105	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	117701000146105	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	117701000146105	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	117711000146107	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	117711000146107	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	117711000146107	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	117721000146102	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	117721000146102	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	117721000146102	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	117731000146100	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	117731000146100	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	117731000146100	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	140301000146101	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	140301000146101	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	140301000146101	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	140741000146104	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	140741000146104	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	140741000146104	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	140961000146101	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	140961000146101	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	140961000146101	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	140971000146107	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	140971000146107	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	140971000146107	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	140981000146109	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	140981000146109	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	140981000146109	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	140991000146106	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	140991000146106	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	140991000146106	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	145871000146106	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	145871000146106	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	145871000146106	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	146481000146103	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	146481000146103	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	146481000146103	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	210041000146107	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	210041000146107	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	210051000146105	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	210051000146105	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	231000146105	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	231000146105	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	231000146105	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	2551000146109	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	2551000146109	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	2551000146109	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	2581000146104	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	2581000146104	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	2581000146104	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	260131000146101	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	260181000146102	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	41000146103	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	41000146103	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	41000146103	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	42931000146101	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	46231000146109	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	46231000146109	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	46231000146109	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	51000146100	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	51000146100	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	51000146100	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	52801000146101	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	52801000146101	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	52801000146101	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	55451000146109	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	55451000146109	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	55451000146109	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	8721000146106	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	8721000146106	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	8721000146106	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	9631000146108	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	9631000146108	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	97801000146108	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	97801000146108	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	97801000146108	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	98011000146102	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	98011000146102	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	98011000146102	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	98021000146107	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	98021000146107	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	98021000146107	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	98031000146109	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	98031000146109	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	98031000146109	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	98041000146101	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	98041000146101	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	98041000146101	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	98051000146103	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	98051000146103	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	98051000146103	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	98061000146100	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	98061000146100	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	98061000146100	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	99051000146107	Netherlands Refset Project	Main Refset Project for Dutch NRC
-6703	99051000146107	Netherlands Refset Project	Main Refset Project for Dutch NRC
 6703	99051000146107	Netherlands Refset Project	Main Refset Project for Dutch NRC
 801	2.16.840.1.113883.2.20.3.210	Canada Infoway Project	Canada Infoway Project
 801	23671000087102	Canada Infoway Project	Canada Infoway Project
 802	723264001	SNOMED International WIP Project	Uses terminology server and MAIN line, not to be used for production release of refsets
-802	723264001	SNOMED International WIP Project	Uses terminology server and MAIN line, not to be used for production release of refsets
-802	723264001	SNOMED International WIP Project	Uses terminology server and MAIN line, not to be used for production release of refsets
-802	723264001	SNOMED International WIP Project	Uses terminology server and MAIN line, not to be used for production release of refsets
-802	723264001	SNOMED International WIP Project	Uses terminology server and MAIN line, not to be used for production release of refsets
-802	723264001	SNOMED International WIP Project	Uses terminology server and MAIN line, not to be used for production release of refsets
-802	723264001	SNOMED International WIP Project	Uses terminology server and MAIN line, not to be used for production release of refsets
-802	723264001	SNOMED International WIP Project	Uses terminology server and MAIN line, not to be used for production release of refsets
-802	723264001	SNOMED International WIP Project	Uses terminology server and MAIN line, not to be used for production release of refsets
-802	723264001	SNOMED International WIP Project	Uses terminology server and MAIN line, not to be used for production release of refsets
+99999	1021000036104	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1050711000168101	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1050951000168102	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	105891000036102	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1061861000168107	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1072351000168102	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	11000036103	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1141581000168103	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1156291000168106	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1164231000168107	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1165891000168108	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1183941000168107	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1184281000168105	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1184831000168105	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1200161000168100	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1203181000168101	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1234411000168107	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1244621000168103	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1332931000168105	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1332941000168101	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1332951000168104	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1332961000168102	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	142321000036106	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	142341000036103	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1453441000168107	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1479981000168107	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1488531000168102	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1489271000168107	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1495581000168106	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	15071000036100	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1514151000168100	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1525861000168104	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1545561000168103	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1550501000168106	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1563251000168109	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	1568041000168105	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	171881000036108	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	171991000036103	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	2021000036107	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	21000036105	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	231000036106	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	3021000036100	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32566021000036108	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32567021000036105	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32568021000036109	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32569021000036103	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570061000036105	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570071000036102	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570081000036100	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570091000036103	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570101000036107	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570111000036109	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570121000036102	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570131000036100	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570141000036105	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570151000036108	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570161000036106	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570171000036103	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570181000036101	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570191000036104	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570201000036102	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570211000036100	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570311000036106	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570321000036104	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570331000036102	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570341000036107	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570351000036105	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570361000036108	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570371000036100	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570381000036103	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570391000036101	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570481000036109	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570501000036104	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570511000036102	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570521000036109	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570581000036105	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570591000036107	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570601000036100	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570611000036103	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570621000036105	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570631000036107	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570641000036102	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570711000036105	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	32570811000036104	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	4021000036102	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	5021000036101	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	6021000036108	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	669181000168104	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	694461000168100	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	71000036109	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	722081000168108	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	722091000168106	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	722101000168101	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	725411000168101	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	745281000168105	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	745301000168109	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	745311000168107	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	773111000168109	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	775371000168103	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	810311000168105	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	852631000168103	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	929360021000036102	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	929360031000036100	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	929360041000036105	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	929360051000036108	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	929360061000036106	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	929360071000036103	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	929360081000036101	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	933437921000036101	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	955601000168105	Australia NRC Reference Sets	Australia Reference Sets Project
+99999	955611000168108	Australia NRC Reference Sets	Australia Reference Sets Project

@@ -24,7 +24,6 @@ import org.hibernate.search.engine.backend.types.Sortable;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
-import org.ihtsdo.refsetservice.terminologyservice.EditionService;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 
@@ -391,43 +390,38 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
      */
     public boolean doesUserHavePermission(final String roleToCheck, final Project project) throws Exception {
 
-        return checkPermission(roleToCheck, project.getEdition(), project.getCrowdProjectId());
-    }
+        final String organizationName = project.getEdition().getOrganizationName();
+        final String editionName = project.getEdition().getShortName();
 
-    /**
-     * Check if the user has the specified role on the organization.
-     *
-     * @param roleToCheck the role to look for
-     * @param organization the organization
-     * @return if the user has the specified role on the refset
-     * @throws Exception the exception
-     */
-    public boolean doesUserHavePermission(final String roleToCheck, final Organization organization) throws Exception {
-
-        final Edition edition = EditionService.getEditionForOrganization(organization.getId());
-
-        return checkPermission(roleToCheck, edition, null);
+        return checkPermission(roleToCheck, organizationName, editionName, project.getCrowdProjectId());
     }
 
     /**
      * Check if the user has the specified role on the organization or project.
      *
      * @param roleToCheck the role to look for
-     * @param edition the edition to check permissions against
+     * @param organizationName the organization name
+     * @param editionName the edition short name to check permissions against
      * @param projectCrowdId the crowd ID of the project to check permissions against or null for org level permission
      * @return if the user has the specified role on the refset
      * @throws Exception the exception
      */
-    public boolean checkPermission(final String roleToCheck, final Edition edition, final String projectCrowdId) throws Exception {
+    public boolean checkPermission(final String roleToCheck, final String organizationName, final String editionName, final String projectCrowdId)
+        throws Exception {
 
         try {
 
-            String editionName = null;
+            String organizationCrowdName = null;
+            String editionShortName = null;
 
-            if (edition == null && projectCrowdId == null) {
-                editionName = "all";
-            } else if (edition != null) {
-                editionName = CrowdGroupNameAlgorithm.getEditionString(edition.getShortName());
+            if (organizationName == null) {
+                organizationCrowdName = "all";
+            } else {
+                organizationCrowdName = CrowdGroupNameAlgorithm.getOrganizationString(organizationName);
+            }
+
+            if (editionName != null) {
+                editionShortName = CrowdGroupNameAlgorithm.getEditionString(editionName);
             }
 
             final String lowerCasedRoleToCheck = roleToCheck.toLowerCase();
@@ -436,26 +430,35 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
 
                 final String lowerCasedRole = role.toLowerCase();
                 final int indexFirstHyphen = lowerCasedRole.indexOf("-");
-                final String editionPart = lowerCasedRole.substring(0, indexFirstHyphen);
-                // LOG.debug("doesUserHavePermission editionName: " + editionName + " ; edition part of role: " + editionPart);
 
-                // first check the edition permissions
-                if (editionPart.equals("all") || editionPart.equals(editionName)) {
+                final String organizationPart = lowerCasedRole.substring(0, indexFirstHyphen);
+                // LOG.debug("doesUserHavePermission organizationName: " + organizationCrowdName + " ; organization part of role: " + organizationPart);
 
-                    final String projectPart = lowerCasedRole.substring(indexFirstHyphen + 1, lowerCasedRole.indexOf("-", indexFirstHyphen + 1));
+                // first check the organization permissions
+                if (organizationPart.equals("all") || organizationPart.equals(organizationCrowdName)) {
+
+                    final int indexSecondHyphen = lowerCasedRole.indexOf("-", indexFirstHyphen + 1);
+                    final String editionPart = lowerCasedRole.substring(indexFirstHyphen + 1, indexSecondHyphen);
+                    final String projectPart = lowerCasedRole.substring(indexSecondHyphen + 1, lowerCasedRole.indexOf("-", indexSecondHyphen + 1));
+                    // LOG.debug("doesUserHavePermission editionName: " + editionShortName + " ; edition part of role: " + editionPart);
                     // LOG.debug("doesUserHavePermission projectName: " + projectName + " ; project part of role: " + projectPart);
 
-                    // then check the project level permissions against 1: all access, 2: org level viewer, 3: project level project name
-                    if (projectPart.equals("all") || (projectCrowdId == null && roleToCheck.equals(ROLE_VIEWER))
-                        || (projectCrowdId != null && projectPart.equals(projectCrowdId))) {
+                    // then check the edition permissions against 1: all access, 2: org level admin, 3: org level viewer, 4: edition level name
+                    if (editionPart.equals("all") || (editionShortName == null && projectPart.equals("all") && roleToCheck.equals(ROLE_ADMIN))
+                        || (editionShortName == null && roleToCheck.equals(ROLE_VIEWER)) || editionPart.equals(editionShortName)) {
 
-                        // LOG.debug("doesUserHavePermission lowerCasedRole: " + lowerCasedRole + " ; lowerCasedRoleToCheck: " + lowerCasedRoleToCheck);
+                        // then check the project level permissions against 1: all access, 2: org level viewer, 3: project level project name
+                        if (projectPart.equals("all") || (projectCrowdId == null && roleToCheck.equals(ROLE_VIEWER))
+                            || (projectCrowdId != null && projectPart.equals(projectCrowdId))) {
 
-                        // last check for the role or if they have any permission at this level they have the VIEWER role
-                        if (lowerCasedRole.endsWith("-all") || lowerCasedRole.endsWith("-" + lowerCasedRoleToCheck) || roleToCheck.equals(ROLE_VIEWER)) {
+                            // LOG.debug("doesUserHavePermission lowerCasedRole: " + lowerCasedRole + " ; lowerCasedRoleToCheck: " + lowerCasedRoleToCheck);
 
-                            // LOG.debug("doesUserHavePermission = true");
-                            return true;
+                            // last check for the role or if they have any permission at this level they have the VIEWER role
+                            if (lowerCasedRole.endsWith("-all") || lowerCasedRole.endsWith("-" + lowerCasedRoleToCheck) || roleToCheck.equals(ROLE_VIEWER)) {
+
+                                // LOG.debug("doesUserHavePermission = true");
+                                return true;
+                            }
                         }
                     }
                 }

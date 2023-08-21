@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
-import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
@@ -196,7 +195,7 @@ public class TeamService extends BaseService {
                             if (teamsResultList != null && teamsResultList.getItems() != null) {
                                 user.getTeams().addAll(teamsResultList.getItems());
                             }
-                            
+
                             team.getMemberList().add(user);
                         }
 
@@ -353,12 +352,17 @@ public class TeamService extends BaseService {
 
             final ResultList<Team> results = service.find(query, pfs, Team.class, null);
             final ResultList<Team> resultsToReturn = new ResultList<>();
-            
+
             final String systemUserList = PropertyUtility.getProperty("refset.service.system.accounts");
             final Set<String> systemUsers =
                 (StringUtils.isNotBlank(systemUserList)) ? new HashSet<>(Arrays.asList(systemUserList.split(","))) : new HashSet<>();
-                
+
             for (final Team team : results.getItems()) {
+
+                final Organization organization = OrganizationService.getOrganization(service, user, team.getOrganizationId(), true);
+                if (organization.isAffiliate() && !organization.getMembers().stream().anyMatch(m -> m.getId().equals(user.getId()))) {
+                    continue;
+                }
 
                 // if only the user's teams should be returned then make sure the user is an
                 // admin or a member of the team
@@ -486,10 +490,19 @@ public class TeamService extends BaseService {
     public static Team addUserToTeam(final TerminologyService service, final User user, final Team team, final User userToAdd) throws Exception {
 
         final Organization organization = team.getOrganization();
-        final Edition edition = EditionService.getEditionForOrganization(organization.getId());
         final Set<User> organizationMembers = organization.getMembers();
+        boolean memberOfOrganization = false;
 
-        if (!organizationMembers.contains(userToAdd)) {
+        for (final User organizationMember : organizationMembers) {
+
+            if (organizationMember.getId().equals(userToAdd.getId())) {
+
+                memberOfOrganization = true;
+                break;
+            }
+        }
+
+        if (!memberOfOrganization) {
 
             final String message = "User with " + userToAdd.getEmail() + " is not a member of organization " + organization.getName() + ".";
             LOG.error(message);
@@ -500,7 +513,8 @@ public class TeamService extends BaseService {
 
             final String message = "User with " + userToAdd.getEmail() + " is already a member of team " + team.getName() + ".";
             LOG.error(message);
-            throw new ResponseStatusException(HttpStatus.CONFLICT, message);
+//            throw new ResponseStatusException(HttpStatus.CONFLICT, message);
+            return team;
         }
 
         team.getMembers().add(userToAdd.getId());
@@ -525,12 +539,15 @@ public class TeamService extends BaseService {
 
                 for (final Project project : projectList.getItems()) {
 
-                    CrowdAPIClient.addGroup(project.getEdition().getShortName(), project.getName(), project.getDescription(), true, false);
+                    final String organizationName = project.getEdition().getOrganizationName();
+                    final String editionName = project.getEdition().getShortName();
+
+                    CrowdAPIClient.addGroup(organizationName, editionName, project.getName(), project.getDescription(), true, false);
 
                     for (final String role : updatedTeam.getRoles()) {
 
-                        final String groupName =
-                            CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                        final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(organizationName, editionName, project.getCrowdProjectId(), role);
+
                         CrowdAPIClient.addMembership(groupName, userToAdd.getUserName());
                     }
                 }
@@ -538,9 +555,9 @@ public class TeamService extends BaseService {
 
             if (team.getType().equalsIgnoreCase(TeamType.ORGANIZATION.getText())) {
 
-                CrowdAPIClient.addGroup(edition.getShortName(), "all", "Organization Administrators", false, true);
+                CrowdAPIClient.addGroup(organization.getName(), "all", "all", "Organization Administrators", false, false);
 
-                final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(edition.getShortName(), "all", "admin");
+                final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(organization.getName(), "all", "all", "admin");
 
                 CrowdAPIClient.addMembership(groupName, userToAdd.getUserName());
 
@@ -662,20 +679,23 @@ public class TeamService extends BaseService {
             if (projectList != null && projectList.getItems() != null) {
                 for (final Project project : projectList.getItems()) {
                     for (final String role : updatedTeam.getRoles()) {
-                        final String groupName =
-                            CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
+
+                        final String organizationName = project.getEdition().getOrganizationName();
+                        final String editionName = project.getEdition().getShortName();
+                        final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(organizationName, editionName, project.getCrowdProjectId(), role);
+
                         CrowdAPIClient.deleteMembership(groupName, userToRemove.getUserName());
                     }
                 }
             }
 
-            final Edition edition = EditionService.getEditionForOrganization(updatedTeam.getOrganization().getId());
-
             if (updatedTeam.getType().equalsIgnoreCase(TeamType.ORGANIZATION.getText())) {
 
-                final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(edition.getShortName(), "all", "admin");
-                CrowdAPIClient.deleteMembership(groupName, userToRemove.getUserName().replace(" ", "%20"));
+                for (final String role : updatedTeam.getRoles()) {
 
+                    final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(updatedTeam.getOrganization().getName(), "all", "all", role);
+                    CrowdAPIClient.deleteMembership(groupName, userToRemove.getUserName().replace(" ", "%20"));
+                }
             }
 
         } else {
@@ -696,12 +716,29 @@ public class TeamService extends BaseService {
      */
     public static Team addRoleToTeam(final User authUser, final String teamId, final String role) throws Exception {
 
+        return addRoleToTeam(authUser, teamId, role, false);
+    }
+
+    /**
+     * Adds the role to team.
+     *
+     * @param authUser the auth user
+     * @param teamId the team id
+     * @param role the role
+     * @param isNew is this a new team
+     * @return the team
+     * @throws Exception the exception
+     */
+    public static Team addRoleToTeam(final User authUser, final String teamId, final String role, final boolean isNew) throws Exception {
+
         try (final TerminologyService service = new TerminologyService()) {
 
             // find team
             final Team team = getTeam(teamId, true);
 
-            checkEditPermissions(authUser, team);
+            if (!isNew) {
+                checkEditPermissions(authUser, team);
+            }
 
             if (StringUtils.isBlank(role) && !UserRole.getAllRoles().contains(UserRole.valueOf(role))) {
 
@@ -724,24 +761,43 @@ public class TeamService extends BaseService {
             service.beginTransaction();
 
             final Team updatedTeam = service.update(team);
+
             service.add(AuditEntryHelper.addRoleToTeamEntry(updatedTeam, role));
             service.commit();
 
             // add user to crowd groups if team is assigned to projects.
             if (crowdUnitTestSkip == null || !"true".equalsIgnoreCase(crowdUnitTestSkip)) {
-                LOG.info("CALLING CROWD API from ProjectService updateMemberships");
+                LOG.info("CALLING CROWD API from TeamService addRoleToTeam");
 
-                final List<Project> projects = getTeamProjects(updatedTeam);
+                if (team.getType().equalsIgnoreCase(TeamType.ORGANIZATION.getText())) {
 
-                if (projects != null) {
-                    for (final Project project : projects) {
+                    final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(team.getOrganization().getName(), "all", "all", role);
 
-                        if (updatedTeam.getMemberList() != null) {
-                            for (final User user : updatedTeam.getMemberList()) {
+                    if (updatedTeam.getMemberList() != null) {
 
-                                final String groupName =
-                                    CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
-                                CrowdAPIClient.addMembership(groupName, user.getUserName());
+                        for (final User user : updatedTeam.getMemberList()) {
+                            CrowdAPIClient.addMembership(groupName, user.getUserName());
+                        }
+                    }
+
+                } else {
+
+                    final List<Project> projects = getTeamProjects(updatedTeam);
+
+                    if (projects != null) {
+                        for (final Project project : projects) {
+
+                            if (updatedTeam.getMemberList() != null) {
+                                for (final User user : updatedTeam.getMemberList()) {
+
+                                    final String organizationName = project.getEdition().getOrganizationName();
+                                    final String editionName = project.getEdition().getShortName();
+                                    final String groupName =
+                                        CrowdGroupNameAlgorithm.buildCrowdGroupName(organizationName, editionName, project.getCrowdProjectId(), role);
+
+                                    CrowdAPIClient.addMembership(groupName, user.getUserName());
+                                }
+
                             }
                         }
                     }
@@ -783,6 +839,13 @@ public class TeamService extends BaseService {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
             }
 
+            if (team.getType().equalsIgnoreCase(TeamType.ORGANIZATION.getText()) && role.equals(User.ROLE_ADMIN)) {
+
+                final String message = "Admin role can not be removed from Organization Admin teams " + teamId + ".";
+                LOG.error(message);
+                throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
+            }
+
             team.getRoles().remove(UserRole.valueOf(role).toString());
             validateTeamData(service, team, false);
 
@@ -796,16 +859,34 @@ public class TeamService extends BaseService {
 
             // remove users from team if team assigned to projects.
             if (crowdUnitTestSkip == null || !"true".equalsIgnoreCase(crowdUnitTestSkip)) {
-                LOG.info("CALLING CROWD API from ProjectService updateMemberships");
+                LOG.info("CALLING CROWD API from TeamService removeRoleFromTeam");
 
-                final List<Project> projects = getTeamProjects(team);
-                if (projects != null) {
-                    for (final Project project : projects) {
-                        if (team != null && team.getMemberList() != null) {
-                            for (final User user : team.getMemberList()) {
-                                final String groupName =
-                                    CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
-                                CrowdAPIClient.deleteMembership(groupName, user.getUserName());
+                if (team.getType().equalsIgnoreCase(TeamType.ORGANIZATION.getText())) {
+
+                    final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(team.getOrganization().getName(), "all", "all", role);
+
+                    if (updatedTeam.getMemberList() != null) {
+
+                        for (final User user : updatedTeam.getMemberList()) {
+                            CrowdAPIClient.deleteMembership(groupName, user.getUserName());
+                        }
+                    }
+
+                } else {
+
+                    final List<Project> projects = getTeamProjects(team);
+                    if (projects != null) {
+                        for (final Project project : projects) {
+                            if (team != null && team.getMemberList() != null) {
+                                for (final User user : team.getMemberList()) {
+
+                                    final String organizationName = project.getEdition().getOrganizationName();
+                                    final String editionName = project.getEdition().getShortName();
+                                    final String groupName =
+                                        CrowdGroupNameAlgorithm.buildCrowdGroupName(organizationName, editionName, project.getCrowdProjectId(), role);
+
+                                    CrowdAPIClient.deleteMembership(groupName, user.getUserName());
+                                }
                             }
                         }
                     }
@@ -910,7 +991,7 @@ public class TeamService extends BaseService {
     public static boolean canUserEditTeam(final User user, final Team team) throws Exception {
 
         final Organization organization = team.getOrganization();
-        final boolean isOrganizationAdmin = user.doesUserHavePermission(User.ROLE_ADMIN, organization);
+        final boolean isOrganizationAdmin = user.checkPermission(User.ROLE_ADMIN, organization.getName(), null, null);
 
         return (isOrganizationAdmin || (team.getRoles().contains(User.ROLE_ADMIN) && team.getMembers().contains(user.getId())));
     }
@@ -927,7 +1008,7 @@ public class TeamService extends BaseService {
     public static boolean canUserViewTeam(final User user, final Team team, final boolean onlyMemberOf) throws Exception {
 
         final Organization organization = team.getOrganization();
-        final boolean isOrganizationAdmin = user.doesUserHavePermission(User.ROLE_ADMIN, organization);
+        final boolean isOrganizationAdmin = user.checkPermission(User.ROLE_ADMIN, organization.getName(), null, null);
 
         return ((!onlyMemberOf && isOrganizationAdmin) || team.getMembers().contains(user.getId()));
     }

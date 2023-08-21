@@ -22,6 +22,7 @@ import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
+import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
@@ -72,7 +73,11 @@ public class ProjectService extends BaseService {
             RefsetService.setProjectPermissions(user, project);
             checkPermissions(user, project);
 
-            project.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(project.getName()));
+            // Allow for defining the
+            if (project.getCrowdProjectId() == null || project.getCrowdProjectId().isEmpty()) {
+                project.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(project.getName()));
+            }
+
             service.setModifiedBy(user.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
@@ -147,23 +152,36 @@ public class ProjectService extends BaseService {
 
         final Set<String> projectNames = new HashSet<>();
 
+        final List<Project> projects = getProjectsForEdition(editionId);
+
+        if (projects != null) {
+
+            projects.stream().forEach(project -> projectNames.add(project.getName()));
+        }
+
+        return projectNames;
+
+    }
+
+    /**
+     * Returns the projects for edition.
+     *
+     * @param editionId the edition id
+     * @return the projects for edition
+     * @throws Exception the exception
+     */
+    public static List<Project> getProjectsForEdition(final String editionId) throws Exception {
+
         try (final TerminologyService service = new TerminologyService()) {
 
             final ResultList<Project> projects = service.find("edition.id: " + editionId + " AND active:true", null, Project.class, null);
 
-            if (projects == null) {
-
-                return projectNames;
+            if (projects != null) {
+                return projects.getItems();
             }
 
-            projects.getItems().forEach(project -> {
-
-                projectNames.add(project.getName());
-            });
-
-            return projectNames;
+            return new ArrayList<Project>();
         }
-
     }
 
     /**
@@ -240,6 +258,12 @@ public class ProjectService extends BaseService {
             final List<Project> projectList = new ArrayList<>(results.getItems());
 
             for (Project project : projectList) {
+
+                final Organization organization = OrganizationService.getOrganization(service, user, project.getOrganizationId(), true);
+                if (organization.isAffiliate() && !organization.getMembers().stream().anyMatch(m -> m.getId().equals(user.getId()))) {
+                    results.getItems().remove(project);
+                    continue;
+                }
 
                 project = RefsetService.setProjectPermissions(user, project);
 
@@ -453,6 +477,8 @@ public class ProjectService extends BaseService {
 
             LOG.info("CALLING CROWD API from ProjectService updateMemberships");
 
+            final String organizationName = project.getEdition().getOrganizationName();
+            final String editionName = project.getEdition().getShortName();
             final Set<String> copyOfOldTeams = (oldTeams != null) ? new HashSet<String>(oldTeams) : new HashSet<String>();
             final Set<String> copyOfNewTeams = (newTeams != null) ? new HashSet<String>(newTeams) : new HashSet<String>();
 
@@ -465,12 +491,12 @@ public class ProjectService extends BaseService {
                 for (final String teamId : copyOfNewTeams) {
                     final Team team = TeamService.getTeam(teamId, true);
                     // ignores 400 errors, if the group already exists
-                    CrowdAPIClient.addGroup(project.getEdition().getShortName(), project.getName(), project.getDescription(), true, false);
+                    CrowdAPIClient.addGroup(organizationName, editionName, project.getName(), project.getDescription(), true, false);
                     if (team != null && team.getMemberList() != null) {
                         for (final String role : team.getRoles()) {
                             for (final User user : team.getMemberList()) {
                                 final String groupName =
-                                    CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                                    CrowdGroupNameAlgorithm.buildCrowdGroupName(organizationName, editionName, project.getCrowdProjectId(), role);
                                 CrowdAPIClient.addMembership(groupName, user.getUserName());
                             }
                         }
@@ -489,7 +515,7 @@ public class ProjectService extends BaseService {
                         for (final String role : team.getRoles()) {
                             for (final User user : team.getMemberList()) {
                                 final String groupName =
-                                    CrowdGroupNameAlgorithm.buildCrowdGroupName(project.getEdition().getShortName(), project.getCrowdProjectId(), role);
+                                    CrowdGroupNameAlgorithm.buildCrowdGroupName(organizationName, editionName, project.getCrowdProjectId(), role);
                                 CrowdAPIClient.deleteMembership(groupName, user.getUserName());
                             }
                         }

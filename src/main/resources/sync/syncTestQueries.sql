@@ -1,4 +1,3 @@
-;
 -- ***** Orgs
 -- 1
 select name, description  from organizations order by name;
@@ -31,37 +30,25 @@ select c.name as edition_name, b.name as project_name, a.name as refset_name, a.
 
 -- ***** Org/Teams (basic)
 -- 7
-select a.name as Organization, b.name as Team from teams b, organizations a where a.id = b.organization_id order by a.name, b.name;
+select a.name as organization_name, b.name as team_name from teams b, organizations a where a.id = b.organization_id order by a.name, b.name;
 
 
 -- ***** organization_members
 -- 8
-select a.name, b.name from users a, organizations b, organization_members c where a.id = c.user_id and b.id = c.organization_id order by a.name, b.name; 
+select a.name as user_name, b.name as organization_name from users a, organizations b, organization_members c where a.id = c.user_id and b.id = c.organization_id order by a.name, b.name;
 
 
 -- ***** team members
 -- 9 
-select a.name, b.name from teams a, users b, team_members c where a.id = c.team_id and b.id = c.members order by a.name, b.name;
+select a.name as team_name, b.name as user_name from teams a, users b, team_members c where a.id = c.team_id and b.id = c.members order by a.name, b.name;
 
 
 -- **** team roles
 -- 10 
-select b.name, a.roles from team_roles a, teams b where b.id = a.team_id order by b.name, a.roles;
+select b.name as team_name, a.roles as team_role from team_roles a, teams b where b.id = a.team_id order by b.name, a.roles;
 
 
 -- ***** Project/Teams (basic)
 -- 11
 select d.name as Edition, b.name as Project, c.name as Team from project_teams a, projects b, teams c, editions d where b.id = a.project_id and c.id = a.teams and d.id = b.edition_id order by d.name, b.name, c.name;
-
-
--- ***** user roles
--- 12
-select a.name, b.roles from users a, user_roles b where a.id = b.user_id order by a.name, b.roles;
-
-
-
-
-
-
--- drop schema rt2; create schema rt2; use rt2;
 

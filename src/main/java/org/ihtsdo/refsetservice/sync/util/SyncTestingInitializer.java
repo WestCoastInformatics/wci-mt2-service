@@ -95,7 +95,7 @@ public class SyncTestingInitializer {
         service.setModifiedFlag(true);
 
         if (dbHandler == null) {
-            dbHandler = new SyncDatabaseHandler(null);
+            dbHandler = new SyncDatabaseHandler(null, new SyncStatistics());
         }
         if (utilities == null) {
 

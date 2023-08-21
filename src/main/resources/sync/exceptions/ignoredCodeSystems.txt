@@ -10,9 +10,10 @@ SNOMEDCT-TM	Traditional Medicine
 SNOMEDCT-COMDE	Common German Translation
 SNOMEDCT-NLFIX	Netherlands Extension Fix
 SNOMEDCT-EDQM	EDQM Extension
+SNOMEDCT-CHFIX	Swiss Extension Fix
 
 SNOMEDCT-WCI	WCI Testing Extension
 
-SNOMEDCT-AM	Armenian Extension
-SNOMEDCT-AT	Austrian Extension
-SNOMEDCT-VN	Vietnam Extension
+SNOMEDCT-AM	Armenian Extension	## Until have module
+SNOMEDCT-VN	Vietnam Extension	## Until have module
+

@@ -28,6 +28,10 @@ import org.springframework.core.io.ClassPathResource;
 /**
  * The Class SyncPropertyFileReader.
  */
+/**
+ * @author jesseefron
+ *
+ */
 public class SyncPropertyFileReader {
 
     /** The Constant LOG. */
@@ -60,9 +64,7 @@ public class SyncPropertyFileReader {
     /** The ignored code systems resource. */
     private ClassPathResource ignoredCodeSystemsResource = new ClassPathResource(IGNORED_CODE_SYSTEMS_PATH);
 
-    /** The ignored refsets resource. */
-    private final ClassPathResource ignoredRefsetsResource = new ClassPathResource("sync/exceptions/ignoredRefsets.txt");
-
+    // TODO: JESSE - Review the existing needs for these remaining resources files as they may have been created to deal with bad data
     /** The undefined default lang refsets resource. */
     private final ClassPathResource undefinedDefaultLangRefsetsResource = new ClassPathResource("sync/exceptions/undefinedDefaultLangRefsets.txt");
 
@@ -75,8 +77,15 @@ public class SyncPropertyFileReader {
     /** The team membership resource. */
     private final ClassPathResource teamMembershipResource = new ClassPathResource("sync/initial-teams/teamMembership.txt");
 
+    /** The existing migrate clean resource. */
+    private final ClassPathResource existingMigrateCleanResource = new ClassPathResource("sync/system-migration/existingProjectNameIds.txt");
+
     /** The Constant SPLIT_CHARACTER. */
     public static final String SPLIT_CHARACTER = "\t";
+
+    private static final String OLD_SNOMED_CORE_NAME = "IHTSDO";
+
+    private static final String NEW_SNOMED_CORE_NAME = "SNOMEDCT";
 
     /** The refset to description map. */
     private final Map<String, String> refsetToDescriptionMap = readRttRefsetsToDescriptionMap();
@@ -105,8 +114,8 @@ public class SyncPropertyFileReader {
     /** The rtt refset to clauses map. */
     private final Map<String, ArrayList<String>> refsetSctIdToClausesMap = new HashMap<>();
 
-    /** The project organization map. */
-    private final Map<String, String> projectOrganizationMap = new HashMap<>();
+    /** The project data map of project line to name to description. */
+    private final Set<SyncProjectMetadata> projectData = new HashSet<>();
 
     /** The projects to ignore. */
     private final Set<String> projectsToIgnore = new HashSet<>();
@@ -116,6 +125,9 @@ public class SyncPropertyFileReader {
 
     /** The rtt refset to effective date map. */
     private final Map<String, String> rttRefsetToEffectiveDateMap = new HashMap<>();
+
+    /** The existing edition project info. */
+    private final Map<String, Map<String, String>> existingEditionProjectInfo = readExistingEditionProjectInfo();
 
     /** The metadata map. */
     private final Map<String, SyncPersistenceMetadata> metadataMap = new HashMap<>();
@@ -128,9 +140,6 @@ public class SyncPropertyFileReader {
 
     /** The default language refset map. */
     private static Map<String, Set<String>> defaultLanguageRefsetMap = new HashMap<>();
-
-    /** The refsets to ignore. */
-    private static List<String> refsetsToIgnore = new ArrayList<>();
 
     /**
      * The Enum FileProcessType.
@@ -215,33 +224,6 @@ public class SyncPropertyFileReader {
     }
 
     /**
-     * Returns the refsets to ignore.
-     *
-     * @return the refsets to ignore
-     */
-    public List<String> getRefsetsToIgnore() {
-
-        if (refsetsToIgnore == null) {
-
-            refsetsToIgnore = new ArrayList<>();
-        }
-
-        if (refsetsToIgnore.isEmpty()) {
-
-            try (final BufferedReader reader = new BufferedReader(new InputStreamReader(ignoredRefsetsResource.getInputStream()));) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    refsetsToIgnore.add(line);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        return refsetsToIgnore;
-    }
-
-    /**
      * Read rtt refsets to description map.
      *
      * @return the map
@@ -318,6 +300,7 @@ public class SyncPropertyFileReader {
 
             e.printStackTrace();
         }
+
     }
 
     /**
@@ -348,8 +331,10 @@ public class SyncPropertyFileReader {
 
                     refsetToTagsInfoMap.get(columns[0]).add(stripQuotes(columns[1]));
                 } else {
+
                     LOG.info("Skipping this line in readRttRefsetsToTagsMap(): " + line);
                 }
+
                 line = reader.readLine();
             }
 
@@ -506,11 +491,13 @@ public class SyncPropertyFileReader {
 
             defaultLanguageRefsetMap = new HashMap<>();
         }
+
         if (defaultLanguageRefsetMap.isEmpty()) {
 
             try (final BufferedReader reader = new BufferedReader(new InputStreamReader(undefinedDefaultLangRefsetsResource.getInputStream()));) {
 
                 String line;
+
                 while ((line = reader.readLine()) != null) {
 
                     final String[] columns = line.split("\t");
@@ -520,6 +507,7 @@ public class SyncPropertyFileReader {
 
                         defaultLanguageRefsetMap.get(columns[0]).add(columns[i]);
                     }
+
                 }
 
             } catch (final IOException e) {
@@ -530,6 +518,47 @@ public class SyncPropertyFileReader {
         }
 
         return defaultLanguageRefsetMap;
+    }
+
+    /**
+     * Read rtt project info.
+     *
+     * @return the map
+     */
+    private Map<String, Map<String, String>> readExistingEditionProjectInfo() {
+
+        // edition to map of project name to crowd id
+        final Map<String, Map<String, String>> projectInfo = new HashMap<>();
+
+        try {
+
+            final BufferedReader reader = new BufferedReader(new InputStreamReader(existingMigrateCleanResource.getInputStream()));
+
+            // Line contents: crowdProjectId, projectName, editionShortName
+            String line = reader.readLine();
+            line = reader.readLine();
+
+            while (line != null && !line.isEmpty()) {
+
+                final String[] columns = line.split(SPLIT_CHARACTER);
+
+                if (!projectInfo.containsKey(columns[2])) {
+
+                    projectInfo.put(columns[2], new HashMap<>());
+                }
+
+                projectInfo.get(columns[2]).put(columns[1], columns[0]);
+
+                line = reader.readLine();
+            }
+
+            reader.close();
+        } catch (final IOException e) {
+
+            e.printStackTrace();
+        }
+
+        return projectInfo;
     }
 
     /**
@@ -685,7 +714,9 @@ public class SyncPropertyFileReader {
 
         String updatedLine = line;
         String narrative;
+
         try {
+
             // Clean up narrative if has commas which some do
             if (updatedLine.split(SPLIT_CHARACTER)[9].startsWith("\"")) {
 
@@ -696,8 +727,7 @@ public class SyncPropertyFileReader {
                 narrative = updatedLine.substring(descStartIdx + 1, descStartIdx + descEndIdx + 1);
 
                 // Cleanup updateLine to remove ',' in narrative
-                updatedLine =
-                    updatedLine.substring(0, descStartIdx) + narrative.replaceAll(SPLIT_CHARACTER, "") + updatedLine.substring(descStartIdx + descEndIdx + 2);
+                updatedLine = updatedLine.substring(0, descStartIdx) + narrative.replaceAll(SPLIT_CHARACTER, "") + updatedLine.substring(descStartIdx + descEndIdx + 2);
             } else {
 
                 narrative = updatedLine.split(SPLIT_CHARACTER)[9];
@@ -720,6 +750,7 @@ public class SyncPropertyFileReader {
             final String[] values = updatedLine.split(SPLIT_CHARACTER);
 
             if (projectsToIgnore.contains(values[27])) {
+
                 // Don't add refsets from ignored projects (just WCI projects for now)
                 return null;
             } else if (!values[8].matches("\\b\\d*\\b")) {
@@ -792,9 +823,12 @@ public class SyncPropertyFileReader {
      */
     private void parseProjectLine(final String line, final int lineNumber) throws Exception {
 
-        String organizationName;
+        String projectName;
+        String projectDescription;
         String modified;
         String modifiedBy;
+        String editionShortName;
+        String crowdId = null;
 
         if (line.toLowerCase().contains(SyncUtilities.DEVELOPER_ORGANIZATION_NAME_KEYWORD)) {
 
@@ -802,29 +836,43 @@ public class SyncPropertyFileReader {
         }
 
         try {
-            if (line.split(SPLIT_CHARACTER)[1].startsWith("\"")) {
 
-                // If description has commas (and some do), can't rely on
-                // splitting
-                // on comma. Must identify Description and then remove from line
-                // before finding other values
-                final int descStartIdx = line.indexOf("\"");
-                final int descEndIdx = line.substring(descStartIdx + 1).indexOf("\"");
-                final String[] values = line.substring(descStartIdx + descEndIdx + 3).split(SPLIT_CHARACTER);
+            final String[] values = line.split(SPLIT_CHARACTER);
 
-                organizationName = values[7].replaceAll("\"", "");
-                modified = values[2];
-                modifiedBy = values[3];
-            } else {
+            projectName = values[7].replaceAll("\"", "");
+            projectDescription = values[1];
+            editionShortName = values[9].replaceAll("\"", "");
+            modified = values[4];
+            modifiedBy = values[5];
 
-                final String[] values = line.split(SPLIT_CHARACTER);
+            if (editionShortName.equals(OLD_SNOMED_CORE_NAME)) {
 
-                organizationName = values[9].replaceAll("\"", "");
-                modified = values[4];
-                modifiedBy = values[5];
+                editionShortName = NEW_SNOMED_CORE_NAME;
             }
 
-            projectOrganizationMap.put(line.split(SPLIT_CHARACTER)[0], organizationName);
+            if (existingEditionProjectInfo.containsKey(editionShortName) && existingEditionProjectInfo.get(editionShortName).containsKey(projectName)) {
+
+                crowdId = existingEditionProjectInfo.get(editionShortName).get(projectName);
+            }
+
+            // TODO: TESTING - Create new project on crowd (without users but that gets added with project=ALL
+            if (crowdId == null || crowdId.isEmpty()) {
+
+                StringBuffer s = new StringBuffer();
+
+                String[] nameParts = projectName.split(" ");
+
+                for (int i = 0; i < nameParts.length; i++) {
+
+                    s.append(nameParts[i].toLowerCase().charAt(0));
+                }
+
+                crowdId = s.toString();
+            }
+
+            SyncProjectMetadata newProject = new SyncProjectMetadata(line.split(SPLIT_CHARACTER)[0], crowdId, projectName, projectDescription, editionShortName);
+
+            projectData.add(newProject);
 
             metadataMap.put("project-" + line.split(SPLIT_CHARACTER)[0], new SyncPersistenceMetadata(modified, modifiedBy));
         } catch (final Exception e) {
@@ -846,6 +894,7 @@ public class SyncPropertyFileReader {
     public Map<String, Map<String, String>> getProjectIdToProjectInfoMap() {
 
         if (projectIdToProjectInfoMap.isEmpty()) {
+
             readRttProjectInfo();
         }
 
@@ -860,6 +909,7 @@ public class SyncPropertyFileReader {
     public Map<String, String> getSctIdToProjectIdMap() {
 
         if (sctIdToProjectIdMap.isEmpty()) {
+
             readRttProjectInfo();
         }
 
@@ -967,12 +1017,12 @@ public class SyncPropertyFileReader {
     }
 
     /**
-     * Returns the project organization map.
+     * Returns the project data map.
      *
-     * @return the project organization map
+     * @return the project data map
      */
-    public Map<String, String> getProjectOrganizationMap() {
+    public Set<SyncProjectMetadata> getProjectData() {
 
-        return projectOrganizationMap;
+        return projectData;
     }
 }

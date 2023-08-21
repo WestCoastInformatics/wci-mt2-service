@@ -22,6 +22,7 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -61,6 +62,7 @@ import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RefsetMemberComparison;
+import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
 import org.ihtsdo.refsetservice.model.User;
@@ -173,7 +175,7 @@ public final class RefsetMemberService {
     private static final Map<String, Map<String, Set<String>>> ANCESTORS_CACHE = new HashMap<>();
 
     /** The Constant CONCEPT_DESCRIPTIONS_PER_CALL. */
-    private static final int CONCEPT_DESCRIPTIONS_PER_CALL = 386;
+    private static final int CONCEPT_DESCRIPTIONS_PER_CALL = 250;
 
     /** The Constant URL_MAX_CHAR_LENGTH - URLs will error if larger. */
     private static final int URL_MAX_CHAR_LENGTH = 6000;
@@ -1264,6 +1266,12 @@ public final class RefsetMemberService {
             sourceFiles.add(builderRf2FilePath);
         }
 
+        // remove effectiveTime
+        if (!"PUBLISHED".equalsIgnoreCase(refset.getVersionStatus())) {
+            final String snowGeneratedRf2FilePath = sourceFiles.iterator().next();
+            removeEffectiveTime(snowGeneratedRf2FilePath);
+        }
+
         // if exportMetadata requested, add it
         if (exportMetadata) {
 
@@ -1279,6 +1287,50 @@ public final class RefsetMemberService {
         FileUtility.deleteDirectory(builderDirectoryTempDir.toFile());
 
         return exportFileDir;
+    }
+
+    /**
+     * Removes the effective time.
+     *
+     * @param origFilePath the orig file path
+     * @throws Exception the exception
+     */
+    private static void removeEffectiveTime(final String origFilePath) throws Exception {
+
+        LOG.debug("Removing effectiveTime for non-PUBLISHED refsets.");
+        try {
+            final Path tempFilePath = Files.createTempFile("temp", ".txt");
+
+            try (final BufferedReader br = new BufferedReader(new FileReader(new File(origFilePath)));
+                final BufferedWriter writer = new BufferedWriter(new FileWriter(tempFilePath.toFile()))) {
+
+                String line;
+                while ((line = br.readLine()) != null) {
+                    if (StringUtils.isEmpty(line)) {
+                        continue;
+                    }
+                    if (line.startsWith("id")) {
+                        writer.write(line);
+                        writer.newLine();
+                        continue;
+                    }
+
+                    final String[] tokens = line.split("\t");
+                    tokens[1] = "";
+                    final String updatedLine = String.join("\t", tokens);
+                    writer.write(updatedLine);
+                    writer.newLine();
+
+                }
+            }
+
+            // Replace the original file with the modified temporary file
+            Files.move(tempFilePath, Path.of(origFilePath), StandardCopyOption.REPLACE_EXISTING);
+
+        } catch (IOException e) {
+            LOG.error("ERROR removing effectiveTime from file {}", origFilePath);
+            throw e;
+        }
     }
 
     /**
@@ -1949,28 +2001,15 @@ public final class RefsetMemberService {
      */
     public static void populateAllLanguageDescriptions(final Refset refset, final List<Concept> conceptsToProcess) throws Exception {
 
-        final StringBuffer conceptIds = new StringBuffer();
-
-        // Create Snowstorm URL
-        final String url = SnowstormConnection.getBaseUrl() + getBranchPath(refset) + "/descriptions?limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH;
-
-        boolean firstTime = true;
-
-        for (final Concept concept : conceptsToProcess) {
-
-            if (firstTime) {
-
-                firstTime = false;
-            } else {
-
-                conceptIds.append(",");
-            }
-
-            conceptIds.append(concept.getCode());
+        if (conceptsToProcess == null || conceptsToProcess.isEmpty()) {
+            return;
         }
 
+        // Create Snowstorm URL
+        final String fullSnowstormUrl = SnowstormConnection.getBaseUrl() + getBranchPath(refset) + "/descriptions?limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH
+            + "&conceptIds=" + conceptsToProcess.stream().map(Concept::getCode).collect(Collectors.joining(","));
+
         // Call Snowstorm
-        final String fullSnowstormUrl = url + "&conceptIds=" + conceptIds;
         try (final Response response = SnowstormConnection.getResponse(fullSnowstormUrl)) {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
@@ -3194,9 +3233,15 @@ public final class RefsetMemberService {
 
             return concept;
 
+        } catch (final RestException ex) {
+
+            // throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", message);
+            throw new RestException(false, ex.getError().getStatus(), ex.getMessage(), "Could not get Reference Set children for concept " + conceptId + ".");
+
         } catch (final Exception ex) {
 
             throw new Exception("Could not get Reference Set children for concept " + conceptId + " from snowstorm: " + ex.getMessage(), ex);
+
         }
 
     }
@@ -3297,8 +3342,10 @@ public final class RefsetMemberService {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
-                throw new Exception(
-                    "call to url '" + url + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
+                LOG.error(
+                    "Call to url '" + url + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
+                throw new RestException(false, response.getStatusInfo().getStatusCode(), "Message: " + response.getStatusInfo().getReasonPhrase(),
+                    "Error looking up concept(s).");
             }
 
             final String resultString = response.readEntity(String.class);
@@ -6275,8 +6322,10 @@ public final class RefsetMemberService {
             returnMap.put("hasChildren", "false"); // comparisonConcept.getHasChildren() + "");
             returnMap.put("membership", "Comparison Reference Set");
             refsetMemberComparison.getComparisonRefsetDistinctMembers().add(comparisonConceptId);
+
             final Map<String, String> preferedTermEnglish =
-                comparisonConcept.getDescriptions().stream().filter(f -> f.get(LANGUAGE_ID).equals(PREFERRED_TERM_EN)).findFirst().get();
+                comparisonConcept.getDescriptions().stream().filter(f -> f != null && PREFERRED_TERM_EN.equals(f.get(LANGUAGE_ID))).findFirst().orElse(null);
+
             returnMap.put("name", (preferedTermEnglish != null) ? preferedTermEnglish.get(DESCRIPTION_TERM).strip() : comparisonConcept.getName().strip());
 
             refsetMemberComparison.getItems().add(returnMap);

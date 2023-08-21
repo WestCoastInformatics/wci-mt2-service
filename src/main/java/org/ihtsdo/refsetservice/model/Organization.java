@@ -83,6 +83,10 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
     @Column(nullable = true, length = 255)
     private String iconUri;
 
+    /** The affiliate flag. */
+    @Column(nullable = false)
+    private boolean affiliate;
+
     /** The of roles for this project. */
     @Transient
     private List<String> roles;
@@ -130,6 +134,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         iconUri = other.iconUri;
         members = other.getMembers();
         roles = other.getRoles();
+        affiliate = other.isAffiliate();
     }
 
     /**
@@ -145,6 +150,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         description = other.getDescription();
         primaryContactEmail = other.getPrimaryContactEmail();
         roles = other.getRoles();
+        affiliate = other.isAffiliate();
     }
 
     /**
@@ -284,6 +290,27 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         this.roles = roles;
     }
 
+    /**
+     * Checks if is an affiliate organization.
+     *
+     * @return the affiliate flag
+     */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+    public boolean isAffiliate() {
+
+        return affiliate;
+    }
+
+    /**
+     * Sets the affiliate flag.
+     *
+     * @param affiliate the affiliate flag to set
+     */
+    public void setAffiliate(final boolean affiliate) {
+
+        this.affiliate = affiliate;
+    }
+
     /* see superclass */
     @Override
     public int hashCode() {
@@ -296,6 +323,7 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((primaryContactEmail == null) ? 0 : primaryContactEmail.hashCode());
         result = prime * result + ((roles == null) ? 0 : roles.hashCode());
+        result = prime * result + (affiliate ? 1 : 0);
         return result;
     }
 
@@ -355,6 +383,9 @@ public class Organization extends AbstractHasModified implements Copyable<Organi
                 return false;
             }
         } else if (!roles.equals(other.roles)) {
+            return false;
+        }
+        if (affiliate != other.affiliate) {
             return false;
         }
         return true;

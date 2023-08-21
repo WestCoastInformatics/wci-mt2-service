@@ -286,7 +286,7 @@ public final class DiscussionService {
         final String threadUserName = thread.getPosts().get(0).getUser().getUserName();
 
         // if the user does not have the correct roles on the refset or they did not create the thread then they can't edit it
-        return (Collections.disjoint(refset.getRoles(), Arrays.asList(User.ROLE_ADMIN)) && !threadUserName.equals(user.getUserName()));
+        return (Collections.disjoint(refset.getRoles(), Arrays.asList(User.ROLE_ADMIN)) || threadUserName.equals(user.getUserName()));
     }
 
     /**
@@ -317,7 +317,7 @@ public final class DiscussionService {
         final String postUserName = post.getUser().getUserName();
 
         // if the user does not have the correct roles on the refset or they did not create the post then they can't edit it
-        return (Collections.disjoint(refset.getRoles(), Arrays.asList(User.ROLE_ADMIN)) && !postUserName.equals(user.getUserName()));
+        return (Collections.disjoint(refset.getRoles(), Arrays.asList(User.ROLE_ADMIN)) || postUserName.equals(user.getUserName()));
     }
 
     /**

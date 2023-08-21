@@ -2589,7 +2589,7 @@ public class RefsetService {
             // if there are no teams add organization admin team
             if (allTeams.size() == 0) {
 
-                final Team organizationAdminTeam = OrganizationService.getOrganizationAdminTeam(service, organization.getId());
+                final Team organizationAdminTeam = OrganizationService.getActiveOrganizationAdminTeam(service, organization.getId());
 
                 if (organizationAdminTeam != null) {
                     allTeams.add(organizationAdminTeam);
@@ -2920,8 +2920,10 @@ public class RefsetService {
         try (final TerminologyService service = new TerminologyService()) {
 
             final Refset refset = getRefset(service, authUser, refsetInternalId);
+            final String organizationName = refset.getOrganizationName();
+            final String editionName = refset.getEdition().getShortName();
 
-            if (!authUser.checkPermission(User.ROLE_VIEWER, refset.getEdition(), null)) {
+            if (!authUser.checkPermission(User.ROLE_VIEWER, organizationName, editionName, null)) {
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "This user does not have permission to perform this action");
             }
 
@@ -3055,8 +3057,10 @@ public class RefsetService {
         final String refsetId = nameValuePairs.get("refset");
         LOG.info("Requester is: {}", requesterUser);
         final Refset refset = getRefset(service, requesterUser, refsetId);
+        final String organizationName = refset.getOrganizationName();
+        final String editionName = refset.getEdition().getShortName();
 
-        if (!requesterUser.checkPermission(User.ROLE_VIEWER, refset.getEdition(), null)) {
+        if (!requesterUser.checkPermission(User.ROLE_VIEWER, organizationName, editionName, null)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "This user does not have permission to perform this action");
         }
 

@@ -949,6 +949,8 @@ public class RefsetController extends BaseController {
 
             final User user = SecurityService.getUserFromSession();
             Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+            WorkflowService.canUserPerformWorkflowAction(user, refset, action);
+
             final String currentStatus = refset.getWorkflowStatus();
 
             service.setModifiedBy(user.getUserName());
@@ -1079,7 +1081,7 @@ public class RefsetController extends BaseController {
 
         final User user = SecurityService.getUserFromSession();
 
-        if (!user.checkPermission(User.ROLE_ADMIN, null, null)) {
+        if (!user.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
             return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.UNAUTHORIZED);
         }
 
@@ -1208,12 +1210,12 @@ public class RefsetController extends BaseController {
 
                 typeToPublish = "localset";
 
-                if (!user.checkPermission(User.ROLE_ADMIN, edition, null)) {
+                if (!user.checkPermission(User.ROLE_ADMIN, edition.getOrganizationName(), edition.getShortName(), null)) {
                     return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.UNAUTHORIZED);
                 }
             } else {
 
-                if (!user.checkPermission(User.ROLE_ADMIN, null, null)) {
+                if (!user.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
                     return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.UNAUTHORIZED);
                 }
             }
@@ -1301,8 +1303,10 @@ public class RefsetController extends BaseController {
             service.setModifiedFlag(true);
 
             final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+            final String organizationName = refset.getOrganizationName();
+            final String editionName = refset.getEdition().getShortName();
 
-            if (!user.checkPermission(User.ROLE_ADMIN, refset.getEdition(), refset.getProject().getCrowdProjectId())) {
+            if (!user.checkPermission(User.ROLE_ADMIN, organizationName, editionName, refset.getProject().getCrowdProjectId())) {
                 return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.UNAUTHORIZED);
             }
 
@@ -1363,7 +1367,7 @@ public class RefsetController extends BaseController {
 
         final User user = SecurityService.getUserFromSession();
 
-        if (!user.checkPermission(User.ROLE_ADMIN, null, null)) {
+        if (!user.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
             return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.UNAUTHORIZED);
         }
 
@@ -1440,6 +1444,7 @@ public class RefsetController extends BaseController {
             // service.setTransactionPerOperation(false);
             // service.beginTransaction();
 
+            WorkflowService.canUserPerformWorkflowAction(user, null, refsetInternalId);
             final String newRefsetInternalId = RefsetService.createNewRefsetVersion(service, user, refsetInternalId, true);
             // service.commit();
 
@@ -2193,7 +2198,7 @@ public class RefsetController extends BaseController {
 
         final User user = SecurityService.getUserFromSession();
 
-        if (!user.checkPermission(User.ROLE_ADMIN, null, null)) {
+        if (!user.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
             return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.UNAUTHORIZED);
         }
 
@@ -2225,6 +2230,9 @@ public class RefsetController extends BaseController {
 
             try (final TerminologyService service = new TerminologyService()) {
 
+                service.setModifiedBy("Sync");
+                service.setModifiedFlag(true);
+
                 SyncAgent.sync(service, refsetPerVersionSync, runForProduction, isIgnoreCoreRefsets);
 
                 return new ResponseEntity<>(message + "RT2 synced with Snowstorm successfully", HttpStatus.OK);
@@ -2253,7 +2261,7 @@ public class RefsetController extends BaseController {
 
             final User user = SecurityService.getUserFromSession();
 
-            if (!user.checkPermission(User.ROLE_ADMIN, null, null)) {
+            if (!user.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
                 return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.UNAUTHORIZED);
             }
 
@@ -2289,7 +2297,7 @@ public class RefsetController extends BaseController {
 
             final User user = SecurityService.getUserFromSession();
 
-            if (!user.checkPermission(User.ROLE_ADMIN, null, null)) {
+            if (!user.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
                 return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.UNAUTHORIZED);
             }
 
@@ -2622,15 +2630,22 @@ public class RefsetController extends BaseController {
         try {
 
             // no auth required
-            SecurityService.getUserFromSession();
+            final User user = SecurityService.getUserFromSession();
 
             try (final TerminologyService service = new TerminologyService()) {
 
                 final long start = System.currentTimeMillis();
                 ResultList<Organization> results = new ResultList<Organization>();
                 final PfsParameter pfs = new PfsParameter();
-                final QueryParameter query = new QueryParameter();
-                query.setQuery("active:true");
+
+                String query = "active:true";
+
+                if (SecurityService.GUEST_USERNAME.equals(user.getUserName())) {
+                    query += " AND affiliate:false ";
+                }
+
+                final QueryParameter queryParameter = new QueryParameter();
+                queryParameter.setQuery(query);
 
                 results = service.find(query, pfs, Organization.class, null);
 
@@ -2639,6 +2654,13 @@ public class RefsetController extends BaseController {
 
                 // LOG.debug("results: " + ModelUtility.toJson(results));
                 final List<Organization> organizationList = results.getItems();
+
+                organizationList.removeIf(org -> {
+                    return org.isAffiliate() && !org.getMembers().stream().anyMatch(m -> m.getId().equals(user.getId()));
+                });
+
+                results.setTotal(organizationList.size());
+
                 organizationList.sort(new Comparator<Organization>() {
 
                     @Override
@@ -3506,7 +3528,7 @@ public class RefsetController extends BaseController {
 
         final User user = SecurityService.getUserFromSession();
 
-        if (!user.checkPermission(User.ROLE_ADMIN, null, null)) {
+        if (!user.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
             return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.UNAUTHORIZED);
         }
 

@@ -10,6 +10,7 @@
 package org.ihtsdo.refsetservice.sync;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.sync.util.SyncCodeSystemDeterminer;
 import org.ihtsdo.refsetservice.sync.util.SyncDatabaseHandler;
 import org.ihtsdo.refsetservice.sync.util.SyncStatistics;
 import org.ihtsdo.refsetservice.sync.util.SyncUtilities;
@@ -69,12 +71,13 @@ public abstract class SyncAgent {
     private static boolean testing = false;
 
     /** The testing edition short name. */
-    private static String testingEditionShortName = "SNOMEDCT";
+    protected static String testingEditionShortName = "";
 
     /** The testing refset. */
-    private static String testingRefset = "733991000"; // Core - Dentistry (in multiple projects in RTT)
 
-    // protected static String testingRefset = null; // To test entire edition
+    protected static String testingRefset = null; // To test entire edition
+    // private static String testingRefset = "421000210109"; // NZ with def clauses
+    // private static String testingRefset = "733991000"; // Core - Dentistry (in multiple projects in RTT)
     // protected static String testingRefset = "751000172100"; // 751000172100 - from Belgium
     // protected static String testingRefset = "723264001"; // 723264001 - TAGS (only one today) - from sct-core
     // protected static String testingRefset = "64641000052102"; // Tim's for ugprade testing (on Swedish)
@@ -83,127 +86,11 @@ public abstract class SyncAgent {
     /** The developer testing edition short name. */
     private static String developerTestingEditionShortName = null;
 
-    /** The develeper testing organization. */
-    private static Organization develeperTestingOrganization = null;
-
-    /** Other process fields. Owner Name to Organization Description. */
-    protected static final Set<JsonNode> FILTERED_CODE_SYSTEMS = new HashSet<>();
-
     /** The Constant DEVELOPER_CODE_SYSTEM_SHORTNAME. */
     protected static final String DEVELOPER_CODE_SYSTEM_SHORTNAME = "SNOMEDCT-WCI";
 
-    /** The Constant SNOMED_ADMIN_USERNAME. */
-    protected static final String SNOMED_ADMIN_USERNAME = "rdavidson";
-
-    /** The Constant DEVELOPER_ADMIN_USERNAME_PREFIX. */
-    protected static final String DEVELOPER_ADMIN_USERNAME_PREFIX = "refset-";
-
     /** The Constant ADMIN_USERNAMES. */
     protected static final Set<String> ADMIN_USERNAMES = new HashSet<>();
-
-    /**
-     * @return the utilities
-     */
-    protected static SyncUtilities getUtilities() {
-
-        return utilities;
-    }
-
-    /**
-     * @param utilities the utilities to set
-     */
-    protected static void setUtilities(final SyncUtilities utilities) {
-
-        SyncAgent.utilities = utilities;
-    }
-
-    /**
-     * @return the dbHandler
-     */
-    protected static SyncDatabaseHandler getDbHandler() {
-
-        return dbHandler;
-    }
-
-    /**
-     * @param dbHandler the dbHandler to set
-     */
-    protected static void setDbHandler(final SyncDatabaseHandler dbHandler) {
-
-        SyncAgent.dbHandler = dbHandler;
-    }
-
-    /**
-     * @return the testingEditionShortName
-     */
-    protected static String getTestingEditionShortName() {
-
-        return testingEditionShortName;
-    }
-
-    /**
-     * @param testingEditionShortName the testingEditionShortName to set
-     */
-    protected static void setTestingEditionShortName(final String testingEditionShortName) {
-
-        SyncAgent.testingEditionShortName = testingEditionShortName;
-    }
-
-    /**
-     * @return the testingRefset
-     */
-    protected static String getTestingRefset() {
-
-        return testingRefset;
-    }
-
-    /**
-     * @param testingRefset the testingRefset to set
-     */
-    protected static void setTestingRefset(final String testingRefset) {
-
-        SyncAgent.testingRefset = testingRefset;
-    }
-
-    /**
-     * @return the developerTestingEditionShortName
-     */
-    protected static String getDeveloperTestingEditionShortName() {
-
-        return developerTestingEditionShortName;
-    }
-
-    /**
-     * @param developerTestingEditionShortName the developerTestingEditionShortName to set
-     */
-    protected static void setDeveloperTestingEditionShortName(final String developerTestingEditionShortName) {
-
-        SyncAgent.developerTestingEditionShortName = developerTestingEditionShortName;
-    }
-
-    /**
-     * @return the develeperTestingOrganization
-     */
-    protected static Organization getDeveleperTestingOrganization() {
-
-        return develeperTestingOrganization;
-    }
-
-    /**
-     * @param develeperTestingOrganization the develeperTestingOrganization to set
-     */
-    protected static void setDeveleperTestingOrganization(final Organization develeperTestingOrganization) {
-
-        SyncAgent.develeperTestingOrganization = develeperTestingOrganization;
-    }
-
-    /**
-     * @return the branchdateformatter
-     */
-    protected static String getBranchdateformatter() {
-
-        return BRANCH_DATE_FORMAT;
-    }
 
     /**
      * Sync.
@@ -241,30 +128,133 @@ public abstract class SyncAgent {
         final Date startOperationStartTime = new Date();
 
         initialize(service);
+        service.add(AuditEntryHelper.syncBeginEntry(startOperationStartTime));
+
+        SyncCodeSystemDeterminer termServerCodeSystemConsumer =
+            new SyncCodeSystemDeterminer(service, getUtilities(), STATISTICS, isTesting(), testingEditionShortName);
+
+        Set<JsonNode> filteredCodeSystems = termServerCodeSystemConsumer.determineCodeSystemsToProcess();
+        final HashMap<String, String> termServerEditionToOrganizationMap = termServerCodeSystemConsumer.getEditionToOrganizationMap(filteredCodeSystems);
 
         LOG.info("Starting Syncing of Users, Projects, Code System, Branches, and Refsets from Termserver");
 
-        service.add(AuditEntryHelper.syncBeginEntry(startOperationStartTime));
-
         // Only identify branches on filtered code systems and on runShortSync value
-        SyncAgent agent = new SyncCodeSystemAgent();
+        LOG.info("Running sync on organizations & editions.");
+        SyncAgent agent = new SyncCodeSystemAgent(service, filteredCodeSystems, termServerEditionToOrganizationMap);
         agent.syncComponent(service);
 
-        agent = new SyncCrowdAgent();
+        // Update available code systems due to potential migrations (edition move from one org to another) and reactivations
+        filteredCodeSystems = termServerCodeSystemConsumer.determineCodeSystemsToProcess();
+
+        // If first time processing a code system with projects, then and only then update users, teams, and projects based on crowd.
+        LOG.info("Review projects on crowd when encountering a code system without existing projects in system");
+        agent = new SyncCrowdAgent(filteredCodeSystems);
         agent.syncComponent(service);
 
         // Find all refsets from filtered branches
-        agent = new SyncRefsetAgent();
+        LOG.info("Running sync on refsets.");
+        agent = new SyncRefsetAgent(filteredCodeSystems);
         agent.syncComponent(service);
 
         // Post processing
-        // utilities.emailSyncResults(service);
-
         LOG.info(STATISTICS.printStatistics());
-        LOG.info("Completed Syncing with Termserver");
+
+        utilities.emailSyncResults(service);
 
         final long processingMinutes = utilities.getProcessingMinutes("FULL", startOperationStartTime);
         service.add(AuditEntryHelper.syncFinishEntry(new Date(), processingMinutes));
+
+        LOG.info("Completed Syncing with Termserver");
+    }
+
+    /**
+     * Returns the utilities.
+     *
+     * @return the utilities
+     */
+    protected static SyncUtilities getUtilities() {
+
+        return utilities;
+    }
+
+    /**
+     * Sets the utilities.
+     *
+     * @param utilities the utilities to set
+     */
+    protected static void setUtilities(final SyncUtilities utilities) {
+
+        SyncAgent.utilities = utilities;
+    }
+
+    /**
+     * Returns the db handler.
+     *
+     * @return the dbHandler
+     */
+    protected static SyncDatabaseHandler getDbHandler() {
+
+        return dbHandler;
+    }
+
+    /**
+     * Sets the db handler.
+     *
+     * @param dbHandler the dbHandler to set
+     */
+    protected static void setDbHandler(final SyncDatabaseHandler dbHandler) {
+
+        SyncAgent.dbHandler = dbHandler;
+    }
+
+    /**
+     * Sets the developer testing edition short name.
+     *
+     * @param editionShortName the developer testing edition short name
+     */
+    public void setDeveloperTestingEditionShortName(final String editionShortName) {
+
+        developerTestingEditionShortName = editionShortName;
+    }
+
+    /**
+     * Returns the developer testing edition short name.
+     *
+     * @return the developerTestingEditionShortName
+     */
+    public String getDeveloperTestingEditionShortName() {
+
+        return developerTestingEditionShortName;
+    }
+
+    /**
+     * Returns the testing refset.
+     *
+     * @return the testingRefset
+     */
+    protected static String getTestingRefset() {
+
+        return testingRefset;
+    }
+
+    /**
+     * Sets the testing refset.
+     *
+     * @param testingRefset the testingRefset to set
+     */
+    protected static void setTestingRefset(final String testingRefset) {
+
+        SyncAgent.testingRefset = testingRefset;
+    }
+
+    /**
+     * Returns the branchdateformatter.
+     *
+     * @return the branchdateformatter
+     */
+    protected static String getBranchdateformatter() {
+
+        return BRANCH_DATE_FORMAT;
     }
 
     /**
@@ -278,17 +268,16 @@ public abstract class SyncAgent {
         service.setModifiedFlag(true);
 
         if (dbHandler == null) {
-            dbHandler = new SyncDatabaseHandler(null);
+
+            dbHandler = new SyncDatabaseHandler(null, STATISTICS);
         }
+
         if (utilities == null) {
 
             utilities = new SyncUtilities(dbHandler);
         }
 
         dbHandler.setUtilities(utilities);
-
-        ADMIN_USERNAMES.add(SNOMED_ADMIN_USERNAME);
-        ADMIN_USERNAMES.add(DEVELOPER_ADMIN_USERNAME_PREFIX);
     }
 
     /**
@@ -314,13 +303,13 @@ public abstract class SyncAgent {
 
         developerTestingEditionShortName = null;
 
-        FILTERED_CODE_SYSTEMS.clear();
-
         STATISTICS.clearStatistics();
 
         if (utilities != null) {
+
             utilities.clearPreviousRun();
         }
+
     }
 
     /**
@@ -336,9 +325,11 @@ public abstract class SyncAgent {
         final Object termserverAttribute) {
 
         if (termserverAttribute == null && databaseAttribute == null) {
+
             // Both null, no difference
             return false;
         } else if (termserverAttribute != null && databaseAttribute != null && databaseAttribute.equals(termserverAttribute)) {
+
             // Both not null with identical value, no difference
             return false;
         }

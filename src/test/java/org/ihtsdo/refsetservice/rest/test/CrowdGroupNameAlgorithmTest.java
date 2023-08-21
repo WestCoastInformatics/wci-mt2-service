@@ -29,31 +29,68 @@ public class CrowdGroupNameAlgorithmTest {
     public void testGenerateName() throws Exception {
 
         String result = "";
-        result = CrowdGroupNameAlgorithm.generateCrowdGroupName("SNOMEDCT-WCI", "WCI Testing Project", "author");
-        assertThat(result).isEqualTo("rt2-snomedctwci-wtp-author");
+        result = CrowdGroupNameAlgorithm.generateCrowdGroupName("WCI Edition", "SNOMEDCT-WCI", "WCI Testing Project", "author", false);
+        assertThat(result).isEqualTo("rt2-wciedition-snomedctwci-wtp-author");
 
-        result = CrowdGroupNameAlgorithm.generateCrowdGroupName("SNOMEDCT-AT", "WCI Testing Project", "admin");
-        assertThat(result).isEqualTo("rt2-snomedctat-wtp-admin");
+        result = CrowdGroupNameAlgorithm.generateCrowdGroupName("Netherlands Extension", "SNOMEDCT-NL", "WCI Testing Project", "admin", false);
+        assertThat(result).isEqualTo("rt2-netherlandsextension-snomedctnl-wtp-admin");
 
-        result = CrowdGroupNameAlgorithm.generateCrowdGroupName("SNOMEDCT-BE", "Belgian Edition Upgrade dedicated UAT Training Project", "reviewer");
-        assertThat(result).isEqualTo("rt2-snomedctbe-beudutp-reviewer");
+        result = CrowdGroupNameAlgorithm.generateCrowdGroupName("Belgian Extension", "SNOMEDCT-BE", "Belgian Edition Upgrade dedicated UAT Training Project",
+            "reviewer", false);
+        assertThat(result).isEqualTo("rt2-belgianextension-snomedctbe-beudutp-reviewer");
 
         assertThrows(Exception.class, () -> {
-            CrowdGroupNameAlgorithm.generateCrowdGroupName(" ", " ", " ");
+            CrowdGroupNameAlgorithm.generateCrowdGroupName(" ", " ", " ", " ", false);
         });
 
         assertThrows(Exception.class, () -> {
-            CrowdGroupNameAlgorithm.generateCrowdGroupName(" ", " b ", " ");
+            CrowdGroupNameAlgorithm.generateCrowdGroupName(" ", " ", " b ", " ", false);
         });
 
         assertThrows(Exception.class, () -> {
-            CrowdGroupNameAlgorithm.generateCrowdGroupName(" a ", "  ", " ");
+            CrowdGroupNameAlgorithm.generateCrowdGroupName(" ", " a ", "  ", " ", false);
         });
 
     }
 
     /**
      * Test organization.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testOrganization() throws Exception {
+
+        String result = "";
+
+        result = CrowdGroupNameAlgorithm.getEditionString("WCI Edition");
+        assertThat(result).isEqualTo("wciedition");
+
+        result = CrowdGroupNameAlgorithm.getEditionString("Netherlands Extension");
+        assertThat(result).isEqualTo("netherlandsextension");
+
+        result = CrowdGroupNameAlgorithm.getEditionString("United States Edition");
+        assertThat(result).isEqualTo("unitedstatesedition");
+
+        result = CrowdGroupNameAlgorithm.getEditionString("Affiliate Test 1");
+        assertThat(result).isEqualTo("affiliatetest1");
+
+        assertThrows(Exception.class, () -> {
+            CrowdGroupNameAlgorithm.getEditionString("");
+        });
+
+        assertThrows(Exception.class, () -> {
+            CrowdGroupNameAlgorithm.getEditionString(null);
+        });
+
+        assertThrows(Exception.class, () -> {
+            CrowdGroupNameAlgorithm.getEditionString("    ");
+        });
+
+    }
+
+    /**
+     * Test edition.
      *
      * @throws Exception the exception
      */

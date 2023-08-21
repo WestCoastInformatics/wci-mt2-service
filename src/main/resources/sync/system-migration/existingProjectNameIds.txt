@@ -1,0 +1,136 @@
+crowdProjectId	name	shortName
+iedp	International Edition Default Project	SNOMEDCT
+sip	SNOMED International Project	SNOMEDCT
+siwp	SNOMED International WIP Project	SNOMEDCT
+aedp	Austrian Extension Default Project	SNOMEDCT-AT
+aedp	Australian Extension Default Project	SNOMEDCT-AU
+bedp	Belgian Extension Default Project	SNOMEDCT-BE
+wtp	WCI Test Project	SNOMEDCT-BE
+bep	Belgian Extension Project	SNOMEDCT-BE
+sedp	Swiss Edition Default Project	SNOMEDCT-CH
+dedp	Danish Edition Default Project	SNOMEDCT-DK
+enp	Estonian NRC Project	SNOMEDCT-EE
+eedp	Estonian Edition Default Project	SNOMEDCT-EE
+iedp	Irish Edition Default Project	SNOMEDCT-IE
+kedp	Korean Extension Default Project	SNOMEDCT-KR
+wtp	WCI Test project	SNOMEDCT-NL
+m	Microbiology	SNOMEDCT-NL
+nedp	Netherlands Extension Default Project	SNOMEDCT-NL
+nedp	Norwegian Edition Default Project	SNOMEDCT-NO
+nzedp	New Zealand Edition Default Project	SNOMEDCT-NZ
+nzrp	New Zealand Refset Project	SNOMEDCT-NZ
+sedp	Swedish Edition Default Project	SNOMEDCT-SE
+snp	Sweden NRC Project	SNOMEDCT-SE
+inrp	Inera National Refset Project	SNOMEDCT-SE
+usedp	United States Edition Default Project	SNOMEDCT-US
+a	apdp	SNOMEDCT-NL
+a	atdptts	SNOMEDCT-BE
+a	aedp	SNOMEDCT-AT
+aedp	Australian Extension Default Project	SNOMEDCT-AU
+aedp	Austrian Extension Default Project	SNOMEDCT-AT
+b	bedp	SNOMEDCT-BE
+b	bep	SNOMEDCT-BE
+b	bepa	SNOMEDCT-BE
+bedp	Belgian Extension Default Project	SNOMEDCT-BE
+bep	Belgian Extension Project	SNOMEDCT-BE
+d	dt1nt	SNOMEDCT-BE
+d	dt1et	SNOMEDCT-BE
+d	dt3nt	SNOMEDCT-BE
+d	dp	SNOMEDCT-BE
+d	dt2nt	SNOMEDCT-BE
+d	dt0	SNOMEDCT-BE
+d	dedp	SNOMEDCT-DK
+d	dt2g	SNOMEDCT-BE
+d	dt	SNOMEDCT-BE
+dedp	Danish Edition Default Project	SNOMEDCT-DK
+dt	Dev Test 1 - empty teams	SNOMEDCT-BE
+dt0	Dev Test 02	SNOMEDCT-BE
+dt0	Dev Test 01	SNOMEDCT-BE
+dt1nt 	Dev Test - 1 no teams	SNOMEDCT-BE
+dt2g	Dev Test 2 - general	SNOMEDCT-BE
+dt2nt	Dev Test - 2 no teams	SNOMEDCT-BE
+dt3nt	Dev Test - 3 no teams	SNOMEDCT-BE
+e	enp	SNOMEDCT-EE
+eedp	Estonian Edition Default Project	SNOMEDCT-EE
+enp	Estonian NRC Project	SNOMEDCT-EE
+i	iedp	SNOMEDCT-IE
+i	iedp	SNOMEDCT
+i	inrp	SNOMEDCT-SE
+iedp	International Edition Default Project	SNOMEDCT
+iedp	Irish Edition Default Project	SNOMEDCT-IE
+inrp	Inera National Refset Project	SNOMEDCT-SE
+j	jd	SNOMEDCT-BE
+j	jd2	SNOMEDCT-BE
+k	ktdp	SNOMEDCT-KR
+kedp	Korean Extension Default Project	SNOMEDCT-KR
+n	nedp	SNOMEDCT-NL
+n	nedp	SNOMEDCT-NO
+n	nzedp	SNOMEDCT-NZ
+n	nsp	SNOMEDCT-SE
+nedp	Netherlands Extension Default Project	SNOMEDCT-NL
+nedp	Norwegian Edition Default Project	SNOMEDCT-NO
+nzedp	New Zealand Edition Default Project	SNOMEDCT-NZ
+nzrp	New Zealand Refset Project	SNOMEDCT-NZ
+p	p	SNOMEDCT-BE
+p	pt2	SNOMEDCT-IE
+s	snp	SNOMEDCT-SE
+s	sedp	SNOMEDCT-SE
+s	sip	SNOMEDCT
+s	siwp	SNOMEDCT
+s	s	SNOMEDCT-BE
+sedp	Swiss Edition Default Project	SNOMEDCT-CH
+sedp	Swedish Edition Default Project	SNOMEDCT-SE
+sip	SNOMED International Project	SNOMEDCT
+siwp	SNOMED International WIP Project	SNOMEDCT
+snp	Sweden NRC Project	SNOMEDCT-SE
+t	ttpfne	SNOMEDCT-NL
+t	t1	SNOMEDCT-US
+t	training	SNOMEDCT
+t	tpp	SNOMEDCT-SE
+t	training	SNOMEDCT-CH
+t	training	SNOMEDCT-NO
+t	t	SNOMEDCT-IE
+t	training	SNOMEDCT-BE
+t	t	SNOMEDCT
+t	tp	SNOMEDCT-US
+t	training	SNOMEDCT-SE
+t	tp	SNOMEDCT-BE
+t	training	SNOMEDCT-US
+t	training	SNOMEDCT-NZ
+t	training	SNOMEDCT-NL
+t	training	SNOMEDCT-IE
+t	t1	SNOMEDCT-BE
+t	tp	SNOMEDCT
+t	training	SNOMEDCT-DK
+t	training	SNOMEDCT-EE
+t	ta	SNOMEDCT
+t	tdapr	SNOMEDCT-DK
+t	tp	SNOMEDCT-NL
+t	t	SNOMEDCT-BE
+t	t	SNOMEDCT-NL
+t	training	SNOMEDCT-KR
+t	training	SNOMEDCT-AT
+t	tc	SNOMEDCT
+t1	Test 123456	SNOMEDCT-BE
+tp	Testing Project	SNOMEDCT-US
+u	uat	SNOMEDCT-AT
+u	usedp	SNOMEDCT-US
+usedp	Test 123	SNOMEDCT-US
+w	wta	SNOMEDCT-BE
+w	wat	SNOMEDCT-SE
+w	wtp9	SNOMEDCT
+w	wtp	SNOMEDCT
+w	wnp	SNOMEDCT
+w	wtp	SNOMEDCT-SE
+w	wtap	SNOMEDCT
+w	wtp	SNOMEDCT-NZ
+w	Wendy's #1	SNOMEDCT-BE
+w	w	SNOMEDCT-BE
+w	wt9	SNOMEDCT-SE
+w	wntp	SNOMEDCT-NZ
+w	watp	SNOMEDCT
+w	wt	SNOMEDCT
+w	wstp	SNOMEDCT-SE
+w	wt	SNOMEDCT-BE
+wt2	WB Project 2	SNOMEDCT-BE
+wtp	WB Test Project	SNOMEDCT

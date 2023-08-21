@@ -287,7 +287,7 @@ public class OrganizationController extends BaseController {
         try (final TerminologyService service = new TerminologyService()) {
 
             service.setModifiedBy(authUser.getUserName());
-            OrganizationService.inactivateOrganization(service, authUser, id);
+            OrganizationService.updateOrganizationStatus(service, authUser, id, false);
 
             return new ResponseEntity<>(HttpStatus.ACCEPTED);
 
@@ -324,8 +324,11 @@ public class OrganizationController extends BaseController {
         authorizeUser();
 
         try (final TerminologyService service = new TerminologyService()) {
+            final User authUser = authorizeUser();
 
-            final ResultListUser usersResultList = OrganizationService.getOrganizationUsers(service, id, includeTeams);
+            final Organization organization = OrganizationService.getOrganization(service, authUser, id, true);
+
+            final ResultListUser usersResultList = OrganizationService.getOrganizationUsers(service, organization, includeTeams);
             return new ResponseEntity<>(usersResultList, HttpStatus.OK);
 
         } catch (final Exception e) {
@@ -359,7 +362,7 @@ public class OrganizationController extends BaseController {
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            final ResultList<Team> orgTeams = OrganizationService.getOrganizationTeams(service, id);
+            final ResultList<Team> orgTeams = OrganizationService.getActiveOrganizationTeams(service, id);
             return new ResponseEntity<>(new ResultListTeam(orgTeams), HttpStatus.OK);
 
         } catch (final Exception e) {

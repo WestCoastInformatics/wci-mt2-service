@@ -27,6 +27,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,6 +79,9 @@ public class CrowdAPIClient extends CrowdClientAbstract {
     /** Remove user from group DELETE. */
     private static final String REMOVE_USER_FROM_GROUP = "/rest/usermanagement/1/user/group/direct";
 
+    /** The Constant VALID_RULE_PARTS. */
+    private static final int VALID_RULE_PARTS = 5;
+
     /**
      * Returns the user from Crowd.
      *
@@ -125,20 +129,25 @@ public class CrowdAPIClient extends CrowdClientAbstract {
      * Add all groups with roles e.g. rt2-no-abc-author. - rt2 is the application - no is the two letter code for the organization (country) - abc is the
      * acronym of the group name - author is the role (admin, author, reviewer and viewer are the others)
      *
-     * @param organization the organization
+     * @param organizationName the organization name
+     * @param editionName the edition name
      * @param projectName the project name
      * @param projectDescription the project description
      * @param generateProjectName the generate project name
      * @param adminOnly to add the all-admin permission for organization administrators
      * @throws Exception the exception
      */
-    public static void addGroup(final String organization, final String projectName, final String projectDescription, final boolean generateProjectName,
-        final boolean adminOnly) throws Exception {
+    public static void addGroup(final String organizationName, final String editionName, final String projectName, final String projectDescription,
+        final boolean generateProjectName, final boolean adminOnly) throws Exception {
 
-        LOG.info("Add group {} to organization {} with description of {}", projectName, organization, projectDescription);
+        LOG.info("Add group {} to organization {} with description of {}", projectName, organizationName, projectDescription);
 
-        if (StringUtils.isBlank(organization)) {
-            throw new Exception("Organization name cannot be empty or null. Received organization: " + organization);
+        if (StringUtils.isBlank(organizationName)) {
+            throw new Exception("Organization name cannot be empty or null. Received organization: " + organizationName);
+        }
+
+        if (StringUtils.isBlank(editionName)) {
+            throw new Exception("Edition name cannot be empty or null. Received edition: " + editionName);
         }
 
         if (StringUtils.isEmpty(projectName)) {
@@ -148,7 +157,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         final String description = (!StringUtils.isEmpty(projectDescription)) ? projectDescription.trim() : projectName.trim();
 
         /*
-         * {"name": "rt2-test-all-author", "description": "test crowd client", "type": "GROUP" }
+         * {"name": "rt2-ownerofinternational-test-all-author", "description": "test crowd client", "type": "GROUP" }
          */
         final Set<String> rolesToAdd = new HashSet<>();
         if (adminOnly) {
@@ -159,8 +168,9 @@ public class CrowdAPIClient extends CrowdClientAbstract {
 
         for (final String role : rolesToAdd) {
 
-            final String groupName = generateProjectName ? CrowdGroupNameAlgorithm.generateCrowdGroupName(organization, projectName, role)
-                : CrowdGroupNameAlgorithm.buildCrowdGroupName(organization, projectName, role);
+            final String groupName =
+                generateProjectName ? CrowdGroupNameAlgorithm.generateCrowdGroupName(organizationName, editionName, projectName, role, false)
+                    : CrowdGroupNameAlgorithm.buildCrowdGroupName(organizationName, editionName, projectName, role);
 
             LOG.info("CALL CROWD API url:" + getBaseUrl() + ADD_GROUP);
             final String entity = "{\"name\": \"" + groupName + "\", \"description\": \"" + description + "\", \"type\": \"GROUP\" }";
@@ -195,23 +205,23 @@ public class CrowdAPIClient extends CrowdClientAbstract {
     /**
      * Add admin group for an organization.
      *
-     * @param organization the organization
+     * @param organizationName the organizationName
      * @param description the description
      * @return the string
      * @throws Exception the exception
      */
-    public static String addAdminGroup(final String organization, final String description) throws Exception {
+    public static String addAdminGroup(final String organizationName, final String description) throws Exception {
 
-        LOG.info("Add group {} to organization {} with description of {}", "all", organization, description);
+        LOG.info("Add group {} to organization {} with description of {}", "all", organizationName, description);
 
-        if (StringUtils.isBlank(organization)) {
-            throw new Exception("Organization name cannot be empty or null. Received organization: " + organization);
+        if (StringUtils.isBlank(organizationName)) {
+            throw new Exception("Organization name cannot be empty or null. Received organization: " + organizationName);
         }
 
         /*
          * {"name": "rt2-test-all-admin", "description": "admin for organization", "type": "GROUP" }
          */
-        final String groupName = CrowdGroupNameAlgorithm.generateCrowdGroupName(organization, "all", "admin", true);
+        final String groupName = CrowdGroupNameAlgorithm.generateCrowdGroupName(organizationName, "all", "all", "admin", true);
 
         LOG.info("CALL CROWD API url:" + getBaseUrl() + ADD_GROUP);
         final String entity = "{\"name\": \"" + groupName + "\", \"description\": \"" + description + "\", \"type\": \"GROUP\" }";
@@ -347,6 +357,8 @@ public class CrowdAPIClient extends CrowdClientAbstract {
 
     /**
      * Returns the all crowd rule members.
+     * 
+     * As rule-to-users map
      *
      * @return the all crowd rule members
      * @throws Exception the exception
@@ -382,14 +394,14 @@ public class CrowdAPIClient extends CrowdClientAbstract {
 
                     final Element membership = (Element) membershipNode;
                     // Get the value of the group name attribute.
-                    final String projectName = membershipNode.getAttributes().getNamedItem("group").getNodeValue();
+                    final String rule = membershipNode.getAttributes().getNamedItem("group").getNodeValue();
 
-                    if (!projectName.startsWith(APP_PREFIX) || !membership.hasChildNodes()) {
+                    if (!rule.startsWith(APP_PREFIX) || !membership.hasChildNodes() || rule.split("-").length != VALID_RULE_PARTS) {
                         continue;
                     }
 
-                    if (!groupMemberMap.containsKey(projectName)) {
-                        groupMemberMap.put(projectName, new HashSet<>());
+                    if (!groupMemberMap.containsKey(rule)) {
+                        groupMemberMap.put(rule, new HashSet<>());
                     }
 
                     final NodeList usersList = membership.getChildNodes();
@@ -402,7 +414,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
 
                             final Element users = (Element) usersNode;
                             final NodeList userList = users.getChildNodes();
-                            final int userListSize = usersList.getLength();
+                            final int userListSize = userList.getLength();
 
                             for (int k = 0; k < userListSize; k++) {
 
@@ -412,7 +424,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
                                     // Get the user name
                                     String userName = userNode.getAttributes().getNamedItem("name").getNodeValue();
 
-                                    groupMemberMap.get(projectName).add(userName);
+                                    groupMemberMap.get(rule).add(userName);
 
                                 }
                             }
@@ -521,8 +533,16 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         // 409 Returned if the user is already a direct member of the group.
         if (statusCode == 201) {
 
-            // was previously added.
-            LOG.info("User {} already is a member of {}.", username, groupname);
+            LOG.info("User {} now is a member of {}.", username, groupname);
+
+            final User loggedInUser = SecurityService.getUserFromSession();
+
+            // if the user modified is the current user then update their roles
+            if (username.equals(loggedInUser.getUserName())) {
+
+                loggedInUser.getRoles().add(groupname.substring("rt2-".length()));
+                SecurityService.setUserInSession(loggedInUser);
+            }
 
         } else if (statusCode == 400) {
 
@@ -568,6 +588,15 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         if (statusCode == 204) {
 
             LOG.info("User {} removed from group {}.", username, groupname);
+
+            final User loggedInUser = SecurityService.getUserFromSession();
+
+            // if the user modified is the current user then update their roles
+            if (username.equals(loggedInUser.getUserName())) {
+
+                loggedInUser.getRoles().remove(groupname.substring("rt2-".length()));
+                SecurityService.setUserInSession(loggedInUser);
+            }
 
         } else if (statusCode == 404) {
 

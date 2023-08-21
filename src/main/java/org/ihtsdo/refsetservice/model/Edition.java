@@ -38,6 +38,7 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDe
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.ObjectPath;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.PropertyValue;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
+import org.ihtsdo.refsetservice.util.LanguageConstants;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
@@ -296,6 +297,7 @@ public class Edition extends AbstractHasModified {
      *
      * @return the code system type
      */
+    @FullTextField(analyzer = "standard")
     public String getMaintainerType() {
 
         return maintainerType;
@@ -352,6 +354,8 @@ public class Edition extends AbstractHasModified {
             languageDetails.put("languageCode", languageCode);
             languageDetails.put("qualifiedLanguageRefset", languageRefsetCode + "PT");
             languageDetails.put("qualifiedLanguageCode", languageCode.toUpperCase() + " (PT)");
+            languageDetails.put("qualifiedLanguageDialectCode",
+                LanguageConstants.LANGUAGE_CODE_TO_COUNTRY_CODE.get(languageRefsetCode) + "-" + languageCode.toUpperCase());
 
             // if this is the default language code make sure it is first and
             // add a FSN version
@@ -366,8 +370,10 @@ public class Edition extends AbstractHasModified {
 
                 if (languageCode.equals("en")) {
 
-                    qualifiedLanguageList.add(1, Map.of("languageRefset", languageRefsetCode, "languageCode", languageCode, "qualifiedLanguageRefset",
-                        languageRefsetCode + "FSN", "qualifiedLanguageCode", languageCode.toUpperCase() + " (FSN)"));
+                    qualifiedLanguageList.add(1,
+                        Map.of("languageRefset", languageRefsetCode, "languageCode", languageCode, "qualifiedLanguageRefset", languageRefsetCode + "FSN",
+                            "qualifiedLanguageCode", languageCode.toUpperCase() + " (FSN)", "qualifiedLanguageDialectCode",
+                            LanguageConstants.LANGUAGE_CODE_TO_COUNTRY_CODE.get(languageRefsetCode) + "-" + languageCode.toUpperCase()));
                 }
 
             } else {
