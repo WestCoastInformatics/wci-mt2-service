@@ -45,18 +45,27 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.servers.Server;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controller for /artifact endpoints.
  */
 @RestController
-@Api(tags = "artifacts", description = "Endpoints for adding, updating, and removing reference set artifacts.")
+@OpenAPIDefinition(info = @Info(title = "Artifact Controller", version = "1.0.0", description = "Endpoints for adding, updating, and removing reference set artifacts."), tags = {
+		@Tag(name = "artifact", description = "Artifact service endpoints") }, servers = {
+				@Server(description = "Current Instance", url = "/") })
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
 public class ArtifactController extends BaseController {
 
@@ -71,11 +80,10 @@ public class ArtifactController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/artifact/{id}")
-	@ApiOperation(value = "Get artifact.", response = Artifact.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "id", value = "Artifact id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path") })
+	@Operation(summary = "Get artifact.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Artifact.class))),
+			@ApiResponse(responseCode = "500", description = "Internal server error") }, parameters = {
+					@Parameter(name = "id", description = "Artifact id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)) })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<Artifact> getArtifact(@PathVariable(value = "id") final String id)
 			throws Exception {
@@ -107,10 +115,9 @@ public class ArtifactController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/artifact", produces = MediaType.APPLICATION_JSON)
-	@ApiOperation(value = "Find artifacts.", response = ResultList.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully retrieved the requested information"),
-			@ApiResponse(code = 401, message = "Unauthorized"),
-			@ApiResponse(code = 500, message = "Internal server error") })
+	@Operation(summary = "Find artifacts.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Artifact.class))),
+			@ApiResponse(responseCode = "500", description = "Internal server error") })
 	// @ModelAttribute API params documented in SearchParameter
 	@RecordMetric
 	public @ResponseBody ResponseEntity<ResultList<Artifact>> findArtifacts(
@@ -156,10 +163,11 @@ public class ArtifactController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@PostMapping(value = "/artifact")
-	@ApiOperation(value = "Add artifact. This call requires authentication with the correct role.", response = Artifact.class)
-	@ApiResponses(value = { @ApiResponse(code = 202, message = "Added artifact"),
-			@ApiResponse(code = 401, message = "Unauthorized"),
-			@ApiResponse(code = 500, message = "Internal server error") })
+	@Operation(summary = "Add artifact. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "202", description = "Added artifact", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Artifact.class))),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
+			@ApiResponse(responseCode = "500", description = "Internal server error") })
 	@ApiImplicitParams({
 			@ApiImplicitParam(name = "artifact", value = "Artifact object", required = true, dataTypeClass = Artifact.class, paramType = "body") })
 	@RecordMetric
