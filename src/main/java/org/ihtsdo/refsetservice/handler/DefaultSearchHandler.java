@@ -205,9 +205,7 @@ public class DefaultSearchHandler implements SearchHandler {
 
         // 3. (query OR escapedQuery^10.0)
         String part3 = null;
-        if (StringUtility.isEmpty(query)) {
-            part3 = null;
-        } else {
+        if (!StringUtility.isEmpty(query)) {
             part3 = query;
         }
         // LOG.debug(" part3 = " + part3);

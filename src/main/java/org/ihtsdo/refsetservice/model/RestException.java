@@ -11,9 +11,12 @@ package org.ihtsdo.refsetservice.model;
 
 import org.springframework.http.HttpStatus;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
  * Wrapper REST exception so we can properly format all exception responses to REST calls.
  */
+@Schema(description = "Payload for JSON error responses")
 public class RestException extends RuntimeException {
 
     /** The error. */

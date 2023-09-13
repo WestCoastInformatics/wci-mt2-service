@@ -138,7 +138,8 @@ public final class SnowstormConnection {
      * @return The Snowstorm response
      * @throws Exception the exception
      */
-    public static InputStream getFileDownload(final String url) throws Exception {
+    @SuppressWarnings("resource")
+	public static InputStream getFileDownload(final String url) throws Exception {
 
         final Client client = ClientBuilder.newClient();
         final WebTarget target = client.target(url);
@@ -198,12 +199,15 @@ public final class SnowstormConnection {
      * @return The Snowstorm response
      * @throws Exception the exception
      */
-    public static Response deleteResponse(final String url, final String entity) throws Exception {
+    @SuppressWarnings("resource")
+	public static Response deleteResponse(final String url, final String entity) throws Exception {
 
         final Client client = ClientBuilder.newClient();
         final WebTarget target = client.target(url);
         Response response;
 
+        // TODO: we shouldn't return a response here and leave it open
+        // we should get its payload and return that and then make sure the response is closed.
         if (entity == null) {
 
             response = target.request(ACCEPT).header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES).header("Cookie", getGenericUserCookie(false)).delete();

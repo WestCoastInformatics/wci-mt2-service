@@ -54,7 +54,6 @@ public class EditionController extends BaseController {
      * @return the edition
      * @throws Exception the exception
      */
-    @SuppressWarnings("unchecked")
     @ApiOperation(value = "Get edition", response = Edition.class)
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 401, message = "Unauthorized"),
@@ -76,7 +75,8 @@ public class EditionController extends BaseController {
             return new ResponseEntity<>(edition, HttpStatus.OK);
 
         } catch (final Exception e) {
-            return handleException(e);
+			handleException(e);
+			return null;
         }
     }
 
@@ -86,7 +86,6 @@ public class EditionController extends BaseController {
      * @return the editions
      * @throws Exception the exception
      */
-    @SuppressWarnings("unchecked")
     @ApiOperation(value = "Get all editions", response = ResultList.class)
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 417, message = "Failed Expectation"),
@@ -105,7 +104,8 @@ public class EditionController extends BaseController {
             return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
-            return handleException(e);
+			handleException(e);
+			return null;
         }
     }
 
@@ -117,7 +117,6 @@ public class EditionController extends BaseController {
      * @return the string
      * @throws Exception the exception
      */
-    @SuppressWarnings("unchecked")
     @ApiOperation(value = "Find editions.", response = ResultList.class)
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 404, message = "Resource not found"),
@@ -141,8 +140,8 @@ public class EditionController extends BaseController {
             return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            return handleException(e);
+			handleException(e);
+			return null;
         }
     }
 

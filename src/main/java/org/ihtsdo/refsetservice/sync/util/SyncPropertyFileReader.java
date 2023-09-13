@@ -34,995 +34,1002 @@ import org.springframework.core.io.ClassPathResource;
  */
 public class SyncPropertyFileReader {
 
-    /** The Constant LOG. */
-    private static final Logger LOG = LoggerFactory.getLogger(SyncPropertyFileReader.class);
+	/** The Constant LOG. */
+	private static final Logger LOG = LoggerFactory.getLogger(SyncPropertyFileReader.class);
 
-    /** The projects resource. */
-    private final ClassPathResource projectsResource = new ClassPathResource("sync/rtt-migration/projects.txt");
+	/** The projects resource. */
+	private final ClassPathResource projectsResource = new ClassPathResource("sync/rtt-migration/projects.txt");
 
-    /** The clauses resource. */
-    private final ClassPathResource clausesResource = new ClassPathResource("sync/rtt-migration/clauses.txt");
+	/** The clauses resource. */
+	private final ClassPathResource clausesResource = new ClassPathResource("sync/rtt-migration/clauses.txt");
 
-    /** The refsets resource. */
-    private final ClassPathResource refsetsResource = new ClassPathResource("sync/rtt-migration/refsets.txt");
+	/** The refsets resource. */
+	private final ClassPathResource refsetsResource = new ClassPathResource("sync/rtt-migration/refsets.txt");
 
-    /** The refset rtt to sct id resource. */
-    private final ClassPathResource refsetRttToSctIdResource = new ClassPathResource("sync/rtt-migration/refsetRttToSct.txt");
+	/** The refset rtt to sct id resource. */
+	private final ClassPathResource refsetRttToSctIdResource = new ClassPathResource(
+			"sync/rtt-migration/refsetRttToSct.txt");
 
-    /** The refset to tags resource. */
-    private final ClassPathResource refsetToTagsResource = new ClassPathResource("sync/rtt-migration/refsetToTags.txt");
+	/** The refset to tags resource. */
+	private final ClassPathResource refsetToTagsResource = new ClassPathResource("sync/rtt-migration/refsetToTags.txt");
 
-    /** The refset to projects resource. */
-    private final ClassPathResource refsetToProjectsResource = new ClassPathResource("sync/rtt-migration/refsetToProjects.txt");
+	/** The refset to projects resource. */
+	private final ClassPathResource refsetToProjectsResource = new ClassPathResource(
+			"sync/rtt-migration/refsetToProjects.txt");
 
-    /** The refset to description resource. */
-    private final ClassPathResource refsetToDescriptionResource = new ClassPathResource("sync/rtt-migration/refsetToDescription.txt");
+	/** The refset to description resource. */
+	private final ClassPathResource refsetToDescriptionResource = new ClassPathResource(
+			"sync/rtt-migration/refsetToDescription.txt");
 
-    /** The Constant IGNORED_CODE_SYSTEMS_PATH. */
-    private static final String IGNORED_CODE_SYSTEMS_PATH = "sync/exceptions/ignoredCodeSystems.txt";
+	/** The Constant IGNORED_CODE_SYSTEMS_PATH. */
+	private static final String IGNORED_CODE_SYSTEMS_PATH = "sync/exceptions/ignoredCodeSystems.txt";
 
-    /** The ignored code systems resource. */
-    private ClassPathResource ignoredCodeSystemsResource = new ClassPathResource(IGNORED_CODE_SYSTEMS_PATH);
+	/** The ignored code systems resource. */
+	private ClassPathResource ignoredCodeSystemsResource = new ClassPathResource(IGNORED_CODE_SYSTEMS_PATH);
 
-    // TODO: JESSE - Review the existing needs for these remaining resources files as they may have been created to deal with bad data
-    /** The undefined default lang refsets resource. */
-    private final ClassPathResource undefinedDefaultLangRefsetsResource = new ClassPathResource("sync/exceptions/undefinedDefaultLangRefsets.txt");
+	// TODO: JESSE - Review the existing needs for these remaining resources files
+	// as they may have been created to deal with bad data
+	/** The undefined default lang refsets resource. */
+	private final ClassPathResource undefinedDefaultLangRefsetsResource = new ClassPathResource(
+			"sync/exceptions/undefinedDefaultLangRefsets.txt");
 
-    /** The team creation resource. */
-    private final ClassPathResource teamCreationResource = new ClassPathResource("sync/initial-teams/teamCreation.txt");
+	/** The team creation resource. */
+	private final ClassPathResource teamCreationResource = new ClassPathResource("sync/initial-teams/teamCreation.txt");
 
-    /** The team to project assignment resource. */
-    private final ClassPathResource teamToProjectAssignmentResource = new ClassPathResource("sync/initial-teams/teamToProjectAssignment.txt");
+	/** The team to project assignment resource. */
+	private final ClassPathResource teamToProjectAssignmentResource = new ClassPathResource(
+			"sync/initial-teams/teamToProjectAssignment.txt");
 
-    /** The team membership resource. */
-    private final ClassPathResource teamMembershipResource = new ClassPathResource("sync/initial-teams/teamMembership.txt");
+	/** The team membership resource. */
+	private final ClassPathResource teamMembershipResource = new ClassPathResource(
+			"sync/initial-teams/teamMembership.txt");
 
-    /** The existing migrate clean resource. */
-    private final ClassPathResource existingMigrateCleanResource = new ClassPathResource("sync/system-migration/existingProjectNameIds.txt");
+	/** The existing migrate clean resource. */
+	private final ClassPathResource existingMigrateCleanResource = new ClassPathResource(
+			"sync/system-migration/existingProjectNameIds.txt");
 
-    /** The Constant SPLIT_CHARACTER. */
-    public static final String SPLIT_CHARACTER = "\t";
+	/** The Constant SPLIT_CHARACTER. */
+	public static final String SPLIT_CHARACTER = "\t";
 
-    private static final String OLD_SNOMED_CORE_NAME = "IHTSDO";
+	private static final String OLD_SNOMED_CORE_NAME = "IHTSDO";
 
-    private static final String NEW_SNOMED_CORE_NAME = "SNOMEDCT";
+	private static final String NEW_SNOMED_CORE_NAME = "SNOMEDCT";
 
-    /** The refset to description map. */
-    private final Map<String, String> refsetToDescriptionMap = readRttRefsetsToDescriptionMap();
+	/** The refset to description map. */
+	private final Map<String, String> refsetToDescriptionMap = readRttRefsetsToDescriptionMap();
 
-    /** The refset sct id to tags map. */
-    private final Map<String, Set<String>> refsetSctIdToTagsMap = readRefsetSctIdToTagsMap();
+	/** The refset sct id to tags map. */
+	private final Map<String, Set<String>> refsetSctIdToTagsMap = readRefsetSctIdToTagsMap();
 
-    /** The team creation. */
-    private final Map<String, Map<String, Set<String>>> teamCreation = readTeamCreation();
+	/** The team creation. */
+	private final Map<String, Map<String, Set<String>>> teamCreation = readTeamCreation();
 
-    /** The team to projects. */
-    private final Map<String, Set<String>> teamToProjects = readTeamToProjectAssignement();
+	/** The team to projects. */
+	private final Map<String, Set<String>> teamToProjects = readTeamToProjectAssignement();
 
-    /** The team membership. */
-    private final Map<String, Set<String>> teamMembership = readTeamMembership();
+	/** The team membership. */
+	private final Map<String, Set<String>> teamMembership = readTeamMembership();
 
-    /** The code system short names. */
-    private final List<String> codeSystemShortNames = new ArrayList<>();
+	/** The code system short names. */
+	private final List<String> codeSystemShortNames = new ArrayList<>();
 
-    /** The refset internal id map. */
-    private final Map<String, String> rttIdToRefsetJsonMap = new HashMap<>();
+	/** The refset internal id map. */
+	private final Map<String, String> rttIdToRefsetJsonMap = new HashMap<>();
 
-    /** The refset sct id to internal id map. */
-    private final Map<String, Set<String>> rttRefsetSctIdToRttIdMap = new HashMap<>();
+	/** The refset sct id to internal id map. */
+	private final Map<String, Set<String>> rttRefsetSctIdToRttIdMap = new HashMap<>();
 
-    /** The rtt refset to clauses map. */
-    private final Map<String, ArrayList<String>> refsetSctIdToClausesMap = new HashMap<>();
+	/** The rtt refset to clauses map. */
+	private final Map<String, ArrayList<String>> refsetSctIdToClausesMap = new HashMap<>();
 
-    /** The project data map of project line to name to description. */
-    private final Set<SyncProjectMetadata> projectData = new HashSet<>();
+	/** The project data map of project line to name to description. */
+	private final Set<SyncProjectMetadata> projectData = new HashSet<>();
 
-    /** The projects to ignore. */
-    private final Set<String> projectsToIgnore = new HashSet<>();
+	/** The projects to ignore. */
+	private final Set<String> projectsToIgnore = new HashSet<>();
 
-    /** The refset to project map. */
-    private final Map<String, String> rttIdToRttProjectIdMap = new HashMap<>();
+	/** The refset to project map. */
+	private final Map<String, String> rttIdToRttProjectIdMap = new HashMap<>();
 
-    /** The rtt refset to effective date map. */
-    private final Map<String, String> rttRefsetToEffectiveDateMap = new HashMap<>();
+	/** The rtt refset to effective date map. */
+	private final Map<String, String> rttRefsetToEffectiveDateMap = new HashMap<>();
 
-    /** The existing edition project info. */
-    private final Map<String, Map<String, String>> existingEditionProjectInfo = readExistingEditionProjectInfo();
+	/** The existing edition project info. */
+	private final Map<String, Map<String, String>> existingEditionProjectInfo = readExistingEditionProjectInfo();
 
-    /** The metadata map. */
-    private final Map<String, SyncPersistenceMetadata> metadataMap = new HashMap<>();
+	/** The metadata map. */
+	private final Map<String, SyncPersistenceMetadata> metadataMap = new HashMap<>();
 
-    /** The sct id to project id map. */
-    private final Map<String, String> sctIdToProjectIdMap = new HashMap<>();
+	/** The sct id to project id map. */
+	private final Map<String, String> sctIdToProjectIdMap = new HashMap<>();
 
-    /** Map of Project ids to map of project name-to-description. */
-    private final Map<String, Map<String, String>> projectIdToProjectInfoMap = new HashMap<>();
+	/** Map of Project ids to map of project name-to-description. */
+	private final Map<String, Map<String, String>> projectIdToProjectInfoMap = new HashMap<>();
 
-    /** The default language refset map. */
-    private static Map<String, Set<String>> defaultLanguageRefsetMap = new HashMap<>();
+	/** The default language refset map. */
+	private static Map<String, Set<String>> defaultLanguageRefsetMap = new HashMap<>();
 
-    /**
-     * The Enum FileProcessType.
-     */
-    private enum FileProcessType {
+	/**
+	 * The Enum FileProcessType.
+	 */
+	private enum FileProcessType {
 
-        /** The refset. */
-        REFSET,
-        /** The clause. */
-        CLAUSE,
-        /** The project. */
-        PROJECT;
-    }
+		/** The refset. */
+		REFSET,
+		/** The clause. */
+		CLAUSE,
+		/** The project. */
+		PROJECT;
+	}
 
-    /**
-     * Pre-processing supporting files.
-     *
-     * @throws Exception the exception
-     */
-    public void parseRttData() throws Exception {
+	/**
+	 * Pre-processing supporting files.
+	 *
+	 * @throws Exception the exception
+	 */
+	public void parseRttData() throws Exception {
 
-        // Based on findings, define the list of refsets in RTT
-        populateFromFile(clausesResource, FileProcessType.CLAUSE);
-        populateFromFile(projectsResource, FileProcessType.PROJECT);
+		// Based on findings, define the list of refsets in RTT
+		populateFromFile(clausesResource, FileProcessType.CLAUSE);
+		populateFromFile(projectsResource, FileProcessType.PROJECT);
 
-        final BufferedReader reader = new BufferedReader(new InputStreamReader(refsetRttToSctIdResource.getInputStream()));
+		try (final InputStreamReader in = new InputStreamReader(refsetRttToSctIdResource.getInputStream());
+				final BufferedReader reader = new BufferedReader(in);) {
 
-        // Grab Header on 2nd time through
-        String line = reader.readLine();
-        line = reader.readLine();
+			// Grab Header on 2nd time through
+			String line = reader.readLine();
+			line = reader.readLine();
 
-        while (line != null) {
+			while (line != null) {
 
-            if (!rttRefsetSctIdToRttIdMap.containsKey(line.split(SPLIT_CHARACTER)[1])) {
+				if (!rttRefsetSctIdToRttIdMap.containsKey(line.split(SPLIT_CHARACTER)[1])) {
 
-                rttRefsetSctIdToRttIdMap.put(line.split(SPLIT_CHARACTER)[1], new HashSet<String>());
-            }
+					rttRefsetSctIdToRttIdMap.put(line.split(SPLIT_CHARACTER)[1], new HashSet<String>());
+				}
 
-            rttRefsetSctIdToRttIdMap.get(line.split(SPLIT_CHARACTER)[1]).add(line.split(SPLIT_CHARACTER)[0]);
+				rttRefsetSctIdToRttIdMap.get(line.split(SPLIT_CHARACTER)[1]).add(line.split(SPLIT_CHARACTER)[0]);
 
-            line = reader.readLine();
-        }
+				line = reader.readLine();
+			}
 
-        populateFromFile(refsetsResource, FileProcessType.REFSET);
-    }
+			populateFromFile(refsetsResource, FileProcessType.REFSET);
+		}
+	}
 
-    /**
-     * Returns the code systems to ignore.
-     *
-     * @return the code systems to ignore
-     */
-    // Reread every time as can now update list without rebuilding. Not an issue as it's only used via sync (so not costly)
-    public List<String> getCodeSystemsToIgnore() {
+	/**
+	 * Returns the code systems to ignore.
+	 *
+	 * @return the code systems to ignore
+	 */
+	// Reread every time as can now update list without rebuilding. Not an issue as
+	// it's only used via sync (so not costly)
+	public List<String> getCodeSystemsToIgnore() {
 
-        try {
+		ignoredCodeSystemsResource = new ClassPathResource(IGNORED_CODE_SYSTEMS_PATH);
+		try (final InputStreamReader in = new InputStreamReader(ignoredCodeSystemsResource.getInputStream());
+				final BufferedReader reader = new BufferedReader(in);) {
 
-            ignoredCodeSystemsResource = new ClassPathResource(IGNORED_CODE_SYSTEMS_PATH);
+			String line = reader.readLine();
 
-            final BufferedReader reader = new BufferedReader(new InputStreamReader(ignoredCodeSystemsResource.getInputStream()));
+			while (line != null) {
 
-            String line = reader.readLine();
+				if (!line.isBlank()) {
 
-            while (line != null) {
+					final String shortName = line.split("\t")[0];
 
-                if (!line.isBlank()) {
+					codeSystemShortNames.add(shortName);
+				}
 
-                    final String shortName = line.split("\t")[0];
+				line = reader.readLine();
+			}
 
-                    codeSystemShortNames.add(shortName);
-                }
+		} catch (final IOException e) {
 
-                line = reader.readLine();
-            }
+			e.printStackTrace();
+		}
 
-            reader.close();
-        } catch (final IOException e) {
+		return codeSystemShortNames;
+	}
 
-            e.printStackTrace();
-        }
+	/**
+	 * Read rtt refsets to description map.
+	 *
+	 * @return the map
+	 */
+	private Map<String, String> readRttRefsetsToDescriptionMap() {
 
-        return codeSystemShortNames;
-    }
+		final Map<String, String> refsetToDescriptionMap = new HashMap<>();
 
-    /**
-     * Read rtt refsets to description map.
-     *
-     * @return the map
-     */
-    private Map<String, String> readRttRefsetsToDescriptionMap() {
+		try (final InputStreamReader in = new InputStreamReader(refsetToDescriptionResource.getInputStream());
+				final BufferedReader reader = new BufferedReader(in);) {
 
-        final Map<String, String> refsetToDescriptionMap = new HashMap<>();
+			// Grab header first
+			String line = reader.readLine();
+			line = reader.readLine();
 
-        try {
+			while (line != null && !line.trim().isEmpty()) {
 
-            final BufferedReader reader = new BufferedReader(new InputStreamReader(refsetToDescriptionResource.getInputStream()));
+				final int columnSplit = line.indexOf(SyncPropertyFileReader.SPLIT_CHARACTER);
 
-            // Grab header first
-            String line = reader.readLine();
-            line = reader.readLine();
+				if (columnSplit < 0) {
 
-            while (line != null && !line.trim().isEmpty()) {
+					LOG.error("Have issue with line: " + line);
 
-                final int columnSplit = line.indexOf(SyncPropertyFileReader.SPLIT_CHARACTER);
+				}
 
-                if (columnSplit < 0) {
+				final String sctId = line.substring(0, columnSplit);
+				final String description = stripQuotes(line.substring(columnSplit + 1));
 
-                    LOG.error("Have issue with line: " + line);
+				refsetToDescriptionMap.put(sctId, description);
 
-                }
+				line = reader.readLine();
+			}
 
-                final String sctId = line.substring(0, columnSplit);
-                final String description = stripQuotes(line.substring(columnSplit + 1));
+		} catch (final Exception e) {
 
-                refsetToDescriptionMap.put(sctId, description);
+			e.printStackTrace();
+		}
 
-                line = reader.readLine();
-            }
+		return refsetToDescriptionMap;
+	}
 
-            reader.close();
-        } catch (final Exception e) {
+	/**
+	 * Read rtt project info.
+	 */
+	private void readRttProjectInfo() {
 
-            e.printStackTrace();
-        }
+		try (final InputStreamReader in = new InputStreamReader(refsetToProjectsResource.getInputStream());
+				final BufferedReader reader = new BufferedReader(in);) {
 
-        return refsetToDescriptionMap;
-    }
+			// ProjectId, refsetId, projectName, projectDescription
+			String line = reader.readLine();
 
-    /**
-     * Read rtt project info.
-     */
-    private void readRttProjectInfo() {
+			while (line != null && !line.isEmpty()) {
 
-        try {
+				final String[] columns = line.split(SPLIT_CHARACTER);
 
-            final BufferedReader reader = new BufferedReader(new InputStreamReader(refsetToProjectsResource.getInputStream()));
+				sctIdToProjectIdMap.put(columns[1], columns[0]);
 
-            // ProjectId, refsetId, projectName, projectDescription
-            String line = reader.readLine();
+				if (!projectIdToProjectInfoMap.containsKey(columns[0])) {
 
-            while (line != null && !line.isEmpty()) {
+					final Map<String, String> projectNameDescriptionMap = new HashMap<>();
+					projectNameDescriptionMap.put(columns[2], columns[3]);
+					projectIdToProjectInfoMap.put(columns[0], projectNameDescriptionMap);
+				}
 
-                final String[] columns = line.split(SPLIT_CHARACTER);
+				line = reader.readLine();
+			}
 
-                sctIdToProjectIdMap.put(columns[1], columns[0]);
+		} catch (final IOException e) {
 
-                if (!projectIdToProjectInfoMap.containsKey(columns[0])) {
+			e.printStackTrace();
+		}
 
-                    final Map<String, String> projectNameDescriptionMap = new HashMap<>();
-                    projectNameDescriptionMap.put(columns[2], columns[3]);
-                    projectIdToProjectInfoMap.put(columns[0], projectNameDescriptionMap);
-                }
+	}
 
-                line = reader.readLine();
-            }
+	/**
+	 * Read refset sct id to tags map.
+	 *
+	 * @return the map
+	 */
+	private Map<String, Set<String>> readRefsetSctIdToTagsMap() {
 
-            reader.close();
-        } catch (final IOException e) {
+		final Map<String, Set<String>> refsetToTagsInfoMap = new HashMap<>();
 
-            e.printStackTrace();
-        }
+		try (final InputStreamReader in = new InputStreamReader(refsetToTagsResource.getInputStream());
+				final BufferedReader reader = new BufferedReader(in);) {
 
-    }
+			String line = reader.readLine();
 
-    /**
-     * Read refset sct id to tags map.
-     *
-     * @return the map
-     */
-    private Map<String, Set<String>> readRefsetSctIdToTagsMap() {
+			while (line != null && !line.isEmpty()) {
 
-        final Map<String, Set<String>> refsetToTagsInfoMap = new HashMap<>();
+				final String[] columns = line.split(SPLIT_CHARACTER);
 
-        try {
+				if (!refsetToTagsInfoMap.containsKey(columns[0])) {
 
-            final BufferedReader reader = new BufferedReader(new InputStreamReader(refsetToTagsResource.getInputStream()));
+					refsetToTagsInfoMap.put(columns[0], new HashSet<>());
+				}
 
-            String line = reader.readLine();
+				if (columns.length == 2 && !columns[0].isEmpty() && !columns[1].isEmpty()
+						&& refsetToTagsInfoMap.containsKey(columns[0])) {
 
-            while (line != null && !line.isEmpty()) {
+					refsetToTagsInfoMap.get(columns[0]).add(stripQuotes(columns[1]));
+				} else {
 
-                final String[] columns = line.split(SPLIT_CHARACTER);
+					LOG.info("Skipping this line in readRttRefsetsToTagsMap(): " + line);
+				}
 
-                if (!refsetToTagsInfoMap.containsKey(columns[0])) {
+				line = reader.readLine();
+			}
 
-                    refsetToTagsInfoMap.put(columns[0], new HashSet<>());
-                }
+		} catch (final IOException e) {
 
-                if (columns.length == 2 && !columns[0].isEmpty() && !columns[1].isEmpty() && refsetToTagsInfoMap.containsKey(columns[0])) {
+			e.printStackTrace();
+		}
 
-                    refsetToTagsInfoMap.get(columns[0]).add(stripQuotes(columns[1]));
-                } else {
+		return refsetToTagsInfoMap;
+	}
 
-                    LOG.info("Skipping this line in readRttRefsetsToTagsMap(): " + line);
-                }
+	/**
+	 * Read team creation.
+	 *
+	 * @return the map
+	 */
+	private Map<String, Map<String, Set<String>>> readTeamCreation() {
 
-                line = reader.readLine();
-            }
+		final Map<String, Map<String, Set<String>>> teamsToCreate = new HashMap<>();
 
-            reader.close();
-        } catch (final IOException e) {
+		try (final InputStreamReader in = new InputStreamReader(teamCreationResource.getInputStream());
+				final BufferedReader reader = new BufferedReader(in);) {
 
-            e.printStackTrace();
-        }
+			String line = reader.readLine();
 
-        return refsetToTagsInfoMap;
-    }
+			while (line != null && !line.isEmpty()) {
 
-    /**
-     * Read team creation.
-     *
-     * @return the map
-     */
-    private Map<String, Map<String, Set<String>>> readTeamCreation() {
+				final String[] columns = line.split("\t");
 
-        final Map<String, Map<String, Set<String>>> teamsToCreate = new HashMap<>();
+				if (columns.length != 3) {
 
-        try {
+					throw new IOException(
+							"line: " + line + " has only " + columns.length + " rather than the expected amount (3)");
+				}
 
-            final BufferedReader reader = new BufferedReader(new InputStreamReader(teamCreationResource.getInputStream()));
+				if (!teamsToCreate.containsKey(columns[0])) {
 
-            String line = reader.readLine();
+					teamsToCreate.put(columns[0], new HashMap<String, Set<String>>());
+				}
 
-            while (line != null && !line.isEmpty()) {
+				if (!teamsToCreate.get(columns[0]).containsKey(columns[1])) {
 
-                final String[] columns = line.split("\t");
+					teamsToCreate.get(columns[0]).put(columns[1], new HashSet<String>());
+				}
 
-                if (columns.length != 3) {
+				teamsToCreate.get(columns[0]).get(columns[1]).add(columns[2]);
+				line = reader.readLine();
+			}
 
-                    throw new IOException("line: " + line + " has only " + columns.length + " rather than the expected amount (3)");
-                }
+		} catch (
 
-                if (!teamsToCreate.containsKey(columns[0])) {
+		final IOException e) {
 
-                    teamsToCreate.put(columns[0], new HashMap<String, Set<String>>());
-                }
+			e.printStackTrace();
+		}
 
-                if (!teamsToCreate.get(columns[0]).containsKey(columns[1])) {
+		return teamsToCreate;
+	}
 
-                    teamsToCreate.get(columns[0]).put(columns[1], new HashSet<String>());
-                }
+	/**
+	 * Read team to project assignement.
+	 *
+	 * @return the map
+	 */
+	private Map<String, Set<String>> readTeamToProjectAssignement() {
 
-                teamsToCreate.get(columns[0]).get(columns[1]).add(columns[2]);
-                line = reader.readLine();
-            }
+		final Map<String, Set<String>> teamToProjects = new HashMap<>();
 
-            reader.close();
-        } catch (
+		try (final InputStreamReader in = new InputStreamReader(teamToProjectAssignmentResource.getInputStream());
+				final BufferedReader reader = new BufferedReader(in);) {
 
-        final IOException e) {
+			String line = reader.readLine();
 
-            e.printStackTrace();
-        }
+			while (line != null && !line.isEmpty()) {
 
-        return teamsToCreate;
-    }
+				final String[] columns = line.split("\t");
 
-    /**
-     * Read team to project assignement.
-     *
-     * @return the map
-     */
-    private Map<String, Set<String>> readTeamToProjectAssignement() {
+				if (columns.length != 2) {
 
-        final Map<String, Set<String>> teamToProjects = new HashMap<>();
+					throw new IOException(
+							"line: " + line + " has only " + columns.length + " rather than the expected amount (2)");
+				}
 
-        try {
+				if (!teamToProjects.containsKey(columns[0])) {
 
-            final BufferedReader reader = new BufferedReader(new InputStreamReader(teamToProjectAssignmentResource.getInputStream()));
+					teamToProjects.put(columns[0], new HashSet<>());
+				}
 
-            String line = reader.readLine();
+				teamToProjects.get(columns[0]).add(stripQuotes(columns[1]));
+				line = reader.readLine();
+			}
 
-            while (line != null && !line.isEmpty()) {
+		} catch (final IOException e) {
 
-                final String[] columns = line.split("\t");
+			e.printStackTrace();
+		}
 
-                if (columns.length != 2) {
+		return teamToProjects;
+	}
 
-                    throw new IOException("line: " + line + " has only " + columns.length + " rather than the expected amount (2)");
-                }
+	/**
+	 * Read team membership.
+	 *
+	 * @return the map
+	 */
+	private Map<String, Set<String>> readTeamMembership() {
 
-                if (!teamToProjects.containsKey(columns[0])) {
+		final Map<String, Set<String>> teamMembership = new HashMap<>();
 
-                    teamToProjects.put(columns[0], new HashSet<>());
-                }
+		try (final InputStreamReader in = new InputStreamReader(teamMembershipResource.getInputStream());
+				final BufferedReader reader = new BufferedReader(in);) {
 
-                teamToProjects.get(columns[0]).add(stripQuotes(columns[1]));
-                line = reader.readLine();
-            }
+			String line = reader.readLine();
 
-            reader.close();
-        } catch (final IOException e) {
+			while (line != null && !line.isEmpty()) {
 
-            e.printStackTrace();
-        }
+				final String[] columns = line.split("\t");
 
-        return teamToProjects;
-    }
+				if (columns.length != 2) {
 
-    /**
-     * Read team membership.
-     *
-     * @return the map
-     */
-    private Map<String, Set<String>> readTeamMembership() {
+					throw new IOException(
+							"line: " + line + " has only " + columns.length + " rather than the expected amount (2)");
+				}
 
-        final Map<String, Set<String>> teamMembership = new HashMap<>();
+				if (!teamMembership.containsKey(columns[0])) {
 
-        try {
+					teamMembership.put(columns[0], new HashSet<String>());
+				}
 
-            final BufferedReader reader = new BufferedReader(new InputStreamReader(teamMembershipResource.getInputStream()));
+				teamMembership.get(columns[0]).add(columns[1]);
+				line = reader.readLine();
+			}
 
-            String line = reader.readLine();
+		} catch (final IOException e) {
 
-            while (line != null && !line.isEmpty()) {
+			e.printStackTrace();
+		}
 
-                final String[] columns = line.split("\t");
+		return teamMembership;
+	}
 
-                if (columns.length != 2) {
+	/**
+	 * Read undefined default language refsets.
+	 *
+	 * @return the map
+	 */
+	public Map<String, Set<String>> readUndefinedDefaultLanguageRefsets() {
 
-                    throw new IOException("line: " + line + " has only " + columns.length + " rather than the expected amount (2)");
-                }
+		if (defaultLanguageRefsetMap == null) {
 
-                if (!teamMembership.containsKey(columns[0])) {
+			defaultLanguageRefsetMap = new HashMap<>();
+		}
 
-                    teamMembership.put(columns[0], new HashSet<String>());
-                }
+		if (defaultLanguageRefsetMap.isEmpty()) {
 
-                teamMembership.get(columns[0]).add(columns[1]);
-                line = reader.readLine();
-            }
+			try (final InputStreamReader in = new InputStreamReader(
+					undefinedDefaultLangRefsetsResource.getInputStream());
+					final BufferedReader reader = new BufferedReader(in);) {
 
-            reader.close();
-        } catch (final IOException e) {
+				String line;
 
-            e.printStackTrace();
-        }
+				while ((line = reader.readLine()) != null) {
 
-        return teamMembership;
-    }
+					final String[] columns = line.split("\t");
+					defaultLanguageRefsetMap.put(columns[0], new HashSet<String>());
 
-    /**
-     * Read undefined default language refsets.
-     *
-     * @return the map
-     */
-    public Map<String, Set<String>> readUndefinedDefaultLanguageRefsets() {
+					for (int i = 1; i < columns.length; i++) {
 
-        if (defaultLanguageRefsetMap == null) {
+						defaultLanguageRefsetMap.get(columns[0]).add(columns[i]);
+					}
 
-            defaultLanguageRefsetMap = new HashMap<>();
-        }
+				}
 
-        if (defaultLanguageRefsetMap.isEmpty()) {
+			} catch (final IOException e) {
 
-            try (final BufferedReader reader = new BufferedReader(new InputStreamReader(undefinedDefaultLangRefsetsResource.getInputStream()));) {
+				e.printStackTrace();
+			}
 
-                String line;
+		}
 
-                while ((line = reader.readLine()) != null) {
+		return defaultLanguageRefsetMap;
+	}
 
-                    final String[] columns = line.split("\t");
-                    defaultLanguageRefsetMap.put(columns[0], new HashSet<String>());
+	/**
+	 * Read rtt project info.
+	 *
+	 * @return the map
+	 */
+	private Map<String, Map<String, String>> readExistingEditionProjectInfo() {
 
-                    for (int i = 1; i < columns.length; i++) {
+		// edition to map of project name to crowd id
+		final Map<String, Map<String, String>> projectInfo = new HashMap<>();
 
-                        defaultLanguageRefsetMap.get(columns[0]).add(columns[i]);
-                    }
+		try (final InputStreamReader in = new InputStreamReader(existingMigrateCleanResource.getInputStream());
+				final BufferedReader reader = new BufferedReader(in);) {
 
-                }
+			// Line contents: crowdProjectId, projectName, editionShortName
+			String line = reader.readLine();
+			line = reader.readLine();
 
-            } catch (final IOException e) {
+			while (line != null && !line.isEmpty()) {
 
-                e.printStackTrace();
-            }
+				final String[] columns = line.split(SPLIT_CHARACTER);
 
-        }
+				if (!projectInfo.containsKey(columns[2])) {
 
-        return defaultLanguageRefsetMap;
-    }
+					projectInfo.put(columns[2], new HashMap<>());
+				}
 
-    /**
-     * Read rtt project info.
-     *
-     * @return the map
-     */
-    private Map<String, Map<String, String>> readExistingEditionProjectInfo() {
+				projectInfo.get(columns[2]).put(columns[1], columns[0]);
 
-        // edition to map of project name to crowd id
-        final Map<String, Map<String, String>> projectInfo = new HashMap<>();
+				line = reader.readLine();
+			}
 
-        try {
+		} catch (final IOException e) {
 
-            final BufferedReader reader = new BufferedReader(new InputStreamReader(existingMigrateCleanResource.getInputStream()));
+			e.printStackTrace();
+		}
 
-            // Line contents: crowdProjectId, projectName, editionShortName
-            String line = reader.readLine();
-            line = reader.readLine();
+		return projectInfo;
+	}
 
-            while (line != null && !line.isEmpty()) {
+	/**
+	 * Generate json from sql file.
+	 *
+	 * @param classPathResource the input resource
+	 * @param processType       the process type
+	 * @throws Exception the exception
+	 */
+	private void populateFromFile(final ClassPathResource classPathResource, final FileProcessType processType)
+			throws Exception {
 
-                final String[] columns = line.split(SPLIT_CHARACTER);
+		int lineNumber = 0;
 
-                if (!projectInfo.containsKey(columns[2])) {
+		try {
 
-                    projectInfo.put(columns[2], new HashMap<>());
-                }
+			final BufferedReader reader = new BufferedReader(new InputStreamReader(classPathResource.getInputStream()));
 
-                projectInfo.get(columns[2]).put(columns[1], columns[0]);
+			// Grab Header on 2nd time through
+			String line = reader.readLine();
+			line = reader.readLine();
 
-                line = reader.readLine();
-            }
+			while (line != null) {
 
-            reader.close();
-        } catch (final IOException e) {
+				switch (processType) {
 
-            e.printStackTrace();
-        }
+				case REFSET:
+					final String refsetJson = lineToRefsetJson(line, lineNumber++);
 
-        return projectInfo;
-    }
+					if (refsetJson != null) {
 
-    /**
-     * Generate json from sql file.
-     *
-     * @param classPathResource the input resource
-     * @param processType the process type
-     * @throws Exception the exception
-     */
-    private void populateFromFile(final ClassPathResource classPathResource, final FileProcessType processType) throws Exception {
+						rttIdToRefsetJsonMap.put(line.split(SPLIT_CHARACTER)[0], refsetJson);
+					}
+					break;
 
-        int lineNumber = 0;
+				case CLAUSE:
 
-        try {
+					// Combine multiline clauses into one
+					while (line.indexOf("\"") >= 0 && line.indexOf("\"") == line.lastIndexOf("\"")) {
 
-            final BufferedReader reader = new BufferedReader(new InputStreamReader(classPathResource.getInputStream()));
+						line = line + " " + reader.readLine();
+					}
 
-            // Grab Header on 2nd time through
-            String line = reader.readLine();
-            line = reader.readLine();
+					final String clauseJson = lineToClauseJson(line, lineNumber++);
+					final String refsetSctId = line.split(SPLIT_CHARACTER)[0];
 
-            while (line != null) {
+					// store all clauses associated wtih a given refset
 
-                switch (processType) {
+					if (!refsetSctIdToClausesMap.containsKey(refsetSctId)) {
 
-                    case REFSET:
-                        final String refsetJson = lineToRefsetJson(line, lineNumber++);
+						refsetSctIdToClausesMap.put(refsetSctId, new ArrayList<String>());
+					}
 
-                        if (refsetJson != null) {
+					refsetSctIdToClausesMap.get(refsetSctId).add(clauseJson);
+					break;
 
-                            rttIdToRefsetJsonMap.put(line.split(SPLIT_CHARACTER)[0], refsetJson);
-                        }
-                        break;
+				case PROJECT:
+					parseProjectLine(line, lineNumber++);
+					break;
 
-                    case CLAUSE:
+				default:
+					throw new Exception("Should never reach here have processType: " + processType);
+				}
 
-                        // Combine multiline clauses into one
-                        while (line.indexOf("\"") >= 0 && line.indexOf("\"") == line.lastIndexOf("\"")) {
+				// read next line
+				line = reader.readLine();
+			}
 
-                            line = line + " " + reader.readLine();
-                        }
+		} catch (final IOException e) {
 
-                        final String clauseJson = lineToClauseJson(line, lineNumber++);
-                        final String refsetSctId = line.split(SPLIT_CHARACTER)[0];
+			e.printStackTrace();
+		}
 
-                        // store all clauses associated wtih a given refset
+	}
 
-                        if (!refsetSctIdToClausesMap.containsKey(refsetSctId)) {
+	/**
+	 * Returns the test queries.
+	 *
+	 * @param classPathResource the class path resource
+	 * @return the test queries
+	 * @throws Exception the exception
+	 */
+	public List<String> getTestQueries(final ClassPathResource classPathResource) throws Exception {
 
-                            refsetSctIdToClausesMap.put(refsetSctId, new ArrayList<String>());
-                        }
+		final List<String> lines = FileUtils.readLines(new File(classPathResource.getPath()), "utf-8");
 
-                        refsetSctIdToClausesMap.get(refsetSctId).add(clauseJson);
-                        break;
+		return lines;
 
-                    case PROJECT:
-                        parseProjectLine(line, lineNumber++);
-                        break;
+	}
 
-                    default:
-                        throw new Exception("Should never reach here have processType: " + processType);
-                }
+	/**
+	 * Strip quotes.
+	 *
+	 * @param str the str
+	 * @return the string
+	 */
+	private String stripQuotes(final String str) {
 
-                // read next line
-                line = reader.readLine();
-            }
+		String updatedString = str;
 
-            reader.close();
-        } catch (final IOException e) {
+		if (updatedString.startsWith("\"")) {
 
-            e.printStackTrace();
-        }
+			updatedString = updatedString.substring(1);
+		}
 
-    }
+		if (updatedString.endsWith("\"")) {
 
-    /**
-     * Returns the test queries.
-     *
-     * @param classPathResource the class path resource
-     * @return the test queries
-     * @throws Exception the exception
-     */
-    public List<String> getTestQueries(final ClassPathResource classPathResource) throws Exception {
+			updatedString = updatedString.substring(0, updatedString.length() - 1);
+		}
 
-        final List<String> lines = FileUtils.readLines(new File(classPathResource.getPath()), "utf-8");
+		return updatedString;
+	}
 
-        return lines;
+	/**
+	 * Line to clause json.
+	 *
+	 * @param line       the line
+	 * @param lineNumber the line number
+	 * @return the string
+	 */
+	private String lineToClauseJson(final String line, final int lineNumber) {
 
-    }
+		try {
 
-    /**
-     * Strip quotes.
-     *
-     * @param str the str
-     * @return the string
-     */
-    private String stripQuotes(final String str) {
+			final StringBuffer buf = new StringBuffer();
+			final String[] clauseValues = line.split(SPLIT_CHARACTER);
+			buf.append("{ \"negated\":\"");
+			buf.append(clauseValues[1].equals("0") ? "false" : "true");
+			buf.append("\",");
 
-        String updatedString = str;
+			buf.append("\"value\":\"" + clauseValues[2].replaceAll("\"", "").replaceAll("\t", "") + "\"}");
+			return buf.toString();
+		} catch (final Exception e) {
 
-        if (updatedString.startsWith("\"")) {
+			LOG.error("Failed to process line #" + lineNumber + " of clause json: " + line);
 
-            updatedString = updatedString.substring(1);
-        }
+			e.printStackTrace();
 
-        if (updatedString.endsWith("\"")) {
+			throw e;
+		}
 
-            updatedString = updatedString.substring(0, updatedString.length() - 1);
-        }
+	}
 
-        return updatedString;
-    }
+	/**
+	 * Line to refset json.
+	 *
+	 * @param line       the line
+	 * @param lineNumber the line number
+	 * @return the string
+	 * @throws Exception the exception
+	 */
+	private String lineToRefsetJson(final String line, final int lineNumber) throws Exception {
 
-    /**
-     * Line to clause json.
-     *
-     * @param line the line
-     * @param lineNumber the line number
-     * @return the string
-     */
-    private String lineToClauseJson(final String line, final int lineNumber) {
+		String updatedLine = line;
+		String narrative;
 
-        try {
+		try {
 
-            final StringBuffer buf = new StringBuffer();
-            final String[] clauseValues = line.split(SPLIT_CHARACTER);
-            buf.append("{ \"negated\":\"");
-            buf.append(clauseValues[1].equals("0") ? "false" : "true");
-            buf.append("\",");
+			// Clean up narrative if has commas which some do
+			if (updatedLine.split(SPLIT_CHARACTER)[9].startsWith("\"")) {
 
-            buf.append("\"value\":\"" + clauseValues[2].replaceAll("\"", "").replaceAll("\t", "") + "\"}");
-            return buf.toString();
-        } catch (final Exception e) {
+				// Can't rely on splitting on comma. Must identify narrative and
+				// then remove from line before finding other values
+				final int descStartIdx = updatedLine.indexOf(updatedLine.split(SPLIT_CHARACTER)[9]);
+				final int descEndIdx = updatedLine.substring(descStartIdx + 1).indexOf("\"");
+				narrative = updatedLine.substring(descStartIdx + 1, descStartIdx + descEndIdx + 1);
 
-            LOG.error("Failed to process line #" + lineNumber + " of clause json: " + line);
+				// Cleanup updateLine to remove ',' in narrative
+				updatedLine = updatedLine.substring(0, descStartIdx) + narrative.replaceAll(SPLIT_CHARACTER, "")
+						+ updatedLine.substring(descStartIdx + descEndIdx + 2);
+			} else {
 
-            e.printStackTrace();
+				narrative = updatedLine.split(SPLIT_CHARACTER)[9];
+			}
 
-            throw e;
-        }
+			// Clean up name if has commas (which some do)
+			if (updatedLine.split(SPLIT_CHARACTER)[17].startsWith("\"")) {
 
-    }
+				// Can't rely on splitting on comma. Must identify name portion
+				// and then remove from line before finding other values
+				final int nameStartIdx = updatedLine.indexOf(updatedLine.split(SPLIT_CHARACTER)[17]);
+				final int nameEndIdx = updatedLine.substring(nameStartIdx + 1).indexOf("\"");
+				final String name = updatedLine.substring(nameStartIdx + 1, nameStartIdx + nameEndIdx + 1);
 
-    /**
-     * Line to refset json.
-     *
-     * @param line the line
-     * @param lineNumber the line number
-     * @return the string
-     * @throws Exception the exception
-     */
-    private String lineToRefsetJson(final String line, final int lineNumber) throws Exception {
+				// Cleanup line to remove ',' in narrative
+				updatedLine = updatedLine.substring(0, nameStartIdx) + name.replaceAll(",", "")
+						+ updatedLine.substring(nameStartIdx + nameEndIdx + 2);
+			}
 
-        String updatedLine = line;
-        String narrative;
+			updatedLine = updatedLine.replace("\"", "");
+			final String[] values = updatedLine.split(SPLIT_CHARACTER);
 
-        try {
+			if (projectsToIgnore.contains(values[27])) {
 
-            // Clean up narrative if has commas which some do
-            if (updatedLine.split(SPLIT_CHARACTER)[9].startsWith("\"")) {
+				// Don't add refsets from ignored projects (just WCI projects for now)
+				return null;
+			} else if (!values[8].matches("\\b\\d*\\b")) {
 
-                // Can't rely on splitting on comma. Must identify narrative and
-                // then remove from line before finding other values
-                final int descStartIdx = updatedLine.indexOf(updatedLine.split(SPLIT_CHARACTER)[9]);
-                final int descEndIdx = updatedLine.substring(descStartIdx + 1).indexOf("\"");
-                narrative = updatedLine.substring(descStartIdx + 1, descStartIdx + descEndIdx + 1);
+				return null;
+			} else if (!"PUBLISHED".equals(values[26])) {
 
-                // Cleanup updateLine to remove ',' in narrative
-                updatedLine = updatedLine.substring(0, descStartIdx) + narrative.replaceAll(SPLIT_CHARACTER, "") + updatedLine.substring(descStartIdx + descEndIdx + 2);
-            } else {
+				// Only add published versions of refsets, not those in development
+				return null;
+			} else if (values[2] == null) {
 
-                narrative = updatedLine.split(SPLIT_CHARACTER)[9];
-            }
+				// Published refsets must have an effectiveTime
+				return null;
+			} else if (values[1].length() != 1
+					|| (!values[1].equals("1") && !Character.isISOControl(values[1].charAt(0)))) {
 
-            // Clean up name if has commas (which some do)
-            if (updatedLine.split(SPLIT_CHARACTER)[17].startsWith("\"")) {
+				// Must be an active refset
+				return null;
+			}
 
-                // Can't rely on splitting on comma. Must identify name portion
-                // and then remove from line before finding other values
-                final int nameStartIdx = updatedLine.indexOf(updatedLine.split(SPLIT_CHARACTER)[17]);
-                final int nameEndIdx = updatedLine.substring(nameStartIdx + 1).indexOf("\"");
-                final String name = updatedLine.substring(nameStartIdx + 1, nameStartIdx + nameEndIdx + 1);
+			final StringBuffer buf = new StringBuffer();
+			final String rttRefsetId = values[0];
 
-                // Cleanup line to remove ',' in narrative
-                updatedLine = updatedLine.substring(0, nameStartIdx) + name.replaceAll(",", "") + updatedLine.substring(nameStartIdx + nameEndIdx + 2);
-            }
+			if (narrative.equals(values[17])) {
 
-            updatedLine = updatedLine.replace("\"", "");
-            final String[] values = updatedLine.split(SPLIT_CHARACTER);
+				// Name and narrative the same, so clearing narrative
+				narrative = "";
+			}
 
-            if (projectsToIgnore.contains(values[27])) {
+			// Begin RefsetJson
+			buf.append("{");
 
-                // Don't add refsets from ignored projects (just WCI projects for now)
-                return null;
-            } else if (!values[8].matches("\\b\\d*\\b")) {
+			// Populate the Json with values from refsets.txt file
+			buf.append("\"name\": \"" + values[17] + "\",");
+			buf.append("\"refsetId\": \"" + values[8] + "\",");
+			buf.append("\"moduleId\": \"" + values[5] + "\",");
+			buf.append("\"version\": \"" + values[2] + "\","); // "2021-05-30 00:00:00"
+			buf.append("\"narrative\": \"" + narrative + "\",");
+			buf.append("\"privateRefset\": " + ((values[15].equals("0")) ? "true" : "false"));
 
-                return null;
-            } else if (!"PUBLISHED".equals(values[26])) {
+			// Complete the json
+			buf.append("}");
 
-                // Only add published versions of refsets, not those in development
-                return null;
-            } else if (values[2] == null) {
+			// Store ability to map from RefsetId to ProjectId
+			rttIdToRttProjectIdMap.put(rttRefsetId, values[27]);
 
-                // Published refsets must have an effectiveTime
-                return null;
-            } else if (values[1].length() != 1 || (!values[1].equals("1") && !Character.isISOControl(values[1].charAt(0)))) {
+			// Store effective Time to avoid handling it within Json
+			rttRefsetToEffectiveDateMap.put(rttRefsetId, values[2]);
 
-                // Must be an active refset
-                return null;
-            }
+			final SyncPersistenceMetadata meta = new SyncPersistenceMetadata(values[3], values[4]);
+			metadataMap.put("refset-" + rttRefsetId, meta);
 
-            final StringBuffer buf = new StringBuffer();
-            final String rttRefsetId = values[0];
+			return buf.toString();
+		} catch (final Exception e) {
 
-            if (narrative.equals(values[17])) {
+			LOG.error("Failed to process line #" + lineNumber + " of refset json: " + line);
 
-                // Name and narrative the same, so clearing narrative
-                narrative = "";
-            }
+			e.printStackTrace();
 
-            // Begin RefsetJson
-            buf.append("{");
+			throw e;
+		}
 
-            // Populate the Json with values from refsets.txt file
-            buf.append("\"name\": \"" + values[17] + "\",");
-            buf.append("\"refsetId\": \"" + values[8] + "\",");
-            buf.append("\"moduleId\": \"" + values[5] + "\",");
-            buf.append("\"version\": \"" + values[2] + "\","); // "2021-05-30 00:00:00"
-            buf.append("\"narrative\": \"" + narrative + "\",");
-            buf.append("\"privateRefset\": " + ((values[15].equals("0")) ? "true" : "false"));
+	}
 
-            // Complete the json
-            buf.append("}");
+	/**
+	 * Line to project json.
+	 *
+	 * @param line       the line
+	 * @param lineNumber the line number
+	 * @throws Exception the exception
+	 */
+	private void parseProjectLine(final String line, final int lineNumber) throws Exception {
 
-            // Store ability to map from RefsetId to ProjectId
-            rttIdToRttProjectIdMap.put(rttRefsetId, values[27]);
+		String projectName;
+		String projectDescription;
+		String modified;
+		String modifiedBy;
+		String editionShortName;
+		String crowdId = null;
 
-            // Store effective Time to avoid handling it within Json
-            rttRefsetToEffectiveDateMap.put(rttRefsetId, values[2]);
+		if (line.toLowerCase().contains(SyncUtilities.DEVELOPER_ORGANIZATION_NAME_KEYWORD)) {
 
-            final SyncPersistenceMetadata meta = new SyncPersistenceMetadata(values[3], values[4]);
-            metadataMap.put("refset-" + rttRefsetId, meta);
+			projectsToIgnore.add(line.split(SPLIT_CHARACTER)[0]);
+		}
 
-            return buf.toString();
-        } catch (final Exception e) {
+		try {
 
-            LOG.error("Failed to process line #" + lineNumber + " of refset json: " + line);
+			final String[] values = line.split(SPLIT_CHARACTER);
 
-            e.printStackTrace();
+			projectName = values[7].replaceAll("\"", "");
+			projectDescription = values[1];
+			editionShortName = values[9].replaceAll("\"", "");
+			modified = values[4];
+			modifiedBy = values[5];
 
-            throw e;
-        }
+			if (editionShortName.equals(OLD_SNOMED_CORE_NAME)) {
 
-    }
+				editionShortName = NEW_SNOMED_CORE_NAME;
+			}
 
-    /**
-     * Line to project json.
-     *
-     * @param line the line
-     * @param lineNumber the line number
-     * @throws Exception the exception
-     */
-    private void parseProjectLine(final String line, final int lineNumber) throws Exception {
+			if (existingEditionProjectInfo.containsKey(editionShortName)
+					&& existingEditionProjectInfo.get(editionShortName).containsKey(projectName)) {
 
-        String projectName;
-        String projectDescription;
-        String modified;
-        String modifiedBy;
-        String editionShortName;
-        String crowdId = null;
+				crowdId = existingEditionProjectInfo.get(editionShortName).get(projectName);
+			}
 
-        if (line.toLowerCase().contains(SyncUtilities.DEVELOPER_ORGANIZATION_NAME_KEYWORD)) {
+			// TODO: TESTING - Create new project on crowd (without users but that gets
+			// added with project=ALL
+			if (crowdId == null || crowdId.isEmpty()) {
 
-            projectsToIgnore.add(line.split(SPLIT_CHARACTER)[0]);
-        }
+				StringBuffer s = new StringBuffer();
 
-        try {
+				String[] nameParts = projectName.split(" ");
 
-            final String[] values = line.split(SPLIT_CHARACTER);
+				for (int i = 0; i < nameParts.length; i++) {
 
-            projectName = values[7].replaceAll("\"", "");
-            projectDescription = values[1];
-            editionShortName = values[9].replaceAll("\"", "");
-            modified = values[4];
-            modifiedBy = values[5];
+					s.append(nameParts[i].toLowerCase().charAt(0));
+				}
 
-            if (editionShortName.equals(OLD_SNOMED_CORE_NAME)) {
+				crowdId = s.toString();
+			}
 
-                editionShortName = NEW_SNOMED_CORE_NAME;
-            }
+			SyncProjectMetadata newProject = new SyncProjectMetadata(line.split(SPLIT_CHARACTER)[0], crowdId,
+					projectName, projectDescription, editionShortName);
 
-            if (existingEditionProjectInfo.containsKey(editionShortName) && existingEditionProjectInfo.get(editionShortName).containsKey(projectName)) {
+			projectData.add(newProject);
 
-                crowdId = existingEditionProjectInfo.get(editionShortName).get(projectName);
-            }
+			metadataMap.put("project-" + line.split(SPLIT_CHARACTER)[0],
+					new SyncPersistenceMetadata(modified, modifiedBy));
+		} catch (final Exception e) {
 
-            // TODO: TESTING - Create new project on crowd (without users but that gets added with project=ALL
-            if (crowdId == null || crowdId.isEmpty()) {
+			LOG.error("Failed to process line #" + lineNumber + " of project json: " + line);
 
-                StringBuffer s = new StringBuffer();
+			e.printStackTrace();
 
-                String[] nameParts = projectName.split(" ");
+			throw e;
+		}
 
-                for (int i = 0; i < nameParts.length; i++) {
+	}
 
-                    s.append(nameParts[i].toLowerCase().charAt(0));
-                }
+	/**
+	 * Returns the project id to project info map.
+	 *
+	 * @return the project id to project info map
+	 */
+	public Map<String, Map<String, String>> getProjectIdToProjectInfoMap() {
 
-                crowdId = s.toString();
-            }
+		if (projectIdToProjectInfoMap.isEmpty()) {
 
-            SyncProjectMetadata newProject = new SyncProjectMetadata(line.split(SPLIT_CHARACTER)[0], crowdId, projectName, projectDescription, editionShortName);
+			readRttProjectInfo();
+		}
 
-            projectData.add(newProject);
+		return projectIdToProjectInfoMap;
+	}
 
-            metadataMap.put("project-" + line.split(SPLIT_CHARACTER)[0], new SyncPersistenceMetadata(modified, modifiedBy));
-        } catch (final Exception e) {
+	/**
+	 * Returns the sct id to project id map.
+	 *
+	 * @return the sct id to project id map
+	 */
+	public Map<String, String> getSctIdToProjectIdMap() {
 
-            LOG.error("Failed to process line #" + lineNumber + " of project json: " + line);
+		if (sctIdToProjectIdMap.isEmpty()) {
 
-            e.printStackTrace();
+			readRttProjectInfo();
+		}
 
-            throw e;
-        }
+		return sctIdToProjectIdMap;
+	}
 
-    }
+	/**
+	 * Returns the refset to description map.
+	 *
+	 * @return the refset to description map
+	 */
+	public Map<String, String> getRefsetToDescriptionMap() {
 
-    /**
-     * Returns the project id to project info map.
-     *
-     * @return the project id to project info map
-     */
-    public Map<String, Map<String, String>> getProjectIdToProjectInfoMap() {
+		return refsetToDescriptionMap;
+	}
 
-        if (projectIdToProjectInfoMap.isEmpty()) {
+	/**
+	 * Returns the refset sct to tags map.
+	 *
+	 * @return the refset sct to tags map
+	 */
+	public Map<String, Set<String>> getRefsetSctToTagsMap() {
 
-            readRttProjectInfo();
-        }
+		return refsetSctIdToTagsMap;
+	}
 
-        return projectIdToProjectInfoMap;
-    }
+	/**
+	 * Returns the refset sct id to rtt id map.
+	 *
+	 * @return the refset sct id to rtt id map
+	 */
+	public Map<String, Set<String>> getRefsetSctIdToRttIdMap() {
 
-    /**
-     * Returns the sct id to project id map.
-     *
-     * @return the sct id to project id map
-     */
-    public Map<String, String> getSctIdToProjectIdMap() {
+		return rttRefsetSctIdToRttIdMap;
+	}
 
-        if (sctIdToProjectIdMap.isEmpty()) {
+	/**
+	 * Returns the rtt id to refset json map.
+	 *
+	 * @return the rtt id to refset json map
+	 */
+	public Map<String, String> getRttIdToRefsetJsonMap() {
 
-            readRttProjectInfo();
-        }
+		return rttIdToRefsetJsonMap;
+	}
 
-        return sctIdToProjectIdMap;
-    }
+	/**
+	 * Returns the refset sct to clauses map.
+	 *
+	 * @return the refset sct to clauses map
+	 */
+	public Map<String, ArrayList<String>> getRefsetSctToClausesMap() {
 
-    /**
-     * Returns the refset to description map.
-     *
-     * @return the refset to description map
-     */
-    public Map<String, String> getRefsetToDescriptionMap() {
+		return refsetSctIdToClausesMap;
+	}
 
-        return refsetToDescriptionMap;
-    }
+	/**
+	 * Returns the rtt refset to effective date map.
+	 *
+	 * @return the rtt refset to effective date map
+	 */
+	public Map<String, String> getRttRefsetToEffectiveDateMap() {
 
-    /**
-     * Returns the refset sct to tags map.
-     *
-     * @return the refset sct to tags map
-     */
-    public Map<String, Set<String>> getRefsetSctToTagsMap() {
+		return rttRefsetToEffectiveDateMap;
+	}
 
-        return refsetSctIdToTagsMap;
-    }
+	/**
+	 * Returns the metadata map.
+	 *
+	 * @return the metadata map
+	 */
+	public Map<String, SyncPersistenceMetadata> getMetadataMap() {
 
-    /**
-     * Returns the refset sct id to rtt id map.
-     *
-     * @return the refset sct id to rtt id map
-     */
-    public Map<String, Set<String>> getRefsetSctIdToRttIdMap() {
+		return metadataMap;
+	}
 
-        return rttRefsetSctIdToRttIdMap;
-    }
+	/**
+	 * Returns the team creation.
+	 *
+	 * @return the team creation
+	 */
+	public Map<String, Map<String, Set<String>>> getTeamCreation() {
 
-    /**
-     * Returns the rtt id to refset json map.
-     *
-     * @return the rtt id to refset json map
-     */
-    public Map<String, String> getRttIdToRefsetJsonMap() {
+		return teamCreation;
+	}
 
-        return rttIdToRefsetJsonMap;
-    }
+	/**
+	 * Returns the team to projects.
+	 *
+	 * @return the team to projects
+	 */
+	public Map<String, Set<String>> getTeamToProjects() {
 
-    /**
-     * Returns the refset sct to clauses map.
-     *
-     * @return the refset sct to clauses map
-     */
-    public Map<String, ArrayList<String>> getRefsetSctToClausesMap() {
+		return teamToProjects;
+	}
 
-        return refsetSctIdToClausesMap;
-    }
+	/**
+	 * Returns the team membership.
+	 *
+	 * @return the team membership
+	 */
+	public Map<String, Set<String>> getTeamMembership() {
 
-    /**
-     * Returns the rtt refset to effective date map.
-     *
-     * @return the rtt refset to effective date map
-     */
-    public Map<String, String> getRttRefsetToEffectiveDateMap() {
+		return teamMembership;
+	}
 
-        return rttRefsetToEffectiveDateMap;
-    }
+	/**
+	 * Returns the project data map.
+	 *
+	 * @return the project data map
+	 */
+	public Set<SyncProjectMetadata> getProjectData() {
 
-    /**
-     * Returns the metadata map.
-     *
-     * @return the metadata map
-     */
-    public Map<String, SyncPersistenceMetadata> getMetadataMap() {
-
-        return metadataMap;
-    }
-
-    /**
-     * Returns the team creation.
-     *
-     * @return the team creation
-     */
-    public Map<String, Map<String, Set<String>>> getTeamCreation() {
-
-        return teamCreation;
-    }
-
-    /**
-     * Returns the team to projects.
-     *
-     * @return the team to projects
-     */
-    public Map<String, Set<String>> getTeamToProjects() {
-
-        return teamToProjects;
-    }
-
-    /**
-     * Returns the team membership.
-     *
-     * @return the team membership
-     */
-    public Map<String, Set<String>> getTeamMembership() {
-
-        return teamMembership;
-    }
-
-    /**
-     * Returns the project data map.
-     *
-     * @return the project data map
-     */
-    public Set<SyncProjectMetadata> getProjectData() {
-
-        return projectData;
-    }
+		return projectData;
+	}
 }

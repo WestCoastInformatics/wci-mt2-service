@@ -80,7 +80,8 @@ public class SecurityController extends BaseController {
             return new ResponseEntity<>(results, new HttpHeaders(), HttpStatus.OK);
 
         } catch (final Exception e) {
-            return handleException(e);
+			handleException(e);
+			return null;
         }
     }
 
@@ -120,7 +121,8 @@ public class SecurityController extends BaseController {
             return new ResponseEntity<>(user, new HttpHeaders(), HttpStatus.OK);
 
         } catch (final Exception e) {
-            return handleException(e);
+			handleException(e);
+			return null;
         }
     }
 
@@ -151,7 +153,8 @@ public class SecurityController extends BaseController {
             return new ResponseEntity<>(new HttpHeaders(), HttpStatus.OK);
 
         } catch (final Exception e) {
-            return handleException(e);
+			handleException(e);
+			return null;
         }
     }
 }

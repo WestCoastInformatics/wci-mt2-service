@@ -677,7 +677,8 @@ public final class IndexUtility {
         // Directory indexmanager
         if (!PropertyUtility.getProperties().getProperty("spring.jpa.properties.hibernate.search.backend.type").trim().equals("elasticsearch")) {
 
-            final QueryParser queryParser = new MultiFieldQueryParser(IndexUtility.getIndexedFieldNames(clazz, "string").toArray(new String[] {}),
+            @SuppressWarnings("resource")
+			final QueryParser queryParser = new MultiFieldQueryParser(IndexUtility.getIndexedFieldNames(clazz, "string").toArray(new String[] {}),
                 mapping.indexedEntity(clazz).indexManager().unwrap(LuceneIndexManager.class).searchAnalyzer());
 
             predicate = predicateFactory.extension(LuceneExtension.get()).fromLuceneQuery(queryParser.parse(finalQuery)).toPredicate();

@@ -72,7 +72,6 @@ public class TeamController extends BaseController {
      * @return the team
      * @throws Exception the exception
      */
-    @SuppressWarnings("unchecked")
     @ApiOperation(value = "Get team.  This call requires authentication with the correct role.", response = Team.class)
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
@@ -101,9 +100,8 @@ public class TeamController extends BaseController {
             return new ResponseEntity<>(new HttpHeaders(), HttpStatus.NOT_FOUND);
 
         } catch (final Exception e) {
-
-            LOG.error("Error getting team.  Id: {}", id);
-            return handleException(e);
+			handleException(e);
+			return null;
         }
 
     }
@@ -119,7 +117,6 @@ public class TeamController extends BaseController {
      * @return the string
      * @throws Exception the exception
      */
-    @SuppressWarnings("unchecked")
     @ApiOperation(value = "Find teams.  This call requires authentication with the correct role.", response = ResultList.class, notes = API_NOTES)
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
@@ -159,9 +156,8 @@ public class TeamController extends BaseController {
             return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            LOG.error("Error searching teams.  Search criteria: {} ", searchParameters.toString());
-            return handleException(e);
+			handleException(e);
+			return null;
         }
 
     }
@@ -210,9 +206,8 @@ public class TeamController extends BaseController {
             return ResponseEntity.status(HttpStatus.CREATED).body(t);
 
         } catch (final Exception e) {
-
-            LOG.error("Error adding team.  Team: {}", team == null ? null : team.toString());
-            return handleException(e);
+			handleException(e);
+			return null;
         }
 
     }
@@ -269,9 +264,8 @@ public class TeamController extends BaseController {
             return new ResponseEntity<>(new HttpHeaders(), HttpStatus.NOT_FOUND);
 
         } catch (final Exception e) {
-
-            LOG.error("Error updating team. Team: {}", team);
-            return handleException(e);
+			handleException(e);
+			return null;
         }
 
     }
@@ -283,7 +277,6 @@ public class TeamController extends BaseController {
      * @return the users
      * @throws Exception the exception
      */
-    @SuppressWarnings("unchecked")
     @ApiOperation(value = "Get users for team.  This call requires authentication with the correct role.", response = ResultListUser.class)
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
@@ -306,8 +299,8 @@ public class TeamController extends BaseController {
             return new ResponseEntity<>(users, HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            return handleException(e);
+			handleException(e);
+			return null;
         }
 
     }
@@ -320,7 +313,6 @@ public class TeamController extends BaseController {
      * @return the response entity
      * @throws Exception the exception
      */
-    @SuppressWarnings("unchecked")
     @ApiOperation(value = "Add user to team.  This call requires authentication with the correct role.", response = String.class)
     @ApiResponses(value = {
         @ApiResponse(code = 201, message = "Successfully added user to team"), @ApiResponse(code = 400, message = "Bad request"),
@@ -356,9 +348,8 @@ public class TeamController extends BaseController {
             return new ResponseEntity<>(nfe.getMessage(), HttpStatus.NOT_FOUND);
 
         } catch (final Exception e) {
-
-            LOG.error("Error adding user(s): {} to team: {}", emails, id);
-            return handleException(e);
+			handleException(e);
+			return null;
         }
 
     }
@@ -371,7 +362,6 @@ public class TeamController extends BaseController {
      * @return the response entity
      * @throws Exception the exception
      */
-    @SuppressWarnings("unchecked")
     @ApiOperation(value = "Delete users from team.  This call requires authentication with the correct role.", response = Void.class)
     @ApiResponses(value = {
         @ApiResponse(code = 202, message = "Successfully removed user from team"), @ApiResponse(code = 400, message = "Bad request"),
@@ -399,9 +389,8 @@ public class TeamController extends BaseController {
             return new ResponseEntity<>(new HttpHeaders(), HttpStatus.NOT_FOUND);
 
         } catch (final Exception e) {
-
-            LOG.error("Error removing user: {} from team: {}", userId, id);
-            return handleException(e);
+			handleException(e);
+			return null;
         }
 
     }
@@ -414,7 +403,6 @@ public class TeamController extends BaseController {
      * @return the response entity
      * @throws Exception the exception
      */
-    @SuppressWarnings("unchecked")
     @ApiOperation(value = "Add role to team.  This call requires authentication with the correct role.", response = Void.class)
     @ApiResponses(value = {
         @ApiResponse(code = 201, message = "Successfully added role to team"), @ApiResponse(code = 400, message = "Bad request"),
@@ -438,9 +426,8 @@ public class TeamController extends BaseController {
             return new ResponseEntity<>(HttpStatus.CREATED);
 
         } catch (final Exception e) {
-
-            LOG.error("Error adding role: {} to team: {}", role, id);
-            return handleException(e);
+			handleException(e);
+			return null;
         }
 
     }
@@ -453,7 +440,6 @@ public class TeamController extends BaseController {
      * @return the response entity
      * @throws Exception the exception
      */
-    @SuppressWarnings("unchecked")
     @ApiOperation(value = "Delete role from team.  This call requires authentication with the correct role.", response = Void.class)
     @ApiResponses(value = {
         @ApiResponse(code = 202, message = "Successfully removed role from team"), @ApiResponse(code = 401, message = "Unauthorized"),
@@ -478,9 +464,8 @@ public class TeamController extends BaseController {
             return new ResponseEntity<>(HttpStatus.ACCEPTED);
 
         } catch (final Exception e) {
-
-            LOG.error("Error removing role: {} from team: {}", role, id);
-            return handleException(e);
+			handleException(e);
+			return null;
         }
 
     }
@@ -492,7 +477,6 @@ public class TeamController extends BaseController {
      * @return the response entity
      * @throws Exception the exception
      */
-    @SuppressWarnings("unchecked")
     @ApiOperation(value = "Inactivate a team.  This call requires authentication with the correct role.", response = Void.class)
     @ApiResponses(value = {
         @ApiResponse(code = 202, message = "Successfully inactivated team"), @ApiResponse(code = 401, message = "Unauthorized"),
@@ -520,9 +504,8 @@ public class TeamController extends BaseController {
             return new ResponseEntity<>(new HttpHeaders(), HttpStatus.NOT_FOUND);
 
         } catch (final Exception e) {
-
-            LOG.error("Error inactivating team.  Id: {}", id);
-            return handleException(e);
+			handleException(e);
+			return null;
         }
 
     }

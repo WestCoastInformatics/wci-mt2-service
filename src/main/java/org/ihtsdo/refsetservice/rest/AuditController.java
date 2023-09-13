@@ -95,7 +95,6 @@ public class AuditController extends BaseController {
      * @return the string
      * @throws Exception the exception
      */
-    @SuppressWarnings("unchecked")
     @RequestMapping(method = RequestMethod.GET, value = "/audit", produces = MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Find audit entries. This call requires authentication with the correct role.", response = ResultList.class)
     @ApiResponses(value = {
@@ -131,7 +130,8 @@ public class AuditController extends BaseController {
 
         } catch (final Exception e) {
             LOG.error("Error searching audit entries.  Search criteria: {} ", searchParameters.toString(), e);
-            return handleException(e);
+			handleException(e);
+			return null;
         }
     }
 
@@ -146,7 +146,6 @@ public class AuditController extends BaseController {
      * @return the string
      * @throws Exception the exception
      */
-    @SuppressWarnings("unchecked")
     @ApiOperation(value = "Find audit entries for entity. This call requires authentication with the correct role.", response = ResultList.class)
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
@@ -248,7 +247,8 @@ public class AuditController extends BaseController {
 
         } catch (final Exception e) {
             LOG.error("Error searching audit entries.  Search criteria: {} ", searchParameters.toString(), e);
-            return handleException(e);
+			handleException(e);
+			return null;
         }
     }
 }

@@ -79,7 +79,6 @@ public class UserController extends BaseController {
      * @return the user
      * @throws Exception the exception
      */
-    @SuppressWarnings("unchecked")
     @ApiOperation(value = "Get user. This call requires authentication with the correct role.", response = User.class)
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
@@ -112,7 +111,8 @@ public class UserController extends BaseController {
             return new ResponseEntity<>(new HttpHeaders(), HttpStatus.NOT_FOUND);
 
         } catch (final Exception e) {
-            return handleException(e);
+			handleException(e);
+			return null;
         }
     }
 
@@ -124,7 +124,6 @@ public class UserController extends BaseController {
      * @return the response entity
      * @throws Exception the exception
      */
-    @SuppressWarnings("unchecked")
     @ApiOperation(value = "Update user. This call requires authentication with the correct role.", response = User.class)
     @ApiResponses(value = {
         @ApiResponse(code = 201, message = "Successfully updated user"), @ApiResponse(code = 401, message = "Unauthorized"),
@@ -158,8 +157,8 @@ public class UserController extends BaseController {
             return new ResponseEntity<>(new HttpHeaders(), HttpStatus.NOT_FOUND);
 
         } catch (final Exception e) {
-            LOG.error("Error updating user.  Id: {}", id, e);
-            return handleException(e);
+			handleException(e);
+			return null;
         }
     }
 
@@ -170,7 +169,6 @@ public class UserController extends BaseController {
      * @return the response entity
      * @throws Exception the exception
      */
-    @SuppressWarnings("unchecked")
     @ApiOperation(value = "Delete icon for the user. This call requires authentication with the correct role.", response = User.class)
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successfully removed icon for user"), @ApiResponse(code = 401, message = "Unauthorized"),
@@ -205,8 +203,8 @@ public class UserController extends BaseController {
             return new ResponseEntity<>(new HttpHeaders(), HttpStatus.NOT_FOUND);
 
         } catch (final Exception e) {
-            LOG.error("Error updating user.  Id: {}", id, e);
-            return handleException(e);
+			handleException(e);
+			return null;
         }
     }
 
@@ -220,7 +218,6 @@ public class UserController extends BaseController {
      * @return the string
      * @throws Exception the exception
      */
-    @SuppressWarnings("unchecked")
     @ApiOperation(value = "Find users. This call requires authentication with the correct role.", response = ResultList.class, notes = API_NOTES)
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
@@ -267,8 +264,8 @@ public class UserController extends BaseController {
             return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
-            LOG.error("Error searching organizations.  Search criteria: {} ", searchParameters.toString());
-            return handleException(e);
+			handleException(e);
+			return null;
         }
     }
 
@@ -279,7 +276,6 @@ public class UserController extends BaseController {
      * @return the user icon
      * @throws Exception the exception
      */
-    @SuppressWarnings("unchecked")
     @ApiOperation(value = "Icon file for the user", response = Resource.class)
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successfully added icon for user"), @ApiResponse(code = 400, message = "Bad request"),
@@ -301,9 +297,8 @@ public class UserController extends BaseController {
                 .header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(file.getFile().toPath())).contentLength(file.contentLength()).body(file);
 
         } catch (final Exception e) {
-
-            LOG.error("Trying to get user icon file " + fileName, e);
-            return handleException(e);
+			handleException(e);
+			return null;
         }
     }
 
@@ -315,7 +310,6 @@ public class UserController extends BaseController {
      * @return the response entity with the icon URI
      * @throws Exception the exception
      */
-    @SuppressWarnings("unchecked")
     @ApiOperation(value = "Update icon for user. This call requires authentication with the correct role.", response = String.class)
     @ApiResponses(value = {
         @ApiResponse(code = 202, message = "Successfully updated icon for user"), @ApiResponse(code = 401, message = "Unauthorized"),
@@ -352,9 +346,8 @@ public class UserController extends BaseController {
             return new ResponseEntity<>("\"" + user.getIconUri() + "\"", HttpStatus.ACCEPTED);
 
         } catch (final Exception e) {
-
-            LOG.error("Trying to edit user icon for user " + id, e);
-            return handleException(e);
+			handleException(e);
+			return null;
         }
     }
 

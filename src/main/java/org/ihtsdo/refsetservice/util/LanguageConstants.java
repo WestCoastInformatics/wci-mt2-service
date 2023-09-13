@@ -23,7 +23,7 @@ public final class LanguageConstants {
     private LanguageConstants() {
 
         // n/a
-    };
+    }
 
     /** The Constant LANGUAGE_CODE_TO_COUNTRY_CODE. */
     public static final Map<String, String> LANGUAGE_CODE_TO_COUNTRY_CODE;

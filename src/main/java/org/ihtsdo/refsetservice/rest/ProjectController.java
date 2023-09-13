@@ -113,8 +113,8 @@ public class ProjectController extends BaseController {
 
         } catch (final Exception e) {
 
-            LOG.error("Error fetching project.  Id: {}", id, e);
-            return handleException(e);
+			handleException(e);
+			return null;
         }
 
     }
@@ -150,8 +150,8 @@ public class ProjectController extends BaseController {
             return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            return handleException(e);
+			handleException(e);
+			return null;
         }
 
     }
@@ -167,7 +167,6 @@ public class ProjectController extends BaseController {
      * @return the string
      * @throws Exception the exception
      */
-    @SuppressWarnings("unchecked")
     @ApiOperation(value = "Find projects. This call requires authentication with the correct role.", response = ResultList.class, notes = API_NOTES)
     @ApiResponses(value = {
         @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
@@ -240,8 +239,8 @@ public class ProjectController extends BaseController {
             return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
-
-            return handleException(e);
+			handleException(e);
+			return null;
         }
 
     }
@@ -323,9 +322,8 @@ public class ProjectController extends BaseController {
             return ResponseEntity.status(HttpStatus.CREATED).body(localProject);
 
         } catch (final Exception e) {
-
-            LOG.error("Error adding project. {}", project == null ? null : project.toString(), e);
-            return handleException(e);
+			handleException(e);
+			return null;
         }
 
     }
@@ -378,9 +376,8 @@ public class ProjectController extends BaseController {
             return ResponseEntity.status(HttpStatus.OK).body(proj);
 
         } catch (final Exception e) {
-
-            LOG.error("Error updating project.  Id: {}", id, e);
-            return handleException(e);
+			handleException(e);
+			return null;
         }
 
     }
@@ -423,8 +420,8 @@ public class ProjectController extends BaseController {
 
         } catch (final Exception e) {
 
-            LOG.error("Error inactivating project.  Id: {}", id, e);
-            return handleException(e);
+			handleException(e);
+			return null;
         }
 
     }

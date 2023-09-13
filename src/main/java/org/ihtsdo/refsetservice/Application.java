@@ -57,7 +57,8 @@ public class Application extends SpringBootServletInitializer {
      * @param args the command line arguments
      * @throws Exception the exception
      */
-    public static void main(final String[] args) throws Exception {
+    @SuppressWarnings("resource")
+	public static void main(final String[] args) throws Exception {
 
         try {
 

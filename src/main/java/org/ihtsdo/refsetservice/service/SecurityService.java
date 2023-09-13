@@ -26,6 +26,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.handler.SecurityServiceHandler;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
+import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.UserProjectRole;
 import org.ihtsdo.refsetservice.terminologyservice.EditionService;
@@ -39,678 +40,695 @@ import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Reference implementation of the {@link SecurityService}.
  */
 public class SecurityService implements AutoCloseable {
 
-    /** The Constant LOG. */
-    private static final Logger LOG = LoggerFactory.getLogger(SecurityService.class);
+	/** The Constant LOG. */
+	private static final Logger LOG = LoggerFactory.getLogger(SecurityService.class);
 
-    /** The token userName . */
-    private static Map<String, String> tokenUsernameMap = Collections.synchronizedMap(new HashMap<String, String>());
+	/** The token userName . */
+	private static Map<String, String> tokenUsernameMap = Collections.synchronizedMap(new HashMap<String, String>());
 
-    /** The token login time . */
-    private static Map<String, Date> tokenTimeoutMap = Collections.synchronizedMap(new HashMap<String, Date>());
+	/** The token login time . */
+	private static Map<String, Date> tokenTimeoutMap = Collections.synchronizedMap(new HashMap<String, Date>());
 
-    /** a place to store temporary user data in memory . */
-    private static Map<String, Map<String, Object>> userInMemoryStorage = Collections.synchronizedMap(new HashMap<String, Map<String, Object>>());
+	/** a place to store temporary user data in memory . */
+	private static Map<String, Map<String, Object>> userInMemoryStorage = Collections
+			.synchronizedMap(new HashMap<String, Map<String, Object>>());
 
-    /** The handler. */
-    private static SecurityServiceHandler handler = null;
+	/** The handler. */
+	private static SecurityServiceHandler handler = null;
+
+	/** The session key for the user object. */
+	public static final String SESSION_USER_OBJECT_KEY = "RT2_USER_OBJECT";
+
+	/** The session key for the list of user projects. */
+	public static final String SESSION_USER_PROJECTS = "RT2_USER_PROJECTS";
+
+	/** The handler. */
+	public static final String GUEST_USERNAME = "nonLoggedInUser";
 
-    /** The session key for the user object. */
-    public static final String SESSION_USER_OBJECT_KEY = "RT2_USER_OBJECT";
+	/** The timeout. */
+	private static int timeout;
 
-    /** The session key for the list of user projects. */
-    public static final String SESSION_USER_PROJECTS = "RT2_USER_PROJECTS";
+	/**
+	 * Instantiates an empty {@link SecurityServiceJpa}.
+	 *
+	 * @throws Exception the exception
+	 */
+	public SecurityService() throws Exception {
 
-    /** The handler. */
-    public static final String GUEST_USERNAME = "nonLoggedInUser";
+		super();
+	}
 
-    /** The timeout. */
-    private static int timeout;
+	/**
+	 * Get a user for application level changes that has full permissions.
+	 *
+	 * @return the user from the session or null
+	 * @throws Exception the exception
+	 */
+	public static User getApplicationAdminUser() throws Exception {
 
-    /**
-     * Instantiates an empty {@link SecurityServiceJpa}.
-     *
-     * @throws Exception the exception
-     */
-    public SecurityService() throws Exception {
+		final User user = new User();
+		user.setName("RT2 Internal Application Admin");
+		user.setUserName("RT2_Internal_Application_Admin");
+		user.getRoles().add("all-all-all");
 
-        super();
-    }
+		return user;
+	}
 
-    /**
-     * Get a user for application level changes that has full permissions.
-     *
-     * @return the user from the session or null
-     * @throws Exception the exception
-     */
-    public static User getApplicationAdminUser() throws Exception {
+	/**
+	 * Get the user from the session.
+	 *
+	 * @return the user from the session or null
+	 * @throws Exception the exception
+	 */
+	public static User getUserFromSession() throws Exception {
 
-        final User user = new User();
-        user.setName("RT2 Internal Application Admin");
-        user.setUserName("RT2_Internal_Application_Admin");
-        user.getRoles().add("all-all-all");
+		final Object object = getFromSession(SESSION_USER_OBJECT_KEY);
 
-        return user;
-    }
+		if (object != null) {
 
-    /**
-     * Get the user from the session.
-     *
-     * @return the user from the session or null
-     * @throws Exception the exception
-     */
-    public static User getUserFromSession() throws Exception {
+			LOG.debug("getUserFromSession SESSION USER: " + ModelUtility.toJson(object));
+			return (User) object;
+		}
 
-        final Object object = getFromSession(SESSION_USER_OBJECT_KEY);
+		// TODO - Find a better solution for unit tests
+		if (PropertyUtility.getProperty("springProfiles").toLowerCase().contains("test")) {
 
-        if (object != null) {
+			final User testUser = new User("unitTestUser", "Unit Test User", "", "", "", new HashSet<String>());
+			testUser.getRoles().add("all-all-author");
+			testUser.getRoles().add("all-all-reviewer");
+			testUser.getRoles().add("all-all-admin");
+			LOG.debug("getUserFromSession SESSION USER: " + ModelUtility.toJson(testUser));
+			return testUser;
+		}
 
-            LOG.debug("getUserFromSession SESSION USER: " + ModelUtility.toJson(object));
-            return (User) object;
-        }
+		final User nonLoggedInUser = new User(GUEST_USERNAME, "Non Logged In User", "", "", "", new HashSet<String>());
+		LOG.debug("getUserFromSession SESSION USER: " + ModelUtility.toJson(nonLoggedInUser));
 
-        // TODO - Find a better solution for unit tests
-        if (PropertyUtility.getProperty("springProfiles").toLowerCase().contains("test")) {
+		final ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder
+				.getRequestAttributes();
 
-            final User testUser = new User("unitTestUser", "Unit Test User", "", "", "", new HashSet<String>());
-            testUser.getRoles().add("all-all-author");
-            testUser.getRoles().add("all-all-reviewer");
-            testUser.getRoles().add("all-all-admin");
-            LOG.debug("getUserFromSession SESSION USER: " + ModelUtility.toJson(testUser));
-            return testUser;
-        }
+		if (requestAttributes == null || requestAttributes.getRequest() == null) {
 
-        final User nonLoggedInUser = new User(GUEST_USERNAME, "Non Logged In User", "", "", "", new HashSet<String>());
-        LOG.debug("getUserFromSession SESSION USER: " + ModelUtility.toJson(nonLoggedInUser));
+			return nonLoggedInUser;
+		}
 
-        final ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+		final HttpServletResponse response = requestAttributes.getResponse();
+		final Cookie imsCookie = getImsCookie();
 
-        if (requestAttributes == null || requestAttributes.getRequest() == null) {
+		if (imsCookie != null) {
 
-            return nonLoggedInUser;
-        }
+			final Cookie cookie = new Cookie(imsCookie.getName(), null);
+			cookie.setPath("/");
+			cookie.setDomain(".ihtsdotools.org");
+			cookie.setHttpOnly(imsCookie.isHttpOnly());
+			cookie.setMaxAge(0);
+			response.addCookie(cookie);
+		}
 
-        final HttpServletResponse response = requestAttributes.getResponse();
-        final Cookie imsCookie = getImsCookie();
+		return nonLoggedInUser;
+	}
 
-        if (imsCookie != null) {
+	/**
+	 * Returns the ims cookie.
+	 *
+	 * @return the ims cookie
+	 * @throws Exception the exception
+	 */
+	public static Cookie getImsCookie() throws Exception {
 
-            final Cookie cookie = new Cookie(imsCookie.getName(), null);
-            cookie.setPath("/");
-            cookie.setDomain(".ihtsdotools.org");
-            cookie.setHttpOnly(imsCookie.isHttpOnly());
-            cookie.setMaxAge(0);
-            response.addCookie(cookie);
-        }
+		final ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder
+				.getRequestAttributes();
 
-        return nonLoggedInUser;
-    }
+		if (requestAttributes == null || requestAttributes.getRequest() == null) {
+			return null;
+		}
 
-    /**
-     * Returns the ims cookie.
-     *
-     * @return the ims cookie
-     * @throws Exception the exception
-     */
-    public static Cookie getImsCookie() throws Exception {
+		Cookie imsCookie = null;
+		final Cookie[] cookies = requestAttributes.getRequest().getCookies();
 
-        final ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+		if (cookies != null) {
 
-        if (requestAttributes == null || requestAttributes.getRequest() == null) {
-            return null;
-        }
+			for (int i = 0; i < cookies.length; i++) {
 
-        Cookie imsCookie = null;
-        final Cookie[] cookies = requestAttributes.getRequest().getCookies();
+				if (cookies[i].getName().contains("ims-ihtsdo")) {
 
-        if (cookies != null) {
+					// LOG.debug("getImsCookie ims-ihtsdo cookie: " +
+					// ModelUtility.toJson(cookies[i]));
+					imsCookie = cookies[i];
+					break;
+				}
+			}
+		}
 
-            for (int i = 0; i < cookies.length; i++) {
+		return imsCookie;
+	}
 
-                if (cookies[i].getName().contains("ims-ihtsdo")) {
+	/**
+	 * Clear cookies.
+	 *
+	 * @throws Exception the exception
+	 */
+	private static void clearCookies() throws Exception {
 
-                    // LOG.debug("getImsCookie ims-ihtsdo cookie: " + ModelUtility.toJson(cookies[i]));
-                    imsCookie = cookies[i];
-                    break;
-                }
-            }
-        }
+		final ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder
+				.getRequestAttributes();
 
-        return imsCookie;
-    }
+		if (requestAttributes != null && requestAttributes.getRequest() != null) {
 
-    /**
-     * Clear cookies.
-     *
-     * @throws Exception the exception
-     */
-    private static void clearCookies() throws Exception {
+			final Cookie[] cookies = requestAttributes.getRequest().getCookies();
 
-        final ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+			if (cookies != null) {
 
-        if (requestAttributes != null && requestAttributes.getRequest() != null) {
+				final HttpServletResponse response = requestAttributes.getResponse();
 
-            final Cookie[] cookies = requestAttributes.getRequest().getCookies();
+				for (int i = 0; i < cookies.length; i++) {
 
-            if (cookies != null) {
+					if (cookies[i].getName().contains("ims-ihtsdo")) {
 
-                final HttpServletResponse response = requestAttributes.getResponse();
+						LOG.debug("clearCookies ims-ihtsdo cookie: " + ModelUtility.toJson(cookies[i]));
+						final Cookie cookie = new Cookie(cookies[i].getName(), null);
+						cookie.setPath("/");
+						cookie.setDomain(".ihtsdotools.org");
+						cookie.setHttpOnly(cookies[i].isHttpOnly());
+						cookie.setMaxAge(0);
+						response.addCookie(cookie);
+						break;
+					}
 
-                for (int i = 0; i < cookies.length; i++) {
+				}
 
-                    if (cookies[i].getName().contains("ims-ihtsdo")) {
+			}
 
-                        LOG.debug("clearCookies ims-ihtsdo cookie: " + ModelUtility.toJson(cookies[i]));
-                        final Cookie cookie = new Cookie(cookies[i].getName(), null);
-                        cookie.setPath("/");
-                        cookie.setDomain(".ihtsdotools.org");
-                        cookie.setHttpOnly(cookies[i].isHttpOnly());
-                        cookie.setMaxAge(0);
-                        response.addCookie(cookie);
-                        break;
-                    }
+		}
 
-                }
+	}
 
-            }
+	/**
+	 * Get the something from the session.
+	 *
+	 * @param attributeName the session attribute name
+	 * @return the object from the session or null
+	 * @throws Exception the exception
+	 */
+	public static Object getFromSession(final String attributeName) throws Exception {
 
-        }
+		final ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder
+				.getRequestAttributes();
 
-    }
+		if (requestAttributes == null || requestAttributes.getRequest() == null) {
 
-    /**
-     * Get the something from the session.
-     *
-     * @param attributeName the session attribute name
-     * @return the object from the session or null
-     * @throws Exception the exception
-     */
-    public static Object getFromSession(final String attributeName) throws Exception {
+			return null;
+		}
 
-        final ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+		final HttpSession session = requestAttributes.getRequest().getSession();
 
-        if (requestAttributes == null || requestAttributes.getRequest() == null) {
+		if (session == null) {
 
-            return null;
-        }
+			return null;
+		}
 
-        final HttpSession session = requestAttributes.getRequest().getSession();
+		final Object object = session.getAttribute(attributeName);
+		return object;
+	}
 
-        if (session == null) {
+	/**
+	 * Get the something from the session.
+	 *
+	 * @param attributeName the session attribute name
+	 * @param value         the value to store in the session
+	 * @return true if the value was set in the session, otherwise false
+	 * @throws Exception the exception
+	 */
+	public static boolean setInSession(final String attributeName, final String value) throws Exception {
 
-            return null;
-        }
+		final ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder
+				.getRequestAttributes();
 
-        final Object object = session.getAttribute(attributeName);
-        return object;
-    }
+		if (requestAttributes == null || requestAttributes.getRequest() == null) {
 
-    /**
-     * Get the something from the session.
-     *
-     * @param attributeName the session attribute name
-     * @param value the value to store in the session
-     * @return true if the value was set in the session, otherwise false
-     * @throws Exception the exception
-     */
-    public static boolean setInSession(final String attributeName, final String value) throws Exception {
+			return false;
+		}
 
-        final ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+		final HttpSession session = requestAttributes.getRequest().getSession();
 
-        if (requestAttributes == null || requestAttributes.getRequest() == null) {
+		if (session == null) {
 
-            return false;
-        }
+			return false;
+		}
 
-        final HttpSession session = requestAttributes.getRequest().getSession();
+		session.setAttribute(attributeName, value);
+		return true;
+	}
 
-        if (session == null) {
+	/**
+	 * Set the user into the session.
+	 *
+	 * @param user the user to store in the session
+	 * @return true if the user was set in the session, otherwise false
+	 * @throws Exception the exception
+	 */
+	public static boolean setUserInSession(final User user) throws Exception {
 
-            return false;
-        }
+		final ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder
+				.getRequestAttributes();
 
-        session.setAttribute(attributeName, value);
-        return true;
-    }
+		if (requestAttributes == null || requestAttributes.getRequest() == null) {
 
-    /**
-     * Set the user into the session.
-     *
-     * @param user the user to store in the session
-     * @return true if the user was set in the session, otherwise false
-     * @throws Exception the exception
-     */
-    public static boolean setUserInSession(final User user) throws Exception {
+			return false;
+		}
 
-        final ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+		final HttpSession session = requestAttributes.getRequest().getSession();
 
-        if (requestAttributes == null || requestAttributes.getRequest() == null) {
+		if (session == null) {
 
-            return false;
-        }
+			return false;
+		}
 
-        final HttpSession session = requestAttributes.getRequest().getSession();
+		session.setAttribute(SESSION_USER_OBJECT_KEY, user);
+		return true;
+	}
 
-        if (session == null) {
+	/**
+	 * Remove the something from the session.
+	 *
+	 * @param attributeName the session attribute name
+	 * @throws Exception the exception
+	 */
+	public static void removeFromSession(final String attributeName) throws Exception {
 
-            return false;
-        }
+		final ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder
+				.getRequestAttributes();
 
-        session.setAttribute(SESSION_USER_OBJECT_KEY, user);
-        return true;
-    }
+		if (requestAttributes == null || requestAttributes.getRequest() == null) {
 
-    /**
-     * Remove the something from the session.
-     *
-     * @param attributeName the session attribute name
-     * @throws Exception the exception
-     */
-    public static void removeFromSession(final String attributeName) throws Exception {
+			return;
+		}
 
-        final ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+		final HttpSession session = requestAttributes.getRequest().getSession();
 
-        if (requestAttributes == null || requestAttributes.getRequest() == null) {
+		if (session == null) {
 
-            return;
-        }
+			return;
+		}
 
-        final HttpSession session = requestAttributes.getRequest().getSession();
+		session.removeAttribute(attributeName);
+	}
 
-        if (session == null) {
+	/**
+	 * Get something from the user specific in memory storage.
+	 *
+	 * @param attributeName the storage attribute name
+	 * @return the object from the storage or null
+	 * @throws Exception the exception
+	 */
+	public static Object getFromInMemoryStorage(final String attributeName) throws Exception {
 
-            return;
-        }
+		final User user = getUserFromSession();
+		Object returnObject = null;
 
-        session.removeAttribute(attributeName);
-    }
+		if (userInMemoryStorage.containsKey(user.getUserName())) {
 
-    /**
-     * Get something from the user specific in memory storage.
-     *
-     * @param attributeName the storage attribute name
-     * @return the object from the storage or null
-     * @throws Exception the exception
-     */
-    public static Object getFromInMemoryStorage(final String attributeName) throws Exception {
+			final Map<String, Object> storageMap = userInMemoryStorage.get(user.getUserName());
 
-        final User user = getUserFromSession();
-        Object returnObject = null;
+			if (storageMap.containsKey(attributeName)) {
 
-        if (userInMemoryStorage.containsKey(user.getUserName())) {
+				returnObject = storageMap.get(attributeName);
+			}
 
-            final Map<String, Object> storageMap = userInMemoryStorage.get(user.getUserName());
+		}
 
-            if (storageMap.containsKey(attributeName)) {
+		return returnObject;
+	}
 
-                returnObject = storageMap.get(attributeName);
-            }
+	/**
+	 * Set something in the user specific in memory storage.
+	 *
+	 * @param attributeName the storage attribute name
+	 * @param value         the value to store in the storage
+	 * @return true if the value was set in the storage, otherwise false
+	 * @throws Exception the exception
+	 */
+	public static boolean setInMemoryStorage(final String attributeName, final Object value) throws Exception {
 
-        }
+		final User user = getUserFromSession();
 
-        return returnObject;
-    }
+		if (userInMemoryStorage.containsKey(user.getUserName())) {
 
-    /**
-     * Set something in the user specific in memory storage.
-     *
-     * @param attributeName the storage attribute name
-     * @param value the value to store in the storage
-     * @return true if the value was set in the storage, otherwise false
-     * @throws Exception the exception
-     */
-    public static boolean setInMemoryStorage(final String attributeName, final Object value) throws Exception {
+			final Map<String, Object> storageMap = userInMemoryStorage.get(user.getUserName());
+			storageMap.put(attributeName, value);
 
-        final User user = getUserFromSession();
+		} else {
 
-        if (userInMemoryStorage.containsKey(user.getUserName())) {
+			final Map<String, Object> storageMap = new HashMap<>();
+			storageMap.put(attributeName, value);
+			userInMemoryStorage.put(user.getUserName(), storageMap);
+		}
 
-            final Map<String, Object> storageMap = userInMemoryStorage.get(user.getUserName());
-            storageMap.put(attributeName, value);
+		return true;
+	}
 
-        } else {
+	/**
+	 * Remove the something from the in memory storage.
+	 *
+	 * @param attributeName the storage attribute name
+	 * @throws Exception the exception
+	 */
+	public static void removeFromInMemoryStorage(final String attributeName) throws Exception {
 
-            final Map<String, Object> storageMap = new HashMap<>();
-            storageMap.put(attributeName, value);
-            userInMemoryStorage.put(user.getUserName(), storageMap);
-        }
+		final User user = getUserFromSession();
 
-        return true;
-    }
+		if (userInMemoryStorage.containsKey(user.getUserName())) {
 
-    /**
-     * Remove the something from the in memory storage.
-     *
-     * @param attributeName the storage attribute name
-     * @throws Exception the exception
-     */
-    public static void removeFromInMemoryStorage(final String attributeName) throws Exception {
+			final Map<String, Object> storageMap = userInMemoryStorage.get(user.getUserName());
+			storageMap.remove(attributeName);
+		}
 
-        final User user = getUserFromSession();
+	}
 
-        if (userInMemoryStorage.containsKey(user.getUserName())) {
+	/**
+	 * Authenticate.
+	 *
+	 * @param userName the user name
+	 * @return the user
+	 * @throws Exception the exception
+	 */
+	public User authenticate(final String userName) throws Exception {
 
-            final Map<String, Object> storageMap = userInMemoryStorage.get(user.getUserName());
-            storageMap.remove(attributeName);
-        }
+		// Check userName and password are not null
+		if (userName == null || userName.isEmpty()) {
 
-    }
+			throw new LocalException("Invalid userName: null");
+		}
 
-    /**
-     * Authenticate.
-     *
-     * @param userName the user name
-     * @return the user
-     * @throws Exception the exception
-     */
-    public User authenticate(final String userName) throws Exception {
+		final Properties config = PropertyUtility.getProperties();
 
-        // Check userName and password are not null
-        if (userName == null || userName.isEmpty()) {
+		if (handler == null) {
 
-            throw new LocalException("Invalid userName: null");
-        }
+			timeout = (StringUtils.isNotBlank(config.getProperty("spring.session.timeout.seconds")))
+					? Integer.valueOf(config.getProperty("spring.session.timeout.seconds"))
+					: 900000;
 
-        final Properties config = PropertyUtility.getProperties();
+			final String handlerName = (StringUtils.isNotBlank(config.getProperty("security.handler")))
+					? config.getProperty("security.handler")
+					: "org.ihtsdo.refsetservice.handler.ImsSecurityServiceHandler";
 
-        if (handler == null) {
+			handler = HandlerUtility.newStandardHandlerInstanceWithConfiguration("security.handler", handlerName,
+					SecurityServiceHandler.class);
 
-            timeout = (StringUtils.isNotBlank(config.getProperty("spring.session.timeout.seconds")))
-                ? Integer.valueOf(config.getProperty("spring.session.timeout.seconds")) : 900000;
+		}
 
-            final String handlerName = (StringUtils.isNotBlank(config.getProperty("security.handler"))) ? config.getProperty("security.handler")
-                : "org.ihtsdo.refsetservice.handler.ImsSecurityServiceHandler";
+		//
+		// Call the security service
+		//
+		final User authUser = handler.authenticate(userName);
+		LOG.info("Authenticated user is {}", authUser);
+		return authHelper(authUser);
+	}
 
-            handler = HandlerUtility.newStandardHandlerInstanceWithConfiguration("security.handler", handlerName, SecurityServiceHandler.class);
+	/**
+	 * Auth helper.
+	 *
+	 * @param authUser the auth user
+	 * @return the user
+	 * @throws Exception the exception
+	 */
+	private User authHelper(final User authUser) throws Exception {
 
-        }
+		if (authUser == null) {
+			return null;
+		}
 
-        //
-        // Call the security service
-        //
-        final User authUser = handler.authenticate(userName);
-        LOG.info("Authenticated user is {}", authUser);
-        return authHelper(authUser);
-    }
+		// check if authenticated user exists
+		final User userFound = getUserFromUserName(authUser.getUserName());
 
-    /**
-     * Auth helper.
-     *
-     * @param authUser the auth user
-     * @return the user
-     * @throws Exception the exception
-     */
-    private User authHelper(final User authUser) throws Exception {
+		// if user was found, update to match settings
+		String userId = null;
 
-        if (authUser == null) {
-            return null;
-        }
+		if (userFound != null) {
+			// handleLazyInit(userFound);
 
-        // check if authenticated user exists
-        final User userFound = getUserFromUserName(authUser.getUserName());
+			LOG.info("update user {}", authUser);
+			userFound.setEmail(authUser.getEmail());
+			userFound.setName(authUser.getName());
+			userFound.setUserName(authUser.getUserName());
+			userFound.setRoles(authUser.getRoles());
+			updateUser(userFound);
+			userId = userFound.getId();
+		}
 
-        // if user was found, update to match settings
-        String userId = null;
+		// if User not found but they have RT2 roles, create one for them
+		else if (!authUser.getRoles().isEmpty()) {
 
-        if (userFound != null) {
-            // handleLazyInit(userFound);
+			LOG.info("add user {}", authUser);
+			User newUser = new User();
+			newUser.setEmail(authUser.getEmail());
+			newUser.setName(authUser.getName());
+			newUser.setUserName(authUser.getUserName());
+			newUser.setRoles(authUser.getRoles());
+			newUser = addUser(newUser);
+			userId = newUser.getId();
 
-            LOG.info("update user {}", authUser);
-            userFound.setEmail(authUser.getEmail());
-            userFound.setName(authUser.getName());
-            userFound.setUserName(authUser.getUserName());
-            userFound.setRoles(authUser.getRoles());
-            updateUser(userFound);
-            userId = userFound.getId();
-        }
+		} else {
+			// if user not found, return not
+			throw new RestException(false, 401, "Unauthorized",
+					"You are not a member of an organization.  You can still browse public reference sets.");
+		}
 
-        // if User not found but they have RT2 roles, create one for them
-        else if (!authUser.getRoles().isEmpty()) {
+		// Generate application-managed token
+		final String token = handler.computeTokenForUser(authUser.getUserName());
+		tokenUsernameMap.put(token, authUser.getUserName());
+		tokenTimeoutMap.put(token, new Date(new Date().getTime() + timeout));
 
-            LOG.info("add user {}", authUser);
-            User newUser = new User();
-            newUser.setEmail(authUser.getEmail());
-            newUser.setName(authUser.getName());
-            newUser.setUserName(authUser.getUserName());
-            newUser.setRoles(authUser.getRoles());
-            newUser = addUser(newUser);
-            userId = newUser.getId();
+		LOG.debug("User = " + authUser.getUserName() + ", " + authUser);
 
-        } else {
-            // if user not found, return not
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "You are not a member of an organization.  You can still browse public reference sets.");
-        }
+		// Reload the user to populate UserPreferences
+		final User finalUser = getUser(userId);
+		finalUser.setAuthToken(token);
+		finalUser.setRoles(authUser.getRoles());
+		return finalUser;
 
-        // Generate application-managed token
-        final String token = handler.computeTokenForUser(authUser.getUserName());
-        tokenUsernameMap.put(token, authUser.getUserName());
-        tokenTimeoutMap.put(token, new Date(new Date().getTime() + timeout));
+	}
 
-        LOG.debug("User = " + authUser.getUserName() + ", " + authUser);
+	/**
+	 * Adds the user to organization if entered in Crowd but not a member in RT2's
+	 * organization.
+	 *
+	 * @param user the user
+	 * @throws Exception the exception
+	 */
+	@SuppressWarnings("unused")
+	private void checkAndAddUserToOrganization(final User user) throws Exception {
 
-        // Reload the user to populate UserPreferences
-        final User finalUser = getUser(userId);
-        finalUser.setAuthToken(token);
-        finalUser.setRoles(authUser.getRoles());
-        return finalUser;
+		// break down org-project-role
+		if (user == null || user.getRoles() == null || user.getRoles().isEmpty()) {
 
-    }
+			return;
+		}
 
-    /**
-     * Adds the user to organization if entered in Crowd but not a member in RT2's organization.
-     *
-     * @param user the user
-     * @throws Exception the exception
-     */
-    private void checkAndAddUserToOrganization(final User user) throws Exception {
+		try (final TerminologyService service = new TerminologyService()) {
 
-        // break down org-project-role
-        if (user == null || user.getRoles() == null || user.getRoles().isEmpty()) {
+			final User appAdminUser = getApplicationAdminUser();
 
-            return;
-        }
+			service.setModifiedBy(appAdminUser.getUserName());
+			service.setTransactionPerOperation(false);
+			service.beginTransaction();
 
-        try (final TerminologyService service = new TerminologyService()) {
+			final Set<String> permissionEditionAbbreviations = new HashSet<>();
 
-            final User appAdminUser = getApplicationAdminUser();
+			for (final String groupName : user.getRoles()) {
 
-            service.setModifiedBy(appAdminUser.getUserName());
-            service.setTransactionPerOperation(false);
-            service.beginTransaction();
+				final UserProjectRole userProjectRole = new UserProjectRole(groupName);
+				permissionEditionAbbreviations.add(userProjectRole.getOrganization());
+			}
 
-            final Set<String> permissionEditionAbbreviations = new HashSet<>();
+			final ResultList<Edition> editions = EditionService.searchEditions(new SearchParameters());
+			final Map<String, Organization> organizationMap = new HashMap<>();
 
-            for (final String groupName : user.getRoles()) {
+			for (final Edition edition : editions.getItems()) {
 
-                final UserProjectRole userProjectRole = new UserProjectRole(groupName);
-                permissionEditionAbbreviations.add(userProjectRole.getOrganization());
-            }
+				organizationMap.put(edition.getAbbreviation(), edition.getOrganization());
+			}
 
-            final ResultList<Edition> editions = EditionService.searchEditions(new SearchParameters());
-            final Map<String, Organization> organizationMap = new HashMap<>();
+			for (final String permissionEditionAbbreviation : permissionEditionAbbreviations) {
 
-            for (final Edition edition : editions.getItems()) {
+				for (final Edition possibleEdition : new ArrayList<Edition>(editions.getItems())) {
 
-                organizationMap.put(edition.getAbbreviation(), edition.getOrganization());
-            }
+					Edition edition = null;
+					boolean isMember = false;
 
-            for (final String permissionEditionAbbreviation : permissionEditionAbbreviations) {
+					if (possibleEdition.getAbbreviation().equals(permissionEditionAbbreviation)) {
 
-                for (final Edition possibleEdition : new ArrayList<Edition>(editions.getItems())) {
+						edition = possibleEdition;
+						editions.getItems().remove(possibleEdition);
 
-                    Edition edition = null;
-                    boolean isMember = false;
+					} else {
 
-                    if (possibleEdition.getAbbreviation().equals(permissionEditionAbbreviation)) {
+						continue;
+					}
 
-                        edition = possibleEdition;
-                        editions.getItems().remove(possibleEdition);
+					OrganizationService.setRoles(appAdminUser, edition.getOrganization(),
+							edition.getOrganization().getRoles());
 
-                    } else {
+					for (final User member : edition.getOrganization().getMembers()) {
 
-                        continue;
-                    }
+						if (member.getId().equals(user.getId())) {
 
-                    OrganizationService.setRoles(appAdminUser, edition.getOrganization(), edition.getOrganization().getRoles());
+							isMember = true;
+							break;
+						}
 
-                    for (final User member : edition.getOrganization().getMembers()) {
+					}
 
-                        if (member.getId().equals(user.getId())) {
+					if (!isMember) {
 
-                            isMember = true;
-                            break;
-                        }
+						LOG.debug("Add user " + user.getUserName() + " to organization "
+								+ edition.getOrganization().getName());
+						OrganizationService.addUserToOrganization(service, appAdminUser,
+								edition.getOrganization().getId(), user.getEmail());
+					}
 
-                    }
+				}
 
-                    if (!isMember) {
+			}
 
-                        LOG.debug("Add user " + user.getUserName() + " to organization " + edition.getOrganization().getName());
-                        OrganizationService.addUserToOrganization(service, appAdminUser, edition.getOrganization().getId(), user.getEmail());
-                    }
+			service.commit();
+		}
 
-                }
+	}
 
-            }
+	/* see superclass */
+	/**
+	 * Logout.
+	 *
+	 * @param userName the user name
+	 * @throws Exception the exception
+	 */
+	// @Override
+	public void logout(final String userName) throws Exception {
 
-            service.commit();
-        }
+		final User user = getUserFromSession();
 
-    }
+		if (!user.getUserName().equals(userName)) {
+			throw new RestException(false, 401, "Unauthorized", "This user name supplied is not authenticated.");
+		}
 
-    /* see superclass */
-    /**
-     * Logout.
-     *
-     * @param userName the user name
-     * @throws Exception the exception
-     */
-    // @Override
-    public void logout(final String userName) throws Exception {
+		tokenUsernameMap.remove(userName);
+		tokenTimeoutMap.remove(userName);
+		removeFromSession(SESSION_USER_OBJECT_KEY);
+		clearCookies();
+	}
 
-        final User user = getUserFromSession();
+	/**
+	 * Returns the user.
+	 *
+	 * @param id the id
+	 * @return the user
+	 * @throws Exception the exception
+	 */
+	public User getUser(final String id) throws Exception {
 
-        if (!user.getUserName().equals(userName)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "This user name supplied is not authenticated.");
-        }
+		User user = null;
 
-        tokenUsernameMap.remove(userName);
-        tokenTimeoutMap.remove(userName);
-        removeFromSession(SESSION_USER_OBJECT_KEY);
-        clearCookies();
-    }
+		try (final TerminologyService service = new TerminologyService()) {
 
-    /**
-     * Returns the user.
-     *
-     * @param id the id
-     * @return the user
-     * @throws Exception the exception
-     */
-    public User getUser(final String id) throws Exception {
+			user = service.get(id, User.class);
+		}
 
-        User user = null;
+		return user;
+	}
 
-        try (final TerminologyService service = new TerminologyService()) {
+	/**
+	 * Returns the user from user name.
+	 *
+	 * @param userName the user name
+	 * @return the user from user name
+	 * @throws Exception the exception
+	 */
+	public static User getUserFromUserName(final String userName) throws Exception {
 
-            user = service.get(id, User.class);
-        }
+		User user = null;
 
-        return user;
-    }
+		try (final TerminologyService service = new TerminologyService()) {
 
-    /**
-     * Returns the user from user name.
-     *
-     * @param userName the user name
-     * @return the user from user name
-     * @throws Exception the exception
-     */
-    public static User getUserFromUserName(final String userName) throws Exception {
+			// Note: When testing POSTMAN, hard code userName to your userName and relaunch
+			// server
+			user = service.findSingle("userName:" + userName, User.class, null);
+		}
 
-        User user = null;
+		return user;
+	}
 
-        try (final TerminologyService service = new TerminologyService()) {
+	/**
+	 * Adds the user.
+	 *
+	 * @param user the user
+	 * @return the user
+	 * @throws Exception the exception
+	 */
+	public User addUser(User user) throws Exception {
 
-            // Note: When testing POSTMAN, hard code userName to your userName and relaunch server
-            user = service.findSingle("userName:" + userName, User.class, null);
-        }
+		LOG.debug("Security Service - add user {}", user);
 
-        return user;
-    }
+		try (final TerminologyService service = new TerminologyService()) {
 
-    /**
-     * Adds the user.
-     *
-     * @param user the user
-     * @return the user
-     * @throws Exception the exception
-     */
-    public User addUser(User user) throws Exception {
+			service.setModifiedBy(user.getUserName());
+			final User user2 = service.addHasLastModified(user);
+			service.add(AuditEntryHelper.addUserEntry(user2));
+			return user2;
+		}
 
-        LOG.debug("Security Service - add user {}", user);
+	}
 
-        try (final TerminologyService service = new TerminologyService()) {
+	/**
+	 * Removes the user.
+	 *
+	 * @param user the user
+	 * @throws Exception the exception
+	 */
+	public void removeUser(final User user) throws Exception {
 
-            service.setModifiedBy(user.getUserName());
-            user = service.addHasLastModified(user);
-            service.add(AuditEntryHelper.addUserEntry(user));
-        }
+		LOG.debug("Security Service - remove user {}", user);
 
-        return user;
-    }
+		try (final TerminologyService service = new TerminologyService()) {
 
-    /**
-     * Removes the user.
-     *
-     * @param user the user
-     * @throws Exception the exception
-     */
-    public void removeUser(final User user) throws Exception {
+			service.setModifiedBy(user.getUserName());
+			service.remove(user);
+		}
 
-        LOG.debug("Security Service - remove user {}", user);
+	}
 
-        try (final TerminologyService service = new TerminologyService()) {
+	/**
+	 * Update user.
+	 *
+	 * @param user the user
+	 * @throws Exception the exception
+	 */
+	public void updateUser(final User user) throws Exception {
 
-            service.setModifiedBy(user.getUserName());
-            service.remove(user);
-        }
+		LOG.debug("Security Service - update user {}", user);
 
-    }
+		try (final TerminologyService service = new TerminologyService()) {
 
-    /**
-     * Update user.
-     *
-     * @param user the user
-     * @throws Exception the exception
-     */
-    public void updateUser(final User user) throws Exception {
+			service.setModifiedBy(user.getUserName());
+			service.updateHasLastModified(user);
+		}
 
-        LOG.debug("Security Service - update user {}", user);
+	}
 
-        try (final TerminologyService service = new TerminologyService()) {
+	/* see superclass */
+	@Override
+	public void close() throws Exception {
 
-            service.setModifiedBy(user.getUserName());
-            service.updateHasLastModified(user);
-        }
+		// n/a
 
-    }
-
-    /* see superclass */
-    @Override
-    public void close() throws Exception {
-
-        // n/a
-
-    }
+	}
 
 }
