@@ -18,6 +18,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Artifact;
+import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.terminologyservice.ArtifactService;
 import org.ihtsdo.refsetservice.util.FileUtility;
@@ -78,8 +79,7 @@ public class ArtifactController extends BaseController {
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/artifact/{id}")
 	@Operation(summary = "Get artifact.", responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Artifact.class))),
-			@ApiResponse(responseCode = "500", description = "Internal server error") }, parameters = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Artifact.class))) }, parameters = {
 					@Parameter(name = "id", description = "Artifact id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)) })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<Artifact> getArtifact(@PathVariable(value = "id") final String id)
@@ -113,8 +113,7 @@ public class ArtifactController extends BaseController {
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/artifact", produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Find artifacts.", responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Artifact.class))),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Artifact.class))) })
 	// @ModelAttribute API params documented in SearchParameter
 	@RecordMetric
 	public @ResponseBody ResponseEntity<ResultList<Artifact>> findArtifacts(
@@ -164,7 +163,7 @@ public class ArtifactController extends BaseController {
 			@ApiResponse(responseCode = "202", description = "Added artifact", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Artifact.class))),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
 			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "417", description = "Expectation failed") })
 	@Parameters({ @Parameter(name = "artifact", description = "Artifact object", required = true) })
 	@RecordMetric
 	public ResponseEntity<?> addArtifact(@RequestParam final String artifact,
@@ -175,7 +174,13 @@ public class ArtifactController extends BaseController {
 
 		try {
 
-			final Artifact artifactEntry = ModelUtility.fromJson(artifact, Artifact.class);
+			Artifact artifactEntry = null;
+			try {
+				artifactEntry = ModelUtility.fromJson(artifact, Artifact.class);
+			} catch (Exception e) {
+				throw new RestException(false, 417, "Expectation Failed ", "Unable to parse artifact = " + artifact);
+
+			}
 
 			// TODO: check required values.
 
@@ -215,7 +220,9 @@ public class ArtifactController extends BaseController {
 	@Operation(summary = "Update artifact. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Updated artifact"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
+			@ApiResponse(responseCode = "404", description = "Not found"),
+			@ApiResponse(responseCode = "417", description = "Expecation failed") })
 	@Parameters({ @Parameter(name = "id", description = "Artifact id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "artifact", description = "Artifact object", required = true) })
 	@RecordMetric
@@ -228,7 +235,16 @@ public class ArtifactController extends BaseController {
 		try {
 
 			final Artifact existingArtifact = ArtifactService.getArtifact(id);
-			final Artifact artifactEntry = ModelUtility.fromJson(artifact, Artifact.class);
+			if (existingArtifact == null) {
+				throw new RestException(false, 404, "Not found", "Unable to find artifact by id = " + id);
+			}
+			Artifact artifactEntry = null;
+			try {
+				artifactEntry = ModelUtility.fromJson(artifact, Artifact.class);
+			} catch (Exception e) {
+				throw new RestException(false, 417, "Expectation Failed ", "Unable to parse artifact = " + artifact);
+
+			}
 
 			existingArtifact.populateFrom(artifactEntry);
 			final Artifact returnArtifact = ArtifactService.updateArtifact(authUser, existingArtifact);
@@ -255,7 +271,9 @@ public class ArtifactController extends BaseController {
 	@Operation(summary = "Inactivate artifact. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "204", description = "Successfully inactivated artifact"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
+			@ApiResponse(responseCode = "404", description = "Not found")
+			})
 	@Parameters({ @Parameter(name = "id", description = "Artifact id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
 	public ResponseEntity inactivateArtifact(final @PathVariable String id) throws Exception {
@@ -265,7 +283,12 @@ public class ArtifactController extends BaseController {
 		final User authUser = authorizeUser();
 
 		try {
+
 			final Artifact artifact = ArtifactService.getArtifact(id);
+			if (artifact == null) {
+				throw new RestException(false, 404, "Not found", "Unable to find artifact by id = " + id);
+			}
+
 			artifact.setActive(false);
 			ArtifactService.updateArtifact(authUser, artifact);
 			return new ResponseEntity<>(HttpStatus.NO_CONTENT);
@@ -289,8 +312,7 @@ public class ArtifactController extends BaseController {
 	@Operation(summary = "Download artifact.", responses = {
 			@ApiResponse(responseCode = "200", description = "Retrieved artifact"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "404", description = "Not Found"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "404", description = "Not Found") })
 	@Parameters({ @Parameter(name = "id", description = "Artifact id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
 	public ResponseEntity<Resource> downloadArtifact(@PathVariable("id") final String id) throws Exception {
@@ -303,15 +325,14 @@ public class ArtifactController extends BaseController {
 
 			final Artifact artifact = ArtifactService.getArtifact(id);
 			if (artifact == null) {
-				LOG.info("Artifact: " + id + " not found.");
-				return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+				throw new RestException(false, 404, "Not found", "Unable to find artifact by id = " + id);
 			}
 
 			final Resource file = FileUtility.getArtifactFile(artifact.getStoredFileName());
 
 			if (file == null) {
-				LOG.error("Artifact: file " + artifact.getStoredFileName() + " not found.");
-				return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+				throw new RestException(false, 404, "Not found",
+						"Unable to get artifact file = " + artifact.getStoredFileName());
 			}
 
 			return ResponseEntity.ok()

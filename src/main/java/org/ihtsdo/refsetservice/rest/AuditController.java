@@ -17,6 +17,7 @@ import org.ihtsdo.refsetservice.model.AuditEntry;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.AuditService;
@@ -76,8 +77,7 @@ public class AuditController extends BaseController {
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/audit/{id}")
 	@Operation(summary = "Get audit entry.", responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"), })
 	@Parameters({
 			@Parameter(name = "id", description = "Audit entry id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)) })
 	@RecordMetric
@@ -107,8 +107,7 @@ public class AuditController extends BaseController {
 	@ApiOperation(value = "Find audit entries. This call requires authentication with the correct role.", response = ResultList.class)
 	@ApiResponses(value = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "401", description = "Unauthorized"), })
 	@ApiImplicitParams({
 			@ApiImplicitParam(name = "query", value = "The value to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
 			@ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
@@ -154,9 +153,10 @@ public class AuditController extends BaseController {
 	@ApiOperation(value = "Find audit entries for entity. This call requires authentication with the correct role.", response = ResultList.class)
 	@ApiResponses(value = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
+			@ApiResponse(responseCode = "417", description = "Expectation failed")
+			, })
 	@ApiImplicitParams({
 			@ApiImplicitParam(name = "entityType", value = "The entity type, e.g. 'REFSET'", required = true, dataTypeClass = String.class, paramType = "path", defaultValue = ""),
 			@ApiImplicitParam(name = "entityId", value = "The entity id, e.g. '89f97217-ceb1-47b2-8066-cbcdde20884e'", required = true, dataTypeClass = String.class, paramType = "path", defaultValue = ""),
@@ -168,20 +168,21 @@ public class AuditController extends BaseController {
 	@RequestMapping(method = RequestMethod.GET, value = "/audit/{entityType}/{entityId}", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<AuditEntry>> searchAuditEntriesForEntity(
 			@PathVariable final String entityType, @PathVariable final String entityId,
-			@RequestParam(value = "expand") final Boolean expand, @ModelAttribute final SearchParameters searchParameters,
-			final BindingResult bindingResult) throws Exception {
+			@RequestParam(value = "expand") final Boolean expand,
+			@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult)
+			throws Exception {
 
 		final User authUser = SecurityService.getUserFromSession();
 		if (authUser == null) {
-			return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+			throw new RestException(false, 401, "Unauthorized", "Unable to get user from session");
 		}
 
 		if (StringUtils.isBlank(entityType)) {
-			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+			throw new RestException(false, 417, "Expectation failed", "Unexpected blank entity type");
 		}
 
 		if (StringUtils.isBlank(entityId)) {
-			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+			throw new RestException(false, 417, "Expectation failed", "Unexpected blank entity id");
 		}
 
 		// Check to make sure parameters were properly bound to variables.
