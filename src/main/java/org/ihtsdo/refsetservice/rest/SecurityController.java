@@ -68,9 +68,9 @@ public class SecurityController extends BaseController {
 
 		LOG.info("PERMISSION CLEANUP START");
 
+		final User user = authorizeUser();
 		try (final SecurityService securityService = new SecurityService()) {
 
-			final User user = SecurityService.getUserFromSession();
 			String results = "Didn't work";
 
 			if (user.getUserName().equals("refset-dev") || user.getUserName().equals("twhalen")) {
@@ -101,8 +101,7 @@ public class SecurityController extends BaseController {
 	@PostMapping("/authenticate/{userName}")
 	@Operation(summary = "Authorize the user. Requires logging in to IMS first and sending the appropriate cookie", responses = {
 			@ApiResponse(responseCode = "200", description = "Successful authorization, payload contains user object"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "401", description = "Unauthorized") })
 	@Parameters({ @Parameter(name = "userName", description = "User name to authenicate", required = true) })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<User> authenticate(@PathVariable(value = "userName") final String userName,
@@ -137,8 +136,7 @@ public class SecurityController extends BaseController {
 	 */
 	@PostMapping("/logout/{userName}")
 	@Operation(summary = "Log out the authenticated user. This call requires authentication", responses = {
-			@ApiResponse(responseCode = "200", description = "Successful logout"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "200", description = "Successful logout") })
 	@Parameters({ @Parameter(name = "userName", description = "User name to log out", required = true) })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<Void> logout(

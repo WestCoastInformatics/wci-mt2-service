@@ -158,35 +158,34 @@ public class ArtifactController extends BaseController {
 			@ApiResponse(responseCode = "417", description = "Expectation failed") })
 	@Parameters({ @Parameter(name = "artifact", description = "Artifact object", required = true) })
 	@RecordMetric
-	public ResponseEntity<?> addArtifact(@RequestParam final String artifact,
+	public ResponseEntity<?> addArtifact(@RequestParam final String artifactStr,
 			@RequestParam("file") final MultipartFile inputFile) throws Exception {
 
 		final User authUser = authorizeUser();
 
 		try {
 
-			Artifact artifactEntry = null;
+			Artifact artifact = null;
 			try {
-				artifactEntry = ModelUtility.fromJson(artifact, Artifact.class);
+				artifact = ModelUtility.fromJson(artifactStr, Artifact.class);
 			} catch (Exception e) {
-				throw new RestException(false, 417, "Expectation Failed ", "Unable to parse artifact = " + artifact);
-
+				throw new RestException(false, 417, "Expectation Failed ", "Unable to parse artifact = " + artifactStr);
 			}
 
 			// TODO: check required values.
 
 			final File file = FileUtility.saveArtifactFile(inputFile,
-					artifactEntry.getEntityType() + "-" + artifactEntry.getEntityId(), null);
+					artifact.getEntityType() + "-" + artifact.getEntityId(), null);
 
-			artifactEntry.setStoredFileName(file.getName());
-			artifactEntry.setFileName(inputFile.getOriginalFilename());
+			artifact.setStoredFileName(file.getName());
+			artifact.setFileName(inputFile.getOriginalFilename());
 
 			final String fileType = (FilenameUtils.getExtension(file.getCanonicalFile().toString()));
 			if (StringUtils.isNotBlank(fileType)) {
-				artifactEntry.setFileType(fileType.toUpperCase());
+				artifact.setFileType(fileType.toUpperCase());
 			}
 
-			final Artifact newArtifact = ArtifactService.addArtifact(authUser, artifactEntry);
+			final Artifact newArtifact = ArtifactService.addArtifact(authUser, artifact);
 
 			return ResponseEntity.status(HttpStatus.ACCEPTED).body(newArtifact);
 
@@ -217,7 +216,7 @@ public class ArtifactController extends BaseController {
 			@Parameter(name = "artifact", description = "Artifact object", required = true) })
 	@RecordMetric
 	public ResponseEntity updateArtifact(final @PathVariable String id,
-			final @org.springframework.web.bind.annotation.RequestBody String artifact) throws Exception {
+			final @org.springframework.web.bind.annotation.RequestBody String artifactStr) throws Exception {
 
 		final User authUser = authorizeUser();
 
@@ -227,15 +226,15 @@ public class ArtifactController extends BaseController {
 			if (existingArtifact == null) {
 				throw new RestException(false, 404, "Not found", "Unable to find artifact by id = " + id);
 			}
-			Artifact artifactEntry = null;
+			Artifact artifact = null;
 			try {
-				artifactEntry = ModelUtility.fromJson(artifact, Artifact.class);
+				artifact = ModelUtility.fromJson(artifactStr, Artifact.class);
 			} catch (Exception e) {
-				throw new RestException(false, 417, "Expectation Failed ", "Unable to parse artifact = " + artifact);
+				throw new RestException(false, 417, "Expectation Failed ", "Unable to parse artifact = " + artifactStr);
 
 			}
 
-			existingArtifact.populateFrom(artifactEntry);
+			existingArtifact.populateFrom(artifact);
 			final Artifact returnArtifact = ArtifactService.updateArtifact(authUser, existingArtifact);
 
 			return ResponseEntity.status(HttpStatus.OK).body(returnArtifact);

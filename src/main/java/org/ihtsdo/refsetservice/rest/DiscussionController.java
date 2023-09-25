@@ -21,7 +21,6 @@ import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.DiscussionService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
-import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,7 +76,8 @@ public class DiscussionController extends BaseController {
 	@RequestMapping(method = RequestMethod.GET, value = "/discussion/{type}/{refsetInternalId}")
 	@Operation(summary = "Get discussions for the specified parameters. To see certain results this call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested discussion"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden") })
 	@Parameters({
 			@Parameter(name = "type", description = "Object type, e.g. 'REFSET, REFSET_MEMEBER'", required = true, schema = @Schema(implementation = String.class)),
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the Refset", required = true, schema = @Schema(implementation = String.class)),
@@ -118,8 +118,7 @@ public class DiscussionController extends BaseController {
 	@Operation(summary = "Returns discussion thread. To see certain results this call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested discussion"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Not found"), })
+			@ApiResponse(responseCode = "403", description = "Forbidden") })
 	@Parameters({
 			@Parameter(name = "id", description = "Discussion id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)), })
 	@RecordMetric
@@ -133,12 +132,8 @@ public class DiscussionController extends BaseController {
 			final DiscussionThread discussionThread = DiscussionService.getDiscussion(service, authUser, id);
 
 			if (discussionThread == null) {
-
-				final String message = "Unable to retrieve discussion thread: " + id;
-				throw new RestException(false, 404, "Not Found", message);
+				return null;
 			}
-
-			LOG.debug("getDiscussion: discussionThread: " + ModelUtility.toJson(discussionThread));
 
 			return new ResponseEntity<>(discussionThread, new HttpHeaders(), HttpStatus.OK);
 
@@ -160,7 +155,7 @@ public class DiscussionController extends BaseController {
 	@Operation(summary = "Add discussion. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "201", description = "Added discussion"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "403", description = "Forbidden") })
 	@Parameters({ @Parameter(name = "thread", description = "Discussion thread object", required = true) })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<DiscussionThread> createDiscussionThread(
@@ -178,7 +173,7 @@ public class DiscussionController extends BaseController {
 
 				LOG.error("createDiscussionThread: User does not have permissions to perform this action: {}.",
 						authUser.getUserName());
-				throw new RestException(false, 401, "Unauthorized",
+				throw new RestException(false, 403, "Forbidden",
 						"User does not have permissions to perform this action.");
 			}
 
@@ -217,8 +212,8 @@ public class DiscussionController extends BaseController {
 	@Operation(summary = "Add post to existing discussion thread. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "201", description = "Added discussion post to discussion thread."),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "404", description = "Not found"),
-			@ApiResponse(responseCode = "500", description = "Server error") })
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
+			@ApiResponse(responseCode = "404", description = "Not found") })
 	@Parameters({
 			@Parameter(name = "threadId", description = "discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
 			@Parameter(name = "post", description = "Post object.", required = true) })
@@ -233,8 +228,6 @@ public class DiscussionController extends BaseController {
 			final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
 
 			if (thread == null) {
-
-				LOG.error("createPost: Unable to retrieve discussion thread id: {}.", threadId);
 				throw new RestException(false, 404, "Not found", "Unable to find discussion thread for " + threadId);
 			}
 
@@ -243,10 +236,7 @@ public class DiscussionController extends BaseController {
 
 			// If the user does not have the correct permissions then return an error
 			if ((refset.isPrivateRefset() || thread.isPrivateThread()) && !permittedRole) {
-
-				LOG.error("createPost: User does not have permissions to perform this action: {}.",
-						authUser.getUserName());
-				throw new RestException(false, 401, "Unauthorized",
+				throw new RestException(false, 403, "Forbidden",
 						"User does not have permissions to perform this action.");
 			}
 
@@ -286,8 +276,8 @@ public class DiscussionController extends BaseController {
 	@Operation(summary = "Update discussion thread. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Updated discussion thread"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "404", description = "Not found"),
-			@ApiResponse(responseCode = "500", description = "Server error") })
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
+			@ApiResponse(responseCode = "404", description = "Not found") })
 	@Parameters({
 			@Parameter(name = "threadId", description = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
 			@Parameter(name = "thread", description = "Discussion thread object", required = true) })
@@ -315,7 +305,7 @@ public class DiscussionController extends BaseController {
 
 				LOG.error("updateDiscussionThread: User does not have permissions to perform this action: {}.",
 						authUser.getUserName());
-				throw new RestException(false, 401, "Unauthorized",
+				throw new RestException(false, 403, "Forbidden",
 						"User does not have permissions to perform this action.");
 			}
 
@@ -360,8 +350,8 @@ public class DiscussionController extends BaseController {
 	@Operation(summary = "Set discussion thread status. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Updated discussion thread status"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "404", description = "Not found"),
-			@ApiResponse(responseCode = "500", description = "Server error") })
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
+			@ApiResponse(responseCode = "404", description = "Not found") })
 	@Parameters({
 			@Parameter(name = "threadId", description = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
 			@Parameter(name = "status", description = "the discussion thread's status", required = true, schema = @Schema(implementation = String.class)) })
@@ -389,7 +379,7 @@ public class DiscussionController extends BaseController {
 
 				LOG.error("updateDiscussionThreadStatus: User does not have permissions to perform this action: {}.",
 						authUser.getUserName());
-				throw new RestException(false, 401, "Unauthorized",
+				throw new RestException(false, 403, "Forbidden",
 						"User does not have permissions to perform this action.");
 			}
 
@@ -427,8 +417,8 @@ public class DiscussionController extends BaseController {
 	@Operation(summary = "Set the privacy of a discussion thread. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully updated discussion thread privacy"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "404", description = "Not found"),
-			@ApiResponse(responseCode = "500", description = "Server error") })
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
+			@ApiResponse(responseCode = "404", description = "Not found") })
 	@Parameters({
 			@Parameter(name = "threadId", description = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
 			@Parameter(name = "isPrivate", description = "Is the discussion thread private", required = true) })
@@ -457,7 +447,7 @@ public class DiscussionController extends BaseController {
 
 				LOG.error("updateDiscussionThreadPrivacy: User does not have permissions to perform this action: {}.",
 						authUser.getUserName());
-				throw new RestException(false, 401, "Unauthorized",
+				throw new RestException(false, 403, "Forbidden",
 						"User does not have permissions to perform this action.");
 			}
 
@@ -498,8 +488,8 @@ public class DiscussionController extends BaseController {
 	@Operation(summary = "Set discussion thread visibility. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Updated discussion thread visibility"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "404", description = "Not found"),
-			@ApiResponse(responseCode = "500", description = "Server error") })
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
+			@ApiResponse(responseCode = "404", description = "Not found") })
 	@Parameters({
 			@Parameter(name = "threadId", description = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
 			@Parameter(name = "visibility", description = "The discussion thread's visibility", required = true, schema = @Schema(implementation = String.class)) })
@@ -528,7 +518,7 @@ public class DiscussionController extends BaseController {
 				LOG.error(
 						"updateDiscussionThreadVisibility: User does not have permissions to perform this action: {}.",
 						authUser.getUserName());
-				throw new RestException(false, 401, "Unauthorized",
+				throw new RestException(false, 403, "Forbidden",
 						"User does not have permissions to perform this action.");
 			}
 
@@ -567,8 +557,8 @@ public class DiscussionController extends BaseController {
 	@Operation(summary = "Set discussion post privacy. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Updated the discussion post privacy"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "404", description = "Not found"),
-			@ApiResponse(responseCode = "500", description = "Server error") })
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
+			@ApiResponse(responseCode = "404", description = "Not found") })
 	@Parameters({
 			@Parameter(name = "threadId", description = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
 			@Parameter(name = "postId", description = "Discussion post id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
@@ -606,7 +596,7 @@ public class DiscussionController extends BaseController {
 
 				LOG.error("updateDiscussionPostPrivacy: User does not have permissions to perform this action: {}.",
 						authUser.getUserName());
-				throw new RestException(false, 401, "Unauthorized",
+				throw new RestException(false, 403, "Forbidden",
 						"User does not have permissions to perform this action.");
 			}
 
@@ -654,9 +644,9 @@ public class DiscussionController extends BaseController {
 	@Operation(summary = "Updates a discussion post. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully updated the discussion post."),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "417", description = "Expectation failed"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Not found"),
-			@ApiResponse(responseCode = "500", description = "Server error") })
+			@ApiResponse(responseCode = "417", description = "Expectation failed") })
 	@Parameters({
 			@Parameter(name = "threadId", description = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
 			@Parameter(name = "postId", description = "Discussion post id, e.g. &l5;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
@@ -702,7 +692,7 @@ public class DiscussionController extends BaseController {
 
 				LOG.error("updateDiscussionPost: User does not have permissions to perform this action: {}.",
 						authUser.getUserName());
-				throw new RestException(false, 401, "Unauthorized",
+				throw new RestException(false, 403, "Forbidden",
 						"User does not have permissions to perform this action.");
 			}
 
@@ -750,8 +740,8 @@ public class DiscussionController extends BaseController {
 	@Operation(summary = "Delete discussion post. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully deleted discussion thread."),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "404", description = "Not found"),
-			@ApiResponse(responseCode = "500", description = "Server error") })
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
+			@ApiResponse(responseCode = "404", description = "Not found") })
 	@Parameters({
 			@Parameter(name = "threadId", description = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
 			@Parameter(name = "postId", description = "Discussion post id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)), })
@@ -787,8 +777,8 @@ public class DiscussionController extends BaseController {
 	@Operation(summary = "Deletes a discussion thread. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully deleted the provided discussion thread."),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "404", description = "Not found"),
-			@ApiResponse(responseCode = "500", description = "Server error") })
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
+			@ApiResponse(responseCode = "404", description = "Not found") })
 	@Parameters({
 			@Parameter(name = "threadId", description = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)), })
 	@RecordMetric

@@ -88,6 +88,9 @@ public class AuditController extends BaseController {
 			final SearchParameters searchParameters = new SearchParameters();
 			searchParameters.setQuery("id: " + id);
 			final ResultList<AuditEntry> result = AuditService.findAuditEntries(searchParameters);
+			if (result.size() == 0) {
+				return ResponseEntity.status(HttpStatus.OK).body(null);
+			}
 			return ResponseEntity.status(HttpStatus.OK).body(result.getItems().get(0));
 
 		} catch (Exception e) {

@@ -86,10 +86,8 @@ public class UserController extends BaseController {
 	 */
 	@Operation(summary = "Get user. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "404", description = "Resource not found"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "403", description = "Forbidden") })
 	@Parameters({ @Parameter(name = "id", description = "User id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "includeOrganizations", description = "Include user's organizations", example = "false"),
 			@Parameter(name = "includeTeams", description = "Include user's teams", required = false, example = "false") })
@@ -123,11 +121,9 @@ public class UserController extends BaseController {
 	@Operation(summary = "Update user. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "201", description = "Successfully updated user"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Not Found"),
-			@ApiResponse(responseCode = "409", description = "Conflict"),
-			@ApiResponse(responseCode = "415", description = "Unsupported Media Type"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") }, requestBody = @RequestBody(description = "User to update", required = true, content = {
+			@ApiResponse(responseCode = "417", description = "Failed Expectation") }, requestBody = @RequestBody(description = "User to update", required = true, content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = User.class)) }))
 	@Parameters({ @Parameter(name = "id", description = "User id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "user", description = "User object", required = true) })
@@ -149,6 +145,10 @@ public class UserController extends BaseController {
 			if (!org.apache.commons.lang3.StringUtils.equals(id, user.getId())) {
 				throw new RestException(false, 417, "Expectation failed", "User user id does not match id in URL.");
 			}
+			if (UserService.getUser(id, false) == null) {
+				throw new RestException(false, 404, "Not found", "Unable to find user for id = " + id);
+			}
+
 			final User updatedUser = UserService.updateUser(authUser, user);
 			return new ResponseEntity<>(updatedUser, HttpStatus.OK);
 
@@ -168,11 +168,9 @@ public class UserController extends BaseController {
 	@Operation(summary = "Delete icon for the user. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully removed icon for user"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Not Found"),
-			@ApiResponse(responseCode = "409", description = "Conflict"),
-			@ApiResponse(responseCode = "415", description = "Unsupported Media Type"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	@Parameters({ @Parameter(name = "id", description = "User id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
 	@DeleteMapping(value = "/user/{id}/icon", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
@@ -181,16 +179,15 @@ public class UserController extends BaseController {
 
 		final User authUser = authorizeUser();
 
-		final User user = UserService.getUser(id, false);
-		if (user == null) {
-			throw new RestException(false, 404, "Not found", "Unable to find user for id = " + id);
-		}
-		if (!org.apache.commons.lang3.StringUtils.equals(id, user.getId())) {
-			throw new RestException(false, 417, "Expectation failed",
-					"User is null or user id does not match id in URL.");
-		}
-
 		try {
+			final User user = UserService.getUser(id, false);
+			if (user == null) {
+				throw new RestException(false, 404, "Not found", "Unable to find user for id = " + id);
+			}
+			if (!org.apache.commons.lang3.StringUtils.equals(id, user.getId())) {
+				throw new RestException(false, 417, "Expectation failed",
+						"User is null or user id does not match id in URL.");
+			}
 
 			user.setIconUri(null);
 			final User original = UserService.updateUser(authUser, user);
@@ -214,10 +211,8 @@ public class UserController extends BaseController {
 	 */
 	@Operation(summary = "Find users. This call requires authentication with the correct role.", description = API_NOTES, responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "404", description = "Resource not found"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "403", description = "Forbidden") })
 	// @ModelAttribute API params documented in SearchParameter
 	@Parameters({
 			@Parameter(name = "includeOrganizations", description = "Include user's organizations", required = false, example = "false"),
@@ -269,10 +264,8 @@ public class UserController extends BaseController {
 	 */
 	@Operation(summary = "Icon file for the user", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully added icon for user"),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "404", description = "Resource not found"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "403", description = "Forbidden") })
 	@Parameters({ @Parameter(name = "filename", description = "File name for user icon.", required = true) })
 	@RequestMapping(value = "/user/icon/{fileName}", method = RequestMethod.GET)
 	public @ResponseBody ResponseEntity<Resource> getUserIcon(@PathVariable("fileName") final String fileName)
@@ -304,10 +297,9 @@ public class UserController extends BaseController {
 	@Operation(summary = "Update icon for user. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "202", description = "Successfully updated icon for user"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Not Found"),
-			@ApiResponse(responseCode = "409", description = "Conflict"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 
 	@Parameters({ @Parameter(name = "id", description = "User id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "file", description = "Icon file", required = true) })

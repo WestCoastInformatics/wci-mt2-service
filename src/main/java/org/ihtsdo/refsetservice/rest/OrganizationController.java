@@ -92,9 +92,9 @@ public class OrganizationController extends BaseController {
 	@Operation(summary = "Get organization. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Resource not found"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	@Parameters({ @Parameter(name = "id", description = "Organization identifier, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "includeMembers", description = "Include organization's members (users)", required = false) })
 	@RecordMetric
@@ -171,11 +171,10 @@ public class OrganizationController extends BaseController {
 	@SuppressWarnings("rawtypes")
 	@Operation(summary = "Add organization. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "201", description = "Organization successfully created"),
-			@ApiResponse(responseCode = "400", description = "Bad Request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Resource not found"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	@Parameters({ @Parameter(name = "organization", description = "Organization object", required = true) })
 	@RecordMetric
 	@PostMapping(value = "/organization", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
@@ -220,11 +219,10 @@ public class OrganizationController extends BaseController {
 	@SuppressWarnings("rawtypes")
 	@Operation(summary = "Update organization. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Organization successfully updated"),
-			@ApiResponse(responseCode = "400", description = "Bad Request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Not Found"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	@Parameters({ @Parameter(name = "id", description = "Organization id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "organization", description = "Organization object", required = true) })
 	@RecordMetric
@@ -272,9 +270,9 @@ public class OrganizationController extends BaseController {
 	@Operation(summary = "Inactivate organization. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "202", description = "Successfully inactivated organization"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Not Found"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "417", description = "Failed Expectation")})
 	@Parameters({ @Parameter(name = "id", description = "Organization id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
 	@DeleteMapping(value = "/organization/{id}")
@@ -306,7 +304,6 @@ public class OrganizationController extends BaseController {
 	 */
 	@Operation(summary = "Get user(s) for the organization. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({ @Parameter(name = "id", description = "Organization id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "includeTeams", description = "Include organization user's teams", required = false, example = "false") })
@@ -342,11 +339,10 @@ public class OrganizationController extends BaseController {
 	 */
 	@Operation(summary = "Get team(s) for the organization. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description = "Bad Request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Not Found"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	@Parameters({ @Parameter(name = "id", description = "Organization id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
 	@RequestMapping(value = "/organization/{id}/teams", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
@@ -376,11 +372,10 @@ public class OrganizationController extends BaseController {
 	 */
 	@Operation(summary = "Get projects(s) the organization. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description = "Bad Request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Not Found"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	@Parameters({ @Parameter(name = "id", description = "Organization id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
 	@RequestMapping(value = "/organization/{id}/projects", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
@@ -412,11 +407,10 @@ public class OrganizationController extends BaseController {
 	 */
 	@Operation(summary = "Add user to organization. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "201", description = "User added to organization"),
-			@ApiResponse(responseCode = "400", description = "Bad Request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Not Found"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	@Parameters({ @Parameter(name = "id", description = "Organization id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
 	@PostMapping(value = "/organization/{id}/user")
@@ -461,10 +455,10 @@ public class OrganizationController extends BaseController {
 	@Operation(summary = "Delete user from organization. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "202", description = "Successfully removed user from organization"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Not Found"),
 			@ApiResponse(responseCode = "409", description = "Conflict"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	@Parameters({ @Parameter(name = "id", description = "Organization id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "userId", description = "User id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
@@ -502,8 +496,7 @@ public class OrganizationController extends BaseController {
 	 */
 	@Operation(summary = "Get organization icon.", responses = {
 			@ApiResponse(responseCode = "200", description = "Retrieved organization icon"),
-			@ApiResponse(responseCode = "404", description = "Not Found"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "404", description = "Not Found") })
 	@Parameters({ @Parameter(name = "fileName", description = "fileName, e.g. &lt;uuid&gt;", required = true) })
 	@RequestMapping(value = "/organization/icon/{fileName}", method = RequestMethod.GET)
 	// no auth required
@@ -538,10 +531,10 @@ public class OrganizationController extends BaseController {
 	@Operation(summary = "Update icon for organization. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "202", description = "Updated icon for organization"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Not Found"),
 			@ApiResponse(responseCode = "409", description = "Conflict"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "417", description = "Failed Expectation")})
 	@Parameters({ @Parameter(name = "id", description = "Organization id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "file", description = "Icon file", required = true) })
 	@RecordMetric
@@ -586,12 +579,11 @@ public class OrganizationController extends BaseController {
 	 */
 	@Operation(summary = "Delete organization icon. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully removed organization icon"),
-			@ApiResponse(responseCode = "400", description = "Bad Request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Not Found"),
 			@ApiResponse(responseCode = "415", description = "Unsupported Media Type"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "417", description = "Failed Expectation")})
 	@Parameters({ @Parameter(name = "id", description = "Organization id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
 	@DeleteMapping(value = "/organization/{id}/icon", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
@@ -640,11 +632,11 @@ public class OrganizationController extends BaseController {
 	@Operation(summary = "Request member/non-member to join organization. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Organization icon deleted"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Not Found"),
 			@ApiResponse(responseCode = "409", description = "Conflict"),
 			@ApiResponse(responseCode = "415", description = "Unsupported Media Type"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	@Parameters({ @Parameter(name = "id", description = "Organization id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "emailInfo", description = "Email information", required = true) })
 	@RecordMetric

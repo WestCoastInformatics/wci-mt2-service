@@ -127,6 +127,7 @@ public class RefsetController extends BaseController {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({ @Parameter(name = "refsetId", description = "The ID of the refset to return.", required = true),
 			@Parameter(name = "versionDate", description = "The date of the refset version (YYYY-MM-DD) or IN DEVELOPMENT.", required = true), })
@@ -193,6 +194,7 @@ public class RefsetController extends BaseController {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset to check.", required = true) })
@@ -290,6 +292,7 @@ public class RefsetController extends BaseController {
 					+ "call /refset/{refsetInternalId}/isLocked to get full status."),
 			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
@@ -406,6 +409,7 @@ public class RefsetController extends BaseController {
 					+ "call /refset/{refsetInternalId}/isLocked to get full status."),
 			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
@@ -522,6 +526,7 @@ public class RefsetController extends BaseController {
 					+ "call /refset/{refsetInternalId}/isLocked to get full status."),
 			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
@@ -610,6 +615,7 @@ public class RefsetController extends BaseController {
 					+ "call /refset/{refsetInternalId}/isLocked to get full status."),
 			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
@@ -671,7 +677,9 @@ public class RefsetController extends BaseController {
 			@ApiResponse(responseCode = "200", description = "Successfully added the refset. payload contains the new refset ID."),
 			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
+			@ApiResponse(responseCode = "404", description = "Resource not found"),
+			@ApiResponse(responseCode = "417", description = "Expectation failed") })
 	@Parameters({
 			@Parameter(name = "refsetParameters", description = "The required fields of the refset to add.", required = true) })
 	@PostMapping("/refset")
@@ -735,7 +743,9 @@ public class RefsetController extends BaseController {
 			@ApiResponse(responseCode = "200", description = "Successfully modified the refset."),
 			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
+			@ApiResponse(responseCode = "404", description = "Resource not found"),
+			@ApiResponse(responseCode = "417", description = "Expectation failed") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
 			@Parameter(name = "refsetParameters", description = "The refset to modify.", required = true) })
@@ -793,6 +803,7 @@ public class RefsetController extends BaseController {
 			@ApiResponse(responseCode = "200", description = "Successfully modified the refset. Long running background process, call /refset/{refsetInternalId}/isLocked to get full status"),
 			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true) })
@@ -849,7 +860,9 @@ public class RefsetController extends BaseController {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
+			@ApiResponse(responseCode = "404", description = "Resource not found"),
+			@ApiResponse(responseCode = "417", description = "Expectation failed"), })
 	// @ModelAttribute API params documented in SearchParameter
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true), })
@@ -894,6 +907,7 @@ public class RefsetController extends BaseController {
 			@ApiResponse(responseCode = "200", description = "Successfully changed the refset status. The payload contains the updated refset"),
 			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
@@ -979,6 +993,7 @@ public class RefsetController extends BaseController {
 			@ApiResponse(responseCode = "200", description = "Successfully changed the status note. The payload contains the full updated workflow history"),
 			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
@@ -1029,6 +1044,7 @@ public class RefsetController extends BaseController {
 					@ApiResponse(responseCode = "200", description = "Successfully began the publication process. The payload contains the status."),
 					@ApiResponse(responseCode = "400", description = "Bad request"),
 					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
 					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "codeSystem", description = "A code system to limit the publication to", required = true), })
@@ -1113,6 +1129,7 @@ public class RefsetController extends BaseController {
 			@ApiResponse(responseCode = "200", description = "Successfully published the refsets. The payload contains the status."),
 			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "versionDate", description = "the publication date of the refsets (YYYY-MM-DD)", required = true),
@@ -1247,6 +1264,7 @@ public class RefsetController extends BaseController {
 			@ApiResponse(responseCode = "200", description = "Successfully published the refset. The payload contains the status."),
 			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
@@ -1318,6 +1336,7 @@ public class RefsetController extends BaseController {
 			@ApiResponse(responseCode = "200", description = "Successfully changed the refset statuses. The payload contains the status."),
 			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({ @Parameter(name = "refsetIds", description = "A comma separated list of refset IDs", required = true),
 			@Parameter(name = "notes", description = "The reason why the refsets failed", required = true) })
@@ -1384,6 +1403,7 @@ public class RefsetController extends BaseController {
 			@ApiResponse(responseCode = "200", description = "Successfully created the new refset version. payload contains the internal ID of the new version."),
 			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true) })
@@ -1430,6 +1450,7 @@ public class RefsetController extends BaseController {
 			@ApiResponse(responseCode = "200", description = "Successfully changed the refset status. payload contains the new status."),
 			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
@@ -1469,6 +1490,7 @@ public class RefsetController extends BaseController {
 					+ "Payload contains the status."),
 			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true), })
@@ -1514,6 +1536,7 @@ public class RefsetController extends BaseController {
 			@ApiResponse(responseCode = "200", description = "Successfully deleted the refset edit version. payload contains the status."),
 			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true), })
@@ -1560,7 +1583,9 @@ public class RefsetController extends BaseController {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
+			@ApiResponse(responseCode = "404", description = "Resource not found"),
+			@ApiResponse(responseCode = "417", description = "Expectation failed") })
 	// @ModelAttribute API params documented in SearchParameter
 	@Parameters({
 			@Parameter(name = "query", description = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, example = ""),
@@ -1621,7 +1646,9 @@ public class RefsetController extends BaseController {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
+			@ApiResponse(responseCode = "404", description = "Resource not found"),
+			@ApiResponse(responseCode = "417", description = "Expectation failed") })
 	// @ModelAttribute API params documented in SearchParameter
 	@Parameters({ @Parameter(name = "refsetInternalId", description = "the internal refset ID", required = true) })
 	@RecordMetric
@@ -1683,7 +1710,9 @@ public class RefsetController extends BaseController {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
+			@ApiResponse(responseCode = "404", description = "Resource not found"),
+			@ApiResponse(responseCode = "417", description = "Expectation failed") })
 	// @ModelAttribute API params documented in SearchParameter
 	@Parameters({
 			@Parameter(name = "query", description = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false),
@@ -1746,6 +1775,7 @@ public class RefsetController extends BaseController {
 					@ApiResponse(responseCode = "200", description = "Successfully populated the refset's ancestor cache. Payload contains the status"),
 					@ApiResponse(responseCode = "400", description = "Bad request"),
 					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
 					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetId", description = "The ID of the refset for which ancestors are to be identified.", required = true),
@@ -1803,6 +1833,7 @@ public class RefsetController extends BaseController {
 					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. Payload contains the URL to download the export file"),
 					@ApiResponse(responseCode = "400", description = "Bad request"),
 					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
 					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset to return.", required = true),
@@ -1888,6 +1919,7 @@ public class RefsetController extends BaseController {
 					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. Payload contains the URL to download the export file"),
 					@ApiResponse(responseCode = "400", description = "Bad request"),
 					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
 					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "projectId", description = "The id of the project to export refsets.", required = true),
@@ -1973,6 +2005,7 @@ public class RefsetController extends BaseController {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset to return.", required = true),
@@ -2595,6 +2628,7 @@ public class RefsetController extends BaseController {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. Payload contains a set of concept IDs that are ancestors "
 					+ "to the members of this refset."),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
@@ -2640,6 +2674,7 @@ public class RefsetController extends BaseController {
 	@Operation(summary = "Returns the ancestor path concepts for a refset member. To see certain results this call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
@@ -2682,6 +2717,7 @@ public class RefsetController extends BaseController {
 			+ "to get full status. This call requires authentication with the correct role.", responses = {
 					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. Payload contains the status of the operation"),
 					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
 					@ApiResponse(responseCode = "400", description = "Bad request"),
 					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
@@ -2769,6 +2805,7 @@ public class RefsetController extends BaseController {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true) })
@@ -2818,6 +2855,7 @@ public class RefsetController extends BaseController {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
@@ -2873,8 +2911,8 @@ public class RefsetController extends BaseController {
 	@Operation(summary = "Remove all inactive Upgrade concepts at once. Long running background process, call /refset/{refsetInternalId}/isLocked "
 			+ "to get full status. This call requires authentication with the correct role.", responses = {
 					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. The payload contains the status of the operation"),
-					@ApiResponse(responseCode = "400", description = "Bad request"),
 					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
 					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true) })
@@ -2919,8 +2957,8 @@ public class RefsetController extends BaseController {
 	@Operation(summary = "Add all replacement Upgrade concepts as members at once. Long running background process, call /refset/{refsetInternalId}/isLocked "
 			+ "to get full status. This call requires authentication with the correct role.", responses = {
 					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. The payload contains the status of the operation"),
-					@ApiResponse(responseCode = "400", description = "Bad request"),
 					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
 					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true) })
@@ -2967,9 +3005,10 @@ public class RefsetController extends BaseController {
 	 */
 	@Operation(summary = "Search for members replacement concepts for upgrade. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information."),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
+			@ApiResponse(responseCode = "404", description = "Resource not found"),
+			@ApiResponse(responseCode = "417", description = "Expectation failed") })
 	// @ModelAttribute API params documented in SearchParameter
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true) })
@@ -3019,8 +3058,8 @@ public class RefsetController extends BaseController {
 	 */
 	@Operation(summary = "Search for refsets for dropdown menus. To see certain results this call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+			@ApiResponse(responseCode = "404", description = "Resource not found"),
+			@ApiResponse(responseCode = "417", description = "Expectation failed") })
 	// @ModelAttribute API params documented in SearchParameter
 	@Parameters({ @Parameter(name = "refsetInternalId", description = "the internal refset ID", required = true) })
 	@RecordMetric
@@ -3067,8 +3106,8 @@ public class RefsetController extends BaseController {
 	@Operation(summary = "Compile the data to compare two refsets. Long running background process, call /refset/{refsetInternalId}/isLocked to get full status. "
 			+ "To see certain results this call requires authentication with the correct role.", responses = {
 					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. Payload contains the status of the operation"),
-					@ApiResponse(responseCode = "400", description = "Bad request"),
 					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
 					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "activeRefsetInternalId", description = "The internal ID of the active refset.", required = true),
@@ -3119,8 +3158,8 @@ public class RefsetController extends BaseController {
 	 */
 	@Operation(summary = "Compile the data to compare two refsets. To see certain results this call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information."),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "activeRefsetInternalId", description = "The internal ID of the active refset.", required = true) })
@@ -3170,7 +3209,6 @@ public class RefsetController extends BaseController {
 	 */
 	@Operation(summary = "Request access to the refset for the specified ID", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset to request access to.", required = true),
@@ -3204,7 +3242,6 @@ public class RefsetController extends BaseController {
 	 */
 	@Operation(summary = "Share a refset via email. To see certain results this call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully shared the requested refset. The payload contains the status of the operation"),
-			@ApiResponse(responseCode = "400", description = "Invalid email address recipient entered"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
@@ -3241,7 +3278,6 @@ public class RefsetController extends BaseController {
 	 */
 	@Operation(summary = "Request project access from administrators. To see certain results this call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully requested access to the refset's ecnlosing project"),
-			@ApiResponse(responseCode = "400", description = "Invalid email address recipient entered"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),

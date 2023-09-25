@@ -87,10 +87,9 @@ public class ProjectController extends BaseController {
 	@SuppressWarnings("rawtypes")
 	@Operation(summary = "Get project.  This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "404", description = "Resource not found"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({ @Parameter(name = "id", description = "Project id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "includeMembers", description = "Include project's members (users)", required = false, example = "false") })
 	@RecordMetric
@@ -125,10 +124,9 @@ public class ProjectController extends BaseController {
 	@SuppressWarnings("rawtypes")
 	@Operation(summary = "Get teams for project.  This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "404", description = "Resource not found"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 
 	@Parameters({ @Parameter(name = "id", description = "Project id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
@@ -163,10 +161,10 @@ public class ProjectController extends BaseController {
 	 */
 	@Operation(summary = "Find projects. This call requires authentication with the correct role.", description = API_NOTES, responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Resource not found"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "417", description = "Expectation failed") })
 	// @ModelAttribute API params documented in SearchParameter
 	@Parameters({
 			@Parameter(name = "includeMembers", description = "Include project's members (users)", required = false, example = "false"),
@@ -248,12 +246,11 @@ public class ProjectController extends BaseController {
 	@SuppressWarnings("rawtypes")
 	@Operation(summary = "Add project.  This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "201", description = "Successfully create project"),
-			@ApiResponse(responseCode = "400", description = "Bad Request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Not Found"),
 			@ApiResponse(responseCode = "409", description = "Conflict"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	@Parameters({ @Parameter(name = "project", description = "Project object", required = true) })
 	@RecordMetric
 	@PostMapping(value = "/project", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
@@ -334,11 +331,10 @@ public class ProjectController extends BaseController {
 	@SuppressWarnings("rawtypes")
 	@Operation(summary = "Update project.  This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Update specified project"),
-			@ApiResponse(responseCode = "400", description = "Bad Request"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Not Found"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	@Parameters({ @Parameter(name = "id", description = "Project id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "project", description = "Project object", required = true) })
 	@RecordMetric
@@ -388,9 +384,9 @@ public class ProjectController extends BaseController {
 	@Operation(summary = "Inactivate project.  This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "202", description = "Successfully inactivated project"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Not Found"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	@Parameters({ @Parameter(name = "id", description = "Project id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
 	@DeleteMapping(value = "/project/{id}", consumes = MediaType.APPLICATION_JSON)

@@ -138,18 +138,12 @@ public class UserService extends BaseService {
     public static User updateUser(final User user, final User updateUser) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
-
-            // Find the user
-            final User original = service.get(updateUser.getId(), User.class);
-
-            if (original == null) {
-                LOG.info("Unable to find user for id {}.", updateUser.getId());
-                throw new NotFoundException();
-            }
-
             service.setModifiedBy(user.getUserName());
             service.setTransactionPerOperation(false);
             service.beginTransaction();
+
+            // Find the user
+            final User original = service.get(updateUser.getId(), User.class);
 
             // Apply changes
             original.patchFrom(updateUser);
