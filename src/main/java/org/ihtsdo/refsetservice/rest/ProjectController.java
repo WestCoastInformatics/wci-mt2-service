@@ -21,7 +21,6 @@ import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
-import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.terminologyservice.ProjectService;
 import org.ihtsdo.refsetservice.terminologyservice.TeamService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
@@ -104,13 +103,8 @@ public class ProjectController extends BaseController {
 		authorizeUser();
 
 		try {
-
 			final Project project = ProjectService.getProject(id, includeMembers);
 			return new ResponseEntity<>(project, HttpStatus.OK);
-
-		} catch (final NotFoundException npe) {
-
-			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(npe.getMessage());
 
 		} catch (final Exception e) {
 
@@ -199,8 +193,8 @@ public class ProjectController extends BaseController {
 
 			LOG.debug("getProjects searchParameters: " + ModelUtility.toJson(searchParameters));
 
-			final User user = SecurityService.getUserFromSession();
-			final ResultList<Project> results = ProjectService.searchProjects(user, searchParameters);
+			final User authUser = authorizeUser();
+			final ResultList<Project> results = ProjectService.searchProjects(authUser, searchParameters);
 
 			if (results == null || results.getItems() == null || results.getItems().isEmpty()) {
 				return new ResponseEntity<>(results, HttpStatus.OK);

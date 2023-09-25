@@ -34,6 +34,7 @@ import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.QueryParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RefsetMemberComparison;
+import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.SendCommunicationEmailInfo;
 import org.ihtsdo.refsetservice.model.TypeKeyValue;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
@@ -90,7 +91,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.servers.Server;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-
 /**
  * Controller for /concept endpoints.
  */
@@ -123,25 +123,22 @@ public class RefsetController extends BaseController {
 	 * @return the refset
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Get the refset for the specified ID and version date. To see certain results this call requires authentication with the correct role.", responses=
-	{ @ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
-	@Parameters({
-			@Parameter(name = "refsetId", description = "The ID of the refset to return.", required = true),
+	@Operation(summary = "Get the refset for the specified ID and version date. To see certain results this call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Parameters({ @Parameter(name = "refsetId", description = "The ID of the refset to return.", required = true),
 			@Parameter(name = "versionDate", description = "The date of the refset version (YYYY-MM-DD) or IN DEVELOPMENT.", required = true), })
 	@RecordMetric
 	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}/versionDate/{versionDate}", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<Refset> getRefset(@PathVariable(value = "refsetId") final String refsetId,
 			@PathVariable(value = "versionDate") final String versionDate) throws Exception {
 
+		final User authUser = authorizeUser();
 		try (final TerminologyService service = new TerminologyService()) {
 
-			LOG.debug("getRefset: refsetId: " + refsetId + " ; versionDate: " + versionDate);
-
-			// no auth required
-			final User user = SecurityService.getUserFromSession();
-			final Refset refset = RefsetService.getRefset(service, user, refsetId, versionDate);
+			final Refset refset = RefsetService.getRefset(service, authUser, refsetId, versionDate);
 
 			// if (user.getUserName().equals(SecurityService.GUEST_USERNAME) &&
 			// (refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT) ||
@@ -158,7 +155,7 @@ public class RefsetController extends BaseController {
 			RefsetService.getRefsetDescriptions(refset);
 
 			LOG.debug("getRefset: Including discussion count");
-			DiscussionService.attachRefsetDiscussionCount(service, user, refset);
+			DiscussionService.attachRefsetDiscussionCount(service, authUser, refset);
 
 			if (RefsetMemberService.REFSETS_BEING_UPDATED.contains(refset.getId())) {
 
@@ -192,10 +189,11 @@ public class RefsetController extends BaseController {
 	 * @return the refset member count
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Returns the refset member count. To see certain results this call requires authentication with the correct role.", responses =
-	{ @ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Returns the refset member count. To see certain results this call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset to check.", required = true) })
 	@RecordMetric
@@ -204,12 +202,9 @@ public class RefsetController extends BaseController {
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId, final HttpServletRequest request)
 			throws Exception {
 
+		final User authUser = authorizeUser();
 		try (final TerminologyService service = new TerminologyService()) {
 
-			LOG.debug("getRefsetMemberCount: refsetInternalId: " + refsetInternalId);
-
-			// no auth required
-			final User user = SecurityService.getUserFromSession();
 			final Refset refset = service.findSingle("id:" + QueryParserBase.escape(refsetInternalId) + "",
 					Refset.class, null);
 
@@ -217,7 +212,7 @@ public class RefsetController extends BaseController {
 				throw new Exception("Unable to retrieve reference set " + refsetInternalId);
 			}
 
-			service.setModifiedBy(user.getUserName());
+			service.setModifiedBy(authUser.getUserName());
 			service.setModifiedFlag(true);
 			RefsetService.setRefsetMemberCount(service, refset, false);
 
@@ -240,11 +235,10 @@ public class RefsetController extends BaseController {
 	 * @return the refset
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Returns if the refset is locked and the status of any member changes", responses=
-	{
-			@ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information. Payload may include member update statuses"),
-			@ApiResponse(responseCode = "400", description ="Bad request"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Returns if the refset is locked and the status of any member changes", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. Payload may include member update statuses"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset to check.", required = true) })
 	@RecordMetric
@@ -253,10 +247,9 @@ public class RefsetController extends BaseController {
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId, final HttpServletRequest request)
 			throws Exception {
 
+		authorizeUser();
 		try {
 
-			// no auth required
-			SecurityService.getUserFromSession();
 			final boolean isLocked = RefsetMemberService.REFSETS_BEING_UPDATED.contains(refsetInternalId);
 			String returnString = isLocked + "";
 			// LOG.debug("isRefsetLocked: refsetInternalId: " + refsetInternalId + " ;
@@ -292,12 +285,12 @@ public class RefsetController extends BaseController {
 	 * @return the new internal refset ID
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Add new refset members. This call requires authentication with the correct role.", responses =
-	{
-			@ApiResponse(responseCode = "200", description ="Successfully added the members. payload contains the status of the operation. Long running background process, "
+	@Operation(summary = "Add new refset members. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully added the members. payload contains the status of the operation. Long running background process, "
 					+ "call /refset/{refsetInternalId}/isLocked to get full status."),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
 			@Parameter(name = "conceptIds", description = "A comma separated list of concept IDs to add", required = false),
@@ -311,6 +304,7 @@ public class RefsetController extends BaseController {
 			@RequestParam(required = false) final MultipartFile conceptFile,
 			@RequestParam(required = false) final String fileType) throws Exception {
 
+		final User authUser = authorizeUser();
 		try (final TerminologyService service = new TerminologyService()) {
 
 			RefsetMemberService.REFSETS_BEING_UPDATED.add(refsetInternalId);
@@ -318,12 +312,11 @@ public class RefsetController extends BaseController {
 			List<String> conceptIdList = new ArrayList<>();
 			String error = "";
 			List<String> unaddedConcepts;
-			final User user = SecurityService.getUserFromSession();
 
-			final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
-			WorkflowService.canUserEditRefset(user, refset);
+			final Refset refset = RefsetService.getRefset(service, authUser, refsetInternalId);
+			WorkflowService.canUserEditRefset(authUser, refset);
 
-			service.setModifiedBy(user.getUserName());
+			service.setModifiedBy(authUser.getUserName());
 			// service.setTransactionPerOperation(false);
 			// service.beginTransaction();
 
@@ -356,7 +349,7 @@ public class RefsetController extends BaseController {
 			LOG.debug("addRefsetMembers: conceptIdList: " + conceptIdList);
 
 			// add the list of concepts as members to the refset
-			unaddedConcepts = RefsetMemberService.addRefsetMembers(service, user, refset, conceptIdList);
+			unaddedConcepts = RefsetMemberService.addRefsetMembers(service, authUser, refset, conceptIdList);
 
 			// see if there are any concepts that were unable to be added and craft the
 			// error message
@@ -408,12 +401,12 @@ public class RefsetController extends BaseController {
 	 * @return the status of the operation
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Remove or inactivate refset membership for a group of concepts. This call requires authentication with the correct role.", responses=
-	{
-			@ApiResponse(responseCode = "200", description ="Successfully removed the members. payload contains the status of the operation. Long running background process, "
+	@Operation(summary = "Remove or inactivate refset membership for a group of concepts. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully removed the members. payload contains the status of the operation. Long running background process, "
 					+ "call /refset/{refsetInternalId}/isLocked to get full status."),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
 			@Parameter(name = "conceptIds", description = "A comma separated list of concept IDs to remove", required = false),
@@ -427,17 +420,17 @@ public class RefsetController extends BaseController {
 			@RequestParam(required = false) final MultipartFile conceptFile,
 			@RequestParam(required = false) final String fileType) throws Exception {
 
+		final User authUser = authorizeUser();
 		try (final TerminologyService service = new TerminologyService()) {
 
 			RefsetMemberService.REFSETS_BEING_UPDATED.add(refsetInternalId);
 			RefsetMemberService.REFSETS_UPDATED_MEMBERS.put(refsetInternalId, new HashMap<>());
 			String conceptsToRemove = null;
-			final User user = SecurityService.getUserFromSession();
 
-			final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
-			WorkflowService.canUserEditRefset(user, refset);
+			final Refset refset = RefsetService.getRefset(service, authUser, refsetInternalId);
+			WorkflowService.canUserEditRefset(authUser, refset);
 
-			service.setModifiedBy(user.getUserName());
+			service.setModifiedBy(authUser.getUserName());
 			// service.setTransactionPerOperation(false);
 			// service.beginTransaction();
 
@@ -472,7 +465,7 @@ public class RefsetController extends BaseController {
 			LOG.debug("removeRefsetMembers: conceptIds: " + conceptIds);
 
 			// add the list of concepts as members to the refset
-			final List<String> unremovedConcepts = RefsetMemberService.removeRefsetMembers(service, user, refset,
+			final List<String> unremovedConcepts = RefsetMemberService.removeRefsetMembers(service, authUser, refset,
 					conceptsToRemove);
 			// service.commit();
 
@@ -524,12 +517,12 @@ public class RefsetController extends BaseController {
 	 * @return the status or error message
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Add new intensional refset definition exceptions. This call requires authentication with the correct role.", responses=
-	{
-			@ApiResponse(responseCode = "200", description ="Successfully added the exceptions. payload contains the status of the operation. Long running background process, "
+	@Operation(summary = "Add new intensional refset definition exceptions. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully added the exceptions. payload contains the status of the operation. Long running background process, "
 					+ "call /refset/{refsetInternalId}/isLocked to get full status."),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
 			@Parameter(name = "conceptIds", description = "A comma separated list of concept IDs to add", required = false),
@@ -544,17 +537,18 @@ public class RefsetController extends BaseController {
 			@RequestParam(required = false) final String fileType,
 			@RequestParam(required = false) final String definitionExceptionType) throws Exception {
 
+		final User authUser = authorizeUser();
+
 		try (final TerminologyService service = new TerminologyService()) {
 
 			RefsetMemberService.REFSETS_BEING_UPDATED.add(refsetInternalId);
 			RefsetMemberService.REFSETS_UPDATED_MEMBERS.put(refsetInternalId, new HashMap<>());
 			List<String> conceptIdList = new ArrayList<>();
-			final User user = SecurityService.getUserFromSession();
 
-			final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
-			WorkflowService.canUserEditRefset(user, refset);
+			final Refset refset = RefsetService.getRefset(service, authUser, refsetInternalId);
+			WorkflowService.canUserEditRefset(authUser, refset);
 
-			service.setModifiedBy(user.getUserName());
+			service.setModifiedBy(authUser.getUserName());
 			// service.setTransactionPerOperation(false);
 			// service.beginTransaction();
 
@@ -579,7 +573,7 @@ public class RefsetController extends BaseController {
 				inclusionEcl = RefsetMemberService.conceptListToEclStatement(conceptIdList);
 			}
 
-			final String status = RefsetService.addDefinitionException(service, user, refset, inclusionEcl,
+			final String status = RefsetService.addDefinitionException(service, authUser, refset, inclusionEcl,
 					definitionExceptionType);
 			// service.commit();
 
@@ -611,12 +605,12 @@ public class RefsetController extends BaseController {
 	 * @return the status or error message
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Remove an intensional refset definition exception. This call requires authentication with the correct role.", responses=
-	{
-			@ApiResponse(responseCode = "200", description ="Successfully removed the exception. payload contains the status of the operation. Long running background process, "
+	@Operation(summary = "Remove an intensional refset definition exception. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully removed the exception. payload contains the status of the operation. Long running background process, "
 					+ "call /refset/{refsetInternalId}/isLocked to get full status."),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
 			@Parameter(name = "definitionExceptionId", description = "The internal definition ID", required = true) })
@@ -625,22 +619,24 @@ public class RefsetController extends BaseController {
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId,
 			@PathVariable(value = "definitionExceptionId") final String definitionExceptionId) throws Exception {
 
+		final User authUser = authorizeUser();
+
 		try (final TerminologyService service = new TerminologyService()) {
 
 			RefsetMemberService.REFSETS_BEING_UPDATED.add(refsetInternalId);
 			RefsetMemberService.REFSETS_UPDATED_MEMBERS.put(refsetInternalId, new HashMap<>());
-			final User user = SecurityService.getUserFromSession();
 			LOG.debug("removeRefsetDefinitionExceptions: refsetInternalId: " + refsetInternalId
 					+ "; definitionExceptionId: " + definitionExceptionId);
 
-			final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
-			WorkflowService.canUserEditRefset(user, refset);
+			final Refset refset = RefsetService.getRefset(service, authUser, refsetInternalId);
+			WorkflowService.canUserEditRefset(authUser, refset);
 
-			service.setModifiedBy(user.getUserName());
+			service.setModifiedBy(authUser.getUserName());
 			// service.setTransactionPerOperation(false);
 			// service.beginTransaction();
 
-			final String status = RefsetService.removeDefinitionException(service, user, refset, definitionExceptionId);
+			final String status = RefsetService.removeDefinitionException(service, authUser, refset,
+					definitionExceptionId);
 			// service.commit();
 
 			if (!status.startsWith("Error")) {
@@ -671,11 +667,11 @@ public class RefsetController extends BaseController {
 	 * @return the new internal refset ID
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Add a new refset. This call requires authentication with the correct role.", responses =
-	{
-			@ApiResponse(responseCode = "200", description ="Successfully added the refset. payload contains the new refset ID."),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Add a new refset. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully added the refset. payload contains the new refset ID."),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetParameters", description = "The required fields of the refset to add.", required = true) })
 	@PostMapping("/refset")
@@ -685,20 +681,15 @@ public class RefsetController extends BaseController {
 		// Check to make sure parameters were properly bound to variables.
 		checkBinding(bindingResult);
 
-		String newRefsetInternalId = null;
+		final User authUser = authorizeUser();
 
+		String newRefsetInternalId = null;
 		try (final TerminologyService service = new TerminologyService()) {
 
-			LOG.debug("createRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
-
-			final User user = SecurityService.getUserFromSession();
-
-			service.setModifiedBy(user.getUserName());
-			// service.setTransactionPerOperation(false);
-			// service.beginTransaction();
+			service.setModifiedBy(authUser.getUserName());
 
 			String status = "";
-			final Object returned = RefsetService.createRefset(service, user, refsetParameters);
+			final Object returned = RefsetService.createRefset(service, authUser, refsetParameters);
 
 			if (returned instanceof String) {
 
@@ -740,10 +731,11 @@ public class RefsetController extends BaseController {
 	 * @return the refset internal ID or errors
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Modify an existing refset that is in edit mode. This call requires authentication with the correct role.", responses =
-	{ @ApiResponse(responseCode = "200", description ="Successfully modified the refset."),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Modify an existing refset that is in edit mode. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully modified the refset."),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
 			@Parameter(name = "refsetParameters", description = "The refset to modify.", required = true) })
@@ -755,21 +747,20 @@ public class RefsetController extends BaseController {
 		// Check to make sure parameters were properly bound to variables.
 		checkBinding(bindingResult);
 
+		final User authUser = authorizeUser();
 		try (final TerminologyService service = new TerminologyService()) {
 
-			LOG.debug("modifyRefset: refsetParameters: " + ModelUtility.toJson(refsetParameters));
 			RefsetMemberService.REFSETS_BEING_UPDATED.add(refsetInternalId);
 			RefsetMemberService.REFSETS_UPDATED_MEMBERS.put(refsetInternalId, new HashMap<>());
-			final User user = SecurityService.getUserFromSession();
 
-			final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
-			WorkflowService.canUserEditRefset(user, refset);
+			final Refset refset = RefsetService.getRefset(service, authUser, refsetInternalId);
+			WorkflowService.canUserEditRefset(authUser, refset);
 
-			service.setModifiedBy(user.getUserName());
+			service.setModifiedBy(authUser.getUserName());
 			service.setTransactionPerOperation(false);
 			service.beginTransaction();
 
-			final String status = RefsetService.modifyRefset(service, user, refset, refsetParameters);
+			final String status = RefsetService.modifyRefset(service, authUser, refset, refsetParameters);
 			service.commit();
 
 			if (!status.startsWith("Error")) {
@@ -798,32 +789,31 @@ public class RefsetController extends BaseController {
 	 * @return the refset internal ID or errors
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Recalculate the definition of an intensional refset, updating the members. This call requires authentication with the correct role.", responses =
-	{
-			@ApiResponse(responseCode = "200", description ="Successfully modified the refset. Long running background process, call /refset/{refsetInternalId}/isLocked to get full status"),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Recalculate the definition of an intensional refset, updating the members. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully modified the refset. Long running background process, call /refset/{refsetInternalId}/isLocked to get full status"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true) })
 	@PutMapping("/refset/{refsetInternalId}/recalculateDefinition")
 	public @ResponseBody ResponseEntity<String> recalculateRefsetDefinition(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
 
+		final User authUser = authorizeUser();
 		try (final TerminologyService service = new TerminologyService()) {
 
-			LOG.debug("recalculateRefsetDefinition: refsetInternalId: " + ModelUtility.toJson(refsetInternalId));
 			RefsetMemberService.REFSETS_BEING_UPDATED.add(refsetInternalId);
 			RefsetMemberService.REFSETS_UPDATED_MEMBERS.put(refsetInternalId, new HashMap<>());
-			final User user = SecurityService.getUserFromSession();
 
-			final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
-			WorkflowService.canUserEditRefset(user, refset);
+			final Refset refset = RefsetService.getRefset(service, authUser, refsetInternalId);
+			WorkflowService.canUserEditRefset(authUser, refset);
 
-			service.setModifiedBy(user.getUserName());
+			service.setModifiedBy(authUser.getUserName());
 			// service.setTransactionPerOperation(false);
 			// service.beginTransaction();
 
-			final String status = RefsetService.modifyRefsetDefinition(user, service, refset,
+			final String status = RefsetService.modifyRefsetDefinition(authUser, service, refset,
 					refset.getDefinitionClauses());
 			// service.commit();
 
@@ -855,10 +845,11 @@ public class RefsetController extends BaseController {
 	 * @return the workflow history
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Get Workflow history search results. This call requires authentication with the correct role.", responses =
-	{ @ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Get Workflow history search results. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	// @ModelAttribute API params documented in SearchParameter
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true), })
@@ -871,13 +862,13 @@ public class RefsetController extends BaseController {
 		// Check to make sure parameters were properly bound to variables.
 		checkBinding(bindingResult);
 
+		final User authUser = authorizeUser();
 		try (final TerminologyService service = new TerminologyService()) {
 
 			// LOG.debug("getWorkflowHistory refsetInternalId: " + refsetInternalId + " ;
 			// searchParameters: " + ModelUtility.toJson(searchParameters));
 
-			final User user = SecurityService.getUserFromSession();
-			final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+			final Refset refset = RefsetService.getRefset(service, authUser, refsetInternalId);
 			final ResultList<WorkflowHistory> results = WorkflowService.getWorkflowHistory(service, refset,
 					searchParameters);
 
@@ -899,11 +890,11 @@ public class RefsetController extends BaseController {
 	 * @return the refset internal ID or errors
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Change the workflow status of a refset. This call requires authentication with the correct role.", responses =
-	{
-			@ApiResponse(responseCode = "200", description ="Successfully changed the refset status. The payload contains the updated refset"),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Change the workflow status of a refset. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully changed the refset status. The payload contains the updated refset"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
 			@Parameter(name = "action", description = "The action triggering the status change", required = true),
@@ -913,18 +904,18 @@ public class RefsetController extends BaseController {
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestParam final String action,
 			@RequestParam(required = false) final String notes) throws Exception {
 
+		final User authUser = authorizeUser();
 		try (final TerminologyService service = new TerminologyService()) {
 
 			LOG.debug("setWorkflowStatus: refsetInternalId: " + refsetInternalId + " ; action: " + action + " ; notes: "
 					+ notes);
 
-			final User user = SecurityService.getUserFromSession();
-			Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
-			WorkflowService.canUserPerformWorkflowAction(user, refset, action);
+			Refset refset = RefsetService.getRefset(service, authUser, refsetInternalId);
+			WorkflowService.canUserPerformWorkflowAction(authUser, refset, action);
 
 			final String currentStatus = refset.getWorkflowStatus();
 
-			service.setModifiedBy(user.getUserName());
+			service.setModifiedBy(authUser.getUserName());
 			// service.setTransactionPerOperation(false);
 			// service.beginTransaction();
 
@@ -942,9 +933,9 @@ public class RefsetController extends BaseController {
 			// ready to be edited
 			if (currentStatus == null || currentStatus.equals(WorkflowService.PUBLISHED)) {
 
-				final String newRefsetInternalId = RefsetService.createNewRefsetVersion(service, user, refset.getId(),
-						true);
-				refset = RefsetService.getRefset(service, user, newRefsetInternalId);
+				final String newRefsetInternalId = RefsetService.createNewRefsetVersion(service, authUser,
+						refset.getId(), true);
+				refset = RefsetService.getRefset(service, authUser, newRefsetInternalId);
 
 				if (action.equals(WorkflowService.EDIT) && !refset.isBasedOnLatestVersion()) {
 
@@ -955,7 +946,7 @@ public class RefsetController extends BaseController {
 				return new ResponseEntity<>(refset, HttpStatus.OK);
 			}
 
-			refset = WorkflowService.setWorkflowStatusByAction(service, user, action, refset, notes);
+			refset = WorkflowService.setWorkflowStatusByAction(service, authUser, action, refset, notes);
 			// service.commit();
 
 			// if the status changed return the updated refset else return null
@@ -984,11 +975,11 @@ public class RefsetController extends BaseController {
 	 * @return the refset internal ID or errors
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Modify a refset workflow status note. This call requires authentication with the correct role.", responses =
-	{
-			@ApiResponse(responseCode = "200", description ="Successfully changed the status note. The payload contains the full updated workflow history"),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Modify a refset workflow status note. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully changed the status note. The payload contains the full updated workflow history"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
 			@Parameter(name = "notes", description = "The updated note", required = true), })
@@ -997,20 +988,17 @@ public class RefsetController extends BaseController {
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId,
 			@RequestBody(required = true) final String notes) throws Exception {
 
+		final User authUer = authorizeUser();
 		try (final TerminologyService service = new TerminologyService()) {
 
-			// LOG.debug("updateWorkflowNote: refsetInternalId: " + refsetInternalId + "
-			// ;notes: " + notes);
-			final User user = SecurityService.getUserFromSession();
-
-			service.setModifiedBy(user.getUserName());
+			service.setModifiedBy(authUer.getUserName());
 			// service.setTransactionPerOperation(false);
 			// service.beginTransaction();
 
-			final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+			final Refset refset = RefsetService.getRefset(service, authUer, refsetInternalId);
 			// not used final String currentStatus = refset.getWorkflowStatus();
 
-			WorkflowService.updateWorkflowNote(service, user, refset, notes);
+			WorkflowService.updateWorkflowNote(service, authUer, refset, notes);
 			// service.commit();
 
 			final ResultList<WorkflowHistory> results = WorkflowService.getWorkflowHistory(service, refset,
@@ -1037,22 +1025,21 @@ public class RefsetController extends BaseController {
 	 */
 	@Hidden
 	@Operation(summary = "Start the publication of all Ready for Publication refsets in a code system by promoting them to the REFSETS branch. "
-			+ "** IMPORTANT ** Once this step is taken it will be very hard to reverse. This call requires authentication with the correct role.", responses =
-	{
-			@ApiResponse(responseCode = "200", description ="Successfully began the publication process. The payload contains the status."),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+			+ "** IMPORTANT ** Once this step is taken it will be very hard to reverse. This call requires authentication with the correct role.", responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully began the publication process. The payload contains the status."),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "codeSystem", description = "A code system to limit the publication to", required = true), })
 	@PutMapping("/admin/startAllRefsetPublications")
 	public @ResponseBody ResponseEntity<String> startAllRefsetPublications(
 			@RequestParam(required = true) final String codeSystem) throws Exception {
 
-		final User user = SecurityService.getUserFromSession();
+		final User authUser = authorizeUser();
 
-		if (!user.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
-			return new ResponseEntity<>("This user does not have permission to perform this action",
-					HttpStatus.UNAUTHORIZED);
+		if (!authUser.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
+			throw new RestException(false, 403, "Forbidden", "User does not have permission to perform this action");
 		}
 
 		if (StringUtility.isEmpty(codeSystem)) {
@@ -1065,11 +1052,11 @@ public class RefsetController extends BaseController {
 			final Edition edition = service.findSingle("shortName:" + codeSystem, Edition.class, null);
 
 			if (edition == null) {
-				return new ResponseEntity<>("The code system '" + codeSystem + "' could not be found",
-						HttpStatus.EXPECTATION_FAILED);
+				throw new RestException(false, 417, "Expectation failed",
+						"The code system '" + codeSystem + "' could not be found");
 			}
 
-			service.setModifiedBy(user.getUserName());
+			service.setModifiedBy(authUser.getUserName());
 			service.setModifiedFlag(true);
 
 			LOG.debug("startAllRefsetPublications: editionShortName (codeSystem): " + codeSystem);
@@ -1122,11 +1109,11 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@Hidden
-	@Operation(summary = "Complete the publication of all Ready for Publication refsets in a code system. This call requires authentication with the correct role.", responses =
-	{
-			@ApiResponse(responseCode = "200", description ="Successfully published the refsets. The payload contains the status."),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Complete the publication of all Ready for Publication refsets in a code system. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully published the refsets. The payload contains the status."),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "versionDate", description = "the publication date of the refsets (YYYY-MM-DD)", required = true),
 			@Parameter(name = "codeSystem", description = "A code system to limit the publication to", required = true),
@@ -1138,20 +1125,19 @@ public class RefsetController extends BaseController {
 			@RequestParam(required = true) final String codeSystem,
 			@RequestParam(required = false) final String publishType) throws Exception {
 
-		final User user = SecurityService.getUserFromSession();
+		final User authUser = authorizeUser();
 		String typeToPublish = "regular";
 
 		if (StringUtility.isEmpty(codeSystem)) {
-			return new ResponseEntity<>("A Code System must be specified.", HttpStatus.EXPECTATION_FAILED);
+			throw new RestException(false, 417, "Expecatation failed", "Code System must be specified");
 		}
 
 		try {
 			new SimpleDateFormat(DateUtility.DATE_FORMAT_REVERSE).parse(versionDate);
 
 		} catch (final Exception e) {
-			return new ResponseEntity<>(
-					"The version date must be specified in this format: " + DateUtility.DATE_FORMAT_REVERSE,
-					HttpStatus.EXPECTATION_FAILED);
+			throw new RestException(false, 417, "Expectation failed",
+					"The version date must be specified in this format: " + DateUtility.DATE_FORMAT_REVERSE);
 		}
 
 		String branchPath = "MAIN/";
@@ -1163,9 +1149,9 @@ public class RefsetController extends BaseController {
 		branchPath += versionDate;
 
 		if (!WorkflowService.doesBranchExist(branchPath)) {
-			return new ResponseEntity<>("The version branch '" + branchPath
+			throw new RestException(false, 417, "Expectation failed", "The version branch '" + branchPath
 					+ "' does not exist. This must be created and populated with the reference sets to be versioned outside of this tool "
-					+ "before this publication completion process can be run.", HttpStatus.EXPECTATION_FAILED);
+					+ "before this publication completion process can be run.");
 		}
 
 		try (final TerminologyService service = new TerminologyService()) {
@@ -1173,28 +1159,28 @@ public class RefsetController extends BaseController {
 			final Edition edition = service.findSingle("shortName:" + codeSystem, Edition.class, null);
 
 			if (edition == null) {
-				return new ResponseEntity<>("The code system '" + codeSystem + "' could not be found",
-						HttpStatus.EXPECTATION_FAILED);
+				throw new RestException(false, 417, "Expectation failed",
+						"Unable to find edition for code system = " + codeSystem);
 			}
 
 			if (!StringUtility.isEmpty(publishType) && publishType.equals("localset")) {
 
 				typeToPublish = "localset";
 
-				if (!user.checkPermission(User.ROLE_ADMIN, edition.getOrganizationName(), edition.getShortName(),
+				if (!authUser.checkPermission(User.ROLE_ADMIN, edition.getOrganizationName(), edition.getShortName(),
 						null)) {
-					return new ResponseEntity<>("This user does not have permission to perform this action",
-							HttpStatus.UNAUTHORIZED);
+					throw new RestException(false, 403, "Forbidden",
+							"This user does not have permission to perform this action");
 				}
 			} else {
 
-				if (!user.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
-					return new ResponseEntity<>("This user does not have permission to perform this action",
-							HttpStatus.UNAUTHORIZED);
+				if (!authUser.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
+					throw new RestException(false, 403, "Forbidden",
+							"This user does not have permission to perform this action");
 				}
 			}
 
-			service.setModifiedBy(user.getUserName());
+			service.setModifiedBy(authUser.getUserName());
 			service.setModifiedFlag(true);
 			service.setTransactionPerOperation(false);
 			service.beginTransaction();
@@ -1257,11 +1243,11 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@Hidden
-	@Operation(summary = "Publish a Ready for Publication local refset in a code system. This call requires authentication with the correct role.", responses =
-	{
-			@ApiResponse(responseCode = "200", description ="Successfully published the refset. The payload contains the status."),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Publish a Ready for Publication local refset in a code system. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully published the refset. The payload contains the status."),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
 			@Parameter(name = "versionDate", description = "the publication date of the refset (YYYY-MM-DD)", required = true) })
@@ -1270,21 +1256,21 @@ public class RefsetController extends BaseController {
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId,
 			@RequestParam(required = true) final String versionDate) throws Exception {
 
-		final User user = SecurityService.getUserFromSession();
+		final User authUser = authorizeUser();
 
 		try (final TerminologyService service = new TerminologyService()) {
 
-			service.setModifiedBy(user.getUserName());
+			service.setModifiedBy(authUser.getUserName());
 			service.setModifiedFlag(true);
 
-			final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+			final Refset refset = RefsetService.getRefset(service, authUser, refsetInternalId);
 			final String organizationName = refset.getOrganizationName();
 			final String editionName = refset.getEdition().getShortName();
 
-			if (!user.checkPermission(User.ROLE_ADMIN, organizationName, editionName,
+			if (!authUser.checkPermission(User.ROLE_ADMIN, organizationName, editionName,
 					refset.getProject().getCrowdProjectId())) {
-				return new ResponseEntity<>("This user does not have permission to perform this action",
-						HttpStatus.UNAUTHORIZED);
+				throw new RestException(false, 403, "Forbidden",
+						"This user does not have permission to perform this action");
 			}
 
 			LOG.debug(
@@ -1308,10 +1294,8 @@ public class RefsetController extends BaseController {
 				// refset.getRefsetId();
 				return new ResponseEntity<>(ModelUtility.toJson(newVersionRefset), HttpStatus.OK);
 
-			} else {
-
-				return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
 			}
+			throw new Exception(error);
 
 		} catch (final Exception e) {
 			handleException(e);
@@ -1330,34 +1314,33 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@Hidden
-	@Operation(summary = "Set refsets that failed publication back to 'Ready For Edit' status. This call requires authentication with the correct role.", responses=
-	{
-			@ApiResponse(responseCode = "200", description ="Successfully changed the refset statuses. The payload contains the status."),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
-	@Parameters({
-			@Parameter(name = "refsetIds", description = "A comma separated list of refset IDs", required = true),
+	@Operation(summary = "Set refsets that failed publication back to 'Ready For Edit' status. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully changed the refset statuses. The payload contains the status."),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Parameters({ @Parameter(name = "refsetIds", description = "A comma separated list of refset IDs", required = true),
 			@Parameter(name = "notes", description = "The reason why the refsets failed", required = true) })
 	@PutMapping("/admin/failRefsetPublications")
 	public @ResponseBody ResponseEntity<String> failRefsetPublications(
 			@RequestParam(required = true) final String refsetIds, @RequestParam(required = true) final String notes)
 			throws Exception {
 
-		final User user = SecurityService.getUserFromSession();
+		final User authUser = authorizeUser();
 
-		if (!user.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
-			return new ResponseEntity<>("This user does not have permission to perform this action",
-					HttpStatus.UNAUTHORIZED);
+		if (!authUser.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
+			throw new RestException(false, 403, "Forbidden",
+					"This user does not have permission to perform this action");
 		}
 
 		try (final TerminologyService service = new TerminologyService()) {
 
-			service.setModifiedBy(user.getUserName());
+			service.setModifiedBy(authUser.getUserName());
 			service.setModifiedFlag(true);
 
 			LOG.debug("failRefsetPublications: refset IDs: " + refsetIds + " ; notes: " + notes);
 
-			final List<String> refsetsNotUpdated = WorkflowService.setBatchWorkflowStatusByAction(service, user,
+			final List<String> refsetsNotUpdated = WorkflowService.setBatchWorkflowStatusByAction(service, authUser,
 					refsetIds, WorkflowService.FAILS_RVF, notes);
 			String error = "";
 
@@ -1397,31 +1380,27 @@ public class RefsetController extends BaseController {
 	 * @return the new refset internal ID or errors
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Create a new In Development version of an existing refset in edit mode. This call requires authentication with the correct role.", responses =
-	{
-			@ApiResponse(responseCode = "200", description ="Successfully created the new refset version. payload contains the internal ID of the new version."),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Create a new In Development version of an existing refset in edit mode. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully created the new refset version. payload contains the internal ID of the new version."),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true) })
 	@PostMapping("/refset/{refsetInternalId}/newVersion")
 	public @ResponseBody ResponseEntity<String> createNewRefsetVersion(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
 
-		// Check to make sure parameters were properly bound to variables.
-		// checkBinding(bindingResult);
+		final User authUser = authorizeUser();
 
 		try (final TerminologyService service = new TerminologyService()) {
 
-			LOG.debug("createNewRefsetVersion: refsetInternalId: " + refsetInternalId);
-			final User user = SecurityService.getUserFromSession();
-
-			service.setModifiedBy(user.getUserName());
+			service.setModifiedBy(authUser.getUserName());
 			// service.setTransactionPerOperation(false);
 			// service.beginTransaction();
 
-			WorkflowService.canUserPerformWorkflowAction(user, null, refsetInternalId);
-			final String newRefsetInternalId = RefsetService.createNewRefsetVersion(service, user, refsetInternalId,
+			WorkflowService.canUserPerformWorkflowAction(authUser, null, refsetInternalId);
+			final String newRefsetInternalId = RefsetService.createNewRefsetVersion(service, authUser, refsetInternalId,
 					true);
 			// service.commit();
 
@@ -1447,11 +1426,11 @@ public class RefsetController extends BaseController {
 	 * @return the status of the operation
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Change a refset status. This call requires authentication with the correct role.", responses =
-	{
-			@ApiResponse(responseCode = "200", description ="Successfully changed the refset status. payload contains the new status."),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Change a refset status. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully changed the refset status. payload contains the new status."),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
 			@Parameter(name = "active", description = "Is the refset active", required = true) })
@@ -1459,18 +1438,15 @@ public class RefsetController extends BaseController {
 	public @ResponseBody ResponseEntity<String> updateRefsetStatus(final @PathVariable String refsetInternalId,
 			final boolean active) throws Exception {
 
+		final User authUser = authorizeUser();
 		try (final TerminologyService service = new TerminologyService()) {
 
-			// LOG.debug("updateRefsetStatus: refsetInternalId: " + refsetInternalId + "
-			// ; active: " + active);
-			final User user = SecurityService.getUserFromSession();
+			final Refset refset = RefsetService.getRefset(service, authUser, refsetInternalId);
+			WorkflowService.canUserEditRefset(authUser, refset);
 
-			final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
-			WorkflowService.canUserEditRefset(user, refset);
+			service.setModifiedBy(authUser.getUserName());
 
-			service.setModifiedBy(user.getUserName());
-
-			final String status = RefsetService.updatedRefsetStatus(service, user, refset, active);
+			final String status = RefsetService.updatedRefsetStatus(service, authUser, refset, active);
 
 			return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
 
@@ -1488,33 +1464,30 @@ public class RefsetController extends BaseController {
 	 * @return the status of the operation
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Convert intensional refset to extensional. This call requires authentication with the correct role.", responses =
-	{
-			@ApiResponse(responseCode = "200", description ="Successfully converted the refset. Long running background process, call /refset/{refsetInternalId}/isLocked to get full status. "
+	@Operation(summary = "Convert intensional refset to extensional. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully converted the refset. Long running background process, call /refset/{refsetInternalId}/isLocked to get full status. "
 					+ "Payload contains the status."),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true), })
 	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/convert", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<String> convertToExtensional(final @PathVariable String refsetInternalId)
 			throws Exception {
 
+		final User authUser = authorizeUser();
 		try (final TerminologyService service = new TerminologyService()) {
 
 			RefsetMemberService.REFSETS_BEING_UPDATED.add(refsetInternalId);
 			RefsetMemberService.REFSETS_UPDATED_MEMBERS.put(refsetInternalId, new HashMap<>());
 
-			// LOG.debug("deleteRefsetEditVersion: refsetInternalId: " +
-			// refsetInternalId);
-			final User user = SecurityService.getUserFromSession();
+			final Refset refset = RefsetService.getRefset(service, authUser, refsetInternalId);
+			WorkflowService.canUserEditRefset(authUser, refset);
 
-			final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
-			WorkflowService.canUserEditRefset(user, refset);
+			service.setModifiedBy(authUser.getUserName());
 
-			service.setModifiedBy(user.getUserName());
-
-			final String status = RefsetService.convertToExtensional(service, user, refset);
+			final String status = RefsetService.convertToExtensional(service, authUser, refset);
 
 			return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
 
@@ -1537,31 +1510,28 @@ public class RefsetController extends BaseController {
 	 * @return the status of the operation
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Delete the edit version of a refset. This call requires authentication with the correct role.", responses=
-	{
-			@ApiResponse(responseCode = "200", description ="Successfully deleted the refset edit version. payload contains the status."),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Delete the edit version of a refset. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully deleted the refset edit version. payload contains the status."),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true), })
 	@DeleteMapping("/refset/{refsetInternalId}/editVersion")
 	public @ResponseBody ResponseEntity<String> deleteRefsetEditVersion(final @PathVariable String refsetInternalId)
 			throws Exception {
 
+		final User authUser = authorizeUser();
 		try (final TerminologyService service = new TerminologyService()) {
 
-			// LOG.debug("deleteRefsetEditVersion: refsetInternalId: " +
-			// refsetInternalId);
-			final User user = SecurityService.getUserFromSession();
+			final Refset refset = RefsetService.getRefset(service, authUser, refsetInternalId);
+			WorkflowService.canUserPerformInDevelopmentActionsOnRefset(authUser, refset);
 
-			final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
-			WorkflowService.canUserPerformInDevelopmentActionsOnRefset(user, refset);
-
-			service.setModifiedBy(user.getUserName());
+			service.setModifiedBy(authUser.getUserName());
 			// service.setTransactionPerOperation(false);
 			// service.beginTransaction();
 
-			final String status = RefsetService.deleteInDevelopmentVersion(service, user, refset, true);
+			final String status = RefsetService.deleteInDevelopmentVersion(service, authUser, refset, true);
 			// service.commit();
 			return new ResponseEntity<>("{\"status\": \"" + status + "\"}", HttpStatus.OK);
 
@@ -1586,10 +1556,11 @@ public class RefsetController extends BaseController {
 	 * @return the string
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Get refset search results. To see certain results this call requires authentication with the correct role.", responses =
-	{ @ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Get refset search results. To see certain results this call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	// @ModelAttribute API params documented in SearchParameter
 	@Parameters({
 			@Parameter(name = "query", description = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, example = ""),
@@ -1605,9 +1576,7 @@ public class RefsetController extends BaseController {
 
 		// Check to make sure parameters were properly bound to variables.
 		checkBinding(bindingResult);
-
-		// no auth required
-		final User user = SecurityService.getUserFromSession();
+		final User authUser = authorizeUser();
 
 		final boolean includeInDevelopment = (showInDevelopment != null) ? showInDevelopment : true;
 		final boolean onlyShowPermitted = (showOnlyPermitted != null) ? showOnlyPermitted : false;
@@ -1620,13 +1589,13 @@ public class RefsetController extends BaseController {
 					+ searchConcepts + " ; showInDevelopment: " + includeInDevelopment + " ; countComments: "
 					+ countComments);
 
-			final ResultList<Refset> results = RefsetService.searchRefsets(user, service, searchParameters,
+			final ResultList<Refset> results = RefsetService.searchRefsets(authUser, service, searchParameters,
 					searchConcepts, true, false, includeInDevelopment, onlyShowPermitted);
 
 			if (countComments != null && countComments) {
 
 				LOG.debug("searchRefsets: Including discussion count");
-				DiscussionService.attachRefsetDiscussionCounts(service, user, results.getItems());
+				DiscussionService.attachRefsetDiscussionCounts(service, authUser, results.getItems());
 			}
 
 			return new ResponseEntity<>(results, HttpStatus.OK);
@@ -1648,13 +1617,13 @@ public class RefsetController extends BaseController {
 	 * @return the string
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Search the taxonomy for refset members. To see certain results this call requires authentication with the correct role.", responses =
-	{ @ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Search the taxonomy for refset members. To see certain results this call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	// @ModelAttribute API params documented in SearchParameter
-	@Parameters({
-			@Parameter(name = "refsetInternalId", description = "the internal refset ID", required = true) })
+	@Parameters({ @Parameter(name = "refsetInternalId", description = "the internal refset ID", required = true) })
 	@RecordMetric
 	@RequestMapping(method = RequestMethod.GET, value = { "/refset/{refsetInternalId}/taxonomySearch",
 			"/refset/{refsetInternalId}/conceptSearch" }, produces = MediaType.APPLICATION_JSON)
@@ -1665,9 +1634,8 @@ public class RefsetController extends BaseController {
 
 		// Check to make sure parameters were properly bound to variables.
 		checkBinding(bindingResult);
+		final User authUser = authorizeUser();
 
-		// no auth required
-		final User user = SecurityService.getUserFromSession();
 		boolean searchRefsetMembers = false;
 		final String uri = request.getRequestURI();
 
@@ -1686,8 +1654,8 @@ public class RefsetController extends BaseController {
 
 			if (query != null && !query.equals("")) {
 
-				results = RefsetMemberService.prepareConceptSearch(service, user, refsetInternalId, searchParameters,
-						searchRefsetMembers);
+				results = RefsetMemberService.prepareConceptSearch(service, authUser, refsetInternalId,
+						searchParameters, searchRefsetMembers);
 			}
 
 			return new ResponseEntity<>(results, HttpStatus.OK);
@@ -1711,17 +1679,18 @@ public class RefsetController extends BaseController {
 	 * @return the string
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Search for refset members. To see certain results this call requires authentication with the correct role.", description= API_NOTES,responses=
-	{ @ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Search for refset members. To see certain results this call requires authentication with the correct role.", description = API_NOTES, responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	// @ModelAttribute API params documented in SearchParameter
 	@Parameters({
 			@Parameter(name = "query", description = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false),
-			@Parameter(name = "displayType", description = "Should results be a list or taxonomy", required = true, example= "list"),
+			@Parameter(name = "displayType", description = "Should results be a list or taxonomy", required = true, example = "list"),
 			@Parameter(name = "startingConceptId", description = "For taxonomy calls the starting concept ID (exclusive - get the children of this concept not the concept itself)", required = false),
 			@Parameter(name = "depth", description = "For taxonomy calls the depth - how many levels of children or parents to retrieve", required = false),
-			@Parameter(name = "returnChildren", description = "For taxonomy calls should children be returned. If false then parents will be returned", required = false, example= "true") })
+			@Parameter(name = "returnChildren", description = "For taxonomy calls should children be returned. If false then parents will be returned", required = false, example = "true") })
 	@RecordMetric
 	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/members", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ConceptResultList> getMembers(
@@ -1731,27 +1700,27 @@ public class RefsetController extends BaseController {
 			final BindingResult bindingResult) throws Exception {
 
 		checkBinding(bindingResult);
-
-		// no auth required
-		final long start = System.currentTimeMillis();
-		ConceptResultList results = new ConceptResultList();
-		final User user = SecurityService.getUserFromSession();
-
-		LOG.debug("getMembers: refsetInternalId: " + refsetInternalId + " ; searchParameters: + " + searchParameters
-				+ " ; taxonomyParameters: " + taxonomyParameters + " ; displayType: " + displayType
-				+ " ; countComments: " + countComments);
+		final User authUser = authorizeUser();
 
 		try (final TerminologyService service = new TerminologyService()) {
 
-			final Refset refset = RefsetMemberService.getRefset(user, service, refsetInternalId);
+			// no auth required
+			final long start = System.currentTimeMillis();
+			ConceptResultList results = new ConceptResultList();
 
-			results = RefsetMemberService.getRefsetMembers(service, user, refsetInternalId, searchParameters,
+			LOG.debug("getMembers: refsetInternalId: " + refsetInternalId + " ; searchParameters: + " + searchParameters
+					+ " ; taxonomyParameters: " + taxonomyParameters + " ; displayType: " + displayType
+					+ " ; countComments: " + countComments);
+
+			final Refset refset = RefsetMemberService.getRefset(authUser, service, refsetInternalId);
+
+			results = RefsetMemberService.getRefsetMembers(service, authUser, refsetInternalId, searchParameters,
 					displayType, taxonomyParameters);
 
 			if (countComments != null && countComments) {
 
 				LOG.debug("getMembers: Including discussion count");
-				DiscussionService.attachMemberDiscussionCounts(service, user, refset, results.getItems());
+				DiscussionService.attachMemberDiscussionCounts(service, authUser, refset, results.getItems());
 			}
 
 			results.setTimeTaken(System.currentTimeMillis() - start);
@@ -1773,11 +1742,11 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@Operation(summary = "Cache the ancestors of the refset members for the specified refset ID. To see certain results this call requires "
-			+ "authentication with the correct role.", responses=
-	{
-			@ApiResponse(responseCode = "200", description ="Successfully populated the refset's ancestor cache. Payload contains the status"),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+			+ "authentication with the correct role.", responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully populated the refset's ancestor cache. Payload contains the status"),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetId", description = "The ID of the refset for which ancestors are to be identified.", required = true),
 			@Parameter(name = "versionDate", description = "The date of the refset version (YYYY-MM-DD) or IN DEVELOPMENT.", required = true), })
@@ -1787,15 +1756,14 @@ public class RefsetController extends BaseController {
 			@PathVariable(value = "refsetId") final String refsetId,
 			@PathVariable(value = "versionDate") final String versionDate) throws Exception {
 
+		final User authUser = authorizeUser();
 		try (final TerminologyService service = new TerminologyService()) {
 
-			// no auth required
-			final User user = SecurityService.getUserFromSession();
 			LOG.debug("cacheMemberAncestors: refsetId: " + refsetId + " ; versionDate: " + versionDate);
 
 			String returnJson = "{\"success\": \"<RESULT>\"}";
 
-			final boolean success = RefsetMemberService.cacheMemberAncestors(service, user, refsetId, versionDate);
+			final boolean success = RefsetMemberService.cacheMemberAncestors(service, authUser, refsetId, versionDate);
 
 			if (success) {
 
@@ -1831,11 +1799,11 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@Operation(summary = "Export the refset for the specified ID. Payload contains the URL to download the export file. "
-			+ "To see certain results this call requires authentication with the correct role.", responses =
-	{
-			@ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information. Payload contains the URL to download the export file"),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+			+ "To see certain results this call requires authentication with the correct role.", responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. Payload contains the URL to download the export file"),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset to return.", required = true),
 			@Parameter(name = "exportType", description = "The RF2 type SNAPSHOT or DELTA", required = false),
@@ -1853,10 +1821,9 @@ public class RefsetController extends BaseController {
 			final String startEffectiveTime, final String transientEffectiveTime, final boolean exportMetadata)
 			throws Exception {
 
+		final User authUser = authorizeUser();
 		try (final TerminologyService service = new TerminologyService()) {
 
-			// no auth required
-			final User user = SecurityService.getUserFromSession();
 			LOG.debug("exportRefset: refsetInternalId: " + refsetInternalId + " ; format: " + format + " ; type: "
 					+ exportType + " ; fileNameDate: " + fileNameDate + " ; startEffectiveTime: " + startEffectiveTime
 					+ " ; transientEffectiveTime: " + transientEffectiveTime + " ; exportMetadata: " + exportMetadata);
@@ -1876,9 +1843,9 @@ public class RefsetController extends BaseController {
 
 				} else {
 
-					downloadUri = RefsetMemberService.exportRefsetRf2Delta(service, user, refsetInternalId, exportType,
-							languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata,
-							withNames);
+					downloadUri = RefsetMemberService.exportRefsetRf2Delta(service, authUser, refsetInternalId,
+							exportType, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime,
+							exportMetadata, withNames);
 				}
 
 				LOG.debug("results: " + downloadUri);
@@ -1917,11 +1884,11 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@Operation(summary = "Export the all latest version of all published refsets for the project. Payload contains the URL to download the export file. "
-			+ "To see certain results this call requires authentication with the correct role.", responses =
-	{
-			@ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information. Payload contains the URL to download the export file"),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+			+ "To see certain results this call requires authentication with the correct role.", responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. Payload contains the URL to download the export file"),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "projectId", description = "The id of the project to export refsets.", required = true),
 			@Parameter(name = "languageId", description = "For formats with names which language to display the name in.", required = false),
@@ -1934,14 +1901,13 @@ public class RefsetController extends BaseController {
 			@PathVariable(value = "projectId") final String projectId, final String format, final String languageId,
 			final String fileNameDate, final boolean exportMetadata) throws Exception {
 
+		final User authUser = authorizeUser();
 		try (final TerminologyService service = new TerminologyService()) {
 
-			// no auth required
-			final User user = SecurityService.getUserFromSession();
 			LOG.debug("exportAllRefsetsForProject: projectId: " + projectId + " ; fileNameDate: " + fileNameDate);
 			final boolean withNames = ("rf2_with_names".equalsIgnoreCase(format));
 
-			final String downloadUri = RefsetMemberService.exportAllRefsetsRf2ForProject(service, user, projectId,
+			final String downloadUri = RefsetMemberService.exportAllRefsetsRf2ForProject(service, authUser, projectId,
 					"snapshot", languageId, fileNameDate, exportMetadata, withNames);
 			final String responseMessage = "{\"url\": \"" + downloadUri + "\"}";
 
@@ -1961,23 +1927,19 @@ public class RefsetController extends BaseController {
 	 * @return the file
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Download the specified refset export file", responses =
-	{ @ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description ="Bad request"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
-	@Parameters({
-			@Parameter(name = "fileName", description = "The name of the file to download.", required = true) })
+	@Operation(summary = "Download the specified refset export file", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Parameters({ @Parameter(name = "fileName", description = "The name of the file to download.", required = true) })
 	@RecordMetric
 	@RequestMapping(method = RequestMethod.GET, value = "/export/download/{fileName}", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<Resource> downloadExport(
 			@PathVariable(value = "fileName") final String fileName) throws Exception {
 
+		authorizeUser();
 		try {
 
-			LOG.debug("downloadExport: fileName: " + fileName);
-
-			// no auth required
-			SecurityService.getUserFromSession();
 			final Path filePath = Paths.get(exportFileDir + fileName);
 			final Resource file = new UrlResource(filePath.toUri());
 
@@ -2007,10 +1969,11 @@ public class RefsetController extends BaseController {
 	 * @return the member history
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Get the member history for the specified ID. To see certain results this call requires authentication with the correct role.", responses =
-	{ @ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Get the member history for the specified ID. To see certain results this call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset to return.", required = true),
 			@Parameter(name = "conceptId", description = "The ID of the member to return.", required = true), })
@@ -2020,36 +1983,32 @@ public class RefsetController extends BaseController {
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId,
 			@PathVariable(value = "conceptId") final String conceptId) throws Exception {
 
-		try {
+		final User authUser = authorizeUser();
 
-			// no auth required
-			final User user = SecurityService.getUserFromSession();
-			LOG.debug("getMemberHistory: memberId: " + conceptId + "; refsetInternalId: " + refsetInternalId);
+		LOG.debug("getMemberHistory: memberId: " + conceptId + "; refsetInternalId: " + refsetInternalId);
 
-			try (final TerminologyService service = new TerminologyService()) {
+		try (final TerminologyService service = new TerminologyService()) {
 
-				final Refset refset = service.findSingle("id:" + QueryParserBase.escape(refsetInternalId) + "",
-						Refset.class, null);
+			final Refset refset = service.findSingle("id:" + QueryParserBase.escape(refsetInternalId) + "",
+					Refset.class, null);
 
-				if (refset == null) {
+			if (refset == null) {
 
-					throw new Exception("Unable to retrieve reference set " + refsetInternalId);
-				}
-
-				RefsetService.setRefsetPermissions(user, refset);
-				final List<Map<String, String>> versions = RefsetService.getSortedRefsetVersionList(refset, service,
-						true);
-
-				final List<Map<String, String>> memberHistory = RefsetMemberService.getMemberHistory(service, conceptId,
-						versions);
-
-				LOG.debug("getMemberHistory: member: " + ModelUtility.toJson(memberHistory));
-
-				final ResultList<Map<String, String>> results = new ResultList<>(memberHistory);
-				results.setTotalKnown(true);
-
-				return new ResponseEntity<>(results, HttpStatus.OK);
+				throw new Exception("Unable to retrieve reference set " + refsetInternalId);
 			}
+
+			RefsetService.setRefsetPermissions(authUser, refset);
+			final List<Map<String, String>> versions = RefsetService.getSortedRefsetVersionList(refset, service, true);
+
+			final List<Map<String, String>> memberHistory = RefsetMemberService.getMemberHistory(service, conceptId,
+					versions);
+
+			LOG.debug("getMemberHistory: member: " + ModelUtility.toJson(memberHistory));
+
+			final ResultList<Map<String, String>> results = new ResultList<>(memberHistory);
+			results.setTotalKnown(true);
+
+			return new ResponseEntity<>(results, HttpStatus.OK);
 
 		} catch (final Exception e) {
 			handleException(e);
@@ -2066,41 +2025,37 @@ public class RefsetController extends BaseController {
 	 * @return the concept details
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Get the concept for the specified ID", responses =
-	{ @ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description ="Bad request"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
-	@Parameters({
-			@Parameter(name = "conceptId", description = "The ID of the concept to return.", required = true),
+	@Operation(summary = "Get the concept for the specified ID", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Parameters({ @Parameter(name = "conceptId", description = "The ID of the concept to return.", required = true),
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset to return.", required = true), })
 	@RecordMetric
 	@RequestMapping(method = RequestMethod.GET, value = "/concept/{conceptId}", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<Concept> getConceptDetails(
 			@PathVariable(value = "conceptId") final String conceptId, final String refsetInternalId) throws Exception {
 
-		try {
+		authorizeUser();
 
-			// no auth required
-			SecurityService.getUserFromSession();
-			// LOG.debug("getConceptDetails: conceptId: " + conceptId + ";
-			// refsetInternalId: " + refsetInternalId);
+		// LOG.debug("getConceptDetails: conceptId: " + conceptId + ";
+		// refsetInternalId: " + refsetInternalId);
 
-			try (final TerminologyService service = new TerminologyService()) {
+		try (final TerminologyService service = new TerminologyService()) {
 
-				final Refset refset = service.findSingle("id:" + QueryParserBase.escape(refsetInternalId) + "",
-						Refset.class, null);
+			final Refset refset = service.findSingle("id:" + QueryParserBase.escape(refsetInternalId) + "",
+					Refset.class, null);
 
-				if (refset == null) {
+			if (refset == null) {
 
-					throw new Exception("Unable to retrieve reference set " + refsetInternalId);
-				}
-
-				final Concept concept = RefsetMemberService.getConceptDetails(conceptId, refset);
-
-				// LOG.debug("getConceptDetails: concept: " + ModelUtility.toJson(concept));
-
-				return new ResponseEntity<>(concept, HttpStatus.OK);
+				throw new Exception("Unable to retrieve reference set " + refsetInternalId);
 			}
+
+			final Concept concept = RefsetMemberService.getConceptDetails(conceptId, refset);
+
+			// LOG.debug("getConceptDetails: concept: " + ModelUtility.toJson(concept));
+
+			return new ResponseEntity<>(concept, HttpStatus.OK);
 
 		} catch (final Exception e) {
 			handleException(e);
@@ -2154,11 +2109,11 @@ public class RefsetController extends BaseController {
 			@RequestParam(required = false) final Boolean forProduction,
 			@RequestParam(required = false) final Boolean ignoreCoreRefsets) throws Exception {
 
-		final User user = SecurityService.getUserFromSession();
+		final User authUser = authorizeUser();
 
-		if (!user.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
-			return new ResponseEntity<>("This user does not have permission to perform this action",
-					HttpStatus.UNAUTHORIZED);
+		if (!authUser.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
+			throw new RestException(false, 403, "Forbidden",
+					"This user does not have permission to perform this action");
 		}
 
 		final String message = "";
@@ -2219,13 +2174,12 @@ public class RefsetController extends BaseController {
 	@RequestMapping(method = RequestMethod.GET, value = "/admin/sync/feedback", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<String> createNewFeedbackTestingRefset() throws Exception {
 
+		final User authUser = authorizeUser();
 		try {
 
-			final User user = SecurityService.getUserFromSession();
-
-			if (!user.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
-				return new ResponseEntity<>("This user does not have permission to perform this action",
-						HttpStatus.UNAUTHORIZED);
+			if (!authUser.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
+				throw new RestException(false, 403, "Forbidden",
+						"This user does not have permission to perform this action");
 			}
 
 			final String status = "Feedback testing refset created successfully";
@@ -2259,13 +2213,12 @@ public class RefsetController extends BaseController {
 	@RequestMapping(method = RequestMethod.GET, value = "/admin/sync/intensional", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<String> createNewIntensionalTestingRefset() throws Exception {
 
+		final User authUser = authorizeUser();
 		try {
 
-			final User user = SecurityService.getUserFromSession();
-
-			if (!user.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
-				return new ResponseEntity<>("This user does not have permission to perform this action",
-						HttpStatus.UNAUTHORIZED);
+			if (!authUser.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
+				throw new RestException(false, 403, "Forbidden",
+						"This user does not have permission to perform this action");
 			}
 
 			final String status = "Intensional testing refset created successfully";
@@ -2291,34 +2244,30 @@ public class RefsetController extends BaseController {
 	 * @return the version statuses
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Gets a list of possible version statuses", responses=
-	{ @ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description ="Bad request"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Gets a list of possible version statuses", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@RecordMetric
 	@RequestMapping(method = RequestMethod.GET, value = "/refset/versionStatuses", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<TypeKeyValue>> getVersionStatuses() throws Exception {
 
-		try {
+		authorizeUser();
 
-			// no auth required
-			SecurityService.getUserFromSession();
+		try (final TerminologyService service = new TerminologyService()) {
 
-			try (final TerminologyService service = new TerminologyService()) {
+			final List<TypeKeyValue> versionStatuses = new ArrayList<>();
 
-				final List<TypeKeyValue> versionStatuses = new ArrayList<>();
+			for (final VersionStatus value : VersionStatus.values()) {
 
-				for (final VersionStatus value : VersionStatus.values()) {
-
-					final TypeKeyValue typeKeyValue = new TypeKeyValue("status", value.getLabel(), value.getLabel());
-					versionStatuses.add(typeKeyValue);
-				}
-
-				final ResultList<TypeKeyValue> results = new ResultList<>(versionStatuses);
-				results.setTotalKnown(true);
-
-				return new ResponseEntity<>(results, HttpStatus.OK);
+				final TypeKeyValue typeKeyValue = new TypeKeyValue("status", value.getLabel(), value.getLabel());
+				versionStatuses.add(typeKeyValue);
 			}
+
+			final ResultList<TypeKeyValue> results = new ResultList<>(versionStatuses);
+			results.setTotalKnown(true);
+
+			return new ResponseEntity<>(results, HttpStatus.OK);
 
 		} catch (final Exception e) {
 			handleException(e);
@@ -2333,58 +2282,54 @@ public class RefsetController extends BaseController {
 	 * @return the versions
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Gets a list of all current refset versions", responses= 
-	{ @ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description ="Bad request"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Gets a list of all current refset versions", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@RecordMetric
 	@RequestMapping(method = RequestMethod.GET, value = "/refset/versions", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<TypeKeyValue>> getVersions() throws Exception {
 
-		try {
+		authorizeUser();
 
-			// no auth required
-			SecurityService.getUserFromSession();
+		try (final TerminologyService service = new TerminologyService()) {
 
-			try (final TerminologyService service = new TerminologyService()) {
+			ResultList<Refset> refsets = new ResultList<Refset>();
+			final PfsParameter pfs = new PfsParameter();
+			final QueryParameter query = new QueryParameter();
+			query.setQuery("_exists_:versionDate AND latestPublishedVersion: true");
 
-				ResultList<Refset> refsets = new ResultList<Refset>();
-				final PfsParameter pfs = new PfsParameter();
-				final QueryParameter query = new QueryParameter();
-				query.setQuery("_exists_:versionDate AND latestPublishedVersion: true");
+			refsets = service.find(query, pfs, Refset.class, null);
 
-				refsets = service.find(query, pfs, Refset.class, null);
+			final ResultList<TypeKeyValue> results = new ResultList<>();
+			final List<TypeKeyValue> resultItems = new ArrayList<>();
+			final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 
-				final ResultList<TypeKeyValue> results = new ResultList<>();
-				final List<TypeKeyValue> resultItems = new ArrayList<>();
-				final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+			for (final Refset refset : refsets.getItems()) {
 
-				for (final Refset refset : refsets.getItems()) {
+				final String version = sdf.format(refset.getVersionDate());
+				final TypeKeyValue entry = new TypeKeyValue("version", version, version);
 
-					final String version = sdf.format(refset.getVersionDate());
-					final TypeKeyValue entry = new TypeKeyValue("version", version, version);
+				if (!resultItems.contains(entry)) {
 
-					if (!resultItems.contains(entry)) {
-
-						resultItems.add(entry);
-					}
-
+					resultItems.add(entry);
 				}
 
-				resultItems.sort(new Comparator<TypeKeyValue>() {
-
-					@Override
-					public int compare(final TypeKeyValue o1, final TypeKeyValue o2) {
-
-						return o2.getValue().compareTo(o1.getValue());
-					}
-
-				});
-				results.setItems(resultItems);
-				results.setTotal(resultItems.size());
-
-				return new ResponseEntity<>(results, HttpStatus.OK);
 			}
+
+			resultItems.sort(new Comparator<TypeKeyValue>() {
+
+				@Override
+				public int compare(final TypeKeyValue o1, final TypeKeyValue o2) {
+
+					return o2.getValue().compareTo(o1.getValue());
+				}
+
+			});
+			results.setItems(resultItems);
+			results.setTotal(resultItems.size());
+
+			return new ResponseEntity<>(results, HttpStatus.OK);
 
 		} catch (final Exception e) {
 			handleException(e);
@@ -2402,10 +2347,10 @@ public class RefsetController extends BaseController {
 	 * @return the editions
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Gets a list of all the editions", responses=
-	{ @ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description ="Bad request"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Gets a list of all the editions", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "onlyEditionsWithoutOrganizations", description = "Should the results be limited to editions that do not have an organization tied to them.", required = false), })
 	@RecordMetric
@@ -2413,76 +2358,72 @@ public class RefsetController extends BaseController {
 	public @ResponseBody ResponseEntity<ResultList<TypeKeyValue>> getEditions(
 			@RequestParam(value = "onlyUsersTeams") final boolean onlyEditionsWithoutOrganizations) throws Exception {
 
-		try {
+		final User authUser = authorizeUser();
 
-			// no auth required
-			final User user = SecurityService.getUserFromSession();
+		try (final TerminologyService service = new TerminologyService()) {
 
-			try (final TerminologyService service = new TerminologyService()) {
+			final long start = System.currentTimeMillis();
+			ResultList<Edition> results = new ResultList<Edition>();
+			final PfsParameter pfs = new PfsParameter();
+			final QueryParameter query = new QueryParameter();
+			List<Organization> organizationList = new ArrayList<>();
 
-				final long start = System.currentTimeMillis();
-				ResultList<Edition> results = new ResultList<Edition>();
-				final PfsParameter pfs = new PfsParameter();
-				final QueryParameter query = new QueryParameter();
-				List<Organization> organizationList = new ArrayList<>();
+			if (onlyEditionsWithoutOrganizations) {
 
+				organizationList = OrganizationService
+						.searchOrganizations(service, authUser, new SearchParameters(), false).getItems();
+			}
+
+			results = service.find(query, pfs, Edition.class, null);
+
+			results.setTimeTaken(System.currentTimeMillis() - start);
+			results.setTotalKnown(true);
+
+			LOG.debug("getEditions results: " + ModelUtility.toJson(results));
+			final List<Edition> editionList = results.getItems();
+			editionList.sort(new Comparator<Edition>() {
+
+				@Override
+				public int compare(final Edition o1, final Edition o2) {
+
+					return o1.getName().compareTo(o2.getName());
+				}
+			});
+			final List<TypeKeyValue> entryList = new ArrayList<>();
+			final ResultList<TypeKeyValue> entryResults = new ResultList<>();
+
+			for (final Edition edition : editionList) {
+
+				// if this flag is set skip any edition already tied to an organization
 				if (onlyEditionsWithoutOrganizations) {
 
-					organizationList = OrganizationService
-							.searchOrganizations(service, user, new SearchParameters(), false).getItems();
-				}
+					boolean hasOrganization = false;
 
-				results = service.find(query, pfs, Edition.class, null);
+					for (final Organization organization : organizationList) {
 
-				results.setTimeTaken(System.currentTimeMillis() - start);
-				results.setTotalKnown(true);
+						if (edition.getOrganization().getId().equals(organization.getId())) {
 
-				LOG.debug("getEditions results: " + ModelUtility.toJson(results));
-				final List<Edition> editionList = results.getItems();
-				editionList.sort(new Comparator<Edition>() {
-
-					@Override
-					public int compare(final Edition o1, final Edition o2) {
-
-						return o1.getName().compareTo(o2.getName());
-					}
-				});
-				final List<TypeKeyValue> entryList = new ArrayList<>();
-				final ResultList<TypeKeyValue> entryResults = new ResultList<>();
-
-				for (final Edition edition : editionList) {
-
-					// if this flag is set skip any edition already tied to an organization
-					if (onlyEditionsWithoutOrganizations) {
-
-						boolean hasOrganization = false;
-
-						for (final Organization organization : organizationList) {
-
-							if (edition.getOrganization().getId().equals(organization.getId())) {
-
-								hasOrganization = true;
-							}
-
-						}
-
-						if (hasOrganization) {
-
-							continue;
+							hasOrganization = true;
 						}
 
 					}
 
-					final TypeKeyValue tkv = new TypeKeyValue("edition", edition.getName(), edition.getName());
-					tkv.setId(edition.getId());
-					entryList.add(tkv);
+					if (hasOrganization) {
+
+						continue;
+					}
+
 				}
 
-				entryResults.setItems(entryList);
-				entryResults.setTotalKnown(true);
-
-				return new ResponseEntity<>(entryResults, HttpStatus.OK);
+				final TypeKeyValue tkv = new TypeKeyValue("edition", edition.getName(), edition.getName());
+				tkv.setId(edition.getId());
+				entryList.add(tkv);
 			}
+
+			entryResults.setItems(entryList);
+			entryResults.setTotalKnown(true);
+
+			return new ResponseEntity<>(entryResults, HttpStatus.OK);
 
 		} catch (final Exception e) {
 			handleException(e);
@@ -2502,10 +2443,10 @@ public class RefsetController extends BaseController {
 	 * @return the editions
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Gets the list of Refset Concepts that can be used as parents to a refset or as the underlying concept for a new refset.", responses=
-	{ @ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description ="Bad request"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Gets the list of Refset Concepts that can be used as parents to a refset or as the underlying concept for a new refset.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "branch", description = "The branch to retrieve the concepts from.", required = true),
 			@Parameter(name = "areParentConcepts", description = "Do these concepts represent parent concepts for a new refset, or will they be the underlying concepts for a the refset itself.", required = true), })
@@ -2514,13 +2455,12 @@ public class RefsetController extends BaseController {
 	public @ResponseBody ResponseEntity<ConceptResultList> getRefsetConcepts(final String branch,
 			final boolean areParentConcepts) throws Exception {
 
+		authorizeUser();
 		try (final TerminologyService service = new TerminologyService()) {
 
 			// LOG.debug("getRefsetConcepts: branch: " + branch + "; areParentConcepts: "
 			// + areParentConcepts);
 
-			// no auth required
-			SecurityService.getUserFromSession();
 			final ConceptResultList results = RefsetService.getRefsetConcepts(service, branch, areParentConcepts);
 
 			// LOG.debug("getRefsetConcepts: results: " + ModelUtility.toJson(results));
@@ -2541,23 +2481,18 @@ public class RefsetController extends BaseController {
 	 * @return list of edition versions
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Gets the list of branch versions", responses=
-	{ @ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description ="Bad request"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Gets the list of branch versions", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "branch", description = "The branch to retrieve the concepts from.", required = true) })
 	@RecordMetric
 	@RequestMapping(method = RequestMethod.GET, value = "/general/branchVersions", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<String>> getBranchVersions(final String branch) throws Exception {
 
+		authorizeUser();
 		try {
-
-			// LOG.debug("getBranchVersions - branch: " + branch);
-
-			// no auth required
-			SecurityService.getUserFromSession();
-
 			final ResultList<String> results = new ResultList<>();
 			results.setItems(RefsetService.getBranchVersions(branch));
 
@@ -2578,73 +2513,69 @@ public class RefsetController extends BaseController {
 	 * @return the organizations
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Gets a list of the organizations", responses=
-	{ @ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description ="Bad request"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Gets a list of the organizations", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@RecordMetric
 	@RequestMapping(method = RequestMethod.GET, value = "/refset/organizations", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<TypeKeyValue>> getOrganizations() throws Exception {
 
-		try {
+		final User authUser = authorizeUser();
 
-			// no auth required
-			final User user = SecurityService.getUserFromSession();
+		try (final TerminologyService service = new TerminologyService()) {
 
-			try (final TerminologyService service = new TerminologyService()) {
+			final long start = System.currentTimeMillis();
+			ResultList<Organization> results = new ResultList<Organization>();
+			final PfsParameter pfs = new PfsParameter();
 
-				final long start = System.currentTimeMillis();
-				ResultList<Organization> results = new ResultList<Organization>();
-				final PfsParameter pfs = new PfsParameter();
+			String query = "active:true";
 
-				String query = "active:true";
-
-				if (SecurityService.GUEST_USERNAME.equals(user.getUserName())) {
-					query += " AND affiliate:false ";
-				}
-
-				final QueryParameter queryParameter = new QueryParameter();
-				queryParameter.setQuery(query);
-
-				results = service.find(query, pfs, Organization.class, null);
-
-				results.setTimeTaken(System.currentTimeMillis() - start);
-				results.setTotalKnown(true);
-
-				// LOG.debug("results: " + ModelUtility.toJson(results));
-				final List<Organization> organizationList = results.getItems();
-
-				organizationList.removeIf(org -> {
-					return org.isAffiliate()
-							&& !org.getMembers().stream().anyMatch(m -> m.getId().equals(user.getId()));
-				});
-
-				results.setTotal(organizationList.size());
-
-				organizationList.sort(new Comparator<Organization>() {
-
-					@Override
-					public int compare(final Organization o1, final Organization o2) {
-
-						return o1.getName().compareTo(o2.getName());
-					}
-				});
-				final List<TypeKeyValue> entryList = new ArrayList<>();
-				final ResultList<TypeKeyValue> entryResults = new ResultList<>();
-
-				for (final Organization organization : organizationList) {
-
-					final TypeKeyValue tkv = new TypeKeyValue("organization", organization.getName(),
-							organization.getName());
-					tkv.setId(organization.getId());
-					entryList.add(tkv);
-				}
-
-				entryResults.setItems(entryList);
-				entryResults.setTotalKnown(true);
-
-				return new ResponseEntity<>(entryResults, HttpStatus.OK);
+			if (SecurityService.GUEST_USERNAME.equals(authUser.getUserName())) {
+				query += " AND affiliate:false ";
 			}
+
+			final QueryParameter queryParameter = new QueryParameter();
+			queryParameter.setQuery(query);
+
+			results = service.find(query, pfs, Organization.class, null);
+
+			results.setTimeTaken(System.currentTimeMillis() - start);
+			results.setTotalKnown(true);
+
+			// LOG.debug("results: " + ModelUtility.toJson(results));
+			final List<Organization> organizationList = results.getItems();
+
+			organizationList.removeIf(org -> {
+				return org.isAffiliate()
+						&& !org.getMembers().stream().anyMatch(m -> m.getId().equals(authUser.getId()));
+			});
+
+			results.setTotal(organizationList.size());
+
+			organizationList.sort(new Comparator<Organization>() {
+
+				@Override
+				public int compare(final Organization o1, final Organization o2) {
+
+					return o1.getName().compareTo(o2.getName());
+				}
+			});
+			final List<TypeKeyValue> entryList = new ArrayList<>();
+			final ResultList<TypeKeyValue> entryResults = new ResultList<>();
+
+			for (final Organization organization : organizationList) {
+
+				final TypeKeyValue tkv = new TypeKeyValue("organization", organization.getName(),
+						organization.getName());
+				tkv.setId(organization.getId());
+				entryList.add(tkv);
+			}
+
+			entryResults.setItems(entryList);
+			entryResults.setTotalKnown(true);
+
+			return new ResponseEntity<>(entryResults, HttpStatus.OK);
 
 		} catch (final Exception e) {
 			handleException(e);
@@ -2660,12 +2591,12 @@ public class RefsetController extends BaseController {
 	 * @return the ancestor cache
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Returns the contents of the ancestor cache for a refset. To see certain results this call requires authentication with the correct role.", responses=
-	{
-			@ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information. Payload contains a set of concept IDs that are ancestors "
+	@Operation(summary = "Returns the contents of the ancestor cache for a refset. To see certain results this call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. Payload contains a set of concept IDs that are ancestors "
 					+ "to the members of this refset."),
-			@ApiResponse(responseCode = "401", description ="Unauthorized"), @ApiResponse(responseCode = "400", description ="Bad request"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true), })
 	@RecordMetric
@@ -2673,13 +2604,13 @@ public class RefsetController extends BaseController {
 	public @ResponseBody ResponseEntity<String> getRefsetAncestorCache(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
 
-		// no auth required
+		final User authUser = authorizeUser();
+
 		try (final TerminologyService service = new TerminologyService()) {
 
 			LOG.debug("getRefsetAncestorCache: refsetInternalId: " + refsetInternalId);
 
-			final Refset refset = RefsetMemberService.getRefset(SecurityService.getUserFromSession(), service,
-					refsetInternalId);
+			final Refset refset = RefsetMemberService.getRefset(authUser, service, refsetInternalId);
 			final Map<String, Set<String>> ancestorsCache = RefsetMemberService
 					.getCacheForMemberAncestors(RefsetMemberService.getBranchPath(refset));
 
@@ -2706,10 +2637,11 @@ public class RefsetController extends BaseController {
 	 * @return the concept with the ancestor path filled in
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Returns the ancestor path concepts for a refset member. To see certain results this call requires authentication with the correct role.", responses=
-	{ @ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "401", description ="Unauthorized"), @ApiResponse(responseCode = "400", description ="Bad request"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Returns the ancestor path concepts for a refset member. To see certain results this call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
 			@Parameter(name = "conceptId", description = "The ID of the member concept.", required = true) })
@@ -2719,14 +2651,13 @@ public class RefsetController extends BaseController {
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId,
 			@PathVariable(value = "conceptId") final String conceptId) throws Exception {
 
+		final User authUser = authorizeUser();
 		try (final TerminologyService service = new TerminologyService()) {
 
 			LOG.debug(
 					"getMemberAncestorConcepts: refsetInternalId: " + refsetInternalId + " ; conceptId: " + conceptId);
 
-			// no auth required
-			final User user = SecurityService.getUserFromSession();
-			final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+			final Refset refset = RefsetService.getRefset(service, authUser, refsetInternalId);
 
 			final Concept concept = RefsetMemberService.getConceptAncestors(refset, conceptId);
 
@@ -2748,11 +2679,11 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@Operation(summary = "Compile and store the data to upgrade a list of refsets. Long running background process, call /refset/{refsetInternalId}/isLocked "
-			+ "to get full status. This call requires authentication with the correct role.", responses=
-	{
-			@ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information. Payload contains the status of the operation"),
-			@ApiResponse(responseCode = "401", description ="Unauthorized"), @ApiResponse(responseCode = "400", description ="Bad request"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+			+ "to get full status. This call requires authentication with the correct role.", responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. Payload contains the status of the operation"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "A list of comma separated internal refset IDs to upgrade.", required = true) })
 	@RecordMetric
@@ -2760,7 +2691,7 @@ public class RefsetController extends BaseController {
 	public @ResponseBody ResponseEntity<String> compileUpgradeData(
 			@PathVariable(value = "refsetInternalIds") final String refsetInternalIds) throws Exception {
 
-		final User user = SecurityService.getUserFromSession();
+		final User authUser = authorizeUser();
 
 		final Thread t = new Thread(new Runnable() {
 
@@ -2769,7 +2700,7 @@ public class RefsetController extends BaseController {
 
 				try (final TerminologyService service = new TerminologyService()) {
 
-					service.setModifiedBy(user.getUserName());
+					service.setModifiedBy(authUser.getUserName());
 					service.setModifiedFlag(true);
 
 					String status = "";
@@ -2793,7 +2724,7 @@ public class RefsetController extends BaseController {
 						try {
 
 							// add the list of concepts as members to the refset
-							status = RefsetMemberService.compileUpgradeData(service, user, internalId);
+							status = RefsetMemberService.compileUpgradeData(service, authUser, internalId);
 
 						} finally {
 							RefsetMemberService.REFSETS_BEING_UPDATED.remove(internalId);
@@ -2834,10 +2765,11 @@ public class RefsetController extends BaseController {
 	 * @return The upgrade data
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Get the stored the data to upgrade a refset. This call requires authentication with the correct role.", responses=
-	{ @ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Get the stored the data to upgrade a refset. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true) })
 	@RecordMetric
@@ -2845,16 +2777,16 @@ public class RefsetController extends BaseController {
 	public @ResponseBody ResponseEntity<ResultList<UpgradeInactiveConcept>> getUpgradeData(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
 
-		final User user = SecurityService.getUserFromSession();
+		final User authUser = authorizeUser();
 
 		try (final TerminologyService service = new TerminologyService()) {
 
 			LOG.debug("getUpgradeData: refsetInternalId: " + refsetInternalId);
 
-			final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+			final Refset refset = RefsetService.getRefset(service, authUser, refsetInternalId);
 
 			// add the list of concepts as members to the refset
-			final ResultList<UpgradeInactiveConcept> results = RefsetMemberService.getUpgradeData(service, user,
+			final ResultList<UpgradeInactiveConcept> results = RefsetMemberService.getUpgradeData(service, authUser,
 					refset);
 
 			LOG.debug("getUpgradeData: results " + results);
@@ -2882,10 +2814,11 @@ public class RefsetController extends BaseController {
 	 * @return the status
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Make a change to an upgrade concept. This call requires authentication with the correct role.", responses=
-	{ @ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Make a change to an upgrade concept. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
 			@Parameter(name = "inactiveConceptId", description = "The concept ID of the inactive concept to be upgraded.", required = true),
@@ -2901,14 +2834,14 @@ public class RefsetController extends BaseController {
 			@RequestParam(required = true) final String changed,
 			@RequestBody(required = false) final UpgradeReplacementConcept manualReplacementConcept) throws Exception {
 
-		final User user = SecurityService.getUserFromSession();
+		final User authUser = authorizeUser();
 
 		try (final TerminologyService service = new TerminologyService()) {
 
-			final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
-			WorkflowService.canUserEditRefset(user, refset);
+			final Refset refset = RefsetService.getRefset(service, authUser, refsetInternalId);
+			WorkflowService.canUserEditRefset(authUser, refset);
 
-			service.setModifiedBy(user.getUserName());
+			service.setModifiedBy(authUser.getUserName());
 			service.setModifiedFlag(true);
 			String status = "All changes made successfully";
 
@@ -2916,7 +2849,7 @@ public class RefsetController extends BaseController {
 					+ "; inactiveConceptId: " + inactiveConceptId + "; replacementConceptId: " + replacementConceptId
 					+ "; manualReplacementConcept: " + manualReplacementConcept);
 
-			status = RefsetMemberService.modifyUpgradeConcept(service, user, refset, inactiveConceptId,
+			status = RefsetMemberService.modifyUpgradeConcept(service, authUser, refset, inactiveConceptId,
 					replacementConceptId, manualReplacementConcept, changed);
 
 			LOG.debug("modifyUpgradeConcept: Finished with status: " + status);
@@ -2938,11 +2871,11 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@Operation(summary = "Remove all inactive Upgrade concepts at once. Long running background process, call /refset/{refsetInternalId}/isLocked "
-			+ "to get full status. This call requires authentication with the correct role.", responses=
-	{
-			@ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information. The payload contains the status of the operation"),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+			+ "to get full status. This call requires authentication with the correct role.", responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. The payload contains the status of the operation"),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true) })
 	@RecordMetric
@@ -2950,20 +2883,20 @@ public class RefsetController extends BaseController {
 	public @ResponseBody ResponseEntity<String> removeAllUpgradeInactiveConcepts(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
 
-		final User user = SecurityService.getUserFromSession();
+		final User authUser = authorizeUser();
 
 		try (final TerminologyService service = new TerminologyService()) {
 
-			final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
-			WorkflowService.canUserEditRefset(user, refset);
+			final Refset refset = RefsetService.getRefset(service, authUser, refsetInternalId);
+			WorkflowService.canUserEditRefset(authUser, refset);
 
-			service.setModifiedBy(user.getUserName());
+			service.setModifiedBy(authUser.getUserName());
 			service.setModifiedFlag(true);
 			String status = "All changes made successfully";
 
 			LOG.debug("removeAllUpgradeInactiveConcepts: refsetInternalId: " + refsetInternalId);
 
-			status = RefsetMemberService.removeAllUpgradeInactiveConcepts(service, user, refset);
+			status = RefsetMemberService.removeAllUpgradeInactiveConcepts(service, authUser, refset);
 
 			LOG.debug("removeAllUpgradeInactiveConcepts: Finished with status: " + status);
 
@@ -2984,11 +2917,11 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@Operation(summary = "Add all replacement Upgrade concepts as members at once. Long running background process, call /refset/{refsetInternalId}/isLocked "
-			+ "to get full status. This call requires authentication with the correct role.", responses=
-	{
-			@ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information. The payload contains the status of the operation"),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+			+ "to get full status. This call requires authentication with the correct role.", responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. The payload contains the status of the operation"),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true) })
 	@RecordMetric
@@ -2996,20 +2929,20 @@ public class RefsetController extends BaseController {
 	public @ResponseBody ResponseEntity<String> addAllUpgradeReplacementConcepts(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
 
-		final User user = SecurityService.getUserFromSession();
+		final User authUser = authorizeUser();
 
 		try (final TerminologyService service = new TerminologyService()) {
 
-			final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
-			WorkflowService.canUserEditRefset(user, refset);
+			final Refset refset = RefsetService.getRefset(service, authUser, refsetInternalId);
+			WorkflowService.canUserEditRefset(authUser, refset);
 
-			service.setModifiedBy(user.getUserName());
+			service.setModifiedBy(authUser.getUserName());
 			service.setModifiedFlag(true);
 			String status = "All changes made successfully";
 
 			LOG.debug("addAllUpgradeReplacementConcepts: refsetInternalId: " + refsetInternalId);
 
-			status = RefsetMemberService.addAllUpgradeReplacementConcepts(service, user, refset);
+			status = RefsetMemberService.addAllUpgradeReplacementConcepts(service, authUser, refset);
 
 			LOG.debug("addAllUpgradeReplacementConcepts: Finished with status: " + status);
 
@@ -3032,10 +2965,11 @@ public class RefsetController extends BaseController {
 	 * @return the string
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Search for members replacement concepts for upgrade. This call requires authentication with the correct role.", responses=
-	{ @ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information."),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Search for members replacement concepts for upgrade. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information."),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	// @ModelAttribute API params documented in SearchParameter
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true) })
@@ -3050,11 +2984,11 @@ public class RefsetController extends BaseController {
 		// Check to make sure parameters were properly bound to variables.
 		checkBinding(bindingResult);
 
-		final User user = SecurityService.getUserFromSession();
+		final User authUser = authorizeUser();
 
 		try (final TerminologyService service = new TerminologyService()) {
 
-			final Refset refset = RefsetMemberService.getRefset(user, service, refsetInternalId);
+			final Refset refset = RefsetMemberService.getRefset(authUser, service, refsetInternalId);
 			ResultList<UpgradeReplacementConcept> results = new ResultList<>();
 			final String query = searchParameters.getQuery();
 
@@ -3063,7 +2997,7 @@ public class RefsetController extends BaseController {
 
 			if (query != null && !query.equals("")) {
 
-				results = RefsetMemberService.replacementConceptSearch(user, service, refset, searchParameters);
+				results = RefsetMemberService.replacementConceptSearch(authUser, service, refset, searchParameters);
 			}
 
 			return new ResponseEntity<>(results, HttpStatus.OK);
@@ -3083,13 +3017,12 @@ public class RefsetController extends BaseController {
 	 * @return the string
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Search for refsets for dropdown menus. To see certain results this call requires authentication with the correct role.", responses=
-	{ @ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description ="Bad request"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Search for refsets for dropdown menus. To see certain results this call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	// @ModelAttribute API params documented in SearchParameter
-	@Parameters({
-			@Parameter(name = "refsetInternalId", description = "the internal refset ID", required = true) })
+	@Parameters({ @Parameter(name = "refsetInternalId", description = "the internal refset ID", required = true) })
 	@RecordMetric
 	@RequestMapping(method = RequestMethod.GET, value = {
 			"/refset/dropdownSearch" }, produces = MediaType.APPLICATION_JSON)
@@ -3099,8 +3032,7 @@ public class RefsetController extends BaseController {
 		// Check to make sure parameters were properly bound to variables.
 		checkBinding(bindingResult);
 
-		// no auth required
-		final User user = SecurityService.getUserFromSession();
+		final User authUser = authorizeUser();
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -3111,7 +3043,7 @@ public class RefsetController extends BaseController {
 
 			if (query != null && !query.equals("")) {
 
-				results = RefsetService.refsetDropdownSearch(user, service, searchParameters, true, true);
+				results = RefsetService.refsetDropdownSearch(authUser, service, searchParameters, true, true);
 			}
 
 			return new ResponseEntity<>(results, HttpStatus.OK);
@@ -3133,11 +3065,11 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@Operation(summary = "Compile the data to compare two refsets. Long running background process, call /refset/{refsetInternalId}/isLocked to get full status. "
-			+ "To see certain results this call requires authentication with the correct role.", responses=
-	{
-			@ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information. Payload contains the status of the operation"),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+			+ "To see certain results this call requires authentication with the correct role.", responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. Payload contains the status of the operation"),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "activeRefsetInternalId", description = "The internal ID of the active refset.", required = true),
 			@Parameter(name = "comparisonRefsetInternalId", description = "The internal ID of the comparison refset.", required = true) })
@@ -3147,8 +3079,7 @@ public class RefsetController extends BaseController {
 			@PathVariable(value = "activeRefsetInternalId") final String activeRefsetInternalId,
 			@RequestParam(required = true) final String comparisonRefsetInternalId) throws Exception {
 
-		// no auth required
-		final User user = SecurityService.getUserFromSession();
+		final User authUser = authorizeUser();
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -3159,7 +3090,7 @@ public class RefsetController extends BaseController {
 					+ "; comparisonRefsetInternalId: " + comparisonRefsetInternalId);
 
 			// add the list of concepts as members to the refset
-			status = RefsetMemberService.compileComparisonData(service, user, activeRefsetInternalId,
+			status = RefsetMemberService.compileComparisonData(service, authUser, activeRefsetInternalId,
 					comparisonRefsetInternalId);
 
 			LOG.debug("compileComparisonData: Finished with status " + status);
@@ -3186,10 +3117,11 @@ public class RefsetController extends BaseController {
 	 * @return The comparison data
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Compile the data to compare two refsets. To see certain results this call requires authentication with the correct role.", responses=
-	{ @ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information."),
-			@ApiResponse(responseCode = "400", description ="Bad request"), @ApiResponse(responseCode = "401", description ="Unauthorized"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Compile the data to compare two refsets. To see certain results this call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information."),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "activeRefsetInternalId", description = "The internal ID of the active refset.", required = true) })
 	@RecordMetric
@@ -3198,8 +3130,7 @@ public class RefsetController extends BaseController {
 			@PathVariable(value = "activeRefsetInternalId") final String activeRefsetInternalId,
 			final HttpServletRequest request) throws Exception {
 
-		// no auth required
-		SecurityService.getUserFromSession();
+		authorizeUser();
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -3237,10 +3168,10 @@ public class RefsetController extends BaseController {
 	 * @return was the operation successful
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Request access to the refset for the specified ID", responses=
-	{ @ApiResponse(responseCode = "200", description ="Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description ="Bad request"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Request access to the refset for the specified ID", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset to request access to.", required = true),
 			@Parameter(name = "comments", description = "Any comments related to the request.", required = true), })
@@ -3250,12 +3181,10 @@ public class RefsetController extends BaseController {
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId, final String comments)
 			throws Exception {
 
+		authorizeUser();
 		try (final TerminologyService service = new TerminologyService()) {
 
-			// no auth required
-			SecurityService.getUserFromSession();
-			LOG.debug("requestRefsetAccess: refsetInternalId: " + refsetInternalId + " ; comments: " + comments);
-
+			// TODO: nothing happens here !!
 			return new ResponseEntity<>(true, HttpStatus.OK);
 
 		} catch (final Exception e) {
@@ -3273,11 +3202,10 @@ public class RefsetController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Share a refset via email. To see certain results this call requires authentication with the correct role.", responses=
-	{
-			@ApiResponse(responseCode = "200", description ="Successfully shared the requested refset. The payload contains the status of the operation"),
-			@ApiResponse(responseCode = "400", description ="Invalid email address recipient entered"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Share a refset via email. To see certain results this call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully shared the requested refset. The payload contains the status of the operation"),
+			@ApiResponse(responseCode = "400", description = "Invalid email address recipient entered"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
 			@Parameter(name = "emailInfo", description = "The information about the email address to send to.", required = true) })
@@ -3286,16 +3214,10 @@ public class RefsetController extends BaseController {
 	public @ResponseBody ResponseEntity<String> shareRefset(@PathVariable final String refsetInternalId,
 			@RequestBody(required = true) final SendCommunicationEmailInfo emailInfo) throws Exception {
 
+		final User authUser = authorizeUser();
 		try {
 
-			// no auth required
-			final User user = SecurityService.getUserFromSession();
-
-			LOG.debug("shareRefset: refsetId: " + refsetInternalId + " and emailInfo.recipient: "
-					+ emailInfo.getRecipient() + " and emailInfo.additionalMessage: "
-					+ emailInfo.getAdditionalMessage());
-
-			RefsetService.shareRefset(user, refsetInternalId, emailInfo.getRecipient(),
+			RefsetService.shareRefset(authUser, refsetInternalId, emailInfo.getRecipient(),
 					emailInfo.getAdditionalMessage());
 
 			final String returnMessage = "{\"message\": \"Share Reference Set was Successful\"}";
@@ -3317,11 +3239,10 @@ public class RefsetController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Request project access from administrators. To see certain results this call requires authentication with the correct role.", responses=
-	{
-			@ApiResponse(responseCode = "200", description ="Successfully requested access to the refset's ecnlosing project"),
-			@ApiResponse(responseCode = "400", description ="Invalid email address recipient entered"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Request project access from administrators. To see certain results this call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully requested access to the refset's ecnlosing project"),
+			@ApiResponse(responseCode = "400", description = "Invalid email address recipient entered"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
 			@Parameter(name = "emailInfo", description = "The information about the email address to send to.", required = true) })
@@ -3330,16 +3251,9 @@ public class RefsetController extends BaseController {
 	public @ResponseBody ResponseEntity<String> requestProjectAccess(@PathVariable final String refsetInternalId,
 			@RequestBody(required = true) final SendCommunicationEmailInfo emailInfo) throws Exception {
 
+		final User authUser = authorizeUser();
 		try {
-
-			// no auth required
-			final User user = SecurityService.getUserFromSession();
-
-			LOG.debug("requestProjectAccess: refsetInternalId: " + refsetInternalId + " and emailInfo.recipient: "
-					+ emailInfo.getRecipient() + " and emailInfo.additionalMessage: "
-					+ emailInfo.getAdditionalMessage());
-
-			RefsetService.requestProjectAccess(user, refsetInternalId, emailInfo.getRecipient(),
+			RefsetService.requestProjectAccess(authUser, refsetInternalId, emailInfo.getRecipient(),
 					emailInfo.getAdditionalMessage());
 
 			final String returnMessage = "{\"message\": \"Reference set access (via project access) was requested was Successful\"}";
@@ -3369,9 +3283,9 @@ public class RefsetController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Create a new refset that is a copy of an existing one. This call requires authentication with the correct role.", responses=
-	{ @ApiResponse(responseCode = "200", description ="Successfully copied refset specified"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+	@Operation(summary = "Create a new refset that is a copy of an existing one. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully copied refset specified"),
+			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset to copy.", required = true),
 			@Parameter(name = "name", description = "The information about the email address to send to.", required = true),
@@ -3392,20 +3306,18 @@ public class RefsetController extends BaseController {
 			@RequestParam final String parentConceptId, @RequestParam final String newRefsetConceptId)
 			throws Exception {
 
+		final User authUser = authorizeUser();
+
 		// TODO: Add support for providing a zip RF2 or a refset file to clone off of.
 		// Questions to be answered first: Always use a) latest version for refsetId
 		// provided or b) Version if provided RF2 file instead and c) Can't supply both
 		try (final TerminologyService service = new TerminologyService()) {
 
-			LOG.debug("Copy Refset: refsetId: " + refsetInternalId + " projectId: " + projectId + " with new name: "
-					+ name);
-
-			final User user = SecurityService.getUserFromSession();
-			service.setModifiedBy(user.getUserName());
+			service.setModifiedBy(authUser.getUserName());
 
 			String status = "";
-			final Object returned = RefsetService.copyRefset(service, user, refsetInternalId, name, projectId, localSet,
-					privateRefset, comboSet, narrative, tags, parentConceptId, newRefsetConceptId);
+			final Object returned = RefsetService.copyRefset(service, authUser, refsetInternalId, name, projectId,
+					localSet, privateRefset, comboSet, narrative, tags, parentConceptId, newRefsetConceptId);
 
 			if (returned instanceof String) {
 
@@ -3439,30 +3351,28 @@ public class RefsetController extends BaseController {
 	 */
 	@Hidden
 	@Operation(summary = "Reset a refset to contain the contents of Snowstorm. Note only works if refset has not been upgraded during edit cycle. "
-			+ "This call requires authentication with the correct role.", responses=
-	{ @ApiResponse(responseCode = "200", description ="Successfully reset the refset"),
-			@ApiResponse(responseCode = "403", description ="May not reset refset on a production system"),
-			@ApiResponse(responseCode = "404", description ="Resource not found") })
+			+ "This call requires authentication with the correct role.", responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully reset the refset"),
+					@ApiResponse(responseCode = "403", description = "May not reset refset on a production system"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@RecordMetric
 	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}/reset", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<String> resetRefset(@PathVariable final String refsetId) throws Exception {
 
-		final User user = SecurityService.getUserFromSession();
+		final User authUser = authorizeUser();
 
-		if (!user.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
-			return new ResponseEntity<>("This user does not have permission to perform this action",
-					HttpStatus.UNAUTHORIZED);
+		if (!authUser.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
+			throw new RestException(false, 403, "Forbidden",
+					"This user does not have permission to perform this action");
 		}
 
 		try (final TerminologyService service = new TerminologyService()) {
 
-			LOG.debug("resetRefset: refsetId: " + refsetId);
-
 			if (!SyncAgent.getIsProductionSystem()) {
 
-				service.setModifiedBy(user.getUserName());
+				service.setModifiedBy(authUser.getUserName());
 
-				final String result = RefsetService.resetRefset(service, user, refsetId);
+				final String result = RefsetService.resetRefset(service, authUser, refsetId);
 
 				final String returnMessage = "{\"message\": \"Reset Successful " + result + "\"}";
 
@@ -3470,7 +3380,7 @@ public class RefsetController extends BaseController {
 			}
 
 			final String returnMessage = "{\"message\": \"It is prohibited to be reseting reference sets on this production system\"}";
-			return new ResponseEntity<>(returnMessage, HttpStatus.FORBIDDEN);
+			throw new RestException(false, 403, "Forbidden", returnMessage);
 
 		} catch (final Exception e) {
 			handleException(e);
@@ -3494,13 +3404,8 @@ public class RefsetController extends BaseController {
 	public @ResponseBody ResponseEntity<String> inviteUserToRefset(@PathVariable final String refsetInternalId,
 			@RequestBody(required = true) final SendCommunicationEmailInfo emailInfo) throws Exception {
 
+		final User authUser = authorizeUser();
 		try {
-
-			final User authUser = SecurityService.getUserFromSession();
-
-			LOG.debug("inviteUserToRefset: refsetInternalId: " + refsetInternalId + " and emailInfo.recipient: "
-					+ emailInfo.getRecipient() + " and emailInfo.additionalMessage: "
-					+ emailInfo.getAdditionalMessage());
 
 			RefsetService.inviteUserToOrganization(authUser, refsetInternalId, emailInfo.getRecipient(),
 					emailInfo.getAdditionalMessage());

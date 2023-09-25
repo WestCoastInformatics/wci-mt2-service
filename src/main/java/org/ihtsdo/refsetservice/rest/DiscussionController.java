@@ -18,7 +18,6 @@ import org.ihtsdo.refsetservice.model.DiscussionType;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
-import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.DiscussionService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
@@ -89,27 +88,20 @@ public class DiscussionController extends BaseController {
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId,
 			@RequestParam(required = false) final String conceptId) throws Exception {
 
+		final User authUser = authorizeUser();
 		try {
-
-			LOG.debug("Get discussions for type: " + type.name() + "; refsetInternalId: " + refsetInternalId
-					+ "; conceptId: " + conceptId);
-
-			// no auth required
-			final User user = SecurityService.getUserFromSession();
 
 			try (final TerminologyService service = new TerminologyService()) {
 
-				final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+				final Refset refset = RefsetService.getRefset(service, authUser, refsetInternalId);
 
-				final ResultList<DiscussionThread> results = DiscussionService.getDiscussions(service, user, type,
+				final ResultList<DiscussionThread> results = DiscussionService.getDiscussions(service, authUser, type,
 						refset, conceptId);
-
-				LOG.debug("getDiscussionThreads: results: " + ModelUtility.toJson(results));
-
 				return new ResponseEntity<>(results, HttpStatus.OK);
 			}
 
 		} catch (final Exception e) {
+
 			handleException(e);
 			return null;
 		}
@@ -125,35 +117,30 @@ public class DiscussionController extends BaseController {
 	@RequestMapping(method = RequestMethod.GET, value = "/discussion/{id}")
 	@Operation(summary = "Returns discussion thread. To see certain results this call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested discussion"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
+			@ApiResponse(responseCode = "404", description = "Not found"), })
 	@Parameters({
 			@Parameter(name = "id", description = "Discussion id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)), })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<DiscussionThread> getDiscussion(@PathVariable(value = "id") final String id)
 			throws Exception {
 
-		try {
+		final User authUser = authorizeUser();
 
-			LOG.debug("getDiscussion: Get discussion for id: " + id);
+		try (final TerminologyService service = new TerminologyService()) {
 
-			// no auth required
-			final User user = SecurityService.getUserFromSession();
+			final DiscussionThread discussionThread = DiscussionService.getDiscussion(service, authUser, id);
 
-			try (final TerminologyService service = new TerminologyService()) {
+			if (discussionThread == null) {
 
-				final DiscussionThread discussionThread = DiscussionService.getDiscussion(service, user, id);
-
-				if (discussionThread == null) {
-
-					final String message = "Unable to retrieve discussion thread: " + id;
-					LOG.info("getDiscussion: " + message);
-					throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", message);
-				}
-
-				LOG.debug("getDiscussion: discussionThread: " + ModelUtility.toJson(discussionThread));
-
-				return new ResponseEntity<>(discussionThread, new HttpHeaders(), HttpStatus.OK);
+				final String message = "Unable to retrieve discussion thread: " + id;
+				throw new RestException(false, 404, "Not Found", message);
 			}
+
+			LOG.debug("getDiscussion: discussionThread: " + ModelUtility.toJson(discussionThread));
+
+			return new ResponseEntity<>(discussionThread, new HttpHeaders(), HttpStatus.OK);
 
 		} catch (final Exception e) {
 
@@ -179,42 +166,37 @@ public class DiscussionController extends BaseController {
 	public @ResponseBody ResponseEntity<DiscussionThread> createDiscussionThread(
 			@RequestBody final DiscussionThread thread) throws Exception {
 
-		try {
+		final User authUser = authorizeUser();
 
-			LOG.debug("createDiscussionThread thread: " + thread);
+		try (final TerminologyService service = new TerminologyService()) {
 
-			final User user = SecurityService.getUserFromSession();
+			final Refset refset = RefsetService.getRefset(service, authUser, thread.getRefsetInternalId());
+			final boolean permittedRole = refset.getRoles().contains(User.ROLE_VIEWER);
 
-			try (final TerminologyService service = new TerminologyService()) {
+			// If the user does not have the correct permissions then return an error
+			if ((refset.isPrivateRefset() || thread.isPrivateThread()) && !permittedRole) {
 
-				final Refset refset = RefsetService.getRefset(service, user, thread.getRefsetInternalId());
-				final boolean permittedRole = refset.getRoles().contains(User.ROLE_VIEWER);
-
-				// If the user does not have the correct permissions then return an error
-				if ((refset.isPrivateRefset() || thread.isPrivateThread()) && !permittedRole) {
-
-					LOG.error("createDiscussionThread: User does not have permissions to perform this action: {}.",
-							user.getUserName());
-					throw new RestException(false, 401, "Unauthorized",
-							"User does not have permissions to perform this action.");
-				}
-
-				service.setTransactionPerOperation(false);
-				service.beginTransaction();
-				service.setModifiedBy(user.getUserName());
-				service.setModifiedFlag(true);
-
-				final DiscussionPost post = thread.getPosts().get(0);
-				post.setUser(user);
-				service.add(post);
-
-				service.update(refset);
-				service.add(thread);
-
-				service.commit();
-
-				return new ResponseEntity<>(thread, new HttpHeaders(), HttpStatus.CREATED);
+				LOG.error("createDiscussionThread: User does not have permissions to perform this action: {}.",
+						authUser.getUserName());
+				throw new RestException(false, 401, "Unauthorized",
+						"User does not have permissions to perform this action.");
 			}
+
+			service.setTransactionPerOperation(false);
+			service.beginTransaction();
+			service.setModifiedBy(authUser.getUserName());
+			service.setModifiedFlag(true);
+
+			final DiscussionPost post = thread.getPosts().get(0);
+			post.setUser(authUser);
+			service.add(post);
+
+			service.update(refset);
+			service.add(thread);
+
+			service.commit();
+
+			return new ResponseEntity<>(thread, new HttpHeaders(), HttpStatus.CREATED);
 
 		} catch (final Exception e) {
 
@@ -245,54 +227,47 @@ public class DiscussionController extends BaseController {
 			@PathVariable(value = "threadId") final String threadId, @RequestBody final DiscussionPost post)
 			throws Exception {
 
-		try {
+		final User authUser = authorizeUser();
+		try (final TerminologyService service = new TerminologyService()) {
 
-			LOG.debug("createPost threadId: " + threadId + "; post: " + post);
-			final User user = SecurityService.getUserFromSession();
+			final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
 
-			try (final TerminologyService service = new TerminologyService()) {
+			if (thread == null) {
 
-				final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
-
-				if (thread == null) {
-
-					LOG.error("createPost: Unable to retrieve discussion thread id: {}.", threadId);
-					throw new RestException(false, 404, "Not found",
-							"Unable to find discussion thread for " + threadId);
-				}
-
-				final Refset refset = RefsetService.getRefset(service, user, thread.getRefsetInternalId());
-				final boolean permittedRole = refset.getRoles().contains(User.ROLE_VIEWER);
-
-				// If the user does not have the correct permissions then return an error
-				if ((refset.isPrivateRefset() || thread.isPrivateThread()) && !permittedRole) {
-
-					LOG.error("createPost: User does not have permissions to perform this action: {}.",
-							user.getUserName());
-					throw new RestException(false, 401, "Unauthorized",
-							"User does not have permissions to perform this action.");
-				}
-
-				service.setTransactionPerOperation(false);
-				service.beginTransaction();
-				service.setModifiedBy(user.getUserName());
-				service.setModifiedFlag(true);
-
-				post.setUser(user);
-				service.add(post);
-
-				thread.getPosts().add(post);
-				service.update(thread);
-
-				service.update(refset);
-
-				service.commit();
+				LOG.error("createPost: Unable to retrieve discussion thread id: {}.", threadId);
+				throw new RestException(false, 404, "Not found", "Unable to find discussion thread for " + threadId);
 			}
 
-			return new ResponseEntity<>(post, new HttpHeaders(), HttpStatus.CREATED);
-		}
+			final Refset refset = RefsetService.getRefset(service, authUser, thread.getRefsetInternalId());
+			final boolean permittedRole = refset.getRoles().contains(User.ROLE_VIEWER);
 
-		catch (final Exception e) {
+			// If the user does not have the correct permissions then return an error
+			if ((refset.isPrivateRefset() || thread.isPrivateThread()) && !permittedRole) {
+
+				LOG.error("createPost: User does not have permissions to perform this action: {}.",
+						authUser.getUserName());
+				throw new RestException(false, 401, "Unauthorized",
+						"User does not have permissions to perform this action.");
+			}
+
+			service.setTransactionPerOperation(false);
+			service.beginTransaction();
+			service.setModifiedBy(authUser.getUserName());
+			service.setModifiedFlag(true);
+
+			post.setUser(authUser);
+			service.add(post);
+
+			thread.getPosts().add(post);
+			service.update(thread);
+
+			service.update(refset);
+
+			service.commit();
+
+			return new ResponseEntity<>(post, new HttpHeaders(), HttpStatus.CREATED);
+
+		} catch (final Exception e) {
 
 			handleException(e);
 			return null;
@@ -321,55 +296,50 @@ public class DiscussionController extends BaseController {
 			@PathVariable(value = "threadId") final String threadId, @RequestBody final DiscussionThread thread)
 			throws Exception {
 
-		try {
+		final User authUser = authorizeUser();
+		try (final TerminologyService service = new TerminologyService()) {
 
-			LOG.debug("updateDiscussionThread threadId: " + threadId + "; thread: " + thread);
-			final User user = SecurityService.getUserFromSession();
+			final DiscussionThread originalThread = service.get(threadId, DiscussionThread.class);
 
-			try (final TerminologyService service = new TerminologyService()) {
+			if (thread == null) {
 
-				final DiscussionThread originalThread = service.get(threadId, DiscussionThread.class);
-
-				if (thread == null) {
-
-					LOG.error("updateDiscussionThread: Unable to retrieve discussion thread id: {}.", threadId);
-					throw new RestException(false, 404, "Not found",
-							"Unable to find discussion thread for " + threadId + ".");
-				}
-
-				final Refset refset = RefsetService.getRefset(service, user, thread.getRefsetInternalId());
-
-				// If the user does not have the correct permissions then return an error
-				if (!DiscussionService.canUserEditThread(user, refset, originalThread)) {
-
-					LOG.error("updateDiscussionThread: User does not have permissions to perform this action: {}.",
-							user.getUserName());
-					throw new RestException(false, 401, "Unauthorized",
-							"User does not have permissions to perform this action.");
-				}
-
-				service.setTransactionPerOperation(false);
-				service.beginTransaction();
-				service.setModifiedBy(user.getUserName());
-				service.setModifiedFlag(true);
-
-				originalThread.setSubject(thread.getSubject());
-				originalThread.setStatus(thread.getStatus());
-				originalThread.setVisibility(thread.getVisibility());
-				originalThread.setPrivateThread(thread.isPrivateThread());
-				service.update(originalThread);
-
-				final DiscussionPost post = originalThread.getPosts().get(0);
-				post.setMessage(thread.getPosts().get(0).getMessage());
-				post.setPrivatePost(thread.isPrivateThread());
-				service.update(post);
-
-				service.update(refset);
-
-				service.commit();
-
-				return new ResponseEntity<>(originalThread, new HttpHeaders(), HttpStatus.OK);
+				LOG.error("updateDiscussionThread: Unable to retrieve discussion thread id: {}.", threadId);
+				throw new RestException(false, 404, "Not found",
+						"Unable to find discussion thread for " + threadId + ".");
 			}
+
+			final Refset refset = RefsetService.getRefset(service, authUser, thread.getRefsetInternalId());
+
+			// If the user does not have the correct permissions then return an error
+			if (!DiscussionService.canUserEditThread(authUser, refset, originalThread)) {
+
+				LOG.error("updateDiscussionThread: User does not have permissions to perform this action: {}.",
+						authUser.getUserName());
+				throw new RestException(false, 401, "Unauthorized",
+						"User does not have permissions to perform this action.");
+			}
+
+			service.setTransactionPerOperation(false);
+			service.beginTransaction();
+			service.setModifiedBy(authUser.getUserName());
+			service.setModifiedFlag(true);
+
+			originalThread.setSubject(thread.getSubject());
+			originalThread.setStatus(thread.getStatus());
+			originalThread.setVisibility(thread.getVisibility());
+			originalThread.setPrivateThread(thread.isPrivateThread());
+			service.update(originalThread);
+
+			final DiscussionPost post = originalThread.getPosts().get(0);
+			post.setMessage(thread.getPosts().get(0).getMessage());
+			post.setPrivatePost(thread.isPrivateThread());
+			service.update(post);
+
+			service.update(refset);
+
+			service.commit();
+
+			return new ResponseEntity<>(originalThread, new HttpHeaders(), HttpStatus.OK);
 
 		} catch (final Exception e) {
 
@@ -400,50 +370,43 @@ public class DiscussionController extends BaseController {
 			@PathVariable(value = "threadId") final String threadId, @RequestParam final String status)
 			throws Exception {
 
-		try {
+		final User authUser = authorizeUser();
+		try (final TerminologyService service = new TerminologyService()) {
 
-			LOG.debug("updateDiscussionThreadStatus threadId: " + threadId + "; status: " + status);
+			final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
 
-			final User user = SecurityService.getUserFromSession();
+			if (thread == null) {
 
-			try (final TerminologyService service = new TerminologyService()) {
-
-				final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
-
-				if (thread == null) {
-
-					LOG.error("updateDiscussionThreadStatus: Unable to retrieve discussion thread id: {}.", threadId);
-					throw new RestException(false, 404, "Not found",
-							"Unable to find discussion thread for " + threadId + ".");
-				}
-
-				final Refset refset = RefsetService.getRefset(service, user, thread.getRefsetInternalId());
-
-				// If the user does not have the correct permissions then return an error
-				if (!DiscussionService.canUserEditThread(user, refset, thread)) {
-
-					LOG.error(
-							"updateDiscussionThreadStatus: User does not have permissions to perform this action: {}.",
-							user.getUserName());
-					throw new RestException(false, 401, "Unauthorized",
-							"User does not have permissions to perform this action.");
-				}
-
-				service.setTransactionPerOperation(false);
-				service.beginTransaction();
-				service.setModifiedBy(user.getUserName());
-				service.setModifiedFlag(true);
-
-				thread.setStatus(status);
-
-				// Update
-				service.update(thread);
-				service.update(refset);
-
-				service.commit();
-
-				return new ResponseEntity<>(new HttpHeaders(), HttpStatus.OK);
+				LOG.error("updateDiscussionThreadStatus: Unable to retrieve discussion thread id: {}.", threadId);
+				throw new RestException(false, 404, "Not found",
+						"Unable to find discussion thread for " + threadId + ".");
 			}
+
+			final Refset refset = RefsetService.getRefset(service, authUser, thread.getRefsetInternalId());
+
+			// If the user does not have the correct permissions then return an error
+			if (!DiscussionService.canUserEditThread(authUser, refset, thread)) {
+
+				LOG.error("updateDiscussionThreadStatus: User does not have permissions to perform this action: {}.",
+						authUser.getUserName());
+				throw new RestException(false, 401, "Unauthorized",
+						"User does not have permissions to perform this action.");
+			}
+
+			service.setTransactionPerOperation(false);
+			service.beginTransaction();
+			service.setModifiedBy(authUser.getUserName());
+			service.setModifiedFlag(true);
+
+			thread.setStatus(status);
+
+			// Update
+			service.update(thread);
+			service.update(refset);
+
+			service.commit();
+
+			return new ResponseEntity<>(new HttpHeaders(), HttpStatus.OK);
 
 		} catch (final Exception e) {
 
@@ -474,53 +437,47 @@ public class DiscussionController extends BaseController {
 			@PathVariable(value = "threadId") final String threadId, @RequestParam final boolean isPrivate)
 			throws Exception {
 
-		try {
+		final User authUser = authorizeUser();
 
-			LOG.debug("updateDiscussionThreadPrivacy threadId: " + threadId + "; isPrivate: " + isPrivate);
+		try (final TerminologyService service = new TerminologyService()) {
 
-			final User user = SecurityService.getUserFromSession();
+			final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
 
-			try (final TerminologyService service = new TerminologyService()) {
+			if (thread == null) {
 
-				final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
-
-				if (thread == null) {
-
-					LOG.error("updateDiscussionThreadPrivacy: Unable to retrieve discussion thread id: {}.", threadId);
-					throw new RestException(false, 404, "Not found",
-							"Unable to find discussion thread for " + threadId + ".");
-				}
-
-				final Refset refset = RefsetService.getRefset(service, user, thread.getRefsetInternalId());
-
-				// If the user does not have the correct permissions then return an error
-				if (!DiscussionService.canUserEditThread(user, refset, thread)) {
-
-					LOG.error(
-							"updateDiscussionThreadPrivacy: User does not have permissions to perform this action: {}.",
-							user.getUserName());
-					throw new RestException(false, 401, "Unauthorized",
-							"User does not have permissions to perform this action.");
-				}
-
-				service.setTransactionPerOperation(false);
-				service.beginTransaction();
-				service.setModifiedBy(user.getUserName());
-				service.setModifiedFlag(true);
-
-				thread.setPrivateThread(isPrivate);
-				service.update(thread);
-
-				final DiscussionPost post = thread.getPosts().get(0);
-				post.setPrivatePost(isPrivate);
-				service.update(post);
-
-				service.update(refset);
-
-				service.commit();
-
-				return new ResponseEntity<>(new HttpHeaders(), HttpStatus.OK);
+				LOG.error("updateDiscussionThreadPrivacy: Unable to retrieve discussion thread id: {}.", threadId);
+				throw new RestException(false, 404, "Not found",
+						"Unable to find discussion thread for " + threadId + ".");
 			}
+
+			final Refset refset = RefsetService.getRefset(service, authUser, thread.getRefsetInternalId());
+
+			// If the user does not have the correct permissions then return an error
+			if (!DiscussionService.canUserEditThread(authUser, refset, thread)) {
+
+				LOG.error("updateDiscussionThreadPrivacy: User does not have permissions to perform this action: {}.",
+						authUser.getUserName());
+				throw new RestException(false, 401, "Unauthorized",
+						"User does not have permissions to perform this action.");
+			}
+
+			service.setTransactionPerOperation(false);
+			service.beginTransaction();
+			service.setModifiedBy(authUser.getUserName());
+			service.setModifiedFlag(true);
+
+			thread.setPrivateThread(isPrivate);
+			service.update(thread);
+
+			final DiscussionPost post = thread.getPosts().get(0);
+			post.setPrivatePost(isPrivate);
+			service.update(post);
+
+			service.update(refset);
+
+			service.commit();
+
+			return new ResponseEntity<>(new HttpHeaders(), HttpStatus.OK);
 
 		} catch (final Exception e) {
 
@@ -551,51 +508,44 @@ public class DiscussionController extends BaseController {
 			@PathVariable(value = "threadId") final String threadId, @RequestParam final String visibility)
 			throws Exception {
 
-		try {
+		final User authUser = authorizeUser();
+		try (final TerminologyService service = new TerminologyService()) {
 
-			LOG.debug("updateDiscussionThreadVisibility threadId: " + threadId + "; visibility: " + visibility);
+			final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
 
-			final User user = SecurityService.getUserFromSession();
+			if (thread == null) {
 
-			try (final TerminologyService service = new TerminologyService()) {
-
-				final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
-
-				if (thread == null) {
-
-					LOG.error("updateDiscussionThreadVisibility: Unable to retrieve discussion thread id: {}.",
-							threadId);
-					throw new RestException(false, 404, "Not found",
-							"Unable to find discussion thread for " + threadId + ".");
-				}
-
-				final Refset refset = RefsetService.getRefset(service, user, thread.getRefsetInternalId());
-
-				// If the user does not have the correct permissions then return an error
-				if (!DiscussionService.canUserEditThread(user, refset, thread)) {
-
-					LOG.error(
-							"updateDiscussionThreadVisibility: User does not have permissions to perform this action: {}.",
-							user.getUserName());
-					throw new RestException(false, 401, "Unauthorized",
-							"User does not have permissions to perform this action.");
-				}
-
-				service.setTransactionPerOperation(false);
-				service.beginTransaction();
-				service.setModifiedBy(user.getUserName());
-				service.setModifiedFlag(true);
-
-				thread.setVisibility(visibility);
-
-				// Update
-				service.update(thread);
-				service.update(refset);
-
-				service.commit();
-
-				return new ResponseEntity<>(new HttpHeaders(), HttpStatus.OK);
+				LOG.error("updateDiscussionThreadVisibility: Unable to retrieve discussion thread id: {}.", threadId);
+				throw new RestException(false, 404, "Not found",
+						"Unable to find discussion thread for " + threadId + ".");
 			}
+
+			final Refset refset = RefsetService.getRefset(service, authUser, thread.getRefsetInternalId());
+
+			// If the user does not have the correct permissions then return an error
+			if (!DiscussionService.canUserEditThread(authUser, refset, thread)) {
+
+				LOG.error(
+						"updateDiscussionThreadVisibility: User does not have permissions to perform this action: {}.",
+						authUser.getUserName());
+				throw new RestException(false, 401, "Unauthorized",
+						"User does not have permissions to perform this action.");
+			}
+
+			service.setTransactionPerOperation(false);
+			service.beginTransaction();
+			service.setModifiedBy(authUser.getUserName());
+			service.setModifiedFlag(true);
+
+			thread.setVisibility(visibility);
+
+			// Update
+			service.update(thread);
+			service.update(refset);
+
+			service.commit();
+
+			return new ResponseEntity<>(new HttpHeaders(), HttpStatus.OK);
 
 		} catch (final Exception e) {
 
@@ -629,67 +579,60 @@ public class DiscussionController extends BaseController {
 			@PathVariable(value = "postId") final String postId, @RequestParam final boolean isPrivate)
 			throws Exception {
 
-		try {
+		final User authUser = authorizeUser();
 
-			LOG.debug("updateDiscussionPostPrivacy threadId: " + threadId + "; postId: " + postId + "; isPrivate: "
-					+ isPrivate);
+		try (final TerminologyService service = new TerminologyService()) {
 
-			final User user = SecurityService.getUserFromSession();
+			final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
 
-			try (final TerminologyService service = new TerminologyService()) {
+			if (thread == null) {
 
-				final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
-
-				if (thread == null) {
-
-					LOG.error("updateDiscussionPostPrivacy: Unable to retrieve discussion thread id: {}.", threadId);
-					throw new RestException(false, 404, "Not found",
-							"Unable to find discussion thread for " + threadId + ".");
-				}
-
-				final Refset refset = RefsetService.getRefset(service, user, thread.getRefsetInternalId());
-				final DiscussionPost post = service.get(postId, DiscussionPost.class);
-
-				if (post == null) {
-
-					LOG.error("updateDiscussionPostPrivacy: Unable to retrieve discussion post id: {}.", postId);
-					throw new RestException(false, 404, "Not found",
-							"Unable to find discussion post for " + postId + ".");
-				}
-
-				// If the user does not have the correct permissions then return an error
-				if (!DiscussionService.canUserEditPost(user, refset, post)) {
-
-					LOG.error("updateDiscussionPostPrivacy: User does not have permissions to perform this action: {}.",
-							user.getUserName());
-					throw new RestException(false, 401, "Unauthorized",
-							"User does not have permissions to perform this action.");
-				}
-
-				service.setTransactionPerOperation(false);
-				service.beginTransaction();
-				service.setModifiedBy(user.getUserName());
-				service.setModifiedFlag(true);
-
-				post.setPrivatePost(isPrivate);
-				service.update(post);
-
-				for (final DiscussionPost threadPost : thread.getPosts()) {
-
-					if (threadPost.getId().equals(post.getId())) {
-
-						threadPost.setPrivatePost(isPrivate);
-						break;
-					}
-				}
-
-				service.update(thread);
-				service.update(refset);
-
-				service.commit();
-
-				return new ResponseEntity<>(new HttpHeaders(), HttpStatus.OK);
+				LOG.error("updateDiscussionPostPrivacy: Unable to retrieve discussion thread id: {}.", threadId);
+				throw new RestException(false, 404, "Not found",
+						"Unable to find discussion thread for " + threadId + ".");
 			}
+
+			final Refset refset = RefsetService.getRefset(service, authUser, thread.getRefsetInternalId());
+			final DiscussionPost post = service.get(postId, DiscussionPost.class);
+
+			if (post == null) {
+
+				LOG.error("updateDiscussionPostPrivacy: Unable to retrieve discussion post id: {}.", postId);
+				throw new RestException(false, 404, "Not found", "Unable to find discussion post for " + postId + ".");
+			}
+
+			// If the user does not have the correct permissions then return an error
+			if (!DiscussionService.canUserEditPost(authUser, refset, post)) {
+
+				LOG.error("updateDiscussionPostPrivacy: User does not have permissions to perform this action: {}.",
+						authUser.getUserName());
+				throw new RestException(false, 401, "Unauthorized",
+						"User does not have permissions to perform this action.");
+			}
+
+			service.setTransactionPerOperation(false);
+			service.beginTransaction();
+			service.setModifiedBy(authUser.getUserName());
+			service.setModifiedFlag(true);
+
+			post.setPrivatePost(isPrivate);
+			service.update(post);
+
+			for (final DiscussionPost threadPost : thread.getPosts()) {
+
+				if (threadPost.getId().equals(post.getId())) {
+
+					threadPost.setPrivatePost(isPrivate);
+					break;
+				}
+			}
+
+			service.update(thread);
+			service.update(refset);
+
+			service.commit();
+
+			return new ResponseEntity<>(new HttpHeaders(), HttpStatus.OK);
 
 		} catch (final Exception e) {
 
@@ -724,76 +667,69 @@ public class DiscussionController extends BaseController {
 			@PathVariable(value = "postId") final String postId, @RequestBody final DiscussionPost updatedPost)
 			throws Exception {
 
-		try {
+		final User authUser = authorizeUser();
 
-			LOG.debug("updateDiscussionPost threadId: " + threadId + "; postId: " + postId + "; post: " + updatedPost);
+		try (final TerminologyService service = new TerminologyService()) {
 
-			final User user = SecurityService.getUserFromSession();
+			final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
 
-			try (final TerminologyService service = new TerminologyService()) {
+			if (!postId.equals(updatedPost.getId())) {
 
-				final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
-
-				if (!postId.equals(updatedPost.getId())) {
-
-					final String message = "The postId parameter " + postId
-							+ " does not match the id property of the updatedPost parameter " + updatedPost.getId()
-							+ ".";
-					LOG.error("updateDiscussionPost: " + message);
-					throw new RestException(false, 417, "Expectation failed", message);
-				}
-
-				if (thread == null) {
-
-					LOG.error("updateDiscussionPost: Unable to retrieve discussion thread id: {}.", threadId);
-					throw new RestException(false, 404, "Not found",
-							"Unable to find discussion thread for " + threadId + ".");
-				}
-
-				final Refset refset = RefsetService.getRefset(service, user, thread.getRefsetInternalId());
-				final DiscussionPost existingPost = service.get(postId, DiscussionPost.class);
-
-				if (existingPost == null) {
-
-					LOG.error("updateDiscussionPost: Unable to retrieve discussion post id: {}.", postId);
-					throw new RestException(false, 404, "Not found",
-							"Unable to find discussion post for " + postId + ".");
-				}
-
-				// If the user does not have the correct permissions then return an error
-				if (!DiscussionService.canUserEditPost(user, refset, existingPost)) {
-
-					LOG.error("updateDiscussionPost: User does not have permissions to perform this action: {}.",
-							user.getUserName());
-					throw new RestException(false, 401, "Unauthorized",
-							"User does not have permissions to perform this action.");
-				}
-
-				service.setTransactionPerOperation(false);
-				service.beginTransaction();
-				service.setModifiedBy(user.getUserName());
-				service.setModifiedFlag(true);
-
-				existingPost.setMessage(updatedPost.getMessage());
-				existingPost.setPrivatePost(updatedPost.isPrivatePost());
-				service.update(existingPost);
-
-				for (final DiscussionPost threadPost : thread.getPosts()) {
-
-					if (threadPost.getId().equals(existingPost.getId())) {
-
-						threadPost.populateFrom(existingPost);
-						break;
-					}
-				}
-
-				service.update(thread);
-				service.update(refset);
-
-				service.commit();
-
-				return new ResponseEntity<>(existingPost, new HttpHeaders(), HttpStatus.OK);
+				final String message = "The postId parameter " + postId
+						+ " does not match the id property of the updatedPost parameter " + updatedPost.getId() + ".";
+				LOG.error("updateDiscussionPost: " + message);
+				throw new RestException(false, 417, "Expectation failed", message);
 			}
+
+			if (thread == null) {
+
+				LOG.error("updateDiscussionPost: Unable to retrieve discussion thread id: {}.", threadId);
+				throw new RestException(false, 404, "Not found",
+						"Unable to find discussion thread for " + threadId + ".");
+			}
+
+			final Refset refset = RefsetService.getRefset(service, authUser, thread.getRefsetInternalId());
+			final DiscussionPost existingPost = service.get(postId, DiscussionPost.class);
+
+			if (existingPost == null) {
+
+				LOG.error("updateDiscussionPost: Unable to retrieve discussion post id: {}.", postId);
+				throw new RestException(false, 404, "Not found", "Unable to find discussion post for " + postId + ".");
+			}
+
+			// If the user does not have the correct permissions then return an error
+			if (!DiscussionService.canUserEditPost(authUser, refset, existingPost)) {
+
+				LOG.error("updateDiscussionPost: User does not have permissions to perform this action: {}.",
+						authUser.getUserName());
+				throw new RestException(false, 401, "Unauthorized",
+						"User does not have permissions to perform this action.");
+			}
+
+			service.setTransactionPerOperation(false);
+			service.beginTransaction();
+			service.setModifiedBy(authUser.getUserName());
+			service.setModifiedFlag(true);
+
+			existingPost.setMessage(updatedPost.getMessage());
+			existingPost.setPrivatePost(updatedPost.isPrivatePost());
+			service.update(existingPost);
+
+			for (final DiscussionPost threadPost : thread.getPosts()) {
+
+				if (threadPost.getId().equals(existingPost.getId())) {
+
+					threadPost.populateFrom(existingPost);
+					break;
+				}
+			}
+
+			service.update(thread);
+			service.update(refset);
+
+			service.commit();
+
+			return new ResponseEntity<>(existingPost, new HttpHeaders(), HttpStatus.OK);
 
 		} catch (final Exception e) {
 
@@ -824,11 +760,8 @@ public class DiscussionController extends BaseController {
 			@PathVariable(value = "threadId") final String threadId,
 			@PathVariable(value = "postId") final String postId) throws Exception {
 
+		final User user = authorizeUser();
 		try (final TerminologyService service = new TerminologyService()) {
-
-			LOG.debug("deleteDiscussionPost threadId: " + threadId + "; postId: " + postId);
-
-			final User user = authorizeUser();
 
 			service.setModifiedBy(user.getUserName());
 			service.setModifiedFlag(true);
@@ -863,16 +796,13 @@ public class DiscussionController extends BaseController {
 	public @ResponseBody ResponseEntity<String> deleteDiscussionThread(
 			@PathVariable(value = "threadId") final String threadId) throws Exception {
 
+		final User authUser = authorizeUser();
 		try (final TerminologyService service = new TerminologyService()) {
 
-			LOG.debug("deleteDiscussionThread threadId: " + threadId);
-
-			final User user = SecurityService.getUserFromSession();
-
-			service.setModifiedBy(user.getUserName());
+			service.setModifiedBy(authUser.getUserName());
 			service.setModifiedFlag(true);
 
-			DiscussionService.deleteThread(service, user, threadId);
+			DiscussionService.deleteThread(service, authUser, threadId);
 
 			return new ResponseEntity<>(new HttpHeaders(), HttpStatus.OK);
 

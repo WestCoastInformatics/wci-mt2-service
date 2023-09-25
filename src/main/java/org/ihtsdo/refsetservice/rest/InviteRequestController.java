@@ -4,6 +4,7 @@ import javax.ws.rs.core.MediaType;
 
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.InviteRequest;
+import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
@@ -59,10 +60,9 @@ public class InviteRequestController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@Operation(summary = "Process invitation response.", responses = {
-			@ApiResponse(responseCode = "302", description = "Response to invitation processed"),
+			@ApiResponse(responseCode = "200", description = "Response to invitation processed"),
 			@ApiResponse(responseCode = "404", description = "Not Found"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	@Parameters({ @Parameter(name = "id", description = "Invite request id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "acceptance", description = "Indicate if accepted with true or false", required = true, schema = @Schema(implementation = Boolean.class), example = "false") })
 	@RecordMetric
@@ -81,8 +81,8 @@ public class InviteRequestController extends BaseController {
 			final InviteRequest inviteRequest = service.findSingle("id:" + id, InviteRequest.class, null);
 
 			if (inviteRequest == null) {
-				LOG.info("Did not find invite request id: " + id + " and acceptance: " + acceptance);
-				return new ResponseEntity<>(headers, HttpStatus.FOUND);
+				throw new RestException(false, 404, "Not found",
+						"Did not find invite request id: " + id + " and acceptance: " + acceptance);
 			}
 
 			LOG.info("response to invite request: id: " + id + " and acceptance: " + acceptance);
@@ -92,12 +92,11 @@ public class InviteRequestController extends BaseController {
 				RefsetService.processRefsetInvitation(service, inviteRequest, acceptance);
 			}
 
-			return new ResponseEntity<>(headers, HttpStatus.FOUND);
+			return new ResponseEntity<>(headers, HttpStatus.OK);
 
 		} catch (final Exception e) {
-
-			LOG.error("Exception while processing response for organization id invite", acceptance);
-			return new ResponseEntity<>(headers, HttpStatus.FOUND);
+			handleException(e);
+			return null;
 		}
 	}
 

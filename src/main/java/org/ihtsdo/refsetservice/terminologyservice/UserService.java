@@ -45,9 +45,7 @@ public class UserService extends BaseService {
             final User user = service.get(userId, User.class);
 
             if (user == null) {
-                final String message = "Unable to find user for id " + userId + ".";
-                LOG.error(message);
-                throw new NotFoundException(message);
+            	return null;
             }
 
             if (includeTeams) {

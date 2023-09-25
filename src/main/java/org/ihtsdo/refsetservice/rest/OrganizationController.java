@@ -131,9 +131,9 @@ public class OrganizationController extends BaseController {
 	@Operation(summary = "Find organizations. This call requires authentication with the correct role.", description = API_NOTES, responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Resource not found"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	// @ModelAttribute API params documented in SearchParameter
 	@RecordMetric
 	@RequestMapping(method = RequestMethod.GET, value = "/organization/search", produces = MediaType.APPLICATION_JSON)
@@ -238,16 +238,13 @@ public class OrganizationController extends BaseController {
 		if (organization == null || !org.apache.commons.lang3.StringUtils.equals(id, organization.getId())) {
 
 			final String errorMessage = "Organization is null or organization id does not match id in URL.";
-			LOG.error(errorMessage);
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
+			throw new RestException(false, 404, "Not found", errorMessage);
 		}
 
 		try {
 			organization.validateUpdate(null);
 		} catch (final Exception e) {
-
-			LOG.error("Bad request for organization update.", e);
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+			throw new RestException(false, 417, "Expectation failed", "Validation of organization failed");
 		}
 
 		try (final TerminologyService service = new TerminologyService()) {
@@ -430,7 +427,7 @@ public class OrganizationController extends BaseController {
 		final User authUser = authorizeUser();
 
 		if (StringUtils.isBlank(emails)) {
-			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+			throw new RestException(false, 417, "Expectation failed", "Unexpected blank emails");
 		}
 
 		try (final TerminologyService service = new TerminologyService()) {
@@ -612,8 +609,8 @@ public class OrganizationController extends BaseController {
 
 			final Organization organization = OrganizationService.getOrganization(service, authUser, id, false);
 			if (organization == null || !org.apache.commons.lang3.StringUtils.equals(id, organization.getId())) {
-				LOG.info("Organization is null or organization id does not match id in URL.");
-				return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+				throw new RestException(false, 417, "Expectation failed",
+						"Organization is null or organization id does not match id in URL.");
 			}
 
 			organization.setIconUri(null);
@@ -624,8 +621,7 @@ public class OrganizationController extends BaseController {
 			return new ResponseEntity<>(original, HttpStatus.OK);
 
 		} catch (final NotFoundException nfe) {
-			LOG.error("Error getting organization. Id {} not found.", id);
-			return new ResponseEntity<>(new HttpHeaders(), HttpStatus.NOT_FOUND);
+			throw new RestException(false, 404, "Not found", "Unable to find organization for id = " + id);
 
 		} catch (final Exception e) {
 			handleException(e);

@@ -80,9 +80,7 @@ public class EditionService extends BaseService {
     public static Edition getEdition(final String editionId) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
-
             final Edition edition = service.get(editionId, Edition.class);
-
             return edition;
         }
     }

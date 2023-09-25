@@ -12,7 +12,6 @@ package org.ihtsdo.refsetservice.rest;
 import java.io.File;
 import java.nio.file.Files;
 
-import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.MediaType;
 
 import org.ihtsdo.refsetservice.app.RecordMetric;
@@ -37,7 +36,6 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -50,6 +48,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.servers.Server;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -65,6 +66,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class UserController extends BaseController {
 
 	/** The Constant LOG. */
+	@SuppressWarnings("unused")
 	private static final Logger LOG = LoggerFactory.getLogger(UserController.class);
 
 	/** Search users API notes. */
@@ -97,17 +99,12 @@ public class UserController extends BaseController {
 			@RequestParam(value = "includeOrganizations") final boolean includeOrganizations,
 			@RequestParam(value = "includeTeams") final boolean includeTeams) throws Exception {
 
-		LOG.info("Get user: {}", id);
 		authorizeUser();
 
 		try {
 
 			final User user = UserService.getUser(id, includeTeams);
 			return new ResponseEntity<>(user, HttpStatus.OK);
-
-		} catch (final NotFoundException nfe) {
-			LOG.error("Error getting user. Id {} not found.", id);
-			return new ResponseEntity<>(new HttpHeaders(), HttpStatus.NOT_FOUND);
 
 		} catch (final Exception e) {
 			handleException(e);
@@ -118,8 +115,8 @@ public class UserController extends BaseController {
 	/**
 	 * Update the user.
 	 *
-	 * @param id   the id of the user
-	 * @param user the user
+	 * @param id      the id of the user
+	 * @param userStr the user str
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
@@ -130,30 +127,30 @@ public class UserController extends BaseController {
 			@ApiResponse(responseCode = "409", description = "Conflict"),
 			@ApiResponse(responseCode = "415", description = "Unsupported Media Type"),
 			@ApiResponse(responseCode = "417", description = "Failed Expectation"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "500", description = "Internal server error") }, requestBody = @RequestBody(description = "User to update", required = true, content = {
+					@Content(mediaType = "application/json", schema = @Schema(implementation = User.class)) }))
 	@Parameters({ @Parameter(name = "id", description = "User id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "user", description = "User object", required = true) })
 	@RecordMetric
 	@PutMapping(value = "/user/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<User> updateUser(@PathVariable(value = "id") final String id,
-			@RequestBody final User user) throws Exception {
+			@org.springframework.web.bind.annotation.RequestBody final String userStr) throws Exception {
 
-		LOG.info("Update user: {}", user);
 		final User authUser = authorizeUser();
 
-		if (user == null || !org.apache.commons.lang3.StringUtils.equals(id, user.getId())) {
-			LOG.info("User is null or user id does not match id in URL.");
-			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-		}
-
 		try {
+			User user = null;
+			try {
+				user = ModelUtility.fromJson(userStr, User.class);
+			} catch (Exception e) {
+				throw new RestException(false, 417, "Expectation Failed ", "Unable to parse user = " + user);
 
+			}
+			if (!org.apache.commons.lang3.StringUtils.equals(id, user.getId())) {
+				throw new RestException(false, 417, "Expectation failed", "User user id does not match id in URL.");
+			}
 			final User updatedUser = UserService.updateUser(authUser, user);
 			return new ResponseEntity<>(updatedUser, HttpStatus.OK);
-
-		} catch (final NotFoundException nfe) {
-			LOG.error("Error getting user. Id {} not found.", id);
-			return new ResponseEntity<>(new HttpHeaders(), HttpStatus.NOT_FOUND);
 
 		} catch (final Exception e) {
 			handleException(e);
@@ -182,13 +179,15 @@ public class UserController extends BaseController {
 	public @ResponseBody ResponseEntity<User> deleteUserIcon(@PathVariable(value = "id") final String id)
 			throws Exception {
 
-		LOG.info("Delete user icon: {}", id);
 		final User authUser = authorizeUser();
 
 		final User user = UserService.getUser(id, false);
-		if (user == null || !org.apache.commons.lang3.StringUtils.equals(id, user.getId())) {
-			LOG.info("User is null or user id does not match id in URL.");
-			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+		if (user == null) {
+			throw new RestException(false, 404, "Not found", "Unable to find user for id = " + id);
+		}
+		if (!org.apache.commons.lang3.StringUtils.equals(id, user.getId())) {
+			throw new RestException(false, 417, "Expectation failed",
+					"User is null or user id does not match id in URL.");
 		}
 
 		try {
@@ -196,10 +195,6 @@ public class UserController extends BaseController {
 			user.setIconUri(null);
 			final User original = UserService.updateUser(authUser, user);
 			return new ResponseEntity<>(original, HttpStatus.OK);
-
-		} catch (final NotFoundException nfe) {
-			LOG.error("Error getting user. Id {} not found.", id);
-			return new ResponseEntity<>(new HttpHeaders(), HttpStatus.NOT_FOUND);
 
 		} catch (final Exception e) {
 			handleException(e);
@@ -236,7 +231,6 @@ public class UserController extends BaseController {
 			@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult)
 			throws Exception {
 
-		LOG.info("Search users: {}", ModelUtility.toJson(searchParameters));
 		authorizeUser();
 
 		// Check to make sure parameters were properly bound to variables.
@@ -286,7 +280,6 @@ public class UserController extends BaseController {
 
 		try {
 
-			LOG.info("GET icon for user {}", fileName);
 			final Resource file = FileUtility.getIconFile(fileName);
 
 			return ResponseEntity.ok()
@@ -323,13 +316,17 @@ public class UserController extends BaseController {
 	public ResponseEntity<String> editUserIcon(@PathVariable("id") final String id,
 			@RequestParam("file") final MultipartFile inputFile) throws Exception {
 
-		LOG.info("Edit icon for user: {}.", id);
 		final User authUser = authorizeUser();
 
 		try {
+
 			final User user = UserService.getUser(id, false);
 			if (user == null) {
-				throw new RestException(false, 404, "Not found", "Unable to find user for " + id);
+				throw new RestException(false, 404, "Not found", "Unable to find user for id = " + id);
+			}
+			if (!org.apache.commons.lang3.StringUtils.equals(id, user.getId())) {
+				throw new RestException(false, 417, "Expectation failed",
+						"User is null or user id does not match id in URL.");
 			}
 
 			String fileToDelete = "";

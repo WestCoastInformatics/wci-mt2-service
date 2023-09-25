@@ -167,9 +167,7 @@ public class TeamService extends BaseService {
 			final Team team = service.findSingle("id: " + id + " AND active:true", Team.class, null);
 
 			if (team == null) {
-
-				final String message = "Unable to find team for id " + id + ".";
-				throw new RestException(false, 404, "Not found", message);
+				return null;
 			}
 
 			if (includeMembers) {

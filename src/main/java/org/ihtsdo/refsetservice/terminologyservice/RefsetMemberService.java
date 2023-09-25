@@ -3346,10 +3346,7 @@ public final class RefsetMemberService {
 			return concept;
 
 		} catch (final RestException ex) {
-
-			// throw new RestException(false, HttpStatus.NOT_FOUND, "Not Found", message);
-			throw new RestException(false, ex.getError().getStatus(), ex.getMessage(),
-					"Could not get Reference Set children for concept " + conceptId + ".");
+			throw ex;
 
 		} catch (final Exception ex) {
 

@@ -38,7 +38,6 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -53,6 +52,7 @@ import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.servers.Server;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -68,6 +68,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class ArtifactController extends BaseController {
 
 	/** The Constant LOG. */
+	@SuppressWarnings("unused")
 	private static final Logger LOG = LoggerFactory.getLogger(ArtifactController.class);
 
 	/**
@@ -85,18 +86,13 @@ public class ArtifactController extends BaseController {
 	public @ResponseBody ResponseEntity<Artifact> getArtifact(@PathVariable(value = "id") final String id)
 			throws Exception {
 
-		LOG.info("Get artifact entry: {}", id);
-
 		// no auth required
-
 		try {
 
 			final Artifact artifact = ArtifactService.getArtifact(id);
-
 			return new ResponseEntity<>(artifact, HttpStatus.OK);
 
 		} catch (final Exception e) {
-			LOG.error("Error getting artifactd  {}.", id);
 			handleException(e);
 			return null;
 		}
@@ -113,7 +109,8 @@ public class ArtifactController extends BaseController {
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/artifact", produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Find artifacts.", responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Artifact.class))) })
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Artifact.class))),
+			@ApiResponse(responseCode = "417", description = "Expecation failed") })
 	// @ModelAttribute API params documented in SearchParameter
 	@RecordMetric
 	public @ResponseBody ResponseEntity<ResultList<Artifact>> findArtifacts(
@@ -124,9 +121,6 @@ public class ArtifactController extends BaseController {
 		checkBinding(bindingResult);
 
 		// no auth required
-
-		LOG.info("Search artifact entry search parameters: {}", ModelUtility.toJson(searchParameters));
-
 		try {
 
 			if (searchParameters != null) {
@@ -143,8 +137,6 @@ public class ArtifactController extends BaseController {
 			return new ResponseEntity<>(results, HttpStatus.OK);
 
 		} catch (final Exception e) {
-			LOG.error("Error searching artifacts.  Search criteria: {} ",
-					searchParameters == null ? null : searchParameters.toString());
 			handleException(e);
 			return null;
 		}
@@ -169,7 +161,6 @@ public class ArtifactController extends BaseController {
 	public ResponseEntity<?> addArtifact(@RequestParam final String artifact,
 			@RequestParam("file") final MultipartFile inputFile) throws Exception {
 
-		LOG.info("Add artifact: " + artifact);
 		final User authUser = authorizeUser();
 
 		try {
@@ -200,8 +191,6 @@ public class ArtifactController extends BaseController {
 			return ResponseEntity.status(HttpStatus.ACCEPTED).body(newArtifact);
 
 		} catch (final Exception e) {
-
-			LOG.error("Trying to add artifact " + artifact, e);
 			handleException(e);
 			return null;
 		}
@@ -222,14 +211,14 @@ public class ArtifactController extends BaseController {
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
 			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Not found"),
-			@ApiResponse(responseCode = "417", description = "Expecation failed") })
+			@ApiResponse(responseCode = "417", description = "Expecation failed") }, requestBody = @RequestBody(description = "User to update", required = true, content = {
+					@Content(mediaType = "application/json", schema = @Schema(implementation = Artifact.class)) }))
 	@Parameters({ @Parameter(name = "id", description = "Artifact id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "artifact", description = "Artifact object", required = true) })
 	@RecordMetric
-	public ResponseEntity updateArtifact(final @PathVariable String id, final @RequestBody String artifact)
-			throws Exception {
+	public ResponseEntity updateArtifact(final @PathVariable String id,
+			final @org.springframework.web.bind.annotation.RequestBody String artifact) throws Exception {
 
-		LOG.info("Update artifact: " + artifact);
 		final User authUser = authorizeUser();
 
 		try {
@@ -252,8 +241,6 @@ public class ArtifactController extends BaseController {
 			return ResponseEntity.status(HttpStatus.OK).body(returnArtifact);
 
 		} catch (final Exception e) {
-
-			LOG.error("Trying to add artifact " + artifact, e);
 			handleException(e);
 			return null;
 		}
@@ -272,16 +259,12 @@ public class ArtifactController extends BaseController {
 			@ApiResponse(responseCode = "204", description = "Successfully inactivated artifact"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
 			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Not found")
-			})
+			@ApiResponse(responseCode = "404", description = "Not found") })
 	@Parameters({ @Parameter(name = "id", description = "Artifact id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
 	public ResponseEntity inactivateArtifact(final @PathVariable String id) throws Exception {
 
-		LOG.info("Inactivate artifact: " + id);
-
 		final User authUser = authorizeUser();
-
 		try {
 
 			final Artifact artifact = ArtifactService.getArtifact(id);
@@ -294,8 +277,6 @@ public class ArtifactController extends BaseController {
 			return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 
 		} catch (final Exception e) {
-
-			LOG.error("Trying to Inactivate artifact " + id, e);
 			handleException(e);
 			return null;
 		}
@@ -311,16 +292,12 @@ public class ArtifactController extends BaseController {
 	@GetMapping(value = "/artifact/{id}/file")
 	@Operation(summary = "Download artifact.", responses = {
 			@ApiResponse(responseCode = "200", description = "Retrieved artifact"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
 			@ApiResponse(responseCode = "404", description = "Not Found") })
 	@Parameters({ @Parameter(name = "id", description = "Artifact id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
 	public ResponseEntity<Resource> downloadArtifact(@PathVariable("id") final String id) throws Exception {
 
-		LOG.info("Download artifact: " + id);
-
 		// no auth required
-
 		try {
 
 			final Artifact artifact = ArtifactService.getArtifact(id);
@@ -342,8 +319,6 @@ public class ArtifactController extends BaseController {
 					.contentLength(file.contentLength()).body(file);
 
 		} catch (final Exception e) {
-
-			LOG.error("Trying to download artifact for id:" + id + ".", e);
 			handleException(e);
 			return null;
 		}

@@ -31,7 +31,7 @@ import io.swagger.v3.oas.annotations.Hidden;
 
 
 /**
- * The Class SnowstormController.
+ * Snowstorm controller.
  */
 @RestController
 @Hidden

@@ -14,7 +14,6 @@ import javax.ws.rs.core.MediaType;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.terminologyservice.EditionService;
-import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
@@ -49,6 +48,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class EditionController extends BaseController {
 
 	/** The Constant LOG. */
+	@SuppressWarnings("unused")
 	private static final Logger LOG = LoggerFactory.getLogger(EditionController.class);
 
 	/**
@@ -59,18 +59,12 @@ public class EditionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@Operation(summary = "Get edition", responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "404", description = "Resource not found"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information") })
 	@Parameters({ @Parameter(name = "id", description = "Edition id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
 	@RequestMapping(value = "/edition/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
 	// no auth required
 	public ResponseEntity<Edition> getEdition(@PathVariable(value = "id") final String id) throws Exception {
-
-		LOG.info("Get edition for id: {}", id);
 
 		try {
 			final Edition edition = EditionService.getEdition(id);
@@ -89,15 +83,11 @@ public class EditionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@Operation(summary = "Get all editions", responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information") })
 	@RecordMetric
 	@RequestMapping(value = "/edition/", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
 	// no auth required
 	public ResponseEntity<ResultList<Edition>> getEditions() throws Exception {
-
-		LOG.info("Get all editions");
 
 		try {
 
@@ -120,9 +110,7 @@ public class EditionController extends BaseController {
 	 */
 	@Operation(summary = "Find editions.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "404", description = "Resource not found"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation"),
-			@ApiResponse(responseCode = "500", description = "Internal server error") })
+			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	// @ModelAttribute API params documented in SearchParameter
 	@RecordMetric
 	@RequestMapping(method = RequestMethod.GET, value = "/edition/search", produces = MediaType.APPLICATION_JSON)
@@ -130,8 +118,6 @@ public class EditionController extends BaseController {
 	public @ResponseBody ResponseEntity<ResultList<Edition>> getEditions(
 			@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult)
 			throws Exception {
-
-		LOG.info("getEditions searchParameters: " + ModelUtility.toJson(searchParameters));
 
 		// Check to make sure parameters were properly bound to variables.
 		checkBinding(bindingResult);

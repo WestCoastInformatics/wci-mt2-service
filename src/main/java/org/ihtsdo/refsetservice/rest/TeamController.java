@@ -16,6 +16,7 @@ import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
+import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.ResultListUser;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.TeamType;
@@ -93,11 +94,6 @@ public class TeamController extends BaseController {
 
 			final Team team = TeamService.getTeam(id, includeMembers);
 			return new ResponseEntity<>(team, HttpStatus.OK);
-
-		} catch (final NotFoundException nfe) {
-
-			LOG.error("Error getting team. Id {} not found", id);
-			return new ResponseEntity<>(new HttpHeaders(), HttpStatus.NOT_FOUND);
 
 		} catch (final Exception e) {
 			handleException(e);
@@ -189,16 +185,14 @@ public class TeamController extends BaseController {
 		try {
 
 			if (team == null) {
-
-				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing team");
+				throw new RestException(false, 417, "Expectation failed", "Missing team");
 			}
 
 			try {
 
 				team.validateAdd();
 			} catch (final Exception e) {
-
-				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+				throw new RestException(false, 417, "Expectation failed", "Team failed validation");
 			}
 
 			team.setType(TeamType.PPROJECT.getText());
@@ -241,27 +235,19 @@ public class TeamController extends BaseController {
 		try {
 
 			if (team == null || !org.apache.commons.lang3.StringUtils.equals(id, team.getId())) {
-
-				final String errorMessage = "Team is null or team id does not match id in URL.";
-				LOG.error(errorMessage);
-				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
+				throw new RestException(false, 417, "Expectation failed",
+						"Team is null or team id does not match id in URL.");
 			}
 
 			try {
 
 				team.validateUpdate(null);
 			} catch (final Exception e) {
-
-				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+				throw new RestException(false, 417, "Expectation failed", "Team failed validation");
 			}
 
 			final Team t = TeamService.updateTeam(authUser, team);
 			return new ResponseEntity<>(t, HttpStatus.OK);
-
-		} catch (final NotFoundException nfe) {
-
-			LOG.error("Error updating team. Id {} not found", id);
-			return new ResponseEntity<>(new HttpHeaders(), HttpStatus.NOT_FOUND);
 
 		} catch (final Exception e) {
 			handleException(e);
@@ -326,10 +312,16 @@ public class TeamController extends BaseController {
 		final User authUser = authorizeUser();
 
 		if (StringUtils.isBlank(emails)) {
-			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+			throw new RestException(false, 417, "Expecation failed", "Unexpected blank emails");
 		}
 
 		try {
+
+			final Team team = TeamService.getTeam(id, false);
+			if (team == null) {
+				throw new RestException(false, 404, "Not found", "Unable to find team for id = " + id);
+			}
+
 			if (emails.contains(";")) {
 				for (final String email : Arrays.asList(emails.split(";"))) {
 					TeamService.addUserToTeam(authUser, id, email);
@@ -339,10 +331,6 @@ public class TeamController extends BaseController {
 			}
 
 			return new ResponseEntity<>(HttpStatus.CREATED);
-
-		} catch (final NotFoundException nfe) {
-
-			return new ResponseEntity<>(nfe.getMessage(), HttpStatus.NOT_FOUND);
 
 		} catch (final Exception e) {
 			handleException(e);
@@ -375,14 +363,14 @@ public class TeamController extends BaseController {
 		final User authUser = authorizeUser();
 
 		try {
+			final Team team = TeamService.getTeam(id, false);
+			if (team == null) {
+				throw new RestException(false, 404, "Not found", "Unable to find team for id = " + id);
+			}
 
 			TeamService.removeUserFromTeam(authUser, id, userId);
 
 			return new ResponseEntity<>(HttpStatus.ACCEPTED);
-
-		} catch (final NotFoundException nfe) {
-
-			return new ResponseEntity<>(new HttpHeaders(), HttpStatus.NOT_FOUND);
 
 		} catch (final Exception e) {
 			handleException(e);

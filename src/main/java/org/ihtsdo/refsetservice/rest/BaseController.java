@@ -80,7 +80,7 @@ public class BaseController {
 				errorMessages.add(errorMessage);
 			}
 
-			throw new RestException(false, 400, "Bad request", String.join("\n ", errorMessages));
+			throw new RestException(false, 417, "Expectation failed", String.join("\n ", errorMessages));
 		}
 	}
 

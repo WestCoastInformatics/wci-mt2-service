@@ -18,7 +18,6 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
@@ -108,10 +107,7 @@ public class ProjectService extends BaseService {
 			final Project project = service.findSingle("id: " + projectId + " AND active:true", Project.class, null);
 
 			if (project == null) {
-
-				final String errorMessage = "Unable to find project for id " + projectId + ".";
-				LOG.info(errorMessage);
-				throw new NotFoundException(errorMessage);
+				return null;
 			}
 
 			if (includeMembers) {
