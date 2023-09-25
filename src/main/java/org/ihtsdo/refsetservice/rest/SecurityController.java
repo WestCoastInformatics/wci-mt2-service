@@ -31,12 +31,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.servers.Server;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controller for authentication and user end points.
@@ -44,117 +46,115 @@ import io.swagger.annotations.ApiResponses;
  * @author Nuno
  *
  */
-@Api(tags = "security", description = "Endpoints for authentication and logout")
+@OpenAPIDefinition(info = @Info(title = "Security Controller", version = "1.0.0", description = "Endpoints for authentication and logout."), tags = {
+		@Tag(name = "security", description = "Security service endpoints") }, servers = {
+				@Server(description = "Current Instance", url = "/") })
 @RestController
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
 public class SecurityController extends BaseController {
 
-    /** The Constant LOG. */
-    private static final Logger LOG = LoggerFactory.getLogger(SecurityController.class);
+	/** The Constant LOG. */
+	private static final Logger LOG = LoggerFactory.getLogger(SecurityController.class);
 
-    /**
-     * TODO - REMOVE AFTER PERMISSIONS CONVERTED.
-     *
-     * @param request the request
-     * @return the response entity
-     * @throws Exception the exception
-     */
-    @GetMapping("/internalSecurity/convertPermissions")
-    public @ResponseBody ResponseEntity<String> convertPermissions(final HttpServletRequest request) throws Exception {
+	/**
+	 * TODO - REMOVE AFTER PERMISSIONS CONVERTED.
+	 *
+	 * @param request the request
+	 * @return the response entity
+	 * @throws Exception the exception
+	 */
+	@GetMapping("/internalSecurity/convertPermissions")
+	public @ResponseBody ResponseEntity<String> convertPermissions(final HttpServletRequest request) throws Exception {
 
-        LOG.info("PERMISSION CLEANUP START");
+		LOG.info("PERMISSION CLEANUP START");
 
-        try (final SecurityService securityService = new SecurityService()) {
+		try (final SecurityService securityService = new SecurityService()) {
 
-            final User user = SecurityService.getUserFromSession();
-            String results = "Didn't work";
+			final User user = SecurityService.getUserFromSession();
+			String results = "Didn't work";
 
-            if (user.getUserName().equals("refset-dev") || user.getUserName().equals("twhalen")) {
+			if (user.getUserName().equals("refset-dev") || user.getUserName().equals("twhalen")) {
 
-                ImsSecurityServiceHandler handler = (ImsSecurityServiceHandler) HandlerUtility.newStandardHandlerInstanceWithConfiguration("security.handler",
-                    "IMS", SecurityServiceHandler.class);
-                results = handler.convertRolesForAllUsers();
-            }
+				ImsSecurityServiceHandler handler = (ImsSecurityServiceHandler) HandlerUtility
+						.newStandardHandlerInstanceWithConfiguration("security.handler", "IMS",
+								SecurityServiceHandler.class);
+				results = handler.convertRolesForAllUsers();
+			}
 
-            LOG.info("PERMISSION CLEANUP FINISH");
-            return new ResponseEntity<>(results, new HttpHeaders(), HttpStatus.OK);
+			LOG.info("PERMISSION CLEANUP FINISH");
+			return new ResponseEntity<>(results, new HttpHeaders(), HttpStatus.OK);
 
-        } catch (final Exception e) {
+		} catch (final Exception e) {
 			handleException(e);
 			return null;
-        }
-    }
+		}
+	}
 
-    /**
-     * Returns the user.
-     *
-     * @param userName the user name
-     * @param request the request
-     * @return the user
-     * @throws Exception the exception
-     */
-    @PostMapping("/authenticate/{userName}")
-    @ApiOperation(value = "Authorize the user. Requires logging in to IMS first and sending the appropriate cookie", response = User.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successful authorization, payload contains user object"), @ApiResponse(code = 401, message = "Unauthorized"),
-        @ApiResponse(code = 500, message = "Internal server error")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "userName", value = "User name to authenicate", required = true, dataTypeClass = String.class, paramType = "path")
-    })
-    @RecordMetric
-    public @ResponseBody ResponseEntity<User> authenticate(@PathVariable(value = "userName") final String userName, final HttpServletRequest request)
-        throws Exception {
+	/**
+	 * Returns the user.
+	 *
+	 * @param userName the user name
+	 * @param request  the request
+	 * @return the user
+	 * @throws Exception the exception
+	 */
+	@PostMapping("/authenticate/{userName}")
+	@Operation(summary = "Authorize the user. Requires logging in to IMS first and sending the appropriate cookie", responses = {
+			@ApiResponse(responseCode = "200", description = "Successful authorization, payload contains user object"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "500", description = "Internal server error") })
+	@Parameters({ @Parameter(name = "userName", description = "User name to authenicate", required = true) })
+	@RecordMetric
+	public @ResponseBody ResponseEntity<User> authenticate(@PathVariable(value = "userName") final String userName,
+			final HttpServletRequest request) throws Exception {
 
-        LOG.info("RESTful call POST (Security): authentication for username = {}", userName);
+		LOG.info("RESTful call POST (Security): authentication for username = {}", userName);
 
-        try (final SecurityService securityService = new SecurityService()) {
+		try (final SecurityService securityService = new SecurityService()) {
 
-            final User user = securityService.authenticate(userName);
+			final User user = securityService.authenticate(userName);
 
-            if (user == null || user.getAuthToken() == null) {
-                throw new Exception("Unable to authenticate user");
-            }
+			if (user == null || user.getAuthToken() == null) {
+				throw new Exception("Unable to authenticate user");
+			}
 
-            LOG.debug("******** SESSION USER: " + ModelUtility.toJson(user));
-            request.getSession().setAttribute(SecurityService.SESSION_USER_OBJECT_KEY, user);
-            return new ResponseEntity<>(user, new HttpHeaders(), HttpStatus.OK);
+			LOG.debug("******** SESSION USER: " + ModelUtility.toJson(user));
+			request.getSession().setAttribute(SecurityService.SESSION_USER_OBJECT_KEY, user);
+			return new ResponseEntity<>(user, new HttpHeaders(), HttpStatus.OK);
 
-        } catch (final Exception e) {
+		} catch (final Exception e) {
 			handleException(e);
 			return null;
-        }
-    }
+		}
+	}
 
-    /**
-     * Logout the authenticated user.
-     *
-     * @param userName the user name
-     * @return the user
-     * @throws Exception the exception
-     */
-    @PostMapping("/logout/{userName}")
-    @ApiOperation(value = "Log out the authenticated user. This call requires authentication", response = Void.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successful logout"), @ApiResponse(code = 500, message = "Internal server error")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "userName", value = "User name to log out", required = true, dataTypeClass = String.class, paramType = "path")
-    })
-    @RecordMetric
-    public @ResponseBody ResponseEntity<Void> logout(@PathVariable(value = "userName", required = true) final String userName) throws Exception {
+	/**
+	 * Logout the authenticated user.
+	 *
+	 * @param userName the user name
+	 * @return the user
+	 * @throws Exception the exception
+	 */
+	@PostMapping("/logout/{userName}")
+	@Operation(summary = "Log out the authenticated user. This call requires authentication", responses = {
+			@ApiResponse(responseCode = "200", description = "Successful logout"),
+			@ApiResponse(responseCode = "500", description = "Internal server error") })
+	@Parameters({ @Parameter(name = "userName", description = "User name to log out", required = true) })
+	@RecordMetric
+	public @ResponseBody ResponseEntity<Void> logout(
+			@PathVariable(value = "userName", required = true) final String userName) throws Exception {
 
-        LOG.info("RESTful call POST (Security): logout for userName = {}", userName);
+		LOG.info("RESTful call POST (Security): logout for userName = {}", userName);
 
-        try (final SecurityService securityService = new SecurityService()) {
+		try (final SecurityService securityService = new SecurityService()) {
 
-            securityService.logout(userName);
+			securityService.logout(userName);
 
-            return new ResponseEntity<>(new HttpHeaders(), HttpStatus.OK);
+			return new ResponseEntity<>(new HttpHeaders(), HttpStatus.OK);
 
-        } catch (final Exception e) {
+		} catch (final Exception e) {
 			handleException(e);
 			return null;
-        }
-    }
+		}
+	}
 }

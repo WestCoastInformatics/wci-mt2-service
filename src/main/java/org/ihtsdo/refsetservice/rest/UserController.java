@@ -13,7 +13,6 @@ import java.io.File;
 import java.nio.file.Files;
 
 import javax.ws.rs.NotFoundException;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import org.ihtsdo.refsetservice.app.RecordMetric;
@@ -46,309 +45,309 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.servers.Server;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controller for /user endpoints.
  */
 @RestController
-@Api(tags = "users", description = "Endpoints for retrieving and updating users.")
+@OpenAPIDefinition(info = @Info(title = "User Controller", version = "1.0.0", description = "Endpoints for retrieving and updating users."), tags = {
+		@Tag(name = "user", description = "User service endpoints") }, servers = {
+				@Server(description = "Current Instance", url = "/") })
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
 public class UserController extends BaseController {
 
-    /** The Constant LOG. */
-    private static final Logger LOG = LoggerFactory.getLogger(UserController.class);
+	/** The Constant LOG. */
+	private static final Logger LOG = LoggerFactory.getLogger(UserController.class);
 
-    /** Search users API notes. */
-    private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
+	/** Search users API notes. */
+	private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
 
-    /** The local icon file directory. */
-    private static final String ICON_URL_PREFIX = "user/icon/";
+	/** The local icon file directory. */
+	private static final String ICON_URL_PREFIX = "user/icon/";
 
-    /**
-     * Returns the user.
-     *
-     * @param id the id of the user
-     * @param includeOrganizations the include organizations
-     * @param includeTeams the include teams
-     * @return the user
-     * @throws Exception the exception
-     */
-    @ApiOperation(value = "Get user. This call requires authentication with the correct role.", response = User.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
-        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 404, message = "Resource not found"),
-        @ApiResponse(code = 500, message = "Internal server error")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "id", value = "User id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-        @ApiImplicitParam(name = "includeOrganizations", value = "Include user's organizations", required = false, dataTypeClass = Boolean.class,
-            paramType = "query", defaultValue = "false"),
-        @ApiImplicitParam(name = "includeTeams", value = "Include user's teams", required = false, dataTypeClass = Boolean.class, paramType = "query",
-            defaultValue = "false")
-    })
-    @RecordMetric
-    @RequestMapping(value = "/user/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
-    public @ResponseBody ResponseEntity<User> getUser(@PathVariable(value = "id") final String id,
-        @QueryParam(value = "includeOrganizations") final boolean includeOrganizations, @QueryParam(value = "includeTeams") final boolean includeTeams)
-        throws Exception {
+	/**
+	 * Returns the user.
+	 *
+	 * @param id                   the id of the user
+	 * @param includeOrganizations the include organizations
+	 * @param includeTeams         the include teams
+	 * @return the user
+	 * @throws Exception the exception
+	 */
+	@Operation(summary = "Get user. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found"),
+			@ApiResponse(responseCode = "500", description = "Internal server error") })
+	@Parameters({ @Parameter(name = "id", description = "User id, e.g. &lt;uuid&gt;", required = true),
+			@Parameter(name = "includeOrganizations", description = "Include user's organizations", example = "false"),
+			@Parameter(name = "includeTeams", description = "Include user's teams", required = false, example = "false") })
+	@RecordMetric
+	@RequestMapping(value = "/user/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
+	public @ResponseBody ResponseEntity<User> getUser(@PathVariable(value = "id") final String id,
+			@RequestParam(value = "includeOrganizations") final boolean includeOrganizations,
+			@RequestParam(value = "includeTeams") final boolean includeTeams) throws Exception {
 
-        LOG.info("Get user: {}", id);
-        authorizeUser();
+		LOG.info("Get user: {}", id);
+		authorizeUser();
 
-        try {
+		try {
 
-            final User user = UserService.getUser(id, includeTeams);
-            return new ResponseEntity<>(user, HttpStatus.OK);
+			final User user = UserService.getUser(id, includeTeams);
+			return new ResponseEntity<>(user, HttpStatus.OK);
 
-        } catch (final NotFoundException nfe) {
-            LOG.error("Error getting user. Id {} not found.", id);
-            return new ResponseEntity<>(new HttpHeaders(), HttpStatus.NOT_FOUND);
+		} catch (final NotFoundException nfe) {
+			LOG.error("Error getting user. Id {} not found.", id);
+			return new ResponseEntity<>(new HttpHeaders(), HttpStatus.NOT_FOUND);
 
-        } catch (final Exception e) {
+		} catch (final Exception e) {
 			handleException(e);
 			return null;
-        }
-    }
+		}
+	}
 
-    /**
-     * Update the user.
-     *
-     * @param id the id of the user
-     * @param user the user
-     * @return the response entity
-     * @throws Exception the exception
-     */
-    @ApiOperation(value = "Update user. This call requires authentication with the correct role.", response = User.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 201, message = "Successfully updated user"), @ApiResponse(code = 401, message = "Unauthorized"),
-        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"),
-        @ApiResponse(code = 415, message = "Unsupported Media Type"), @ApiResponse(code = 417, message = "Failed Expectation"),
-        @ApiResponse(code = 500, message = "Internal server error")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "id", value = "User id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-        @ApiImplicitParam(name = "user", value = "User object", required = true, dataTypeClass = User.class, paramType = "body")
-    })
-    @RecordMetric
-    @PutMapping(value = "/user/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-    public @ResponseBody ResponseEntity<User> updateUser(@PathVariable(value = "id") final String id, @RequestBody final User user) throws Exception {
+	/**
+	 * Update the user.
+	 *
+	 * @param id   the id of the user
+	 * @param user the user
+	 * @return the response entity
+	 * @throws Exception the exception
+	 */
+	@Operation(summary = "Update user. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "201", description = "Successfully updated user"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Not Found"),
+			@ApiResponse(responseCode = "409", description = "Conflict"),
+			@ApiResponse(responseCode = "415", description = "Unsupported Media Type"),
+			@ApiResponse(responseCode = "417", description = "Failed Expectation"),
+			@ApiResponse(responseCode = "500", description = "Internal server error") })
+	@Parameters({ @Parameter(name = "id", description = "User id, e.g. &lt;uuid&gt;", required = true),
+			@Parameter(name = "user", description = "User object", required = true) })
+	@RecordMetric
+	@PutMapping(value = "/user/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+	public @ResponseBody ResponseEntity<User> updateUser(@PathVariable(value = "id") final String id,
+			@RequestBody final User user) throws Exception {
 
-        LOG.info("Update user: {}", user);
-        final User authUser = authorizeUser();
+		LOG.info("Update user: {}", user);
+		final User authUser = authorizeUser();
 
-        if (user == null || !org.apache.commons.lang3.StringUtils.equals(id, user.getId())) {
-            LOG.info("User is null or user id does not match id in URL.");
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
+		if (user == null || !org.apache.commons.lang3.StringUtils.equals(id, user.getId())) {
+			LOG.info("User is null or user id does not match id in URL.");
+			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+		}
 
-        try {
+		try {
 
-            final User updatedUser = UserService.updateUser(authUser, user);
-            return new ResponseEntity<>(updatedUser, HttpStatus.OK);
+			final User updatedUser = UserService.updateUser(authUser, user);
+			return new ResponseEntity<>(updatedUser, HttpStatus.OK);
 
-        } catch (final NotFoundException nfe) {
-            LOG.error("Error getting user. Id {} not found.", id);
-            return new ResponseEntity<>(new HttpHeaders(), HttpStatus.NOT_FOUND);
+		} catch (final NotFoundException nfe) {
+			LOG.error("Error getting user. Id {} not found.", id);
+			return new ResponseEntity<>(new HttpHeaders(), HttpStatus.NOT_FOUND);
 
-        } catch (final Exception e) {
+		} catch (final Exception e) {
 			handleException(e);
 			return null;
-        }
-    }
+		}
+	}
 
-    /**
-     * Delete user icon.
-     *
-     * @param id the id of the user
-     * @return the response entity
-     * @throws Exception the exception
-     */
-    @ApiOperation(value = "Delete icon for the user. This call requires authentication with the correct role.", response = User.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully removed icon for user"), @ApiResponse(code = 401, message = "Unauthorized"),
-        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"),
-        @ApiResponse(code = 415, message = "Unsupported Media Type"), @ApiResponse(code = 417, message = "Failed Expectation"),
-        @ApiResponse(code = 500, message = "Internal server error")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "id", value = "User id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path")
-    })
-    @RecordMetric
-    @DeleteMapping(value = "/user/{id}/icon", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-    public @ResponseBody ResponseEntity<User> deleteUserIcon(@PathVariable(value = "id") final String id) throws Exception {
+	/**
+	 * Delete user icon.
+	 *
+	 * @param id the id of the user
+	 * @return the response entity
+	 * @throws Exception the exception
+	 */
+	@Operation(summary = "Delete icon for the user. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully removed icon for user"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Not Found"),
+			@ApiResponse(responseCode = "409", description = "Conflict"),
+			@ApiResponse(responseCode = "415", description = "Unsupported Media Type"),
+			@ApiResponse(responseCode = "417", description = "Failed Expectation"),
+			@ApiResponse(responseCode = "500", description = "Internal server error") })
+	@Parameters({ @Parameter(name = "id", description = "User id, e.g. &lt;uuid&gt;", required = true) })
+	@RecordMetric
+	@DeleteMapping(value = "/user/{id}/icon", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+	public @ResponseBody ResponseEntity<User> deleteUserIcon(@PathVariable(value = "id") final String id)
+			throws Exception {
 
-        LOG.info("Delete user icon: {}", id);
-        final User authUser = authorizeUser();
+		LOG.info("Delete user icon: {}", id);
+		final User authUser = authorizeUser();
 
-        final User user = UserService.getUser(id, false);
-        if (user == null || !org.apache.commons.lang3.StringUtils.equals(id, user.getId())) {
-            LOG.info("User is null or user id does not match id in URL.");
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
+		final User user = UserService.getUser(id, false);
+		if (user == null || !org.apache.commons.lang3.StringUtils.equals(id, user.getId())) {
+			LOG.info("User is null or user id does not match id in URL.");
+			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+		}
 
-        try {
+		try {
 
-            user.setIconUri(null);
-            final User original = UserService.updateUser(authUser, user);
-            return new ResponseEntity<>(original, HttpStatus.OK);
+			user.setIconUri(null);
+			final User original = UserService.updateUser(authUser, user);
+			return new ResponseEntity<>(original, HttpStatus.OK);
 
-        } catch (final NotFoundException nfe) {
-            LOG.error("Error getting user. Id {} not found.", id);
-            return new ResponseEntity<>(new HttpHeaders(), HttpStatus.NOT_FOUND);
+		} catch (final NotFoundException nfe) {
+			LOG.error("Error getting user. Id {} not found.", id);
+			return new ResponseEntity<>(new HttpHeaders(), HttpStatus.NOT_FOUND);
 
-        } catch (final Exception e) {
+		} catch (final Exception e) {
 			handleException(e);
 			return null;
-        }
-    }
+		}
+	}
 
-    /**
-     * Search users.
-     *
-     * @param includeOrganizations the include organizations
-     * @param includeTeams the include teams
-     * @param searchParameters the search parameters
-     * @param bindingResult the binding result
-     * @return the string
-     * @throws Exception the exception
-     */
-    @ApiOperation(value = "Find users. This call requires authentication with the correct role.", response = ResultList.class, notes = API_NOTES)
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 400, message = "Bad request"),
-        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 404, message = "Resource not found"),
-        @ApiResponse(code = 500, message = "Internal server error")
-    })
-    // @ModelAttribute API params documented in SearchParameter
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "includeOrganizations", value = "Include user's organizations", required = false, dataTypeClass = Boolean.class,
-            paramType = "query", defaultValue = "false"),
-        @ApiImplicitParam(name = "includeTeams", value = "Include user's teams", required = false, dataTypeClass = Boolean.class, paramType = "query",
-            defaultValue = "false"),
-        @ApiImplicitParam(name = "query", value = "The value to be searched'", required = false, dataTypeClass = String.class, paramType = "query",
-            defaultValue = "")
-    })
-    @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/user/search", produces = MediaType.APPLICATION_JSON)
-    public @ResponseBody ResponseEntity<ResultList<User>> getUsers(@QueryParam(value = "includeOrganizations") final boolean includeOrganizations,
-        @QueryParam(value = "includeTeams") final boolean includeTeams, @ModelAttribute final SearchParameters searchParameters,
-        final BindingResult bindingResult) throws Exception {
+	/**
+	 * Search users.
+	 *
+	 * @param includeOrganizations the include organizations
+	 * @param includeTeams         the include teams
+	 * @param searchParameters     the search parameters
+	 * @param bindingResult        the binding result
+	 * @return the string
+	 * @throws Exception the exception
+	 */
+	@Operation(summary = "Find users. This call requires authentication with the correct role.", description = API_NOTES, responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found"),
+			@ApiResponse(responseCode = "500", description = "Internal server error") })
+	// @ModelAttribute API params documented in SearchParameter
+	@Parameters({
+			@Parameter(name = "includeOrganizations", description = "Include user's organizations", required = false, example = "false"),
+			@Parameter(name = "includeTeams", description = "Include user's teams", required = false, example = "false"),
+			@Parameter(name = "query", description = "The value to be searched'", required = false) })
+	@RecordMetric
+	@RequestMapping(method = RequestMethod.GET, value = "/user/search", produces = MediaType.APPLICATION_JSON)
+	public @ResponseBody ResponseEntity<ResultList<User>> getUsers(
+			@RequestParam(value = "includeOrganizations") final boolean includeOrganizations,
+			@RequestParam(value = "includeTeams") final boolean includeTeams,
+			@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult)
+			throws Exception {
 
-        LOG.info("Search users: {}", ModelUtility.toJson(searchParameters));
-        authorizeUser();
+		LOG.info("Search users: {}", ModelUtility.toJson(searchParameters));
+		authorizeUser();
 
-        // Check to make sure parameters were properly bound to variables.
-        checkBinding(bindingResult);
+		// Check to make sure parameters were properly bound to variables.
+		checkBinding(bindingResult);
 
-        try {
+		try {
 
-            final ResultList<User> results = UserService.searchUsers(searchParameters);
+			final ResultList<User> results = UserService.searchUsers(searchParameters);
 
-            for (final User user : results.getItems()) {
+			for (final User user : results.getItems()) {
 
-                if (includeTeams) {
-                    final SearchParameters sp = new SearchParameters();
-                    sp.setQuery("members:" + user.getId());
-                    final ResultList<Team> teamsResultList = TeamService.searchTeams(user, sp);
-                    if (teamsResultList != null && teamsResultList.getItems() != null) {
-                        user.getTeams().addAll(teamsResultList.getItems());
-                    }
-                }
-            }
+				if (includeTeams) {
+					final SearchParameters sp = new SearchParameters();
+					sp.setQuery("members:" + user.getId());
+					final ResultList<Team> teamsResultList = TeamService.searchTeams(user, sp);
+					if (teamsResultList != null && teamsResultList.getItems() != null) {
+						user.getTeams().addAll(teamsResultList.getItems());
+					}
+				}
+			}
 
-            return new ResponseEntity<>(results, HttpStatus.OK);
+			return new ResponseEntity<>(results, HttpStatus.OK);
 
-        } catch (final Exception e) {
+		} catch (final Exception e) {
 			handleException(e);
 			return null;
-        }
-    }
+		}
+	}
 
-    /**
-     * Returns the user icon.
-     *
-     * @param fileName the file name
-     * @return the user icon
-     * @throws Exception the exception
-     */
-    @ApiOperation(value = "Icon file for the user", response = Resource.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully added icon for user"), @ApiResponse(code = 400, message = "Bad request"),
-        @ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 404, message = "Resource not found"),
-        @ApiResponse(code = 500, message = "Internal server error")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "filename", value = "File name for user icon.", required = true, dataTypeClass = String.class, paramType = "path")
-    })
-    @RequestMapping(value = "/user/icon/{fileName}", method = RequestMethod.GET)
-    public @ResponseBody ResponseEntity<Resource> getUserIcon(@PathVariable("fileName") final String fileName) throws Exception {
+	/**
+	 * Returns the user icon.
+	 *
+	 * @param fileName the file name
+	 * @return the user icon
+	 * @throws Exception the exception
+	 */
+	@Operation(summary = "Icon file for the user", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully added icon for user"),
+			@ApiResponse(responseCode = "400", description = "Bad request"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Resource not found"),
+			@ApiResponse(responseCode = "500", description = "Internal server error") })
+	@Parameters({ @Parameter(name = "filename", description = "File name for user icon.", required = true) })
+	@RequestMapping(value = "/user/icon/{fileName}", method = RequestMethod.GET)
+	public @ResponseBody ResponseEntity<Resource> getUserIcon(@PathVariable("fileName") final String fileName)
+			throws Exception {
 
-        try {
+		try {
 
-            LOG.info("GET icon for user {}", fileName);
-            final Resource file = FileUtility.getIconFile(fileName);
+			LOG.info("GET icon for user {}", fileName);
+			final Resource file = FileUtility.getIconFile(fileName);
 
-            return ResponseEntity.ok().header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION)
-                .header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(file.getFile().toPath())).contentLength(file.contentLength()).body(file);
+			return ResponseEntity.ok()
+					.header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION)
+					.header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(file.getFile().toPath()))
+					.contentLength(file.contentLength()).body(file);
 
-        } catch (final Exception e) {
+		} catch (final Exception e) {
 			handleException(e);
 			return null;
-        }
-    }
+		}
+	}
 
-    /**
-     * Edit the user icon.
-     *
-     * @param id the user id
-     * @param inputFile the input file
-     * @return the response entity with the icon URI
-     * @throws Exception the exception
-     */
-    @ApiOperation(value = "Update icon for user. This call requires authentication with the correct role.", response = String.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 202, message = "Successfully updated icon for user"), @ApiResponse(code = 401, message = "Unauthorized"),
-        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 409, message = "Conflict"),
-        @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "id", value = "User id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-        @ApiImplicitParam(name = "file", value = "Icon file", required = true, dataTypeClass = MultipartFile.class, paramType = "form")
-    })
-    @RecordMetric
-    @PostMapping(value = "/user/{id}/icon")
-    public ResponseEntity<String> editUserIcon(@PathVariable("id") final String id, @RequestParam("file") final MultipartFile inputFile) throws Exception {
+	/**
+	 * Edit the user icon.
+	 *
+	 * @param id        the user id
+	 * @param inputFile the input file
+	 * @return the response entity with the icon URI
+	 * @throws Exception the exception
+	 */
+	@Operation(summary = "Update icon for user. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "202", description = "Successfully updated icon for user"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Not Found"),
+			@ApiResponse(responseCode = "409", description = "Conflict"),
+			@ApiResponse(responseCode = "417", description = "Failed Expectation"),
+			@ApiResponse(responseCode = "500", description = "Internal server error") })
 
-        LOG.info("Edit icon for user: {}.", id);
-        final User authUser = authorizeUser();
+	@Parameters({ @Parameter(name = "id", description = "User id, e.g. &lt;uuid&gt;", required = true),
+			@Parameter(name = "file", description = "Icon file", required = true) })
+	@RecordMetric
+	@PostMapping(value = "/user/{id}/icon")
+	public ResponseEntity<String> editUserIcon(@PathVariable("id") final String id,
+			@RequestParam("file") final MultipartFile inputFile) throws Exception {
 
-        try {
-            final User user = UserService.getUser(id, false);
-            if (user == null) {
-                throw new RestException(false, 404, "Not found", "Unable to find user for " + id);
-            }
+		LOG.info("Edit icon for user: {}.", id);
+		final User authUser = authorizeUser();
 
-            String fileToDelete = "";
+		try {
+			final User user = UserService.getUser(id, false);
+			if (user == null) {
+				throw new RestException(false, 404, "Not found", "Unable to find user for " + id);
+			}
 
-            if (user.getIconUri() != null) {
-                fileToDelete = user.getIconUri().replace(ICON_URL_PREFIX, "");
-            }
+			String fileToDelete = "";
 
-            final File file = FileUtility.saveIconFile(inputFile, id, fileToDelete);
-            user.setIconUri(ICON_URL_PREFIX + file.getName());
-            UserService.updateUser(authUser, user);
+			if (user.getIconUri() != null) {
+				fileToDelete = user.getIconUri().replace(ICON_URL_PREFIX, "");
+			}
 
-            return new ResponseEntity<>("\"" + user.getIconUri() + "\"", HttpStatus.ACCEPTED);
+			final File file = FileUtility.saveIconFile(inputFile, id, fileToDelete);
+			user.setIconUri(ICON_URL_PREFIX + file.getName());
+			UserService.updateUser(authUser, user);
 
-        } catch (final Exception e) {
+			return new ResponseEntity<>("\"" + user.getIconUri() + "\"", HttpStatus.ACCEPTED);
+
+		} catch (final Exception e) {
 			handleException(e);
 			return null;
-        }
-    }
+		}
+	}
 
 }

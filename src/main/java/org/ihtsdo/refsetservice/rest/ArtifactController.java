@@ -45,17 +45,14 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.servers.Server;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -168,8 +165,7 @@ public class ArtifactController extends BaseController {
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
 			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "500", description = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "artifact", value = "Artifact object", required = true, dataTypeClass = Artifact.class, paramType = "body") })
+	@Parameters({ @Parameter(name = "artifact", description = "Artifact object", required = true) })
 	@RecordMetric
 	public ResponseEntity<?> addArtifact(@RequestParam final String artifact,
 			@RequestParam("file") final MultipartFile inputFile) throws Exception {
@@ -216,13 +212,12 @@ public class ArtifactController extends BaseController {
 	 */
 	@SuppressWarnings("rawtypes")
 	@PutMapping(value = "/artifact/{id}")
-	@ApiOperation(value = "Update artifact. This call requires authentication with the correct role.", response = Artifact.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Updated artifact"),
-			@ApiResponse(code = 401, message = "Unauthorized"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "id", value = "Artifact id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-			@ApiImplicitParam(name = "artifact", value = "Artifact object", required = true, dataTypeClass = Artifact.class, paramType = "body") })
+	@Operation(summary = "Update artifact. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Updated artifact"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "500", description = "Internal server error") })
+	@Parameters({ @Parameter(name = "id", description = "Artifact id, e.g. &lt;uuid&gt;", required = true),
+			@Parameter(name = "artifact", description = "Artifact object", required = true) })
 	@RecordMetric
 	public ResponseEntity updateArtifact(final @PathVariable String id, final @RequestBody String artifact)
 			throws Exception {
@@ -257,12 +252,11 @@ public class ArtifactController extends BaseController {
 	 */
 	@SuppressWarnings("rawtypes")
 	@DeleteMapping(value = "/artifact/{id}")
-	@ApiOperation(value = "Inactivate artifact. This call requires authentication with the correct role.", response = Void.class)
-	@ApiResponses(value = { @ApiResponse(code = 204, message = "Successfully inactivated artifact"),
-			@ApiResponse(code = 401, message = "Unauthorized"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "id", value = "Artifact id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path") })
+	@Operation(summary = "Inactivate artifact. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "204", description = "Successfully inactivated artifact"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "500", description = "Internal server error") })
+	@Parameters({ @Parameter(name = "id", description = "Artifact id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
 	public ResponseEntity inactivateArtifact(final @PathVariable String id) throws Exception {
 
@@ -292,12 +286,12 @@ public class ArtifactController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@GetMapping(value = "/artifact/{id}/file")
-	@ApiOperation(value = "Download artifact.", response = Resource.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Retrieved artifact"),
-			@ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 404, message = "Not Found"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "id", value = "Artifact id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path") })
+	@Operation(summary = "Download artifact.", responses = {
+			@ApiResponse(responseCode = "200", description = "Retrieved artifact"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Not Found"),
+			@ApiResponse(responseCode = "500", description = "Internal server error") })
+	@Parameters({ @Parameter(name = "id", description = "Artifact id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
 	public ResponseEntity<Resource> downloadArtifact(@PathVariable("id") final String id) throws Exception {
 

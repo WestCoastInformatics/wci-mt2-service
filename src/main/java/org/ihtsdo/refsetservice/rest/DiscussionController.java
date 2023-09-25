@@ -40,19 +40,24 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.servers.Server;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controller for /discussion endpoints.
  * 
  */
 @RestController
-@Api(tags = "discussions", description = "Endpoints for adding, updating, and removing discussions and posts.")
+@OpenAPIDefinition(info = @Info(title = "Discussion Controller", version = "1.0.0", description = "Endpoints for adding, updating, and removing discussions and posts."), tags = {
+		@Tag(name = "discussion", description = "Discussion service endpoints") }, servers = {
+				@Server(description = "Current Instance", url = "/") })
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
 public class DiscussionController extends BaseController {
 
@@ -71,13 +76,13 @@ public class DiscussionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/discussion/{type}/{refsetInternalId}")
-	@ApiOperation(value = "Get discussions for the specified parameters. To see certain results this call requires authentication with the correct role.", response = ResultList.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully retrieved the requested discussion"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "type", value = "Object type, e.g. 'REFSET, REFSET_MEMEBER'", required = true, dataTypeClass = String.class, paramType = "path"),
-			@ApiImplicitParam(name = "refsetInternalId", value = "The internal ID of the Refset", required = true, dataTypeClass = String.class, paramType = "path"),
-			@ApiImplicitParam(name = "conceptId", value = "The concept ID of the refset member if this is a member type", required = false, dataTypeClass = String.class, paramType = "query"), })
+	@Operation(summary = "Get discussions for the specified parameters. To see certain results this call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested discussion"),
+			@ApiResponse(responseCode = "500", description = "Internal server error") })
+	@Parameters({
+			@Parameter(name = "type", description = "Object type, e.g. 'REFSET, REFSET_MEMEBER'", required = true, schema = @Schema(implementation = String.class)),
+			@Parameter(name = "refsetInternalId", description = "The internal ID of the Refset", required = true, schema = @Schema(implementation = String.class)),
+			@Parameter(name = "conceptId", description = "The concept ID of the refset member if this is a member type", required = false, schema = @Schema(implementation = String.class)) })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<ResultList<DiscussionThread>> getDiscussions(
 			@PathVariable(value = "type") final DiscussionType type,
@@ -118,11 +123,11 @@ public class DiscussionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/discussion/{id}")
-	@ApiOperation(value = "Returns discussion thread. To see certain results this call requires authentication with the correct role.", response = DiscussionThread.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully retrieved the requested discussion"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "id", value = "Discussion id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"), })
+	@Operation(summary = "Returns discussion thread. To see certain results this call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested discussion"),
+			@ApiResponse(responseCode = "500", description = "Internal server error") })
+	@Parameters({
+			@Parameter(name = "id", description = "Discussion id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)), })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<DiscussionThread> getDiscussion(@PathVariable(value = "id") final String id)
 			throws Exception {
@@ -165,12 +170,11 @@ public class DiscussionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@PostMapping("/discussion")
-	@ApiOperation(value = "Add discussion. This call requires authentication with the correct role.", response = DiscussionThread.class)
-	@ApiResponses(value = { @ApiResponse(code = 201, message = "Added discussion"),
-			@ApiResponse(code = 401, message = "Unauthorized"),
-			@ApiResponse(code = 500, message = "Internal server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "thread", value = "Discussion thread object", required = true, dataTypeClass = DiscussionThread.class, paramType = "body"), })
+	@Operation(summary = "Add discussion. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "201", description = "Added discussion"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "500", description = "Internal server error") })
+	@Parameters({ @Parameter(name = "thread", description = "Discussion thread object", required = true) })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<DiscussionThread> createDiscussionThread(
 			@RequestBody final DiscussionThread thread) throws Exception {
@@ -228,13 +232,14 @@ public class DiscussionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@PostMapping("/discussion/{threadId}/post")
-	@ApiOperation(value = "Add post to existing discussion thread. This call requires authentication with the correct role.", response = DiscussionPost.class)
-	@ApiResponses(value = { @ApiResponse(code = 201, message = "Added discussion post to discussion thread."),
-			@ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 404, message = "Not found"),
-			@ApiResponse(code = 500, message = "Server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "threadId", value = "discussion thread id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-			@ApiImplicitParam(name = "post", value = "Post object.", required = true, dataTypeClass = DiscussionPost.class, paramType = "body"), })
+	@Operation(summary = "Add post to existing discussion thread. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "201", description = "Added discussion post to discussion thread."),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Not found"),
+			@ApiResponse(responseCode = "500", description = "Server error") })
+	@Parameters({
+			@Parameter(name = "threadId", description = "discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
+			@Parameter(name = "post", description = "Post object.", required = true) })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<DiscussionPost> createPost(
 			@PathVariable(value = "threadId") final String threadId, @RequestBody final DiscussionPost post)
@@ -303,13 +308,14 @@ public class DiscussionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@PutMapping("/discussion/{threadId}")
-	@ApiOperation(value = "Update discussion thread. This call requires authentication with the correct role.", response = DiscussionThread.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Updated discussion thread"),
-			@ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 404, message = "Not found"),
-			@ApiResponse(code = 500, message = "Server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "threadId", value = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-			@ApiImplicitParam(name = "thread", value = "Discussion thread object", required = true, dataTypeClass = DiscussionThread.class, paramType = "body") })
+	@Operation(summary = "Update discussion thread. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Updated discussion thread"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Not found"),
+			@ApiResponse(responseCode = "500", description = "Server error") })
+	@Parameters({
+			@Parameter(name = "threadId", description = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
+			@Parameter(name = "thread", description = "Discussion thread object", required = true) })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<DiscussionThread> updateDiscussionThread(
 			@PathVariable(value = "threadId") final String threadId, @RequestBody final DiscussionThread thread)
@@ -381,13 +387,14 @@ public class DiscussionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@PutMapping("/discussion/{threadId}/status")
-	@ApiOperation(value = "Set discussion thread status. This call requires authentication with the correct role.", response = DiscussionThread.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Updated discussion thread status"),
-			@ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 404, message = "Not found"),
-			@ApiResponse(code = 500, message = "Server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "threadId", value = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-			@ApiImplicitParam(name = "status", value = "the discussion thread's status", required = true, dataTypeClass = String.class, paramType = "query") })
+	@Operation(summary = "Set discussion thread status. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Updated discussion thread status"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Not found"),
+			@ApiResponse(responseCode = "500", description = "Server error") })
+	@Parameters({
+			@Parameter(name = "threadId", description = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
+			@Parameter(name = "status", description = "the discussion thread's status", required = true, schema = @Schema(implementation = String.class)) })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<DiscussionThread> updateDiscussionThreadStatus(
 			@PathVariable(value = "threadId") final String threadId, @RequestParam final String status)
@@ -454,13 +461,14 @@ public class DiscussionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@PutMapping("/discussion/{threadId}/privacy")
-	@ApiOperation(value = "Set the privacy of a discussion thread. This call requires authentication with the correct role.", response = DiscussionThread.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully updated discussion thread privacy"),
-			@ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 404, message = "Not found"),
-			@ApiResponse(code = 500, message = "Server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "threadId", value = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-			@ApiImplicitParam(name = "isPrivate", value = "Is the discussion thread private", required = true, dataTypeClass = Boolean.class, paramType = "query") })
+	@Operation(summary = "Set the privacy of a discussion thread. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully updated discussion thread privacy"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Not found"),
+			@ApiResponse(responseCode = "500", description = "Server error") })
+	@Parameters({
+			@Parameter(name = "threadId", description = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
+			@Parameter(name = "isPrivate", description = "Is the discussion thread private", required = true) })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<DiscussionThread> updateDiscussionThreadPrivacy(
 			@PathVariable(value = "threadId") final String threadId, @RequestParam final boolean isPrivate)
@@ -530,13 +538,14 @@ public class DiscussionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@PutMapping("/discussion/{threadId}/visibility")
-	@ApiOperation(value = "Set discussion thread visibility. This call requires authentication with the correct role.", response = DiscussionThread.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Updated discussion thread visibility"),
-			@ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 404, message = "Not found"),
-			@ApiResponse(code = 500, message = "Server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "threadId", value = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-			@ApiImplicitParam(name = "visibility", value = "The discussion thread's visibility", required = true, dataTypeClass = String.class, paramType = "query") })
+	@Operation(summary = "Set discussion thread visibility. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Updated discussion thread visibility"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Not found"),
+			@ApiResponse(responseCode = "500", description = "Server error") })
+	@Parameters({
+			@Parameter(name = "threadId", description = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
+			@Parameter(name = "visibility", description = "The discussion thread's visibility", required = true, schema = @Schema(implementation = String.class)) })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<DiscussionThread> updateDiscussionThreadVisibility(
 			@PathVariable(value = "threadId") final String threadId, @RequestParam final String visibility)
@@ -605,14 +614,15 @@ public class DiscussionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@PutMapping("/discussion/{threadId}/post/{postId}/privacy")
-	@ApiOperation(value = "Set discussion post privacy. This call requires authentication with the correct role.", response = DiscussionThread.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Updated the discussion post privacy"),
-			@ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 404, message = "Not found"),
-			@ApiResponse(code = 500, message = "Server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "threadId", value = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-			@ApiImplicitParam(name = "postId", value = "Discussion post id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-			@ApiImplicitParam(name = "isPrivate", value = "Is the discussion post private", required = true, dataTypeClass = Boolean.class, paramType = "query") })
+	@Operation(summary = "Set discussion post privacy. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Updated the discussion post privacy"),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Not found"),
+			@ApiResponse(responseCode = "500", description = "Server error") })
+	@Parameters({
+			@Parameter(name = "threadId", description = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
+			@Parameter(name = "postId", description = "Discussion post id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
+			@Parameter(name = "isPrivate", description = "Is the discussion post private", required = true) })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<DiscussionThread> updateDiscussionPostPrivacy(
 			@PathVariable(value = "threadId") final String threadId,
@@ -698,15 +708,16 @@ public class DiscussionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@PutMapping("/discussion/{threadId}/post/{postId}")
-	@ApiOperation(value = "Updates a discussion post. This call requires authentication with the correct role.", response = DiscussionPost.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully updated the discussion post."),
-			@ApiResponse(code = 401, message = "Unauthorized"),
-			@ApiResponse(code = 417, message = "Expectation failed"), @ApiResponse(code = 404, message = "Not found"),
-			@ApiResponse(code = 500, message = "Server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "threadId", value = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-			@ApiImplicitParam(name = "postId", value = "Discussion post id, e.g. &l5;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-			@ApiImplicitParam(name = "updatedPost", value = "Discussion post object", required = true, dataTypeClass = DiscussionPost.class, paramType = "query") })
+	@Operation(summary = "Updates a discussion post. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully updated the discussion post."),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "417", description = "Expectation failed"),
+			@ApiResponse(responseCode = "404", description = "Not found"),
+			@ApiResponse(responseCode = "500", description = "Server error") })
+	@Parameters({
+			@Parameter(name = "threadId", description = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
+			@Parameter(name = "postId", description = "Discussion post id, e.g. &l5;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
+			@Parameter(name = "updatedPost", description = "Discussion post object", required = true) })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<DiscussionPost> updateDiscussionPost(
 			@PathVariable(value = "threadId") final String threadId,
@@ -800,13 +811,14 @@ public class DiscussionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@DeleteMapping("/discussion/{threadId}/post/{postId}")
-	@ApiOperation(value = "Delete discussion post. This call requires authentication with the correct role.", response = DiscussionThread.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully deleted discussion thread."),
-			@ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 404, message = "Not found"),
-			@ApiResponse(code = 500, message = "Server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "threadId", value = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-			@ApiImplicitParam(name = "postId", value = "Discussion post id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"), })
+	@Operation(summary = "Delete discussion post. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully deleted discussion thread."),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Not found"),
+			@ApiResponse(responseCode = "500", description = "Server error") })
+	@Parameters({
+			@Parameter(name = "threadId", description = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
+			@Parameter(name = "postId", description = "Discussion post id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)), })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<DiscussionThread> deleteDiscussionPost(
 			@PathVariable(value = "threadId") final String threadId,
@@ -839,12 +851,13 @@ public class DiscussionController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@ApiOperation(value = "Deletes a discussion thread. This call requires authentication with the correct role.", response = String.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Successfully deleted the provided discussion thread."),
-			@ApiResponse(code = 401, message = "Unauthorized"), @ApiResponse(code = 404, message = "Not found"),
-			@ApiResponse(code = 500, message = "Server error") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "threadId", value = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"), })
+	@Operation(summary = "Deletes a discussion thread. This call requires authentication with the correct role.", responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully deleted the provided discussion thread."),
+			@ApiResponse(responseCode = "401", description = "Unauthorized"),
+			@ApiResponse(responseCode = "404", description = "Not found"),
+			@ApiResponse(responseCode = "500", description = "Server error") })
+	@Parameters({
+			@Parameter(name = "threadId", description = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)), })
 	@RecordMetric
 	@DeleteMapping("/discussion/{threadId}")
 	public @ResponseBody ResponseEntity<String> deleteDiscussionThread(
