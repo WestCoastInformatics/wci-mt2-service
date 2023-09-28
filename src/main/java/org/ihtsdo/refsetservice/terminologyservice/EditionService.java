@@ -18,6 +18,7 @@ import java.util.Set;
 
 import javax.ws.rs.core.Response;
 
+import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.User;
@@ -26,7 +27,9 @@ import org.ihtsdo.refsetservice.sync.util.SyncDatabaseHandler;
 import org.ihtsdo.refsetservice.sync.util.SyncStatistics;
 import org.ihtsdo.refsetservice.sync.util.SyncUtilities;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
+import org.ihtsdo.refsetservice.util.HandlerUtility;
 import org.ihtsdo.refsetservice.util.IndexUtility;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
@@ -43,6 +46,25 @@ public class EditionService extends BaseService {
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(EditionService.class);
 
+    /** The terminology handler. */
+    private static TerminologyServerHandler terminologyHandler;
+    
+    static {
+        // Instantiate terminology handler
+        try {
+            String key = "terminology.handler";
+            String handlerName = PropertyUtility.getProperty(key);
+            if (handlerName.isEmpty()) {
+                throw new Exception("terminology.handler expected and does not exist.");
+            }
+
+            terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName, TerminologyServerHandler.class);
+
+        } catch (Exception e) {
+            LOG.error("Failed to initialize terminology.handler - serious error", e);
+            terminologyHandler = null;
+        }
+    }    
     /**
      * Creates the edition.
      *
@@ -153,80 +175,6 @@ public class EditionService extends BaseService {
      * @throws Exception the exception
      */
     public static List<Edition> getAffiliateEditionList() throws Exception {
-
-        final List<Edition> editionList = new ArrayList<>();
-        final String url = SnowstormConnection.getBaseUrl() + "codesystems";
-        LOG.info("getSnowstormCodeSystems url: " + url);
-
-        try (final Response response = SnowstormConnection.getResponse(url)) {
-
-            final String resultString = response.readEntity(String.class);
-
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode organizationJsonRootNode = mapper.readTree(resultString.toString());
-            final Iterator<JsonNode> organizationIterator = organizationJsonRootNode.iterator();
-            final SyncUtilities syncUtilities = new SyncUtilities(new SyncDatabaseHandler(null, new SyncStatistics()));
-
-            while (organizationIterator.hasNext()) {
-
-                final Iterator<JsonNode> codeSystems = organizationIterator.next().iterator();
-
-                while (codeSystems.hasNext()) {
-
-                    final JsonNode codeSystem = codeSystems.next();
-
-                    // Check for invalid or ignored code systems
-                    if (!codeSystem.has("shortName")) {
-                        continue;
-                    }
-
-                    final String editionShortName = codeSystem.get("shortName").asText();
-                    final String maintainerType = syncUtilities.identifyMaintainerType(codeSystem, editionShortName);
-
-                    // Skip inactive code systems
-                    if (codeSystem.has("active") && !codeSystem.get("active").asBoolean()) {
-                        continue;
-                    }
-
-                    // Code System has been defined as to-be-ignored (either by specifying name or shortname).
-                    else if (syncUtilities.getPropertyReader().getCodeSystemsToIgnore().contains(editionShortName)) {
-                        continue;
-                    }
-
-                    // deal only with Type-3 (non-Managed Service)
-                    // else if (!maintainerType.equalsIgnoreCase("Managed Service")) {
-                    // continue;
-                    // }
-
-                    // deal only with official affiliate code systems
-                    else if (!editionShortName.toLowerCase().contains("-affiliate")) {
-                        continue;
-                    }
-
-                    final String editionName = codeSystem.get("name").asText();
-                    final String branch = codeSystem.get("branchPath").asText();
-                    final String defaultLanguageCode = syncUtilities.identifyDefaultLanguageCode(codeSystem, editionName);
-                    final Set<String> defaultLanguageRefsets = syncUtilities.identifyDefaultLanguageRefsets(codeSystem, editionShortName, branch);
-
-                    // Affiliates (on any extension) should not have the ability to choose modules.
-                    // Fix to 1201891009 |SNOMED CT Community content module (core metadata concept)| for all affiliate refsets
-                    final Set<String> editionModules = new HashSet<>(Arrays.asList("1201891009"));
-
-                    final Edition edition = new Edition();
-                    edition.setShortName(editionShortName);
-                    edition.setName(editionName);
-                    edition.setBranch(branch);
-                    edition.setDefaultLanguageRefsets(defaultLanguageRefsets);
-                    edition.setModules(editionModules);
-                    edition.setDefaultLanguageCode(defaultLanguageCode);
-                    edition.setMaintainerType(maintainerType);
-                    edition.setActive(true);
-
-                    editionList.add(edition);
-                }
-            }
-        }
-
-        return editionList;
+        return terminologyHandler.getAffiliateEditionList();
     }
 }

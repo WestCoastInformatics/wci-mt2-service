@@ -59,10 +59,10 @@ public final class SnowstormConnection {
     /** Static initialization. */
     static {
 
-        baseUrl = PropertyUtility.getProperty("snowstorm.baseUrl");
-        authUrl = PropertyUtility.getProperty("snowstorm.authUrl");
-        userName = PropertyUtility.getProperty("snowstorm.username");
-        password = PropertyUtility.getProperty("snowstorm.password");
+        baseUrl = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.baseUrl");
+        authUrl = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.authUrl");
+        userName = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.username");
+        password = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.password");
     }
 
     /**

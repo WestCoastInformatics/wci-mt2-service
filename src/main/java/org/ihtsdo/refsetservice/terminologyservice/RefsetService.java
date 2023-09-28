@@ -16,11 +16,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,13 +27,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status.Family;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.handler.ExportHandler;
+import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.DefinitionClauseEditHistory;
@@ -58,6 +54,7 @@ import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.EmailUtility;
 import org.ihtsdo.refsetservice.util.FileUtility;
+import org.ihtsdo.refsetservice.util.HandlerUtility;
 import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
@@ -70,10 +67,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
 /**
  * Service class to handle getting and modifying internal refset information.
  */
@@ -82,20 +75,23 @@ public class RefsetService {
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(RefsetService.class);
 
+    /** The terminology handler. */
+    private static TerminologyServerHandler terminologyHandler;
+
     /** The refset to language map. */
     private static final Map<String, String> REFSET_TO_LANGUAGE_MAP = new HashMap<>();
-
-    // /** The project list cache. */
-    // private static final LinkedHashMap<String, Project> projectCache = new LinkedHashMap<>();
 
     /** The refset to language map. */
     public static final String SIMPLE_TYPE_REFERENCE_SET = "446609009";
 
     /** The module Id of the SIMPLE_TYPE_REFERENCE_SET. */
-    private static final String SNOMED_CORE_MODULE_ID = "900000000000012004";
+    public static final String SNOMED_CORE_MODULE_ID = "900000000000012004";
+
+    // /** The project list cache. */
+    // private static final LinkedHashMap<String, Project> projectCache = new LinkedHashMap<>();
 
     /** A cache of the sorted branch versions. */
-    private static final Map<String, List<String>> BRANCH_VERSION_CACHE = new HashMap<>();
+    public static final Map<String, List<String>> BRANCH_VERSION_CACHE = new HashMap<>();
 
     /** A cache of the branches to use for refset searches. */
     private static final Set<String> BRANCH_SEARCH_CACHE = new HashSet<>();
@@ -148,6 +144,21 @@ public class RefsetService {
 
     static {
         appUrlRoot = PropertyUtility.getProperties().getProperty("app.url.root");
+
+        // Instantiate terminology handler
+        try {
+            String key = "terminology.handler";
+            String handlerName = PropertyUtility.getProperty(key);
+            if (handlerName.isEmpty()) {
+                throw new Exception("terminology.handler expected and does not exist.");
+            }
+
+            terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName, TerminologyServerHandler.class);
+
+        } catch (Exception e) {
+            LOG.error("Failed to initialize terminology.handler - serious error", e);
+            terminologyHandler = null;
+        }
     }
 
     /**
@@ -161,192 +172,8 @@ public class RefsetService {
      */
     public static Object createRefset(final TerminologyService service, final User user, final Refset refsetEditParameters) throws Exception {
 
-        String newInternalRefsetId = null;
-        Refset refset = null;
-        String refsetConceptId = refsetEditParameters.getRefsetId();
-        String parentConceptId = refsetEditParameters.getParentConceptId();
-        Edition edition = null;
-        Project project = null;
-        List<String> conceptIdList = new ArrayList<>();
-        final String moduleId = refsetEditParameters.getModuleId();
+        return terminologyHandler.createRefset(service, user, refsetEditParameters);
 
-        // get the edition and project for the new refset
-        if (refsetConceptId != null && doesRefsetExist(refsetConceptId, null)) {
-
-            return "Error - Concept Id '" + refsetConceptId + "' is already used as a reference set.";
-        }
-
-        project = service.get(refsetEditParameters.getProjectId(), Project.class);
-
-        if (project == null) {
-
-            throw new Exception("Project Id: " + refsetEditParameters.getProjectId() + " does not exist in the RT2 database");
-        }
-
-        edition = project.getEdition();
-
-        // if a new refset concept needs to be created get the ID to use
-        if (refsetConceptId == null) {
-
-            refsetConceptId = WorkflowService.getNewRefsetId(edition.getBranch());
-        }
-
-        // create a refset branch for the new refset
-        final String refsetBranchId = WorkflowService.generateBranchId();
-        final String refsetBranch = WorkflowService.createRefsetBranch(edition.getBranch(), refsetConceptId, refsetBranchId, refsetEditParameters.isLocalSet());
-
-        // if a new refset concept needs to be created
-        if (refsetEditParameters.getRefsetId() == null) {
-
-            // if null set the parent to "Simple Type Reference Set"
-            if (parentConceptId == null) {
-
-                parentConceptId = SIMPLE_TYPE_REFERENCE_SET;
-            }
-
-            final ObjectMapper mapper = new ObjectMapper();
-
-            final ObjectNode descriptions = mapper.createObjectNode().set("descriptions",
-                mapper.createArrayNode()
-                    .add(mapper.createObjectNode().put("moduleId", moduleId).put("term", refsetEditParameters.getName()).put("typeId", "900000000000013009")
-                        .put("caseSignificance", "CASE_INSENSITIVE").put("lang", "en")
-                        .set("acceptabilityMap", mapper.createObjectNode().put("900000000000509007", "PREFERRED").put("900000000000508004", "PREFERRED")))
-                    .add(mapper.createObjectNode().put("moduleId", moduleId).put("term", refsetEditParameters.getName() + " (foundation metadata concept)")
-                        .put("typeId", "900000000000003001").put("caseSignificance", "CASE_INSENSITIVE").put("lang", "en")
-                        .set("acceptabilityMap", mapper.createObjectNode().put("900000000000509007", "PREFERRED").put("900000000000508004", "PREFERRED"))));
-
-            final ObjectNode relationships = mapper.createObjectNode().set("relationships",
-                mapper.createArrayNode()
-                    .add(mapper.createObjectNode().put("moduleId", moduleId).put("destinationId", parentConceptId).put("typeId", "116680003").put("groupId", 0)
-                        .put("lang", "en")
-                        .set("acceptabilityMap", mapper.createObjectNode().put("900000000000509007", "PREFERRED").put("900000000000508004", "PREFERRED")))
-                    .add(mapper.createObjectNode().put("destinationId", "446609009").put("typeId", "116680003").put("groupId", 0)));
-
-            final ObjectNode classAxioms = mapper.createObjectNode().set("classAxioms",
-                mapper.createArrayNode().add(mapper.createObjectNode().put("moduleId", moduleId).put("definitionStatusId", "900000000000074008")
-                    .set("relationships", mapper.createArrayNode().add(
-                        mapper.createObjectNode().put("moduleId", moduleId).put("destinationId", "446609009").put("typeId", "116680003").put("groupId", 0)))));
-
-            final long start = System.currentTimeMillis();
-            final ObjectNode body = mapper.createObjectNode().put("conceptId", refsetConceptId).put("moduleId", moduleId);
-            body.setAll(relationships);
-            body.setAll(classAxioms);
-            body.setAll(descriptions);
-
-            final String url = SnowstormConnection.getBaseUrl() + "browser/" + refsetBranch + "/" + "concepts/";
-
-            LOG.debug("createRefset URL: " + url);
-            LOG.debug("createRefset URL body: " + body.toString());
-
-            try (final Response response = SnowstormConnection.postResponse(url, body.toString())) {
-
-                if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-
-                    throw new Exception(
-                        "call to url '" + url + "' wasn't successful. " + response.getStatus() + ": " + response.getStatusInfo().getReasonPhrase());
-                }
-
-                // Only process payload if Rest call is successful
-                if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-
-                    throw new Exception(Integer.toString(response.getStatus()));
-                }
-
-                final String resultString = response.readEntity(String.class);
-
-                final JsonNode root = mapper.readTree(resultString.toString());
-                final JsonNode conceptNode = root;
-
-                if (conceptNode.has("conceptId")) {
-
-                    refsetConceptId = conceptNode.get("conceptId").asText();
-                } else {
-
-                    throw new Exception("Unable to create new reference set concept.");
-                }
-
-            }
-
-            LOG.debug("Create Refset: newly created refset concept ID: " + refsetConceptId + ". Time: " + (System.currentTimeMillis() - start));
-        }
-
-        final String editBranchId = WorkflowService.generateBranchId();
-
-        final long start = System.currentTimeMillis();
-
-        // add the new refset to the database
-        refset = new Refset(refsetEditParameters);
-        refset.setRefsetId(refsetConceptId);
-        refset.setVersionStatus(Refset.IN_DEVELOPMENT);
-        refset.setWorkflowStatus(WorkflowService.READY_FOR_EDIT);
-        refset.setProject(project);
-        refset.setVersionDate(null);
-        refset.setEditBranchId(editBranchId);
-        refset.setRefsetBranchId(refsetBranchId);
-
-        if (refset.getType().equals(Refset.INTENSIONAL)) {
-
-            // Add definition clauses to the DB
-            for (final DefinitionClause clause : refset.getDefinitionClauses()) {
-
-                service.add(clause);
-            }
-
-        }
-
-        // Add an object
-        service.add(refset);
-        newInternalRefsetId = refset.getId();
-
-        WorkflowService.createEditBranch(service, user, refset, editBranchId);
-
-        // Add a workflow history entry for CREATE and then update the workflow to IN_EDIT
-        WorkflowService.addWorkflowHistory(service, user, WorkflowService.CREATE, refset, "");
-        refset = WorkflowService.setWorkflowStatus(service, user, WorkflowService.EDIT, refset, "", WorkflowService.IN_EDIT, user.getUserName());
-
-        // if cloning a refset this is where extensional members are copied over
-        // String originBranchPath = edition.getBranch();
-
-        // if (refsetEditParameters.getVersionDate() != null) {
-        // originBranchPath += "/" + getFormattedRefsetDate(refsetEditParameters.getVersionDate());
-        // }
-
-        RefsetMemberService.REFSETS_UPDATED_MEMBERS.put(newInternalRefsetId, new HashMap<>());
-
-        if (refset.getType().equals(Refset.INTENSIONAL)) {
-
-            refset.setBranchPath(getBranchPath(refset));
-
-            try {
-
-                final String ecl = getEclFromDefinition(refsetEditParameters.getDefinitionClauses());
-
-                // get the list of concepts from the ECL
-                conceptIdList = RefsetMemberService.getConceptIdsFromEcl(refset.getBranchPath(), ecl);
-
-                // if there are no concepts in the definition then stop the creation
-                if (conceptIdList.size() == 0) {
-
-                    return "Error - Definition returns no concepts.";
-                }
-
-            } catch (final Exception e) {
-
-                return "Error - Invalid ECL Definition";
-            }
-
-            // add the list of concepts as members to the refset
-            RefsetMemberService.addRefsetMembers(service, user, refset, conceptIdList);
-            WorkflowService.mergeEditIntoRefsetBranch(refset.getEditionBranch(), refset.getRefsetId(), editBranchId, refsetBranchId,
-                "Initial intensional refset creation.", refset.isLocalSet());
-        }
-
-        clearAllRefsetCaches(refset.getEditionBranch());
-
-        LOG.info("Create Refset: Refset " + refset.getRefsetId() + " successfully added. Time: " + (System.currentTimeMillis() - start));
-        LOG.debug("Create Refset: Refset: " + ModelUtility.toJson(refset));
-
-        return refset;
     }
 
     /**
@@ -961,118 +788,7 @@ public class RefsetService {
      */
     private static void updateRefsetConcept(final Refset refset, final boolean active, final String moduleId) throws Exception {
 
-        // first retrieve the concept so all fields will be present for the update
-        final String refsetId = refset.getRefsetId();
-        final String branch = refset.getBranchPath();
-        final String url = SnowstormConnection.getBaseUrl() + "browser/" + branch + "/" + "concepts/" + refsetId;
-        final ObjectMapper mapper = new ObjectMapper();
-        ObjectNode memberBody = null;
-
-        LOG.debug("updateRefsetConcept URL: " + url);
-
-        try (final Response response = SnowstormConnection.getResponse(url)) {
-
-            // Only process payload if Rest call is successful
-            if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-
-                throw new Exception("Unable to retrieve reference set concept: " + refsetId + " Status: " + Integer.toString(response.getStatus()) + ". Error: "
-                    + response.getStatusInfo().getReasonPhrase());
-            }
-
-            // create the body entity for the update call from the retrieved concept
-            final String resultString = response.readEntity(String.class);
-            memberBody = (ObjectNode) mapper.readTree(resultString.toString()).deepCopy();
-        }
-
-        if (active != refset.isActive()) {
-
-            LOG.info("Changing refset concept active status to: " + active);
-
-            // set the concept status
-            memberBody.put("active", active);
-
-            // set the concept inactivation indicator
-            if (!active) {
-                memberBody.put("inactivationIndicator", "OUTDATED");
-            } else {
-                memberBody.put("inactivationIndicator", "");
-            }
-
-            // loop thru the class axioms and set the status
-            final Iterator<JsonNode> axiomIterator = memberBody.get("classAxioms").iterator();
-
-            while (axiomIterator.hasNext()) {
-
-                final ObjectNode axiomNode = (ObjectNode) axiomIterator.next();
-                axiomNode.put("active", active);
-            }
-
-            // loop thru the relationships and set the status
-            final Iterator<JsonNode> relationshipsIterator = memberBody.get("relationships").iterator();
-
-            while (relationshipsIterator.hasNext()) {
-
-                final ObjectNode relationshipsNode = (ObjectNode) relationshipsIterator.next();
-                relationshipsNode.put("active", active);
-            }
-        }
-
-        if (!moduleId.equals(refset.getModuleId())) {
-
-            LOG.info("Changing Refset Concept Module ID from: " + refset.getModuleId() + " to: " + moduleId);
-            memberBody.put("moduleId", moduleId);
-
-            // loop thru the descriptions and set the moduleId
-            final Iterator<JsonNode> descriptionsIterator = memberBody.get("descriptions").iterator();
-
-            while (descriptionsIterator.hasNext()) {
-
-                final ObjectNode descriptionNode = (ObjectNode) descriptionsIterator.next();
-                descriptionNode.put("moduleId", moduleId);
-            }
-
-            // loop thru the class axioms and set the moduleId
-            final Iterator<JsonNode> axiomIterator = memberBody.get("classAxioms").iterator();
-
-            while (axiomIterator.hasNext()) {
-
-                final ObjectNode axiomNode = (ObjectNode) axiomIterator.next();
-                axiomNode.put("moduleId", moduleId);
-
-                // loop thru the axiom relationships and set the moduleId
-                final Iterator<JsonNode> relationshipsIterator = axiomNode.get("relationships").iterator();
-
-                while (relationshipsIterator.hasNext()) {
-
-                    final ObjectNode relationshipsNode = (ObjectNode) relationshipsIterator.next();
-                    relationshipsNode.put("moduleId", moduleId);
-                }
-            }
-
-            // loop thru the relationships and set the moduleId
-            final Iterator<JsonNode> relationshipsIterator = memberBody.get("relationships").iterator();
-
-            while (relationshipsIterator.hasNext()) {
-
-                final ObjectNode relationshipsNode = (ObjectNode) relationshipsIterator.next();
-                relationshipsNode.put("moduleId", moduleId);
-            }
-        }
-
-        LOG.debug("updateRefsetConcept update concept URL body: " + memberBody.toString());
-
-        // update the concept with the new data
-        try (final Response response = SnowstormConnection.putResponse(url, memberBody.toString())) {
-
-            // Only process payload if Rest call is successful
-            if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-                throw new Exception("Unable to update reference set concept: " + refsetId + ". Status: " + Integer.toString(response.getStatus()) + ". Error: "
-                    + response.getStatusInfo().getReasonPhrase());
-            }
-
-            LOG.info("updateRefsetConcept refset concept: " + refsetId);
-        }
-
+        terminologyHandler.updateRefsetConcept(refset, active, moduleId);
     }
 
     /**
@@ -1192,93 +908,8 @@ public class RefsetService {
      */
     public static ConceptResultList getRefsetConcepts(final TerminologyService service, final String branch, final boolean areParentConcepts) throws Exception {
 
-        final ConceptResultList results = new ConceptResultList();
-        final Set<String> existingRefsetIds = new HashSet<>();
-        String ecl = StringUtility.encodeValue(QueryParserBase.escape("<<" + SIMPLE_TYPE_REFERENCE_SET));
+        return terminologyHandler.getRefsetConcepts(service, branch, areParentConcepts);
 
-        if (!areParentConcepts) {
-
-            ecl = StringUtility.encodeValue(QueryParserBase.escape("<" + SIMPLE_TYPE_REFERENCE_SET));
-        }
-
-        final List<Edition> editions = getEditionForBranch(branch);
-
-        String modules = "";
-
-        if (editions.size() > 0) {
-
-            for (final Edition edition : editions) {
-                modules += edition.getModules().stream().collect(Collectors.joining(",")) + ", ";
-            }
-        }
-
-        modules += SNOMED_CORE_MODULE_ID;
-
-        final String url = SnowstormConnection.getBaseUrl() + branch + "/" + "concepts?ecl=" + ecl + "&limit=1000&module=" + modules;
-
-        LOG.debug("getRefsetConcepts URL: " + url);
-
-        // If we are looking for concepts to represent a refset, then we are filtering out those concept that are currently refsets
-        if (!areParentConcepts) {
-
-            // get all the existing refsets for latest branch version
-            final String query = "(latestPublishedVersion: true AND hasVersionInDevelopment: false) OR versionStatus: (" + Refset.IN_DEVELOPMENT + ")";
-            final ResultList<Refset> refsets = service.find(query, null, Refset.class, null);
-
-            for (final Refset refset : refsets.getItems()) {
-
-                if (!existingRefsetIds.contains(refset.getRefsetId())) {
-
-                    existingRefsetIds.add(refset.getRefsetId());
-                }
-
-            }
-
-            LOG.debug("getRefsetConcepts existingRefsetIds: " + existingRefsetIds);
-        }
-
-        final Set<String> excludeList = conceptsToRemove(!areParentConcepts);
-
-        // update the concept with the new data
-        try (final Response response = SnowstormConnection.getResponse(url)) {
-
-            // Only process payload if Rest call is successful
-            if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-
-                throw new Exception("Unable to get reference set concepts. Status: " + Integer.toString(response.getStatus()) + ". Error: "
-                    + response.getStatusInfo().getReasonPhrase());
-            }
-
-            final ObjectMapper mapper = new ObjectMapper();
-            final String resultString = response.readEntity(String.class);
-            final JsonNode root = mapper.readTree(resultString.toString());
-            final Iterator<JsonNode> iterator = root.get("items").iterator();
-
-            // loop thru the returned member details and inactivate it or add it to the list to delete
-            while (iterator != null && iterator.hasNext()) {
-
-                final JsonNode conceptNode = iterator.next();
-                final Concept concept = new Concept();
-                final String conceptId = conceptNode.get("conceptId").asText();
-
-                // if this isn't for a parent concept and the refset already exists then skip it
-                if ((!areParentConcepts && existingRefsetIds.contains(conceptId)) || excludeList.contains(conceptId)) {
-
-                    continue;
-                }
-
-                concept.setCode(conceptId);
-                concept.setName(conceptNode.get("pt").get("term").asText());
-                concept.setTerminology("SNOMEDCT");
-
-                results.getItems().add(concept);
-            }
-
-            // sort the results
-            Collections.sort(results.getItems(), (o1, o2) -> (o1.getName().compareTo(o2.getName())));
-        }
-
-        return results;
     }
 
     /**
@@ -2259,7 +1890,7 @@ public class RefsetService {
      * @return List <Edition> list of editions matching branch
      * @throws Exception the exception
      */
-    private static List<Edition> getEditionForBranch(final String branch) throws Exception {
+    public static List<Edition> getEditionForBranch(final String branch) throws Exception {
 
         ResultList<Edition> editions = new ResultList<>();
 
@@ -2327,68 +1958,8 @@ public class RefsetService {
      */
     public static List<String> getBranchVersions(final String editionPath) throws Exception {
 
-        final String url = SnowstormConnection.getBaseUrl() + "branches/" + editionPath + "/children?immediateChildren=true";
-        final List<String> branchCache = getCacheForBranchVersions(editionPath);
+        return terminologyHandler.getBranchVersions(editionPath);
 
-        // check if the concept call has been cached
-        if (branchCache.size() > 0) {
-
-            LOG.debug("getBranchVersions USING CACHE");
-            return branchCache;
-        }
-
-        try (final Response response = SnowstormConnection.getResponse(url)) {
-
-            // Only process payload if Rest call is successful
-            if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-
-                throw new Exception("Unable to get edition versions. Status: " + Integer.toString(response.getStatus()) + ". Error: "
-                    + response.getStatusInfo().getReasonPhrase());
-            }
-
-            final String resultString = response.readEntity(String.class);
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString.toString());
-            final Iterator<JsonNode> branchIterator = root.iterator();
-
-            // get versions from edition as long as active & within edition's module
-            while (branchIterator.hasNext()) {
-
-                final JsonNode child = branchIterator.next();
-                final String childBranch = child.get("path").asText();
-                String childDate = childBranch.replace(editionPath, "");
-
-                if (childDate.startsWith("/")) {
-
-                    childDate = childDate.substring(1);
-                }
-
-                // Only get pure date branches
-                if (childDate.matches("^\\d{4}-\\d{2}-\\d{2}$")) {
-
-                    final Date branchDate = DateUtility.getDate(childDate, DateUtility.DATE_FORMAT_REVERSE, null);
-
-                    if (branchDate.before(new Date())) {
-
-                        branchCache.add(childDate);
-                    }
-
-                }
-
-                // stop when branch does not start with a date
-                else if (!childDate.matches("^\\d{4}-\\d{2}-\\d{2}.*")) {
-
-                    break;
-                }
-
-            }
-
-            // sort the results in reverse order since that is the usual way they are consumed
-            Collections.sort(branchCache, (o1, o2) -> (o2.compareTo(o1)));
-        }
-
-        BRANCH_VERSION_CACHE.put(editionPath, branchCache);
-        return branchCache;
     }
 
     /**
@@ -2419,7 +1990,7 @@ public class RefsetService {
      * @param excludeCurrentSiRefsets the exclude current si refsets
      * @return the sets the
      */
-    private static Set<String> conceptsToRemove(final boolean excludeCurrentSiRefsets) {
+    public static Set<String> conceptsToRemove(final boolean excludeCurrentSiRefsets) {
 
         final Set<String> conceptCodes = new HashSet<>();
         final String[] refsetExclude = PropertyUtility.getProperty("refset-copy-concept-exclude").split("\\|");
