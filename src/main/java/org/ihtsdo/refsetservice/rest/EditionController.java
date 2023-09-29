@@ -58,14 +58,14 @@ public class EditionController extends BaseController {
 	 * @return the edition
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.GET, value = "/edition/{id}", produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Get edition", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information") })
 	@Parameters({ @Parameter(name = "id", description = "Edition id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
-	@RequestMapping(value = "/edition/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
-	// no auth required
 	public ResponseEntity<Edition> getEdition(@PathVariable(value = "id") final String id) throws Exception {
 
+		// no auth required
 		try {
 			final Edition edition = EditionService.getEdition(id);
 			return new ResponseEntity<>(edition, HttpStatus.OK);
@@ -82,12 +82,12 @@ public class EditionController extends BaseController {
 	 * @return the editions
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.GET, value = "/edition/", produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Get all editions", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information") })
 	@RecordMetric
-	@RequestMapping(value = "/edition/", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
-	// no auth required
 	public ResponseEntity<ResultList<Edition>> getEditions() throws Exception {
+		// no auth required
 
 		try {
 
@@ -108,16 +108,16 @@ public class EditionController extends BaseController {
 	 * @return the string
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.GET, value = "/edition/search", produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Find editions.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	// @ModelAttribute API params documented in SearchParameter
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/edition/search", produces = MediaType.APPLICATION_JSON)
-	// no auth required
 	public @ResponseBody ResponseEntity<ResultList<Edition>> getEditions(
 			@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult)
 			throws Exception {
+		// no auth required
 
 		// Check to make sure parameters were properly bound to variables.
 		checkBinding(bindingResult);

@@ -27,10 +27,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -60,6 +57,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class DiscussionController extends BaseController {
 
 	/** The Constant LOG. */
+	@SuppressWarnings("unused")
 	private static final Logger LOG = LoggerFactory.getLogger(DiscussionController.class);
 
 	/**
@@ -151,7 +149,7 @@ public class DiscussionController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@PostMapping("/discussion")
+	@RequestMapping(method = RequestMethod.POST, value = "/discussion")
 	@Operation(summary = "Add discussion. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "201", description = "Added discussion"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -170,9 +168,6 @@ public class DiscussionController extends BaseController {
 
 			// If the user does not have the correct permissions then return an error
 			if ((refset.isPrivateRefset() || thread.isPrivateThread()) && !permittedRole) {
-
-				LOG.error("createDiscussionThread: User does not have permissions to perform this action: {}.",
-						authUser.getUserName());
 				throw new RestException(false, 403, "Forbidden",
 						"User does not have permissions to perform this action.");
 			}
@@ -208,7 +203,7 @@ public class DiscussionController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@PostMapping("/discussion/{threadId}/post")
+	@RequestMapping(method = RequestMethod.POST, value = "/discussion/{threadId}/post")
 	@Operation(summary = "Add post to existing discussion thread. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "201", description = "Added discussion post to discussion thread."),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -272,7 +267,7 @@ public class DiscussionController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@PutMapping("/discussion/{threadId}")
+	@RequestMapping(method = RequestMethod.PUT, value = "/discussion/{threadId}")
 	@Operation(summary = "Update discussion thread. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Updated discussion thread"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -292,8 +287,6 @@ public class DiscussionController extends BaseController {
 			final DiscussionThread originalThread = service.get(threadId, DiscussionThread.class);
 
 			if (thread == null) {
-
-				LOG.error("updateDiscussionThread: Unable to retrieve discussion thread id: {}.", threadId);
 				throw new RestException(false, 404, "Not found",
 						"Unable to find discussion thread for " + threadId + ".");
 			}
@@ -302,9 +295,6 @@ public class DiscussionController extends BaseController {
 
 			// If the user does not have the correct permissions then return an error
 			if (!DiscussionService.canUserEditThread(authUser, refset, originalThread)) {
-
-				LOG.error("updateDiscussionThread: User does not have permissions to perform this action: {}.",
-						authUser.getUserName());
 				throw new RestException(false, 403, "Forbidden",
 						"User does not have permissions to perform this action.");
 			}
@@ -346,7 +336,7 @@ public class DiscussionController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@PutMapping("/discussion/{threadId}/status")
+	@RequestMapping(method = RequestMethod.PUT, value = "/discussion/{threadId}/status")
 	@Operation(summary = "Set discussion thread status. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Updated discussion thread status"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -366,8 +356,6 @@ public class DiscussionController extends BaseController {
 			final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
 
 			if (thread == null) {
-
-				LOG.error("updateDiscussionThreadStatus: Unable to retrieve discussion thread id: {}.", threadId);
 				throw new RestException(false, 404, "Not found",
 						"Unable to find discussion thread for " + threadId + ".");
 			}
@@ -376,9 +364,6 @@ public class DiscussionController extends BaseController {
 
 			// If the user does not have the correct permissions then return an error
 			if (!DiscussionService.canUserEditThread(authUser, refset, thread)) {
-
-				LOG.error("updateDiscussionThreadStatus: User does not have permissions to perform this action: {}.",
-						authUser.getUserName());
 				throw new RestException(false, 403, "Forbidden",
 						"User does not have permissions to perform this action.");
 			}
@@ -413,7 +398,7 @@ public class DiscussionController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@PutMapping("/discussion/{threadId}/privacy")
+	@RequestMapping(method = RequestMethod.PUT, value = "/discussion/{threadId}/privacy")
 	@Operation(summary = "Set the privacy of a discussion thread. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully updated discussion thread privacy"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -434,8 +419,6 @@ public class DiscussionController extends BaseController {
 			final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
 
 			if (thread == null) {
-
-				LOG.error("updateDiscussionThreadPrivacy: Unable to retrieve discussion thread id: {}.", threadId);
 				throw new RestException(false, 404, "Not found",
 						"Unable to find discussion thread for " + threadId + ".");
 			}
@@ -445,8 +428,6 @@ public class DiscussionController extends BaseController {
 			// If the user does not have the correct permissions then return an error
 			if (!DiscussionService.canUserEditThread(authUser, refset, thread)) {
 
-				LOG.error("updateDiscussionThreadPrivacy: User does not have permissions to perform this action: {}.",
-						authUser.getUserName());
 				throw new RestException(false, 403, "Forbidden",
 						"User does not have permissions to perform this action.");
 			}
@@ -484,7 +465,7 @@ public class DiscussionController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@PutMapping("/discussion/{threadId}/visibility")
+	@RequestMapping(method = RequestMethod.PUT, value = "/discussion/{threadId}/visibility")
 	@Operation(summary = "Set discussion thread visibility. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Updated discussion thread visibility"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -504,8 +485,6 @@ public class DiscussionController extends BaseController {
 			final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
 
 			if (thread == null) {
-
-				LOG.error("updateDiscussionThreadVisibility: Unable to retrieve discussion thread id: {}.", threadId);
 				throw new RestException(false, 404, "Not found",
 						"Unable to find discussion thread for " + threadId + ".");
 			}
@@ -514,10 +493,6 @@ public class DiscussionController extends BaseController {
 
 			// If the user does not have the correct permissions then return an error
 			if (!DiscussionService.canUserEditThread(authUser, refset, thread)) {
-
-				LOG.error(
-						"updateDiscussionThreadVisibility: User does not have permissions to perform this action: {}.",
-						authUser.getUserName());
 				throw new RestException(false, 403, "Forbidden",
 						"User does not have permissions to perform this action.");
 			}
@@ -553,7 +528,7 @@ public class DiscussionController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@PutMapping("/discussion/{threadId}/post/{postId}/privacy")
+	@RequestMapping(method = RequestMethod.PUT, value = "/discussion/{threadId}/post/{postId}/privacy")
 	@Operation(summary = "Set discussion post privacy. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Updated the discussion post privacy"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -577,7 +552,6 @@ public class DiscussionController extends BaseController {
 
 			if (thread == null) {
 
-				LOG.error("updateDiscussionPostPrivacy: Unable to retrieve discussion thread id: {}.", threadId);
 				throw new RestException(false, 404, "Not found",
 						"Unable to find discussion thread for " + threadId + ".");
 			}
@@ -586,16 +560,11 @@ public class DiscussionController extends BaseController {
 			final DiscussionPost post = service.get(postId, DiscussionPost.class);
 
 			if (post == null) {
-
-				LOG.error("updateDiscussionPostPrivacy: Unable to retrieve discussion post id: {}.", postId);
 				throw new RestException(false, 404, "Not found", "Unable to find discussion post for " + postId + ".");
 			}
 
 			// If the user does not have the correct permissions then return an error
 			if (!DiscussionService.canUserEditPost(authUser, refset, post)) {
-
-				LOG.error("updateDiscussionPostPrivacy: User does not have permissions to perform this action: {}.",
-						authUser.getUserName());
 				throw new RestException(false, 403, "Forbidden",
 						"User does not have permissions to perform this action.");
 			}
@@ -640,7 +609,7 @@ public class DiscussionController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@PutMapping("/discussion/{threadId}/post/{postId}")
+	@RequestMapping(method = RequestMethod.PUT, value = "/discussion/{threadId}/post/{postId}")
 	@Operation(summary = "Updates a discussion post. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully updated the discussion post."),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -667,13 +636,10 @@ public class DiscussionController extends BaseController {
 
 				final String message = "The postId parameter " + postId
 						+ " does not match the id property of the updatedPost parameter " + updatedPost.getId() + ".";
-				LOG.error("updateDiscussionPost: " + message);
 				throw new RestException(false, 417, "Expectation failed", message);
 			}
 
 			if (thread == null) {
-
-				LOG.error("updateDiscussionPost: Unable to retrieve discussion thread id: {}.", threadId);
 				throw new RestException(false, 404, "Not found",
 						"Unable to find discussion thread for " + threadId + ".");
 			}
@@ -682,16 +648,11 @@ public class DiscussionController extends BaseController {
 			final DiscussionPost existingPost = service.get(postId, DiscussionPost.class);
 
 			if (existingPost == null) {
-
-				LOG.error("updateDiscussionPost: Unable to retrieve discussion post id: {}.", postId);
 				throw new RestException(false, 404, "Not found", "Unable to find discussion post for " + postId + ".");
 			}
 
 			// If the user does not have the correct permissions then return an error
 			if (!DiscussionService.canUserEditPost(authUser, refset, existingPost)) {
-
-				LOG.error("updateDiscussionPost: User does not have permissions to perform this action: {}.",
-						authUser.getUserName());
 				throw new RestException(false, 403, "Forbidden",
 						"User does not have permissions to perform this action.");
 			}
@@ -736,7 +697,7 @@ public class DiscussionController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@DeleteMapping("/discussion/{threadId}/post/{postId}")
+	@RequestMapping(method = RequestMethod.DELETE, value = "/discussion/{threadId}/post/{postId}")
 	@Operation(summary = "Delete discussion post. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully deleted discussion thread."),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -774,6 +735,7 @@ public class DiscussionController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.DELETE, value = "/discussion/{threadId}")
 	@Operation(summary = "Deletes a discussion thread. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully deleted the provided discussion thread."),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -782,7 +744,6 @@ public class DiscussionController extends BaseController {
 	@Parameters({
 			@Parameter(name = "threadId", description = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)), })
 	@RecordMetric
-	@DeleteMapping("/discussion/{threadId}")
 	public @ResponseBody ResponseEntity<String> deleteDiscussionThread(
 			@PathVariable(value = "threadId") final String threadId) throws Exception {
 

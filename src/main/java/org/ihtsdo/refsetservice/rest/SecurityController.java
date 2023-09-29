@@ -18,16 +18,14 @@ import org.ihtsdo.refsetservice.handler.SecurityServiceHandler;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
-import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -54,6 +52,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class SecurityController extends BaseController {
 
 	/** The Constant LOG. */
+	@SuppressWarnings("unused")
 	private static final Logger LOG = LoggerFactory.getLogger(SecurityController.class);
 
 	/**
@@ -63,10 +62,8 @@ public class SecurityController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@GetMapping("/internalSecurity/convertPermissions")
+	@RequestMapping(method = RequestMethod.GET, value = "/internalSecurity/convertPermissions")
 	public @ResponseBody ResponseEntity<String> convertPermissions(final HttpServletRequest request) throws Exception {
-
-		LOG.info("PERMISSION CLEANUP START");
 
 		final User user = authorizeUser();
 		try (final SecurityService securityService = new SecurityService()) {
@@ -81,7 +78,6 @@ public class SecurityController extends BaseController {
 				results = handler.convertRolesForAllUsers();
 			}
 
-			LOG.info("PERMISSION CLEANUP FINISH");
 			return new ResponseEntity<>(results, new HttpHeaders(), HttpStatus.OK);
 
 		} catch (final Exception e) {
@@ -98,7 +94,7 @@ public class SecurityController extends BaseController {
 	 * @return the user
 	 * @throws Exception the exception
 	 */
-	@PostMapping("/authenticate/{userName}")
+	@RequestMapping(method = RequestMethod.POST, value = "/authenticate/{userName}")
 	@Operation(summary = "Authorize the user. Requires logging in to IMS first and sending the appropriate cookie", responses = {
 			@ApiResponse(responseCode = "200", description = "Successful authorization, payload contains user object"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized") })
@@ -106,8 +102,6 @@ public class SecurityController extends BaseController {
 	@RecordMetric
 	public @ResponseBody ResponseEntity<User> authenticate(@PathVariable(value = "userName") final String userName,
 			final HttpServletRequest request) throws Exception {
-
-		LOG.info("RESTful call POST (Security): authentication for username = {}", userName);
 
 		try (final SecurityService securityService = new SecurityService()) {
 
@@ -117,7 +111,6 @@ public class SecurityController extends BaseController {
 				throw new Exception("Unable to authenticate user");
 			}
 
-			LOG.debug("******** SESSION USER: " + ModelUtility.toJson(user));
 			request.getSession().setAttribute(SecurityService.SESSION_USER_OBJECT_KEY, user);
 			return new ResponseEntity<>(user, new HttpHeaders(), HttpStatus.OK);
 
@@ -134,15 +127,13 @@ public class SecurityController extends BaseController {
 	 * @return the user
 	 * @throws Exception the exception
 	 */
-	@PostMapping("/logout/{userName}")
+	@RequestMapping(method = RequestMethod.POST, value = "/logout/{userName}")
 	@Operation(summary = "Log out the authenticated user. This call requires authentication", responses = {
 			@ApiResponse(responseCode = "200", description = "Successful logout") })
 	@Parameters({ @Parameter(name = "userName", description = "User name to log out", required = true) })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<Void> logout(
 			@PathVariable(value = "userName", required = true) final String userName) throws Exception {
-
-		LOG.info("RESTful call POST (Security): logout for userName = {}", userName);
 
 		try (final SecurityService securityService = new SecurityService()) {
 

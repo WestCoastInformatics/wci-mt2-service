@@ -40,11 +40,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -89,6 +86,7 @@ public class OrganizationController extends BaseController {
 	 * @return the organization
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.GET, value = "/organization/{id}", produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Get organization. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -98,7 +96,6 @@ public class OrganizationController extends BaseController {
 	@Parameters({ @Parameter(name = "id", description = "Organization identifier, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "includeMembers", description = "Include organization's members (users)", required = false) })
 	@RecordMetric
-	@RequestMapping(value = "/organization/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
 	public ResponseEntity<Organization> getOrganization(@PathVariable(value = "id") final String id,
 			@RequestParam(value = "includeMembers", defaultValue = "false") final boolean includeMembers)
 			throws Exception {
@@ -128,6 +125,7 @@ public class OrganizationController extends BaseController {
 	 * @return the string
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.GET, value = "/organization/search", produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Find organizations. This call requires authentication with the correct role.", description = API_NOTES, responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -136,7 +134,6 @@ public class OrganizationController extends BaseController {
 			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	// @ModelAttribute API params documented in SearchParameter
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/organization/search", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<Organization>> getOrganizations(
 			@RequestParam(value = "includeMembers") final boolean includeMembers,
 			@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult)
@@ -168,7 +165,7 @@ public class OrganizationController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("rawtypes")
+	@RequestMapping(method = RequestMethod.PUT, value = "/organization", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Add organization. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "201", description = "Organization successfully created"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -177,8 +174,7 @@ public class OrganizationController extends BaseController {
 			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	@Parameters({ @Parameter(name = "organization", description = "Organization object", required = true) })
 	@RecordMetric
-	@PostMapping(value = "/organization", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-	public ResponseEntity addOrganization(@RequestBody final Organization organization) throws Exception {
+	public ResponseEntity<Organization> addOrganization(@RequestBody final Organization organization) throws Exception {
 
 		LOG.info("Add organization: {}", organization);
 		final User authUser = authorizeUser();
@@ -216,7 +212,7 @@ public class OrganizationController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("rawtypes")
+	@RequestMapping(method = RequestMethod.PUT, value = "/organization/{id}", consumes = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Update organization. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Organization successfully updated"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -226,8 +222,7 @@ public class OrganizationController extends BaseController {
 	@Parameters({ @Parameter(name = "id", description = "Organization id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "organization", description = "Organization object", required = true) })
 	@RecordMetric
-	@PutMapping(value = "/organization/{id}", consumes = MediaType.APPLICATION_JSON)
-	public ResponseEntity updateOrganization(@PathVariable(value = "id") final String id,
+	public ResponseEntity<Organization> updateOrganization(@PathVariable(value = "id") final String id,
 			@RequestBody final Organization organization) throws Exception {
 
 		LOG.info("Update organization: {}", organization);
@@ -266,17 +261,16 @@ public class OrganizationController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("rawtypes")
+	@RequestMapping(method = RequestMethod.DELETE, value = "/organization/{id}")
 	@Operation(summary = "Inactivate organization. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "202", description = "Successfully inactivated organization"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
 			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Not Found"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation")})
+			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	@Parameters({ @Parameter(name = "id", description = "Organization id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
-	@DeleteMapping(value = "/organization/{id}")
-	public ResponseEntity deleteOrganization(@PathVariable("id") final String id) throws Exception {
+	public ResponseEntity<Void> deleteOrganization(@PathVariable("id") final String id) throws Exception {
 
 		LOG.info("Inactivate organization: {}", id);
 		final User authUser = authorizeUser();
@@ -302,13 +296,13 @@ public class OrganizationController extends BaseController {
 	 * @return the organization
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.GET, value = "/organization/{id}/users", produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Get user(s) for the organization. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({ @Parameter(name = "id", description = "Organization id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "includeTeams", description = "Include organization user's teams", required = false, example = "false") })
 	@RecordMetric
-	@RequestMapping(value = "/organization/{id}/users", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
 	public ResponseEntity<ResultListUser> getOrganizationUsers(@PathVariable(value = "id") final String id,
 			@RequestParam(value = "includeTeams") final boolean includeTeams) throws Exception {
 
@@ -337,6 +331,7 @@ public class OrganizationController extends BaseController {
 	 * @return ResponseEntity<ResultListTeam>
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.GET, value = "/organization/{id}/teams", produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Get team(s) for the organization. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -345,7 +340,6 @@ public class OrganizationController extends BaseController {
 			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	@Parameters({ @Parameter(name = "id", description = "Organization id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
-	@RequestMapping(value = "/organization/{id}/teams", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
 	public ResponseEntity<ResultListTeam> getOrganizationTeams(@PathVariable(value = "id") final String id)
 			throws Exception {
 
@@ -370,6 +364,7 @@ public class OrganizationController extends BaseController {
 	 * @return ResponseEntity<ResultListProject>
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.GET, value = "/organization/{id}/projects", produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Get projects(s) the organization. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -378,7 +373,6 @@ public class OrganizationController extends BaseController {
 			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	@Parameters({ @Parameter(name = "id", description = "Organization id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
-	@RequestMapping(value = "/organization/{id}/projects", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
 	public ResponseEntity<ResultListProject> getOrganizationProjects(@PathVariable(value = "id") final String id)
 			throws Exception {
 
@@ -405,6 +399,7 @@ public class OrganizationController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.POST, value = "/organization/{id}/user")
 	@Operation(summary = "Add user to organization. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "201", description = "User added to organization"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -413,7 +408,6 @@ public class OrganizationController extends BaseController {
 			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	@Parameters({ @Parameter(name = "id", description = "Organization id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
-	@PostMapping(value = "/organization/{id}/user")
 	public @ResponseBody ResponseEntity<String> addUserToOrganization(@PathVariable final String id,
 			final String emails) throws Exception {
 
@@ -452,6 +446,7 @@ public class OrganizationController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.DELETE, value = "/organization/{id}/user/{userId}")
 	@Operation(summary = "Delete user from organization. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "202", description = "Successfully removed user from organization"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -462,7 +457,6 @@ public class OrganizationController extends BaseController {
 	@Parameters({ @Parameter(name = "id", description = "Organization id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "userId", description = "User id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
-	@DeleteMapping(value = "/organization/{id}/user/{userId}")
 	public @ResponseBody ResponseEntity<Organization> removeUserFromOrganization(
 			@PathVariable(value = "id") final String id, @PathVariable(value = "userId") final String userId)
 			throws Exception {
@@ -494,11 +488,11 @@ public class OrganizationController extends BaseController {
 	 * @return the organization icon
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(value = "/organization/icon/{fileName}", method = RequestMethod.GET)
 	@Operation(summary = "Get organization icon.", responses = {
 			@ApiResponse(responseCode = "200", description = "Retrieved organization icon"),
 			@ApiResponse(responseCode = "404", description = "Not Found") })
 	@Parameters({ @Parameter(name = "fileName", description = "fileName, e.g. &lt;uuid&gt;", required = true) })
-	@RequestMapping(value = "/organization/icon/{fileName}", method = RequestMethod.GET)
 	// no auth required
 	public @ResponseBody ResponseEntity<Resource> getOrganizationIcon(@PathVariable("fileName") final String fileName)
 			throws Exception {
@@ -528,17 +522,17 @@ public class OrganizationController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.POST, value = "/organization/{id}/icon")
 	@Operation(summary = "Update icon for organization. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "202", description = "Updated icon for organization"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
 			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Not Found"),
 			@ApiResponse(responseCode = "409", description = "Conflict"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation")})
+			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	@Parameters({ @Parameter(name = "id", description = "Organization id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "file", description = "Icon file", required = true) })
 	@RecordMetric
-	@PostMapping(value = "/organization/{id}/icon")
 	public ResponseEntity<String> editOrganizationIcon(@PathVariable("id") final String id,
 			@RequestParam("file") final MultipartFile inputFile) throws Exception {
 
@@ -577,16 +571,16 @@ public class OrganizationController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.DELETE, value = "/organization/{id}/icon")
 	@Operation(summary = "Delete organization icon. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully removed organization icon"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
 			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Not Found"),
 			@ApiResponse(responseCode = "415", description = "Unsupported Media Type"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation")})
+			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	@Parameters({ @Parameter(name = "id", description = "Organization id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
-	@DeleteMapping(value = "/organization/{id}/icon", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<Organization> deleteOrganizationIcon(
 			@PathVariable(value = "id") final String id) throws Exception {
 
@@ -629,6 +623,7 @@ public class OrganizationController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.POST, value = "/organization/{id}/invite", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Request member/non-member to join organization. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Organization icon deleted"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -640,7 +635,6 @@ public class OrganizationController extends BaseController {
 	@Parameters({ @Parameter(name = "id", description = "Organization id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "emailInfo", description = "Email information", required = true) })
 	@RecordMetric
-	@PostMapping(value = "/organization/{id}/invite", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<String> inviteUserToRefset(@PathVariable final String id,
 			@RequestBody(required = true) final SendCommunicationEmailInfo emailInfo) throws Exception {
 

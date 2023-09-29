@@ -155,8 +155,9 @@ public class ArtifactController extends BaseController {
 			@ApiResponse(responseCode = "202", description = "Added artifact", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Artifact.class))),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
 			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "417", description = "Expectation failed") })
-	@Parameters({ @Parameter(name = "artifact", description = "Artifact object", required = true) })
+			@ApiResponse(responseCode = "417", description = "Expectation failed") }, requestBody = @RequestBody(description = "Artifact to add", required = true, content = {
+					@Content(mediaType = "application/json", schema = @Schema(implementation = Artifact.class)) }))
+	@Parameters({ @Parameter(name = "file", description = "Artifact contents", required = true) })
 	@RecordMetric
 	public ResponseEntity<?> addArtifact(@RequestParam final String artifactStr,
 			@RequestParam("file") final MultipartFile inputFile) throws Exception {
@@ -210,10 +211,9 @@ public class ArtifactController extends BaseController {
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
 			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Not found"),
-			@ApiResponse(responseCode = "417", description = "Expecation failed") }, requestBody = @RequestBody(description = "User to update", required = true, content = {
+			@ApiResponse(responseCode = "417", description = "Expecation failed") }, requestBody = @RequestBody(description = "Artifact to update", required = true, content = {
 					@Content(mediaType = "application/json", schema = @Schema(implementation = Artifact.class)) }))
-	@Parameters({ @Parameter(name = "id", description = "Artifact id, e.g. &lt;uuid&gt;", required = true),
-			@Parameter(name = "artifact", description = "Artifact object", required = true) })
+	@Parameters({ @Parameter(name = "id", description = "Artifact id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
 	public ResponseEntity updateArtifact(final @PathVariable String id,
 			final @org.springframework.web.bind.annotation.RequestBody String artifactStr) throws Exception {

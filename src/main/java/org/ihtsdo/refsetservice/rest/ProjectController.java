@@ -18,12 +18,12 @@ import javax.ws.rs.core.MediaType;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.IdName;
 import org.ihtsdo.refsetservice.model.Project;
+import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.terminologyservice.ProjectService;
 import org.ihtsdo.refsetservice.terminologyservice.TeamService;
-import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
@@ -33,11 +33,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -84,7 +81,7 @@ public class ProjectController extends BaseController {
 	 * @return the project
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("rawtypes")
+	@RequestMapping(method = RequestMethod.GET, value = "/project/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Get project.  This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -93,8 +90,7 @@ public class ProjectController extends BaseController {
 	@Parameters({ @Parameter(name = "id", description = "Project id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "includeMembers", description = "Include project's members (users)", required = false, example = "false") })
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/project/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-	public @ResponseBody ResponseEntity getProject(@PathVariable(value = "id") final String id,
+	public @ResponseBody ResponseEntity<Project> getProject(@PathVariable(value = "id") final String id,
 			@RequestParam(value = "includeMembers", defaultValue = "false") final boolean includeMembers)
 			throws Exception {
 
@@ -120,18 +116,16 @@ public class ProjectController extends BaseController {
 	 * @return the project teams
 	 * @throws Exception the exception
 	 */
-
-	@SuppressWarnings("rawtypes")
+	@RequestMapping(method = RequestMethod.GET, value = "/project/{id}/teams", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Get teams for project.  This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
 			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
-
 	@Parameters({ @Parameter(name = "id", description = "Project id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/project/{id}/teams", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-	public @ResponseBody ResponseEntity getProjectTeams(@PathVariable(value = "id") final String id) throws Exception {
+	public @ResponseBody ResponseEntity<ResultList<Team>> getProjectTeams(@PathVariable(value = "id") final String id)
+			throws Exception {
 
 		LOG.info("Project: id: " + id);
 		authorizeUser();
@@ -159,6 +153,7 @@ public class ProjectController extends BaseController {
 	 * @return the string
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.GET, value = "/project/search", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Find projects. This call requires authentication with the correct role.", description = API_NOTES, responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -171,7 +166,6 @@ public class ProjectController extends BaseController {
 			@Parameter(name = "includeModuleNames", description = "Include names of modules for the edition", required = false, example = "false"),
 			@Parameter(name = "includeTeamDetails", description = "Include id and name of assigned teams", required = false, example = "false"), })
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/project/search", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<Project>> getProjects(
 			@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult,
 			@RequestParam(value = "includeMembers", defaultValue = "false") final boolean includeMembers,
@@ -188,9 +182,6 @@ public class ProjectController extends BaseController {
 		final boolean addTeamDetails = includeTeamDetails != null && includeTeamDetails;
 
 		try {
-
-			LOG.debug("getProjects searchParameters: " + ModelUtility.toJson(searchParameters));
-
 			final User authUser = authorizeUser();
 			final ResultList<Project> results = ProjectService.searchProjects(authUser, searchParameters);
 
@@ -243,7 +234,7 @@ public class ProjectController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("rawtypes")
+	@RequestMapping(method = RequestMethod.POST, value = "/project", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Add project.  This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "201", description = "Successfully create project"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -253,43 +244,35 @@ public class ProjectController extends BaseController {
 			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	@Parameters({ @Parameter(name = "project", description = "Project object", required = true) })
 	@RecordMetric
-	@PostMapping(value = "/project", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-	public @ResponseBody ResponseEntity addProject(@RequestBody final Project project) throws Exception {
+	public @ResponseBody ResponseEntity<Project> addProject(@RequestBody final Project project) throws Exception {
 
-		LOG.info("Add project: {}", project);
 		final User authUser = authorizeUser();
 
 		try {
 
 			if (project == null) {
-
-				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing project");
+				throw new RestException(false, 417, "Expectation failed", "Project payload is missing");
 			}
 
 			final Set<String> projectNames = ProjectService.getProjectNamesForEdition(project.getEdition().getId());
 
 			if (projectNames.contains(project.getName())) {
-
-				return ResponseEntity.status(HttpStatus.CONFLICT)
-						.body("A project with the name " + project.getName() + " already exists for this edition.");
+				throw new RestException(false, 417, "Expectation failed",
+						"A project with the name " + project.getName() + " already exists for this edition.");
 			}
 
 			try {
 
 				project.validateAdd();
 			} catch (final Exception e) {
-
 				final String errorMessage = "Project validation failed for add. Message: " + e.getMessage();
-				LOG.error(errorMessage, e);
-				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
+				throw new RestException(false, 417, "Expectation failed", errorMessage);
 			}
 
 			final Project localProject = ProjectService.addProject(authUser, project);
 
 			if (crowdUnitTestSkip == null || !"true".equalsIgnoreCase(crowdUnitTestSkip)) {
-
 				LOG.info("CALLING CROWD API");
-
 				try {
 
 					final String organizationName = project.getEdition().getOrganizationName();
@@ -299,14 +282,11 @@ public class ProjectController extends BaseController {
 							localProject.getDescription(), true, false);
 
 				} catch (final Exception e) {
-
 					final String errorMessage = "Failed adding Crowd groups. Message: " + e.getMessage();
-					LOG.error(errorMessage, e);
-					return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body("");
+					throw new RestException(false, 417, "Expectation failed", errorMessage);
 				}
 
 			} else {
-
 				LOG.info("SKIP CALLING CROWD API");
 			}
 
@@ -328,7 +308,7 @@ public class ProjectController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("rawtypes")
+	@RequestMapping(method = RequestMethod.PUT, value = "/project/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Update project.  This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Update specified project"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -338,27 +318,22 @@ public class ProjectController extends BaseController {
 	@Parameters({ @Parameter(name = "id", description = "Project id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "project", description = "Project object", required = true) })
 	@RecordMetric
-	@PutMapping(value = "/project/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-	public @ResponseBody ResponseEntity updateProject(@PathVariable(value = "id") final String id,
+	public @ResponseBody ResponseEntity<Project> updateProject(@PathVariable(value = "id") final String id,
 			@RequestBody final Project project) throws Exception {
 
-		LOG.info("Update project: {}", project);
 		final User authUser = authorizeUser();
 
 		if (project == null || !org.apache.commons.lang3.StringUtils.equals(id, project.getId())) {
 
 			final String errorMessage = "Project is null or project id does not match id in URL.";
-			LOG.error(errorMessage);
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
+			throw new RestException(false, 404, "Not found", errorMessage);
 		}
 
 		try {
 
 			project.validateUpdate(null);
 		} catch (final Exception e) {
-
-			LOG.error("Bad request for project update.", e);
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+			throw new RestException(false, 417, "Expectation failed", "Project validation failed = " + project.getId());
 		}
 
 		try {
@@ -380,7 +355,7 @@ public class ProjectController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("rawtypes")
+	@RequestMapping(method = RequestMethod.DELETE, value = "/project/{id}")
 	@Operation(summary = "Inactivate project.  This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "202", description = "Successfully inactivated project"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -389,10 +364,8 @@ public class ProjectController extends BaseController {
 			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	@Parameters({ @Parameter(name = "id", description = "Project id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
-	@DeleteMapping(value = "/project/{id}", consumes = MediaType.APPLICATION_JSON)
-	public ResponseEntity deleteProject(@PathVariable("id") final String id) throws Exception {
+	public ResponseEntity<Void> deleteProject(@PathVariable("id") final String id) throws Exception {
 
-		LOG.info("Inactivate project: {}", id);
 		final User authUser = authorizeUser();
 
 		ProjectService.getProject(id, false);
@@ -403,8 +376,6 @@ public class ProjectController extends BaseController {
 			return new ResponseEntity<>(HttpStatus.ACCEPTED);
 
 		} catch (final NotFoundException nfe) {
-
-			LOG.error("Error getting team. Id {} not found", id);
 			return new ResponseEntity<>(new HttpHeaders(), HttpStatus.NOT_FOUND);
 
 		} catch (final Exception e) {

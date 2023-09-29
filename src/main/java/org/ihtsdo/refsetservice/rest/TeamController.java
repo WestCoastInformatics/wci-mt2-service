@@ -22,20 +22,15 @@ import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.TeamType;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.terminologyservice.TeamService;
-import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -63,6 +58,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class TeamController extends BaseController {
 
 	/** The Constant LOG. */
+	@SuppressWarnings("unused")
 	private static final Logger LOG = LoggerFactory.getLogger(TeamController.class);
 
 	/** Search teams API notes. */
@@ -76,6 +72,7 @@ public class TeamController extends BaseController {
 	 * @return the team
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.GET, value = "/team/{id}")
 	@Operation(summary = "Get team.  This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -83,11 +80,9 @@ public class TeamController extends BaseController {
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({ @Parameter(name = "id", description = "Team id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "includeMembers", description = "Include team's members (users)", required = false, example = "false") })
-	@RequestMapping(method = RequestMethod.GET, value = "/team/{id}")
 	public @ResponseBody ResponseEntity<Team> getTeam(@PathVariable(value = "id") final String id,
 			@RequestParam(value = "includeMembers") final boolean includeMembers) throws Exception {
 
-		LOG.info("Get team: {}", id);
 		authorizeUser();
 
 		try {
@@ -114,6 +109,7 @@ public class TeamController extends BaseController {
 	 * @return the string
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.GET, value = "/team/search", produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Find teams.  This call requires authentication with the correct role.", description = API_NOTES, responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -126,15 +122,12 @@ public class TeamController extends BaseController {
 			@Parameter(name = "onlyUsersTeams", description = "Limit to only user teams", required = false),
 			@Parameter(name = "hideOrganizationTeams", description = "Hide organization teams", required = false) })
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/team/search", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<Team>> getTeams(
 			@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult,
 			@RequestParam(value = "includeMembers") final boolean includeMembers,
 			@RequestParam(value = "onlyUsersTeams") final boolean onlyUsersTeams,
 			@RequestParam(value = "hideOrganizationTeams") final Boolean hideOrganizationTeams) throws Exception {
 
-		LOG.info("Search teams includeMembers: {} ; searchParameters: {}", includeMembers,
-				ModelUtility.toJson(searchParameters));
 		final User authUser = authorizeUser();
 
 		boolean noOrganizationTeams = false;
@@ -167,7 +160,7 @@ public class TeamController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("rawtypes")
+	@RequestMapping(method = RequestMethod.POST, value = "/team", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Add team.  This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "201", description = "Team successfully created"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -177,10 +170,8 @@ public class TeamController extends BaseController {
 			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	@Parameters({ @Parameter(name = "team", description = "Team object", required = true) })
 	@RecordMetric
-	@PostMapping(value = "/team", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-	public @ResponseBody ResponseEntity addTeam(@RequestBody final Team team) throws Exception {
+	public @ResponseBody ResponseEntity<Team> addTeam(@RequestBody final Team team) throws Exception {
 
-		LOG.info("Add team: {}", team);
 		final User authUser = authorizeUser();
 
 		try {
@@ -215,7 +206,7 @@ public class TeamController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@SuppressWarnings("rawtypes")
+	@RequestMapping(method = RequestMethod.POST, value = "/team/{id}", consumes = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Update team.  This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "201", description = "Successfully updated team"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -225,11 +216,9 @@ public class TeamController extends BaseController {
 	@Parameters({ @Parameter(name = "id", description = "Team id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "team", description = "Team object", required = true) })
 	@RecordMetric
-	@PutMapping(value = "/team/{id}", consumes = MediaType.APPLICATION_JSON)
-	public @ResponseBody ResponseEntity updateTeam(@PathVariable(value = "id") final String id,
+	public @ResponseBody ResponseEntity<Team> updateTeam(@PathVariable(value = "id") final String id,
 			@RequestBody final Team team) throws Exception {
 
-		LOG.info("Update team: {}", team);
 		final User authUser = authorizeUser();
 
 		try {
@@ -263,6 +252,7 @@ public class TeamController extends BaseController {
 	 * @return the users
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.GET, value = "/team/{id}/users", produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Get users for team.  This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -270,10 +260,8 @@ public class TeamController extends BaseController {
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({ @Parameter(name = "id", description = "Team id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
-	@RequestMapping(value = "/team/{id}/users", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
 	public ResponseEntity<Object> getOrganizationUsers(@PathVariable final String id) throws Exception {
 
-		LOG.info("Get team users. Id: {}", id);
 		final User authUser = authorizeUser();
 
 		try {
@@ -296,17 +284,16 @@ public class TeamController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.POST, value = "/team/{id}/member")
 	@Operation(summary = "Add user to team.  This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "201", description = "Successfully added user to team"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
 			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({ @Parameter(name = "id", description = "Team id, e.g. &lt;uuid&gt;", required = true) })
-	@PostMapping("/team/{id}/member")
 	public @ResponseBody ResponseEntity<String> addUsersToTeam(@PathVariable final String id, final String emails)
 			throws Exception {
 
-		LOG.info("Add user(s) {} to team: {}", emails, id);
 		final User authUser = authorizeUser();
 
 		if (StringUtils.isBlank(emails)) {
@@ -345,6 +332,7 @@ public class TeamController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.DELETE, value = "/team/{id}/member/{userId}")
 	@Operation(summary = "Delete users from team.  This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "202", description = "Successfully removed user from team"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -352,11 +340,9 @@ public class TeamController extends BaseController {
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({ @Parameter(name = "id", description = "Team id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "userId", description = "User id, e.g. &lt;uuid&gt;", required = true) })
-	@DeleteMapping("/team/{id}/member/{userId}")
 	public @ResponseBody ResponseEntity<Void> removeUserFromTeam(@PathVariable final String id,
 			@PathVariable final String userId) throws Exception {
 
-		LOG.info("Remove user {} from team: {}", userId, id);
 		final User authUser = authorizeUser();
 
 		try {
@@ -384,6 +370,7 @@ public class TeamController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.POST, value = "/team/{id}/role/{role}")
 	@Operation(summary = "Add role to team.  This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "201", description = "Successfully added role to team"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -391,11 +378,9 @@ public class TeamController extends BaseController {
 			@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({ @Parameter(name = "id", description = "Team id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "role", description = "Role to add. One of ADMIN, REVIEWER, VIEWER or AUTHOR.", required = true) })
-	@PostMapping("/team/{id}/role/{role}")
 	public @ResponseBody ResponseEntity<Void> addRoleToTeam(@PathVariable final String id,
 			@PathVariable final String role) throws Exception {
 
-		LOG.info("Add role {} to team {}", role, id);
 		final User authUser = authorizeUser();
 
 		try {
@@ -418,6 +403,7 @@ public class TeamController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.DELETE, value = "/team/{id}/role/{role}")
 	@Operation(summary = "Delete role from team.  This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "202", description = "Successfully removed role from team"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -427,11 +413,9 @@ public class TeamController extends BaseController {
 	@Parameters({ @Parameter(name = "id", description = "Team id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "role", description = "Role to add. One of ADMIN, REVIEWER, VIEWER or AUTHOR.", required = true) })
 	@RecordMetric
-	@DeleteMapping("/team/{id}/role/{role}")
 	public @ResponseBody ResponseEntity<Void> removeRoleFromTeam(@PathVariable final String id,
 			@PathVariable final String role) throws Exception {
 
-		LOG.info("Remove role {} from team: {}", role, id);
 		final User authUser = authorizeUser();
 
 		try {
@@ -453,6 +437,7 @@ public class TeamController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.DELETE, value = "/team/{id}")
 	@Operation(summary = "Inactivate a team.  This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "202", description = "Successfully inactivated team"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -461,10 +446,8 @@ public class TeamController extends BaseController {
 			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	@Parameters({ @Parameter(name = "id", description = "Team id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
-	@DeleteMapping(value = "/team/{id}")
 	public ResponseEntity<Void> deleteTeam(@PathVariable("id") final String id) throws Exception {
 
-		LOG.info("Inactivate team: {}", id);
 		final User authUser = authorizeUser();
 
 		try {
@@ -473,10 +456,7 @@ public class TeamController extends BaseController {
 			return new ResponseEntity<>(HttpStatus.ACCEPTED);
 
 		} catch (final NotFoundException nfe) {
-
-			LOG.error("Error inactivating team. Id {} not found", id);
-			return new ResponseEntity<>(new HttpHeaders(), HttpStatus.NOT_FOUND);
-
+			throw new RestException(false, 404, "Not found", "Error inactivating team. Id {} not found = " + id);
 		} catch (final Exception e) {
 			handleException(e);
 			return null;

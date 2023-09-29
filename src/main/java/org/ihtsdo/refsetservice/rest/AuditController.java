@@ -238,7 +238,6 @@ public class AuditController extends BaseController {
 			return ResponseEntity.status(HttpStatus.OK).body(results);
 
 		} catch (final Exception e) {
-			LOG.error("Error searching audit entries.  Search criteria: {} ", searchParameters.toString(), e);
 			handleException(e);
 			return null;
 		}

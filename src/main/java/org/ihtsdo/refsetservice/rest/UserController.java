@@ -31,11 +31,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -84,6 +81,7 @@ public class UserController extends BaseController {
 	 * @return the user
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.GET, value = "/user/{id}", produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Get user. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -92,7 +90,6 @@ public class UserController extends BaseController {
 			@Parameter(name = "includeOrganizations", description = "Include user's organizations", example = "false"),
 			@Parameter(name = "includeTeams", description = "Include user's teams", required = false, example = "false") })
 	@RecordMetric
-	@RequestMapping(value = "/user/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<User> getUser(@PathVariable(value = "id") final String id,
 			@RequestParam(value = "includeOrganizations") final boolean includeOrganizations,
 			@RequestParam(value = "includeTeams") final boolean includeTeams) throws Exception {
@@ -118,6 +115,7 @@ public class UserController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.PUT, value = "/user/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Update user. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "201", description = "Successfully updated user"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -128,7 +126,6 @@ public class UserController extends BaseController {
 	@Parameters({ @Parameter(name = "id", description = "User id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "user", description = "User object", required = true) })
 	@RecordMetric
-	@PutMapping(value = "/user/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<User> updateUser(@PathVariable(value = "id") final String id,
 			@org.springframework.web.bind.annotation.RequestBody final String userStr) throws Exception {
 
@@ -165,6 +162,7 @@ public class UserController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.DELETE, value = "/user/{id}/icon", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Delete icon for the user. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully removed icon for user"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -173,7 +171,6 @@ public class UserController extends BaseController {
 			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	@Parameters({ @Parameter(name = "id", description = "User id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
-	@DeleteMapping(value = "/user/{id}/icon", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<User> deleteUserIcon(@PathVariable(value = "id") final String id)
 			throws Exception {
 
@@ -209,6 +206,7 @@ public class UserController extends BaseController {
 	 * @return the string
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.GET, value = "/user/search", produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Find users. This call requires authentication with the correct role.", description = API_NOTES, responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -219,7 +217,6 @@ public class UserController extends BaseController {
 			@Parameter(name = "includeTeams", description = "Include user's teams", required = false, example = "false"),
 			@Parameter(name = "query", description = "The value to be searched'", required = false) })
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/user/search", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<User>> getUsers(
 			@RequestParam(value = "includeOrganizations") final boolean includeOrganizations,
 			@RequestParam(value = "includeTeams") final boolean includeTeams,
@@ -262,12 +259,12 @@ public class UserController extends BaseController {
 	 * @return the user icon
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.GET, value = "/user/icon/{fileName}")
 	@Operation(summary = "Icon file for the user", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully added icon for user"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
 			@ApiResponse(responseCode = "403", description = "Forbidden") })
 	@Parameters({ @Parameter(name = "filename", description = "File name for user icon.", required = true) })
-	@RequestMapping(value = "/user/icon/{fileName}", method = RequestMethod.GET)
 	public @ResponseBody ResponseEntity<Resource> getUserIcon(@PathVariable("fileName") final String fileName)
 			throws Exception {
 
@@ -294,6 +291,7 @@ public class UserController extends BaseController {
 	 * @return the response entity with the icon URI
 	 * @throws Exception the exception
 	 */
+	@RequestMapping(method = RequestMethod.POST, value = "/user/{id}/icon")
 	@Operation(summary = "Update icon for user. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "202", description = "Successfully updated icon for user"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -304,7 +302,6 @@ public class UserController extends BaseController {
 	@Parameters({ @Parameter(name = "id", description = "User id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "file", description = "Icon file", required = true) })
 	@RecordMetric
-	@PostMapping(value = "/user/{id}/icon")
 	public ResponseEntity<String> editUserIcon(@PathVariable("id") final String id,
 			@RequestParam("file") final MultipartFile inputFile) throws Exception {
 
