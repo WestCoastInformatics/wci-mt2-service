@@ -39,9 +39,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -49,7 +46,6 @@ import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.servers.Server;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
@@ -109,16 +105,16 @@ public class AuditController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/audit", produces = MediaType.APPLICATION_JSON)
-	@ApiOperation(value = "Find audit entries. This call requires authentication with the correct role.", response = ResultList.class)
-	@ApiResponses(value = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+	@Operation(summary = "Find audit entries. This call requires authentication with the correct role.", responses =
+
+	{ @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
 			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "417", description = "Expectation failed") })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "query", value = "The value to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
-			@ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
-			@ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0") })
+	@Parameters({
+			@Parameter(name = "query", description = "The value to be searched, e.g. 'melanoma'", required = false),
+			@Parameter(name = "limit", description = "The max number of results to return", required = false, example = "10"),
+			@Parameter(name = "offset", description = "The offset for the first result", required = false, example = "0") })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<ResultList<AuditEntry>> searchAuditEntries(
 			@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult)
@@ -150,19 +146,17 @@ public class AuditController extends BaseController {
 	 * @return the string
 	 * @throws Exception the exception
 	 */
-	@ApiOperation(value = "Find audit entries for entity. This call requires authentication with the correct role.", response = ResultList.class)
-	@ApiResponses(value = {
+	@Operation(summary = "Find audit entries for entity. This call requires authentication with the correct role.", responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
 			@ApiResponse(responseCode = "403", description = "Forbidden"),
 			@ApiResponse(responseCode = "417", description = "Expectation failed"), })
-	@ApiImplicitParams({
-			@ApiImplicitParam(name = "entityType", value = "The entity type, e.g. 'REFSET'", required = true, dataTypeClass = String.class, paramType = "path", defaultValue = ""),
-			@ApiImplicitParam(name = "entityId", value = "The entity id, e.g. '89f97217-ceb1-47b2-8066-cbcdde20884e'", required = true, dataTypeClass = String.class, paramType = "path", defaultValue = ""),
-			@ApiImplicitParam(name = "expand", value = "Will expand the result to include related entries.  e.g include project and teams for an organization ", required = false, dataTypeClass = Boolean.class, paramType = "path", defaultValue = "false"),
-			@ApiImplicitParam(name = "query", value = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, dataTypeClass = String.class, paramType = "query", defaultValue = ""),
-			@ApiImplicitParam(name = "limit", value = "The max number of results to return", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0"),
-			@ApiImplicitParam(name = "offset", value = "The offset for the first result", required = false, dataTypeClass = Integer.class, paramType = "query", defaultValue = "0") })
+	@Parameters({ @Parameter(name = "entityType", description = "The entity type, e.g. 'REFSET'", required = true),
+			@Parameter(name = "entityId", description = "The entity id, e.g. '89f97217-ceb1-47b2-8066-cbcdde20884e'", required = true),
+			@Parameter(name = "expand", description = "Will expand the result to include related entries.  e.g include project and teams for an organization ", required = false, example = "false"),
+			@Parameter(name = "query", description = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false),
+			@Parameter(name = "limit", description = "The max number of results to return", required = false, example = "10"),
+			@Parameter(name = "offset", description = "The offset for the first result", required = false, example = "0") })
 	@RecordMetric
 	@RequestMapping(method = RequestMethod.GET, value = "/audit/{entityType}/{entityId}", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<AuditEntry>> searchAuditEntriesForEntity(

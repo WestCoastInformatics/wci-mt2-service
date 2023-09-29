@@ -23,12 +23,12 @@ import org.springframework.web.context.request.WebRequest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import springfox.documentation.annotations.ApiIgnore;
+import io.swagger.v3.oas.annotations.Hidden;
 
 /**
  * Handler for errors when accessing API thru browser.
  */
-@ApiIgnore
+@Hidden
 @Controller
 @RequestMapping("/error")
 public class ErrorHandlerController implements ErrorController {

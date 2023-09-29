@@ -40,6 +40,10 @@ test:
 install:
 	./gradlew clean build install -x test -x spotbugsMain -x spotbugsTest
 
+# Run the spring-boot jar with the debugging agent
+run:
+	java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5555 -jar build/libs/snomed-refset-service-*-SNAPSHOT.jar &
+
 # Publish artifacts to nexus (requires a local .gradle/gradle.properties properly configured)
 release:
 	./gradlew clean uploadArchives
