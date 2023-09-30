@@ -29,14 +29,10 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
-import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.servers.Server;
-import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controller for authentication and user end points.
@@ -44,9 +40,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
  * @author Nuno
  *
  */
-@OpenAPIDefinition(info = @Info(title = "Security Controller", version = "1.0.0", description = "Endpoints for authentication and logout."), tags = {
-		@Tag(name = "security", description = "Security service endpoints") }, servers = {
-				@Server(description = "Current Instance", url = "/") })
 @RestController
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
 public class SecurityController extends BaseController {
@@ -95,9 +88,10 @@ public class SecurityController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.POST, value = "/authenticate/{userName}")
-	@Operation(summary = "Authorize the user. Requires logging in to IMS first and sending the appropriate cookie", responses = {
-			@ApiResponse(responseCode = "200", description = "Successful authorization, payload contains user object"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized") })
+	@Operation(summary = "Authorize the user. Requires logging in to IMS first and sending the appropriate cookie", tags = {
+			"security" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successful authorization, payload contains user object"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized") })
 	@Parameters({ @Parameter(name = "userName", description = "User name to authenicate", required = true) })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<User> authenticate(@PathVariable(value = "userName") final String userName,
@@ -128,8 +122,8 @@ public class SecurityController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.POST, value = "/logout/{userName}")
-	@Operation(summary = "Log out the authenticated user. This call requires authentication", responses = {
-			@ApiResponse(responseCode = "200", description = "Successful logout") })
+	@Operation(summary = "Log out the authenticated user. This call requires authentication", tags = {
+			"security" }, responses = { @ApiResponse(responseCode = "200", description = "Successful logout") })
 	@Parameters({ @Parameter(name = "userName", description = "User name to log out", required = true) })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<Void> logout(

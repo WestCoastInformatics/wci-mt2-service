@@ -35,24 +35,17 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
-import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.servers.Server;
-import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controller for /discussion endpoints.
  * 
  */
 @RestController
-@OpenAPIDefinition(info = @Info(title = "Discussion Controller", version = "1.0.0", description = "Endpoints for adding, updating, and removing discussions and posts."), tags = {
-		@Tag(name = "discussion", description = "Discussion service endpoints") }, servers = {
-				@Server(description = "Current Instance", url = "/") })
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
 public class DiscussionController extends BaseController {
 
@@ -72,10 +65,11 @@ public class DiscussionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/discussion/{type}/{refsetInternalId}")
-	@Operation(summary = "Get discussions for the specified parameters. To see certain results this call requires authentication with the correct role.", responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested discussion"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden") })
+	@Operation(summary = "Get discussions for the specified parameters. To see certain results this call requires authentication with the correct role.", tags = {
+			"discussion" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested discussion"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden") })
 	@Parameters({
 			@Parameter(name = "type", description = "Object type, e.g. 'REFSET, REFSET_MEMEBER'", required = true, schema = @Schema(implementation = String.class)),
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the Refset", required = true, schema = @Schema(implementation = String.class)),
@@ -113,10 +107,11 @@ public class DiscussionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/discussion/{id}")
-	@Operation(summary = "Returns discussion thread. To see certain results this call requires authentication with the correct role.", responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested discussion"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden") })
+	@Operation(summary = "Returns discussion thread. To see certain results this call requires authentication with the correct role.", tags = {
+			"discussion" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested discussion"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden") })
 	@Parameters({
 			@Parameter(name = "id", description = "Discussion id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)), })
 	@RecordMetric
@@ -150,10 +145,10 @@ public class DiscussionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.POST, value = "/discussion")
-	@Operation(summary = "Add discussion. This call requires authentication with the correct role.", responses = {
-			@ApiResponse(responseCode = "201", description = "Added discussion"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden") })
+	@Operation(summary = "Add discussion. This call requires authentication with the correct role.", tags = {
+			"discussion" }, responses = { @ApiResponse(responseCode = "201", description = "Added discussion"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden") })
 	@Parameters({ @Parameter(name = "thread", description = "Discussion thread object", required = true) })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<DiscussionThread> createDiscussionThread(
@@ -204,11 +199,12 @@ public class DiscussionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.POST, value = "/discussion/{threadId}/post")
-	@Operation(summary = "Add post to existing discussion thread. This call requires authentication with the correct role.", responses = {
-			@ApiResponse(responseCode = "201", description = "Added discussion post to discussion thread."),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Not found") })
+	@Operation(summary = "Add post to existing discussion thread. This call requires authentication with the correct role.", tags = {
+			"discussion" }, responses = {
+					@ApiResponse(responseCode = "201", description = "Added discussion post to discussion thread."),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Not found") })
 	@Parameters({
 			@Parameter(name = "threadId", description = "discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
 			@Parameter(name = "post", description = "Post object.", required = true) })
@@ -268,11 +264,11 @@ public class DiscussionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.PUT, value = "/discussion/{threadId}")
-	@Operation(summary = "Update discussion thread. This call requires authentication with the correct role.", responses = {
-			@ApiResponse(responseCode = "200", description = "Updated discussion thread"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Not found") })
+	@Operation(summary = "Update discussion thread. This call requires authentication with the correct role.", tags = {
+			"discussion" }, responses = { @ApiResponse(responseCode = "200", description = "Updated discussion thread"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Not found") })
 	@Parameters({
 			@Parameter(name = "threadId", description = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
 			@Parameter(name = "thread", description = "Discussion thread object", required = true) })
@@ -337,11 +333,12 @@ public class DiscussionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.PUT, value = "/discussion/{threadId}/status")
-	@Operation(summary = "Set discussion thread status. This call requires authentication with the correct role.", responses = {
-			@ApiResponse(responseCode = "200", description = "Updated discussion thread status"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Not found") })
+	@Operation(summary = "Set discussion thread status. This call requires authentication with the correct role.", tags = {
+			"discussion" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Updated discussion thread status"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Not found") })
 	@Parameters({
 			@Parameter(name = "threadId", description = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
 			@Parameter(name = "status", description = "the discussion thread's status", required = true, schema = @Schema(implementation = String.class)) })
@@ -399,11 +396,12 @@ public class DiscussionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.PUT, value = "/discussion/{threadId}/privacy")
-	@Operation(summary = "Set the privacy of a discussion thread. This call requires authentication with the correct role.", responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully updated discussion thread privacy"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Not found") })
+	@Operation(summary = "Set the privacy of a discussion thread. This call requires authentication with the correct role.", tags = {
+			"discussion" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully updated discussion thread privacy"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Not found") })
 	@Parameters({
 			@Parameter(name = "threadId", description = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
 			@Parameter(name = "isPrivate", description = "Is the discussion thread private", required = true) })
@@ -466,11 +464,12 @@ public class DiscussionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.PUT, value = "/discussion/{threadId}/visibility")
-	@Operation(summary = "Set discussion thread visibility. This call requires authentication with the correct role.", responses = {
-			@ApiResponse(responseCode = "200", description = "Updated discussion thread visibility"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Not found") })
+	@Operation(summary = "Set discussion thread visibility. This call requires authentication with the correct role.", tags = {
+			"discussion" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Updated discussion thread visibility"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Not found") })
 	@Parameters({
 			@Parameter(name = "threadId", description = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
 			@Parameter(name = "visibility", description = "The discussion thread's visibility", required = true, schema = @Schema(implementation = String.class)) })
@@ -529,11 +528,12 @@ public class DiscussionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.PUT, value = "/discussion/{threadId}/post/{postId}/privacy")
-	@Operation(summary = "Set discussion post privacy. This call requires authentication with the correct role.", responses = {
-			@ApiResponse(responseCode = "200", description = "Updated the discussion post privacy"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Not found") })
+	@Operation(summary = "Set discussion post privacy. This call requires authentication with the correct role.", tags = {
+			"discussion" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Updated the discussion post privacy"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Not found") })
 	@Parameters({
 			@Parameter(name = "threadId", description = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
 			@Parameter(name = "postId", description = "Discussion post id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
@@ -610,12 +610,13 @@ public class DiscussionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.PUT, value = "/discussion/{threadId}/post/{postId}")
-	@Operation(summary = "Updates a discussion post. This call requires authentication with the correct role.", responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully updated the discussion post."),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Not found"),
-			@ApiResponse(responseCode = "417", description = "Expectation failed") })
+	@Operation(summary = "Updates a discussion post. This call requires authentication with the correct role.", tags = {
+			"discussion" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully updated the discussion post."),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Not found"),
+					@ApiResponse(responseCode = "417", description = "Expectation failed") })
 	@Parameters({
 			@Parameter(name = "threadId", description = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
 			@Parameter(name = "postId", description = "Discussion post id, e.g. &l5;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
@@ -698,11 +699,12 @@ public class DiscussionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.DELETE, value = "/discussion/{threadId}/post/{postId}")
-	@Operation(summary = "Delete discussion post. This call requires authentication with the correct role.", responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully deleted discussion thread."),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Not found") })
+	@Operation(summary = "Delete discussion post. This call requires authentication with the correct role.", tags = {
+			"discussion" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully deleted discussion thread."),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Not found") })
 	@Parameters({
 			@Parameter(name = "threadId", description = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)),
 			@Parameter(name = "postId", description = "Discussion post id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)), })
@@ -736,11 +738,12 @@ public class DiscussionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.DELETE, value = "/discussion/{threadId}")
-	@Operation(summary = "Deletes a discussion thread. This call requires authentication with the correct role.", responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully deleted the provided discussion thread."),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Not found") })
+	@Operation(summary = "Deletes a discussion thread. This call requires authentication with the correct role.", tags = {
+			"discussion" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully deleted the provided discussion thread."),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Not found") })
 	@Parameters({
 			@Parameter(name = "threadId", description = "Discussion thread id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)), })
 	@RecordMetric

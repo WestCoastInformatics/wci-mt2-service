@@ -39,23 +39,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
-import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.servers.Server;
-import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controller for /audit endpoints.
  */
 @RestController
-@OpenAPIDefinition(info = @Info(title = "Audit Controller", version = "1.0.0", description = "Endpoints for searching and retrieving audit entries."), tags = {
-		@Tag(name = "audit", description = "Audit service endpoints") }, servers = {
-				@Server(description = "Current Instance", url = "/") })
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
 public class AuditController extends BaseController {
 
@@ -70,7 +63,7 @@ public class AuditController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/audit/{id}")
-	@Operation(summary = "Get audit entry.", responses = {
+	@Operation(summary = "Get audit entry.", tags = { "audit" }, responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"), })
 	@Parameters({
 			@Parameter(name = "id", description = "Audit entry id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)) })
@@ -105,12 +98,12 @@ public class AuditController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/audit", produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Find audit entries. This call requires authentication with the correct role.", responses =
-
-	{ @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "417", description = "Expectation failed") })
+	@Operation(summary = "Find audit entries. This call requires authentication with the correct role.", tags = {
+			"audit" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "417", description = "Expectation failed") })
 	@Parameters({
 			@Parameter(name = "query", description = "The value to be searched, e.g. 'melanoma'", required = false),
 			@Parameter(name = "limit", description = "The max number of results to return", required = false, example = "10"),
@@ -146,11 +139,12 @@ public class AuditController extends BaseController {
 	 * @return the string
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Find audit entries for entity. This call requires authentication with the correct role.", responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "417", description = "Expectation failed"), })
+	@Operation(summary = "Find audit entries for entity. This call requires authentication with the correct role.", tags = {
+			"audit" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "417", description = "Expectation failed"), })
 	@Parameters({ @Parameter(name = "entityType", description = "The entity type, e.g. 'REFSET'", required = true),
 			@Parameter(name = "entityId", description = "The entity id, e.g. '89f97217-ceb1-47b2-8066-cbcdde20884e'", required = true),
 			@Parameter(name = "expand", description = "Will expand the result to include related entries.  e.g include project and teams for an organization ", required = false, example = "false"),

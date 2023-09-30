@@ -45,25 +45,18 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
-import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.servers.Server;
-import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controller for /artifact endpoints.
  */
 @RestController
-@OpenAPIDefinition(info = @Info(title = "Artifact Controller", version = "1.0.0", description = "Endpoints for adding, updating, and removing reference set artifacts."), tags = {
-		@Tag(name = "artifact", description = "Artifact service endpoints") }, servers = {
-				@Server(description = "Current Instance", url = "/") })
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
 public class ArtifactController extends BaseController {
 
@@ -79,7 +72,7 @@ public class ArtifactController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/artifact/{id}")
-	@Operation(summary = "Get artifact.", responses = {
+	@Operation(summary = "Get artifact.", tags = { "artifact" }, responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Artifact.class))) }, parameters = {
 					@Parameter(name = "id", description = "Artifact id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)) })
 	@RecordMetric
@@ -108,7 +101,7 @@ public class ArtifactController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/artifact", produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Find artifacts.", responses = {
+	@Operation(summary = "Find artifacts.", tags = { "artifact" }, responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Artifact.class))),
 			@ApiResponse(responseCode = "417", description = "Expecation failed") })
 	// @ModelAttribute API params documented in SearchParameter
@@ -151,12 +144,13 @@ public class ArtifactController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@PostMapping(value = "/artifact")
-	@Operation(summary = "Add artifact. This call requires authentication with the correct role.", responses = {
-			@ApiResponse(responseCode = "202", description = "Added artifact", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Artifact.class))),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "417", description = "Expectation failed") }, requestBody = @RequestBody(description = "Artifact to add", required = true, content = {
-					@Content(mediaType = "application/json", schema = @Schema(implementation = Artifact.class)) }))
+	@Operation(summary = "Add artifact. This call requires authentication with the correct role.", tags = {
+			"artifact" }, responses = {
+					@ApiResponse(responseCode = "202", description = "Added artifact", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Artifact.class))),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "417", description = "Expectation failed") }, requestBody = @RequestBody(description = "Artifact to add", required = true, content = {
+							@Content(mediaType = "application/json", schema = @Schema(implementation = Artifact.class)) }))
 	@Parameters({ @Parameter(name = "file", description = "Artifact contents", required = true) })
 	@RecordMetric
 	public ResponseEntity<?> addArtifact(@RequestParam final String artifactStr,
@@ -206,13 +200,13 @@ public class ArtifactController extends BaseController {
 	 */
 	@SuppressWarnings("rawtypes")
 	@PutMapping(value = "/artifact/{id}")
-	@Operation(summary = "Update artifact. This call requires authentication with the correct role.", responses = {
-			@ApiResponse(responseCode = "200", description = "Updated artifact"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Not found"),
-			@ApiResponse(responseCode = "417", description = "Expecation failed") }, requestBody = @RequestBody(description = "Artifact to update", required = true, content = {
-					@Content(mediaType = "application/json", schema = @Schema(implementation = Artifact.class)) }))
+	@Operation(summary = "Update artifact. This call requires authentication with the correct role.", tags = {
+			"artifact" }, responses = { @ApiResponse(responseCode = "200", description = "Updated artifact"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Not found"),
+					@ApiResponse(responseCode = "417", description = "Expecation failed") }, requestBody = @RequestBody(description = "Artifact to update", required = true, content = {
+							@Content(mediaType = "application/json", schema = @Schema(implementation = Artifact.class)) }))
 	@Parameters({ @Parameter(name = "id", description = "Artifact id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
 	public ResponseEntity updateArtifact(final @PathVariable String id,
@@ -254,11 +248,12 @@ public class ArtifactController extends BaseController {
 	 */
 	@SuppressWarnings("rawtypes")
 	@DeleteMapping(value = "/artifact/{id}")
-	@Operation(summary = "Inactivate artifact. This call requires authentication with the correct role.", responses = {
-			@ApiResponse(responseCode = "204", description = "Successfully inactivated artifact"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Not found") })
+	@Operation(summary = "Inactivate artifact. This call requires authentication with the correct role.", tags = {
+			"artifact" }, responses = {
+					@ApiResponse(responseCode = "204", description = "Successfully inactivated artifact"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Not found") })
 	@Parameters({ @Parameter(name = "id", description = "Artifact id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
 	public ResponseEntity inactivateArtifact(final @PathVariable String id) throws Exception {
@@ -289,7 +284,7 @@ public class ArtifactController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@GetMapping(value = "/artifact/{id}/file")
-	@Operation(summary = "Download artifact.", responses = {
+	@Operation(summary = "Download artifact.", tags = { "artifact" }, responses = {
 			@ApiResponse(responseCode = "200", description = "Retrieved artifact"),
 			@ApiResponse(responseCode = "404", description = "Not Found") })
 	@Parameters({ @Parameter(name = "id", description = "Artifact id, e.g. &lt;uuid&gt;", required = true) })

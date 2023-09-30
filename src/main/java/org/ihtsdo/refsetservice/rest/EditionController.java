@@ -28,22 +28,15 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
-import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.servers.Server;
-import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controller for /edition endpoints.
  */
 @RestController
-@OpenAPIDefinition(info = @Info(title = "Edition Controller", version = "1.0.0", description = "Endpoints for retrieving editions."), tags = {
-		@Tag(name = "edition", description = "Edition service endpoints") }, servers = {
-				@Server(description = "Current Instance", url = "/") })
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
 public class EditionController extends BaseController {
 
@@ -59,7 +52,7 @@ public class EditionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/edition/{id}", produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Get edition", responses = {
+	@Operation(summary = "Get edition", tags = { "edition" }, responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information") })
 	@Parameters({ @Parameter(name = "id", description = "Edition id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
@@ -83,7 +76,7 @@ public class EditionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/edition/", produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Get all editions", responses = {
+	@Operation(summary = "Get all editions", tags = { "edition" }, responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information") })
 	@RecordMetric
 	public ResponseEntity<ResultList<Edition>> getEditions() throws Exception {
@@ -109,7 +102,7 @@ public class EditionController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/edition/search", produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Find editions.", responses = {
+	@Operation(summary = "Find editions.", tags = { "edition" }, responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
 			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	// @ModelAttribute API params documented in SearchParameter

@@ -21,23 +21,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
-import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.servers.Server;
-import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controller for /invite endpoints.
  */
 @RestController
-@OpenAPIDefinition(info = @Info(title = "Invite Request Controller", version = "1.0.0", description = "Endpoints for handling reponses from invites."), tags = {
-		@Tag(name = "invite", description = "Invite Request service endpoints") }, servers = {
-				@Server(description = "Current Instance", url = "/") })
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
 public class InviteRequestController extends BaseController {
 
@@ -59,7 +52,7 @@ public class InviteRequestController extends BaseController {
 	 * @return the response entity
 	 * @throws Exception the exception
 	 */
-	@Operation(summary = "Process invitation response.", responses = {
+	@Operation(summary = "Process invitation response.", tags = { "invite" }, responses = {
 			@ApiResponse(responseCode = "200", description = "Response to invitation processed"),
 			@ApiResponse(responseCode = "404", description = "Not Found"),
 			@ApiResponse(responseCode = "417", description = "Failed Expectation") })

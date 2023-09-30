@@ -40,25 +40,18 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
-import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.servers.Server;
-import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controller for /user endpoints.
  */
 @RestController
-@OpenAPIDefinition(info = @Info(title = "User Controller", version = "1.0.0", description = "Endpoints for retrieving and updating users."), tags = {
-		@Tag(name = "user", description = "User service endpoints") }, servers = {
-				@Server(description = "Current Instance", url = "/") })
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
 public class UserController extends BaseController {
 
@@ -82,10 +75,11 @@ public class UserController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/user/{id}", produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Get user. This call requires authentication with the correct role.", responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden") })
+	@Operation(summary = "Get user. This call requires authentication with the correct role.", tags = {
+			"user" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden") })
 	@Parameters({ @Parameter(name = "id", description = "User id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "includeOrganizations", description = "Include user's organizations", example = "false"),
 			@Parameter(name = "includeTeams", description = "Include user's teams", required = false, example = "false") })
@@ -116,13 +110,13 @@ public class UserController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.PUT, value = "/user/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Update user. This call requires authentication with the correct role.", responses = {
-			@ApiResponse(responseCode = "201", description = "Successfully updated user"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Not Found"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation") }, requestBody = @RequestBody(description = "User to update", required = true, content = {
-					@Content(mediaType = "application/json", schema = @Schema(implementation = User.class)) }))
+	@Operation(summary = "Update user. This call requires authentication with the correct role.", tags = {
+			"user" }, responses = { @ApiResponse(responseCode = "201", description = "Successfully updated user"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Not Found"),
+					@ApiResponse(responseCode = "417", description = "Failed Expectation") }, requestBody = @RequestBody(description = "User to update", required = true, content = {
+							@Content(mediaType = "application/json", schema = @Schema(implementation = User.class)) }))
 	@Parameters({ @Parameter(name = "id", description = "User id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "user", description = "User object", required = true) })
 	@RecordMetric
@@ -163,12 +157,13 @@ public class UserController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.DELETE, value = "/user/{id}/icon", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Delete icon for the user. This call requires authentication with the correct role.", responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully removed icon for user"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Not Found"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
+	@Operation(summary = "Delete icon for the user. This call requires authentication with the correct role.", tags = {
+			"user" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully removed icon for user"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Not Found"),
+					@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 	@Parameters({ @Parameter(name = "id", description = "User id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<User> deleteUserIcon(@PathVariable(value = "id") final String id)
@@ -207,10 +202,11 @@ public class UserController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/user/search", produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Find users. This call requires authentication with the correct role.", description = API_NOTES, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden") })
+	@Operation(summary = "Find users. This call requires authentication with the correct role.", description = API_NOTES, tags = {
+			"user" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden") })
 	// @ModelAttribute API params documented in SearchParameter
 	@Parameters({
 			@Parameter(name = "includeOrganizations", description = "Include user's organizations", required = false, example = "false"),
@@ -260,7 +256,7 @@ public class UserController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/user/icon/{fileName}")
-	@Operation(summary = "Icon file for the user", responses = {
+	@Operation(summary = "Icon file for the user", tags = { "user" }, responses = {
 			@ApiResponse(responseCode = "200", description = "Successfully added icon for user"),
 			@ApiResponse(responseCode = "401", description = "Unauthorized"),
 			@ApiResponse(responseCode = "403", description = "Forbidden") })
@@ -292,12 +288,13 @@ public class UserController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.POST, value = "/user/{id}/icon")
-	@Operation(summary = "Update icon for user. This call requires authentication with the correct role.", responses = {
-			@ApiResponse(responseCode = "202", description = "Successfully updated icon for user"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Not Found"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
+	@Operation(summary = "Update icon for user. This call requires authentication with the correct role.", tags = {
+			"user" }, responses = {
+					@ApiResponse(responseCode = "202", description = "Successfully updated icon for user"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Not Found"),
+					@ApiResponse(responseCode = "417", description = "Failed Expectation") })
 
 	@Parameters({ @Parameter(name = "id", description = "User id, e.g. &lt;uuid&gt;", required = true),
 			@Parameter(name = "file", description = "Icon file", required = true) })
