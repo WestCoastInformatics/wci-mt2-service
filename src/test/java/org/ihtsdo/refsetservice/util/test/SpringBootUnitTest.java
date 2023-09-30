@@ -24,23 +24,23 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 public class SpringBootUnitTest {
 
-    /** The Constant LOG. */
-    private static final Logger LOG = LoggerFactory.getLogger(SpringBootUnitTest.class);
+	/** The Constant LOG. */
+	private static final Logger LOG = LoggerFactory.getLogger(SpringBootUnitTest.class);
 
-    /**
-     * Test connectability.
-     *
-     * @throws Exception the exception
-     */
-    @Test
-    public void testConnectability() throws Exception {
+	/**
+	 * Test connectability.
+	 *
+	 * @throws Exception the exception
+	 */
+	@Test
+	public void testConnectability() throws Exception {
 
-        LOG.info("TEST");
-        final Client client = ClientBuilder.newClient();
-        final WebTarget target = client.target("https://www.google.com");
+		LOG.info("TEST");
+		final Client client = ClientBuilder.newClient();
+		final WebTarget target = client.target("https://www.google.com");
 
-        final Response response = target.request("application/json").get();
-
-        assertEquals(Family.SUCCESSFUL, response.getStatusInfo().getFamily());
-    }
+		try (Response response = target.request("application/json").get()) {
+			assertEquals(Family.SUCCESSFUL, response.getStatusInfo().getFamily());
+		}
+	}
 }

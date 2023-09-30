@@ -30,7 +30,8 @@ import org.slf4j.LoggerFactory;
 public class InviteRequestUnitTest extends BaseTest {
 
     /** The Constant LOG. */
-    private static final Logger LOG = LoggerFactory.getLogger(InviteRequestUnitTest.class);
+    @SuppressWarnings("unused")
+	private static final Logger LOG = LoggerFactory.getLogger(InviteRequestUnitTest.class);
 
     /** The object. */
     private InviteRequest object;

@@ -53,293 +53,310 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class UserControllerIntegrationTest extends BaseTest {
 
-    /** The Constant LOG. */
-    private static final Logger LOG = LoggerFactory.getLogger(UserControllerIntegrationTest.class);
-
-    /** The mvc. */
-    @Autowired
-    private MockMvc mvc;
-
-    // /** The test properties. */
-    // @Autowired
-    // private Properties testProperties;
+	/** The Constant LOG. */
+	private static final Logger LOG = LoggerFactory.getLogger(UserControllerIntegrationTest.class);
+
+	/** The mvc. */
+	@Autowired
+	private MockMvc mvc;
+
+	// /** The test properties. */
+	// @Autowired
+	// private Properties testProperties;
 
-    /** The object mapper. */
-    private ObjectMapper objectMapper;
+	/** The object mapper. */
+	private ObjectMapper objectMapper;
 
-    /** The base url. */
-    private String baseUrl = "";
+	/** The base url. */
+	private String baseUrl = "";
 
-    // /** The env. */
-    // @Autowired
-    // private Environment env;
+	// /** The env. */
+	// @Autowired
+	// private Environment env;
 
-    /** The edition. */
-    private Edition edition = null;
+	/** The edition. */
+	private Edition edition = null;
 
-    /** The organization. */
-    private Organization organization = null;
+	/** The organization. */
+	private Organization organization = null;
 
-    /** The test user. */
-    private User testUser = null;
+	/** The test user. */
+	private User testUser = null;
 
-    /** The url. */
-    private String url = null;
+	/** The url. */
+	private String url = null;
 
-    /** The result. */
-    private MvcResult result = null;
+	/** The result. */
+	private MvcResult result = null;
 
-    /** The content. */
-    private String content = null;
+	/** The content. */
+	private String content = null;
 
-    /**
-     * Sets the up.
-     */
-    @BeforeEach
-    public void setUp() {
+	/**
+	 * Sets the up.
+	 */
+	@BeforeEach
+	public void setUp() {
 
-        objectMapper = new ObjectMapper();
-        JacksonTester.initFields(this, objectMapper);
-        baseUrl = "/user";
-    }
+		objectMapper = new ObjectMapper();
+		JacksonTester.initFields(this, objectMapper);
+		baseUrl = "/user";
+	}
 
-    /**
-     * Sets the up.
-     */
-    @BeforeAll
-    public void addData() {
+	/**
+	 * Sets the up.
+	 */
+	@BeforeAll
+	public void addData() {
 
-        testUser = new User();
-        testUser.setUserName("unitTestUser");
-        testUser.setName("Unit Test User");
-        testUser.setEmail("user@fake.org");
-        testUser.setTitle("Senior Mapper");
-        testUser.setCompany("The Company");
+		testUser = new User();
+		testUser.setUserName("unitTestUser");
+		testUser.setName("Unit Test User");
+		testUser.setEmail("user@fake.org");
+		testUser.setTitle("Senior Mapper");
+		testUser.setCompany("The Company");
 
-        try {
+		try {
 
-            testUser = addUser(testUser);
-        } catch (final Exception e) {
+			testUser = addUser(testUser);
+		} catch (final Exception e) {
 
-            LOG.error("ERROR {}", e.getMessage(), e);
-            assertTrue(false);
-        }
+			LOG.error("ERROR {}", e.getMessage(), e);
+			assertTrue(false);
+		}
 
-        final Organization tempOrganization = new Organization();
-        tempOrganization.setId(null);
-        tempOrganization.setName("User Unit Test Organization");
-        tempOrganization.setActive(true);
-        tempOrganization.setDescription("Generated from unit test");
-        tempOrganization.setIconUri("/organization/icon/");
-        tempOrganization.setPrimaryContactEmail("org@test.com");
+		final Organization tempOrganization = new Organization();
+		tempOrganization.setId(null);
+		tempOrganization.setName("User Unit Test Organization");
+		tempOrganization.setActive(true);
+		tempOrganization.setDescription("Generated from unit test");
+		tempOrganization.setIconUri("/organization/icon/");
+		tempOrganization.setPrimaryContactEmail("org@test.com");
 
-        final Edition tempEdition = new Edition();
-        tempEdition.setId(null);
-        tempEdition.setName("User Unit Test Edition");
-        tempEdition.setShortName("userTestShortName");
-        tempEdition.setNamespace("userTestNamespace");
-        tempEdition.setIconUri("userTestIconUri");
-        tempEdition.setBranch("/SNOMEDCT");
-        tempEdition.setOrganization(organization);
+		final Edition tempEdition = new Edition();
+		tempEdition.setId(null);
+		tempEdition.setName("User Unit Test Edition");
+		tempEdition.setShortName("userTestShortName");
+		tempEdition.setNamespace("userTestNamespace");
+		tempEdition.setIconUri("userTestIconUri");
+		tempEdition.setBranch("/SNOMEDCT");
+		tempEdition.setOrganization(organization);
 
-        try {
+		try {
 
-            edition = EditionService.createEdition(testUser, tempEdition);
-        } catch (final Exception e) {
+			edition = EditionService.createEdition(testUser, tempEdition);
+		} catch (final Exception e) {
 
-            LOG.error("ERROR {}", e.getMessage(), e);
-            assertTrue(false);
-        }
+			LOG.error("ERROR {}", e.getMessage(), e);
+			assertTrue(false);
+		}
 
-        assertThat(edition).isNotNull();
-        assertThat(edition.getId()).isNotNull();
+		assertThat(edition).isNotNull();
+		assertThat(edition.getId()).isNotNull();
 
-        try (final TerminologyService service = new TerminologyService()) {
+		try (final TerminologyService service = new TerminologyService()) {
 
-            service.setModifiedBy(testUser.getUserName());
-            service.setTransactionPerOperation(false);
-            service.beginTransaction();
+			service.setModifiedBy(testUser.getUserName());
+			service.setTransactionPerOperation(false);
+			service.beginTransaction();
 
-            organization = OrganizationService.createOrganization(service, testUser, tempOrganization);
+			organization = OrganizationService.createOrganization(service, testUser, tempOrganization);
 
-            service.commit();
+			service.commit();
 
-        } catch (final Exception e) {
+		} catch (final Exception e) {
 
-            LOG.error("ERROR {}", e.getMessage(), e);
-            assertTrue(false);
-        }
+			LOG.error("ERROR {}", e.getMessage(), e);
+			assertTrue(false);
+		}
 
-        assertThat(organization).isNotNull();
-        assertThat(organization.getId()).isNotNull();
+		assertThat(organization).isNotNull();
+		assertThat(organization.getId()).isNotNull();
 
-        try {
+		try {
+
+			final User user2 = new User();
+			user2.setUserName("secondTestUser");
+			user2.setName("Second Unit Tester");
+			user2.setEmail("2nduser@fake.org");
+			user2.setTitle("Another Senior Mapper");
+			user2.setCompany("The Company");
 
-            final User user2 = new User();
-            user2.setUserName("secondTestUser");
-            user2.setName("Second Unit Tester");
-            user2.setEmail("2nduser@fake.org");
-            user2.setTitle("Another Senior Mapper");
-            user2.setCompany("The Company");
+			try {
 
-            try {
-
-                addUser(user2);
-            } catch (final Exception e) {
-
-                LOG.error("Exception adding users : {}", e);
-                throw e;
-            }
-
-        } catch (final Exception ex) {
-
-            LOG.error("Exception setting up date for tests", ex);
-            assertThat(false).isEqualTo(true);
-        }
-
-    }
-
-    // API does not include create user - That is performed by the Security Service
-    // @Test
-    // @Order(1)
-    // public void testCreate() throws Exception {}
-
-    /**
-     * Test get.
-     *
-     * @throws Exception the exception
-     */
-    @Test
-    @Order(2)
-    public void testGet() throws Exception {
-
-        url = baseUrl + "/" + testUser.getId();
-
-        result = mvc.perform(get(url).queryParam("includeMembers", "true").contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
-        content = result.getResponse().getContentAsString();
-        LOG.info(" content = {}", content);
-
-        final User newUser = new ObjectMapper().readValue(content, User.class);
-        assertThat(compareUsers(testUser, newUser, false)).isTrue();
-    }
-
-    /**
-     * Test update.
-     *
-     * @throws Exception the exception
-     */
-    @Test
-    @Order(3)
-    public void testUpdate() throws Exception {
-
-        url = baseUrl;
-
-        // updates
-        testUser.setName("Unit Test User - Update");
-        testUser.setEmail("update@fake.org");
-        testUser.setTitle("Senior Mapper - Update");
-        testUser.setCompany("The New Company - Update");
-
-        url = baseUrl + "/" + testUser.getId();
-        mvc.perform(put(url).content(testUser.toString())).andExpect(status().isUnsupportedMediaType()).andReturn();
-
-        mvc.perform(put(url).content(testUser.toString()).contentType(MediaType.APPLICATION_XML)).andExpect(status().isUnsupportedMediaType()).andReturn();
-        result = mvc.perform(put(url).content(testUser.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
-        content = result.getResponse().getContentAsString();
-
-        final User updatedUser = new ObjectMapper().readValue(content, User.class);
-        assertThat(compareUsers(testUser, updatedUser, false)).isTrue();
-
-    }
-
-    /**
-     * Test find.
-     *
-     * @throws Exception the exception
-     */
-    @Test
-    @Order(4)
-    public void testFind() throws Exception {
-
-        // find by user name
-        url = baseUrl + "/search?";
-
-        result = mvc.perform(get(url).queryParam("query", "userName:" + testUser.getUserName()).queryParam("includeOrganizations", "false")
-            .queryParam("includeTeams", "false").contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
-        content = result.getResponse().getContentAsString();
-        final ResultList<User> userNameResultList = new ObjectMapper().readValue(content, (new TypeReference<ResultList<User>>() {
-        }));
-
-        assertThat(userNameResultList).isNotNull();
-        assertThat(userNameResultList.getItems()).isNotNull();
-        assertThat(userNameResultList.getItems().size()).isEqualTo(1);
-
-        final User userNameUser = userNameResultList.getItems().get(0);
-        assertThat(compareUsers(testUser, userNameUser, false)).isTrue();
-
-        // find by email
-        /*
-         * NOT INDEXED IN USER url = baseUrl + "/search";
-         * 
-         * result = mvc.perform(get(url).queryParam("query", "email:" +
-         * testUser.getEmail()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn(); content =
-         * result.getResponse().getContentAsString(); LOG.info(" content = {}", content); final ResultList<User> emailResultList = new
-         * ObjectMapper().readValue(content, (new TypeReference<ResultList<User>>() { }));
-         * 
-         * assertThat(emailResultList).isNotNull(); assertThat(emailResultList.getItems()).isNotNull();
-         * assertThat(emailResultList.getItems().size()).isEqualTo(1);
-         * 
-         * final User emailNewUser = emailResultList.getItems().get(0); assertThat(compareUsers(testUser, emailNewUser, true)).isTrue();
-         */
-
-        // find by name
-        /*
-         * NOT INDEXED IN USER url = baseUrl + "/search";
-         * 
-         * result = mvc.perform(get(url).queryParam("query", "name:" +
-         * testUser.getName()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn(); content =
-         * result.getResponse().getContentAsString(); LOG.info(" content = {}", content); final ResultList<User> resultList = new
-         * ObjectMapper().readValue(content, (new TypeReference<ResultList<User>>() { }));
-         * 
-         * assertThat(resultList).isNotNull(); assertThat(resultList.getItems()).isNotNull(); assertThat(resultList.getItems().size()).isEqualTo(1);
-         * 
-         * final User newUser = resultList.getItems().get(0); assertThat(compareUsers(testUser, newUser, true)).isTrue(); testUser =
-         * resultList.getItems().get(0);
-         */
-
-    }
-
-    // API does not include inactivate user - That is performed by the Security Service
-    // @Test
-    // @Order(3)
-    // public void testInactivate() throws Exception {}
-
-    /**
-     * Compare users.
-     *
-     * @param newUser the new user
-     * @param originalUser the original user
-     * @param nonUpdatedAttributes the non updated attributes
-     * @return true, if successful
-     */
-    private boolean compareUsers(final User newUser, final User originalUser, final boolean nonUpdatedAttributes) {
-
-        boolean pass = false;
-        LOG.info("new user record = {}", newUser);
-        assertThat(newUser).isNotNull();
-        assertThat(newUser.getName()).isEqualTo(originalUser.getName());
-        assertThat(newUser.isActive()).isEqualTo(originalUser.isActive());
-        assertThat(newUser.getEmail()).isEqualTo(originalUser.getEmail());
-        assertThat(newUser.getTitle()).isEqualTo(originalUser.getTitle());
-
-        if (nonUpdatedAttributes) {
-
-            assertThat(newUser.getIconUri()).isEqualTo(originalUser.getIconUri());
-        }
-
-        pass = true;
-        return pass;
-
-    }
+				addUser(user2);
+			} catch (final Exception e) {
+
+				LOG.error("Exception adding users : {}", e);
+				throw e;
+			}
+
+		} catch (final Exception ex) {
+
+			LOG.error("Exception setting up date for tests", ex);
+			assertThat(false).isEqualTo(true);
+		}
+
+	}
+
+	// API does not include create user - That is performed by the Security Service
+	// @Test
+	// @Order(1)
+	// public void testCreate() throws Exception {}
+
+	/**
+	 * Test get.
+	 *
+	 * @throws Exception the exception
+	 */
+	@Test
+	@Order(2)
+	public void testGet() throws Exception {
+
+		url = baseUrl + "/" + testUser.getId();
+
+		result = mvc.perform(get(url).queryParam("includeMembers", "true").contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+		content = result.getResponse().getContentAsString();
+		LOG.info(" content = {}", content);
+
+		final User newUser = new ObjectMapper().readValue(content, User.class);
+		assertThat(compareUsers(testUser, newUser, false)).isTrue();
+	}
+
+	/**
+	 * Test update.
+	 *
+	 * @throws Exception the exception
+	 */
+	@Test
+	@Order(3)
+	public void testUpdate() throws Exception {
+
+		url = baseUrl;
+
+		// updates
+		testUser.setName("Unit Test User - Update");
+		testUser.setEmail("update@fake.org");
+		testUser.setTitle("Senior Mapper - Update");
+		testUser.setCompany("The New Company - Update");
+
+		url = baseUrl + "/" + testUser.getId();
+		mvc.perform(put(url).content(testUser.toString())).andExpect(status().isUnsupportedMediaType()).andReturn();
+
+		mvc.perform(put(url).content(testUser.toString()).contentType(MediaType.APPLICATION_XML))
+				.andExpect(status().isUnsupportedMediaType()).andReturn();
+		result = mvc.perform(put(url).content(testUser.toString()).contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk()).andReturn();
+		content = result.getResponse().getContentAsString();
+
+		final User updatedUser = new ObjectMapper().readValue(content, User.class);
+		assertThat(compareUsers(testUser, updatedUser, false)).isTrue();
+
+	}
+
+	/**
+	 * Test find.
+	 *
+	 * @throws Exception the exception
+	 */
+	@Test
+	@Order(4)
+	public void testFind() throws Exception {
+
+		// find by user name
+		url = baseUrl + "/search?";
+
+		result = mvc.perform(get(url).queryParam("query", "userName:" + testUser.getUserName())
+				.queryParam("includeOrganizations", "false").queryParam("includeTeams", "false")
+				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+		content = result.getResponse().getContentAsString();
+		final ResultList<User> userNameResultList = new ObjectMapper().readValue(content,
+				(new TypeReference<ResultList<User>>() {
+					// n/a
+				}));
+
+		assertThat(userNameResultList).isNotNull();
+		assertThat(userNameResultList.getItems()).isNotNull();
+		assertThat(userNameResultList.getItems().size()).isEqualTo(1);
+
+		final User userNameUser = userNameResultList.getItems().get(0);
+		assertThat(compareUsers(testUser, userNameUser, false)).isTrue();
+
+		// find by email
+		/*
+		 * NOT INDEXED IN USER url = baseUrl + "/search";
+		 * 
+		 * result = mvc.perform(get(url).queryParam("query", "email:" +
+		 * testUser.getEmail()).contentType(MediaType.APPLICATION_JSON)).andExpect(
+		 * status().isOk()).andReturn(); content =
+		 * result.getResponse().getContentAsString(); LOG.info(" content = {}",
+		 * content); final ResultList<User> emailResultList = new
+		 * ObjectMapper().readValue(content, (new TypeReference<ResultList<User>>() {
+		 * }));
+		 * 
+		 * assertThat(emailResultList).isNotNull();
+		 * assertThat(emailResultList.getItems()).isNotNull();
+		 * assertThat(emailResultList.getItems().size()).isEqualTo(1);
+		 * 
+		 * final User emailNewUser = emailResultList.getItems().get(0);
+		 * assertThat(compareUsers(testUser, emailNewUser, true)).isTrue();
+		 */
+
+		// find by name
+		/*
+		 * NOT INDEXED IN USER url = baseUrl + "/search";
+		 * 
+		 * result = mvc.perform(get(url).queryParam("query", "name:" +
+		 * testUser.getName()).contentType(MediaType.APPLICATION_JSON)).andExpect(status
+		 * ().isOk()).andReturn(); content = result.getResponse().getContentAsString();
+		 * LOG.info(" content = {}", content); final ResultList<User> resultList = new
+		 * ObjectMapper().readValue(content, (new TypeReference<ResultList<User>>() {
+		 * }));
+		 * 
+		 * assertThat(resultList).isNotNull();
+		 * assertThat(resultList.getItems()).isNotNull();
+		 * assertThat(resultList.getItems().size()).isEqualTo(1);
+		 * 
+		 * final User newUser = resultList.getItems().get(0);
+		 * assertThat(compareUsers(testUser, newUser, true)).isTrue(); testUser =
+		 * resultList.getItems().get(0);
+		 */
+
+	}
+
+	// API does not include inactivate user - That is performed by the Security
+	// Service
+	// @Test
+	// @Order(3)
+	// public void testInactivate() throws Exception {}
+
+	/**
+	 * Compare users.
+	 *
+	 * @param newUser              the new user
+	 * @param originalUser         the original user
+	 * @param nonUpdatedAttributes the non updated attributes
+	 * @return true, if successful
+	 */
+	private boolean compareUsers(final User newUser, final User originalUser, final boolean nonUpdatedAttributes) {
+
+		boolean pass = false;
+		LOG.info("new user record = {}", newUser);
+		assertThat(newUser).isNotNull();
+		assertThat(newUser.getName()).isEqualTo(originalUser.getName());
+		assertThat(newUser.isActive()).isEqualTo(originalUser.isActive());
+		assertThat(newUser.getEmail()).isEqualTo(originalUser.getEmail());
+		assertThat(newUser.getTitle()).isEqualTo(originalUser.getTitle());
+
+		if (nonUpdatedAttributes) {
+
+			assertThat(newUser.getIconUri()).isEqualTo(originalUser.getIconUri());
+		}
+
+		pass = true;
+		return pass;
+
+	}
 
 }

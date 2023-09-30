@@ -33,14 +33,14 @@ import org.slf4j.LoggerFactory;
 public class ProjectUnitTest extends BaseTest {
 
     /** The Constant LOG. */
-    @SuppressWarnings("unused")
     private static final Logger LOG = LoggerFactory.getLogger(ProjectUnitTest.class);
 
     /** The model object to test. */
     private Project object;
 
     /** The edition. */
-    private Edition edition;
+    @SuppressWarnings("unused")
+	private Edition edition;
 
     /**
      * Setup.
