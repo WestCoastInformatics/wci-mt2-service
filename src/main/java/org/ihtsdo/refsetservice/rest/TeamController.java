@@ -31,7 +31,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -41,6 +40,9 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
 /**
@@ -162,10 +164,11 @@ public class TeamController extends BaseController {
 					@ApiResponse(responseCode = "403", description = "Forbidden"),
 					@ApiResponse(responseCode = "404", description = "Not Found"),
 					@ApiResponse(responseCode = "409", description = "Conflict"),
-					@ApiResponse(responseCode = "417", description = "Failed Expectation") })
-	@Parameters({ @Parameter(name = "team", description = "Team object", required = true) })
+					@ApiResponse(responseCode = "417", description = "Failed Expectation") }, requestBody = @RequestBody(description = "Team to add", required = true, content = {
+							@Content(mediaType = "application/json", schema = @Schema(implementation = Team.class)) }))
 	@RecordMetric
-	public @ResponseBody ResponseEntity<Team> addTeam(@RequestBody final Team team) throws Exception {
+	public @ResponseBody ResponseEntity<Team> addTeam(
+			@org.springframework.web.bind.annotation.RequestBody final Team team) throws Exception {
 
 		final User authUser = authorizeUser();
 
@@ -207,12 +210,12 @@ public class TeamController extends BaseController {
 					@ApiResponse(responseCode = "401", description = "Unauthorized"),
 					@ApiResponse(responseCode = "403", description = "Forbidden"),
 					@ApiResponse(responseCode = "404", description = "Not Found"),
-					@ApiResponse(responseCode = "417", description = "Failed Expectation") })
-	@Parameters({ @Parameter(name = "id", description = "Team id, e.g. &lt;uuid&gt;", required = true),
-			@Parameter(name = "team", description = "Team object", required = true) })
+					@ApiResponse(responseCode = "417", description = "Failed Expectation") }, requestBody = @RequestBody(description = "Team to update", required = true, content = {
+							@Content(mediaType = "application/json", schema = @Schema(implementation = Team.class)) }))
+	@Parameters({ @Parameter(name = "id", description = "Team id, e.g. &lt;uuid&gt;", required = true) })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<Team> updateTeam(@PathVariable(value = "id") final String id,
-			@RequestBody final Team team) throws Exception {
+			@org.springframework.web.bind.annotation.RequestBody final Team team) throws Exception {
 
 		final User authUser = authorizeUser();
 

@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
@@ -40,6 +41,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
  * @author Nuno
  *
  */
+@Hidden
 @RestController
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
 public class SecurityController extends BaseController {

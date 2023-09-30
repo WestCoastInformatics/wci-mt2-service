@@ -70,7 +70,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -82,6 +81,9 @@ import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
 /**
@@ -115,12 +117,13 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetId}/versionDate/{versionDate}", produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Get the refset for the specified ID and version date. To see certain results this call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Operation(summary = "Get the refset for the specified ID and version date. To see certain results this call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({ @Parameter(name = "refsetId", description = "The ID of the refset to return.", required = true),
 			@Parameter(name = "versionDate", description = "The date of the refset version (YYYY-MM-DD) or IN DEVELOPMENT.", required = true), })
 	@RecordMetric
@@ -182,12 +185,13 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/memberCount", produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Returns the refset member count. To see certain results this call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Operation(summary = "Returns the refset member count. To see certain results this call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset to check.", required = true) })
 	@RecordMetric
@@ -229,10 +233,11 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/isLocked", produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Returns if the refset is locked and the status of any member changes", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. Payload may include member update statuses"),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Operation(summary = "Returns if the refset is locked and the status of any member changes", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. Payload may include member update statuses"),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset to check.", required = true) })
 	@RecordMetric
@@ -279,22 +284,24 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.POST, value = "/refset/{refsetInternalId}/members")
-	@Operation(summary = "Add new refset members. This call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully added the members. payload contains the status of the operation. Long running background process, "
-					+ "call /refset/{refsetInternalId}/isLocked to get full status."),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Operation(summary = "Add new refset members. This call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully added the members. payload contains the status of the operation. Long running background process, "
+							+ "call /refset/{refsetInternalId}/isLocked to get full status."),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") }, requestBody = @RequestBody(description = "List of concept ids to add", required = true, content = {
+							@Content(mediaType = "application/json", schema = @Schema(implementation = List.class)) }))
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
-			@Parameter(name = "conceptIds", description = "A comma separated list of concept IDs to add", required = false),
 			@Parameter(name = "ecl", description = "An ECL query to identify concepts to add", required = false),
 			@Parameter(name = "conceptFile", description = "A file containing concept IDs to add", required = false),
 			@Parameter(name = "fileType", description = "The type of file uploaded (list or rf2)", required = false) })
 	public @ResponseBody ResponseEntity<String> addRefsetMembers(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId,
-			@RequestBody(required = false) final String conceptIds, @RequestParam(required = false) final String ecl,
+			@org.springframework.web.bind.annotation.RequestBody(required = false) final String conceptIds,
+			@RequestParam(required = false) final String ecl,
 			@RequestParam(required = false) final MultipartFile conceptFile,
 			@RequestParam(required = false) final String fileType) throws Exception {
 
@@ -396,22 +403,24 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.POST, value = "/refset/{refsetInternalId}/removeMembers")
-	@Operation(summary = "Remove or inactivate refset membership for a group of concepts. This call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully removed the members. payload contains the status of the operation. Long running background process, "
-					+ "call /refset/{refsetInternalId}/isLocked to get full status."),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Operation(summary = "Remove or inactivate refset membership for a group of concepts. This call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully removed the members. payload contains the status of the operation. Long running background process, "
+							+ "call /refset/{refsetInternalId}/isLocked to get full status."),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") }, requestBody = @RequestBody(description = "List of concept ids to remove", required = true, content = {
+							@Content(mediaType = "application/json", schema = @Schema(implementation = List.class)) }))
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
-			@Parameter(name = "conceptIds", description = "A comma separated list of concept IDs to remove", required = false),
 			@Parameter(name = "ecl", description = "An ECL query to identify concepts to remove", required = false),
 			@Parameter(name = "conceptFile", description = "A file containing concept IDs to remove", required = false),
 			@Parameter(name = "fileType", description = "The type of file uploaded (list or rf2)", required = false), })
 	public @ResponseBody ResponseEntity<String> removeRefsetMembers(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId,
-			@RequestBody(required = false) final String conceptIds, @RequestParam(required = false) final String ecl,
+			@org.springframework.web.bind.annotation.RequestBody(required = false) final String conceptIds,
+			@RequestParam(required = false) final String ecl,
 			@RequestParam(required = false) final MultipartFile conceptFile,
 			@RequestParam(required = false) final String fileType) throws Exception {
 
@@ -513,22 +522,24 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.POST, value = "/refset/{refsetInternalId}/definitionExceptions")
-	@Operation(summary = "Add new intensional refset definition exceptions. This call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully added the exceptions. payload contains the status of the operation. Long running background process, "
-					+ "call /refset/{refsetInternalId}/isLocked to get full status."),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Operation(summary = "Add new intensional refset definition exceptions. This call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully added the exceptions. payload contains the status of the operation. Long running background process, "
+							+ "call /refset/{refsetInternalId}/isLocked to get full status."),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") }, requestBody = @RequestBody(description = "List of concept ids to add as definition exceptions", required = true, content = {
+							@Content(mediaType = "application/json", schema = @Schema(implementation = List.class)) }))
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
-			@Parameter(name = "conceptIds", description = "A comma separated list of concept IDs to add", required = false),
 			@Parameter(name = "ecl", description = "An ECL query to identify concepts to add", required = false),
 			@Parameter(name = "conceptFile", description = "A file containing concept IDs to add", required = false),
 			@Parameter(name = "fileType", description = "The type of file uploaded (list or rf2)", required = false), })
 	public @ResponseBody ResponseEntity<String> addRefsetDefinitionExceptions(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId,
-			@RequestBody(required = false) final String conceptIds, @RequestParam(required = false) final String ecl,
+			@org.springframework.web.bind.annotation.RequestBody(required = false) final String conceptIds,
+			@RequestParam(required = false) final String ecl,
 			@RequestParam(required = false) final MultipartFile conceptFile,
 			@RequestParam(required = false) final String fileType,
 			@RequestParam(required = false) final String definitionExceptionType) throws Exception {
@@ -602,13 +613,14 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.POST, value = "/refset/{refsetInternalId}/removeDefinitionException/{definitionExceptionId}")
-	@Operation(summary = "Remove an intensional refset definition exception. This call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully removed the exception. payload contains the status of the operation. Long running background process, "
-					+ "call /refset/{refsetInternalId}/isLocked to get full status."),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Operation(summary = "Remove an intensional refset definition exception. This call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully removed the exception. payload contains the status of the operation. Long running background process, "
+							+ "call /refset/{refsetInternalId}/isLocked to get full status."),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
 			@Parameter(name = "definitionExceptionId", description = "The internal definition ID", required = true) })
@@ -665,16 +677,17 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.POST, value = "/refset")
-	@Operation(summary = "Add a new refset. This call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully added the refset. payload contains the new refset ID."),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Resource not found"),
-			@ApiResponse(responseCode = "417", description = "Expectation failed") })
-	@Parameters({
-			@Parameter(name = "refsetParameters", description = "The required fields of the refset to add.", required = true) })
-	public @ResponseBody ResponseEntity<String> createRefset(final @RequestBody Refset refsetParameters,
+	@Operation(summary = "Add a new refset. This call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully added the refset. payload contains the new refset ID."),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Resource not found"),
+					@ApiResponse(responseCode = "417", description = "Expectation failed") }, requestBody = @RequestBody(description = "Refset to add", required = true, content = {
+							@Content(mediaType = "application/json", schema = @Schema(implementation = Refset.class)) }))
+	public @ResponseBody ResponseEntity<String> addRefset(
+			final @org.springframework.web.bind.annotation.RequestBody Refset refsetParameters,
 			final BindingResult bindingResult) throws Exception {
 
 		// Check to make sure parameters were properly bound to variables.
@@ -731,19 +744,21 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.PUT, value = "/refset/{refsetInternalId}")
-	@Operation(summary = "Modify an existing refset that is in edit mode. This call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully modified the refset."),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Resource not found"),
-			@ApiResponse(responseCode = "417", description = "Expectation failed") })
+	@Operation(summary = "Modify an existing refset that is in edit mode. This call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully modified the refset."),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Resource not found"),
+					@ApiResponse(responseCode = "417", description = "Expectation failed") }, requestBody = @RequestBody(description = "Refset to update", required = true, content = {
+							@Content(mediaType = "application/json", schema = @Schema(implementation = Refset.class)) }))
 	@Parameters({
-			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
-			@Parameter(name = "refsetParameters", description = "The refset to modify.", required = true) })
-	public @ResponseBody ResponseEntity<String> modifyRefset(
+			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true) })
+	public @ResponseBody ResponseEntity<String> updateRefset(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId,
-			final @RequestBody Refset refsetParameters, final BindingResult bindingResult) throws Exception {
+			final @org.springframework.web.bind.annotation.RequestBody Refset refsetParameters,
+			final BindingResult bindingResult) throws Exception {
 
 		// Check to make sure parameters were properly bound to variables.
 		checkBinding(bindingResult);
@@ -791,12 +806,13 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.PUT, value = "/refset/{refsetInternalId}/recalculateDefinition")
-	@Operation(summary = "Recalculate the definition of an intensional refset, updating the members. This call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully modified the refset. Long running background process, call /refset/{refsetInternalId}/isLocked to get full status"),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Operation(summary = "Recalculate the definition of an intensional refset, updating the members. This call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully modified the refset. Long running background process, call /refset/{refsetInternalId}/isLocked to get full status"),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true) })
 	public @ResponseBody ResponseEntity<String> recalculateRefsetDefinition(
@@ -848,13 +864,14 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/workflowHistory", produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Get Workflow history search results. This call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Resource not found"),
-			@ApiResponse(responseCode = "417", description = "Expectation failed"), })
+	@Operation(summary = "Get Workflow history search results. This call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Resource not found"),
+					@ApiResponse(responseCode = "417", description = "Expectation failed"), })
 	// @ModelAttribute API params documented in SearchParameter
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true), })
@@ -895,12 +912,13 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.POST, value = "/refset/{refsetInternalId}/workflowStatus")
-	@Operation(summary = "Change the workflow status of a refset. This call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully changed the refset status. The payload contains the updated refset"),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Operation(summary = "Change the workflow status of a refset. This call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully changed the refset status. The payload contains the updated refset"),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
 			@Parameter(name = "action", description = "The action triggering the status change", required = true),
@@ -981,18 +999,19 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.PUT, value = "/refset/{refsetInternalId}/workflowNote")
-	@Operation(summary = "Modify a refset workflow status note. This call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully changed the status note. The payload contains the full updated workflow history"),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Operation(summary = "Modify a refset workflow status note. This call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully changed the status note. The payload contains the full updated workflow history"),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") }, requestBody = @RequestBody(description = "Workflow notes", required = true, content = {
+							@Content(mediaType = "application/json", schema = @Schema(implementation = String.class)) }))
 	@Parameters({
-			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
-			@Parameter(name = "notes", description = "The updated note", required = true), })
+			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true) })
 	public @ResponseBody ResponseEntity<ResultList<WorkflowHistory>> updateWorkflowNote(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId,
-			@RequestBody(required = true) final String notes) throws Exception {
+			@org.springframework.web.bind.annotation.RequestBody(required = true) final String notes) throws Exception {
 
 		final User authUer = authorizeUser();
 		try (final TerminologyService service = new TerminologyService()) {
@@ -1032,12 +1051,13 @@ public class RefsetController extends BaseController {
 	@Hidden
 	@RequestMapping(method = RequestMethod.PUT, value = "/admin/startAllRefsetPublications")
 	@Operation(summary = "Start the publication of all Ready for Publication refsets in a code system by promoting them to the REFSETS branch. "
-			+ "** IMPORTANT ** Once this step is taken it will be very hard to reverse. This call requires authentication with the correct role.", tags = { "refset" }, responses = {
-					@ApiResponse(responseCode = "200", description = "Successfully began the publication process. The payload contains the status."),
-					@ApiResponse(responseCode = "400", description = "Bad request"),
-					@ApiResponse(responseCode = "401", description = "Unauthorized"),
-					@ApiResponse(responseCode = "403", description = "Forbidden"),
-					@ApiResponse(responseCode = "404", description = "Resource not found") })
+			+ "** IMPORTANT ** Once this step is taken it will be very hard to reverse. This call requires authentication with the correct role.", tags = {
+					"refset" }, responses = {
+							@ApiResponse(responseCode = "200", description = "Successfully began the publication process. The payload contains the status."),
+							@ApiResponse(responseCode = "400", description = "Bad request"),
+							@ApiResponse(responseCode = "401", description = "Unauthorized"),
+							@ApiResponse(responseCode = "403", description = "Forbidden"),
+							@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "codeSystem", description = "A code system to limit the publication to", required = true), })
 	public @ResponseBody ResponseEntity<String> startAllRefsetPublications(
@@ -1117,12 +1137,13 @@ public class RefsetController extends BaseController {
 	 */
 	@Hidden
 	@RequestMapping(method = RequestMethod.PUT, value = "/admin/completeAllRefsetPublications")
-	@Operation(summary = "Complete the publication of all Ready for Publication refsets in a code system. This call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully published the refsets. The payload contains the status."),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Operation(summary = "Complete the publication of all Ready for Publication refsets in a code system. This call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully published the refsets. The payload contains the status."),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "versionDate", description = "the publication date of the refsets (YYYY-MM-DD)", required = true),
 			@Parameter(name = "codeSystem", description = "A code system to limit the publication to", required = true),
@@ -1252,12 +1273,13 @@ public class RefsetController extends BaseController {
 	 */
 	@Hidden
 	@RequestMapping(method = RequestMethod.PUT, value = "/admin/refset/{refsetInternalId}/publishLocalset")
-	@Operation(summary = "Publish a Ready for Publication local refset in a code system. This call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully published the refset. The payload contains the status."),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Operation(summary = "Publish a Ready for Publication local refset in a code system. This call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully published the refset. The payload contains the status."),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
 			@Parameter(name = "versionDate", description = "the publication date of the refset (YYYY-MM-DD)", required = true) })
@@ -1324,12 +1346,13 @@ public class RefsetController extends BaseController {
 	 */
 	@Hidden
 	@RequestMapping(method = RequestMethod.PUT, value = "/admin/failRefsetPublications")
-	@Operation(summary = "Set refsets that failed publication back to 'Ready For Edit' status. This call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully changed the refset statuses. The payload contains the status."),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Operation(summary = "Set refsets that failed publication back to 'Ready For Edit' status. This call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully changed the refset statuses. The payload contains the status."),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({ @Parameter(name = "refsetIds", description = "A comma separated list of refset IDs", required = true),
 			@Parameter(name = "notes", description = "The reason why the refsets failed", required = true) })
 	public @ResponseBody ResponseEntity<String> failRefsetPublications(
@@ -1391,12 +1414,13 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.POST, value = "/refset/{refsetInternalId}/newVersion")
-	@Operation(summary = "Create a new In Development version of an existing refset in edit mode. This call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully created the new refset version. payload contains the internal ID of the new version."),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Operation(summary = "Create a new In Development version of an existing refset in edit mode. This call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully created the new refset version. payload contains the internal ID of the new version."),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true) })
 	public @ResponseBody ResponseEntity<String> createNewRefsetVersion(
@@ -1438,12 +1462,13 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.PUT, value = "/refset/{refsetInternalId}/refsetStatus")
-	@Operation(summary = "Change a refset status. This call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully changed the refset status. payload contains the new status."),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Operation(summary = "Change a refset status. This call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully changed the refset status. payload contains the new status."),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
 			@Parameter(name = "active", description = "Is the refset active", required = true) })
@@ -1477,13 +1502,14 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/convert", produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Convert intensional refset to extensional. This call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully converted the refset. Long running background process, call /refset/{refsetInternalId}/isLocked to get full status. "
-					+ "Payload contains the status."),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Operation(summary = "Convert intensional refset to extensional. This call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully converted the refset. Long running background process, call /refset/{refsetInternalId}/isLocked to get full status. "
+							+ "Payload contains the status."),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true), })
 	public @ResponseBody ResponseEntity<String> convertToExtensional(final @PathVariable String refsetInternalId)
@@ -1524,12 +1550,13 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.DELETE, value = "/refset/{refsetInternalId}/editVersion")
-	@Operation(summary = "Delete the edit version of a refset. This call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully deleted the refset edit version. payload contains the status."),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Operation(summary = "Delete the edit version of a refset. This call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully deleted the refset edit version. payload contains the status."),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true), })
 	public @ResponseBody ResponseEntity<String> deleteRefsetEditVersion(final @PathVariable String refsetInternalId)
@@ -1571,13 +1598,14 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/refset/search", produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Get refset search results. To see certain results this call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Resource not found"),
-			@ApiResponse(responseCode = "417", description = "Expectation failed") })
+	@Operation(summary = "Get refset search results. To see certain results this call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Resource not found"),
+					@ApiResponse(responseCode = "417", description = "Expectation failed") })
 	// @ModelAttribute API params documented in SearchParameter
 	@Parameters({
 			@Parameter(name = "query", description = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false, example = ""),
@@ -1635,13 +1663,14 @@ public class RefsetController extends BaseController {
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = { "/refset/{refsetInternalId}/taxonomySearch",
 			"/refset/{refsetInternalId}/conceptSearch" }, produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Search the taxonomy for refset members. To see certain results this call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Resource not found"),
-			@ApiResponse(responseCode = "417", description = "Expectation failed") })
+	@Operation(summary = "Search the taxonomy for refset members. To see certain results this call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Resource not found"),
+					@ApiResponse(responseCode = "417", description = "Expectation failed") })
 	// @ModelAttribute API params documented in SearchParameter
 	@Parameters({ @Parameter(name = "refsetInternalId", description = "the internal refset ID", required = true) })
 	@RecordMetric
@@ -1698,13 +1727,14 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/members", produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Search for refset members. To see certain results this call requires authentication with the correct role.", description = API_NOTES, tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Resource not found"),
-			@ApiResponse(responseCode = "417", description = "Expectation failed") })
+	@Operation(summary = "Search for refset members. To see certain results this call requires authentication with the correct role.", description = API_NOTES, tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Resource not found"),
+					@ApiResponse(responseCode = "417", description = "Expectation failed") })
 	// @ModelAttribute API params documented in SearchParameter
 	@Parameters({
 			@Parameter(name = "query", description = "The term, phrase, or code to be searched, e.g. 'melanoma'", required = false),
@@ -1821,12 +1851,13 @@ public class RefsetController extends BaseController {
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/export/{refsetInternalId}", produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Export the refset for the specified ID. Payload contains the URL to download the export file. "
-			+ "To see certain results this call requires authentication with the correct role.", tags = { "refset" }, responses = {
-					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. Payload contains the URL to download the export file"),
-					@ApiResponse(responseCode = "400", description = "Bad request"),
-					@ApiResponse(responseCode = "401", description = "Unauthorized"),
-					@ApiResponse(responseCode = "403", description = "Forbidden"),
-					@ApiResponse(responseCode = "404", description = "Resource not found") })
+			+ "To see certain results this call requires authentication with the correct role.", tags = {
+					"refset" }, responses = {
+							@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. Payload contains the URL to download the export file"),
+							@ApiResponse(responseCode = "400", description = "Bad request"),
+							@ApiResponse(responseCode = "401", description = "Unauthorized"),
+							@ApiResponse(responseCode = "403", description = "Forbidden"),
+							@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset to return.", required = true),
 			@Parameter(name = "exportType", description = "The RF2 type SNAPSHOT or DELTA", required = false),
@@ -1907,12 +1938,13 @@ public class RefsetController extends BaseController {
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/export/project/{projectId}", produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Export the all latest version of all published refsets for the project. Payload contains the URL to download the export file. "
-			+ "To see certain results this call requires authentication with the correct role.", tags = { "refset" }, responses = {
-					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. Payload contains the URL to download the export file"),
-					@ApiResponse(responseCode = "400", description = "Bad request"),
-					@ApiResponse(responseCode = "401", description = "Unauthorized"),
-					@ApiResponse(responseCode = "403", description = "Forbidden"),
-					@ApiResponse(responseCode = "404", description = "Resource not found") })
+			+ "To see certain results this call requires authentication with the correct role.", tags = {
+					"refset" }, responses = {
+							@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. Payload contains the URL to download the export file"),
+							@ApiResponse(responseCode = "400", description = "Bad request"),
+							@ApiResponse(responseCode = "401", description = "Unauthorized"),
+							@ApiResponse(responseCode = "403", description = "Forbidden"),
+							@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "projectId", description = "The id of the project to export refsets.", required = true),
 			@Parameter(name = "languageId", description = "For formats with names which language to display the name in.", required = false),
@@ -1993,12 +2025,13 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/member/{conceptId}", produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Get the member history for the specified ID. To see certain results this call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Operation(summary = "Get the member history for the specified ID. To see certain results this call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset to return.", required = true),
 			@Parameter(name = "conceptId", description = "The ID of the member to return.", required = true), })
@@ -2468,10 +2501,11 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/general/refsetConcepts", produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Gets the list of Refset Concepts that can be used as parents to a refset or as the underlying concept for a new refset.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Operation(summary = "Gets the list of Refset Concepts that can be used as parents to a refset or as the underlying concept for a new refset.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "branch", description = "The branch to retrieve the concepts from.", required = true),
 			@Parameter(name = "areParentConcepts", description = "Do these concepts represent parent concepts for a new refset, or will they be the underlying concepts for a the refset itself.", required = true), })
@@ -2616,13 +2650,14 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/ancestorCache", produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Returns the contents of the ancestor cache for a refset. To see certain results this call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. Payload contains a set of concept IDs that are ancestors "
-					+ "to the members of this refset."),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Operation(summary = "Returns the contents of the ancestor cache for a refset. To see certain results this call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. Payload contains a set of concept IDs that are ancestors "
+							+ "to the members of this refset."),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true), })
 	@RecordMetric
@@ -2663,12 +2698,13 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/member/{conceptId}/ancestorConcepts", produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Returns the ancestor path concepts for a refset member. To see certain results this call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Operation(summary = "Returns the ancestor path concepts for a refset member. To see certain results this call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
 			@Parameter(name = "conceptId", description = "The ID of the member concept.", required = true) })
@@ -2706,12 +2742,13 @@ public class RefsetController extends BaseController {
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalIds}/compileUpgradeData", produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Compile and store the data to upgrade a list of refsets. Long running background process, call /refset/{refsetInternalId}/isLocked "
-			+ "to get full status. This call requires authentication with the correct role.", tags = { "refset" }, responses = {
-					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. Payload contains the status of the operation"),
-					@ApiResponse(responseCode = "401", description = "Unauthorized"),
-					@ApiResponse(responseCode = "403", description = "Forbidden"),
-					@ApiResponse(responseCode = "400", description = "Bad request"),
-					@ApiResponse(responseCode = "404", description = "Resource not found") })
+			+ "to get full status. This call requires authentication with the correct role.", tags = {
+					"refset" }, responses = {
+							@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. Payload contains the status of the operation"),
+							@ApiResponse(responseCode = "401", description = "Unauthorized"),
+							@ApiResponse(responseCode = "403", description = "Forbidden"),
+							@ApiResponse(responseCode = "400", description = "Bad request"),
+							@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "A list of comma separated internal refset IDs to upgrade.", required = true) })
 	@RecordMetric
@@ -2793,12 +2830,13 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/upgradeData", produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Get the stored the data to upgrade a refset. This call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Operation(summary = "Get the stored the data to upgrade a refset. This call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true) })
 	@RecordMetric
@@ -2843,25 +2881,27 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.POST, value = "/refset/{refsetInternalId}/modifyUpgradeConcept")
-	@Operation(summary = "Make a change to an upgrade concept. This call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "400", description = "Bad request"),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Operation(summary = "Make a change to an upgrade concept. This call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+					@ApiResponse(responseCode = "400", description = "Bad request"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") }, requestBody = @RequestBody(description = "Upgrade replacement concept", required = true, content = {
+							@Content(mediaType = "application/json", schema = @Schema(implementation = UpgradeReplacementConcept.class)) }))
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
 			@Parameter(name = "inactiveConceptId", description = "The concept ID of the inactive concept to be upgraded.", required = true),
 			@Parameter(name = "replacementConceptId", description = "The concept ID of the replacement concept to be updated.", required = false),
-			@Parameter(name = "changed", description = "A string identifying what has been changed.", required = true),
-			@Parameter(name = "manualReplacementConcept", description = "The manual upgrade replacement concept to be added.", required = false), })
+			@Parameter(name = "changed", description = "A string identifying what has been changed.", required = true) })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<String> modifyUpgradeConcept(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId,
 			@RequestParam(required = true) final String inactiveConceptId,
 			@RequestParam(required = false) final String replacementConceptId,
 			@RequestParam(required = true) final String changed,
-			@RequestBody(required = false) final UpgradeReplacementConcept manualReplacementConcept) throws Exception {
+			@org.springframework.web.bind.annotation.RequestBody(required = false) final UpgradeReplacementConcept manualReplacementConcept)
+			throws Exception {
 
 		final User authUser = authorizeUser();
 
@@ -2901,11 +2941,12 @@ public class RefsetController extends BaseController {
 	 */
 	@RequestMapping(method = RequestMethod.POST, value = "/refset/{refsetInternalId}/removeAllUpgradeInactiveConcepts")
 	@Operation(summary = "Remove all inactive Upgrade concepts at once. Long running background process, call /refset/{refsetInternalId}/isLocked "
-			+ "to get full status. This call requires authentication with the correct role.", tags = { "refset" }, responses = {
-					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. The payload contains the status of the operation"),
-					@ApiResponse(responseCode = "401", description = "Unauthorized"),
-					@ApiResponse(responseCode = "403", description = "Forbidden"),
-					@ApiResponse(responseCode = "404", description = "Resource not found") })
+			+ "to get full status. This call requires authentication with the correct role.", tags = {
+					"refset" }, responses = {
+							@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. The payload contains the status of the operation"),
+							@ApiResponse(responseCode = "401", description = "Unauthorized"),
+							@ApiResponse(responseCode = "403", description = "Forbidden"),
+							@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true) })
 	@RecordMetric
@@ -2947,11 +2988,12 @@ public class RefsetController extends BaseController {
 	 */
 	@RequestMapping(method = RequestMethod.POST, value = "/refset/{refsetInternalId}/addAllUpgradeReplacementConcepts")
 	@Operation(summary = "Add all replacement Upgrade concepts as members at once. Long running background process, call /refset/{refsetInternalId}/isLocked "
-			+ "to get full status. This call requires authentication with the correct role.", tags = { "refset" }, responses = {
-					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. The payload contains the status of the operation"),
-					@ApiResponse(responseCode = "401", description = "Unauthorized"),
-					@ApiResponse(responseCode = "403", description = "Forbidden"),
-					@ApiResponse(responseCode = "404", description = "Resource not found") })
+			+ "to get full status. This call requires authentication with the correct role.", tags = {
+					"refset" }, responses = {
+							@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. The payload contains the status of the operation"),
+							@ApiResponse(responseCode = "401", description = "Unauthorized"),
+							@ApiResponse(responseCode = "403", description = "Forbidden"),
+							@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true) })
 	@RecordMetric
@@ -2996,12 +3038,13 @@ public class RefsetController extends BaseController {
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = {
 			"/refset/{refsetInternalId}/replacementConceptSearch" }, produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Search for members replacement concepts for upgrade. This call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information."),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Resource not found"),
-			@ApiResponse(responseCode = "417", description = "Expectation failed") })
+	@Operation(summary = "Search for members replacement concepts for upgrade. This call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information."),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Resource not found"),
+					@ApiResponse(responseCode = "417", description = "Expectation failed") })
 	// @ModelAttribute API params documented in SearchParameter
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true) })
@@ -3049,10 +3092,11 @@ public class RefsetController extends BaseController {
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = {
 			"/refset/dropdownSearch" }, produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Search for refsets for dropdown menus. To see certain results this call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "404", description = "Resource not found"),
-			@ApiResponse(responseCode = "417", description = "Expectation failed") })
+	@Operation(summary = "Search for refsets for dropdown menus. To see certain results this call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+					@ApiResponse(responseCode = "404", description = "Resource not found"),
+					@ApiResponse(responseCode = "417", description = "Expectation failed") })
 	// @ModelAttribute API params documented in SearchParameter
 	@Parameters({ @Parameter(name = "refsetInternalId", description = "the internal refset ID", required = true) })
 	@RecordMetric
@@ -3096,11 +3140,12 @@ public class RefsetController extends BaseController {
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/refset/{activeRefsetInternalId}/compileComparisonData", produces = MediaType.APPLICATION_JSON)
 	@Operation(summary = "Compile the data to compare two refsets. Long running background process, call /refset/{refsetInternalId}/isLocked to get full status. "
-			+ "To see certain results this call requires authentication with the correct role.", tags = { "refset" }, responses = {
-					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. Payload contains the status of the operation"),
-					@ApiResponse(responseCode = "401", description = "Unauthorized"),
-					@ApiResponse(responseCode = "403", description = "Forbidden"),
-					@ApiResponse(responseCode = "404", description = "Resource not found") })
+			+ "To see certain results this call requires authentication with the correct role.", tags = {
+					"refset" }, responses = {
+							@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information. Payload contains the status of the operation"),
+							@ApiResponse(responseCode = "401", description = "Unauthorized"),
+							@ApiResponse(responseCode = "403", description = "Forbidden"),
+							@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "activeRefsetInternalId", description = "The internal ID of the active refset.", required = true),
 			@Parameter(name = "comparisonRefsetInternalId", description = "The internal ID of the comparison refset.", required = true) })
@@ -3148,11 +3193,12 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/refset/{activeRefsetInternalId}/comparisonData", produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Compile the data to compare two refsets. To see certain results this call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information."),
-			@ApiResponse(responseCode = "401", description = "Unauthorized"),
-			@ApiResponse(responseCode = "403", description = "Forbidden"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Operation(summary = "Compile the data to compare two refsets. To see certain results this call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information."),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "activeRefsetInternalId", description = "The internal ID of the active refset.", required = true) })
 	@RecordMetric
@@ -3232,15 +3278,17 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.POST, value = "/refset/{refsetInternalId}/share", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Share a refset via email. To see certain results this call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully shared the requested refset. The payload contains the status of the operation"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Operation(summary = "Share a refset via email. To see certain results this call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully shared the requested refset. The payload contains the status of the operation"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") }, requestBody = @RequestBody(description = "Email info", required = true, content = {
+							@Content(mediaType = "application/json", schema = @Schema(implementation = SendCommunicationEmailInfo.class)) }))
 	@Parameters({
-			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
-			@Parameter(name = "emailInfo", description = "The information about the email address to send to.", required = true) })
+			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true) })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<String> shareRefset(@PathVariable final String refsetInternalId,
-			@RequestBody(required = true) final SendCommunicationEmailInfo emailInfo) throws Exception {
+			@org.springframework.web.bind.annotation.RequestBody(required = true) final SendCommunicationEmailInfo emailInfo)
+			throws Exception {
 
 		final User authUser = authorizeUser();
 		try {
@@ -3268,15 +3316,17 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.POST, value = "/refset/{refsetInternalId}/request", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Request project access from administrators. To see certain results this call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully requested access to the refset's ecnlosing project"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Operation(summary = "Request project access from administrators. To see certain results this call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully requested access to the refset's ecnlosing project"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") }, requestBody = @RequestBody(description = "Email info", required = true, content = {
+							@Content(mediaType = "application/json", schema = @Schema(implementation = SendCommunicationEmailInfo.class)) }))
 	@Parameters({
-			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
-			@Parameter(name = "emailInfo", description = "The information about the email address to send to.", required = true) })
+			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true) })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<String> requestProjectAccess(@PathVariable final String refsetInternalId,
-			@RequestBody(required = true) final SendCommunicationEmailInfo emailInfo) throws Exception {
+			@org.springframework.web.bind.annotation.RequestBody(required = true) final SendCommunicationEmailInfo emailInfo)
+			throws Exception {
 
 		final User authUser = authorizeUser();
 		try {
@@ -3311,9 +3361,10 @@ public class RefsetController extends BaseController {
 	 * @throws Exception the exception
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/refset/{refsetInternalId}/copy", produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Create a new refset that is a copy of an existing one. This call requires authentication with the correct role.", tags = { "refset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully copied refset specified"),
-			@ApiResponse(responseCode = "404", description = "Resource not found") })
+	@Operation(summary = "Create a new refset that is a copy of an existing one. This call requires authentication with the correct role.", tags = {
+			"refset" }, responses = {
+					@ApiResponse(responseCode = "200", description = "Successfully copied refset specified"),
+					@ApiResponse(responseCode = "404", description = "Resource not found") })
 	@Parameters({
 			@Parameter(name = "refsetInternalId", description = "The internal ID of the refset to copy.", required = true),
 			@Parameter(name = "name", description = "The information about the email address to send to.", required = true),
@@ -3426,10 +3477,12 @@ public class RefsetController extends BaseController {
 	 */
 	@Hidden
 	@RequestMapping(method = RequestMethod.POST, value = "/refset/{refsetInternalId}/invite", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Request member/non-member to join organization. This call requires authentication with the correct role.")
+	@Operation(summary = "Request member/non-member to join organization. This call requires authentication with the correct role.", requestBody = @RequestBody(description = "Email info", required = true, content = {
+			@Content(mediaType = "application/json", schema = @Schema(implementation = SendCommunicationEmailInfo.class)) }))
 	@RecordMetric
 	public @ResponseBody ResponseEntity<String> inviteUserToRefset(@PathVariable final String refsetInternalId,
-			@RequestBody(required = true) final SendCommunicationEmailInfo emailInfo) throws Exception {
+			@org.springframework.web.bind.annotation.RequestBody(required = true) final SendCommunicationEmailInfo emailInfo)
+			throws Exception {
 
 		final User authUser = authorizeUser();
 		try {

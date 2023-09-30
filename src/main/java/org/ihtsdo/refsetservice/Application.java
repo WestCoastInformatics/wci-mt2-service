@@ -46,8 +46,8 @@ description = "Endponts for accessing and interacting with the refset service.")
 		@Tag(name = "project", description = "Project service endpoints"),
 		@Tag(name = "refset", description = "Refset service endpoints"),
 		@Tag(name = "security", description = "Security/auth service endpoints"),
-		@Tag(name = "Team", description = "Team service endpoints"),
-		@Tag(name = "usr", description = "User service endpoints") }, servers = {
+		@Tag(name = "team", description = "Team service endpoints"),
+		@Tag(name = "user", description = "User service endpoints") }, servers = {
 				@Server(description = "Current Instance", url = "/") })
 public class Application extends SpringBootServletInitializer {
 
