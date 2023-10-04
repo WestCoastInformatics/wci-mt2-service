@@ -10,14 +10,7 @@
 
 package org.ihtsdo.refsetservice.handler;
 
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
 import java.util.Set;
-
-import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.Edition;
@@ -26,7 +19,8 @@ import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.S3ConnectionWrapper;
-import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
+import org.ihtsdo.refsetservice.util.HandlerUtility;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.StringUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +41,27 @@ public class ExportHandler {
 
 	/** The Constant LOG. */
 	private static final Logger LOG = LoggerFactory.getLogger(ExportHandler.class);
+
+	/** The terminology handler. */
+	private static TerminologyServerHandler terminologyHandler;
+
+	static {
+		// Instantiate terminology handler
+		try {
+			String key = "terminology.handler";
+			String handlerName = PropertyUtility.getProperty(key);
+			if (handlerName.isEmpty()) {
+				throw new Exception("terminology.handler expected and does not exist.");
+			}
+
+			terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName,
+					TerminologyServerHandler.class);
+
+		} catch (Exception e) {
+			LOG.error("Failed to initialize terminology.handler - serious error", e);
+			terminologyHandler = null;
+		}
+	}
 
 	/**
 	 * Indicates whether or not requested file on S 3 is the case.
@@ -223,41 +238,9 @@ public class ExportHandler {
 	 * @throws Exception the exception
 	 */
 	public String generateSnowVersionFile(final String entityString) throws Exception {
-		/*-
-		 * Example of entity
-		 {
-		    "branchPath": "MAIN/SNOMEDCT-BE/2020-03-15",
-		    "conceptsAndRelationshipsOnly": false,
-		    "filenameEffectiveDate": "20210315",
-		    "legacyZipNaming": false,
-		    "refsetIds": [
-		        "741000172102"
-		    ],
-		    "startEffectiveTime": "20210315",
-		    "transientEffectiveTime": "20210315",
-		    "type": "SNAPSHOT",
-		    "unpromotedChangesOnly": false
-		} */
 
-		LOG.debug(entityString);
+		return terminologyHandler.generateVersionFile(entityString);
 
-		// Call Snowstorm to create RF2 file
-		final String snowstormExportApiUrl = SnowstormConnection.getBaseUrl() + "exports";
-		LOG.debug("Snowstorm Export API URL: " + snowstormExportApiUrl + entityString);
-
-		String snowVersionFileUrl = "";
-
-		try (final Response response = SnowstormConnection.postResponse(snowstormExportApiUrl, entityString);) {
-
-			snowVersionFileUrl = response.getLocation().toString() + "/archive";
-			LOG.debug("Snowstorm File URL: " + snowVersionFileUrl);
-
-		} catch (final Exception ex) {
-			throw new Exception("Could not generate the Rf2 file by snowstorm with : " + entityString, ex);
-
-		}
-
-		return snowVersionFileUrl;
 	}
 
 	/**
@@ -270,19 +253,6 @@ public class ExportHandler {
 	public void downloadSnowGeneratedFile(final String snowVersionFileUrl, final String localSnowVersionPath)
 			throws Exception {
 
-		// Download generated file from Snowstorm
-		LOG.debug("Local snow version file path is: " + localSnowVersionPath);
-		try (final InputStream inputStream = SnowstormConnection.getFileDownload(snowVersionFileUrl);) {
-			// Download the Snowstorm file
-
-			try (final ReadableByteChannel readableByteChannel = Channels.newChannel(inputStream);
-					final FileOutputStream fileOutputStream = new FileOutputStream(localSnowVersionPath);
-					final FileChannel fileChannel = fileOutputStream.getChannel()) {
-
-				fileChannel.transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
-			} catch (final Exception ex) {
-				throw new Exception("Failed to download the Snowstorm generated RF2 file: " + ex.getMessage(), ex);
-			}
-		}
+		terminologyHandler.downloadGeneratedFile(snowVersionFileUrl, localSnowVersionPath);
 	}
 }

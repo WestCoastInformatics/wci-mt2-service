@@ -10,17 +10,15 @@
 package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.core.Response;
+import javax.ws.rs.NotFoundException;
 
-import org.apache.commons.lang3.StringUtils;
+import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
@@ -31,6 +29,7 @@ import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
+import org.ihtsdo.refsetservice.util.HandlerUtility;
 import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
@@ -38,9 +37,7 @@ import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
+// TODO: Auto-generated Javadoc
 /**
  * The Class ProjectService.
  */
@@ -49,11 +46,30 @@ public class ProjectService extends BaseService {
 	/** The Constant LOG. */
 	private static final Logger LOG = LoggerFactory.getLogger(ProjectService.class);
 
+	/** The terminology handler. */
+	private static TerminologyServerHandler terminologyHandler;
+
 	/** The crowd unit test skip. */
 	private static String crowdUnitTestSkip;
 
 	static {
 		crowdUnitTestSkip = PropertyUtility.getProperty("crowd.unit.test.skip");
+
+		// Instantiate terminology handler
+		try {
+			String key = "terminology.handler";
+			String handlerName = PropertyUtility.getProperty(key);
+			if (handlerName.isEmpty()) {
+				throw new Exception("terminology.handler expected and does not exist.");
+			}
+
+			terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName,
+					TerminologyServerHandler.class);
+
+		} catch (Exception e) {
+			LOG.error("Failed to initialize terminology.handler - serious error", e);
+			terminologyHandler = null;
+		}
 	}
 
 	/**
@@ -107,7 +123,10 @@ public class ProjectService extends BaseService {
 			final Project project = service.findSingle("id: " + projectId + " AND active:true", Project.class, null);
 
 			if (project == null) {
-				return null;
+
+				final String errorMessage = "Unable to find project for id " + projectId + ".";
+				LOG.info(errorMessage);
+				throw new NotFoundException(errorMessage);
 			}
 
 			if (includeMembers) {
@@ -289,54 +308,8 @@ public class ProjectService extends BaseService {
 	 */
 	public static Map<String, String> getModuleNames(final Project project) throws Exception {
 
-		// Create Snowstorm URL
-		final String conceptSearchUrl = SnowstormConnection.getBaseUrl() + project.getEdition().getBranch()
-				+ "/concepts/search";
-		final String bodyBase = "{\"limit\": 1000, ";
-		String bodyConceptIds = "\"conceptIds\":[";
-		final ObjectMapper mapper = new ObjectMapper();
-		final Map<String, String> moduleNames = new HashMap<>();
+		return terminologyHandler.getModuleNames(project);
 
-		for (final String moduleId : project.getEdition().getModules()) {
-			bodyConceptIds += "\"" + moduleId + "\",";
-		}
-
-		bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",") + "]";
-
-		final String searchBody = bodyBase + bodyConceptIds + "}";
-		LOG.debug("getModuleNames URL: " + conceptSearchUrl);
-		LOG.debug("getModuleNames BODY: " + searchBody);
-
-		try (final Response response = SnowstormConnection.postResponse(conceptSearchUrl, searchBody)) {
-
-			final String resultString = response.readEntity(String.class);
-
-			// Only process payload if Rest call is successful
-			if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-
-				throw new Exception(
-						"call to url '" + conceptSearchUrl + "' for module name lookup wasn't successful. Status: "
-								+ response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
-			}
-
-			final JsonNode root = mapper.readTree(resultString.toString());
-			final Iterator<JsonNode> iterator = root.get("items").iterator();
-
-			while (iterator != null && iterator.hasNext()) {
-
-				final JsonNode conceptNode = iterator.next();
-				final String conceptId = conceptNode.get("conceptId").asText();
-				String name = "";
-
-				if (conceptNode.get("fsn") != null && conceptNode.get("fsn").get("term") != null) {
-					name = conceptNode.get("fsn").get("term").asText();
-				}
-
-				moduleNames.put(conceptId, name);
-			}
-		}
-
-		return moduleNames;
 	}
 
 	/**

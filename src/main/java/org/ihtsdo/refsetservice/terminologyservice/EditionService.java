@@ -9,222 +9,160 @@
  */
 package org.ihtsdo.refsetservice.terminologyservice;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
-import javax.ws.rs.core.Response;
-
+import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.sync.util.SyncDatabaseHandler;
-import org.ihtsdo.refsetservice.sync.util.SyncStatistics;
-import org.ihtsdo.refsetservice.sync.util.SyncUtilities;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
+import org.ihtsdo.refsetservice.util.HandlerUtility;
 import org.ihtsdo.refsetservice.util.IndexUtility;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 /**
- * The Class EditionService.
+ * Service for search and retrieval of edition information.
  */
 public class EditionService extends BaseService {
 
-    /** The Constant LOG. */
-    private static final Logger LOG = LoggerFactory.getLogger(EditionService.class);
+	/** The Constant LOG. */
+	private static final Logger LOG = LoggerFactory.getLogger(EditionService.class);
 
-    /**
-     * Creates the edition.
-     *
-     * @param user the user
-     * @param edition the edition
-     * @return the edition
-     * @throws Exception the exception
-     */
-    public static Edition createEdition(final User user, final Edition edition) throws Exception {
+	/** The terminology handler. */
+	private static TerminologyServerHandler terminologyHandler;
 
-        try (final TerminologyService service = new TerminologyService()) {
+	static {
+		// Instantiate terminology handler
+		try {
+			String key = "terminology.handler";
+			String handlerName = PropertyUtility.getProperty(key);
+			if (handlerName.isEmpty()) {
+				throw new Exception("terminology.handler expected and does not exist.");
+			}
 
-            final Edition newEdition = new Edition();
-            newEdition.populateFrom(edition);
+			terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName,
+					TerminologyServerHandler.class);
 
-            service.setModifiedBy(user.getUserName());
-            service.setTransactionPerOperation(false);
-            service.beginTransaction();
+		} catch (Exception e) {
+			LOG.error("Failed to initialize terminology.handler - serious error", e);
+			terminologyHandler = null;
+		}
+	}
 
-            service.add(newEdition);
-            service.add(AuditEntryHelper.addEditionEntry(newEdition));
-            service.commit();
+	/**
+	 * Creates the edition.
+	 *
+	 * @param user    the user
+	 * @param edition the edition
+	 * @return the edition
+	 * @throws Exception the exception
+	 */
+	public static Edition createEdition(final User user, final Edition edition) throws Exception {
 
-            return newEdition;
-        }
-    }
+		try (final TerminologyService service = new TerminologyService()) {
 
-    /**
-     * Returns the edition.
-     *
-     * @param editionId the edition id
-     * @return the edition
-     * @throws Exception the exception
-     */
-    public static Edition getEdition(final String editionId) throws Exception {
+			final Edition newEdition = new Edition();
+			newEdition.populateFrom(edition);
 
-        try (final TerminologyService service = new TerminologyService()) {
-            final Edition edition = service.get(editionId, Edition.class);
-            return edition;
-        }
-    }
+			service.setModifiedBy(user.getUserName());
+			service.setTransactionPerOperation(false);
+			service.beginTransaction();
 
-    /**
-     * Returns the editions.
-     *
-     * @return the editions
-     * @throws Exception the exception
-     */
-    public static ResultList<Edition> getEditions() throws Exception {
+			service.add(newEdition);
+			service.add(AuditEntryHelper.addEditionEntry(newEdition));
+			service.commit();
 
-        try (final TerminologyService service = new TerminologyService()) {
+			return newEdition;
+		}
+	}
 
-            final ResultList<Edition> results = searchEditions(new SearchParameters());
+	/**
+	 * Returns the edition.
+	 *
+	 * @param editionId the edition id
+	 * @return the edition
+	 * @throws Exception the exception
+	 */
+	public static Edition getEdition(final String editionId) throws Exception {
 
-            return results;
-        }
-    }
+		try (final TerminologyService service = new TerminologyService()) {
+			final Edition edition = service.get(editionId, Edition.class);
+			return edition;
+		}
+	}
 
-    /**
-     * Search Editions.
-     *
-     * @param searchParameters the search parameters
-     * @return the list of projects
-     * @throws Exception the exception
-     */
-    public static ResultList<Edition> searchEditions(final SearchParameters searchParameters) throws Exception {
+	/**
+	 * Returns the editions.
+	 *
+	 * @return the editions
+	 * @throws Exception the exception
+	 */
+	public static ResultList<Edition> getEditions() throws Exception {
 
-        try (final TerminologyService service = new TerminologyService()) {
+		try (final TerminologyService service = new TerminologyService()) {
 
-            final long start = System.currentTimeMillis();
-            String query = getQueryForActiveOnly(searchParameters);
-            final PfsParameter pfs = new PfsParameter();
+			final ResultList<Edition> results = searchEditions(new SearchParameters());
 
-            if (searchParameters.getOffset() != null) {
-                pfs.setOffset(searchParameters.getOffset());
-            }
+			return results;
+		}
+	}
 
-            if (searchParameters.getLimit() != null) {
-                pfs.setLimit(searchParameters.getLimit());
-            }
+	/**
+	 * Search Editions.
+	 *
+	 * @param searchParameters the search parameters
+	 * @return the list of projects
+	 * @throws Exception the exception
+	 */
+	public static ResultList<Edition> searchEditions(final SearchParameters searchParameters) throws Exception {
 
-            if (searchParameters.getSortAscending() != null) {
-                pfs.setAscending(searchParameters.getSortAscending());
-            }
+		try (final TerminologyService service = new TerminologyService()) {
 
-            if (searchParameters.getSort() != null) {
-                pfs.setSort(searchParameters.getSort());
-            }
+			final long start = System.currentTimeMillis();
+			String query = getQueryForActiveOnly(searchParameters);
+			final PfsParameter pfs = new PfsParameter();
 
-            if (query != null && !query.equals("")) {
-                query = IndexUtility.addWildcardsToQuery(query, Edition.class);
-            }
+			if (searchParameters.getOffset() != null) {
+				pfs.setOffset(searchParameters.getOffset());
+			}
 
-            final ResultList<Edition> results = service.find(query, pfs, Edition.class, null);
-            results.setTimeTaken(System.currentTimeMillis() - start);
-            results.setTotalKnown(true);
+			if (searchParameters.getLimit() != null) {
+				pfs.setLimit(searchParameters.getLimit());
+			}
 
-            return results;
-        }
-    }
+			if (searchParameters.getSortAscending() != null) {
+				pfs.setAscending(searchParameters.getSortAscending());
+			}
 
-    /**
-     * Populate new editions based on affiliated code systems from the terminology server.
-     *
-     * @return a list of new editions based on affiliated code systems
-     * @throws Exception the exception
-     */
-    public static List<Edition> getAffiliateEditionList() throws Exception {
+			if (searchParameters.getSort() != null) {
+				pfs.setSort(searchParameters.getSort());
+			}
 
-        final List<Edition> editionList = new ArrayList<>();
-        final String url = SnowstormConnection.getBaseUrl() + "codesystems";
-        LOG.info("getSnowstormCodeSystems url: " + url);
+			if (query != null && !query.equals("")) {
+				query = IndexUtility.addWildcardsToQuery(query, Edition.class);
+			}
 
-        try (final Response response = SnowstormConnection.getResponse(url)) {
+			final ResultList<Edition> results = service.find(query, pfs, Edition.class, null);
+			results.setTimeTaken(System.currentTimeMillis() - start);
+			results.setTotalKnown(true);
 
-            final String resultString = response.readEntity(String.class);
+			return results;
+		}
+	}
 
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode organizationJsonRootNode = mapper.readTree(resultString.toString());
-            final Iterator<JsonNode> organizationIterator = organizationJsonRootNode.iterator();
-            final SyncUtilities syncUtilities = new SyncUtilities(new SyncDatabaseHandler(null, new SyncStatistics()));
-
-            while (organizationIterator.hasNext()) {
-
-                final Iterator<JsonNode> codeSystems = organizationIterator.next().iterator();
-
-                while (codeSystems.hasNext()) {
-
-                    final JsonNode codeSystem = codeSystems.next();
-
-                    // Check for invalid or ignored code systems
-                    if (!codeSystem.has("shortName")) {
-                        continue;
-                    }
-
-                    final String editionShortName = codeSystem.get("shortName").asText();
-                    final String maintainerType = syncUtilities.identifyMaintainerType(codeSystem, editionShortName);
-
-                    // Skip inactive code systems
-                    if (codeSystem.has("active") && !codeSystem.get("active").asBoolean()) {
-                        continue;
-                    }
-
-                    // Code System has been defined as to-be-ignored (either by specifying name or shortname).
-                    else if (syncUtilities.getPropertyReader().getCodeSystemsToIgnore().contains(editionShortName)) {
-                        continue;
-                    }
-
-                    // deal only with Type-3 (non-Managed Service)
-                    // else if (!maintainerType.equalsIgnoreCase("Managed Service")) {
-                    // continue;
-                    // }
-
-                    // deal only with official affiliate code systems
-                    else if (!editionShortName.toLowerCase().contains("-affiliate")) {
-                        continue;
-                    }
-
-                    final String editionName = codeSystem.get("name").asText();
-                    final String branch = codeSystem.get("branchPath").asText();
-                    final String defaultLanguageCode = syncUtilities.identifyDefaultLanguageCode(codeSystem, editionName);
-                    final Set<String> defaultLanguageRefsets = syncUtilities.identifyDefaultLanguageRefsets(codeSystem, editionShortName, branch);
-
-                    // Affiliates (on any extension) should not have the ability to choose modules.
-                    // Fix to 1201891009 |SNOMED CT Community content module (core metadata concept)| for all affiliate refsets
-                    final Set<String> editionModules = new HashSet<>(Arrays.asList("1201891009"));
-
-                    final Edition edition = new Edition();
-                    edition.setShortName(editionShortName);
-                    edition.setName(editionName);
-                    edition.setBranch(branch);
-                    edition.setDefaultLanguageRefsets(defaultLanguageRefsets);
-                    edition.setModules(editionModules);
-                    edition.setDefaultLanguageCode(defaultLanguageCode);
-                    edition.setMaintainerType(maintainerType);
-                    edition.setActive(true);
-
-                    editionList.add(edition);
-                }
-            }
-        }
-
-        return editionList;
-    }
+	/**
+	 * Populate new editions based on affiliated code systems from the terminology
+	 * server.
+	 *
+	 * @return a list of new editions based on affiliated code systems
+	 * @throws Exception the exception
+	 */
+	public static List<Edition> getAffiliateEditionList() throws Exception {
+		return terminologyHandler.getAffiliateEditionList();
+	}
 }
