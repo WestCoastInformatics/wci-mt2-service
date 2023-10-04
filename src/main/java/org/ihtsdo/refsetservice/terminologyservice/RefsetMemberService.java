@@ -80,7 +80,6 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 
 /**
  * Service class to get refset member concept information from a terminology
@@ -92,3608 +91,3680 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
  */
 public final class RefsetMemberService {
 
-    /** The Constant LOG. */
-    private static final Logger LOG = LoggerFactory.getLogger(RefsetMemberService.class);
+	/** The Constant LOG. */
+	private static final Logger LOG = LoggerFactory.getLogger(RefsetMemberService.class);
 
-    /** The terminology handler. */
-    private static TerminologyServerHandler terminologyHandler;
+	/** The terminology handler. */
+	private static TerminologyServerHandler terminologyHandler;
 
-    /** The simple date format. */
-    public static final String DATE_FORMAT = "yyyyMMdd";
+	/** The simple date format. */
+	public static final String DATE_FORMAT = "yyyyMMdd";
 
-    /** The refset to language map. */
-    private static final Map<String, String> REFSET_TO_LANGUAGES_MAP = new HashMap<>();
+	/** The refset to language map. */
+	private static final Map<String, String> REFSET_TO_LANGUAGES_MAP = new HashMap<>();
 
-    /** The description term. */
-    public static final String DESCRIPTION_TERM = "term";
+	/** The description term. */
+	public static final String DESCRIPTION_TERM = "term";
 
-    /** The description type. */
-    private static final String DESCRIPTION_TYPE = "type";
+	/** The description type. */
+	private static final String DESCRIPTION_TYPE = "type";
 
-    /** The description language. */
-    private static final String DESCRIPTION_LANGUAGE = "language";
+	/** The description language. */
+	private static final String DESCRIPTION_LANGUAGE = "language";
 
-    /** The description language. */
-    private static final String DESCRIPTION_ID = "descriptionId";
+	/** The description language. */
+	private static final String DESCRIPTION_ID = "descriptionId";
 
-    /** The description language code. */
-    private static final String LANGUAGE_CODE = "languageCode";
+	/** The description language code. */
+	private static final String LANGUAGE_CODE = "languageCode";
 
-    /** The description language code and type combined. */
-    public static final String LANGUAGE_ID = "languageId";
+	/** The description language code and type combined. */
+	public static final String LANGUAGE_ID = "languageId";
 
-    /** The description language. */
-    private static final String LANGUAGE_NAME = "languageName";
+	/** The description language. */
+	private static final String LANGUAGE_NAME = "languageName";
 
-    /** The upgrade changed status for REPLACEMENT_REMOVED. */
-    public static final String REPLACEMENT_REMOVED = "REPLACEMENT_REMOVED";
+	/** The upgrade changed status for REPLACEMENT_REMOVED. */
+	public static final String REPLACEMENT_REMOVED = "REPLACEMENT_REMOVED";
 
-    /** The upgrade changed status for REPLACEMENT_ADDED. */
-    public static final String REPLACEMENT_ADDED = "REPLACEMENT_ADDED";
+	/** The upgrade changed status for REPLACEMENT_ADDED. */
+	public static final String REPLACEMENT_ADDED = "REPLACEMENT_ADDED";
 
-    /** The upgrade changed status for REMOVED_MANUAL_REPLACEMENT. */
-    public static final String REMOVED_MANUAL_REPLACEMENT = "REMOVED_MANUAL_REPLACEMENT";
+	/** The upgrade changed status for REMOVED_MANUAL_REPLACEMENT. */
+	public static final String REMOVED_MANUAL_REPLACEMENT = "REMOVED_MANUAL_REPLACEMENT";
 
-    /** The upgrade changed status for NEW_MANUAL_REPLACEMENT. */
-    public static final String NEW_MANUAL_REPLACEMENT = "NEW_MANUAL_REPLACEMENT";
+	/** The upgrade changed status for NEW_MANUAL_REPLACEMENT. */
+	public static final String NEW_MANUAL_REPLACEMENT = "NEW_MANUAL_REPLACEMENT";
 
-    /** The upgrade changed status for INACTIVE_ADDED. */
-    public static final String INACTIVE_ADDED = "INACTIVE_ADDED";
+	/** The upgrade changed status for INACTIVE_ADDED. */
+	public static final String INACTIVE_ADDED = "INACTIVE_ADDED";
 
-    /** The upgrade changed status for INACTIVE_REMOVED. */
-    public static final String INACTIVE_REMOVED = "INACTIVE_REMOVED";
+	/** The upgrade changed status for INACTIVE_REMOVED. */
+	public static final String INACTIVE_REMOVED = "INACTIVE_REMOVED";
 
-    /** The local directory to store exported refset files. */
-    private static String exportFileDir;
+	/** The local directory to store exported refset files. */
+	private static String exportFileDir;
 
-    /** The local server url to download exported refset files. */
-    private static final String EXPORT_DOWNLOAD_URL = "export/download/";
+	/** The local server url to download exported refset files. */
+	private static final String EXPORT_DOWNLOAD_URL = "export/download/";
 
-    /** A list of refset actively being updated. */
-    public static final Set<String> REFSETS_BEING_UPDATED = new HashSet<>();
+	/** A list of refset actively being updated. */
+	public static final Set<String> REFSETS_BEING_UPDATED = new HashSet<>();
 
-    /** A list of refset actively being updated. */
-    public static final Map<String, Map<String, Map<String, String>>> REFSETS_UPDATED_MEMBERS = new HashMap<>();
+	/** A list of refset actively being updated. */
+	public static final Map<String, Map<String, Map<String, String>>> REFSETS_UPDATED_MEMBERS = new HashMap<>();
 
-    /** A cache of the members returned for a specific URL. */
-    public static final Map<String, Map<String, ConceptResultList>> CONCEPTS_CALL_CACHE = new HashMap<>();
+	/** A cache of the members returned for a specific URL. */
+	public static final Map<String, Map<String, ConceptResultList>> CONCEPTS_CALL_CACHE = new HashMap<>();
 
-    /** A cache of the details for any concept. */
-    public static final Map<String, Map<String, Concept>> CONCEPT_DETAILS_CACHE = new HashMap<>();
+	/** A cache of the details for any concept. */
+	public static final Map<String, Map<String, Concept>> CONCEPT_DETAILS_CACHE = new HashMap<>();
 
-    /** A cache of the taxonomy ancestor path for concepts. */
-    public static final Map<String, Map<String, Concept>> TAXONOMY_SEARCH_ANCESTORS_CACHE = new HashMap<>();
+	/** A cache of the taxonomy ancestor path for concepts. */
+	public static final Map<String, Map<String, Concept>> TAXONOMY_SEARCH_ANCESTORS_CACHE = new HashMap<>();
 
-    /** A cache of the children for each tree node. */
-    private static final Map<String, Map<String, ConceptResultList>> TREE_CACHE = new HashMap<>();
+	/** A cache of the children for each tree node. */
+	private static final Map<String, Map<String, ConceptResultList>> TREE_CACHE = new HashMap<>();
 
-    /** A cache of the children for each tree node. */
-    public static final Map<String, Map<String, Set<String>>> ANCESTORS_CACHE = new HashMap<>();
+	/** A cache of the children for each tree node. */
+	public static final Map<String, Map<String, Set<String>>> ANCESTORS_CACHE = new HashMap<>();
 
-    /** The Constant CONCEPT_DESCRIPTIONS_PER_CALL. */
-    public static final int CONCEPT_DESCRIPTIONS_PER_CALL = 250;
+	/** The Constant CONCEPT_DESCRIPTIONS_PER_CALL. */
+	public static final int CONCEPT_DESCRIPTIONS_PER_CALL = 250;
 
-    /** The Constant URL_MAX_CHAR_LENGTH - URLs will error if larger. */
-    public static final int URL_MAX_CHAR_LENGTH = 6000;
+	/** The Constant URL_MAX_CHAR_LENGTH - URLs will error if larger. */
+	public static final int URL_MAX_CHAR_LENGTH = 6000;
 
-    /** The max number of record elasticsearch will return without erroring. */
-    public static final int ELASTICSEARCH_MAX_RECORD_LENGTH = 9990;
+	/** The max number of record elasticsearch will return without erroring. */
+	public static final int ELASTICSEARCH_MAX_RECORD_LENGTH = 9990;
 
-    /** The column index of the concept ID in an RF2 file. */
-    public static final int REFEST_RF2_CONCEPTID_COLUMN = 5;
+	/** The column index of the concept ID in an RF2 file. */
+	public static final int REFEST_RF2_CONCEPTID_COLUMN = 5;
 
-    /** The number of milliseconds to stop processing records to avoid a gateway timeout. */
-    public static final int TIMEOUT_MILLISECOND_THRESHOLD = 60000;
+	/**
+	 * The number of milliseconds to stop processing records to avoid a gateway
+	 * timeout.
+	 */
+	public static final int TIMEOUT_MILLISECOND_THRESHOLD = 60000;
 
-    /** Snomed code for prefrered term in English *. */
-    public static final String PREFERRED_TERM_EN = "900000000000509007PT";
+	/** Snomed code for prefrered term in English *. */
+	public static final String PREFERRED_TERM_EN = "900000000000509007PT";
 
-    /** The Constant REFSET_TO_PUBLISHED_VERSION_MAP. */
-    public static final Map<String, List<Long>> REFSET_TO_PUBLISHED_VERSION_MAP = new HashMap<>();
+	/** The Constant REFSET_TO_PUBLISHED_VERSION_MAP. */
+	public static final Map<String, List<Long>> REFSET_TO_PUBLISHED_VERSION_MAP = new HashMap<>();
+
+	static {
+
+		exportFileDir = PropertyUtility.getProperty("export.fileDir") + File.separator;
+
+		// TODO: Remove once Edition updated
+		REFSET_TO_LANGUAGES_MAP.put("450828004", "es");
+		REFSET_TO_LANGUAGES_MAP.put("32570271000036106", "en");
+		REFSET_TO_LANGUAGES_MAP.put("900000000000509007", "en");
+		REFSET_TO_LANGUAGES_MAP.put("21000172104", "fr");
+		REFSET_TO_LANGUAGES_MAP.put("31000172101", "nl");
+		REFSET_TO_LANGUAGES_MAP.put("554461000005103", "da");
+		REFSET_TO_LANGUAGES_MAP.put("71000181105", "et");
+		REFSET_TO_LANGUAGES_MAP.put("5641000179103", "es");
+		REFSET_TO_LANGUAGES_MAP.put("21000220103", "en");
+		REFSET_TO_LANGUAGES_MAP.put("61000202103", "no");
+		REFSET_TO_LANGUAGES_MAP.put("46011000052107", "sv");
+
+		// Instantiate terminology handler
+		try {
+			String key = "terminology.handler";
+			String handlerName = PropertyUtility.getProperty(key);
+			if (handlerName.isEmpty()) {
+				throw new Exception("terminology.handler expected and does not exist.");
+			}
+
+			terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName,
+					TerminologyServerHandler.class);
+
+		} catch (Exception e) {
+			LOG.error("Failed to initialize terminology.handler - serious error", e);
+			terminologyHandler = null;
+		}
+	}
+
+	/**
+	 * Instantiates an empty {@link RefsetMemberService}.
+	 */
+	private RefsetMemberService() {
+
+		// n/a
+	}
+
+	/**
+	 * Get the refset member concepts.
+	 *
+	 * @param service            the Terminology Service
+	 * @param user               the user
+	 * @param refsetInternalId   the internal refset ID
+	 * @param searchParameters   the search parameters
+	 * @param displayType        Should results be a list or hierarchical taxonomy
+	 * @param taxonomyParameters the taxonomy parameters
+	 * @return the refset member concepts
+	 * @throws Exception the exception
+	 */
+	public static ConceptResultList getRefsetMembers(final TerminologyService service, final User user,
+			final String refsetInternalId, final SearchParameters searchParameters, final String displayType,
+			final TaxonomyParameters taxonomyParameters) throws Exception {
+
+		ConceptResultList concepts = new ConceptResultList();
+
+		final Refset refset = getRefset(user, service, refsetInternalId);
+		final List<String> nonDefaultPreferredTerms = identifyNonDefaultPreferredTerms(refset.getEdition());
+
+		// the next call depend if a list or taxonomy is being returned
+		if (displayType.equals("list")) {
+
+			concepts = getMemberList(refset, nonDefaultPreferredTerms, searchParameters);
+			LOG.debug("Refset has " + concepts.size() + " members");
+
+		} else {
+
+			concepts = getMemberTaxonomy(refset, nonDefaultPreferredTerms, taxonomyParameters);
+		}
+
+		// LOG.debug("getRefsetMembers results: " + ModelUtility.toJson(concepts));
+
+		return concepts;
+	}
+
+	/**
+	 * Get the refset.
+	 *
+	 * @param user             the user
+	 * @param service          the Terminology Service
+	 * @param refsetInternalId the internal refset ID
+	 * @return the refset
+	 * @throws Exception the exception
+	 */
+	public static Refset getRefset(final User user, final TerminologyService service, final String refsetInternalId)
+			throws Exception {
+
+		Refset refset = service.get(refsetInternalId, Refset.class);
+
+		if (refset == null) {
+
+			throw new Exception(
+					"Reference Set Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
+		}
+
+		refset = RefsetService.setRefsetPermissions(user, refset);
+
+		return refset;
+	}
+
+	/**
+	 * Called recursively to accumulate all refset members in order to compose a
+	 * freeset.
+	 *
+	 * @param service          the Terminology Service
+	 * @param refsetInternalId the internal refset ID
+	 * @param searchAfter      the searchAfter identifier
+	 * @param concepts         the list of concepts
+	 * @return the list of member concepts
+	 * @throws Exception the exception
+	 */
+	public static List<Concept> getAllRefsetMembers(final TerminologyService service, final String refsetInternalId,
+			final String searchAfter, final List<Concept> concepts) throws Exception {
+
+		return terminologyHandler.getAllRefsetMembers(service, refsetInternalId, searchAfter, concepts);
+	}
+
+	/**
+	 * Identify non default preferred terms.
+	 *
+	 * @param edition the edition
+	 * @return the list
+	 */
+	public static List<String> identifyNonDefaultPreferredTerms(final Edition edition) {
+
+		final List<String> nonDefaultPreferredTerms = new ArrayList<>();
+		// get the list of languages the refset supports
+		nonDefaultPreferredTerms.addAll(REFSET_TO_LANGUAGES_MAP.keySet().stream().collect(Collectors.toList()));
+
+		final String languageToRemove = (edition.getDefaultLanguageCode()) == null ? "en"
+				: edition.getDefaultLanguageCode();
+
+		if (edition.getDefaultLanguageCode() != null) {
+
+			REFSET_TO_LANGUAGES_MAP.entrySet().stream().filter(entry -> languageToRemove.equals(entry.getValue()))
+					.map(Map.Entry::getKey).forEach((val) -> {
+
+						nonDefaultPreferredTerms.remove(val);
+					});
+		}
+
+		// remove the default language and any languages that are not in the
+		// edition's default list
+		nonDefaultPreferredTerms
+				.removeIf(languageRefset -> !edition.getDefaultLanguageRefsets().contains(languageRefset));
+
+		// make sure every refset includes English as a fall back language
+		if (edition.getDefaultLanguageCode() != null && !edition.getDefaultLanguageCode().equals("en")
+				&& !nonDefaultPreferredTerms.contains("en")) {
+
+			nonDefaultPreferredTerms.add("en");
+		}
+
+		Collections.sort(nonDefaultPreferredTerms);
 
-    static {
+		return nonDefaultPreferredTerms;
+	}
 
-        exportFileDir = PropertyUtility.getProperty("export.fileDir") + File.separator;
-
-        // TODO: Remove once Edition updated
-        REFSET_TO_LANGUAGES_MAP.put("450828004", "es");
-        REFSET_TO_LANGUAGES_MAP.put("32570271000036106", "en");
-        REFSET_TO_LANGUAGES_MAP.put("900000000000509007", "en");
-        REFSET_TO_LANGUAGES_MAP.put("21000172104", "fr");
-        REFSET_TO_LANGUAGES_MAP.put("31000172101", "nl");
-        REFSET_TO_LANGUAGES_MAP.put("554461000005103", "da");
-        REFSET_TO_LANGUAGES_MAP.put("71000181105", "et");
-        REFSET_TO_LANGUAGES_MAP.put("5641000179103", "es");
-        REFSET_TO_LANGUAGES_MAP.put("21000220103", "en");
-        REFSET_TO_LANGUAGES_MAP.put("61000202103", "no");
-        REFSET_TO_LANGUAGES_MAP.put("46011000052107", "sv");
-
-        // Instantiate terminology handler
-        try {
-            String key = "terminology.handler";
-            String handlerName = PropertyUtility.getProperty(key);
-            if (handlerName.isEmpty()) {
-                throw new Exception("terminology.handler expected and does not exist.");
-            }
-
-            terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName, TerminologyServerHandler.class);
-
-        } catch (Exception e) {
-            LOG.error("Failed to initialize terminology.handler - serious error", e);
-            terminologyHandler = null;
-        }
-    }
-
-    /**
-     * Instantiates an empty {@link RefsetMemberService}.
-     */
-    private RefsetMemberService() {
-
-        // n/a
-    }
-
-    /**
-     * Get the refset member concepts.
-     *
-     * @param service the Terminology Service
-     * @param user the user
-     * @param refsetInternalId the internal refset ID
-     * @param searchParameters the search parameters
-     * @param displayType Should results be a list or hierarchical taxonomy
-     * @param taxonomyParameters the taxonomy parameters
-     * @return the refset member concepts
-     * @throws Exception the exception
-     */
-    public static ConceptResultList getRefsetMembers(final TerminologyService service, final User user, final String refsetInternalId,
-        final SearchParameters searchParameters, final String displayType, final TaxonomyParameters taxonomyParameters) throws Exception {
-
-        ConceptResultList concepts = new ConceptResultList();
-
-        final Refset refset = getRefset(user, service, refsetInternalId);
-        final List<String> nonDefaultPreferredTerms = identifyNonDefaultPreferredTerms(refset.getEdition());
-
-        // the next call depend if a list or taxonomy is being returned
-        if (displayType.equals("list")) {
-
-            concepts = getMemberList(refset, nonDefaultPreferredTerms, searchParameters);
-            LOG.debug("Refset has " + concepts.size() + " members");
-
-        } else {
-
-            concepts = getMemberTaxonomy(refset, nonDefaultPreferredTerms, taxonomyParameters);
-        }
-
-        // LOG.debug("getRefsetMembers results: " + ModelUtility.toJson(concepts));
-
-        return concepts;
-    }
-
-    /**
-     * Get the refset.
-     *
-     * @param user the user
-     * @param service the Terminology Service
-     * @param refsetInternalId the internal refset ID
-     * @return the refset
-     * @throws Exception the exception
-     */
-    public static Refset getRefset(final User user, final TerminologyService service, final String refsetInternalId) throws Exception {
-
-        Refset refset = service.get(refsetInternalId, Refset.class);
-
-        if (refset == null) {
-
-            throw new Exception("Reference Set Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
-        }
-
-        refset = RefsetService.setRefsetPermissions(user, refset);
-
-        return refset;
-    }
-
-    /**
-     * Called recursively to accumulate all refset members in order to compose a freeset.
-     *
-     * @param service the Terminology Service
-     * @param refsetInternalId the internal refset ID
-     * @param searchAfter the searchAfter identifier
-     * @param concepts the list of concepts
-     * @return the list of member concepts
-     * @throws Exception the exception
-     */
-    public static List<Concept> getAllRefsetMembers(final TerminologyService service, final String refsetInternalId, final String searchAfter,
-        final List<Concept> concepts) throws Exception {
-
-        return terminologyHandler.getAllRefsetMembers(service, refsetInternalId, searchAfter, concepts);
-    }
-
-    /**
-     * Identify non default preferred terms.
-     *
-     * @param edition the edition
-     * @return the list
-     */
-    public static List<String> identifyNonDefaultPreferredTerms(final Edition edition) {
-
-        final List<String> nonDefaultPreferredTerms = new ArrayList<>();
-        // get the list of languages the refset supports
-        nonDefaultPreferredTerms.addAll(REFSET_TO_LANGUAGES_MAP.keySet().stream().collect(Collectors.toList()));
-
-        final String languageToRemove = (edition.getDefaultLanguageCode()) == null ? "en" : edition.getDefaultLanguageCode();
+	/**
+	 * Sort descriptions.
+	 *
+	 * @param conceptId                the concept id
+	 * @param descriptions             the descriptions
+	 * @param refset                   the refset
+	 * @param nonDefaultPreferredTerms the non-default preferred terms
+	 * @return the map
+	 * @throws Exception the exception
+	 */
+	public static List<Map<String, String>> sortConceptDescriptions(final String conceptId,
+			final Set<Map<String, String>> descriptions, final Refset refset,
+			final List<String> nonDefaultPreferredTerms) throws Exception {
 
-        if (edition.getDefaultLanguageCode() != null) {
+		// Sort descriptions in the order defined below.
+		//
+		// 1) PT � Default Lang Code
+		// 2) FSN
+		// 3) All other PTs
+		// -- a. Order by language code
+		// -- b. If no translation, will be null
 
-            REFSET_TO_LANGUAGES_MAP.entrySet().stream().filter(entry -> languageToRemove.equals(entry.getValue())).map(Map.Entry::getKey).forEach((val) -> {
+		// do this for each concept
+		final List<Map<String, String>> sortedDescriptionList = new ArrayList<>();
+		final Map<String, Set<Map<String, String>>> sortingMap = new HashMap<>();
 
-                nonDefaultPreferredTerms.remove(val);
-            });
-        }
+		// Actual code
+		for (final Map<String, String> descriptionMap : descriptions) {
 
-        // remove the default language and any languages that are not in the
-        // edition's default list
-        nonDefaultPreferredTerms.removeIf(languageRefset -> !edition.getDefaultLanguageRefsets().contains(languageRefset));
+			final String languageId = descriptionMap.get(LANGUAGE_ID);
 
-        // make sure every refset includes English as a fall back language
-        if (edition.getDefaultLanguageCode() != null && !edition.getDefaultLanguageCode().equals("en") && !nonDefaultPreferredTerms.contains("en")) {
+			if (!sortingMap.containsKey(languageId)) {
 
-            nonDefaultPreferredTerms.add("en");
-        }
+				sortingMap.put(languageId, new HashSet<Map<String, String>>());
+			}
 
-        Collections.sort(nonDefaultPreferredTerms);
+			// Handle the default language
+			if (descriptionMap.get(DESCRIPTION_LANGUAGE).equals(refset.getEdition().getDefaultLanguageCode())) {
 
-        return nonDefaultPreferredTerms;
-    }
+				if (descriptionMap.get(DESCRIPTION_TYPE).equalsIgnoreCase("fsn")) {
 
-    /**
-     * Sort descriptions.
-     *
-     * @param conceptId the concept id
-     * @param descriptions the descriptions
-     * @param refset the refset
-     * @param nonDefaultPreferredTerms the non-default preferred terms
-     * @return the map
-     * @throws Exception the exception
-     */
-    public static List<Map<String, String>> sortConceptDescriptions(final String conceptId, final Set<Map<String, String>> descriptions, final Refset refset,
-        final List<String> nonDefaultPreferredTerms) throws Exception {
+					if (sortingMap.containsKey(languageId) && !sortingMap.get(languageId).isEmpty()) {
 
-        // Sort descriptions in the order defined below.
-        //
-        // 1) PT � Default Lang Code
-        // 2) FSN
-        // 3) All other PTs
-        // -- a. Order by language code
-        // -- b. If no translation, will be null
+						displayDuplicateWarning("A FSN in the default language", conceptId,
+								descriptionMap.get(DESCRIPTION_LANGUAGE), sortingMap.get(languageId), descriptionMap);
+						continue;
+					}
 
-        // do this for each concept
-        final List<Map<String, String>> sortedDescriptionList = new ArrayList<>();
-        final Map<String, Set<Map<String, String>>> sortingMap = new HashMap<>();
+					sortingMap.get(languageId).add(descriptionMap);
 
-        // Actual code
-        for (final Map<String, String> descriptionMap : descriptions) {
+				} else {
 
-            final String languageId = descriptionMap.get(LANGUAGE_ID);
+					if ("pt".equalsIgnoreCase(descriptionMap.get(DESCRIPTION_TYPE))
+							&& sortingMap.containsKey(languageId) && !sortingMap.get(languageId).isEmpty()) {
 
-            if (!sortingMap.containsKey(languageId)) {
+						displayDuplicateWarning("A PT in the default language", conceptId,
+								descriptionMap.get(DESCRIPTION_LANGUAGE), sortingMap.get(languageId), descriptionMap);
+						continue;
+					}
 
-                sortingMap.put(languageId, new HashSet<Map<String, String>>());
-            }
+					sortingMap.get(languageId).add(descriptionMap);
+				}
 
-            // Handle the default language
-            if (descriptionMap.get(DESCRIPTION_LANGUAGE).equals(refset.getEdition().getDefaultLanguageCode())) {
+			}
 
-                if (descriptionMap.get(DESCRIPTION_TYPE).equalsIgnoreCase("fsn")) {
+			// Handle the non-default languages
+			else {
 
-                    if (sortingMap.containsKey(languageId) && !sortingMap.get(languageId).isEmpty()) {
+				if (descriptionMap.get(DESCRIPTION_TYPE).equalsIgnoreCase("fsn")) {
 
-                        displayDuplicateWarning("A FSN in the default language", conceptId, descriptionMap.get(DESCRIPTION_LANGUAGE),
-                            sortingMap.get(languageId), descriptionMap);
-                        continue;
-                    }
+					if (sortingMap.containsKey(languageId) && !sortingMap.get(languageId).isEmpty()) {
 
-                    sortingMap.get(languageId).add(descriptionMap);
+						displayDuplicateWarning("A FSN in a non-default language", conceptId,
+								descriptionMap.get(DESCRIPTION_LANGUAGE), sortingMap.get(languageId), descriptionMap);
+						continue;
+					}
 
-                } else {
+					sortingMap.get(languageId).add(descriptionMap);
 
-                    if ("pt".equalsIgnoreCase(descriptionMap.get(DESCRIPTION_TYPE)) && sortingMap.containsKey(languageId)
-                        && !sortingMap.get(languageId).isEmpty()) {
+				} else {
 
-                        displayDuplicateWarning("A PT in the default language", conceptId, descriptionMap.get(DESCRIPTION_LANGUAGE), sortingMap.get(languageId),
-                            descriptionMap);
-                        continue;
-                    }
+					if ("pt".equalsIgnoreCase(descriptionMap.get(DESCRIPTION_TYPE))
+							&& sortingMap.containsKey(languageId) && !sortingMap.get(languageId).isEmpty()) {
 
-                    sortingMap.get(languageId).add(descriptionMap);
-                }
+						displayDuplicateWarning("A PT in a non-default language", conceptId,
+								descriptionMap.get(DESCRIPTION_LANGUAGE), sortingMap.get(languageId), descriptionMap);
+						continue;
+					}
 
-            }
+					sortingMap.get(languageId).add(descriptionMap);
+				}
 
-            // Handle the non-default languages
-            else {
+			}
 
-                if (descriptionMap.get(DESCRIPTION_TYPE).equalsIgnoreCase("fsn")) {
+		}
 
-                    if (sortingMap.containsKey(languageId) && !sortingMap.get(languageId).isEmpty()) {
+		final List<Map<String, String>> languageRefsets = refset.getEdition().getFullyQualifiedLanguageRefsets();
 
-                        displayDuplicateWarning("A FSN in a non-default language", conceptId, descriptionMap.get(DESCRIPTION_LANGUAGE),
-                            sortingMap.get(languageId), descriptionMap);
-                        continue;
-                    }
+		final Set<String> languageIdsProcessed = new HashSet<>();
 
-                    sortingMap.get(languageId).add(descriptionMap);
+		for (final Map<String, String> languageRefset : languageRefsets) {
 
-                } else {
+			final String languageId = languageRefset.get("qualifiedLanguageRefset");
 
-                    if ("pt".equalsIgnoreCase(descriptionMap.get(DESCRIPTION_TYPE)) && sortingMap.containsKey(languageId)
-                        && !sortingMap.get(languageId).isEmpty()) {
+			if (sortingMap.get(languageId) != null) {
 
-                        displayDuplicateWarning("A PT in a non-default language", conceptId, descriptionMap.get(DESCRIPTION_LANGUAGE),
-                            sortingMap.get(languageId), descriptionMap);
-                        continue;
-                    }
+				sortedDescriptionList.addAll(sortingMap.get(languageId));
+				languageIdsProcessed.add(languageId);
+			} else {
 
-                    sortingMap.get(languageId).add(descriptionMap);
-                }
+				sortedDescriptionList.add(null);
+			}
 
-            }
+		}
 
-        }
+		// Add non-FSN & Default Language PTs... but defer the Text Definitions
+		// to end
+		final Set<String> textDescriptionLanguageIds = new HashSet<>();
 
-        final List<Map<String, String>> languageRefsets = refset.getEdition().getFullyQualifiedLanguageRefsets();
+		for (final String languageId : sortingMap.keySet()) {
 
-        final Set<String> languageIdsProcessed = new HashSet<>();
+			if (!languageIdsProcessed.contains(languageId)) {
 
-        for (final Map<String, String> languageRefset : languageRefsets) {
+				if (languageId.toLowerCase().endsWith("def")) {
 
-            final String languageId = languageRefset.get("qualifiedLanguageRefset");
+					textDescriptionLanguageIds.add(languageId);
+				} else {
 
-            if (sortingMap.get(languageId) != null) {
+					sortedDescriptionList.addAll(sortingMap.get(languageId));
+				}
 
-                sortedDescriptionList.addAll(sortingMap.get(languageId));
-                languageIdsProcessed.add(languageId);
-            } else {
+			}
 
-                sortedDescriptionList.add(null);
-            }
+		}
 
-        }
+		// Finally, add Text Definitions
+		for (final String languageId : textDescriptionLanguageIds) {
 
-        // Add non-FSN & Default Language PTs... but defer the Text Definitions
-        // to end
-        final Set<String> textDescriptionLanguageIds = new HashSet<>();
+			sortedDescriptionList.addAll(sortingMap.get(languageId));
+		}
 
-        for (final String languageId : sortingMap.keySet()) {
+		return sortedDescriptionList;
+	}
 
-            if (!languageIdsProcessed.contains(languageId)) {
+	/**
+	 * Display duplicate warning.
+	 *
+	 * @param errorMessage         the error msg
+	 * @param conceptId            the con id
+	 * @param language             the language
+	 * @param existingDescriptions the existing descriptions
+	 * @param descriptionMap       the desc map
+	 */
+	private static void displayDuplicateWarning(final String errorMessage, final String conceptId,
+			final String language, final Set<Map<String, String>> existingDescriptions,
+			final Map<String, String> descriptionMap) {
 
-                if (languageId.toLowerCase().endsWith("def")) {
+		LOG.warn(errorMessage + "(" + language + ") has already been identified for conceptId: " + conceptId);
 
-                    textDescriptionLanguageIds.add(languageId);
-                } else {
+		LOG.warn("Original ones identified:");
 
-                    sortedDescriptionList.addAll(sortingMap.get(languageId));
-                }
+		for (final Map<String, String> set : existingDescriptions) {
 
-            }
+			printDescription(set);
+		}
 
-        }
+		LOG.warn("New one encountered: " + printDescription(descriptionMap));
+	}
 
-        // Finally, add Text Definitions
-        for (final String languageId : textDescriptionLanguageIds) {
+	/**
+	 * Prints the description.
+	 *
+	 * @param description the map
+	 * @return the string
+	 */
+	private static String printDescription(final Map<String, String> description) {
 
-            sortedDescriptionList.addAll(sortingMap.get(languageId));
-        }
+		return "Type = " + description.get(DESCRIPTION_TYPE) + " for lang = " + description.get(DESCRIPTION_LANGUAGE)
+				+ " with term = " + description.get(DESCRIPTION_TERM);
+	}
 
-        return sortedDescriptionList;
-    }
+	/**
+	 * Gets the refset to languages map.
+	 *
+	 * @return the REFSET_TO_LANGUAGES_MAP
+	 */
+	public static Map<String, String> getRefsetToLanguagesMap() {
 
-    /**
-     * Display duplicate warning.
-     *
-     * @param errorMessage the error msg
-     * @param conceptId the con id
-     * @param language the language
-     * @param existingDescriptions the existing descriptions
-     * @param descriptionMap the desc map
-     */
-    private static void displayDuplicateWarning(final String errorMessage, final String conceptId, final String language,
-        final Set<Map<String, String>> existingDescriptions, final Map<String, String> descriptionMap) {
+		return REFSET_TO_LANGUAGES_MAP;
+	}
 
-        LOG.warn(errorMessage + "(" + language + ") has already been identified for conceptId: " + conceptId);
+	/**
+	 * Get a list of refsets containing members matching the search.
+	 *
+	 * @param searchParameters the search parameters
+	 * @return a list of refsets containing members matching the search
+	 * @throws Exception the exception
+	 */
+	public static Set<String> searchDirectoryMembers(final SearchParameters searchParameters) throws Exception {
 
-        LOG.warn("Original ones identified:");
+		final String query = searchParameters.getQuery();
+		final List<String> directoryColumns = Arrays.asList("id", "refsetId", "name", "editionName", "organizationName",
+				"versionStatus", "versionDate", "modified", "privateRefset");
+		String snowstormQuery = "";
+		final String[] queryParts = query.split(" AND ");
 
-        for (final Map<String, String> set : existingDescriptions) {
+		for (final String queryPart : queryParts) {
 
-            printDescription(set);
-        }
+			final String[] keyValue = queryPart.split(":");
 
-        LOG.warn("New one encountered: " + printDescription(descriptionMap));
-    }
+			if (keyValue.length > 1 && directoryColumns.contains(keyValue[0])) {
 
-    /**
-     * Prints the description.
-     *
-     * @param description the map
-     * @return the string
-     */
-    private static String printDescription(final Map<String, String> description) {
+				continue;
+			} else {
 
-        return "Type = " + description.get(DESCRIPTION_TYPE) + " for lang = " + description.get(DESCRIPTION_LANGUAGE) + " with term = "
-            + description.get(DESCRIPTION_TERM);
-    }
+				snowstormQuery += queryPart + " AND ";
+			}
 
-    /**
-     * Gets the refset to languages map.
-     *
-     * @return the REFSET_TO_LANGUAGES_MAP
-     */
-    public static Map<String, String> getRefsetToLanguagesMap() {
+		}
 
-        return REFSET_TO_LANGUAGES_MAP;
-    }
+		snowstormQuery = StringUtils.removeEnd(snowstormQuery, " AND ");
+		return getDirectoryMembers(snowstormQuery);
+	}
 
-    /**
-     * Get a list of refsets containing members matching the search.
-     *
-     * @param searchParameters the search parameters
-     * @return a list of refsets containing members matching the search
-     * @throws Exception the exception
-     */
-    public static Set<String> searchDirectoryMembers(final SearchParameters searchParameters) throws Exception {
+	/**
+	 * Multisearch descriptions of reference sets.
+	 *
+	 * @param snowstormQuery the query string
+	 * @return JSON string search results
+	 * @throws Exception the exception
+	 */
+	private static Set<String> getDirectoryMembers(final String snowstormQuery) throws Exception {
 
-        final String query = searchParameters.getQuery();
-        final List<String> directoryColumns =
-            Arrays.asList("id", "refsetId", "name", "editionName", "organizationName", "versionStatus", "versionDate", "modified", "privateRefset");
-        String snowstormQuery = "";
-        final String[] queryParts = query.split(" AND ");
+		return terminologyHandler.getDirectoryMembers(snowstormQuery);
+	}
 
-        for (final String queryPart : queryParts) {
+	/**
+	 * Multisearch of descriptions.
+	 *
+	 * @param searchParameters        the search parameters
+	 * @param ecl                     ECL to narrow search
+	 * @param nonPublishedBranchPaths a set of non-published branch paths to search
+	 *                                in addition to all published branches
+	 * @return Collection of conceptIds as strings.
+	 * @throws Exception the exception
+	 */
+	public static Set<String> searchMultisearchDescriptions(final SearchParameters searchParameters, final String ecl,
+			final Set<String> nonPublishedBranchPaths) throws Exception {
+
+		return terminologyHandler.searchMultisearchDescriptions(searchParameters, ecl, nonPublishedBranchPaths);
+
+	}
+
+	/**
+	 * Export latest version of published all refsets for a project.
+	 *
+	 * @param service        the service
+	 * @param user           the user
+	 * @param projectId      the project id
+	 * @param type           the type
+	 * @param languageId     the language id
+	 * @param fileNameDate   the file name date
+	 * @param exportMetadata the export metadata
+	 * @param withNames      the with names
+	 * @return the string
+	 * @throws Exception the exception
+	 */
+	@SuppressWarnings("unchecked")
+	public static String exportAllRefsetsRf2ForProject(final TerminologyService service, final User user,
+			final String projectId, final String type, final String languageId, final String fileNameDate,
+			final boolean exportMetadata, final boolean withNames) throws Exception {
+
+		final List<String> refsetFiles = new ArrayList<>();
+		final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+		final Query query = service.getEntityManager().createNativeQuery(
+				"SELECT refsetId, MAX(versionDate) FROM refsets WHERE project_Id = :projectId AND versionStatus = 'PUBLISHED' GROUP BY project_id, refsetId")
+				.setParameter("projectId", projectId);
+		final List<Object[]> queryResults = query.getResultList();
+
+		if (queryResults == null || queryResults.isEmpty()) {
+
+			throw new Exception("Found no published Reference Sets for project id " + projectId + " to export.");
+		}
+
+		try {
+
+			for (final Object[] o : queryResults) {
+
+				final SearchParameters searchParameters = new SearchParameters();
+				final String versionDate = simpleDateFormat.format(o[1]);
+				searchParameters.setQuery("refsetId:" + o[0].toString() + " AND versionDate:" + versionDate
+						+ " AND versionStatus:PUBLISHED");
+				final ResultList<Refset> refsetList = RefsetService.searchRefsets(user, service, searchParameters,
+						false, false, false, false, false);
+
+				if (refsetList != null && refsetList.getItems() != null && !refsetList.getItems().isEmpty()) {
+
+					for (final Refset refset : refsetList.getItems()) {
+
+						RefsetService.setRefsetPermissions(user, refset);
+
+						final String fileName = exportRefsetRf2File(service, refset.getId(), type, languageId,
+								fileNameDate, null, versionDate.replace("-", ""), exportMetadata, withNames);
+						refsetFiles.add(exportFileDir + fileName);
+					}
+
+				}
+
+			}
+
+			// add all files into a zip file
+			final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyymmdd-hhmmss");
+			final String zipFileName = String.format("RT2-Downloaded-refsets-%s.zip", dateFormat.format(new Date()));
+			zipFiles(refsetFiles, exportFileDir + zipFileName);
+			return EXPORT_DOWNLOAD_URL + zipFileName;
+
+		} catch (final Exception ex) {
+
+			throw new Exception("Failed to export zip file name " + ex.getMessage(), ex);
+		}
+
+	}
+
+	/**
+	 * Get the refset member concepts in RF2 format.
+	 *
+	 * @param service                the Terminology Service
+	 * @param refsetInternalId       the internal refset ID
+	 * @param type                   the type
+	 * @param languageId             the language to display names in
+	 * @param fileNameDate           the file name date
+	 * @param startEffectiveTime     the start effective time
+	 * @param transientEffectiveTime the transient effective time
+	 * @param exportMetadata         should refset metadata be included in the
+	 *                               export
+	 * @param withNames              the with names
+	 * @return the refset member concepts
+	 * @throws Exception the exception
+	 */
+	public static String exportRefsetRf2(final TerminologyService service, final String refsetInternalId,
+			final String type, final String languageId, final String fileNameDate, final String startEffectiveTime,
+			final String transientEffectiveTime, final boolean exportMetadata, final boolean withNames)
+			throws Exception {
+
+		return EXPORT_DOWNLOAD_URL + exportRefsetRf2File(service, refsetInternalId, type, languageId, fileNameDate,
+				startEffectiveTime, transientEffectiveTime, exportMetadata, withNames);
+	}
+
+	/**
+	 * Get the refset member concepts in RF2 format.
+	 *
+	 * @param service                the Terminology Service
+	 * @param refsetInternalId       the internal refset ID
+	 * @param type                   the type
+	 * @param languageId             the language to display names in
+	 * @param fileNameDate           the file name date
+	 * @param startEffectiveTime     the start effective time
+	 * @param transientEffectiveTime the transient effective time
+	 * @param exportMetadata         should refset metadata be included in the
+	 *                               export
+	 * @param withNames              the with names
+	 * @return the refset member concepts
+	 * @throws Exception the exception
+	 */
+	private static String exportRefsetRf2File(final TerminologyService service, final String refsetInternalId,
+			final String type, final String languageId, final String fileNameDate, final String startEffectiveTime,
+			final String transientEffectiveTime, final boolean exportMetadata, final boolean withNames)
+			throws Exception {
+
+		final Set<String> dates = new HashSet<>();
+		dates.add(transientEffectiveTime);
+
+		if (startEffectiveTime != null) {
+
+			dates.add(startEffectiveTime);
+		}
+
+		final ExportHandler exporter = new ExportHandler();
+
+		try {
+
+			final Refset refset = RefsetService.getRefset(service, SecurityService.getUserFromSession(),
+					refsetInternalId);
+
+			if (refset == null) {
+
+				throw new Exception(
+						"Reference Set Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
+			}
+
+			final String awsVersionedPath = exporter.generateAwsBaseVersionPath(refset, type, dates);
+
+			final String rt2VersionFileName = exporter.generateRt2VersionFileName(refset, type, languageId, dates,
+					exportMetadata, withNames);
+
+			// Check if file already exists
+			if (!S3ConnectionWrapper.isInS3Cache(awsVersionedPath, rt2VersionFileName)) {
+				// Rt2 Version File doesn't reside on s3
+
+				// Snowstorm generated RF2 file
+				final String snowGeneratedFileName = exporter.generateSnowVersionFileName(refset, type, dates);
+
+				// Local place to store snowBaseVersionFileName
+				final Path localSnowGeneratedTempDir = Files.createTempDirectory("rt2LocalSnowGenerated-");
+
+				// Local Snowstorm generated Rf2 file name
+				final String localSnowGeneratedFilePath = localSnowGeneratedTempDir + File.separator
+						+ snowGeneratedFileName;
+
+				// Check if SnowS version file name does already exist in S3
+				// Cache
+				if (!S3ConnectionWrapper.isInS3Cache(awsVersionedPath, snowGeneratedFileName)) {
+					// Base-SnowVersion file is not on S3, so generate it, and
+					// after downloading it, store it on S3
+
+					// Generate file on SnowS
+					final String entityString = "{\"refsetIds\": [\"" + refset.getRefsetId()
+							+ "\"],  \"branchPath\": \"" + getBranchPath(refset)
+							+ "\", \"conceptsAndRelationshipsOnly\": false, \"filenameEffectiveDate\": \""
+							+ fileNameDate
+							+ "\", \"legacyZipNaming\": false, \"type\": \"SNAPSHOT\", \"unpromotedChangesOnly\": false"
+							+ (startEffectiveTime == null ? ""
+									: ",  \"startEffectiveTime\": \"" + startEffectiveTime + "\"")
+							+ (transientEffectiveTime == null ? ""
+									: ",  \"transientEffectiveTime\": \"" + transientEffectiveTime + "\"")
+							+ "}";
+
+					LOG.debug("generating file from snowstorm");
+					// Generate on SnowS
+					final String snowGeneratedFileUrl = exporter.generateSnowVersionFile(entityString);
+
+					LOG.debug("Downloading file from snowstorm");
+					// Download file from SnowS
+					exporter.downloadSnowGeneratedFile(snowGeneratedFileUrl, localSnowGeneratedFilePath);
+
+					LOG.debug("uploading snowstorm genned file to S3");
+					// store file one s3
+					S3ConnectionWrapper.uploadToS3(awsVersionedPath, localSnowGeneratedTempDir.toString(),
+							snowGeneratedFileName);
+				} else {
+
+					LOG.debug("Downloading snowstorm genned file from S3");
+					S3ConnectionWrapper.downloadFileFromS3(awsVersionedPath, snowGeneratedFileName,
+							localSnowGeneratedFilePath);
+				}
+
+				LOG.debug("converting snowstorm genned file to RT2 format");
+				// Have access to localSnowGeneratedFilePath from which rt2 will
+				// generate the
+				// export file
+				generateRt2ExportFile(refset, localSnowGeneratedFilePath, rt2VersionFileName, exportMetadata, withNames,
+						languageId);
+
+				S3ConnectionWrapper.uploadToS3(awsVersionedPath, exportFileDir, rt2VersionFileName);
+
+				FileUtility.deleteDirectory(localSnowGeneratedTempDir.toFile());
+
+			} else {
 
-            final String[] keyValue = queryPart.split(":");
+				if (!Files.exists(Path.of(exportFileDir + rt2VersionFileName))) {
 
-            if (keyValue.length > 1 && directoryColumns.contains(keyValue[0])) {
+					LOG.debug("Downloading RT2 genned file from S3");
+					S3ConnectionWrapper.downloadFileFromS3(awsVersionedPath, rt2VersionFileName,
+							exportFileDir + rt2VersionFileName);
+				}
 
-                continue;
-            } else {
+			}
 
-                snowstormQuery += queryPart + " AND ";
-            }
+			LOG.debug("Final Export File Path: " + exportFileDir + rt2VersionFileName);
 
-        }
+			// if download is from RT2 server
+			// ServletUriComponentsBuilder builder =
+			// ServletUriComponentsBuilder.fromCurrentContextPath();
+			return rt2VersionFileName;
 
-        snowstormQuery = StringUtils.removeEnd(snowstormQuery, " AND ");
-        return getDirectoryMembers(snowstormQuery);
-    }
+		} catch (final Exception ex) {
 
-    /**
-     * Multisearch descriptions of reference sets.
-     *
-     * @param snowstormQuery the query string
-     * @return JSON string search results
-     * @throws Exception the exception
-     */
-    private static Set<String> getDirectoryMembers(final String snowstormQuery) throws Exception {
+			throw new Exception("Failed to export zip file name " + ex.getMessage(), ex);
+		}
 
-        return terminologyHandler.getDirectoryMembers(snowstormQuery);
-    }
+	}
 
-    /**
-     * Multisearch of descriptions.
-     *
-     * @param searchParameters the search parameters
-     * @param ecl ECL to narrow search
-     * @param nonPublishedBranchPaths a set of non-published branch paths to search in addition to all published branches
-     * @return Collection of conceptIds as strings.
-     * @throws Exception the exception
-     */
-    public static Set<String> searchMultisearchDescriptions(final SearchParameters searchParameters, final String ecl,
-        final Set<String> nonPublishedBranchPaths) throws Exception {
+	/**
+	 * Get the refset member concepts in RF2 DELTA format.
+	 *
+	 * @param service                the Terminology Service
+	 * @param user                   the user
+	 * @param refsetInternalId       the internal refset ID
+	 * @param type                   the type
+	 * @param languageId             the language to display names in
+	 * @param fileNameDate           the file name date
+	 * @param startEffectiveTime     the start effective time
+	 * @param transientEffectiveTime the transient effective time
+	 * @param exportMetadata         should refset metadata be included in the
+	 *                               export
+	 * @param withNames              the with names
+	 * @return the refset member concepts
+	 * @throws Exception the exception
+	 */
+	public static String exportRefsetRf2Delta(final TerminologyService service, final User user,
+			final String refsetInternalId, final String type, final String languageId, final String fileNameDate,
+			final String startEffectiveTime, final String transientEffectiveTime, final boolean exportMetadata,
+			boolean withNames) throws Exception {
 
-        return terminologyHandler.searchMultisearchDescriptions(searchParameters, ecl, nonPublishedBranchPaths);
+		boolean lWithNames = withNames;
 
-    }
+		// TODO: Turn this into a method variable
+		final Set<String> dates = new HashSet<>();
+		dates.add(transientEffectiveTime);
 
-    /**
-     * Export latest version of published all refsets for a project.
-     *
-     * @param service the service
-     * @param user the user
-     * @param projectId the project id
-     * @param type the type
-     * @param languageId the language id
-     * @param fileNameDate the file name date
-     * @param exportMetadata the export metadata
-     * @param withNames the with names
-     * @return the string
-     * @throws Exception the exception
-     */
-    public static String exportAllRefsetsRf2ForProject(final TerminologyService service, final User user, final String projectId, final String type,
-        final String languageId, final String fileNameDate, final boolean exportMetadata, final boolean withNames) throws Exception {
+		if (startEffectiveTime != null) {
 
-        final List<String> refsetFiles = new ArrayList<>();
-        final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+			dates.add(startEffectiveTime);
+		}
 
-        final Query query = service.getEntityManager()
-            .createNativeQuery(
-                "SELECT refsetId, MAX(versionDate) FROM refsets WHERE project_Id = :projectId AND versionStatus = 'PUBLISHED' GROUP BY project_id, refsetId")
-            .setParameter("projectId", projectId);
-        final List<Object[]> queryResults = query.getResultList();
+		final ExportHandler exporter = new ExportHandler();
 
-        if (queryResults == null || queryResults.isEmpty()) {
+		try {
 
-            throw new Exception("Found no published Reference Sets for project id " + projectId + " to export.");
-        }
+			final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
 
-        try {
+			if (refset == null) {
 
-            for (final Object[] o : queryResults) {
+				throw new Exception(
+						"Reference Set Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
+			}
 
-                final SearchParameters searchParameters = new SearchParameters();
-                final String versionDate = simpleDateFormat.format(o[1]);
-                searchParameters.setQuery("refsetId:" + o[0].toString() + " AND versionDate:" + versionDate + " AND versionStatus:PUBLISHED");
-                final ResultList<Refset> refsetList = RefsetService.searchRefsets(user, service, searchParameters, false, false, false, false, false);
+			final String deltaAwsVersionedPath = exporter.generateAwsBaseVersionPath(refset, type, dates);
 
-                if (refsetList != null && refsetList.getItems() != null && !refsetList.getItems().isEmpty()) {
+			final String deltaRt2VersionFileName = exporter.generateRt2VersionFileName(refset, type, languageId, dates,
+					exportMetadata, lWithNames);
 
-                    for (final Refset refset : refsetList.getItems()) {
+			final String deltaSnowGeneratedFileName = exporter.generateSnowVersionFileName(refset, "DELTA", dates);
 
-                        RefsetService.setRefsetPermissions(user, refset);
+			// Check if delta file already exists
+			if (!S3ConnectionWrapper.isInS3Cache(deltaAwsVersionedPath, deltaRt2VersionFileName)) {
 
-                        final String fileName = exportRefsetRf2File(service, refset.getId(), type, languageId, fileNameDate, null, versionDate.replace("-", ""),
-                            exportMetadata, withNames);
-                        refsetFiles.add(exportFileDir + fileName);
-                    }
+				// determine all snapshot versions that will contribute to the delta
+				final List<Map<String, String>> versionMap = RefsetService.getSortedRefsetVersionList(refset, service,
+						true);
+				final Map<String, String> versionToRefsetInternalId = new HashMap<>();
+				final List<String> versionsInScope = new ArrayList<>();
 
-                }
+				for (final Map<String, String> entry : versionMap) {
 
-            }
+					final String candidateVersion = entry.get("date");
 
-            // add all files into a zip file
-            final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyymmdd-hhmmss");
-            final String zipFileName = String.format("RT2-Downloaded-refsets-%s.zip", dateFormat.format(new Date()));
-            zipFiles(refsetFiles, exportFileDir + zipFileName);
-            return EXPORT_DOWNLOAD_URL + zipFileName;
+					if (candidateVersion != null
+							&& candidateVersion.replaceAll("-", "").compareTo(startEffectiveTime) > 0
+							&& candidateVersion.replaceAll("-", "").compareTo(transientEffectiveTime) <= 0) {
 
-        } catch (final Exception ex) {
+						versionsInScope.add(candidateVersion);
+						versionToRefsetInternalId.put(candidateVersion, entry.get("refsetInternalId"));
+					}
 
-            throw new Exception("Failed to export zip file name " + ex.getMessage(), ex);
-        }
+				}
 
-    }
+				LOG.debug("versionsInScope " + versionsInScope);
 
-    /**
-     * Get the refset member concepts in RF2 format.
-     *
-     * @param service the Terminology Service
-     * @param refsetInternalId the internal refset ID
-     * @param type the type
-     * @param languageId the language to display names in
-     * @param fileNameDate the file name date
-     * @param startEffectiveTime the start effective time
-     * @param transientEffectiveTime the transient effective time
-     * @param exportMetadata should refset metadata be included in the export
-     * @param withNames the with names
-     * @return the refset member concepts
-     * @throws Exception the exception
-     */
-    public static String exportRefsetRf2(final TerminologyService service, final String refsetInternalId, final String type, final String languageId,
-        final String fileNameDate, final String startEffectiveTime, final String transientEffectiveTime, final boolean exportMetadata, final boolean withNames)
-        throws Exception {
+				// Local place to store snowBaseVersionFileName
+				final Path localSnowGeneratedTempDir = Files.createTempDirectory("rt2LocalSnowGenerated-");
 
-        return EXPORT_DOWNLOAD_URL + exportRefsetRf2File(service, refsetInternalId, type, languageId, fileNameDate, startEffectiveTime, transientEffectiveTime,
-            exportMetadata, withNames);
-    }
+				// build fileContentsArray with contents from each snapshot version
+				String headerLine = null;
+				final List<String> fileContentsArray = new ArrayList<>();
 
-    /**
-     * Get the refset member concepts in RF2 format.
-     *
-     * @param service the Terminology Service
-     * @param refsetInternalId the internal refset ID
-     * @param type the type
-     * @param languageId the language to display names in
-     * @param fileNameDate the file name date
-     * @param startEffectiveTime the start effective time
-     * @param transientEffectiveTime the transient effective time
-     * @param exportMetadata should refset metadata be included in the export
-     * @param withNames the with names
-     * @return the refset member concepts
-     * @throws Exception the exception
-     */
-    private static String exportRefsetRf2File(final TerminologyService service, final String refsetInternalId, final String type, final String languageId,
-        final String fileNameDate, final String startEffectiveTime, final String transientEffectiveTime, final boolean exportMetadata, final boolean withNames)
-        throws Exception {
+				for (final String versionInScope : versionsInScope) {
 
-        final Set<String> dates = new HashSet<>();
-        dates.add(transientEffectiveTime);
+					if (versionInScope == null) {
+						continue;
+					}
 
-        if (startEffectiveTime != null) {
+					dates.clear();
+					dates.add(versionInScope.replaceAll("-", ""));
 
-            dates.add(startEffectiveTime);
-        }
+					Refset refsetVersion = refset;
 
-        final ExportHandler exporter = new ExportHandler();
+					try {
 
-        try {
+						refsetVersion = RefsetService.getRefset(service, user, refset.getRefsetId(), versionInScope);
 
-            final Refset refset = RefsetService.getRefset(service, SecurityService.getUserFromSession(), refsetInternalId);
+					} catch (final Exception ex) {
 
-            if (refset == null) {
+						// N/A
+					}
 
-                throw new Exception("Reference Set Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
-            }
+					final String awsVersionedPath = exporter.generateAwsBaseVersionPath(refset, "DELTA-SNAPSHOT",
+							dates);
 
-            final String awsVersionedPath = exporter.generateAwsBaseVersionPath(refset, type, dates);
+					// NOT USED final String rt2VersionFileName =
+					// exporter.generateRt2VersionFileName(refset, "SNAPSHOT", languageId, dates,
+					// exportMetadata,
+					// lWithNames);
 
-            final String rt2VersionFileName = exporter.generateRt2VersionFileName(refset, type, languageId, dates, exportMetadata, withNames);
+					// Snowstorm generated RF2 file
+					final String snowGeneratedFileName = exporter.generateSnowVersionFileName(refset, "SNAPSHOT",
+							dates);
 
-            // Check if file already exists
-            if (!S3ConnectionWrapper.isInS3Cache(awsVersionedPath, rt2VersionFileName)) {
-                // Rt2 Version File doesn't reside on s3
+					// Local Snowstorm generated Rf2 file name
+					final String localSnowGeneratedFilePath = localSnowGeneratedTempDir + File.separator
+							+ snowGeneratedFileName;
 
-                // Snowstorm generated RF2 file
-                final String snowGeneratedFileName = exporter.generateSnowVersionFileName(refset, type, dates);
+					// Check if SnowS version file name does already exist in S3 cache
+					if (!S3ConnectionWrapper.isInS3Cache(awsVersionedPath, snowGeneratedFileName)) {
 
-                // Local place to store snowBaseVersionFileName
-                final Path localSnowGeneratedTempDir = Files.createTempDirectory("rt2LocalSnowGenerated-");
+						// Base-SnowVersion file is not on S3, so generate it, and after downloading it,
+						// store it on S3
+						final String entityString = "{\"refsetIds\": [\"" + refset.getRefsetId()
+								+ "\"],  \"branchPath\": \"" + refsetVersion.getBranchPath()
+								+ "\", \"conceptsAndRelationshipsOnly\": false, \"filenameEffectiveDate\": \""
+								+ versionInScope.replaceAll("-", "")
+								+ "\", \"legacyZipNaming\": false, \"type\": \"SNAPSHOT\", \"unpromotedChangesOnly\": false"
+								+ (",  \"startEffectiveTime\": \"" + versionInScope.replaceAll("-", "") + "\"")
+								+ (",  \"transientEffectiveTime\": \"" + versionInScope.replaceAll("-", "") + "\"")
+								+ "}";
 
-                // Local Snowstorm generated Rf2 file name
-                final String localSnowGeneratedFilePath = localSnowGeneratedTempDir + File.separator + snowGeneratedFileName;
+						LOG.info("generating file from snowstorm" + entityString);
 
-                // Check if SnowS version file name does already exist in S3
-                // Cache
-                if (!S3ConnectionWrapper.isInS3Cache(awsVersionedPath, snowGeneratedFileName)) {
-                    // Base-SnowVersion file is not on S3, so generate it, and
-                    // after downloading it, store it on S3
+						// Generate on SnowS
+						final String snowGeneratedFileUrl = exporter.generateSnowVersionFile(entityString);
+						LOG.debug("Downloading file from snowstorm, " + localSnowGeneratedFilePath);
 
-                    // Generate file on SnowS
-                    final String entityString = "{\"refsetIds\": [\"" + refset.getRefsetId() + "\"],  \"branchPath\": \"" + getBranchPath(refset)
-                        + "\", \"conceptsAndRelationshipsOnly\": false, \"filenameEffectiveDate\": \"" + fileNameDate
-                        + "\", \"legacyZipNaming\": false, \"type\": \"SNAPSHOT\", \"unpromotedChangesOnly\": false"
-                        + (startEffectiveTime == null ? "" : ",  \"startEffectiveTime\": \"" + startEffectiveTime + "\"")
-                        + (transientEffectiveTime == null ? "" : ",  \"transientEffectiveTime\": \"" + transientEffectiveTime + "\"") + "}";
+						// Download file from SnowS
+						exporter.downloadSnowGeneratedFile(snowGeneratedFileUrl, localSnowGeneratedFilePath);
+						LOG.debug("uploading snowstorm genned file to S3");
 
-                    LOG.debug("generating file from snowstorm");
-                    // Generate on SnowS
-                    final String snowGeneratedFileUrl = exporter.generateSnowVersionFile(entityString);
+						// store file one s3
+						S3ConnectionWrapper.uploadToS3(awsVersionedPath, localSnowGeneratedTempDir.toString(),
+								snowGeneratedFileName);
 
-                    LOG.debug("Downloading file from snowstorm");
-                    // Download file from SnowS
-                    exporter.downloadSnowGeneratedFile(snowGeneratedFileUrl, localSnowGeneratedFilePath);
+					} else {
 
-                    LOG.debug("uploading snowstorm genned file to S3");
-                    // store file one s3
-                    S3ConnectionWrapper.uploadToS3(awsVersionedPath, localSnowGeneratedTempDir.toString(), snowGeneratedFileName);
-                } else {
+						LOG.info("Downloading snowstorm genned file from S3, " + snowGeneratedFileName);
+						S3ConnectionWrapper.downloadFileFromS3(awsVersionedPath, snowGeneratedFileName,
+								localSnowGeneratedFilePath);
+					}
 
-                    LOG.debug("Downloading snowstorm genned file from S3");
-                    S3ConnectionWrapper.downloadFileFromS3(awsVersionedPath, snowGeneratedFileName, localSnowGeneratedFilePath);
-                }
+					// append the contents of this snapshot file to the fileContentsArray
+					FileUtility.unzip(localSnowGeneratedFilePath, localSnowGeneratedFilePath.replace(".zip", ""));
+					final String fileNamePath = localSnowGeneratedFilePath.replace(".zip", "") + File.separator
+							+ "SnomedCT_Export" + File.separator + "Snapshot" + File.separator + "Refset"
+							+ File.separator + "Content" + File.separator;
+					final String[] files = new File(fileNamePath).list();
 
-                LOG.debug("converting snowstorm genned file to RT2 format");
-                // Have access to localSnowGeneratedFilePath from which rt2 will
-                // generate the
-                // export file
-                generateRt2ExportFile(refset, localSnowGeneratedFilePath, rt2VersionFileName, exportMetadata, withNames, languageId);
+					if (files != null) {
 
-                S3ConnectionWrapper.uploadToS3(awsVersionedPath, exportFileDir, rt2VersionFileName);
+						if (lWithNames) {
 
-                FileUtility.deleteDirectory(localSnowGeneratedTempDir.toFile());
+							final String snowGeneratedRf2FilePath = fileNamePath + files[0];
+							// NOT USED final String rf2FileName =
+							// snowGeneratedRf2FilePath.substring(snowGeneratedRf2FilePath.lastIndexOf(File.separator)
+							// + 1);
+							final String builderRf2FilePath = fileNamePath + files[0] + ".names";
 
-            } else {
+							final Refset specificRefset = service.findSingle(
+									"id:" + versionToRefsetInternalId.get(versionInScope), Refset.class, null);
+							appendNamesToRf2(specificRefset, snowGeneratedRf2FilePath, builderRf2FilePath, languageId);
 
-                if (!Files.exists(Path.of(exportFileDir + rt2VersionFileName))) {
+							final File origFile = new File(snowGeneratedRf2FilePath);
 
-                    LOG.debug("Downloading RT2 genned file from S3");
-                    S3ConnectionWrapper.downloadFileFromS3(awsVersionedPath, rt2VersionFileName, exportFileDir + rt2VersionFileName);
-                }
+							if (origFile.exists()) {
 
-            }
+								origFile.delete();
+							}
 
-            LOG.debug("Final Export File Path: " + exportFileDir + rt2VersionFileName);
+							final File namesFile = new File(builderRf2FilePath);
 
-            // if download is from RT2 server
-            // ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
-            return rt2VersionFileName;
+							if (namesFile.exists()) {
 
-        } catch (final Exception ex) {
+								namesFile.renameTo(origFile);
+							}
 
-            throw new Exception("Failed to export zip file name " + ex.getMessage(), ex);
-        }
+							lWithNames = false;
+						}
 
-    }
+						fileContentsArray.addAll(FileUtility.readFileToArray(fileNamePath + files[0]));
+					}
 
-    /**
-     * Get the refset member concepts in RF2 DELTA format.
-     *
-     * @param service the Terminology Service
-     * @param user the user
-     * @param refsetInternalId the internal refset ID
-     * @param type the type
-     * @param languageId the language to display names in
-     * @param fileNameDate the file name date
-     * @param startEffectiveTime the start effective time
-     * @param transientEffectiveTime the transient effective time
-     * @param exportMetadata should refset metadata be included in the export
-     * @param withNames the with names
-     * @return the refset member concepts
-     * @throws Exception the exception
-     */
-    public static String exportRefsetRf2Delta(final TerminologyService service, final User user, final String refsetInternalId, final String type,
-        final String languageId, final String fileNameDate, final String startEffectiveTime, final String transientEffectiveTime, final boolean exportMetadata,
-        boolean withNames) throws Exception {
+					LOG.debug("fileContentsArray after versionInScope " + fileContentsArray.size() + " "
+							+ versionInScope);
+					LOG.debug("fileContentsArray: " + fileContentsArray);
 
-        // TODO: Turn this into a method variable
-        final Set<String> dates = new HashSet<>();
-        dates.add(transientEffectiveTime);
+					// If first file, store header so can print it later
+					if (headerLine == null) {
 
-        if (startEffectiveTime != null) {
+						for (final String line : fileContentsArray) {
 
-            dates.add(startEffectiveTime);
-        }
+							if (line.toLowerCase().startsWith("id")) {
 
-        final ExportHandler exporter = new ExportHandler();
+								headerLine = line;
+								break;
+							}
 
-        try {
+						}
 
-            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+					}
 
-            if (refset == null) {
+				}
 
-                throw new Exception("Reference Set Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
-            }
+				// Processed all intermediate files - put in a set to remove duplicates from
+				// fileContents
+				final Set<String> fileContentsSet = new HashSet<>(fileContentsArray);
 
-            final String deltaAwsVersionedPath = exporter.generateAwsBaseVersionPath(refset, type, dates);
+				// sort fileContents
+				final List<String> fileContentsArrayList = new ArrayList<>(fileContentsSet);
+				Collections.sort(fileContentsArrayList);
 
-            final String deltaRt2VersionFileName = exporter.generateRt2VersionFileName(refset, type, languageId, dates, exportMetadata, withNames);
+				// if the files were empty then print out an empty file with just the header
+				// line
+				if (headerLine == null) {
 
-            final String deltaSnowGeneratedFileName = exporter.generateSnowVersionFileName(refset, "DELTA", dates);
+					final String separator = "\t";
+					headerLine = "id" + separator + "effectiveTime" + separator + "active" + separator + "moduleId"
+							+ separator + "refsetId" + separator + "referencedComponentId";
+				}
 
-            // Check if delta file already exists
-            if (!S3ConnectionWrapper.isInS3Cache(deltaAwsVersionedPath, deltaRt2VersionFileName)) {
+				// write fileContents to file
+				try (final FileOutputStream fos = new FileOutputStream(
+						localSnowGeneratedTempDir.toString() + File.separator + deltaSnowGeneratedFileName);
+						final BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));) {
 
-                // determine all snapshot versions that will contribute to the delta
-                final List<Map<String, String>> versionMap = RefsetService.getSortedRefsetVersionList(refset, service, true);
-                final Map<String, String> versionToRefsetInternalId = new HashMap<>();
-                final List<String> versionsInScope = new ArrayList<>();
+					// Write header onto delta file
+					bw.write(headerLine);
+					bw.newLine();
 
-                for (final Map<String, String> entry : versionMap) {
+					for (final String line : fileContentsArrayList) {
 
-                    final String candidateVersion = entry.get("date");
+						// Only print the header line once... Was done above
+						if (line.toLowerCase().startsWith("id")) {
 
-                    if (candidateVersion != null && candidateVersion.replaceAll("-", "").compareTo(startEffectiveTime) > 0
-                        && candidateVersion.replaceAll("-", "").compareTo(transientEffectiveTime) <= 0) {
+							continue;
+						}
 
-                        versionsInScope.add(candidateVersion);
-                        versionToRefsetInternalId.put(candidateVersion, entry.get("refsetInternalId"));
-                    }
+						bw.write(line);
+						bw.newLine();
+					}
 
-                }
+					bw.close();
+					fos.close();
 
-                LOG.debug("versionsInScope " + versionsInScope);
+				} catch (final IOException e) {
 
-                // Local place to store snowBaseVersionFileName
-                final Path localSnowGeneratedTempDir = Files.createTempDirectory("rt2LocalSnowGenerated-");
+					e.printStackTrace();
+				}
 
-                // build fileContentsArray with contents from each snapshot version
-                String headerLine = null;
-                final List<String> fileContentsArray = new ArrayList<>();
+				LOG.debug("converting snowstorm genned file to RT2 format");
+				// Have access to localSnowGeneratedFilePath from which rt2 will generate the
+				// export file
+				generateRt2ExportFile(refset,
+						localSnowGeneratedTempDir.toString() + File.separator + deltaSnowGeneratedFileName,
+						deltaRt2VersionFileName, exportMetadata, lWithNames, languageId);
 
-                for (final String versionInScope : versionsInScope) {
+				LOG.debug("uploading snowstorm genned file to S3");
 
-                    if (versionInScope == null) {
-                        continue;
-                    }
+				// store file on s3
+				S3ConnectionWrapper.uploadToS3(deltaAwsVersionedPath, exportFileDir, deltaRt2VersionFileName);
+				FileUtility.deleteDirectory(localSnowGeneratedTempDir.toFile());
 
-                    dates.clear();
-                    dates.add(versionInScope.replaceAll("-", ""));
+			} else {
 
-                    Refset refsetVersion = refset;
+				if (!Files.exists(Path.of(exportFileDir + deltaRt2VersionFileName))) {
 
-                    try {
+					LOG.debug("Downloading RT2 snapshot genned file from S3");
+					S3ConnectionWrapper.downloadFileFromS3(deltaAwsVersionedPath, deltaRt2VersionFileName,
+							exportFileDir + deltaRt2VersionFileName);
+				}
 
-                        refsetVersion = RefsetService.getRefset(service, user, refset.getRefsetId(), versionInScope);
+			}
 
-                    } catch (final Exception ex) {
+			// if download is from RT2 server
+			// final ServletUriComponentsBuilder builder =
+			// ServletUriComponentsBuilder.fromCurrentContextPath();
+			return EXPORT_DOWNLOAD_URL + deltaRt2VersionFileName;
 
-                        // N/A
-                    }
+		} catch (final Exception ex) {
 
-                    final String awsVersionedPath = exporter.generateAwsBaseVersionPath(refset, "DELTA-SNAPSHOT", dates);
+			throw new Exception("Failed to export delta zip file name: " + ex.getMessage(), ex);
+		}
 
-                    // NOT USED final String rt2VersionFileName = exporter.generateRt2VersionFileName(refset, "SNAPSHOT", languageId, dates, exportMetadata,
-                    // withNames);
+	}
 
-                    // Snowstorm generated RF2 file
-                    final String snowGeneratedFileName = exporter.generateSnowVersionFileName(refset, "SNAPSHOT", dates);
+	/**
+	 * Generate RT2 export file.
+	 *
+	 * @param refset                     the refset
+	 * @param localSnowGeneratedFilePath the local snow generated file path
+	 * @param rt2VersionFileName         the rt 2 version file name
+	 * @param exportMetadata             the export metadata
+	 * @param appendNames                the append names
+	 * @param languageId                 the language id
+	 * @return the string
+	 * @throws Exception the exception
+	 */
+	private static String generateRt2ExportFile(final Refset refset, final String localSnowGeneratedFilePath,
+			final String rt2VersionFileName, final boolean exportMetadata, final boolean appendNames,
+			final String languageId) throws Exception {
 
-                    // Local Snowstorm generated Rf2 file name
-                    final String localSnowGeneratedFilePath = localSnowGeneratedTempDir + File.separator + snowGeneratedFileName;
+		// Generate the Rt2 version of refset RF2 Zip file
+		final Path builderDirectoryTempDir = Files.createTempDirectory("rt2Builder-");
+		boolean noFiles = false;
 
-                    // Check if SnowS version file name does already exist in S3 cache
-                    if (!S3ConnectionWrapper.isInS3Cache(awsVersionedPath, snowGeneratedFileName)) {
+		LOG.debug("creating builder temp dir: " + builderDirectoryTempDir.toString());
 
-                        // Base-SnowVersion file is not on S3, so generate it, and after downloading it, store it on S3
-                        final String entityString = "{\"refsetIds\": [\"" + refset.getRefsetId() + "\"],  \"branchPath\": \"" + refsetVersion.getBranchPath()
-                            + "\", \"conceptsAndRelationshipsOnly\": false, \"filenameEffectiveDate\": \"" + versionInScope.replaceAll("-", "")
-                            + "\", \"legacyZipNaming\": false, \"type\": \"SNAPSHOT\", \"unpromotedChangesOnly\": false"
-                            + (versionInScope == null ? "" : ",  \"startEffectiveTime\": \"" + versionInScope.replaceAll("-", "") + "\"")
-                            + (versionInScope == null ? "" : ",  \"transientEffectiveTime\": \"" + versionInScope.replaceAll("-", "") + "\"") + "}";
+		// Unzip the download if snapshot
+		List<String> sourceFiles = new ArrayList<>();
 
-                        LOG.info("generating file from snowstorm" + entityString);
+		if (!localSnowGeneratedFilePath.contains("DELTA")) {
 
-                        // Generate on SnowS
-                        final String snowGeneratedFileUrl = exporter.generateSnowVersionFile(entityString);
-                        LOG.debug("Downloading file from snowstorm, " + localSnowGeneratedFilePath);
+			sourceFiles = unzipFiles(localSnowGeneratedFilePath, builderDirectoryTempDir.toString());
+		} else {
 
-                        // Download file from SnowS
-                        exporter.downloadSnowGeneratedFile(snowGeneratedFileUrl, localSnowGeneratedFilePath);
-                        LOG.debug("uploading snowstorm genned file to S3");
+			sourceFiles.add(localSnowGeneratedFilePath);
+		}
 
-                        // store file one s3
-                        S3ConnectionWrapper.uploadToS3(awsVersionedPath, localSnowGeneratedTempDir.toString(), snowGeneratedFileName);
+		LOG.debug("unzipped source files: " + ModelUtility.toJson(sourceFiles));
 
-                    } else {
+		if (sourceFiles.size() > 1) {
 
-                        LOG.info("Downloading snowstorm genned file from S3, " + snowGeneratedFileName);
-                        S3ConnectionWrapper.downloadFileFromS3(awsVersionedPath, snowGeneratedFileName, localSnowGeneratedFilePath);
-                    }
+			throw new Exception("Unexpected number of files generated by Snowstorm Export RF2: " + sourceFiles.size());
+		} else if (sourceFiles.size() == 0) {
 
-                    // append the contents of this snapshot file to the fileContentsArray
-                    FileUtility.unzip(localSnowGeneratedFilePath, localSnowGeneratedFilePath.replace(".zip", ""));
-                    final String fileNamePath = localSnowGeneratedFilePath.replace(".zip", "") + File.separator + "SnomedCT_Export" + File.separator
-                        + "Snapshot" + File.separator + "Refset" + File.separator + "Content" + File.separator;
-                    final String[] files = new File(fileNamePath).list();
+			final Path path = Path.of(builderDirectoryTempDir.toString() + File.separator + "noresults.txt");
+			Files.write(path,
+					("No results for Reference Set " + refset.getRefsetId()).getBytes(StandardCharsets.UTF_8));
+			sourceFiles.add(path.toString());
+			noFiles = true;
+		}
 
-                    if (files != null) {
+		// If Rf2WithNames selected, append the names to the refset file
+		// if there were no files from Snowstorm, there is no need to append names
+		if (appendNames && !noFiles) {
 
-                        if (withNames) {
+			final String snowGeneratedRf2FilePath = sourceFiles.iterator().next();
+			final String rf2FileName = snowGeneratedRf2FilePath
+					.substring(snowGeneratedRf2FilePath.lastIndexOf(File.separator) + 1);
+			final String builderRf2FilePath = builderDirectoryTempDir.toString() + File.separator + rf2FileName;
 
-                            final String snowGeneratedRf2FilePath = fileNamePath + files[0];
-                            // NOT USED final String rf2FileName = snowGeneratedRf2FilePath.substring(snowGeneratedRf2FilePath.lastIndexOf(File.separator) + 1);
-                            final String builderRf2FilePath = fileNamePath + files[0] + ".names";
+			appendNamesToRf2(refset, snowGeneratedRf2FilePath, builderRf2FilePath, languageId);
 
-                            final Refset specificRefset = service.findSingle("id:" + versionToRefsetInternalId.get(versionInScope), Refset.class, null);
-                            appendNamesToRf2(specificRefset, snowGeneratedRf2FilePath, builderRf2FilePath, languageId);
+			sourceFiles.clear();
+			sourceFiles.add(builderRf2FilePath);
+		}
 
-                            final File origFile = new File(snowGeneratedRf2FilePath);
+		// remove effectiveTime
+		if (!"PUBLISHED".equalsIgnoreCase(refset.getVersionStatus())) {
+			final String snowGeneratedRf2FilePath = sourceFiles.iterator().next();
+			removeEffectiveTime(snowGeneratedRf2FilePath);
+		}
 
-                            if (origFile.exists()) {
+		// if exportMetadata requested, add it
+		if (exportMetadata) {
 
-                                origFile.delete();
-                            }
+			sourceFiles.add(exportRefsetMetadata(refset, builderDirectoryTempDir));
+		}
 
-                            final File namesFile = new File(builderRf2FilePath);
+		LOG.debug("ready to be zipped source files: " + ModelUtility.toJson(sourceFiles));
 
-                            if (namesFile.exists()) {
+		// zip the files together
+		zipFiles(sourceFiles, exportFileDir + rt2VersionFileName);
 
-                                namesFile.renameTo(origFile);
-                            }
+		// Delete directory structure and original zip
+		FileUtility.deleteDirectory(builderDirectoryTempDir.toFile());
 
-                            withNames = false;
-                        }
+		return exportFileDir;
+	}
 
-                        fileContentsArray.addAll(FileUtility.readFileToArray(fileNamePath + files[0]));
-                    }
+	/**
+	 * Removes the effective time.
+	 *
+	 * @param origFilePath the orig file path
+	 * @throws Exception the exception
+	 */
+	private static void removeEffectiveTime(final String origFilePath) throws Exception {
 
-                    LOG.debug("fileContentsArray after versionInScope " + fileContentsArray.size() + " " + versionInScope);
-                    LOG.debug("fileContentsArray: " + fileContentsArray);
+		LOG.debug("Removing effectiveTime for non-PUBLISHED refsets.");
+		try {
+			final Path tempFilePath = Files.createTempFile("temp", ".txt");
 
-                    // If first file, store header so can print it later
-                    if (headerLine == null) {
+			try (final BufferedReader br = new BufferedReader(new FileReader(new File(origFilePath)));
+					final BufferedWriter writer = new BufferedWriter(new FileWriter(tempFilePath.toFile()))) {
 
-                        for (final String line : fileContentsArray) {
+				String line;
+				while ((line = br.readLine()) != null) {
+					if (StringUtils.isEmpty(line)) {
+						continue;
+					}
+					if (line.startsWith("id")) {
+						writer.write(line);
+						writer.newLine();
+						continue;
+					}
 
-                            if (line.toLowerCase().startsWith("id")) {
+					final String[] tokens = line.split("\t");
+					tokens[1] = "";
+					final String updatedLine = String.join("\t", tokens);
+					writer.write(updatedLine);
+					writer.newLine();
 
-                                headerLine = line;
-                                break;
-                            }
+				}
+			}
 
-                        }
+			// Replace the original file with the modified temporary file
+			Files.move(tempFilePath, Path.of(origFilePath), StandardCopyOption.REPLACE_EXISTING);
 
-                    }
+		} catch (IOException e) {
+			LOG.error("ERROR removing effectiveTime from file {}", origFilePath);
+			throw e;
+		}
+	}
 
-                }
+	/**
+	 * Append names to rf 2.
+	 *
+	 * @param refset               the refset
+	 * @param origFilePath         the orig file path
+	 * @param newFileWithNamesPath the new file with names path
+	 * @param languageId           the language id
+	 * @throws Exception the exception
+	 */
+	private static void appendNamesToRf2(final Refset refset, final String origFilePath,
+			final String newFileWithNamesPath, final String languageId) throws Exception {
 
-                // Processed all intermediate files - put in a set to remove duplicates from fileContents
-                final Set<String> fileContentsSet = new HashSet<>(fileContentsArray);
+		// Move rf2 file to a tmp (as we create new one below). Update sourceFiles
+		// accordingly
+		LOG.debug("Appending descriptions to RF2 file");
 
-                // sort fileContents
-                final List<String> fileContentsArrayList = new ArrayList<>(fileContentsSet);
-                Collections.sort(fileContentsArrayList);
+		// Get member cache
+		final List<Concept> conceptsNotInCache = new ArrayList<>();
+		final Map<String, Concept> members = new HashMap<>();
 
-                // if the files were empty then print out an empty file with just the header line
-                if (headerLine == null) {
+		// Read through file and identify those concepts not in cache or don't have all
+		// requisite languages populated
+		try (BufferedReader br = new BufferedReader(new FileReader(new File(origFilePath)))) {
 
-                    final String separator = "\t";
-                    headerLine = "id" + separator + "effectiveTime" + separator + "active" + separator + "moduleId" + separator + "refsetId" + separator
-                        + "referencedComponentId";
-                }
+			String extractedLine = br.readLine();
+			extractedLine = br.readLine();
 
-                // write fileContents to file
-                try {
+			while (extractedLine != null && !extractedLine.trim().isEmpty()) {
 
-                    final FileOutputStream fos = new FileOutputStream(localSnowGeneratedTempDir.toString() + File.separator + deltaSnowGeneratedFileName);
-                    final BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(fos));
+				final String conceptId = extractedLine.split("\t")[REFEST_RF2_CONCEPTID_COLUMN];
 
-                    // Write header onto delta file
-                    bw.write(headerLine);
-                    bw.newLine();
+				// TODO: Also check doesn't have all needed languages
+				if (!members.containsKey(conceptId) || members.get(conceptId).getDescriptions().isEmpty()) {
 
-                    for (final String line : fileContentsArrayList) {
+					final Concept concept = new Concept();
+					concept.setCode(conceptId);
+					conceptsNotInCache.add(concept);
+				}
 
-                        // Only print the header line once... Was done above
-                        if (line.toLowerCase().startsWith("id")) {
+				extractedLine = br.readLine();
 
-                            continue;
-                        }
+				if (conceptsNotInCache.size() == CONCEPT_DESCRIPTIONS_PER_CALL || extractedLine == null) {
 
-                        bw.write(line);
-                        bw.newLine();
-                    }
+					populateAllLanguageDescriptions(refset, conceptsNotInCache);
 
-                    bw.close();
-                    fos.close();
+					// Populate Members cache with data
+					for (final Concept concept : conceptsNotInCache) {
 
-                } catch (final IOException e) {
+						if (!members.containsKey(concept.getCode())) {
 
-                    e.printStackTrace();
-                }
+							members.put(concept.getCode(), concept);
+						} else {
 
-                LOG.debug("converting snowstorm genned file to RT2 format");
-                // Have access to localSnowGeneratedFilePath from which rt2 will generate the export file
-                generateRt2ExportFile(refset, localSnowGeneratedTempDir.toString() + File.separator + deltaSnowGeneratedFileName, deltaRt2VersionFileName,
-                    exportMetadata, withNames, languageId);
+							members.get(concept.getCode()).setDescriptions(concept.getDescriptions());
+						}
 
-                LOG.debug("uploading snowstorm genned file to S3");
+					}
 
-                // store file on s3
-                S3ConnectionWrapper.uploadToS3(deltaAwsVersionedPath, exportFileDir, deltaRt2VersionFileName);
-                FileUtility.deleteDirectory(localSnowGeneratedTempDir.toFile());
+					conceptsNotInCache.clear();
+				}
 
-            } else {
+			}
 
-                if (!Files.exists(Path.of(exportFileDir + deltaRt2VersionFileName))) {
+			br.close();
+		}
 
-                    LOG.debug("Downloading RT2 snapshot genned file from S3");
-                    S3ConnectionWrapper.downloadFileFromS3(deltaAwsVersionedPath, deltaRt2VersionFileName, exportFileDir + deltaRt2VersionFileName);
-                }
+		// Get descriptions for those not cached or not cached with all languages. Read
+		// through file 2nd time and write each line to new file while appending
+		// selected name
+		try (final FileWriter fw = new FileWriter(new File(newFileWithNamesPath));
+				final BufferedReader br = new BufferedReader(new FileReader(new File(origFilePath)))) {
 
-            }
+			// get the header line so we can add the new description header
+			String extractedLine = br.readLine();
 
-            // if download is from RT2 server
-            // final ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
-            return EXPORT_DOWNLOAD_URL + deltaRt2VersionFileName;
+			for (final Map<String, String> defaultLanguages : refset.getEdition().getFullyQualifiedLanguageRefsets()) {
 
-        } catch (final Exception ex) {
+				if (languageId.equals(defaultLanguages.get("qualifiedLanguageRefset"))) {
 
-            throw new Exception("Failed to export delta zip file name: " + ex.getMessage(), ex);
-        }
+					fw.write(extractedLine + "\t" + defaultLanguages.get("qualifiedLanguageCode") + "\n");
+				}
 
-    }
+			}
 
-    /**
-     * Generate RT2 export file.
-     *
-     * @param refset the refset
-     * @param localSnowGeneratedFilePath the local snow generated file path
-     * @param rt2VersionFileName the rt 2 version file name
-     * @param exportMetadata the export metadata
-     * @param appendNames the append names
-     * @param languageId the language id
-     * @return the string
-     * @throws Exception the exception
-     */
-    private static String generateRt2ExportFile(final Refset refset, final String localSnowGeneratedFilePath, final String rt2VersionFileName,
-        final boolean exportMetadata, final boolean appendNames, final String languageId) throws Exception {
+			// get the first line of concepts
+			extractedLine = br.readLine();
 
-        // Generate the Rt2 version of refset RF2 Zip file
-        final Path builderDirectoryTempDir = Files.createTempDirectory("rt2Builder-");
-        boolean noFiles = false;
+			while (extractedLine != null) {
 
-        LOG.debug("creating builder temp dir: " + builderDirectoryTempDir.toString());
+				final String conceptId = extractedLine.split("\t")[REFEST_RF2_CONCEPTID_COLUMN];
 
-        // Unzip the download if snapshot
-        List<String> sourceFiles = new ArrayList<>();
+				// TODO: How to determine which language
+				if (!members.containsKey(conceptId)) {
 
-        if (!localSnowGeneratedFilePath.contains("DELTA")) {
+					throw new Exception("Didn't have concept populated with descriptions yet");
+				}
 
-            sourceFiles = unzipFiles(localSnowGeneratedFilePath, builderDirectoryTempDir.toString());
-        } else {
+				boolean written = false;
+				int i = 0;
+				String fallbackDescription = null;
 
-            sourceFiles.add(localSnowGeneratedFilePath);
-        }
+				while (i < members.get(conceptId).getDescriptions().size()) {
 
-        LOG.debug("unzipped source files: " + ModelUtility.toJson(sourceFiles));
+					final Map<String, String> description = members.get(conceptId).getDescriptions().get(i);
 
-        if (sourceFiles.size() > 1) {
+					// if this isn't the description we want
+					if (description == null || !languageId.equals(description.get(LANGUAGE_ID))) {
 
-            throw new Exception("Unexpected number of files generated by Snowstorm Export RF2: " + sourceFiles.size());
-        } else if (sourceFiles.size() == 0) {
+						// If this is the English PT add it as a fallback to use if the language we want
+						// isn't on this concept
+						if (description != null && description.get(LANGUAGE_ID).equals(PREFERRED_TERM_EN)) {
 
-            final Path path = Path.of(builderDirectoryTempDir.toString() + File.separator + "noresults.txt");
-            Files.write(path, ("No results for Reference Set " + refset.getRefsetId()).getBytes(StandardCharsets.UTF_8));
-            sourceFiles.add(path.toString());
-            noFiles = true;
-        }
+							fallbackDescription = extractedLine + "\t" + description.get(DESCRIPTION_TERM);
+						}
 
-        // If Rf2WithNames selected, append the names to the refset file
-        // if there were no files from Snowstorm, there is no need to append names
-        if (appendNames && !noFiles) {
+						i++;
+						continue;
+					}
 
-            final String snowGeneratedRf2FilePath = sourceFiles.iterator().next();
-            final String rf2FileName = snowGeneratedRf2FilePath.substring(snowGeneratedRf2FilePath.lastIndexOf(File.separator) + 1);
-            final String builderRf2FilePath = builderDirectoryTempDir.toString() + File.separator + rf2FileName;
+					fw.write(extractedLine + "\t" + description.get(DESCRIPTION_TERM));
+					written = true;
+					break;
+				}
 
-            appendNamesToRf2(refset, snowGeneratedRf2FilePath, builderRf2FilePath, languageId);
+				// If the language we want isn't on this concept try to use the English fallback
+				if (!written && fallbackDescription != null) {
 
-            sourceFiles.clear();
-            sourceFiles.add(builderRf2FilePath);
-        }
+					fw.write(fallbackDescription);
+					written = true;
 
-        // remove effectiveTime
-        if (!"PUBLISHED".equalsIgnoreCase(refset.getVersionStatus())) {
-            final String snowGeneratedRf2FilePath = sourceFiles.iterator().next();
-            removeEffectiveTime(snowGeneratedRf2FilePath);
-        }
+				} else if (!written) {
 
-        // if exportMetadata requested, add it
-        if (exportMetadata) {
+					throw new Exception("Not seeing the expected descriptions for member: " + conceptId
+							+ " as have these descriptions: " + members.get(conceptId).getDescriptions());
+				}
 
-            sourceFiles.add(exportRefsetMetadata(refset, builderDirectoryTempDir));
-        }
+				fw.write("\n");
+				extractedLine = br.readLine();
+			}
 
-        LOG.debug("ready to be zipped source files: " + ModelUtility.toJson(sourceFiles));
+		}
 
-        // zip the files together
-        zipFiles(sourceFiles, exportFileDir + rt2VersionFileName);
+	}
 
-        // Delete directory structure and original zip
-        FileUtility.deleteDirectory(builderDirectoryTempDir.toFile());
+	/**
+	 * Get the refset member basic information.
+	 *
+	 * @param refsetId    the refset ID
+	 * @param limit       the number of results per page
+	 * @param searchAfter the member to search after
+	 * @param branchPath  the branch and version of the refset
+	 * @return the raw resultString
+	 * @throws Exception the exception
+	 */
+	private static String getMemberSctids(final String refsetId, final int limit, final String searchAfter,
+			final String branchPath) throws Exception {
 
-        return exportFileDir;
-    }
+		return terminologyHandler.getMemberSctids(refsetId, limit, searchAfter, branchPath);
 
-    /**
-     * Removes the effective time.
-     *
-     * @param origFilePath the orig file path
-     * @throws Exception the exception
-     */
-    private static void removeEffectiveTime(final String origFilePath) throws Exception {
+	}
 
-        LOG.debug("Removing effectiveTime for non-PUBLISHED refsets.");
-        try {
-            final Path tempFilePath = Files.createTempFile("temp", ".txt");
+	/**
+	 * Export the refset member concept IDs in a zipped CSV format.
+	 *
+	 * @param service          the Terminology Service
+	 * @param refsetInternalId the internal refset ID
+	 * @param exportMetadata   should refset metadata be included in the export
+	 * @return the URL of the file containing the member list
+	 * @throws Exception the exception
+	 */
+	public static String exportRefsetSctidList(final TerminologyService service, final String refsetInternalId,
+			final boolean exportMetadata) throws Exception {
 
-            try (final BufferedReader br = new BufferedReader(new FileReader(new File(origFilePath)));
-                final BufferedWriter writer = new BufferedWriter(new FileWriter(tempFilePath.toFile()))) {
+		final int limit = ELASTICSEARCH_MAX_RECORD_LENGTH;
+		boolean hasMorePages = true;
+		final StringBuilder fileLines = new StringBuilder();
+		String zipOutputPath = exportFileDir;
+		String refsetFileName = "";
+		String sctidsFilePath = "";
+		final List<String> sourceFiles = new ArrayList<>();
+		Path tempDirectoryPath = null;
 
-                String line;
-                while ((line = br.readLine()) != null) {
-                    if (StringUtils.isEmpty(line)) {
-                        continue;
-                    }
-                    if (line.startsWith("id")) {
-                        writer.write(line);
-                        writer.newLine();
-                        continue;
-                    }
+		// get the refset and member information
+		try {
 
-                    final String[] tokens = line.split("\t");
-                    tokens[1] = "";
-                    final String updatedLine = String.join("\t", tokens);
-                    writer.write(updatedLine);
-                    writer.newLine();
+			final Refset refset = RefsetService.getRefset(service, SecurityService.getUserFromSession(),
+					refsetInternalId);
 
-                }
-            }
+			if (refset == null) {
 
-            // Replace the original file with the modified temporary file
-            Files.move(tempFilePath, Path.of(origFilePath), StandardCopyOption.REPLACE_EXISTING);
+				throw new Exception(
+						"Reference Set Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
+			}
 
-        } catch (IOException e) {
-            LOG.error("ERROR removing effectiveTime from file {}", origFilePath);
-            throw e;
-        }
-    }
+			refsetFileName = "refset_" + refset.getRefsetId() + "_" + getRefsetAsOfDate(refset) + "_member_ids.txt";
+			zipOutputPath += refsetFileName.replace(".txt", ".zip");
+			tempDirectoryPath = Files.createTempDirectory("sctidList-" + refsetFileName.replace(".txt", ""));
+			sctidsFilePath = tempDirectoryPath.toString() + File.separator + refsetFileName;
 
-    /**
-     * Append names to rf 2.
-     *
-     * @param refset the refset
-     * @param origFilePath the orig file path
-     * @param newFileWithNamesPath the new file with names path
-     * @param languageId the language id
-     * @throws Exception the exception
-     */
-    private static void appendNamesToRf2(final Refset refset, final String origFilePath, final String newFileWithNamesPath, final String languageId)
-        throws Exception {
+			LOG.debug("SCTID txt output path = " + sctidsFilePath);
+			LOG.debug("zip output path = " + zipOutputPath);
 
-        // Move rf2 file to a tmp (as we create new one below). Update sourceFiles accordingly
-        LOG.debug("Appending descriptions to RF2 file");
+			if (exportMetadata) {
 
-        // Get member cache
-        final List<Concept> conceptsNotInCache = new ArrayList<>();
-        final Map<String, Concept> members = new HashMap<>();
+				sourceFiles.add(exportRefsetMetadata(refset, tempDirectoryPath));
+			}
 
-        // Read through file and identify those concepts not in cache or don't have all requisite languages populated
-        try (BufferedReader br = new BufferedReader(new FileReader(new File(origFilePath)))) {
+			String searchAfter = "";
 
-            String extractedLine = br.readLine();
-            extractedLine = br.readLine();
+			while (hasMorePages) {
 
-            while (extractedLine != null && !extractedLine.trim().isEmpty()) {
+				final String resultString = getMemberSctids(refset.getRefsetId(), limit, searchAfter,
+						getBranchPath(refset));
+				// LOG.debug("exportRefsetSctidList: resultString" + resultString);
+				final ObjectMapper mapper = new ObjectMapper();
+				final JsonNode root = mapper.readTree(resultString);
+				final JsonNode items = root.get("items");
+				final Iterator<JsonNode> iterator = items.iterator();
+				LOG.debug("exportRefsetSctidList items.size(): " + items.size());
 
-                final String conceptId = extractedLine.split("\t")[REFEST_RF2_CONCEPTID_COLUMN];
+				if (root.get("searchAfter") != null) {
 
-                // TODO: Also check doesn't have all needed languages
-                if (!members.containsKey(conceptId) || members.get(conceptId).getDescriptions().isEmpty()) {
+					searchAfter = root.get("searchAfter").asText();
+				} else {
 
-                    final Concept concept = new Concept();
-                    concept.setCode(conceptId);
-                    conceptsNotInCache.add(concept);
-                }
+					searchAfter = "";
+				}
 
-                extractedLine = br.readLine();
+				LOG.debug("exportRefsetSctidList searchAfter: " + searchAfter);
 
-                if (conceptsNotInCache.size() == CONCEPT_DESCRIPTIONS_PER_CALL || extractedLine == null) {
+				if (items.size() < limit) {
 
-                    populateAllLanguageDescriptions(refset, conceptsNotInCache);
+					hasMorePages = false;
+				}
 
-                    // Populate Members cache with data
-                    for (final Concept concept : conceptsNotInCache) {
+				LOG.debug("exportRefsetSctidList hasMorePages: " + hasMorePages);
 
-                        if (!members.containsKey(concept.getCode())) {
+				while (iterator.hasNext()) {
 
-                            members.put(concept.getCode(), concept);
-                        } else {
+					final JsonNode item = iterator.next();
+					final String conceptId = (item.get("referencedComponentId").asText());
+					fileLines.append(conceptId + "\n");
+				}
 
-                            members.get(concept.getCode()).setDescriptions(concept.getDescriptions());
-                        }
+			}
 
-                    }
+		} catch (final Exception ex) {
 
-                    conceptsNotInCache.clear();
-                }
+			throw new Exception("Could not get Reference Set member data from snowstorm: " + ex.getMessage(), ex);
+		}
 
-            }
+		// print the sctids file
+		try (final FileOutputStream sctidsFileOutputStream = new FileOutputStream(sctidsFilePath);
 
-            br.close();
-        }
+				final OutputStreamWriter sctidsOutputStreamWriter = new OutputStreamWriter(sctidsFileOutputStream,
+						"UTF-8");
+				final PrintWriter sctidsWriter = new PrintWriter(sctidsOutputStreamWriter);) {
 
-        final FileWriter fw = new FileWriter(new File(newFileWithNamesPath));
+			sctidsWriter.print(fileLines);
 
-        // Get descriptions for those not cached or not cached with all languages. Read through file 2nd time and write each line to new file while appending
-        // selected name
-        try (BufferedReader br = new BufferedReader(new FileReader(new File(origFilePath)))) {
+		} catch (final Exception ex) {
 
-            // get the header line so we can add the new description header
-            String extractedLine = br.readLine();
+			throw new Exception("Could not create export txt file: " + ex.getMessage(), ex);
+		}
 
-            for (final Map<String, String> defaultLanguages : refset.getEdition().getFullyQualifiedLanguageRefsets()) {
+		// zip the files together
+		sourceFiles.add(sctidsFilePath);
+		zipFiles(sourceFiles, zipOutputPath);
 
-                if (languageId.equals(defaultLanguages.get("qualifiedLanguageRefset"))) {
+		// Delete temp directory structure and files
+		FileUtility.deleteDirectory(tempDirectoryPath.toFile());
 
-                    fw.write(extractedLine + "\t" + defaultLanguages.get("qualifiedLanguageCode") + "\n");
-                }
+		// if download is from RT2 server
+		// final ServletUriComponentsBuilder builder =
+		// ServletUriComponentsBuilder.fromCurrentContextPath();
+		final String zippedFileUrl = EXPORT_DOWNLOAD_URL + refsetFileName.replace(".txt", ".zip");
 
-            }
+		return zippedFileUrl;
+	}
 
-            // get the first line of concepts
-            extractedLine = br.readLine();
+	/**
+	 * Export a freeset.
+	 *
+	 * @param service          the Terminology Service
+	 * @param refsetInternalId the internal refset ID
+	 * @param languageId       the language id
+	 * @return the freeset in export format
+	 * @throws Exception the exception
+	 */
+	public static String exportFreeset(final TerminologyService service, final String refsetInternalId,
+			final String languageId) throws Exception {
 
-            while (extractedLine != null) {
+		final StringBuilder fileLines = new StringBuilder();
+		String sctidsOutputPath = "";
+		String zipOutputPath = exportFileDir;
+		String refsetFileName = "";
+		final List<String> sourceFiles = new ArrayList<>();
+		Path tempDirectoryPath = null;
 
-                final String conceptId = extractedLine.split("\t")[REFEST_RF2_CONCEPTID_COLUMN];
+		try {
 
-                // TODO: How to determine which language
-                if (!members.containsKey(conceptId)) {
+			final Refset refset = RefsetService.getRefset(service, SecurityService.getUserFromSession(),
+					refsetInternalId);
 
-                    throw new Exception("Didn't have concept populated with descriptions yet");
-                }
+			if (refset == null) {
 
-                boolean written = false;
-                int i = 0;
-                String fallbackDescription = null;
+				throw new Exception(
+						"Reference Set Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
+			}
 
-                while (i < members.get(conceptId).getDescriptions().size()) {
+			refsetFileName = "freeset_" + refset.getRefsetId() + "_" + getRefsetAsOfDate(refset) + ".txt";
+			tempDirectoryPath = Files.createTempDirectory("freeset-" + refsetFileName.replace(".txt", ""));
+			zipOutputPath += refsetFileName.replace(".txt", ".zip");
+			sctidsOutputPath = tempDirectoryPath.toString() + File.separator + refsetFileName;
 
-                    final Map<String, String> description = members.get(conceptId).getDescriptions().get(i);
+			LOG.debug("SCTID freeset txt output path = " + sctidsOutputPath);
+			LOG.debug("zip freeset output path = " + zipOutputPath);
 
-                    // if this isn't the description we want
-                    if (description == null || !languageId.equals(description.get(LANGUAGE_ID))) {
+			LOG.debug("exportFreeset: refsetInternalId: " + refsetInternalId);
 
-                        // If this is the English PT add it as a fallback to use if the language we want isn't on this concept
-                        if (description != null && description.get(LANGUAGE_ID).equals(PREFERRED_TERM_EN)) {
+			final long start = System.currentTimeMillis();
+			final ConceptResultList results = new ConceptResultList();
 
-                            fallbackDescription = extractedLine + "\t" + description.get(DESCRIPTION_TERM);
-                        }
+			final List<Concept> concepts = getAllRefsetMembers(service, refsetInternalId, "", new ArrayList<Concept>());
+			Collections.sort(concepts,
+					Comparator.comparing((final Concept concept) -> Long.parseLong(concept.getCode())));
 
-                        i++;
-                        continue;
-                    }
+			final List<Concept> conceptsToProcess = new ArrayList<>();
+			int i = 0;
 
-                    fw.write(extractedLine + "\t" + description.get(DESCRIPTION_TERM));
-                    written = true;
-                    break;
-                }
+			for (final Concept concept : concepts) {
 
-                // If the language we want isn't on this concept try to use the English fallback
-                if (!written && fallbackDescription != null) {
+				conceptsToProcess.add(concept);
+				i++;
 
-                    fw.write(fallbackDescription);
-                    written = true;
+				if (conceptsToProcess.size() == CONCEPT_DESCRIPTIONS_PER_CALL || i == concepts.size()) {
 
-                } else if (!written) {
+					populateAllLanguageDescriptions(refset, conceptsToProcess);
+					conceptsToProcess.clear();
+				}
 
-                    throw new Exception("Not seeing the expected descriptions for member: " + conceptId + " as have these descriptions: "
-                        + members.get(conceptId).getDescriptions());
-                }
+			}
 
-                fw.write("\n");
-                extractedLine = br.readLine();
-            }
+			results.setTimeTaken(System.currentTimeMillis() - start);
+			results.setItems(concepts);
 
-        }
+			fileLines.append("ConceptID").append("\t");
+			fileLines.append("Active").append("\t");
+			fileLines.append("FSN").append("\t");
+			fileLines.append("PreferredTerm").append("\t");
+			fileLines.append("\r\n");
 
-        fw.close();
-    }
+			for (final Concept cpt : results.getItems()) {
 
-    /**
-     * Get the refset member basic information.
-     *
-     * @param refsetId the refset ID
-     * @param limit the number of results per page
-     * @param searchAfter the member to search after
-     * @param branchPath the branch and version of the refset
-     * @return the raw resultString
-     * @throws Exception the exception
-     */
-    private static String getMemberSctids(final String refsetId, final int limit, final String searchAfter, final String branchPath) throws Exception {
+				String fsn = "";
+				String pt = "";
 
-        return terminologyHandler.getMemberSctids(refsetId, limit, searchAfter, branchPath);
+				for (final Map<String, String> entry : cpt.getDescriptions()) {
 
-    }
+					if (entry != null && "fsn".equalsIgnoreCase(entry.get("type")) && StringUtils.isBlank(fsn)) {
 
-    /**
-     * Export the refset member concept IDs in a zipped CSV format.
-     *
-     * @param service the Terminology Service
-     * @param refsetInternalId the internal refset ID
-     * @param exportMetadata should refset metadata be included in the export
-     * @return the URL of the file containing the member list
-     * @throws Exception the exception
-     */
-    public static String exportRefsetSctidList(final TerminologyService service, final String refsetInternalId, final boolean exportMetadata) throws Exception {
+						fsn = entry.get("term");
+					}
 
-        final int limit = ELASTICSEARCH_MAX_RECORD_LENGTH;
-        boolean hasMorePages = true;
-        final StringBuilder fileLines = new StringBuilder();
-        String zipOutputPath = exportFileDir;
-        String refsetFileName = "";
-        String sctidsFilePath = "";
-        final List<String> sourceFiles = new ArrayList<>();
-        Path tempDirectoryPath = null;
+					if (StringUtils.isNotBlank(languageId) && StringUtils.isBlank(pt)) {
 
-        // get the refset and member information
-        try {
+						if (entry != null && entry.get("languageId").equals(languageId)) {
 
-            final Refset refset = RefsetService.getRefset(service, SecurityService.getUserFromSession(), refsetInternalId);
+							pt = entry.get("term");
+						}
 
-            if (refset == null) {
+					}
 
-                throw new Exception("Reference Set Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
-            }
+				}
 
-            refsetFileName = "refset_" + refset.getRefsetId() + "_" + getRefsetAsOfDate(refset) + "_member_ids.txt";
-            zipOutputPath += refsetFileName.replace(".txt", ".zip");
-            tempDirectoryPath = Files.createTempDirectory("sctidList-" + refsetFileName.replace(".txt", ""));
-            sctidsFilePath = tempDirectoryPath.toString() + File.separator + refsetFileName;
+				fileLines.append(cpt.getCode()).append("\t");
+				fileLines.append(cpt.isActive() ? "1" : "0").append("\t");
+				fileLines.append(StringUtils.isNotEmpty(fsn) ? fsn : "").append("\t");
+				fileLines.append(StringUtils.isNotEmpty(pt) ? pt : cpt.getName());
+				fileLines.append("\r\n");
+			}
 
-            LOG.debug("SCTID txt output path = " + sctidsFilePath);
-            LOG.debug("zip output path = " + zipOutputPath);
+			// print the sctids file
+			try (final FileOutputStream sctidsFileOutputStream = new FileOutputStream(sctidsOutputPath);
+					final OutputStreamWriter sctidsOutputStreamWriter = new OutputStreamWriter(sctidsFileOutputStream,
+							"UTF-8");
+					final PrintWriter freesetWriter = new PrintWriter(sctidsOutputStreamWriter);) {
 
-            if (exportMetadata) {
+				freesetWriter.print(fileLines);
+			}
 
-                sourceFiles.add(exportRefsetMetadata(refset, tempDirectoryPath));
-            }
+		} catch (final Exception ex) {
 
-            String searchAfter = "";
+			throw new Exception("Could not create free set txt file: " + ex.getMessage(), ex);
+		}
 
-            while (hasMorePages) {
+		// zip the files together
+		sourceFiles.add(sctidsOutputPath);
+		zipFiles(sourceFiles, zipOutputPath);
 
-                final String resultString = getMemberSctids(refset.getRefsetId(), limit, searchAfter, getBranchPath(refset));
-                // LOG.debug("exportRefsetSctidList: resultString" + resultString);
-                final ObjectMapper mapper = new ObjectMapper();
-                final JsonNode root = mapper.readTree(resultString);
-                final JsonNode items = root.get("items");
-                final Iterator<JsonNode> iterator = items.iterator();
-                LOG.debug("exportRefsetSctidList items.size(): " + items.size());
+		// Delete temp directory structure and files
+		FileUtility.deleteDirectory(tempDirectoryPath.toFile());
 
-                if (root.get("searchAfter") != null) {
+		// if download is from RT2 server
+		// final ServletUriComponentsBuilder builder =
+		// ServletUriComponentsBuilder.fromCurrentContextPath();
+		final String zippedFileUrl = EXPORT_DOWNLOAD_URL + refsetFileName.replace(".txt", ".zip");
 
-                    searchAfter = root.get("searchAfter").asText();
-                } else {
+		return zippedFileUrl;
+	}
 
-                    searchAfter = "";
-                }
+	/**
+	 * Zip files together.
+	 *
+	 * @param sourceFiles       the list of files to zip together
+	 * @param zipOutputFilePath the path and filename of the zip file to create
+	 * @throws Exception the exception
+	 */
+	public static void zipFiles(final List<String> sourceFiles, final String zipOutputFilePath) throws Exception {
 
-                LOG.debug("exportRefsetSctidList searchAfter: " + searchAfter);
+		try (final FileOutputStream zipFileOutputStream = new FileOutputStream(zipOutputFilePath);
+				final ZipOutputStream zipOutputStream = new ZipOutputStream(zipFileOutputStream);) {
 
-                if (items.size() < limit) {
+			for (final String sourceFile : sourceFiles) {
 
-                    hasMorePages = false;
-                }
+				final File fileToZip = new File(sourceFile);
 
-                LOG.debug("exportRefsetSctidList hasMorePages: " + hasMorePages);
+				try (final FileInputStream zipFileInputStream = new FileInputStream(fileToZip)) {
 
-                while (iterator.hasNext()) {
+					final ZipEntry zipEntry = new ZipEntry(fileToZip.getName());
+					zipOutputStream.putNextEntry(zipEntry);
 
-                    final JsonNode item = iterator.next();
-                    final String conceptId = (item.get("referencedComponentId").asText());
-                    fileLines.append(conceptId + "\n");
-                }
+					final byte[] bytes = new byte[1024];
+					int length;
 
-            }
+					while ((length = zipFileInputStream.read(bytes)) >= 0) {
 
-        } catch (final Exception ex) {
+						zipOutputStream.write(bytes, 0, length);
+					}
 
-            throw new Exception("Could not get Reference Set member data from snowstorm: " + ex.getMessage(), ex);
-        }
+				}
 
-        // print the sctids file
-        try (final FileOutputStream sctidsFileOutputStream = new FileOutputStream(sctidsFilePath);
+			}
 
-            final OutputStreamWriter sctidsOutputStreamWriter = new OutputStreamWriter(sctidsFileOutputStream, "UTF-8");
-            final PrintWriter sctidsWriter = new PrintWriter(sctidsOutputStreamWriter);) {
+		} catch (final Exception ex) {
 
-            sctidsWriter.print(fileLines);
+			throw new Exception("Could not zip the files: " + ex.getMessage(), ex);
+		}
 
-        } catch (final Exception ex) {
+	}
 
-            throw new Exception("Could not create export txt file: " + ex.getMessage(), ex);
-        }
+	/**
+	 * Extract files from a zip archive.
+	 *
+	 * @param zipFilePath    the path and filename of the zip file to unzip
+	 * @param extractionPath the path of the directory to extract files to
+	 * @return a list of file paths of the extracted files
+	 * @throws Exception the exception
+	 */
+	public static List<String> unzipFiles(final String zipFilePath, final String extractionPath) throws Exception {
 
-        // zip the files together
-        sourceFiles.add(sctidsFilePath);
-        zipFiles(sourceFiles, zipOutputPath);
+		final List<String> sourceFiles = new ArrayList<>();
 
-        // Delete temp directory structure and files
-        FileUtility.deleteDirectory(tempDirectoryPath.toFile());
+		try (final ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFilePath));) {
 
-        // if download is from RT2 server
-        // final ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
-        final String zippedFileUrl = EXPORT_DOWNLOAD_URL + refsetFileName.replace(".txt", ".zip");
+			final File extractionDirectory = new File(extractionPath);
+			final byte[] buffer = new byte[1024];
+			ZipEntry zipEntry;
 
-        return zippedFileUrl;
-    }
+			while ((zipEntry = zis.getNextEntry()) != null) {
 
-    /**
-     * Export a freeset.
-     *
-     * @param service the Terminology Service
-     * @param refsetInternalId the internal refset ID
-     * @param languageId the language id
-     * @return the freeset in export format
-     * @throws Exception the exception
-     */
-    public static String exportFreeset(final TerminologyService service, final String refsetInternalId, final String languageId) throws Exception {
+				final File newFile = new File(extractionDirectory, zipEntry.getName());
+				final String extractionCanonicalPath = extractionDirectory.getCanonicalPath();
+				final String fileCanonicalPath = newFile.getCanonicalPath();
 
-        final StringBuilder fileLines = new StringBuilder();
-        String sctidsOutputPath = "";
-        String zipOutputPath = exportFileDir;
-        String refsetFileName = "";
-        final List<String> sourceFiles = new ArrayList<>();
-        Path tempDirectoryPath = null;
+				if (!fileCanonicalPath.startsWith(extractionCanonicalPath + File.separator)) {
 
-        try {
+					throw new IOException("Entry is outside of the target directory: " + zipEntry.getName());
+				}
 
-            final Refset refset = RefsetService.getRefset(service, SecurityService.getUserFromSession(), refsetInternalId);
+				if (zipEntry.isDirectory()) {
 
-            if (refset == null) {
+					if (!newFile.isDirectory() && !newFile.mkdirs()) {
 
-                throw new Exception("Reference Set Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
-            }
+						throw new IOException("Failed to create directory " + newFile);
+					}
 
-            refsetFileName = "freeset_" + refset.getRefsetId() + "_" + getRefsetAsOfDate(refset) + ".txt";
-            tempDirectoryPath = Files.createTempDirectory("freeset-" + refsetFileName.replace(".txt", ""));
-            zipOutputPath += refsetFileName.replace(".txt", ".zip");
-            sctidsOutputPath = tempDirectoryPath.toString() + File.separator + refsetFileName;
+				} else {
 
-            LOG.debug("SCTID freeset txt output path = " + sctidsOutputPath);
-            LOG.debug("zip freeset output path = " + zipOutputPath);
+					// fix for Windows-created archives
+					final File parent = newFile.getParentFile();
 
-            LOG.debug("exportFreeset: refsetInternalId: " + refsetInternalId);
+					if (!parent.isDirectory() && !parent.mkdirs()) {
 
-            final long start = System.currentTimeMillis();
-            final ConceptResultList results = new ConceptResultList();
+						throw new IOException("Failed to create directory " + parent);
+					}
 
-            final List<Concept> concepts = getAllRefsetMembers(service, refsetInternalId, "", new ArrayList<Concept>());
-            Collections.sort(concepts, Comparator.comparing((final Concept concept) -> Long.parseLong(concept.getCode())));
+					// write file content
+					try (final FileOutputStream fileOutputStream = new FileOutputStream(newFile)) {
 
-            final List<Concept> conceptsToProcess = new ArrayList<>();
-            int i = 0;
+						int length;
 
-            for (final Concept concept : concepts) {
+						while ((length = zis.read(buffer)) > 0) {
 
-                conceptsToProcess.add(concept);
-                i++;
+							fileOutputStream.write(buffer, 0, length);
+						}
 
-                if (conceptsToProcess.size() == CONCEPT_DESCRIPTIONS_PER_CALL || i == concepts.size()) {
+					}
 
-                    populateAllLanguageDescriptions(refset, conceptsToProcess);
-                    conceptsToProcess.clear();
-                }
+					sourceFiles.add(fileCanonicalPath);
+				}
 
-            }
+			}
 
-            results.setTimeTaken(System.currentTimeMillis() - start);
-            results.setItems(concepts);
+			return sourceFiles;
 
-            fileLines.append("ConceptID").append("\t");
-            fileLines.append("Active").append("\t");
-            fileLines.append("FSN").append("\t");
-            fileLines.append("PreferredTerm").append("\t");
-            fileLines.append("\r\n");
+		} catch (final Exception ex) {
 
-            for (final Concept cpt : results.getItems()) {
+			throw new Exception("Could not unzip the file: " + ex.getMessage(), ex);
+		}
 
-                String fsn = "";
-                String pt = "";
+	}
 
-                for (final Map<String, String> entry : cpt.getDescriptions()) {
+	/**
+	 * Export the refset metadata in a text format.
+	 *
+	 * @param refset    the refset
+	 * @param directory the directory
+	 * @return the URL of the file containing the metadata
+	 * @throws Exception the exception
+	 */
+	public static String exportRefsetMetadata(final Refset refset, final Path directory) throws Exception {
 
-                    if (entry != null && "fsn".equalsIgnoreCase(entry.get("type")) && StringUtils.isBlank(fsn)) {
+		final StringBuilder fileLines = new StringBuilder();
+		final String pathDate = getRefsetAsOfDate(refset);
+		final String outputPath = directory + "/refset_" + refset.getRefsetId() + "_" + pathDate + "_metadata.txt";
+		final String separator = "\t";
 
-                        fsn = entry.get("term");
-                    }
+		fileLines.append("Refset ID" + separator + refset.getRefsetId() + "\n");
+		fileLines.append("Refset Name" + separator + refset.getName() + "\n");
+		fileLines.append("Edition Name" + separator + refset.getEditionName() + "\n");
+		fileLines.append("Edition Branch" + separator + refset.getEdition().getBranch() + "\n");
+		fileLines.append("Organization" + separator + refset.getEdition().getOrganization().getName() + "\n");
+		fileLines.append("Project" + separator + refset.getProject().getName() + "\n");
+		fileLines.append("Module ID" + separator + refset.getModuleId() + "\n");
+		fileLines.append("Refset Version Status" + separator + refset.getVersionStatus() + "\n");
 
-                    if (StringUtils.isNotBlank(languageId) && StringUtils.isBlank(pt)) {
+		if (refset.getVersionDate() != null) {
 
-                        if (entry.get("languageId").equals(languageId)) {
+			fileLines.append("Reference Set Version Date" + separator
+					+ DateUtility.formatDate(refset.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null) + "\n");
+		} else {
 
-                            pt = entry.get("term");
-                        }
+			fileLines.append("Reference Set Version Date" + separator + "\n");
+		}
 
-                    }
+		if (refset.isLocalSet()) {
 
-                }
+			fileLines.append("Local Reference Set" + separator + "True" + "\n");
+		}
 
-                fileLines.append(cpt.getCode()).append("\t");
-                fileLines.append(cpt.isActive() ? "1" : "0").append("\t");
-                fileLines.append(StringUtils.isNotEmpty(fsn) ? fsn : "").append("\t");
-                fileLines.append(StringUtils.isNotEmpty(pt) ? pt : cpt.getName());
-                fileLines.append("\r\n");
-            }
+		fileLines.append("Reference Set Last Modified Date" + separator
+				+ DateUtility.formatDate(refset.getModified(), DateUtility.DATE_FORMAT_REVERSE, null) + "\n");
+		fileLines.append("Reference Set Type" + separator + refset.getType() + "\n");
 
-            // print the sctids file
-            try (final FileOutputStream sctidsFileOutputStream = new FileOutputStream(sctidsOutputPath);
-                final OutputStreamWriter sctidsOutputStreamWriter = new OutputStreamWriter(sctidsFileOutputStream, "UTF-8");
-                final PrintWriter freesetWriter = new PrintWriter(sctidsOutputStreamWriter);) {
+		if (refset.isActive()) {
 
-                freesetWriter.print(fileLines);
-            }
+			fileLines.append("Reference Set Status" + separator + "Active" + "\n");
+		} else {
 
-        } catch (final Exception ex) {
+			fileLines.append("Reference Set Status" + separator + "Inactive" + "\n");
+		}
 
-            throw new Exception("Could not create free set txt file: " + ex.getMessage(), ex);
-        }
+		if (refset.isPrivateRefset()) {
 
-        // zip the files together
-        sourceFiles.add(sctidsOutputPath);
-        zipFiles(sourceFiles, zipOutputPath);
+			fileLines.append("Private Reference Set" + separator + "True" + "\n");
+		} else {
 
-        // Delete temp directory structure and files
-        FileUtility.deleteDirectory(tempDirectoryPath.toFile());
+			fileLines.append("Private Reference Set" + separator + "False" + "\n");
+		}
 
-        // if download is from RT2 server
-        // final ServletUriComponentsBuilder builder = ServletUriComponentsBuilder.fromCurrentContextPath();
-        final String zippedFileUrl = EXPORT_DOWNLOAD_URL + refsetFileName.replace(".txt", ".zip");
+		fileLines.append("Tags" + separator + String.join(", ", refset.getTags()) + "\n");
 
-        return zippedFileUrl;
-    }
+		if (refset.getNarrative() != null && !refset.getNarrative().equals("")) {
 
-    /**
-     * Zip files together.
-     *
-     * @param sourceFiles the list of files to zip together
-     * @param zipOutputFilePath the path and filename of the zip file to create
-     * @throws Exception the exception
-     */
-    public static void zipFiles(final List<String> sourceFiles, final String zipOutputFilePath) throws Exception {
+			fileLines.append("Reference Set Narrative" + separator + refset.getNarrative() + "\n");
+		}
 
-        try (final FileOutputStream zipFileOutputStream = new FileOutputStream(zipOutputFilePath);
-            final ZipOutputStream zipOutputStream = new ZipOutputStream(zipFileOutputStream);) {
+		if (refset.getVersionNotes() != null && !refset.getVersionNotes().equals("")) {
 
-            for (final String sourceFile : sourceFiles) {
+			fileLines.append("Reference Set Version Notes" + separator + refset.getVersionNotes() + "\n");
+		}
 
-                final File fileToZip = new File(sourceFile);
+		if (refset.getExternalUrl() != null && !refset.getExternalUrl().equals("")) {
 
-                try (final FileInputStream zipFileInputStream = new FileInputStream(fileToZip)) {
+			fileLines.append("External URL" + separator + refset.getExternalUrl() + "\n");
+		}
 
-                    final ZipEntry zipEntry = new ZipEntry(fileToZip.getName());
-                    zipOutputStream.putNextEntry(zipEntry);
+		if (refset.getType().equals(Refset.INTENSIONAL)) {
 
-                    final byte[] bytes = new byte[1024];
-                    int length;
+			final String definition = RefsetService.getEclFromDefinition(refset.getDefinitionClauses());
+			fileLines.append("Reference Set Definition" + separator + definition + "\n");
+		}
 
-                    while ((length = zipFileInputStream.read(bytes)) >= 0) {
+		// print the sctids file
+		try (final FileOutputStream fileOutputStream = new FileOutputStream(outputPath);
+				final OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream, "UTF-8");
+				final PrintWriter printWriter = new PrintWriter(outputStreamWriter);) {
 
-                        zipOutputStream.write(bytes, 0, length);
-                    }
+			printWriter.print(fileLines);
+			return outputPath;
 
-                }
+		} catch (final Exception ex) {
 
-            }
+			throw new Exception("Could not create metadata export txt file: " + ex.getMessage(), ex);
+		}
 
-        } catch (final Exception ex) {
+	}
 
-            throw new Exception("Could not zip the files: " + ex.getMessage(), ex);
-        }
+	/**
+	 * Get either the version date or the current date in yyyy-MM-dd format.
+	 *
+	 * @param refset the refset
+	 * @return the URL of the file containing the metadata
+	 * @throws Exception the exception
+	 */
+	public static String getRefsetAsOfDate(final Refset refset) throws Exception {
 
-    }
+		String asOfDate = "";
+		final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
-    /**
-     * Extract files from a zip archive.
-     *
-     * @param zipFilePath the path and filename of the zip file to unzip
-     * @param extractionPath the path of the directory to extract files to
-     * @return a list of file paths of the extracted files
-     * @throws Exception the exception
-     */
-    public static List<String> unzipFiles(final String zipFilePath, final String extractionPath) throws Exception {
+		if (refset.getVersionDate() != null) {
 
-        final List<String> sourceFiles = new ArrayList<>();
+			asOfDate = simpleDateFormat.format(refset.getVersionDate());
+		} else {
 
-        try (final ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFilePath));) {
+			asOfDate = simpleDateFormat.format(new Date());
+		}
 
-            final File extractionDirectory = new File(extractionPath);
-            final byte[] buffer = new byte[1024];
-            ZipEntry zipEntry;
+		return asOfDate;
+	}
 
-            while ((zipEntry = zis.getNextEntry()) != null) {
+	/**
+	 * Get the branch and version path for a refset.
+	 *
+	 * @param refset the refset
+	 * @return the branch and version path
+	 * @throws Exception the exception
+	 */
+	public static String getBranchPath(final Refset refset) throws Exception {
 
-                final File newFile = new File(extractionDirectory, zipEntry.getName());
-                final String extractionCanonicalPath = extractionDirectory.getCanonicalPath();
-                final String fileCanonicalPath = newFile.getCanonicalPath();
+		return RefsetService.getBranchPath(refset);
+	}
 
-                if (!fileCanonicalPath.startsWith(extractionCanonicalPath + File.separator)) {
+	/**
+	 * Gets the concept descriptions.
+	 *
+	 * @param refset            the refset who's members are being retrieved
+	 * @param conceptsToProcess the concepts to add descriptions to
+	 * @throws Exception the exception
+	 */
+	public static void populateAllLanguageDescriptions(final Refset refset, final List<Concept> conceptsToProcess)
+			throws Exception {
 
-                    throw new IOException("Entry is outside of the target directory: " + zipEntry.getName());
-                }
+		terminologyHandler.populateAllLanguageDescriptions(refset, conceptsToProcess);
 
-                if (zipEntry.isDirectory()) {
+	}
 
-                    if (!newFile.isDirectory() && !newFile.mkdirs()) {
+	/**
+	 * Populates concepts with information on if they have children.
+	 *
+	 * @param refset            the refset who's members are being retrieved
+	 * @param conceptsToProcess the concepts to add hasChild info to
+	 * @throws Exception the exception
+	 */
+	public static void populateConceptLeafStatus(final Refset refset, final List<Concept> conceptsToProcess)
+			throws Exception {
 
-                        throw new IOException("Failed to create directory " + newFile);
-                    }
+		terminologyHandler.populateConceptLeafStatus(refset, conceptsToProcess);
 
-                } else {
+	}
 
-                    // fix for Windows-created archives
-                    final File parent = newFile.getParentFile();
+	/**
+	 * Get ready to search concepts.
+	 *
+	 * @param service             the Terminology Service
+	 * @param user                the user
+	 * @param refsetInternalId    the internal refset ID
+	 * @param searchParameters    the search parameters
+	 * @param searchRefsetMembers Should the search be for members of the refset or
+	 *                            for all concepts
+	 * @return the concept result list
+	 * @throws Exception the exception
+	 */
+	public static ConceptResultList prepareConceptSearch(final TerminologyService service, final User user,
+			final String refsetInternalId, final SearchParameters searchParameters, final boolean searchRefsetMembers)
+			throws Exception {
 
-                    if (!parent.isDirectory() && !parent.mkdirs()) {
+		ConceptResultList concepts = new ConceptResultList();
 
-                        throw new IOException("Failed to create directory " + parent);
-                    }
+		final Refset refset = getRefset(user, service, refsetInternalId);
+		final String branchPath = getBranchPath(refset);
+		final String cacheString = refset.getRefsetId() + searchParameters.toString() + searchRefsetMembers;
+		final Map<String, ConceptResultList> branchCache = getCacheForConceptsCall(branchPath);
+		String searchMembersMode = "all";
 
-                    // write file content
-                    try (final FileOutputStream fileOutputStream = new FileOutputStream(newFile)) {
+		// check if the concept call has been cached
+		if (branchCache.containsKey(cacheString)) {
 
-                        int length;
+			LOG.debug("prepareConceptSearch USING CACHE");
+			return branchCache.get(cacheString);
+		}
 
-                        while ((length = zis.read(buffer)) > 0) {
+		if (searchRefsetMembers) {
 
-                            fileOutputStream.write(buffer, 0, length);
-                        }
+			searchMembersMode = "members";
+		}
 
-                    }
+		concepts = searchConcepts(refset, searchParameters, searchMembersMode, -1);
 
-                    sourceFiles.add(fileCanonicalPath);
-                }
+		if (searchRefsetMembers) {
 
-            }
+			final List<Concept> allConceptList = concepts.getItems();
+			final List<Concept> conceptsToProcess = new ArrayList<>();
+			int i = 0;
 
-            return sourceFiles;
+			for (final Concept concept : allConceptList) {
 
-        } catch (final Exception ex) {
+				conceptsToProcess.add(concept);
+				i++;
 
-            throw new Exception("Could not unzip the file: " + ex.getMessage(), ex);
-        }
+				if (conceptsToProcess.size() == CONCEPT_DESCRIPTIONS_PER_CALL || i == allConceptList.size()) {
 
-    }
+					populateAllLanguageDescriptions(refset, conceptsToProcess);
+					conceptsToProcess.clear();
+				}
 
-    /**
-     * Export the refset metadata in a text format.
-     *
-     * @param refset the refset
-     * @param directory the directory
-     * @return the URL of the file containing the metadata
-     * @throws Exception the exception
-     */
-    public static String exportRefsetMetadata(final Refset refset, final Path directory) throws Exception {
+			}
 
-        final StringBuilder fileLines = new StringBuilder();
-        final String pathDate = getRefsetAsOfDate(refset);
-        final String outputPath = directory + "/refset_" + refset.getRefsetId() + "_" + pathDate + "_metadata.txt";
-        final String separator = "\t";
+		}
 
-        fileLines.append("Refset ID" + separator + refset.getRefsetId() + "\n");
-        fileLines.append("Refset Name" + separator + refset.getName() + "\n");
-        fileLines.append("Edition Name" + separator + refset.getEditionName() + "\n");
-        fileLines.append("Edition Branch" + separator + refset.getEdition().getBranch() + "\n");
-        fileLines.append("Organization" + separator + refset.getEdition().getOrganization().getName() + "\n");
-        fileLines.append("Project" + separator + refset.getProject().getName() + "\n");
-        fileLines.append("Module ID" + separator + refset.getModuleId() + "\n");
-        fileLines.append("Refset Version Status" + separator + refset.getVersionStatus() + "\n");
+		branchCache.put(cacheString, concepts);
+		CONCEPTS_CALL_CACHE.put(branchPath, branchCache);
+		// LOG.debug("prepareConceptSearch: results: " + ModelUtility.toJson(concepts));
 
-        if (refset.getVersionDate() != null) {
+		return concepts;
+	}
 
-            fileLines.append(
-                "Reference Set Version Date" + separator + DateUtility.formatDate(refset.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null) + "\n");
-        } else {
+	/**
+	 * Get the ancestor path for a list of conceptIDs.
+	 *
+	 * @param refset    the refset
+	 * @param conceptId the concept ID paths are being generated for
+	 * @return the concept result list
+	 * @throws Exception the exception
+	 */
+	public static Concept getConceptAncestors(final Refset refset, final String conceptId) throws Exception {
 
-            fileLines.append("Reference Set Version Date" + separator + "\n");
-        }
+		return terminologyHandler.getConceptAncestors(refset, conceptId);
+	}
 
-        if (refset.isLocalSet()) {
+	/**
+	 * Search concepts.
+	 *
+	 * @param refset            the refset
+	 * @param searchParameters  the search parameters
+	 * @param searchMembersMode Should the search be for only for members, non
+	 *                          members, or all concepts. Values: 'all', 'members',
+	 *                          'non members'
+	 * @param limitReturnNumber -1 if all results should be returned, or the number
+	 *                          of final results that should be returned (search may
+	 *                          request more than what is returned)
+	 * @return the concept result list
+	 * @throws Exception the exception
+	 */
+	public static ConceptResultList searchConcepts(final Refset refset, final SearchParameters searchParameters,
+			final String searchMembersMode, final int limitReturnNumber) throws Exception {
 
-            fileLines.append("Local Reference Set" + separator + "True" + "\n");
-        }
+		return terminologyHandler.searchConcepts(refset, searchParameters, searchMembersMode, limitReturnNumber);
 
-        fileLines.append(
-            "Reference Set Last Modified Date" + separator + DateUtility.formatDate(refset.getModified(), DateUtility.DATE_FORMAT_REVERSE, null) + "\n");
-        fileLines.append("Reference Set Type" + separator + refset.getType() + "\n");
+	}
 
-        if (refset.isActive()) {
+	/**
+	 * Process description node.
+	 *
+	 * @param descriptionNodes         the description nodes
+	 * @param defaultLanguageRefsets   the default language refsets
+	 * @param nonDefaultPreferredTerms the non default preferred terms
+	 * @return the sets the
+	 */
+	public static Set<Map<String, String>> processDescriptionNodes(final Set<JsonNode> descriptionNodes,
+			final Set<String> defaultLanguageRefsets, final List<String> nonDefaultPreferredTerms) {
 
-            fileLines.append("Reference Set Status" + separator + "Active" + "\n");
-        } else {
+		final Set<Map<String, String>> descriptions = new HashSet<>();
 
-            fileLines.append("Reference Set Status" + separator + "Inactive" + "\n");
-        }
+		for (final JsonNode descriptionNode : descriptionNodes) {
 
-        if (refset.isPrivateRefset()) {
+			final Map<String, String> descriptionAttributesMap = new HashMap<>();
+			final JsonNode acceptabilityMap = descriptionNode.get("acceptabilityMap");
+			String acceptability = null;
+			String languageId = null;
+			String typeName = null;
 
-            fileLines.append("Private Reference Set" + separator + "True" + "\n");
-        } else {
+			for (final String langRefsetId : defaultLanguageRefsets) {
 
-            fileLines.append("Private Reference Set" + separator + "False" + "\n");
-        }
+				if (acceptabilityMap.has(langRefsetId)) {
 
-        fileLines.append("Tags" + separator + String.join(", ", refset.getTags()) + "\n");
+					acceptability = acceptabilityMap.get(langRefsetId).asText();
+					languageId = langRefsetId;
+					break;
+				}
 
-        if (refset.getNarrative() != null && !refset.getNarrative().equals("")) {
+			}
 
-            fileLines.append("Reference Set Narrative" + separator + refset.getNarrative() + "\n");
-        }
+			if (acceptability != null && (nonDefaultPreferredTerms.isEmpty() || "PREFERRED".equals(acceptability))) {
 
-        if (refset.getVersionNotes() != null && !refset.getVersionNotes().equals("")) {
+				if ("900000000000003001".equals(descriptionNode.get("typeId").asText())) {
 
-            fileLines.append("Reference Set Version Notes" + separator + refset.getVersionNotes() + "\n");
-        }
+					typeName = "FSN";
+				} else if ("900000000000550004".equals(descriptionNode.get("typeId").asText())) {
 
-        if (refset.getExternalUrl() != null && !refset.getExternalUrl().equals("")) {
+					typeName = "DEF";
+				} else {
 
-            fileLines.append("External URL" + separator + refset.getExternalUrl() + "\n");
-        }
+					if ("PREFERRED".equals(acceptability)) {
 
-        if (refset.getType().equals(Refset.INTENSIONAL)) {
+						typeName = "PT";
+					} else {
 
-            final String definition = RefsetService.getEclFromDefinition(refset.getDefinitionClauses());
-            fileLines.append("Reference Set Definition" + separator + definition + "\n");
-        }
+						typeName = "AC";
+					}
 
-        // print the sctids file
-        try (final FileOutputStream fileOutputStream = new FileOutputStream(outputPath);
-            final OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream, "UTF-8");
-            final PrintWriter printWriter = new PrintWriter(outputStreamWriter);) {
+				}
 
-            printWriter.print(fileLines);
-            return outputPath;
+				descriptionAttributesMap.put(DESCRIPTION_TERM, descriptionNode.get("term").asText());
+				descriptionAttributesMap.put(DESCRIPTION_TYPE, typeName);
+				descriptionAttributesMap.put(DESCRIPTION_ID, descriptionNode.get("descriptionId").asText());
+				descriptionAttributesMap.put(LANGUAGE_CODE, languageId);
+				descriptionAttributesMap.put(LANGUAGE_ID, languageId + typeName);
+				descriptionAttributesMap.put(LANGUAGE_NAME,
+						descriptionNode.get("lang").asText().toUpperCase() + " (" + typeName + ")");
+				descriptionAttributesMap.put(DESCRIPTION_LANGUAGE, descriptionNode.get("lang").asText());
 
-        } catch (final Exception ex) {
+				descriptions.add(descriptionAttributesMap);
+			}
 
-            throw new Exception("Could not create metadata export txt file: " + ex.getMessage(), ex);
-        }
+		}
 
-    }
+		return descriptions;
+	}
 
-    /**
-     * Get either the version date or the current date in yyyy-MM-dd format.
-     *
-     * @param refset the refset
-     * @return the URL of the file containing the metadata
-     * @throws Exception the exception
-     */
-    public static String getRefsetAsOfDate(final Refset refset) throws Exception {
+	/**
+	 * Get a taxonomy tree cache collection for a branch path.
+	 *
+	 * @param branchPath the branch path of cache collection to return
+	 * @return the cache collection
+	 * @throws Exception the exception
+	 */
+	public static Map<String, ConceptResultList> getCacheForTree(final String branchPath) throws Exception {
 
-        String asOfDate = "";
-        final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+		if (TREE_CACHE.containsKey(branchPath)) {
 
-        if (refset.getVersionDate() != null) {
+			return TREE_CACHE.get(branchPath);
+		} else {
 
-            asOfDate = simpleDateFormat.format(refset.getVersionDate());
-        } else {
+			return new HashMap<>();
+		}
 
-            asOfDate = simpleDateFormat.format(new Date());
-        }
+	}
 
-        return asOfDate;
-    }
+	/**
+	 * Get a member ancestors cache collection for a branch path.
+	 *
+	 * @param branchPath the branch path of cache collection to return
+	 * @return the cache collection
+	 * @throws Exception the exception
+	 */
+	public static Map<String, Set<String>> getCacheForMemberAncestors(final String branchPath) throws Exception {
 
-    /**
-     * Get the branch and version path for a refset.
-     *
-     * @param refset the refset
-     * @return the branch and version path
-     * @throws Exception the exception
-     */
-    public static String getBranchPath(final Refset refset) throws Exception {
+		if (ANCESTORS_CACHE.containsKey(branchPath)) {
 
-        return RefsetService.getBranchPath(refset);
-    }
+			return ANCESTORS_CACHE.get(branchPath);
+		} else {
 
-    /**
-     * Gets the concept descriptions.
-     *
-     * @param refset the refset who's members are being retrieved
-     * @param conceptsToProcess the concepts to add descriptions to
-     * @throws Exception the exception
-     */
-    public static void populateAllLanguageDescriptions(final Refset refset, final List<Concept> conceptsToProcess) throws Exception {
+			return new HashMap<>();
+		}
 
-        terminologyHandler.populateAllLanguageDescriptions(refset, conceptsToProcess);
+	}
 
-    }
+	/**
+	 * Get a taxonomy ancestors cache collection for a branch path.
+	 *
+	 * @param branchPath the branch path of cache collection to return
+	 * @return the cache collection
+	 * @throws Exception the exception
+	 */
+	public static Map<String, Concept> getCacheForTaxonomySearchAncestors(final String branchPath) throws Exception {
 
-    /**
-     * Populates concepts with information on if they have children.
-     *
-     * @param refset the refset who's members are being retrieved
-     * @param conceptsToProcess the concepts to add hasChild info to
-     * @throws Exception the exception
-     */
-    public static void populateConceptLeafStatus(final Refset refset, final List<Concept> conceptsToProcess) throws Exception {
+		if (TAXONOMY_SEARCH_ANCESTORS_CACHE.containsKey(branchPath)) {
 
-        terminologyHandler.populateConceptLeafStatus(refset, conceptsToProcess);
+			return TAXONOMY_SEARCH_ANCESTORS_CACHE.get(branchPath);
+		} else {
 
-    }
+			return new HashMap<>();
+		}
 
-    /**
-     * Get ready to search concepts.
-     *
-     * @param service the Terminology Service
-     * @param user the user
-     * @param refsetInternalId the internal refset ID
-     * @param searchParameters the search parameters
-     * @param searchRefsetMembers Should the search be for members of the refset or for all concepts
-     * @return the concept result list
-     * @throws Exception the exception
-     */
-    public static ConceptResultList prepareConceptSearch(final TerminologyService service, final User user, final String refsetInternalId,
-        final SearchParameters searchParameters, final boolean searchRefsetMembers) throws Exception {
+	}
 
-        ConceptResultList concepts = new ConceptResultList();
+	/**
+	 * Get a concept detail cache collection for a branch path.
+	 *
+	 * @param branchPath the branch path of cache collection to return
+	 * @return the cache collection
+	 * @throws Exception the exception
+	 */
+	public static Map<String, Concept> getCacheForConceptDetails(final String branchPath) throws Exception {
 
-        final Refset refset = getRefset(user, service, refsetInternalId);
-        final String branchPath = getBranchPath(refset);
-        final String cacheString = refset.getRefsetId() + searchParameters.toString() + searchRefsetMembers;
-        final Map<String, ConceptResultList> branchCache = getCacheForConceptsCall(branchPath);
-        String searchMembersMode = "all";
+		if (CONCEPT_DETAILS_CACHE.containsKey(branchPath)) {
 
-        // check if the concept call has been cached
-        if (branchCache.containsKey(cacheString)) {
+			return CONCEPT_DETAILS_CACHE.get(branchPath);
+		} else {
 
-            LOG.debug("prepareConceptSearch USING CACHE");
-            return branchCache.get(cacheString);
-        }
+			return new HashMap<>();
+		}
 
-        if (searchRefsetMembers) {
+	}
 
-            searchMembersMode = "members";
-        }
+	/**
+	 * Get a member call cache collection for a branch path.
+	 *
+	 * @param branchPath the branch path of cache collection to return
+	 * @return the cache collection
+	 * @throws Exception the exception
+	 */
+	public static Map<String, ConceptResultList> getCacheForConceptsCall(final String branchPath) throws Exception {
 
-        concepts = searchConcepts(refset, searchParameters, searchMembersMode, -1);
+		if (CONCEPTS_CALL_CACHE.containsKey(branchPath)) {
 
-        if (searchRefsetMembers) {
+			return CONCEPTS_CALL_CACHE.get(branchPath);
+		} else {
 
-            final List<Concept> allConceptList = concepts.getItems();
-            final List<Concept> conceptsToProcess = new ArrayList<>();
-            int i = 0;
+			return new HashMap<>();
+		}
 
-            for (final Concept concept : allConceptList) {
+	}
 
-                conceptsToProcess.add(concept);
-                i++;
+	/**
+	 * Clear all caches related to refset members.
+	 *
+	 * @param branchPath the branch to clear the cache collections for
+	 * @throws Exception the exception
+	 */
+	public static void clearAllMemberCaches(final String branchPath) throws Exception {
 
-                if (conceptsToProcess.size() == CONCEPT_DESCRIPTIONS_PER_CALL || i == allConceptList.size()) {
+		if (branchPath != null) {
 
-                    populateAllLanguageDescriptions(refset, conceptsToProcess);
-                    conceptsToProcess.clear();
-                }
+			LOG.debug("clearAllMemberCaches: Clearing caches for branch path: " + branchPath);
 
-            }
+			CONCEPTS_CALL_CACHE.remove(branchPath);
+			CONCEPT_DETAILS_CACHE.remove(branchPath);
+			TAXONOMY_SEARCH_ANCESTORS_CACHE.remove(branchPath);
+			TREE_CACHE.remove(branchPath);
+			ANCESTORS_CACHE.remove(branchPath);
 
-        }
+			// we also need to clear the refset export cache on S3
+			final ExportHandler exportHandler = new ExportHandler();
+			exportHandler.deleteFilesFromBranchPath(branchPath);
 
-        branchCache.put(cacheString, concepts);
-        CONCEPTS_CALL_CACHE.put(branchPath, branchCache);
-        // LOG.debug("prepareConceptSearch: results: " + ModelUtility.toJson(concepts));
+		} else {
 
-        return concepts;
-    }
+			LOG.debug("clearAllMemberCaches: Clearing caches for all branches");
 
-    /**
-     * Get the ancestor path for a list of conceptIDs.
-     *
-     * @param refset the refset
-     * @param conceptId the concept ID paths are being generated for
-     * @return the concept result list
-     * @throws Exception the exception
-     */
-    public static Concept getConceptAncestors(final Refset refset, final String conceptId) throws Exception {
+			CONCEPTS_CALL_CACHE.clear();
+			CONCEPT_DETAILS_CACHE.clear();
+			TAXONOMY_SEARCH_ANCESTORS_CACHE.clear();
+			TREE_CACHE.clear();
+			ANCESTORS_CACHE.clear();
+		}
 
-        return terminologyHandler.getConceptAncestors(refset, conceptId);
-    }
+	}
 
-    /**
-     * Search concepts.
-     *
-     * @param refset the refset
-     * @param searchParameters the search parameters
-     * @param searchMembersMode Should the search be for only for members, non members, or all concepts. Values: 'all', 'members', 'non members'
-     * @param limitReturnNumber -1 if all results should be returned, or the number of final results that should be returned (search may request more than what
-     *            is returned)
-     * @return the concept result list
-     * @throws Exception the exception
-     */
-    public static ConceptResultList searchConcepts(final Refset refset, final SearchParameters searchParameters, final String searchMembersMode,
-        final int limitReturnNumber) throws Exception {
+	/**
+	 * Copy all branch cache collections to another branch.
+	 *
+	 * @param fromBranchPath         the branch to copy the cache collections from
+	 * @param toBranchPath           the branch to copy the cache collections to
+	 * @param changeEditPropertyFrom should cache keys containing the edit property
+	 *                               be change. Null for no change, or "true" or
+	 *                               "false" for the current state of the property
+	 * @throws Exception the exception
+	 */
+	public static void copyAllMemberCachesToBranch(final String fromBranchPath, final String toBranchPath,
+			final String changeEditPropertyFrom) throws Exception {
 
-        return terminologyHandler.searchConcepts(refset, searchParameters, searchMembersMode, limitReturnNumber);
+		if (fromBranchPath == null || fromBranchPath.equals("") || toBranchPath == null || toBranchPath.equals("")) {
 
-    }
+			return;
+		}
 
-    /**
-     * Process description node.
-     *
-     * @param descriptionNodes the description nodes
-     * @param defaultLanguageRefsets the default language refsets
-     * @param nonDefaultPreferredTerms the non default preferred terms
-     * @return the sets the
-     */
-    public static Set<Map<String, String>> processDescriptionNodes(final Set<JsonNode> descriptionNodes, final Set<String> defaultLanguageRefsets,
-        final List<String> nonDefaultPreferredTerms) {
+		boolean changeEditProperty = false;
+		String changeEditPropertyTo = "true";
 
-        final Set<Map<String, String>> descriptions = new HashSet<>();
+		if (changeEditPropertyFrom != null && !changeEditPropertyFrom.equals("")) {
 
-        for (final JsonNode descriptionNode : descriptionNodes) {
+			changeEditProperty = true;
 
-            final Map<String, String> descriptionAttributesMap = new HashMap<>();
-            final JsonNode acceptabilityMap = descriptionNode.get("acceptabilityMap");
-            String acceptability = null;
-            String languageId = null;
-            String typeName = null;
+			if (changeEditPropertyFrom.equals("true")) {
 
-            for (final String langRefsetId : defaultLanguageRefsets) {
+				changeEditPropertyTo = "false";
+			}
 
-                if (acceptabilityMap.has(langRefsetId)) {
+		}
 
-                    acceptability = acceptabilityMap.get(langRefsetId).asText();
-                    languageId = langRefsetId;
-                    break;
-                }
+		LOG.debug("BRANCH CACHE copying from: " + fromBranchPath);
+		LOG.debug("BRANCH CACHE copying to: " + toBranchPath);
 
-            }
+		if (CONCEPTS_CALL_CACHE.containsKey(fromBranchPath)) {
 
-            if (acceptability != null && (nonDefaultPreferredTerms.isEmpty() || "PREFERRED".equals(acceptability))) {
+			Map<String, ConceptResultList> tempCache = CONCEPTS_CALL_CACHE.get(fromBranchPath);
 
-                if ("900000000000003001".equals(descriptionNode.get("typeId").asText())) {
+			if (changeEditProperty) {
 
-                    typeName = "FSN";
-                } else if ("900000000000550004".equals(descriptionNode.get("typeId").asText())) {
+				String cacheString = ModelUtility.toJson(tempCache);
+				cacheString = cacheString.replace("\\\"editing\\\":" + changeEditPropertyFrom,
+						"\\\"editing\\\":" + changeEditPropertyTo);
+				tempCache = ModelUtility.fromJson(cacheString, new TypeReference<Map<String, ConceptResultList>>() {
+					/**/
+				});
+			}
 
-                    typeName = "DEF";
-                } else {
+			CONCEPTS_CALL_CACHE.put(toBranchPath, tempCache);
 
-                    if ("PREFERRED".equals(acceptability)) {
+		} else {
 
-                        typeName = "PT";
-                    } else {
+			CONCEPTS_CALL_CACHE.remove(toBranchPath);
+		}
 
-                        typeName = "AC";
-                    }
+		if (CONCEPT_DETAILS_CACHE.containsKey(fromBranchPath)) {
 
-                }
+			CONCEPT_DETAILS_CACHE.put(toBranchPath, CONCEPT_DETAILS_CACHE.get(fromBranchPath));
+		} else {
 
-                descriptionAttributesMap.put(DESCRIPTION_TERM, descriptionNode.get("term").asText());
-                descriptionAttributesMap.put(DESCRIPTION_TYPE, typeName);
-                descriptionAttributesMap.put(DESCRIPTION_ID, descriptionNode.get("descriptionId").asText());
-                descriptionAttributesMap.put(LANGUAGE_CODE, languageId);
-                descriptionAttributesMap.put(LANGUAGE_ID, languageId + typeName);
-                descriptionAttributesMap.put(LANGUAGE_NAME, descriptionNode.get("lang").asText().toUpperCase() + " (" + typeName + ")");
-                descriptionAttributesMap.put(DESCRIPTION_LANGUAGE, descriptionNode.get("lang").asText());
+			CONCEPT_DETAILS_CACHE.remove(toBranchPath);
+		}
 
-                descriptions.add(descriptionAttributesMap);
-            }
+		if (TAXONOMY_SEARCH_ANCESTORS_CACHE.containsKey(fromBranchPath)) {
 
-        }
+			TAXONOMY_SEARCH_ANCESTORS_CACHE.put(toBranchPath, TAXONOMY_SEARCH_ANCESTORS_CACHE.get(fromBranchPath));
+		} else {
 
-        return descriptions;
-    }
+			TAXONOMY_SEARCH_ANCESTORS_CACHE.remove(toBranchPath);
+		}
 
-    /**
-     * Get a taxonomy tree cache collection for a branch path.
-     *
-     * @param branchPath the branch path of cache collection to return
-     * @return the cache collection
-     * @throws Exception the exception
-     */
-    public static Map<String, ConceptResultList> getCacheForTree(final String branchPath) throws Exception {
+		if (TREE_CACHE.containsKey(fromBranchPath)) {
 
-        if (TREE_CACHE.containsKey(branchPath)) {
+			TREE_CACHE.put(toBranchPath, TREE_CACHE.get(fromBranchPath));
+		} else {
 
-            return TREE_CACHE.get(branchPath);
-        } else {
+			TREE_CACHE.remove(toBranchPath);
+		}
 
-            return new HashMap<>();
-        }
+		if (ANCESTORS_CACHE.containsKey(fromBranchPath)) {
 
-    }
+			ANCESTORS_CACHE.put(toBranchPath, ANCESTORS_CACHE.get(fromBranchPath));
+		} else {
 
-    /**
-     * Get a member ancestors cache collection for a branch path.
-     *
-     * @param branchPath the branch path of cache collection to return
-     * @return the cache collection
-     * @throws Exception the exception
-     */
-    public static Map<String, Set<String>> getCacheForMemberAncestors(final String branchPath) throws Exception {
+			ANCESTORS_CACHE.remove(toBranchPath);
+		}
 
-        if (ANCESTORS_CACHE.containsKey(branchPath)) {
+	}
 
-            return ANCESTORS_CACHE.get(branchPath);
-        } else {
+	/**
+	 * Get the refset member concepts as a list.
+	 *
+	 * @param refset the refset
+	 * @return the count of refset members
+	 * @throws Exception the exception
+	 */
+	public static int getMemberCount(final Refset refset) throws Exception {
 
-            return new HashMap<>();
-        }
+		return terminologyHandler.getMemberCount(refset);
+	}
 
-    }
+	/**
+	 * Get the refset member concepts as a list.
+	 *
+	 * @param refset                   the refset who's members are being retrieved
+	 * @param nonDefaultPreferredTerms the non-default preferred terms
+	 * @param searchParameters         the search parameters
+	 * @return the refset member concepts
+	 * @throws Exception the exception
+	 */
+	public static ConceptResultList getMemberList(final Refset refset, final List<String> nonDefaultPreferredTerms,
+			final SearchParameters searchParameters) throws Exception {
 
-    /**
-     * Get a taxonomy ancestors cache collection for a branch path.
-     *
-     * @param branchPath the branch path of cache collection to return
-     * @return the cache collection
-     * @throws Exception the exception
-     */
-    public static Map<String, Concept> getCacheForTaxonomySearchAncestors(final String branchPath) throws Exception {
+		return terminologyHandler.getMemberList(refset, nonDefaultPreferredTerms, searchParameters);
+	}
 
-        if (TAXONOMY_SEARCH_ANCESTORS_CACHE.containsKey(branchPath)) {
+	/**
+	 * Get the refset member concepts as a list.
+	 *
+	 * @param refset                   the refset who's members are being retrieved
+	 * @param nonDefaultPreferredTerms the non-default preferred terms
+	 * @param taxonomyParameters       the taxonomy parameters
+	 * @return the refset member concepts
+	 * @throws Exception the exception
+	 */
+	public static ConceptResultList getMemberTaxonomy(final Refset refset, final List<String> nonDefaultPreferredTerms,
+			final TaxonomyParameters taxonomyParameters) throws Exception {
 
-            return TAXONOMY_SEARCH_ANCESTORS_CACHE.get(branchPath);
-        } else {
+		final String startingConceptId = taxonomyParameters.getStartingConceptId();
+		final String language = taxonomyParameters.getLanguage();
+		List<Concept> relationsList = new ArrayList<>();
+		final List<Concept> processedTreeNodes = new ArrayList<>();
+		ConceptResultList conceptResultList = new ConceptResultList();
+		final String branchPath = getBranchPath(refset);
+		final String cacheString = refset.getRefsetId() + taxonomyParameters.toString();
+		final Map<String, ConceptResultList> branchCache = getCacheForTree(branchPath);
 
-            return new HashMap<>();
-        }
+		// check if the members call has been cached
+		if (branchCache.containsKey(cacheString)) {
 
-    }
+			LOG.debug("getMemberTaxonomy USING CACHE");
+			return branchCache.get(cacheString);
+		}
 
-    /**
-     * Get a concept detail cache collection for a branch path.
-     *
-     * @param branchPath the branch path of cache collection to return
-     * @return the cache collection
-     * @throws Exception the exception
-     */
-    public static Map<String, Concept> getCacheForConceptDetails(final String branchPath) throws Exception {
+		// If parent concept is inactive, getChildren() will return a 400 error.
+		try {
 
-        if (CONCEPT_DETAILS_CACHE.containsKey(branchPath)) {
+			if (taxonomyParameters.getReturnChildren()) {
 
-            return CONCEPT_DETAILS_CACHE.get(branchPath);
-        } else {
+				conceptResultList = getChildren(startingConceptId, refset, language);
+			} else {
 
-            return new HashMap<>();
-        }
+				conceptResultList = getParents(startingConceptId, refset, language);
+			}
 
-    }
+		} catch (final Exception e) {
 
-    /**
-     * Get a member call cache collection for a branch path.
-     *
-     * @param branchPath the branch path of cache collection to return
-     * @return the cache collection
-     * @throws Exception the exception
-     */
-    public static Map<String, ConceptResultList> getCacheForConceptsCall(final String branchPath) throws Exception {
+			// Only throw exception if the rest status code is something other than 400
+			if (!"400".equals(e.getMessage())) {
 
-        if (CONCEPTS_CALL_CACHE.containsKey(branchPath)) {
+				throw e;
+			}
 
-            return CONCEPTS_CALL_CACHE.get(branchPath);
-        } else {
+		}
 
-            return new HashMap<>();
-        }
+		relationsList = conceptResultList.getItems();
+		final List<Concept> conceptsToProcessMembership = new ArrayList<>();
 
-    }
+		for (final Concept concept : relationsList) {
 
-    /**
-     * Clear all caches related to refset members.
-     *
-     * @param branchPath the branch to clear the cache collections for
-     * @throws Exception the exception
-     */
-    public static void clearAllMemberCaches(final String branchPath) throws Exception {
+			conceptsToProcessMembership.add(concept);
+		}
 
-        if (branchPath != null) {
+		if (!conceptsToProcessMembership.isEmpty()) {
 
-            LOG.debug("clearAllMemberCaches: Clearing caches for branch path: " + branchPath);
+			populateMembershipInformation(refset, conceptsToProcessMembership);
+		}
 
-            CONCEPTS_CALL_CACHE.remove(branchPath);
-            CONCEPT_DETAILS_CACHE.remove(branchPath);
-            TAXONOMY_SEARCH_ANCESTORS_CACHE.remove(branchPath);
-            TREE_CACHE.remove(branchPath);
-            ANCESTORS_CACHE.remove(branchPath);
+		for (final Concept concept : relationsList) {
 
-            // we also need to clear the refset export cache on S3
-            final ExportHandler exportHandler = new ExportHandler();
-            exportHandler.deleteFilesFromBranchPath(branchPath);
+			processedTreeNodes.add(concept);
+		}
 
-        } else {
+		if (taxonomyParameters.getReturnChildren()) {
 
-            LOG.debug("clearAllMemberCaches: Clearing caches for all branches");
+			LOG.debug("Concept has " + processedTreeNodes.size() + " children");
+		} else {
 
-            CONCEPTS_CALL_CACHE.clear();
-            CONCEPT_DETAILS_CACHE.clear();
-            TAXONOMY_SEARCH_ANCESTORS_CACHE.clear();
-            TREE_CACHE.clear();
-            ANCESTORS_CACHE.clear();
-        }
+			LOG.debug("Concept has " + processedTreeNodes.size() + " parents");
+		}
 
-    }
+		// if returning the starting concept get the details and set the concept
+		// properties appropriately for taxonomy
+		if (taxonomyParameters.getReturnStartingConcept()) {
 
-    /**
-     * Copy all branch cache collections to another branch.
-     *
-     * @param fromBranchPath the branch to copy the cache collections from
-     * @param toBranchPath the branch to copy the cache collections to
-     * @param changeEditPropertyFrom should cache keys containing the edit property be change. Null for no change, or "true" or "false" for the current state of
-     *            the property
-     * @throws Exception the exception
-     */
-    public static void copyAllMemberCachesToBranch(final String fromBranchPath, final String toBranchPath, final String changeEditPropertyFrom)
-        throws Exception {
+			Concept startingConcept = getConceptDetails(startingConceptId, refset);
 
-        if (fromBranchPath == null || fromBranchPath.equals("") || toBranchPath == null || toBranchPath.equals("")) {
+			// make sure this is a fresh object since concept details can be cached and it
+			// would otherwise modify objects in that cache and this cache.
+			startingConcept = ModelUtility.fromJson(ModelUtility.toJson(startingConcept), Concept.class);
 
-            return;
-        }
+			// set the name and FSN properties appropriately
+			for (final Map<String, String> description : startingConcept.getDescriptions()) {
 
-        boolean changeEditProperty = false;
-        String changeEditPropertyTo = "true";
+				if (description == null) {
 
-        if (changeEditPropertyFrom != null && !changeEditPropertyFrom.equals("")) {
+					continue;
+				}
 
-            changeEditProperty = true;
+				// check if this is the english FSN, if so set the FSN property
+				if (description.get(DESCRIPTION_LANGUAGE).equalsIgnoreCase("en")
+						&& description.get(DESCRIPTION_TYPE).equalsIgnoreCase("fsn")) {
 
-            if (changeEditPropertyFrom.equals("true")) {
+					startingConcept.setFsn(description.get(DESCRIPTION_TERM));
+				}
 
-                changeEditPropertyTo = "false";
-            }
+				// check if this is the requested language, if so set the name property
+				if (language.equalsIgnoreCase(
+						description.get(DESCRIPTION_LANGUAGE) + "-X-" + description.get(LANGUAGE_CODE))
+						&& description.get(DESCRIPTION_TYPE).equalsIgnoreCase("pt")) {
 
-        }
+					startingConcept.setName(description.get(DESCRIPTION_TERM));
+				}
 
-        LOG.debug("BRANCH CACHE copying from: " + fromBranchPath);
-        LOG.debug("BRANCH CACHE copying to: " + toBranchPath);
+			}
 
-        if (CONCEPTS_CALL_CACHE.containsKey(fromBranchPath)) {
+			startingConcept.setChildren(processedTreeNodes);
+			conceptResultList.setItems(Arrays.asList(startingConcept));
 
-            Map<String, ConceptResultList> tempCache = CONCEPTS_CALL_CACHE.get(fromBranchPath);
+		} else {
 
-            if (changeEditProperty) {
+			conceptResultList.setItems(processedTreeNodes);
+		}
 
-                String cacheString = ModelUtility.toJson(tempCache);
-                cacheString = cacheString.replace("\\\"editing\\\":" + changeEditPropertyFrom, "\\\"editing\\\":" + changeEditPropertyTo);
-                tempCache = ModelUtility.fromJson(cacheString, new TypeReference<Map<String, ConceptResultList>>() {
-                    /**/
-                });
-            }
+		branchCache.put(cacheString, conceptResultList);
+		TREE_CACHE.put(branchPath, branchCache);
 
-            CONCEPTS_CALL_CACHE.put(toBranchPath, tempCache);
+		return conceptResultList;
+	}
 
-        } else {
+	/**
+	 * Returns the concept details.
+	 *
+	 * @param conceptId the concept id
+	 * @param refset    the refset
+	 * @return the concept details
+	 * @throws Exception the exception
+	 */
+	public static Concept getConceptDetails(final String conceptId, final Refset refset) throws Exception {
 
-            CONCEPTS_CALL_CACHE.remove(toBranchPath);
-        }
+		return terminologyHandler.getConceptDetails(conceptId, refset);
 
-        if (CONCEPT_DETAILS_CACHE.containsKey(fromBranchPath)) {
+	}
 
-            CONCEPT_DETAILS_CACHE.put(toBranchPath, CONCEPT_DETAILS_CACHE.get(fromBranchPath));
-        } else {
+	/**
+	 * Returns the parents.
+	 *
+	 * @param conceptId the concept id
+	 * @param refset    the refset
+	 * @param language  the language
+	 * @return the parents
+	 * @throws Exception the exception
+	 */
+	protected static ConceptResultList getParents(final String conceptId, final Refset refset, final String language)
+			throws Exception {
 
-            CONCEPT_DETAILS_CACHE.remove(toBranchPath);
-        }
+		return terminologyHandler.getParents(conceptId, refset, language);
 
-        if (TAXONOMY_SEARCH_ANCESTORS_CACHE.containsKey(fromBranchPath)) {
+	}
 
-            TAXONOMY_SEARCH_ANCESTORS_CACHE.put(toBranchPath, TAXONOMY_SEARCH_ANCESTORS_CACHE.get(fromBranchPath));
-        } else {
+	/**
+	 * Returns the children.
+	 *
+	 * @param conceptId the concept id
+	 * @param refset    the refset
+	 * @param language  the language
+	 * @return the children
+	 * @throws Exception the exception
+	 */
+	protected static ConceptResultList getChildren(final String conceptId, final Refset refset, final String language)
+			throws Exception {
 
-            TAXONOMY_SEARCH_ANCESTORS_CACHE.remove(toBranchPath);
-        }
+		return terminologyHandler.getChildren(conceptId, refset, language);
 
-        if (TREE_CACHE.containsKey(fromBranchPath)) {
+	}
 
-            TREE_CACHE.put(toBranchPath, TREE_CACHE.get(fromBranchPath));
-        } else {
+	/**
+	 * Call the provided Snowstorm URL to get concepts and return a processed result
+	 * list.
+	 * 
+	 * @param url              The API URL to call
+	 * @param refset           the refset
+	 * @param lookupParameters the parts of the concept to retrieve
+	 * @param language         the language to the return the concept descriptions
+	 *                         in
+	 * @return the concepts
+	 * @throws Exception the exception
+	 */
+	protected static ConceptResultList getConceptsFromSnowstorm(final String url, final Refset refset,
+			final ConceptLookupParameters lookupParameters, final String language) throws Exception {
 
-            TREE_CACHE.remove(toBranchPath);
-        }
+		return terminologyHandler.getConceptsFromSnowstorm(url, refset, lookupParameters, language);
 
-        if (ANCESTORS_CACHE.containsKey(fromBranchPath)) {
+	}
 
-            ANCESTORS_CACHE.put(toBranchPath, ANCESTORS_CACHE.get(fromBranchPath));
-        } else {
+	/**
+	 * Populate concepts from Snowstorm.
+	 *
+	 * @param root             the iterator
+	 * @param refset           the refset
+	 * @param lookupParameters the lookup parameters
+	 * @return the concept result list
+	 * @throws Exception the exception
+	 */
+	public static ConceptResultList populateConcepts(final JsonNode root, final Refset refset,
+			final ConceptLookupParameters lookupParameters) throws Exception {
 
-            ANCESTORS_CACHE.remove(toBranchPath);
-        }
+		final ConceptResultList conceptList = new ConceptResultList();
+		final String branchPath = getBranchPath(refset);
+		final String cacheString = refset.getRefsetId();
+		final Map<String, Set<String>> branchCache = getCacheForMemberAncestors(branchPath);
+		final SimpleDateFormat simpleDateFormat = new SimpleDateFormat(DATE_FORMAT);
 
-    }
+		JsonNode conceptNode = root;
+		Iterator<JsonNode> iterator = null;
+		int total = 0;
 
-    /**
-     * Get the refset member concepts as a list.
-     *
-     * @param refset the refset
-     * @return the count of refset members
-     * @throws Exception the exception
-     */
-    public static int getMemberCount(final Refset refset) throws Exception {
+		if (root.get("total") != null) {
 
-        return terminologyHandler.getMemberCount(refset);
-    }
+			total = root.get("total").asInt();
+		}
 
-    /**
-     * Get the refset member concepts as a list.
-     *
-     * @param refset the refset who's members are being retrieved
-     * @param nonDefaultPreferredTerms the non-default preferred terms
-     * @param searchParameters the search parameters
-     * @return the refset member concepts
-     * @throws Exception the exception
-     */
-    public static ConceptResultList getMemberList(final Refset refset, final List<String> nonDefaultPreferredTerms, final SearchParameters searchParameters)
-        throws Exception {
+		String searchAfter = "";
 
-        return terminologyHandler.getMemberList(refset, nonDefaultPreferredTerms, searchParameters);
-    }
+		if (root.get("searchAfter") != null) {
 
-    /**
-     * Get the refset member concepts as a list.
-     *
-     * @param refset the refset who's members are being retrieved
-     * @param nonDefaultPreferredTerms the non-default preferred terms
-     * @param taxonomyParameters the taxonomy parameters
-     * @return the refset member concepts
-     * @throws Exception the exception
-     */
-    public static ConceptResultList getMemberTaxonomy(final Refset refset, final List<String> nonDefaultPreferredTerms,
-        final TaxonomyParameters taxonomyParameters) throws Exception {
+			searchAfter = root.get("searchAfter").asText();
+		}
 
-        final String startingConceptId = taxonomyParameters.getStartingConceptId();
-        final String language = taxonomyParameters.getLanguage();
-        List<Concept> relationsList = new ArrayList<>();
-        final List<Concept> processedTreeNodes = new ArrayList<>();
-        ConceptResultList conceptResultList = new ConceptResultList();
-        final String branchPath = getBranchPath(refset);
-        final String cacheString = refset.getRefsetId() + taxonomyParameters.toString();
-        final Map<String, ConceptResultList> branchCache = getCacheForTree(branchPath);
+		if (!lookupParameters.isGetMembershipInformation()) {
 
-        // check if the members call has been cached
-        if (branchCache.containsKey(cacheString)) {
+			iterator = root.iterator();
+		} else {
 
-            LOG.debug("getMemberTaxonomy USING CACHE");
-            return branchCache.get(cacheString);
-        }
+			iterator = root.get("items").iterator();
+		}
 
-        // If parent concept is inactive, getChildren() will return a 400 error.
-        try {
+		while (lookupParameters.isSingleConceptRequest() || iterator.hasNext()) {
 
-            if (taxonomyParameters.getReturnChildren()) {
+			if (!lookupParameters.isSingleConceptRequest()) {
 
-                conceptResultList = getChildren(startingConceptId, refset, language);
-            } else {
+				conceptNode = iterator.next();
+			}
 
-                conceptResultList = getParents(startingConceptId, refset, language);
-            }
+			String conceptId = null;
 
-        } catch (final Exception e) {
+			if (conceptNode.has("referencedComponent")) {
 
-            // Only throw exception if the rest status code is something other than 400
-            if (!"400".equals(e.getMessage())) {
+				conceptId = conceptNode.get("referencedComponent").get("conceptId").asText();
 
-                throw e;
-            }
+			} else if (conceptNode.has("conceptId")) {
 
-        }
+				conceptId = conceptNode.get("conceptId").asText();
+			} else {
 
-        relationsList = conceptResultList.getItems();
-        final List<Concept> conceptsToProcessMembership = new ArrayList<>();
+				throw new Exception("Unable to process the conceptNode: " + conceptNode);
+			}
 
-        for (final Concept concept : relationsList) {
+			final Concept concept = new Concept();
+			final ConceptLookupParameters missingLookupParameters = identifyContentPopulated(concept, refset,
+					lookupParameters);
 
-            conceptsToProcessMembership.add(concept);
-        }
+			String name = "";
+			boolean memberStatus = false;
+			boolean defined = false;
 
-        if (!conceptsToProcessMembership.isEmpty()) {
+			// if this has a referenced component it is an active refset member, otherwise
+			// it at this point it is not known if it is a member
+			if (conceptNode.has("referencedComponentId")) {
 
-            populateMembershipInformation(refset, conceptsToProcessMembership);
-        }
+				final JsonNode referencedComponent = conceptNode.get("referencedComponent");
 
-        for (final Concept concept : relationsList) {
+				// Read member-representation of basic concept content
+				if (referencedComponent.get("pt") != null && referencedComponent.get("pt").get("term") != null) {
 
-            processedTreeNodes.add(concept);
-        }
+					name = referencedComponent.get("pt").get("term").asText();
+				} else {
 
-        if (taxonomyParameters.getReturnChildren()) {
+					if (referencedComponent.get("term") != null) {
 
-            LOG.debug("Concept has " + processedTreeNodes.size() + " children");
-        } else {
+						name = referencedComponent.get("term").asText();
+					}
 
-            LOG.debug("Concept has " + processedTreeNodes.size() + " parents");
-        }
+				}
 
-        // if returning the starting concept get the details and set the concept properties appropriately for taxonomy
-        if (taxonomyParameters.getReturnStartingConcept()) {
+				// Add FSN if required
+				if (missingLookupParameters.isGetFsn() && referencedComponent.get("fsn") != null) {
 
-            Concept startingConcept = getConceptDetails(startingConceptId, refset);
+					if (referencedComponent.get("fsn") != null && referencedComponent.get("fsn").get("term") != null) {
 
-            // make sure this is a fresh object since concept details can be cached and it would otherwise modify objects in that cache and this cache.
-            startingConcept = ModelUtility.fromJson(ModelUtility.toJson(startingConcept), Concept.class);
+						concept.setFsn(referencedComponent.get("fsn").get("term").asText());
+					} else {
 
-            // set the name and FSN properties appropriately
-            for (final Map<String, String> description : startingConcept.getDescriptions()) {
+						concept.setFsn(name);
+					}
 
-                if (description == null) {
+				}
 
-                    continue;
-                }
+				// concept status - not membership status
+				concept.setActive(referencedComponent.get("active").asBoolean());
 
-                // check if this is the english FSN, if so set the FSN property
-                if (description.get(DESCRIPTION_LANGUAGE).equalsIgnoreCase("en") && description.get(DESCRIPTION_TYPE).equalsIgnoreCase("fsn")) {
+				// grab all membership info
+				memberStatus = conceptNode.get("active").asBoolean();
+				concept.setReleased(conceptNode.get("released").asBoolean());
 
-                    startingConcept.setFsn(description.get(DESCRIPTION_TERM));
-                }
+				if (conceptNode.has("memberId")) {
 
-                // check if this is the requested language, if so set the name property
-                if (language.equalsIgnoreCase(description.get(DESCRIPTION_LANGUAGE) + "-X-" + description.get(LANGUAGE_CODE))
-                    && description.get(DESCRIPTION_TYPE).equalsIgnoreCase("pt")) {
+					concept.setMemberId(conceptNode.get("memberId").asText());
+				}
 
-                    startingConcept.setName(description.get(DESCRIPTION_TERM));
-                }
+				// if the member has been released get the effective time
+				if (conceptNode.has("releasedEffectiveTime")) {
 
-            }
+					concept.setMemberEffectiveTime(
+							simpleDateFormat.parse(conceptNode.get("releasedEffectiveTime").asText()));
+				}
 
-            startingConcept.setChildren(processedTreeNodes);
-            conceptResultList.setItems(Arrays.asList(startingConcept));
+			} else if (conceptNode.has("conceptId")) {
 
-        } else {
+				// Concept is General (and is a child of the node opened) Read
+				// general-representation of basic concept content
+				if (conceptNode.get("pt") != null && conceptNode.get("pt").get("term") != null) {
 
-            conceptResultList.setItems(processedTreeNodes);
-        }
+					name = conceptNode.get("pt").get("term").asText();
 
-        branchCache.put(cacheString, conceptResultList);
-        TREE_CACHE.put(branchPath, branchCache);
+				} else if (conceptNode.get("term") != null) {
 
-        return conceptResultList;
-    }
+					name = conceptNode.get("term").asText();
+				}
 
-    /**
-     * Returns the concept details.
-     *
-     * @param conceptId the concept id
-     * @param refset the refset
-     * @return the concept details
-     * @throws Exception the exception
-     */
-    public static Concept getConceptDetails(final String conceptId, final Refset refset) throws Exception {
+				// Add FSN if required
+				if (missingLookupParameters.isGetFsn() && conceptNode.get("fsn") != null) {
 
-        return terminologyHandler.getConceptDetails(conceptId, refset);
+					if (conceptNode.get("fsn") != null && conceptNode.get("fsn").get("term") != null) {
 
-    }
+						concept.setFsn(conceptNode.get("fsn").get("term").asText());
+					} else {
 
-    /**
-     * Returns the parents.
-     *
-     * @param conceptId the concept id
-     * @param refset the refset
-     * @param language the language
-     * @return the parents
-     * @throws Exception the exception
-     */
-    protected static ConceptResultList getParents(final String conceptId, final Refset refset, final String language) throws Exception {
+						concept.setFsn(name);
+					}
 
-        return terminologyHandler.getParents(conceptId, refset, language);
+				}
 
-    }
+				// grab other concept information
+				if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
 
-    /**
-     * Returns the children.
-     *
-     * @param conceptId the concept id
-     * @param refset the refset
-     * @param language the language
-     * @return the children
-     * @throws Exception the exception
-     */
-    protected static ConceptResultList getChildren(final String conceptId, final Refset refset, final String language) throws Exception {
+					defined = true;
+				}
 
-        return terminologyHandler.getChildren(conceptId, refset, language);
+				if (branchCache.containsKey(cacheString)
+						&& branchCache.get(cacheString).contains(conceptNode.get("conceptId").asText())) {
 
-    }
+					concept.setHasDescendantRefsetMembers(true);
+				}
 
-    /**
-     * Call the provided Snowstorm URL to get concepts and return a processed result list.
-     * 
-     * @param url The API URL to call
-     * @param refset the refset
-     * @param lookupParameters the parts of the concept to retrieve
-     * @param language the language to the return the concept descriptions in
-     * @return the concepts
-     * @throws Exception the exception
-     */
-    protected static ConceptResultList getConceptsFromSnowstorm(final String url, final Refset refset, final ConceptLookupParameters lookupParameters,
-        final String language) throws Exception {
+				if (conceptNode.has("descendantCount")) {
 
-        return terminologyHandler.getConceptsFromSnowstorm(url, refset, lookupParameters, language);
+					concept.setHasChildren(conceptNode.get("descendantCount").asInt() > 0);
+				} else if (conceptNode.has("isLeafInferred")) {
 
-    }
+					concept.setHasChildren(!conceptNode.get("isLeafInferred").asBoolean());
+				}
 
-    /**
-     * Populate concepts from Snowstorm.
-     *
-     * @param root the iterator
-     * @param refset the refset
-     * @param lookupParameters the lookup parameters
-     * @return the concept result list
-     * @throws Exception the exception
-     */
-    public static ConceptResultList populateConcepts(final JsonNode root, final Refset refset, final ConceptLookupParameters lookupParameters)
-        throws Exception {
+				// This is retrieving concept details so get concept status
+				concept.setActive(conceptNode.get("active").asBoolean());
+			}
 
-        final ConceptResultList conceptList = new ConceptResultList();
-        final String branchPath = getBranchPath(refset);
-        final String cacheString = refset.getRefsetId();
-        final Map<String, Set<String>> branchCache = getCacheForMemberAncestors(branchPath);
-        final SimpleDateFormat simpleDateFormat = new SimpleDateFormat(DATE_FORMAT);
+			concept.setCode(conceptId);
+			concept.setName(name);
+			concept.setTerminology("SNOMEDCT");
+			concept.setMemberOfRefset(memberStatus);
+			concept.setDefined(defined);
+			setConceptPermissions(concept);
+			processIntensionalDefinitionException(refset, concept);
 
-        JsonNode conceptNode = root;
-        Iterator<JsonNode> iterator = null;
-        int total = 0;
+			// Populate descriptions
+			if (missingLookupParameters.isGetDescriptions()) {
 
-        if (root.get("total") != null) {
+				// because this may come from a children call the node may not have descriptions
+				if (conceptNode.get("descriptions") != null) {
 
-            total = root.get("total").asInt();
-        }
+					concept.setDescriptions(populateDescriptions(concept.getCode(), conceptNode.get("descriptions"),
+							refset, missingLookupParameters.getNonDefaultPreferredTerms()));
 
-        String searchAfter = "";
+				} else if (conceptNode.get("fsn") != null) {
 
-        if (root.get("searchAfter") != null) {
+					final String fsn = conceptNode.get("fsn").get("term").asText();
+					final Map<String, String> descMap = new HashMap<>();
+					descMap.put("fsn", fsn);
+					final List<Map<String, String>> list = new ArrayList<>();
+					list.add(descMap);
+					concept.setDescriptions(list);
+				} else {
 
-            searchAfter = root.get("searchAfter").asText();
-        }
+					populateAllLanguageDescriptions(refset, new ArrayList<>(Arrays.asList(concept)));
+				}
 
-        if (!lookupParameters.isGetMembershipInformation()) {
+			}
 
-            iterator = root.iterator();
-        } else {
+			// Snowstorm throws a 400-Exception when children/parents of an inactive
+			// concepts are requested
+			if (missingLookupParameters.isGetParents() && concept.isActive()) {
 
-            iterator = root.get("items").iterator();
-        }
+				concept.setParents(getParents(conceptId, refset, null).getItems());
+			}
 
-        while (lookupParameters.isSingleConceptRequest() || iterator.hasNext()) {
+			// Snowstorm throws a 400-Exception when children/parents of an inactive
+			// concepts are requested
+			if (missingLookupParameters.isGetChildren() && concept.isActive()) {
 
-            if (!lookupParameters.isSingleConceptRequest()) {
+				concept.setChildren(getChildren(conceptId, refset, null).getItems());
+			}
 
-                conceptNode = iterator.next();
-            }
+			if (missingLookupParameters.isGetRoleGroups()) {
 
-            String conceptId = null;
+				concept.setRoleGroups(populateRoleGroups(concept.getCode(), conceptNode.get("relationships")));
+			}
 
-            if (conceptNode.has("referencedComponent")) {
+			if (missingLookupParameters.isGetMembershipInformation()) {
 
-                conceptId = conceptNode.get("referencedComponent").get("conceptId").asText();
+				concept.setMemberOfRefset(true);
 
-            } else if (conceptNode.has("conceptId")) {
+				if (conceptNode.get("releasedEffectiveTime") != null) {
 
-                conceptId = conceptNode.get("conceptId").asText();
-            } else {
+					concept.setMemberEffectiveTime(
+							simpleDateFormat.parse(conceptNode.get("releasedEffectiveTime").asText()));
+				}
 
-                throw new Exception("Unable to process the conceptNode: " + conceptNode);
-            }
+			}
 
-            final Concept concept = new Concept();
-            final ConceptLookupParameters missingLookupParameters = identifyContentPopulated(concept, refset, lookupParameters);
+			conceptList.getItems().add(concept);
 
-            String name = "";
-            boolean memberStatus = false;
-            boolean defined = false;
+			if (lookupParameters.isSingleConceptRequest()) {
 
-            // if this has a referenced component it is an active refset member, otherwise it at this point it is not known if it is a member
-            if (conceptNode.has("referencedComponentId")) {
+				break;
+			}
 
-                final JsonNode referencedComponent = conceptNode.get("referencedComponent");
+		}
 
-                // Read member-representation of basic concept content
-                if (referencedComponent.get("pt") != null && referencedComponent.get("pt").get("term") != null) {
+		conceptList.setTotal(total);
+		conceptList.setSearchAfter(searchAfter);
+		return conceptList;
+	}
 
-                    name = referencedComponent.get("pt").get("term").asText();
-                } else {
+	/**
+	 * Identify content populated.
+	 *
+	 * @param concept          the concept
+	 * @param refset           the refset
+	 * @param lookupParameters the lookup parameters
+	 * @return the concept lookup parameters
+	 */
+	private static ConceptLookupParameters identifyContentPopulated(final Concept concept, final Refset refset,
+			final ConceptLookupParameters lookupParameters) {
 
-                    if (referencedComponent.get("term") != null) {
+		// If concept not found in cache, concept is null. Just return original lookup
+		// parameters
+		if (concept == null) {
 
-                        name = referencedComponent.get("term").asText();
-                    }
+			return lookupParameters;
+		}
 
-                }
+		// Concept found in cache, so review contents to see what requires further
+		// lookup
+		final ConceptLookupParameters missingConceptLookupParameters = new ConceptLookupParameters();
+		boolean missingContentFound = false;
 
-                // Add FSN if required
-                if (missingLookupParameters.isGetFsn() && referencedComponent.get("fsn") != null) {
+		if (lookupParameters.isGetDescriptions() && concept.getDescriptions().isEmpty()) {
 
-                    if (referencedComponent.get("fsn") != null && referencedComponent.get("fsn").get("term") != null) {
+			missingConceptLookupParameters.setGetDescriptions(true);
+			missingContentFound = true;
+		}
 
-                        concept.setFsn(referencedComponent.get("fsn").get("term").asText());
-                    } else {
+		if (lookupParameters.isGetMembershipInformation() && concept.getMemberEffectiveTime() == null) {
 
-                        concept.setFsn(name);
-                    }
+			missingConceptLookupParameters.setGetMembershipInformation(true);
+			missingContentFound = true;
+		}
 
-                }
+		if (lookupParameters.isGetParents() && concept.getParents().isEmpty()) {
 
-                // concept status - not membership status
-                concept.setActive(referencedComponent.get("active").asBoolean());
+			missingConceptLookupParameters.setGetParents(true);
+			missingContentFound = true;
+		}
 
-                // grab all membership info
-                memberStatus = conceptNode.get("active").asBoolean();
-                concept.setReleased(conceptNode.get("released").asBoolean());
+		if (lookupParameters.isGetChildren() && concept.getChildren().isEmpty()) {
 
-                if (conceptNode.has("memberId")) {
+			missingConceptLookupParameters.setGetChildren(true);
+			missingContentFound = true;
+		}
 
-                    concept.setMemberId(conceptNode.get("memberId").asText());
-                }
+		if (lookupParameters.isGetFsn() && concept.getFsn() == null) {
 
-                // if the member has been released get the effective time
-                if (conceptNode.has("releasedEffectiveTime")) {
+			missingConceptLookupParameters.setGetFsn(true);
+			missingContentFound = true;
+		}
 
-                    concept.setMemberEffectiveTime(simpleDateFormat.parse(conceptNode.get("releasedEffectiveTime").asText()));
-                }
+		if (lookupParameters.isGetRoleGroups() && concept.getRoleGroups().isEmpty()) {
 
-            } else if (conceptNode.has("conceptId")) {
+			missingConceptLookupParameters.setGetRoleGroups(true);
+			missingContentFound = true;
+		}
 
-                // Concept is General (and is a child of the node opened) Read general-representation of basic concept content
-                if (conceptNode.get("pt") != null && conceptNode.get("pt").get("term") != null) {
+		if (lookupParameters.isSingleConceptRequest()) {
 
-                    name = conceptNode.get("pt").get("term").asText();
+			missingConceptLookupParameters.setSingleConceptRequest(true);
+			missingContentFound = true;
+		}
 
-                } else if (conceptNode.get("term") != null) {
+		// Concept already contains all needed data, so no further lookup
+		// needed. Return
+		// Null
+		if (!missingContentFound) {
 
-                    name = conceptNode.get("term").asText();
-                }
+			return null;
+		}
 
-                // Add FSN if required
-                if (missingLookupParameters.isGetFsn() && conceptNode.get("fsn") != null) {
+		// Return required updated content
+		return missingConceptLookupParameters;
+	}
 
-                    if (conceptNode.get("fsn") != null && conceptNode.get("fsn").get("term") != null) {
+	/**
+	 * Populate role groups.
+	 *
+	 * @param conceptId         the concept id
+	 * @param relationshipsNode the relationships node
+	 * @return the map
+	 */
+	private static Map<Integer, List<String>> populateRoleGroups(final String conceptId,
+			final JsonNode relationshipsNode) {
 
-                        concept.setFsn(conceptNode.get("fsn").get("term").asText());
-                    } else {
+		final Map<Integer, List<String>> roleGroups = new HashMap<>();
+		final Iterator<JsonNode> iterator = relationshipsNode.iterator();
 
-                        concept.setFsn(name);
-                    }
+		while (iterator.hasNext()) {
 
-                }
+			final JsonNode relationship = iterator.next();
 
-                // grab other concept information
-                if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
+			if (relationship.get("active").asBoolean()
+					&& "INFERRED_RELATIONSHIP".equals(relationship.get("characteristicType").asText())) {
 
-                    defined = true;
-                }
+				final int groupId = relationship.get("groupId").asInt();
 
-                if (branchCache.containsKey(cacheString) && branchCache.get(cacheString).contains(conceptNode.get("conceptId").asText())) {
+				if (!roleGroups.containsKey(groupId)) {
 
-                    concept.setHasDescendantRefsetMembers(true);
-                }
+					roleGroups.put(groupId, new ArrayList<String>());
+				}
 
-                if (conceptNode.has("descendantCount")) {
+				final String type = relationship.get("type").get("pt").get("term").asText();
 
-                    concept.setHasChildren(conceptNode.get("descendantCount").asInt() > 0);
-                } else if (conceptNode.has("isLeafInferred")) {
+				if (!"Is a".equals(type)) {
 
-                    concept.setHasChildren(!conceptNode.get("isLeafInferred").asBoolean());
-                }
+					final String target = relationship.get("target").get("pt").get("term").asText();
+					roleGroups.get(groupId).add(type + " -> " + target);
+				}
 
-                // This is retrieving concept details so get concept status
-                concept.setActive(conceptNode.get("active").asBoolean());
-            }
+			}
 
-            concept.setCode(conceptId);
-            concept.setName(name);
-            concept.setTerminology("SNOMEDCT");
-            concept.setMemberOfRefset(memberStatus);
-            concept.setDefined(defined);
-            setConceptPermissions(concept);
-            processIntensionalDefinitionException(refset, concept);
+		}
 
-            // Populate descriptions
-            if (missingLookupParameters.isGetDescriptions()) {
+		if (roleGroups.size() > 0 && roleGroups.get(0).size() == 0) {
 
-                // because this may come from a children call the node may not have descriptions
-                if (conceptNode.get("descriptions") != null) {
+			roleGroups.remove(0);
+		}
 
-                    concept.setDescriptions(populateDescriptions(concept.getCode(), conceptNode.get("descriptions"), refset,
-                        missingLookupParameters.getNonDefaultPreferredTerms()));
+		return roleGroups;
+	}
 
-                } else if (conceptNode.get("fsn") != null) {
+	/**
+	 * Populate all descriptions.
+	 *
+	 * @param conceptId                the concept id
+	 * @param descriptions             the descriptions
+	 * @param refset                   the refset
+	 * @param nonDefaultPreferredTerms the non default preferred terms
+	 * @return the list
+	 * @throws Exception the exception
+	 */
+	public static List<Map<String, String>> populateDescriptions(final String conceptId, final JsonNode descriptions,
+			final Refset refset, final List<String> nonDefaultPreferredTerms) throws Exception {
 
-                    final String fsn = conceptNode.get("fsn").get("term").asText();
-                    final Map<String, String> descMap = new HashMap<>();
-                    descMap.put("fsn", fsn);
-                    final List<Map<String, String>> list = new ArrayList<>();
-                    list.add(descMap);
-                    concept.setDescriptions(list);
-                } else {
+		final Iterator<JsonNode> iterator = descriptions.iterator();
 
-                    populateAllLanguageDescriptions(refset, new ArrayList<>(Arrays.asList(concept)));
-                }
+		final Set<JsonNode> descriptionNodes = new HashSet<>();
 
-            }
+		while (iterator.hasNext()) {
 
-            // Snowstorm throws a 400-Exception when children/parents of an inactive concepts are requested
-            if (missingLookupParameters.isGetParents() && concept.isActive()) {
+			final JsonNode description = iterator.next();
+			descriptionNodes.add(description);
+		}
 
-                concept.setParents(getParents(conceptId, refset, null).getItems());
-            }
+		final Set<Map<String, String>> populatedDescriptions = processDescriptionNodes(descriptionNodes,
+				refset.getEdition().getDefaultLanguageRefsets(), nonDefaultPreferredTerms);
 
-            // Snowstorm throws a 400-Exception when children/parents of an inactive concepts are requested
-            if (missingLookupParameters.isGetChildren() && concept.isActive()) {
+		return sortConceptDescriptions(conceptId, populatedDescriptions, refset, nonDefaultPreferredTerms);
+	}
 
-                concept.setChildren(getChildren(conceptId, refset, null).getItems());
-            }
+	/**
+	 * Populate membership information.
+	 *
+	 * @param refset   the refset
+	 * @param concepts the concepts
+	 * @throws Exception the exception
+	 */
+	private static void populateMembershipInformation(final Refset refset, final List<Concept> concepts)
+			throws Exception {
 
-            if (missingLookupParameters.isGetRoleGroups()) {
+		terminologyHandler.populateMembershipInformation(refset, concepts);
+	}
 
-                concept.setRoleGroups(populateRoleGroups(concept.getCode(), conceptNode.get("relationships")));
-            }
+	/**
+	 * Process intensional definition exception.
+	 *
+	 * @param refset  the refset
+	 * @param concept the concept
+	 * @return the string
+	 * @throws Exception the exception
+	 */
+	public static String processIntensionalDefinitionException(final Refset refset, final Concept concept)
+			throws Exception {
 
-            if (missingLookupParameters.isGetMembershipInformation()) {
+		String conceptExceptionType = "";
 
-                concept.setMemberOfRefset(true);
+		if (!refset.getType().equals(Refset.INTENSIONAL)) {
 
-                if (conceptNode.get("releasedEffectiveTime") != null) {
+			return conceptExceptionType;
+		}
 
-                    concept.setMemberEffectiveTime(simpleDateFormat.parse(conceptNode.get("releasedEffectiveTime").asText()));
-                }
+		final List<DefinitionClause> definitionClauses = refset.getDefinitionClauses();
+		final Pattern pattern = Pattern.compile("\\b" + concept.getCode() + "\\b");
 
-            }
+		for (int i = 1; i < definitionClauses.size(); i++) {
 
-            conceptList.getItems().add(concept);
+			final DefinitionClause clause = definitionClauses.get(i);
+			final Matcher matcher = pattern.matcher(clause.getValue());
 
-            if (lookupParameters.isSingleConceptRequest()) {
+			if (matcher.find()) {
 
-                break;
-            }
+				if (clause.getNegated()) {
 
-        }
+					conceptExceptionType = Refset.EXCLUSION;
+				} else {
 
-        conceptList.setTotal(total);
-        conceptList.setSearchAfter(searchAfter);
-        return conceptList;
-    }
+					conceptExceptionType = Refset.INCLUSION;
+				}
 
-    /**
-     * Identify content populated.
-     *
-     * @param concept the concept
-     * @param refset the refset
-     * @param lookupParameters the lookup parameters
-     * @return the concept lookup parameters
-     */
-    private static ConceptLookupParameters identifyContentPopulated(final Concept concept, final Refset refset,
-        final ConceptLookupParameters lookupParameters) {
+				concept.setDefinitionExceptionType(conceptExceptionType);
+				concept.setDefinitionExceptionId(clause.getId());
+				return conceptExceptionType;
+			}
 
-        // If concept not found in cache, concept is null. Just return original lookup parameters
-        if (concept == null) {
+		}
 
-            return lookupParameters;
-        }
+		return conceptExceptionType;
+	}
 
-        // Concept found in cache, so review contents to see what requires further lookup
-        final ConceptLookupParameters missingConceptLookupParameters = new ConceptLookupParameters();
-        boolean missingContentFound = false;
+	/**
+	 * Returns the latest changed version date.
+	 *
+	 * @param branch   the branch
+	 * @param refsetId the refset id
+	 * @return the latest changed version date
+	 * @throws Exception the exception
+	 */
+	public static Long getLatestChangedVersionDate(final String branch, final String refsetId) throws Exception {
 
-        if (lookupParameters.isGetDescriptions() && concept.getDescriptions().isEmpty()) {
+		return terminologyHandler.getLatestChangedVersionDate(branch, refsetId);
 
-            missingConceptLookupParameters.setGetDescriptions(true);
-            missingContentFound = true;
-        }
+	}
 
-        if (lookupParameters.isGetMembershipInformation() && concept.getMemberEffectiveTime() == null) {
+	/**
+	 * get the refset member history for a single refset.
+	 *
+	 * @param service               the Terminology Service
+	 * @param referencedComponentId the member concept ID
+	 * @param versions              a list of the refset versions to get history
+	 *                              from
+	 * @return the member history
+	 * @throws Exception the exception
+	 */
+	public static List<Map<String, String>> getMemberHistory(final TerminologyService service,
+			final String referencedComponentId, final List<Map<String, String>> versions) throws Exception {
 
-            missingConceptLookupParameters.setGetMembershipInformation(true);
-            missingContentFound = true;
-        }
+		return terminologyHandler.getMemberHistory(service, referencedComponentId, versions);
+	}
 
-        if (lookupParameters.isGetParents() && concept.getParents().isEmpty()) {
+	/**
+	 * Populate the user permissions properties on a concept.
+	 *
+	 * @param concept The concept to set properties on
+	 */
+	public static void setConceptPermissions(final Concept concept) {
 
-            missingConceptLookupParameters.setGetParents(true);
-            missingContentFound = true;
-        }
+		concept.setHistoryVisible(true);
+		concept.setFeedbackVisible(true);
+	}
 
-        if (lookupParameters.isGetChildren() && concept.getChildren().isEmpty()) {
+	/**
+	 * Populate the user permissions properties on a concept.
+	 * 
+	 * @param service the Terminology Service
+	 */
+	public static void cacheAllMemberAncestors(final TerminologyService service) {
 
-            missingConceptLookupParameters.setGetChildren(true);
-            missingContentFound = true;
-        }
+		try {
 
-        if (lookupParameters.isGetFsn() && concept.getFsn() == null) {
+			final PfsParameter pfs = new PfsParameter();
+			pfs.setAscending(false);
+			pfs.setSort("latestVersion");
 
-            missingConceptLookupParameters.setGetFsn(true);
-            missingContentFound = true;
-        }
+			final ResultList<Refset> refsets = service.find("", null, Refset.class, null);
+			LOG.info("Starting to cache member ancestors for all " + refsets.getItems().size() + " Reference Sets");
 
-        if (lookupParameters.isGetRoleGroups() && concept.getRoleGroups().isEmpty()) {
+			for (final Refset refset : refsets.getItems()) {
 
-            missingConceptLookupParameters.setGetRoleGroups(true);
-            missingContentFound = true;
-        }
+				refset.setBranchPath(RefsetService.getBranchPath(refset));
+				cacheMemberAncestors(refset);
+			}
 
-        if (lookupParameters.isSingleConceptRequest()) {
+		} catch (final Exception e) {
 
-            missingConceptLookupParameters.setSingleConceptRequest(true);
-            missingContentFound = true;
-        }
+			LOG.error("Could not cache all member ancestors", e);
+		}
 
-        // Concept already contains all needed data, so no further lookup
-        // needed. Return
-        // Null
-        if (!missingContentFound) {
+	}
 
-            return null;
-        }
+	/**
+	 * Cache member ancestors.
+	 *
+	 * @param service     the service
+	 * @param user        the user
+	 * @param refsetId    the refset id
+	 * @param versionDate the version date
+	 * @return true, if successful
+	 * @throws Exception the exception
+	 */
+	public static boolean cacheMemberAncestors(final TerminologyService service, final User user, final String refsetId,
+			final String versionDate) throws Exception {
 
-        // Return required updated content
-        return missingConceptLookupParameters;
-    }
+		return cacheMemberAncestors(RefsetService.getRefset(service, user, refsetId, versionDate));
+	}
 
-    /**
-     * Populate role groups.
-     *
-     * @param conceptId the concept id
-     * @param relationshipsNode the relationships node
-     * @return the map
-     */
-    private static Map<Integer, List<String>> populateRoleGroups(final String conceptId, final JsonNode relationshipsNode) {
+	/**
+	 * Cache member ancestors.
+	 *
+	 * @param refset the refset
+	 * @return true, if successful
+	 * @throws Exception the exception
+	 */
+	public static boolean cacheMemberAncestors(final Refset refset) throws Exception {
 
-        final Map<Integer, List<String>> roleGroups = new HashMap<>();
-        final Iterator<JsonNode> iterator = relationshipsNode.iterator();
+		return terminologyHandler.cacheMemberAncestors(refset);
+	}
 
-        while (iterator.hasNext()) {
+	/**
+	 * Convert a list of concepts into an ECL statement.
+	 *
+	 * @param conceptIds a list of concept IDs
+	 * @return An ECL statement composed of the list of concept IDs
+	 * @throws Exception the exception
+	 */
+	public static String conceptListToEclStatement(final List<String> conceptIds) throws Exception {
 
-            final JsonNode relationship = iterator.next();
+		String ecl = "";
 
-            if (relationship.get("active").asBoolean() && "INFERRED_RELATIONSHIP".equals(relationship.get("characteristicType").asText())) {
+		for (final String conceptId : conceptIds) {
 
-                final int groupId = relationship.get("groupId").asInt();
+			ecl += conceptId + " OR ";
+		}
 
-                if (!roleGroups.containsKey(groupId)) {
+		return StringUtils.removeEnd(ecl, " OR ");
+	}
 
-                    roleGroups.put(groupId, new ArrayList<String>());
-                }
+	/**
+	 * Add a list of concepts as members to a refset.
+	 *
+	 * @param service    the Terminology Service
+	 * @param user       the user
+	 * @param refset     the refset
+	 * @param conceptIds a list of concept IDs to make members
+	 * @return A list of concepts that were unable to be added
+	 * @throws Exception the exception
+	 */
+	public static List<String> addRefsetMembers(final TerminologyService service, final User user, final Refset refset,
+			final List<String> conceptIds) throws Exception {
 
-                final String type = relationship.get("type").get("pt").get("term").asText();
+		return terminologyHandler.addRefsetMembers(service, user, refset, conceptIds);
+	}
 
-                if (!"Is a".equals(type)) {
+	/**
+	 * Remove or inactivate refset membership for a list of concepts.
+	 *
+	 * @param service    the Terminology Service
+	 * @param user       the user
+	 * @param refset     the refset
+	 * @param conceptIds a list of concept IDs to make members
+	 * @return A list of concepts that were unable to have membership removed
+	 * @throws Exception the exception
+	 */
+	public static List<String> removeRefsetMembers(final TerminologyService service, final User user,
+			final Refset refset, final String conceptIds) throws Exception {
 
-                    final String target = relationship.get("target").get("pt").get("term").asText();
-                    roleGroups.get(groupId).add(type + " -> " + target);
-                }
+		return terminologyHandler.removeRefsetMembers(service, user, refset, conceptIds);
 
-            }
+	}
 
-        }
+	/**
+	 * Get a list of concepts ID from an ECL query.
+	 *
+	 * @param branch the branch
+	 * @param ecl    the ecl
+	 * @return A list of concepts that were unable to have membership removed
+	 * @throws Exception the exception
+	 */
+	public static List<String> getConceptIdsFromEcl(final String branch, final String ecl) throws Exception {
 
-        if (roleGroups.size() > 0 && roleGroups.get(0).size() == 0) {
+		return terminologyHandler.getConceptIdsFromEcl(branch, ecl);
 
-            roleGroups.remove(0);
-        }
+	}
 
-        return roleGroups;
-    }
+	/**
+	 * Compile and store the data to upgrade a refset.
+	 *
+	 * @param service          the Terminology Service
+	 * @param user             the user
+	 * @param refsetInternalId the internal refset ID
+	 * @return The operation status
+	 * @throws Exception the exception
+	 */
+	public static String compileUpgradeData(final TerminologyService service, final User user,
+			final String refsetInternalId) throws Exception {
 
-    /**
-     * Populate all descriptions.
-     *
-     * @param conceptId the concept id
-     * @param descriptions the descriptions
-     * @param refset the refset
-     * @param nonDefaultPreferredTerms the non default preferred terms
-     * @return the list
-     * @throws Exception the exception
-     */
-    public static List<Map<String, String>> populateDescriptions(final String conceptId, final JsonNode descriptions, final Refset refset,
-        final List<String> nonDefaultPreferredTerms) throws Exception {
+		return terminologyHandler.compileUpgradeData(service, user, refsetInternalId);
 
-        final Iterator<JsonNode> iterator = descriptions.iterator();
+	}
 
-        final Set<JsonNode> descriptionNodes = new HashSet<>();
+	/**
+	 * get the stored the data to upgrade a refset.
+	 *
+	 * @param service the Terminology Service
+	 * @param user    the user
+	 * @param refset  the refset
+	 * @return The upgrade data
+	 * @throws Exception the exception
+	 */
+	public static ResultList<UpgradeInactiveConcept> getUpgradeData(final TerminologyService service, final User user,
+			final Refset refset) throws Exception {
 
-        while (iterator.hasNext()) {
+		final PfsParameter pfs = new PfsParameter();
+		pfs.setSort("code");
 
-            final JsonNode description = iterator.next();
-            descriptionNodes.add(description);
-        }
+		final ResultList<UpgradeInactiveConcept> results = service.find("refsetId: " + refset.getRefsetId(), pfs,
+				UpgradeInactiveConcept.class, null);
+		results.setTotal(results.getItems().size());
+		results.setTotalKnown(true);
+		results.setMiscCountA(refset.getMemberCount() - results.getItems().size());
 
-        final Set<Map<String, String>> populatedDescriptions =
-            processDescriptionNodes(descriptionNodes, refset.getEdition().getDefaultLanguageRefsets(), nonDefaultPreferredTerms);
+		return results;
+	}
 
-        return sortConceptDescriptions(conceptId, populatedDescriptions, refset, nonDefaultPreferredTerms);
-    }
+	/**
+	 * get a single inactive upgrade concept.
+	 *
+	 * @param service           the Terminology Service
+	 * @param user              the user
+	 * @param refset            the refset
+	 * @param inactiveConceptId the code of the inactive upgrade concept to get
+	 * @return The upgrade data
+	 * @throws Exception the exception
+	 */
+	public static UpgradeInactiveConcept getUpgradeConcept(final TerminologyService service, final User user,
+			final Refset refset, final String inactiveConceptId) throws Exception {
 
-    /**
-     * Populate membership information.
-     *
-     * @param refset the refset
-     * @param concepts the concepts
-     * @throws Exception the exception
-     */
-    private static void populateMembershipInformation(final Refset refset, final List<Concept> concepts) throws Exception {
+		final UpgradeInactiveConcept upgradeInactiveConcept = service.findSingle(
+				"refsetId: " + refset.getRefsetId() + " AND code:" + inactiveConceptId, UpgradeInactiveConcept.class,
+				null);
+		return upgradeInactiveConcept;
+	}
 
-        terminologyHandler.populateMembershipInformation(refset, concepts);
-    }
+	/**
+	 * remove the upgrade data for a refset.
+	 *
+	 * @param service          the Terminology Service
+	 * @param user             the user
+	 * @param refsetInternalId the internal refset ID
+	 * @throws Exception the exception
+	 */
+	public static void removeUpgradeData(final TerminologyService service, final User user,
+			final String refsetInternalId) throws Exception {
 
-    /**
-     * Process intensional definition exception.
-     *
-     * @param refset the refset
-     * @param concept the concept
-     * @return the string
-     * @throws Exception the exception
-     */
-    public static String processIntensionalDefinitionException(final Refset refset, final Concept concept) throws Exception {
+		final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+		final String refsetId = refset.getRefsetId();
 
-        String conceptExceptionType = "";
+		final ResultList<UpgradeInactiveConcept> results = service.find("refsetId: " + refsetId, null,
+				UpgradeInactiveConcept.class, null);
 
-        if (!refset.getType().equals(Refset.INTENSIONAL)) {
+		for (final UpgradeInactiveConcept upgradeInactiveConcept : results.getItems()) {
 
-            return conceptExceptionType;
-        }
+			service.removeObject(upgradeInactiveConcept);
+		}
 
-        final List<DefinitionClause> definitionClauses = refset.getDefinitionClauses();
-        final Pattern pattern = Pattern.compile("\\b" + concept.getCode() + "\\b");
+	}
 
-        for (int i = 1; i < definitionClauses.size(); i++) {
+	/**
+	 * Make a change to an upgrade concept.
+	 *
+	 * @param service                  the Terminology Service
+	 * @param user                     the user
+	 * @param refset                   the refset
+	 * @param inactiveConceptId        the concept ID of the inactive concept to be
+	 *                                 upgraded
+	 * @param replacementConceptId     the concept ID of the replacement concept to
+	 *                                 be updated
+	 * @param manualReplacementConcept the manual upgrade replacement concept that
+	 *                                 to be added
+	 * @param changed                  a string identifying what has been changed
+	 * @return the status of the operation
+	 * @throws Exception the exception
+	 */
+	public static String modifyUpgradeConcept(final TerminologyService service, final User user, final Refset refset,
+			final String inactiveConceptId, final String replacementConceptId,
+			final UpgradeReplacementConcept manualReplacementConcept, final String changed) throws Exception {
 
-            final DefinitionClause clause = definitionClauses.get(i);
-            final Matcher matcher = pattern.matcher(clause.getValue());
+		return terminologyHandler.modifyUpgradeConcept(service, user, refset, inactiveConceptId, replacementConceptId,
+				manualReplacementConcept, changed);
 
-            if (matcher.find()) {
+	}
 
-                if (clause.getNegated()) {
+	/**
+	 * Remove all inactive upgrade concepts.
+	 *
+	 * @param service the Terminology Service
+	 * @param user    the user
+	 * @param refset  the refset
+	 * @return the status of the operation
+	 * @throws Exception the exception
+	 */
+	public static String removeAllUpgradeInactiveConcepts(final TerminologyService service, final User user,
+			final Refset refset) throws Exception {
 
-                    conceptExceptionType = Refset.EXCLUSION;
-                } else {
+		try {
 
-                    conceptExceptionType = Refset.INCLUSION;
-                }
+			List<String> unchangedConcepts;
+			String conceptIdsToChange = "";
+			WorkflowService.canUserEditRefset(user, refset);
+			RefsetMemberService.REFSETS_UPDATED_MEMBERS.put(refset.getId(), new HashMap<>());
 
-                concept.setDefinitionExceptionType(conceptExceptionType);
-                concept.setDefinitionExceptionId(clause.getId());
-                return conceptExceptionType;
-            }
+			final ResultList<UpgradeInactiveConcept> inactiveConceptList = service.find(
+					"refsetId: " + refset.getRefsetId() + " AND stillMember: true", null, UpgradeInactiveConcept.class,
+					null);
 
-        }
+			for (final UpgradeInactiveConcept inactiveConcept : inactiveConceptList.getItems()) {
 
-        return conceptExceptionType;
-    }
+				conceptIdsToChange += inactiveConcept.getCode() + ",";
+			}
 
-    /**
-     * Returns the latest changed version date.
-     *
-     * @param branch the branch
-     * @param refsetId the refset id
-     * @return the latest changed version date
-     * @throws Exception the exception
-     */
-    public static Long getLatestChangedVersionDate(final String branch, final String refsetId) throws Exception {
+			conceptIdsToChange = StringUtils.removeEnd(conceptIdsToChange, ",");
 
-        return terminologyHandler.getLatestChangedVersionDate(branch, refsetId);
+			// remove the concepts as members from the refset
+			unchangedConcepts = RefsetMemberService.removeRefsetMembers(service, user, refset, conceptIdsToChange);
 
-    }
+			for (final UpgradeInactiveConcept inactiveConcept : inactiveConceptList.getItems()) {
 
-    /**
-     * Returns the refset concept release date.
-     *
-     * @param refsetId the refset id
-     * @param branch the branch
-     * @return the refset concept release date
-     * @throws Exception the exception
-     */
-    private static Long getRefsetConceptReleaseDate(final String refsetId, final String branch) throws Exception {
+				// don't process concepts that couldn't be removed
+				if (unchangedConcepts.contains(inactiveConcept.getCode())) {
 
-        return terminologyHandler.getRefsetConceptReleaseDate(refsetId, branch);
+					continue;
+				}
 
-    }
+				inactiveConcept.setStillMember(false);
 
-    /**
-     * get the refset member history for a single refset.
-     *
-     * @param service the Terminology Service
-     * @param referencedComponentId the member concept ID
-     * @param versions a list of the refset versions to get history from
-     * @return the member history
-     * @throws Exception the exception
-     */
-    public static List<Map<String, String>> getMemberHistory(final TerminologyService service, final String referencedComponentId,
-        final List<Map<String, String>> versions) throws Exception {
+				// save the inactive concept
+				service.update(inactiveConcept);
+				LOG.debug("removeAllUpgradeInactiveConcepts: member removed: " + inactiveConcept.getCode());
+			}
 
-        return terminologyHandler.getMemberHistory(service, referencedComponentId, versions);
-    }
+			// see if there the concept was unable to be changed and craft the error message
+			if (unchangedConcepts.size() > 0) {
 
-    /**
-     * Populate the user permissions properties on a concept.
-     *
-     * @param concept The concept to set properties on
-     */
-    public static void setConceptPermissions(final Concept concept) {
+				return "The concepts " + unchangedConcepts + " were unable to be removed.";
+			}
 
-        concept.setHistoryVisible(true);
-        concept.setFeedbackVisible(true);
-    }
+			return "All changes made successfully";
 
-    /**
-     * Populate the user permissions properties on a concept.
-     * 
-     * @param service the Terminology Service
-     */
-    public static void cacheAllMemberAncestors(final TerminologyService service) {
+		} catch (final Exception e) {
 
-        try {
+			throw new Exception(e);
+		}
 
-            final PfsParameter pfs = new PfsParameter();
-            pfs.setAscending(false);
-            pfs.setSort("latestVersion");
+		finally {
 
-            final ResultList<Refset> refsets = service.find("", null, Refset.class, null);
-            LOG.info("Starting to cache member ancestors for all " + refsets.getItems().size() + " Reference Sets");
+			RefsetMemberService.REFSETS_BEING_UPDATED.remove(refset.getId());
+		}
 
-            for (final Refset refset : refsets.getItems()) {
+	}
 
-                refset.setBranchPath(RefsetService.getBranchPath(refset));
-                cacheMemberAncestors(refset);
-            }
+	/**
+	 * Remove all inactive upgrade concepts.
+	 *
+	 * @param service the Terminology Service
+	 * @param user    the user
+	 * @param refset  the refset
+	 * @return the status of the operation
+	 * @throws Exception the exception
+	 */
+	public static String addAllUpgradeReplacementConcepts(final TerminologyService service, final User user,
+			final Refset refset) throws Exception {
 
-        } catch (final Exception e) {
+		try {
 
-            LOG.error("Could not cache all member ancestors", e);
-        }
+			RefsetMemberService.REFSETS_BEING_UPDATED.add(refset.getId());
 
-    }
+			String message = "";
+			List<String> unaddedConcepts;
+			List<String> unremovedConcepts;
+			final List<String> conceptIdsToAdd = new ArrayList<>();
+			String conceptIdsToRemove = "";
+			RefsetMemberService.REFSETS_UPDATED_MEMBERS.put(refset.getId(), new HashMap<>());
 
-    /**
-     * Cache member ancestors.
-     *
-     * @param service the service
-     * @param user the user
-     * @param refsetId the refset id
-     * @param versionDate the version date
-     * @return true, if successful
-     * @throws Exception the exception
-     */
-    public static boolean cacheMemberAncestors(final TerminologyService service, final User user, final String refsetId, final String versionDate)
-        throws Exception {
+			final ResultList<UpgradeInactiveConcept> inactiveConceptList = service
+					.find("refsetId: " + refset.getRefsetId(), null, UpgradeInactiveConcept.class, null);
 
-        return cacheMemberAncestors(RefsetService.getRefset(service, user, refsetId, versionDate));
-    }
+			for (final UpgradeInactiveConcept inactiveConcept : inactiveConceptList.getItems()) {
 
-    /**
-     * Cache member ancestors.
-     *
-     * @param refset the refset
-     * @return true, if successful
-     * @throws Exception the exception
-     */
-    public static boolean cacheMemberAncestors(final Refset refset) throws Exception {
+				if (!conceptIdsToRemove.contains("," + inactiveConcept.getCode() + ",")
+						&& inactiveConcept.isStillMember()) {
+					conceptIdsToRemove += inactiveConcept.getCode() + ",";
+				}
 
-        return terminologyHandler.cacheMemberAncestors(refset);
-    }
+				for (final UpgradeReplacementConcept replacementConcept : inactiveConcept.getReplacementConcepts()) {
 
-    /**
-     * Convert a list of concepts into an ECL statement.
-     *
-     * @param conceptIds a list of concept IDs
-     * @return An ECL statement composed of the list of concept IDs
-     * @throws Exception the exception
-     */
-    public static String conceptListToEclStatement(final List<String> conceptIds) throws Exception {
+					if (!replacementConcept.isAdded() && !replacementConcept.isExistingMember()) {
 
-        String ecl = "";
+						if (!conceptIdsToAdd.contains(replacementConcept.getCode())) {
+							conceptIdsToAdd.add(replacementConcept.getCode());
+						}
 
-        for (final String conceptId : conceptIds) {
+					}
 
-            ecl += conceptId + " OR ";
-        }
+				}
 
-        return StringUtils.removeEnd(ecl, " OR ");
-    }
+			}
 
-    /**
-     * Add a list of concepts as members to a refset.
-     *
-     * @param service the Terminology Service
-     * @param user the user
-     * @param refset the refset
-     * @param conceptIds a list of concept IDs to make members
-     * @return A list of concepts that were unable to be added
-     * @throws Exception the exception
-     */
-    public static List<String> addRefsetMembers(final TerminologyService service, final User user, final Refset refset, final List<String> conceptIds)
-        throws Exception {
+			// add the concepts as members to the refset
+			unaddedConcepts = RefsetMemberService.addRefsetMembers(service, user, refset, conceptIdsToAdd);
 
-        return terminologyHandler.addRefsetMembers(service, user, refset, conceptIds);
-    }
+			// remove the inactive concepts from the refset
+			conceptIdsToRemove = StringUtils.removeEnd(conceptIdsToRemove, ",");
+			unremovedConcepts = RefsetMemberService.removeRefsetMembers(service, user, refset, conceptIdsToRemove);
 
-    /**
-     * Call the API to add a single member to a refset.
-     *
-     * @param refsetId the refset ID
-     * @param url the URL to call
-     * @param conceptId the concept ID to add as a member
-     * @param moduleId the moduleId ID of the refset
-     * @return A list of concepts that were unable to be added
-     * @throws Exception the exception
-     */
-    private static List<String> callAddMemberSingle(final String refsetId, final String url, final String conceptId, final String moduleId) throws Exception {
+			// to make searching easier
+			final Set<String> removedConcepts = new HashSet<String>(Arrays.asList(conceptIdsToRemove.split(",")));
+			removedConcepts.removeAll(unremovedConcepts);
 
-        return terminologyHandler.callAddMemberSingle(refsetId, url, conceptId, moduleId);
+			for (final UpgradeInactiveConcept inactiveConcept : inactiveConceptList.getItems()) {
 
-    }
+				boolean changeInactive = false;
 
-    /**
-     * Call the API to add members in bulk to a refset.
-     *
-     * @param refsetId the refset ID
-     * @param url the base URL to call
-     * @param conceptIds a list of concept IDs to make members
-     * @param moduleId the moduleId ID of the refset
-     * @return A list of concepts that were unable to be added
-     * @throws Exception the exception
-     */
-    private static List<String> callAddMembersBulk(final String refsetId, final String url, final List<String> conceptIds, final String moduleId)
-        throws Exception {
+				for (final UpgradeReplacementConcept replacementConcept : inactiveConcept.getReplacementConcepts()) {
 
-        return terminologyHandler.callAddMembersBulk(refsetId, url, conceptIds, moduleId);
+					// don't process concepts that couldn't be added or that weren't attempted to be
+					// added
+					if (unaddedConcepts.contains(replacementConcept.getCode())
+							|| !conceptIdsToAdd.contains(replacementConcept.getCode())) {
 
-    }
+						continue;
+					}
 
-    /**
-     * Remove or inactivate refset membership for a list of concepts.
-     *
-     * @param service the Terminology Service
-     * @param user the user
-     * @param refset the refset
-     * @param conceptIds a list of concept IDs to make members
-     * @return A list of concepts that were unable to have membership removed
-     * @throws Exception the exception
-     */
-    public static List<String> removeRefsetMembers(final TerminologyService service, final User user, final Refset refset, final String conceptIds)
-        throws Exception {
+					changeInactive = true;
+					replacementConcept.setAdded(true);
+					service.update(replacementConcept);
+					LOG.debug("addAllUpgradeReplacementConcepts: replacement added as member: "
+							+ replacementConcept.getCode());
+				}
 
-        return terminologyHandler.removeRefsetMembers(service, user, refset, conceptIds);
+				if (changeInactive) {
+					inactiveConcept.setReplaced(true);
+				}
 
-    }
+				if (removedConcepts.contains(inactiveConcept.getCode())) {
 
-    /**
-     * Call the API to add a single member to a refset.
-     *
-     * @param refsetId the refset ID
-     * @param url the URL to call
-     * @param memberBody the details to update the member to
-     * @return A list of concepts that were unable to be added
-     * @throws Exception the exception
-     */
-    private static List<String> callUpdateMemberSingle(final String refsetId, final String url, final JsonNode memberBody) throws Exception {
+					inactiveConcept.setStillMember(false);
+					changeInactive = true;
+				}
 
-        return terminologyHandler.callUpdateMemberSingle(refsetId, url, memberBody);
+				if (changeInactive) {
 
-    }
+					service.update(inactiveConcept);
+					LOG.debug(
+							"addAllUpgradeReplacementConcepts: inactive concept updated: " + inactiveConcept.getCode());
+				}
+			}
 
-    /**
-     * Call the API to update members in bulk to a refset.
-     *
-     * @param refsetId the refset ID
-     * @param url the base URL to call
-     * @param memberBodies an array of details to update the members to
-     * @return A list of concepts that were unable to be updated
-     * @throws Exception the exception
-     */
-    private static List<String> callUpdateMembersBulk(final String refsetId, final String url, final ArrayNode memberBodies) throws Exception {
+			// see if there the concept was unable to be changed and craft the error message
+			if (unaddedConcepts.size() > 0 || unremovedConcepts.size() > 0) {
 
-        return terminologyHandler.callUpdateMembersBulk(refsetId, url, memberBodies);
+				if (unaddedConcepts.size() > 0) {
+					message = "The concepts " + unaddedConcepts + " were unable to be added. ";
+				}
 
-    }
+				if (unremovedConcepts.size() > 0) {
+					message += "The inactive concepts " + unremovedConcepts + " were unable to be removed.";
+				}
 
-    /**
-     * Get a list of concepts ID from an ECL query.
-     *
-     * @param branch the branch
-     * @param ecl the ecl
-     * @return A list of concepts that were unable to have membership removed
-     * @throws Exception the exception
-     */
-    public static List<String> getConceptIdsFromEcl(final String branch, final String ecl) throws Exception {
+			} else {
+				message = "All changes made successfully";
+			}
 
-        return terminologyHandler.getConceptIdsFromEcl(branch, ecl);
+			return message;
 
-    }
+		} catch (final Exception e) {
 
-    /**
-     * Compile and store the data to upgrade a refset.
-     *
-     * @param service the Terminology Service
-     * @param user the user
-     * @param refsetInternalId the internal refset ID
-     * @return The operation status
-     * @throws Exception the exception
-     */
-    public static String compileUpgradeData(final TerminologyService service, final User user, final String refsetInternalId) throws Exception {
+			throw new Exception(e);
+		}
 
-        return terminologyHandler.compileUpgradeData(service, user, refsetInternalId);
+		finally {
 
-    }
+			RefsetMemberService.REFSETS_BEING_UPDATED.remove(refset.getId());
+		}
 
-    /**
-     * get the stored the data to upgrade a refset.
-     *
-     * @param service the Terminology Service
-     * @param user the user
-     * @param refset the refset
-     * @return The upgrade data
-     * @throws Exception the exception
-     */
-    public static ResultList<UpgradeInactiveConcept> getUpgradeData(final TerminologyService service, final User user, final Refset refset) throws Exception {
+	}
 
-        final PfsParameter pfs = new PfsParameter();
-        pfs.setSort("code");
+	/**
+	 * Search for replacement concepts for Upgrade.
+	 *
+	 * @param user             the user
+	 * @param service          the terminology service
+	 * @param refset           the refset
+	 * @param searchParameters the search parameters
+	 * @return the upgrade replacement concept result list
+	 * @throws Exception the exception
+	 */
+	public static ResultList<UpgradeReplacementConcept> replacementConceptSearch(final User user,
+			final TerminologyService service, final Refset refset, final SearchParameters searchParameters)
+			throws Exception {
 
-        final ResultList<UpgradeInactiveConcept> results = service.find("refsetId: " + refset.getRefsetId(), pfs, UpgradeInactiveConcept.class, null);
-        results.setTotal(results.getItems().size());
-        results.setTotalKnown(true);
-        results.setMiscCountA(refset.getMemberCount() - results.getItems().size());
+		final ResultList<UpgradeReplacementConcept> replacementConcepts = new ResultList<>();
+		searchParameters.setActiveOnly(true);
 
-        return results;
-    }
+		final ConceptResultList concepts = conceptDropdownSearch(user, service, refset, searchParameters, "non members",
+				true);
 
-    /**
-     * get a single inactive upgrade concept.
-     *
-     * @param service the Terminology Service
-     * @param user the user
-     * @param refset the refset
-     * @param inactiveConceptId the code of the inactive upgrade concept to get
-     * @return The upgrade data
-     * @throws Exception the exception
-     */
-    public static UpgradeInactiveConcept getUpgradeConcept(final TerminologyService service, final User user, final Refset refset,
-        final String inactiveConceptId) throws Exception {
+		for (final Concept concept : concepts.getItems()) {
 
-        final UpgradeInactiveConcept upgradeInactiveConcept =
-            service.findSingle("refsetId: " + refset.getRefsetId() + " AND code:" + inactiveConceptId, UpgradeInactiveConcept.class, null);
-        return upgradeInactiveConcept;
-    }
+			final UpgradeReplacementConcept replacementConcept = new UpgradeReplacementConcept();
+			replacementConcept.setCode(concept.getCode());
+			replacementConcept.setReason("MANUAL_REPLACEMENT");
 
-    /**
-     * remove the upgrade data for a refset.
-     *
-     * @param service the Terminology Service
-     * @param user the user
-     * @param refsetInternalId the internal refset ID
-     * @throws Exception the exception
-     */
-    public static void removeUpgradeData(final TerminologyService service, final User user, final String refsetInternalId) throws Exception {
+			if (concept.getDescriptions().size() > 0) {
 
-        final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
-        final String refsetId = refset.getRefsetId();
+				replacementConcept.setDescriptions(ModelUtility.toJson(concept.getDescriptions()));
+			}
 
-        final ResultList<UpgradeInactiveConcept> results = service.find("refsetId: " + refsetId, null, UpgradeInactiveConcept.class, null);
+			replacementConcepts.getItems().add(replacementConcept);
+		}
 
-        for (final UpgradeInactiveConcept upgradeInactiveConcept : results.getItems()) {
+		replacementConcepts.setTotal(concepts.getTotal());
+		replacementConcepts.setTotalKnown(concepts.isTotalKnown());
 
-            service.removeObject(upgradeInactiveConcept);
-        }
+		LOG.debug("replacementConceptSearch: results: " + ModelUtility.toJson(replacementConcepts));
 
-    }
+		return replacementConcepts;
+	}
 
-    /**
-     * Make a change to an upgrade concept.
-     *
-     * @param service the Terminology Service
-     * @param user the user
-     * @param refset the refset
-     * @param inactiveConceptId the concept ID of the inactive concept to be upgraded
-     * @param replacementConceptId the concept ID of the replacement concept to be updated
-     * @param manualReplacementConcept the manual upgrade replacement concept that to be added
-     * @param changed a string identifying what has been changed
-     * @return the status of the operation
-     * @throws Exception the exception
-     */
-    public static String modifyUpgradeConcept(final TerminologyService service, final User user, final Refset refset, final String inactiveConceptId,
-        final String replacementConceptId, final UpgradeReplacementConcept manualReplacementConcept, final String changed) throws Exception {
+	/**
+	 * Search for concepts for display in dropdown options.
+	 *
+	 * @param user              the user
+	 * @param service           the terminology service
+	 * @param refset            the refset
+	 * @param searchParameters  the search parameters
+	 * @param searchMembersMode Should the search be for only for members, non
+	 *                          members, or all concepts. Values: 'all', 'members',
+	 *                          'non members'
+	 * @param getDescriptions   should all descriptions be populated
+	 * @return the upgrade replacement concept result list
+	 * @throws Exception the exception
+	 */
+	public static ConceptResultList conceptDropdownSearch(final User user, final TerminologyService service,
+			final Refset refset, final SearchParameters searchParameters, final String searchMembersMode,
+			final boolean getDescriptions) throws Exception {
 
-        return terminologyHandler.modifyUpgradeConcept(service, user, refset, inactiveConceptId, replacementConceptId, manualReplacementConcept, changed);
+		searchParameters.setEditing(false);
 
-    }
+		if (searchParameters.getLimit() <= 0) {
 
-    /**
-     * Remove all inactive upgrade concepts.
-     *
-     * @param service the Terminology Service
-     * @param user the user
-     * @param refset the refset
-     * @return the status of the operation
-     * @throws Exception the exception
-     */
-    public static String removeAllUpgradeInactiveConcepts(final TerminologyService service, final User user, final Refset refset) throws Exception {
+			searchParameters.setLimit(10);
+		}
 
-        try {
+		final ConceptResultList concepts = searchConcepts(refset, searchParameters, searchMembersMode,
+				searchParameters.getLimit() * 6);
 
-            List<String> unchangedConcepts;
-            String conceptIdsToChange = "";
-            WorkflowService.canUserEditRefset(user, refset);
-            RefsetMemberService.REFSETS_UPDATED_MEMBERS.put(refset.getId(), new HashMap<>());
+		if (concepts.getItems().size() == 0) {
 
-            final ResultList<UpgradeInactiveConcept> inactiveConceptList =
-                service.find("refsetId: " + refset.getRefsetId() + " AND stillMember: true", null, UpgradeInactiveConcept.class, null);
+			return concepts;
+		}
 
-            for (final UpgradeInactiveConcept inactiveConcept : inactiveConceptList.getItems()) {
+		if (getDescriptions) {
 
-                conceptIdsToChange += inactiveConcept.getCode() + ",";
-            }
+			populateAllLanguageDescriptions(refset, concepts.getItems());
+		}
 
-            conceptIdsToChange = StringUtils.removeEnd(conceptIdsToChange, ",");
+		LOG.debug("conceptDropdownSearch: results: " + ModelUtility.toJson(concepts));
 
-            // remove the concepts as members from the refset
-            unchangedConcepts = RefsetMemberService.removeRefsetMembers(service, user, refset, conceptIdsToChange);
+		return concepts;
+	}
 
-            for (final UpgradeInactiveConcept inactiveConcept : inactiveConceptList.getItems()) {
+	/**
+	 * Compile and store the data to upgrade a refset.
+	 *
+	 * @param service                    the Terminology Service
+	 * @param user                       the user
+	 * @param activeRefsetInternalId     the internal refset ID of the active refset
+	 * @param comparisonRefsetInternalId the internal refset ID of the comparison
+	 *                                   refset
+	 * @return The operation status
+	 * @throws Exception the exception
+	 */
+	public static String compileComparisonData(final TerminologyService service, final User user,
+			final String activeRefsetInternalId, final String comparisonRefsetInternalId) throws Exception {
 
-                // don't process concepts that couldn't be removed
-                if (unchangedConcepts.contains(inactiveConcept.getCode())) {
+		final String status = "Comparison data compiled";
+		final Refset activeRefset = service.get(activeRefsetInternalId, Refset.class);
+		final Refset comparisonRefset = service.get(comparisonRefsetInternalId, Refset.class);
+		final RefsetMemberComparison refsetMemberComparison = new RefsetMemberComparison();
+		refsetMemberComparison.setActiveRefsetInternalId(activeRefset.getId());
+		refsetMemberComparison.setComparisonRefsetInternalId(comparisonRefset.getId());
+		refsetMemberComparison.setActiveRefsetId(activeRefset.getRefsetId());
+		refsetMemberComparison.setComparisonRefsetId(comparisonRefset.getRefsetId());
+		refsetMemberComparison.setActiveRefsetName(activeRefset.getName());
+		refsetMemberComparison.setComparisonRefsetName(comparisonRefset.getName());
+		final boolean editing = activeRefset.getWorkflowStatus().equals(WorkflowService.IN_EDIT);
+		final TreeMap<String, Concept> comparisonRefsetMembers = new TreeMap<>();
+		final TreeMap<String, Concept> activeRefsetMembers = new TreeMap<>();
+		final SearchParameters searchParameters = new SearchParameters();
+		searchParameters.setLimit(10);
+		searchParameters.setEditing(editing);
 
-                    continue;
-                }
+		// remove any existing comparison data for this refset
+		SecurityService.removeFromSession("refsetMemberComparison_" + activeRefsetInternalId);
 
-                inactiveConcept.setStillMember(false);
+		// Change the numbers to '1's to avoid threading
+		final ExecutorService executor = new ThreadPoolExecutor(30, 30, 0L, TimeUnit.MILLISECONDS,
+				new ArrayBlockingQueue<>(30), new ThreadPoolExecutor.CallerRunsPolicy());
 
-                // save the inactive concept
-                service.update(inactiveConcept);
-                LOG.debug("removeAllUpgradeInactiveConcepts: member removed: " + inactiveConcept.getCode());
-            }
+		for (final String refsetType : Arrays.asList("active", "comparison")) {
 
-            // see if there the concept was unable to be changed and craft the error message
-            if (unchangedConcepts.size() > 0) {
+			executor.submit(new Runnable() {
 
-                return "The concepts " + unchangedConcepts + " were unable to be removed.";
-            }
+				/* see superclass */
+				@Override
+				public void run() {
 
-            return "All changes made successfully";
+					try {
 
-        } catch (final Exception e) {
+						final Refset refset;
 
-            throw new Exception(e);
-        }
+						if (refsetType.equals("active")) {
 
-        finally {
+							refset = activeRefset;
+						} else {
 
-            RefsetMemberService.REFSETS_BEING_UPDATED.remove(refset.getId());
-        }
+							refset = comparisonRefset;
+						}
 
-    }
+						final List<String> nonDefaultPreferredTerms = identifyNonDefaultPreferredTerms(
+								refset.getEdition());
+						final ResultList<Concept> concepts = getMemberList(refset, nonDefaultPreferredTerms,
+								searchParameters);
+						final TreeMap<String, Concept> members;
 
-    /**
-     * Remove all inactive upgrade concepts.
-     *
-     * @param service the Terminology Service
-     * @param user the user
-     * @param refset the refset
-     * @return the status of the operation
-     * @throws Exception the exception
-     */
-    public static String addAllUpgradeReplacementConcepts(final TerminologyService service, final User user, final Refset refset) throws Exception {
+						if (refsetType.equals("active")) {
 
-        try {
+							members = activeRefsetMembers;
+						} else {
 
-            RefsetMemberService.REFSETS_BEING_UPDATED.add(refset.getId());
+							members = comparisonRefsetMembers;
+						}
 
-            String message = "";
-            List<String> unaddedConcepts;
-            List<String> unremovedConcepts;
-            final List<String> conceptIdsToAdd = new ArrayList<>();
-            String conceptIdsToRemove = "";
-            RefsetMemberService.REFSETS_UPDATED_MEMBERS.put(refset.getId(), new HashMap<>());
+						for (final Concept concept : concepts.getItems()) {
 
-            final ResultList<UpgradeInactiveConcept> inactiveConceptList =
-                service.find("refsetId: " + refset.getRefsetId(), null, UpgradeInactiveConcept.class, null);
+							members.put(concept.getCode(), concept);
+						}
 
-            for (final UpgradeInactiveConcept inactiveConcept : inactiveConceptList.getItems()) {
+					} catch (final Exception e) {
 
-                if (!conceptIdsToRemove.contains("," + inactiveConcept.getCode() + ",") && inactiveConcept.isStillMember()) {
-                    conceptIdsToRemove += inactiveConcept.getCode() + ",";
-                }
+						throw new RuntimeException(e);
+					}
 
-                for (final UpgradeReplacementConcept replacementConcept : inactiveConcept.getReplacementConcepts()) {
+				}
+			});
+		}
 
-                    if (!replacementConcept.isAdded() && !replacementConcept.isExistingMember()) {
+		executor.shutdown();
+		executor.awaitTermination(10, TimeUnit.MINUTES);
 
-                        if (!conceptIdsToAdd.contains(replacementConcept.getCode())) {
-                            conceptIdsToAdd.add(replacementConcept.getCode());
-                        }
+		refsetMemberComparison.setActiveRefsetMemberTotal(activeRefsetMembers.size());
+		refsetMemberComparison.setComparisonRefsetMemberTotal(comparisonRefsetMembers.size());
 
-                    }
+		for (final Map.Entry<String, Concept> activeMemberEntry : activeRefsetMembers.entrySet()) {
 
-                }
+			final String activeConceptId = activeMemberEntry.getKey();
+			final Concept activeConcept = activeMemberEntry.getValue();
+			final Map<String, String> returnMap = new HashMap<>();
+			returnMap.put("code", activeConceptId);
+			returnMap.put("active", activeConcept.isActive() + "");
+			returnMap.put("memberOfRefset", "true");
+			returnMap.put("definitionExceptionType", activeConcept.getDefinitionExceptionType());
+			returnMap.put("hasChildren", "false"); // activeConcept.getHasChildren() + "");
+			Map<String, String> preferedTermEnglish = null; // activeConcept.getDescriptions().stream().filter(f ->
+															// f.get(LANGUAGE_ID).equals(PREFERRED_TERM_EN)).findFirst().get();
 
-            }
+			boolean foundDescription = false;
 
-            // add the concepts as members to the refset
-            unaddedConcepts = RefsetMemberService.addRefsetMembers(service, user, refset, conceptIdsToAdd);
+			for (final Map<String, String> description : activeConcept.getDescriptions()) {
 
-            // remove the inactive concepts from the refset
-            conceptIdsToRemove = StringUtils.removeEnd(conceptIdsToRemove, ",");
-            unremovedConcepts = RefsetMemberService.removeRefsetMembers(service, user, refset, conceptIdsToRemove);
+				if (description == null) {
+					continue;
+				}
 
-            // to make searching easier
-            final Set<String> removedConcepts = new HashSet<String>(Arrays.asList(conceptIdsToRemove.split(",")));
-            removedConcepts.removeAll(unremovedConcepts);
+				if (description.get(LANGUAGE_ID).equals(PREFERRED_TERM_EN)) {
 
-            for (final UpgradeInactiveConcept inactiveConcept : inactiveConceptList.getItems()) {
+					preferedTermEnglish = description;
+					foundDescription = true;
+					break;
+				}
+			}
 
-                boolean changeInactive = false;
+			if (!foundDescription) {
+				LOG.error("Could not get english description for concept ID: " + activeConceptId);
+			}
 
-                for (final UpgradeReplacementConcept replacementConcept : inactiveConcept.getReplacementConcepts()) {
+			returnMap.put("name", (preferedTermEnglish != null) ? preferedTermEnglish.get(DESCRIPTION_TERM).strip()
+					: activeConcept.getName().strip());
 
-                    // don't process concepts that couldn't be added or that weren't attempted to be added
-                    if (unaddedConcepts.contains(replacementConcept.getCode()) || !conceptIdsToAdd.contains(replacementConcept.getCode())) {
+			// check to see if this member is also a member of the comparison refset
+			if (comparisonRefsetMembers.containsKey(activeConceptId)) {
 
-                        continue;
-                    }
+				returnMap.put("membership", "Both");
+			} else {
 
-                    changeInactive = true;
-                    replacementConcept.setAdded(true);
-                    service.update(replacementConcept);
-                    LOG.debug("addAllUpgradeReplacementConcepts: replacement added as member: " + replacementConcept.getCode());
-                }
+				returnMap.put("membership", "Active Reference Set");
+				refsetMemberComparison.getActiveRefsetDistinctMembers().add(activeConceptId);
+			}
 
-                if (changeInactive) {
-                    inactiveConcept.setReplaced(true);
-                }
+			refsetMemberComparison.getItems().add(returnMap);
+		}
 
-                if (removedConcepts.contains(inactiveConcept.getCode())) {
+		// since the members of the active or both refsets are handled, remove all but
+		// the unique comparison refset members
+		comparisonRefsetMembers.keySet().removeAll(activeRefsetMembers.keySet());
 
-                    inactiveConcept.setStillMember(false);
-                    changeInactive = true;
-                }
+		for (final Map.Entry<String, Concept> comparisonMemberEntry : comparisonRefsetMembers.entrySet()) {
 
-                if (changeInactive) {
+			final String comparisonConceptId = comparisonMemberEntry.getKey();
+			final Concept comparisonConcept = comparisonMemberEntry.getValue();
+			final Map<String, String> returnMap = new HashMap<>();
+			returnMap.put("code", comparisonConceptId);
+			returnMap.put("active", comparisonConcept.isActive() + "");
+			returnMap.put("memberOfRefset", "false");
+			returnMap.put("definitionExceptionType", comparisonConcept.getDefinitionExceptionType());
+			returnMap.put("hasChildren", "false"); // comparisonConcept.getHasChildren() + "");
+			returnMap.put("membership", "Comparison Reference Set");
+			refsetMemberComparison.getComparisonRefsetDistinctMembers().add(comparisonConceptId);
 
-                    service.update(inactiveConcept);
-                    LOG.debug("addAllUpgradeReplacementConcepts: inactive concept updated: " + inactiveConcept.getCode());
-                }
-            }
+			final Map<String, String> preferedTermEnglish = comparisonConcept.getDescriptions().stream()
+					.filter(f -> f != null && PREFERRED_TERM_EN.equals(f.get(LANGUAGE_ID))).findFirst().orElse(null);
 
-            // see if there the concept was unable to be changed and craft the error message
-            if (unaddedConcepts.size() > 0 || unremovedConcepts.size() > 0) {
+			returnMap.put("name", (preferedTermEnglish != null) ? preferedTermEnglish.get(DESCRIPTION_TERM).strip()
+					: comparisonConcept.getName().strip());
 
-                if (unaddedConcepts.size() > 0) {
-                    message = "The concepts " + unaddedConcepts + " were unable to be added. ";
-                }
+			refsetMemberComparison.getItems().add(returnMap);
+		}
 
-                if (unremovedConcepts.size() > 0) {
-                    message += "The inactive concepts " + unremovedConcepts + " were unable to be removed.";
-                }
+		refsetMemberComparison
+				.setActiveRefsetDistinctMembersCount(refsetMemberComparison.getActiveRefsetDistinctMembers().size());
+		refsetMemberComparison.setComparisonRefsetDistinctMembersCount(
+				refsetMemberComparison.getComparisonRefsetDistinctMembers().size());
 
-            } else {
-                message = "All changes made successfully";
-            }
+		final String uuid = UUID.randomUUID().toString();
+		SecurityService.setInMemoryStorage(uuid, refsetMemberComparison);
+		final boolean wasSet = SecurityService.setInSession("refsetMemberComparison_" + activeRefsetInternalId, uuid);
+		LOG.debug("compileComparisonData setInSession: " + wasSet);
+		LOG.debug("compileComparisonData refsetMemberComparison: " + refsetMemberComparison);
 
-            return message;
+		return status;
+	}
 
-        } catch (final Exception e) {
+	/**
+	 * Clear unique refset versions.
+	 *
+	 * @param refsetId the refset id
+	 */
+	public static void clearRefsetVersionsWithChanges(final String refsetId) {
 
-            throw new Exception(e);
-        }
+		if (REFSET_TO_PUBLISHED_VERSION_MAP.containsKey(refsetId)) {
 
-        finally {
+			REFSET_TO_PUBLISHED_VERSION_MAP.get(refsetId).clear();
+		}
 
-            RefsetMemberService.REFSETS_BEING_UPDATED.remove(refset.getId());
-        }
+	}
 
-    }
+	/**
+	 * Clear versions with changes.
+	 */
+	public static void clearVersionsWithChanges() {
 
-    /**
-     * Search for replacement concepts for Upgrade.
-     *
-     * @param user the user
-     * @param service the terminology service
-     * @param refset the refset
-     * @param searchParameters the search parameters
-     * @return the upgrade replacement concept result list
-     * @throws Exception the exception
-     */
-    public static ResultList<UpgradeReplacementConcept> replacementConceptSearch(final User user, final TerminologyService service, final Refset refset,
-        final SearchParameters searchParameters) throws Exception {
-
-        final ResultList<UpgradeReplacementConcept> replacementConcepts = new ResultList<>();
-        searchParameters.setActiveOnly(true);
-
-        final ConceptResultList concepts = conceptDropdownSearch(user, service, refset, searchParameters, "non members", true);
-
-        for (final Concept concept : concepts.getItems()) {
-
-            final UpgradeReplacementConcept replacementConcept = new UpgradeReplacementConcept();
-            replacementConcept.setCode(concept.getCode());
-            replacementConcept.setReason("MANUAL_REPLACEMENT");
-
-            if (concept.getDescriptions().size() > 0) {
-
-                replacementConcept.setDescriptions(ModelUtility.toJson(concept.getDescriptions()));
-            }
-
-            replacementConcepts.getItems().add(replacementConcept);
-        }
-
-        replacementConcepts.setTotal(concepts.getTotal());
-        replacementConcepts.setTotalKnown(concepts.isTotalKnown());
-
-        LOG.debug("replacementConceptSearch: results: " + ModelUtility.toJson(replacementConcepts));
-
-        return replacementConcepts;
-    }
-
-    /**
-     * Search for concepts for display in dropdown options.
-     *
-     * @param user the user
-     * @param service the terminology service
-     * @param refset the refset
-     * @param searchParameters the search parameters
-     * @param searchMembersMode Should the search be for only for members, non members, or all concepts. Values: 'all', 'members', 'non members'
-     * @param getDescriptions should all descriptions be populated
-     * @return the upgrade replacement concept result list
-     * @throws Exception the exception
-     */
-    public static ConceptResultList conceptDropdownSearch(final User user, final TerminologyService service, final Refset refset,
-        final SearchParameters searchParameters, final String searchMembersMode, final boolean getDescriptions) throws Exception {
-
-        searchParameters.setEditing(false);
-
-        if (searchParameters.getLimit() <= 0) {
-
-            searchParameters.setLimit(10);
-        }
-
-        final ConceptResultList concepts = searchConcepts(refset, searchParameters, searchMembersMode, searchParameters.getLimit() * 6);
-
-        if (concepts.getItems().size() == 0) {
-
-            return concepts;
-        }
-
-        if (getDescriptions) {
-
-            populateAllLanguageDescriptions(refset, concepts.getItems());
-        }
-
-        LOG.debug("conceptDropdownSearch: results: " + ModelUtility.toJson(concepts));
-
-        return concepts;
-    }
-
-    /**
-     * Compile and store the data to upgrade a refset.
-     *
-     * @param service the Terminology Service
-     * @param user the user
-     * @param activeRefsetInternalId the internal refset ID of the active refset
-     * @param comparisonRefsetInternalId the internal refset ID of the comparison refset
-     * @return The operation status
-     * @throws Exception the exception
-     */
-    public static String compileComparisonData(final TerminologyService service, final User user, final String activeRefsetInternalId,
-        final String comparisonRefsetInternalId) throws Exception {
-
-        final String status = "Comparison data compiled";
-        final Refset activeRefset = service.get(activeRefsetInternalId, Refset.class);
-        final Refset comparisonRefset = service.get(comparisonRefsetInternalId, Refset.class);
-        final RefsetMemberComparison refsetMemberComparison = new RefsetMemberComparison();
-        refsetMemberComparison.setActiveRefsetInternalId(activeRefset.getId());
-        refsetMemberComparison.setComparisonRefsetInternalId(comparisonRefset.getId());
-        refsetMemberComparison.setActiveRefsetId(activeRefset.getRefsetId());
-        refsetMemberComparison.setComparisonRefsetId(comparisonRefset.getRefsetId());
-        refsetMemberComparison.setActiveRefsetName(activeRefset.getName());
-        refsetMemberComparison.setComparisonRefsetName(comparisonRefset.getName());
-        final boolean editing = activeRefset.getWorkflowStatus().equals(WorkflowService.IN_EDIT);
-        final TreeMap<String, Concept> comparisonRefsetMembers = new TreeMap<>();
-        final TreeMap<String, Concept> activeRefsetMembers = new TreeMap<>();
-        final SearchParameters searchParameters = new SearchParameters();
-        searchParameters.setLimit(10);
-        searchParameters.setEditing(editing);
-
-        // remove any existing comparison data for this refset
-        SecurityService.removeFromSession("refsetMemberComparison_" + activeRefsetInternalId);
-
-        // Change the numbers to '1's to avoid threading
-        final ExecutorService executor =
-            new ThreadPoolExecutor(30, 30, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(30), new ThreadPoolExecutor.CallerRunsPolicy());
-
-        for (final String refsetType : Arrays.asList("active", "comparison")) {
-
-            executor.submit(new Runnable() {
-
-                /* see superclass */
-                @Override
-                public void run() {
-
-                    try {
-
-                        final Refset refset;
-
-                        if (refsetType.equals("active")) {
-
-                            refset = activeRefset;
-                        } else {
-
-                            refset = comparisonRefset;
-                        }
-
-                        final List<String> nonDefaultPreferredTerms = identifyNonDefaultPreferredTerms(refset.getEdition());
-                        final ResultList<Concept> concepts = getMemberList(refset, nonDefaultPreferredTerms, searchParameters);
-                        final TreeMap<String, Concept> members;
-
-                        if (refsetType.equals("active")) {
-
-                            members = activeRefsetMembers;
-                        } else {
-
-                            members = comparisonRefsetMembers;
-                        }
-
-                        for (final Concept concept : concepts.getItems()) {
-
-                            members.put(concept.getCode(), concept);
-                        }
-
-                    } catch (final Exception e) {
-
-                        throw new RuntimeException(e);
-                    }
-
-                }
-            });
-        }
-
-        executor.shutdown();
-        executor.awaitTermination(10, TimeUnit.MINUTES);
-
-        refsetMemberComparison.setActiveRefsetMemberTotal(activeRefsetMembers.size());
-        refsetMemberComparison.setComparisonRefsetMemberTotal(comparisonRefsetMembers.size());
-
-        for (final Map.Entry<String, Concept> activeMemberEntry : activeRefsetMembers.entrySet()) {
-
-            final String activeConceptId = activeMemberEntry.getKey();
-            final Concept activeConcept = activeMemberEntry.getValue();
-            final Map<String, String> returnMap = new HashMap<>();
-            returnMap.put("code", activeConceptId);
-            returnMap.put("active", activeConcept.isActive() + "");
-            returnMap.put("memberOfRefset", "true");
-            returnMap.put("definitionExceptionType", activeConcept.getDefinitionExceptionType());
-            returnMap.put("hasChildren", "false"); // activeConcept.getHasChildren() + "");
-            Map<String, String> preferedTermEnglish = null; // activeConcept.getDescriptions().stream().filter(f ->
-                                                            // f.get(LANGUAGE_ID).equals(PREFERRED_TERM_EN)).findFirst().get();
-
-            boolean foundDescription = false;
-
-            for (final Map<String, String> description : activeConcept.getDescriptions()) {
-
-                if (description == null) {
-                    continue;
-                }
-
-                if (description.get(LANGUAGE_ID).equals(PREFERRED_TERM_EN)) {
-
-                    preferedTermEnglish = description;
-                    foundDescription = true;
-                    break;
-                }
-            }
-
-            if (!foundDescription) {
-                LOG.error("Could not get english description for concept ID: " + activeConceptId);
-            }
-
-            returnMap.put("name", (preferedTermEnglish != null) ? preferedTermEnglish.get(DESCRIPTION_TERM).strip() : activeConcept.getName().strip());
-
-            // check to see if this member is also a member of the comparison refset
-            if (comparisonRefsetMembers.containsKey(activeConceptId)) {
-
-                returnMap.put("membership", "Both");
-            } else {
-
-                returnMap.put("membership", "Active Reference Set");
-                refsetMemberComparison.getActiveRefsetDistinctMembers().add(activeConceptId);
-            }
-
-            refsetMemberComparison.getItems().add(returnMap);
-        }
-
-        // since the members of the active or both refsets are handled, remove all but the unique comparison refset members
-        comparisonRefsetMembers.keySet().removeAll(activeRefsetMembers.keySet());
-
-        for (final Map.Entry<String, Concept> comparisonMemberEntry : comparisonRefsetMembers.entrySet()) {
-
-            final String comparisonConceptId = comparisonMemberEntry.getKey();
-            final Concept comparisonConcept = comparisonMemberEntry.getValue();
-            final Map<String, String> returnMap = new HashMap<>();
-            returnMap.put("code", comparisonConceptId);
-            returnMap.put("active", comparisonConcept.isActive() + "");
-            returnMap.put("memberOfRefset", "false");
-            returnMap.put("definitionExceptionType", comparisonConcept.getDefinitionExceptionType());
-            returnMap.put("hasChildren", "false"); // comparisonConcept.getHasChildren() + "");
-            returnMap.put("membership", "Comparison Reference Set");
-            refsetMemberComparison.getComparisonRefsetDistinctMembers().add(comparisonConceptId);
-
-            final Map<String, String> preferedTermEnglish =
-                comparisonConcept.getDescriptions().stream().filter(f -> f != null && PREFERRED_TERM_EN.equals(f.get(LANGUAGE_ID))).findFirst().orElse(null);
-
-            returnMap.put("name", (preferedTermEnglish != null) ? preferedTermEnglish.get(DESCRIPTION_TERM).strip() : comparisonConcept.getName().strip());
-
-            refsetMemberComparison.getItems().add(returnMap);
-        }
-
-        refsetMemberComparison.setActiveRefsetDistinctMembersCount(refsetMemberComparison.getActiveRefsetDistinctMembers().size());
-        refsetMemberComparison.setComparisonRefsetDistinctMembersCount(refsetMemberComparison.getComparisonRefsetDistinctMembers().size());
-
-        final String uuid = UUID.randomUUID().toString();
-        SecurityService.setInMemoryStorage(uuid, refsetMemberComparison);
-        final boolean wasSet = SecurityService.setInSession("refsetMemberComparison_" + activeRefsetInternalId, uuid);
-        LOG.debug("compileComparisonData setInSession: " + wasSet);
-        LOG.debug("compileComparisonData refsetMemberComparison: " + refsetMemberComparison);
-
-        return status;
-    }
-
-    /**
-     * Clear unique refset versions.
-     *
-     * @param refsetId the refset id
-     */
-    public static void clearRefsetVersionsWithChanges(final String refsetId) {
-
-        if (REFSET_TO_PUBLISHED_VERSION_MAP.containsKey(refsetId)) {
-
-            REFSET_TO_PUBLISHED_VERSION_MAP.get(refsetId).clear();
-        }
-
-    }
-
-    /**
-     * Clear versions with changes.
-     */
-    public static void clearVersionsWithChanges() {
-
-        REFSET_TO_PUBLISHED_VERSION_MAP.clear();
-    }
+		REFSET_TO_PUBLISHED_VERSION_MAP.clear();
+	}
 }

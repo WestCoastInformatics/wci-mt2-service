@@ -12,7 +12,6 @@ package org.ihtsdo.refsetservice.sync.util;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -65,823 +64,857 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class SyncUtilities {
 
-    /** The Constant LOG. */
-    private static final Logger LOG = LoggerFactory.getLogger(SyncUtilities.class);
+	/** The Constant LOG. */
+	private static final Logger LOG = LoggerFactory.getLogger(SyncUtilities.class);
 
-    /** The db handler. */
-    private SyncDatabaseHandler dbHandler;
+	/** The db handler. */
+	private SyncDatabaseHandler dbHandler;
+
+	/** The Constant PROPERTY_READER. */
+	private static final SyncPropertyFileReader PROPERTY_READER = new SyncPropertyFileReader();
 
-    /** The Constant PROPERTY_READER. */
-    private static final SyncPropertyFileReader PROPERTY_READER = new SyncPropertyFileReader();
+	/** The undefined default language refsets. */
+	private static Map<String, Set<String>> undefinedDefaultLanguageRefsets = PROPERTY_READER
+			.readUndefinedDefaultLanguageRefsets();
 
-    /** The undefined default language refsets. */
-    private static Map<String, Set<String>> undefinedDefaultLanguageRefsets = PROPERTY_READER.readUndefinedDefaultLanguageRefsets();
+	/** The Constant CORE_REFSETS. */
+	protected static final Set<String> CORE_REFSETS = new HashSet<>();
 
-    /** The Constant CORE_REFSETS. */
-    protected static final Set<String> CORE_REFSETS = new HashSet<>();
+	/** The Constant CORE_MODULES. */
+	protected static final Set<String> CORE_MODULES = new HashSet<>();
 
-    /** The Constant CORE_MODULES. */
-    protected static final Set<String> CORE_MODULES = new HashSet<>();
+	/** The Constant DEVELOPER_ORGANIZATION_NAME_KEYWORD. */
+	protected static final String DEVELOPER_ORGANIZATION_NAME_KEYWORD = "wci";
 
-    /** The Constant DEVELOPER_ORGANIZATION_NAME_KEYWORD. */
-    protected static final String DEVELOPER_ORGANIZATION_NAME_KEYWORD = "wci";
+	/** The Constant EDITION_MODULES_MAP. */
+	// Edition shortName to Set<Module SctIds>
+	private static final Map<String, Set<String>> EDITION_MODULES_MAP = new HashMap<>();
 
-    /** The Constant EDITION_MODULES_MAP. */
-    // Edition shortName to Set<Module SctIds>
-    private static final Map<String, Set<String>> EDITION_MODULES_MAP = new HashMap<>();
+	/** The Constant FEEDBACK_TESTING_USER_NAME. */
+	public static final String FEEDBACK_TESTING_USER_NAME = "FeedbackTesting";
 
-    /** The Constant FEEDBACK_TESTING_USER_NAME. */
-    public static final String FEEDBACK_TESTING_USER_NAME = "FeedbackTesting";
+	/** The Constant SYNC_USER_NAME. */
+	public static final String SYNC_USER_NAME = "Snowstorm Sync";
 
-    /** The Constant SYNC_USER_NAME. */
-    public static final String SYNC_USER_NAME = "Snowstorm Sync";
+	/** The Constant UNDEFINED_USER_NAME. */
+	// private static final String UNDEFINED_USER_NAME = "Undefined";
 
-    /** The Constant UNDEFINED_USER_NAME. */
-    private static final String UNDEFINED_USER_NAME = "Undefined";
+	/** The Constant METADATA. */
+	// private static final SyncPersistenceMetadata METADATA = new
+	// SyncPersistenceMetadata(new Date(),
+	// UNDEFINED_USER_NAME);
 
-    /** The Constant METADATA. */
-    private static final SyncPersistenceMetadata METADATA = new SyncPersistenceMetadata(new Date(), UNDEFINED_USER_NAME);
+	/** The Constant DEFAULT_LANGUAGE_REFSET. */
+	private static final String DEFAULT_LANGUAGE_REFSET = "900000000000509007";
 
-    /** The Constant DEFAULT_LANGUAGE_REFSET. */
-    private static final String DEFAULT_LANGUAGE_REFSET = "900000000000509007";
+	/** The Constant CORE_MODULE_PARENT. */
+	private static final String CORE_MODULE_PARENT = "900000000000443000";
 
-    /** The Constant CORE_MODULE_PARENT. */
-    private static final String CORE_MODULE_PARENT = "900000000000443000";
+	/** The Constant SIMPLE_REFSET_TYPE_CONCEPT. */
+	static final String SIMPLE_REFSET_TYPE_CONCEPT = "446609009";
 
-    /** The Constant SIMPLE_REFSET_TYPE_CONCEPT. */
-    static final String SIMPLE_REFSET_TYPE_CONCEPT = "446609009";
+	/** The Constant DEFAULT_ORGANIZATION_PREFACE. */
+	private static final String DEFAULT_ORGANIZATION_PREFACE = "Owner of ";
 
-    /** The Constant DEFAULT_ORGANIZATION_PREFACE. */
-    private static final String DEFAULT_ORGANIZATION_PREFACE = "Owner of ";
+	/** The developer testing edition short name. */
+	// private static String developerTestingEditionShortName = null;
 
-    /** The developer testing edition short name. */
-    private static String developerTestingEditionShortName = null;
+	/**
+	 * Instantiates a {@link SyncUtilities} from the specified parameters.
+	 *
+	 * @param dbHandler the db handler
+	 */
+	public SyncUtilities(final SyncDatabaseHandler dbHandler) {
 
-    /**
-     * Instantiates a {@link SyncUtilities} from the specified parameters.
-     *
-     * @param dbHandler the db handler
-     */
-    public SyncUtilities(final SyncDatabaseHandler dbHandler) {
+		this.dbHandler = dbHandler;
+	}
 
-        this.dbHandler = dbHandler;
-    }
+	/**
+	 * Returns the user.
+	 *
+	 * @param service  the service
+	 * @param userName the user name
+	 * @return the user
+	 * @throws Exception the exception
+	 */
+	public User getUser(final TerminologyService service, final String userName) throws Exception {
 
-    /**
-     * Returns the user.
-     *
-     * @param service the service
-     * @param userName the user name
-     * @return the user
-     * @throws Exception the exception
-     */
-    public User getUser(final TerminologyService service, final String userName) throws Exception {
+		User user = null;
 
-        User user = null;
+		final PfsParameter pfs = new PfsParameter();
+		final QueryParameter query = new QueryParameter();
+		query.setQuery("userName:" + userName + " AND active:true");
 
-        final PfsParameter pfs = new PfsParameter();
-        final QueryParameter query = new QueryParameter();
-        query.setQuery("userName:" + userName + " AND active:true");
+		final ResultList<User> results = service.find(query, pfs, User.class, null);
 
-        final ResultList<User> results = service.find(query, pfs, User.class, null);
+		if (results.getItems() != null && results.getItems().size() == 1) {
 
-        if (results.getItems() != null && results.getItems().size() == 1) {
+			// User already exists
+			user = results.getItems().iterator().next();
+		}
 
-            // User already exists
-            user = results.getItems().iterator().next();
-        }
+		return user;
+	}
 
-        return user;
-    }
+	/**
+	 * Returns the user.
+	 *
+	 * @param service  the service
+	 * @param name     the name
+	 * @param userName the user name
+	 * @param email    the email
+	 * @param roles    the roles
+	 * @return the user
+	 * @throws Exception the exception
+	 */
+	public User getUser(final TerminologyService service, final String name, final String userName, final String email,
+			final Set<String> roles) throws Exception {
 
-    /**
-     * Returns the user.
-     *
-     * @param service the service
-     * @param name the name
-     * @param userName the user name
-     * @param email the email
-     * @param roles the roles
-     * @return the user
-     * @throws Exception the exception
-     */
-    public User getUser(final TerminologyService service, final String name, final String userName, final String email, final Set<String> roles) throws Exception {
+		User user = getUser(service, userName);
 
-        User user = getUser(service, userName);
+		if (user == null) {
 
-        if (user == null) {
+			user = dbHandler.addUser(service, name, userName, email);
+		}
 
-            user = dbHandler.addUser(service, name, userName, email);
-        }
+		return user;
 
-        return user;
+	}
 
-    }
+	/**
+	 * Returns the core refsets.
+	 *
+	 * @return the core refsets
+	 * @throws Exception the exception
+	 */
+	public Set<String> getCoreRefsets() throws Exception {
 
-    /**
-     * Returns the core refsets.
-     *
-     * @return the core refsets
-     * @throws Exception the exception
-     */
-    public Set<String> getCoreRefsets() throws Exception {
+		if (CORE_REFSETS != null && !CORE_REFSETS.isEmpty()) {
 
-        if (CORE_REFSETS != null && !CORE_REFSETS.isEmpty()) {
+			return CORE_REFSETS;
+		}
 
-            return CORE_REFSETS;
-        }
+		// https://dev-integration-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/MAIN/concepts/446609009/descendants?stated=false&offset=0&limit=50
+		final String url = SnowstormConnection.getBaseUrl() + "MAIN/concepts/" + SIMPLE_REFSET_TYPE_CONCEPT
+				+ "/descendants?stated=false&offset=0&limit=50";
 
-        // https://dev-integration-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/MAIN/concepts/446609009/descendants?stated=false&offset=0&limit=50
-        final String url = SnowstormConnection.getBaseUrl() + "MAIN/concepts/" + SIMPLE_REFSET_TYPE_CONCEPT + "/descendants?stated=false&offset=0&limit=50";
+		try (final Response response = SnowstormConnection.getResponse(url)) {
 
-        try (final Response response = SnowstormConnection.getResponse(url)) {
+			if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
-            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+				throw new Exception(
+						"Failed calling concept-descendents on Simple Refset Concept in SI-CORE (to identify international refsets)");
+			}
 
-                throw new Exception("Failed calling concept-descendents on Simple Refset Concept in SI-CORE (to identify international refsets)");
-            }
+			final String resultString = response.readEntity(String.class);
+			final ObjectMapper mapper = new ObjectMapper();
+			final JsonNode root = mapper.readTree(resultString.toString());
 
-            final String resultString = response.readEntity(String.class);
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString.toString());
+			// get RefSets from CORE as long as active
+			final Iterator<JsonNode> refsetIterator = root.get("items").iterator();
 
-            // get RefSets from CORE as long as active
-            final Iterator<JsonNode> refsetIterator = root.get("items").iterator();
+			while (refsetIterator.hasNext()) {
 
-            while (refsetIterator.hasNext()) {
+				final JsonNode refset = refsetIterator.next();
 
-                final JsonNode refset = refsetIterator.next();
+				if (!refset.has("conceptId")) {
 
-                if (!refset.has("conceptId")) {
+					LOG.error("Refset must have conceptId: " + refset);
+				} else {
 
-                    LOG.error("Refset must have conceptId: " + refset);
-                } else {
+					LOG.info("Core Refset: " + refset.get("conceptId").asText());
+					CORE_REFSETS.add(refset.get("conceptId").asText());
+				}
 
-                    LOG.info("Core Refset: " + refset.get("conceptId").asText());
-                    CORE_REFSETS.add(refset.get("conceptId").asText());
-                }
+			}
 
-            }
+		} catch (Exception e) {
 
-        } catch (Exception e) {
+			throw new Exception(
+					"Failed finding descendents on Simple Refset Concept in SI-CORE to identify international refsets");
+		}
 
-            throw new Exception("Failed finding descendents on Simple Refset Concept in SI-CORE to identify international refsets");
-        }
+		return CORE_REFSETS;
+	}
 
-        return CORE_REFSETS;
-    }
+	/**
+	 * Returns the core modules.
+	 *
+	 * @return the core modules
+	 * @throws Exception the exception
+	 */
+	public Set<String> getCoreModules() throws Exception {
 
-    /**
-     * Returns the core modules.
-     *
-     * @return the core modules
-     * @throws Exception the exception
-     */
-    public Set<String> getCoreModules() throws Exception {
+		if (CORE_MODULES != null && !CORE_MODULES.isEmpty()) {
 
-        if (CORE_MODULES != null && !CORE_MODULES.isEmpty()) {
+			return CORE_MODULES;
+		}
 
-            return CORE_MODULES;
-        }
+		// https://dev-integration-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/MAIN/concepts/900000000000443000/descendants?stated=false&offset=0&limit=50
+		final String url = SnowstormConnection.getBaseUrl() + "MAIN/concepts/" + CORE_MODULE_PARENT
+				+ "/descendants?stated=false&offset=0&limit=50";
 
-        // https://dev-integration-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/MAIN/concepts/900000000000443000/descendants?stated=false&offset=0&limit=50
-        final String url = SnowstormConnection.getBaseUrl() + "MAIN/concepts/" + CORE_MODULE_PARENT + "/descendants?stated=false&offset=0&limit=50";
+		try (final Response response = SnowstormConnection.getResponse(url)) {
 
-        try (final Response response = SnowstormConnection.getResponse(url)) {
+			if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
-            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+				throw new Exception(
+						"Failed calling concept-descendents on CORE MModule Parent in MAIN (to identify international modules)");
+			}
 
-                throw new Exception("Failed calling concept-descendents on CORE MModule Parent in MAIN (to identify international modules)");
-            }
+			final String resultString = response.readEntity(String.class);
+			final ObjectMapper mapper = new ObjectMapper();
+			final JsonNode root = mapper.readTree(resultString.toString());
 
-            final String resultString = response.readEntity(String.class);
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString.toString());
+			// get RefSets from edition as long as a) active & b) within edition's module
+			final Iterator<JsonNode> moduleIterator = root.get("items").iterator();
 
-            // get RefSets from edition as long as a) active & b) within edition's module
-            final Iterator<JsonNode> moduleIterator = root.get("items").iterator();
+			while (moduleIterator.hasNext()) {
 
-            while (moduleIterator.hasNext()) {
+				final JsonNode module = moduleIterator.next();
 
-                final JsonNode module = moduleIterator.next();
+				if (!module.has("conceptId")) {
 
-                if (!module.has("conceptId")) {
+					LOG.error("Module must have conceptId: " + module);
+				} else {
 
-                    LOG.error("Module must have conceptId: " + module);
-                } else {
+					CORE_MODULES.add(module.get("conceptId").asText());
+				}
 
-                    CORE_MODULES.add(module.get("conceptId").asText());
-                }
+			}
 
-            }
+		} catch (final Exception e) {
 
-        } catch (final Exception e) {
+			throw new Exception(
+					"Failed finding descendents of CORE MModule Parent in MAIN to identify international modules");
+		}
 
-            throw new Exception("Failed finding descendents of CORE MModule Parent in MAIN to identify international modules");
-        }
+		return CORE_MODULES;
+	}
 
-        return CORE_MODULES;
-    }
+	/**
+	 * Identify modules.
+	 *
+	 * @param shortName     the short name
+	 * @param editionName   the edition name
+	 * @param editionBranch the edition branch
+	 * @param codeSystem    the code system
+	 * @return the sets the
+	 * @throws Exception the exception
+	 */
+	public Set<String> identifyModules(final String shortName, final String editionName, final String editionBranch,
+			final JsonNode codeSystem) throws Exception {
 
-    /**
-     * Identify modules.
-     *
-     * @param shortName the short name
-     * @param editionName the edition name
-     * @param editionBranch the edition branch
-     * @param codeSystem the code system
-     * @return the sets the
-     * @throws Exception the exception
-     */
-    public Set<String> identifyModules(final String shortName, final String editionName, final String editionBranch, final JsonNode codeSystem) throws Exception {
+		final Set<String> editionModules = new HashSet<>();
 
-        final Set<String> editionModules = new HashSet<>();
+		if (isInternationalEdition(editionName)) {
 
-        if (isInternationalEdition(editionName)) {
+			final Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
 
-            final Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
+			while (moduleIterator.hasNext()) {
 
-            while (moduleIterator.hasNext()) {
+				final JsonNode module = moduleIterator.next();
 
-                final JsonNode module = moduleIterator.next();
+				if (module.get("active").asBoolean()) {
 
-                if (module.get("active").asBoolean()) {
+					getCoreModules().add(module.get("conceptId").asText());
+					editionModules.add(module.get("conceptId").asText());
+				}
 
-                    getCoreModules().add(module.get("conceptId").asText());
-                    editionModules.add(module.get("conceptId").asText());
-                }
+			}
 
-            }
+		} else {
 
-        } else {
+			final Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
 
-            final Iterator<JsonNode> moduleIterator = codeSystem.get("modules").iterator();
+			// Ignore CORE Modules
+			while (moduleIterator.hasNext()) {
 
-            // Ignore CORE Modules
-            while (moduleIterator.hasNext()) {
+				final JsonNode module = moduleIterator.next();
 
-                final JsonNode module = moduleIterator.next();
+				if (module.get("active").asBoolean() && !getCoreModules().contains(module.get("conceptId").asText())) {
 
-                if (module.get("active").asBoolean() && !getCoreModules().contains(module.get("conceptId").asText())) {
+					editionModules.add(module.get("conceptId").asText());
 
-                    editionModules.add(module.get("conceptId").asText());
+				}
 
-                }
+			}
 
-            }
+			if (editionModules.isEmpty()) {
 
-            if (editionModules.isEmpty()) {
+				if (!isDeveloperEdition(editionName)) {
 
-                if (!isDeveloperEdition(editionName)) {
+					// All non-core code systems must have a non-core module.
+					// throw new Exception("Did not find any modules for code system " +
+					// editionName);
+					LOG.error("Did not find any edition-specific modules for code system: " + editionName
+							+ ". Will default to CORE modules");
+				}
 
-                    // All non-core code systems must have a non-core module.
-                    // throw new Exception("Did not find any modules for code system " + editionName);
-                    LOG.error("Did not find any edition-specific modules for code system: " + editionName + ". Will default to CORE modules");
-                }
+				editionModules.addAll(getCoreModules());
+			}
 
-                editionModules.addAll(getCoreModules());
-            }
+		}
 
-        }
+		EDITION_MODULES_MAP.put(shortName, editionModules);
 
-        EDITION_MODULES_MAP.put(shortName, editionModules);
+		return editionModules;
 
-        return editionModules;
+	}
 
-    }
+	/**
+	 * Identify default language code.
+	 *
+	 * @param codeSystem  the code system
+	 * @param editionName the edition name
+	 * @return the string
+	 * @throws Exception the exception
+	 */
+	public String identifyDefaultLanguageCode(final JsonNode codeSystem, final String editionName) throws Exception {
 
-    /**
-     * Identify default language code.
-     *
-     * @param codeSystem the code system
-     * @param editionName the edition name
-     * @return the string
-     * @throws Exception the exception
-     */
-    public String identifyDefaultLanguageCode(final JsonNode codeSystem, final String editionName) throws Exception {
+		// Identify Edition's defaultLanguageCode - Per Kai, transform first language in
+		// set as defaultLangCode
+		if (!codeSystem.has("languages")) {
 
-        // Identify Edition's defaultLanguageCode - Per Kai, transform first language in set as defaultLangCode
-        if (!codeSystem.has("languages")) {
+			throw new Exception("All Code Systems must have lanaguages set filled in. " + editionName + " does not");
+		}
 
-            throw new Exception("All Code Systems must have lanaguages set filled in. " + editionName + " does not");
-        }
+		final Iterator<String> languages = codeSystem.get("languages").fieldNames();
 
-        final Iterator<String> languages = codeSystem.get("languages").fieldNames();
+		return languages.next();
+	}
 
-        return languages.next();
-    }
+	/**
+	 * Identify default language refsets.
+	 *
+	 * @param codeSystem the code system
+	 * @param shortName  the short name
+	 * @param branch     the branch
+	 * @return the sets the
+	 * @throws Exception the exception
+	 */
+	public Set<String> identifyDefaultLanguageRefsets(final JsonNode codeSystem, final String shortName,
+			final String branch) throws Exception {
 
-    /**
-     * Identify default language refsets.
-     *
-     * @param codeSystem the code system
-     * @param shortName the short name
-     * @param branch the branch
-     * @return the sets the
-     * @throws Exception the exception
-     */
-    public Set<String> identifyDefaultLanguageRefsets(final JsonNode codeSystem, final String shortName, final String branch) throws Exception {
+		final Set<String> retSet = new HashSet<>();
 
-        final Set<String> retSet = new HashSet<>();
+		// Identify Edition's Default Language Refsets
+		if (codeSystem.has("defaultLanguageReferenceSets")) {
 
-        // Identify Edition's Default Language Refsets
-        if (codeSystem.has("defaultLanguageReferenceSets")) {
+			final JsonNode defaultLanguageReferenceSets = codeSystem.get("defaultLanguageReferenceSets");
 
-            final JsonNode defaultLanguageReferenceSets = codeSystem.get("defaultLanguageReferenceSets");
+			final Iterator<JsonNode> defaultLanguageReferencesSetIterator = defaultLanguageReferenceSets.iterator();
 
-            final Iterator<JsonNode> defaultLanguageReferencesSetIterator = defaultLanguageReferenceSets.iterator();
+			while (defaultLanguageReferencesSetIterator.hasNext()) {
 
-            while (defaultLanguageReferencesSetIterator.hasNext()) {
+				retSet.add(defaultLanguageReferencesSetIterator.next().asText());
+			}
 
-                retSet.add(defaultLanguageReferencesSetIterator.next().asText());
-            }
+		} else if (undefinedDefaultLanguageRefsets.containsKey(shortName)) {
 
-        } else if (undefinedDefaultLanguageRefsets.containsKey(shortName)) {
+			retSet.addAll(undefinedDefaultLanguageRefsets.get(shortName));
+		}
 
-            retSet.addAll(undefinedDefaultLanguageRefsets.get(shortName));
-        }
+		// Ensure that DEFAULT_LANG_REFSET is always listed even if not explicitly
+		// listed
+		retSet.add(DEFAULT_LANGUAGE_REFSET);
 
-        // Ensure that DEFAULT_LANG_REFSET is always listed even if not explicitly listed
-        retSet.add(DEFAULT_LANGUAGE_REFSET);
+		// Search for optional language refsets associated with the branch metadata
+		// https://dev-integration-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/branches/MAIN%2FSNOMEDCT-BE?includeInheritedMetadata=false
+		final String url = SnowstormConnection.getBaseUrl() + "branches/" + branch + "?includeInheritedMetadata=false";
 
-        // Search for optional language refsets associated with the branch metadata
-        // https://dev-integration-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/branches/MAIN%2FSNOMEDCT-BE?includeInheritedMetadata=false
-        final String url = SnowstormConnection.getBaseUrl() + "branches/" + branch + "?includeInheritedMetadata=false";
+		try (final Response response = SnowstormConnection.getResponse(url)) {
 
-        try (final Response response = SnowstormConnection.getResponse(url)) {
+			if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
-            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+				throw new Exception(
+						"Failed to get branch information to obtain optional language refsets for edition's main branch");
+			}
 
-                throw new Exception("Failed to get branch information to obtain optional language refsets for edition's main branch");
-            }
+			final String resultString = response.readEntity(String.class);
+			final ObjectMapper mapper = new ObjectMapper();
+			final JsonNode root = mapper.readTree(resultString.toString());
 
-            final String resultString = response.readEntity(String.class);
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString.toString());
+			// get RefSets from CORE as long as active
+			final JsonNode metadata = root.get("metadata");
 
-            // get RefSets from CORE as long as active
-            final JsonNode metadata = root.get("metadata");
+			if (metadata.has("optionalLanguageRefsets")) {
 
-            if (metadata.has("optionalLanguageRefsets")) {
+				final Iterator<JsonNode> refsetIterator = metadata.get("optionalLanguageRefsets").iterator();
 
-                final Iterator<JsonNode> refsetIterator = metadata.get("optionalLanguageRefsets").iterator();
+				while (refsetIterator.hasNext()) {
 
-                while (refsetIterator.hasNext()) {
+					final JsonNode refset = refsetIterator.next();
 
-                    final JsonNode refset = refsetIterator.next();
+					if (!refset.has("refsetId")) {
 
-                    if (!refset.has("refsetId")) {
+						LOG.error("Optional language refset must have a refsetId defined: " + refset);
+					} else {
 
-                        LOG.error("Optional language refset must have a refsetId defined: " + refset);
-                    } else {
+						LOG.info("Optional language refset: " + refset.get("refsetId").asText());
+						retSet.add(refset.get("refsetId").asText());
+					}
 
-                        LOG.info("Optional language refset: " + refset.get("refsetId").asText());
-                        retSet.add(refset.get("refsetId").asText());
-                    }
+				}
 
-                }
+			}
 
-            }
+		} catch (Exception e) {
 
-        } catch (Exception e) {
+			throw new Exception("Failed to process the optional language refsets defined for this branch: " + branch);
+		}
 
-            throw new Exception("Failed to process the optional language refsets defined for this branch: " + branch);
-        }
+		return retSet;
+	}
 
-        return retSet;
-    }
+	/**
+	 * Determine organization name.
+	 *
+	 * @param codeSystem the code system
+	 * @return the string
+	 * @throws Exception the exception
+	 */
+	public String determineEditionShortName(final JsonNode codeSystem) throws Exception {
 
-    /**
-     * Determine organization name.
-     *
-     * @param codeSystem the code system
-     * @return the string
-     * @throws Exception the exception
-     */
-    public String determineEditionShortName(final JsonNode codeSystem) throws Exception {
+		// If owner defined, return it as organization name
+		if (codeSystem.has("shortName") && !codeSystem.get("shortName").asText().trim().isBlank()) {
 
-        // If owner defined, return it as organization name
-        if (codeSystem.has("shortName") && !codeSystem.get("shortName").asText().trim().isBlank()) {
+			return codeSystem.get("shortName").asText();
+		}
 
-            return codeSystem.get("shortName").asText();
-        }
+		throw new Exception("Code system " + codeSystem + " doesn't have a shortName");
+	}
 
-        throw new Exception("Code system " + codeSystem + " doesn't have a shortName");
-    }
+	/**
+	 * Determine organization name.
+	 *
+	 * @param codeSystem the code system
+	 * @return the string
+	 */
+	public String determineOrganizationName(final JsonNode codeSystem) {
 
-    /**
-     * Determine organization name.
-     *
-     * @param codeSystem the code system
-     * @return the string
-     */
-    public String determineOrganizationName(final JsonNode codeSystem) {
+		// If owner defined, return it as organization name
+		if (codeSystem.has("owner") && !codeSystem.get("owner").asText().trim().isBlank()) {
 
-        // If owner defined, return it as organization name
-        if (codeSystem.has("owner") && !codeSystem.get("owner").asText().trim().isBlank()) {
+			return codeSystem.get("owner").asText();
+		}
 
-            return codeSystem.get("owner").asText();
-        }
+		// Create generic organization name
+		final String editionName = codeSystem.has("name") ? codeSystem.get("name").asText() : "";
+		return DEFAULT_ORGANIZATION_PREFACE + editionName;
+	}
 
-        // Create generic organization name
-        final String editionName = codeSystem.has("name") ? codeSystem.get("name").asText() : "";
-        return DEFAULT_ORGANIZATION_PREFACE + editionName;
-    }
+	/**
+	 * Determine organization description.
+	 *
+	 * @param organizationName the organization name
+	 * @return the string
+	 */
+	public String determineOrganizationDescription(final String organizationName) {
 
-    /**
-     * Determine organization description.
-     *
-     * @param organizationName the organization name
-     * @return the string
-     */
-    public String determineOrganizationDescription(final String organizationName) {
+		if (organizationName.startsWith(DEFAULT_ORGANIZATION_PREFACE)) {
 
-        if (organizationName.startsWith(DEFAULT_ORGANIZATION_PREFACE)) {
+			return "Organizational administrators can update this edition's default description.";
+		} else {
 
-            return "Organizational administrators can update this edition's default description.";
-        } else {
+			return "Two things to change." + System.lineSeparator()
+					+ "1) Your organization name isn't defined on Snowstorm yet, so we have provided you with a temporary one that matches your edition name."
+					+ System.lineSeparator()
+					+ "Have your organization's administrator(s) contact SNOMED International to have it changed."
+					+ System.lineSeparator()
+					+ "2) Organizational administrator(s) can update this default description at any time";
+		}
 
-            return "Two things to change." + System.lineSeparator()
-                + "1) Your organization name isn't defined on Snowstorm yet, so we have provided you with a temporary one that matches your edition name." + System.lineSeparator()
-                + "Have your organization's administrator(s) contact SNOMED International to have it changed." + System.lineSeparator()
-                + "2) Organizational administrator(s) can update this default description at any time";
-        }
+	}
 
-    }
+	/**
+	 * Prints the edition values.
+	 *
+	 * @param service the service
+	 * @param edition the edition
+	 * @throws Exception the exception
+	 */
+	public void printEditionValues(final TerminologyService service, final Edition edition) throws Exception {
 
-    /**
-     * Prints the edition values.
-     *
-     * @param service the service
-     * @param edition the edition
-     * @throws Exception the exception
-     */
-    public void printEditionValues(final TerminologyService service, final Edition edition) throws Exception {
+		final List<Project> orgProjects = service.find("edition.id:" + edition.getId(), null, Project.class, null)
+				.getItems();
+		final List<Team> teams = service.getAll(Team.class);
 
-        final List<Project> orgProjects = service.find("edition.id:" + edition.getId(), null, Project.class, null).getItems();
-        final List<Team> teams = service.getAll(Team.class);
+		for (final Project project : orgProjects) {
 
-        for (final Project project : orgProjects) {
+			for (final String teamId : project.getTeams()) {
 
-            for (final String teamId : project.getTeams()) {
+				final Team team = teams.stream().filter(t -> t.getId().equals(teamId)).findFirst().orElse(null);
 
-                final Team team = teams.stream().filter(t -> t.getId().equals(teamId)).findFirst().orElse(null);
+				if (team == null) {
 
-                if (team == null) {
+					throw new Exception(
+							"  Unable to locate team in project " + project.getName() + " for team: " + teamId);
+				}
 
-                    throw new Exception("  Unable to locate team in project " + project.getName() + " for team: " + teamId);
-                }
+			}
 
-            }
+		}
 
-        }
+	}
 
-    }
+	/**
+	 * Returns the iso date time format.
+	 *
+	 * @return the iso date time format
+	 */
+	public static String getIsoDateTimeFormat() {
 
-    /**
-     * Returns the iso date time format.
-     *
-     * @return the iso date time format
-     */
-    public static String getIsoDateTimeFormat() {
+		return SyncPersistenceMetadata.ISO_DATE_TIME_FORMAT;
+	}
 
-        return METADATA.ISO_DATE_TIME_FORMAT;
-    }
+	/**
+	 * Returns the property reader.
+	 *
+	 * @return the property reader
+	 */
+	public SyncPropertyFileReader getPropertyReader() {
 
-    /**
-     * Returns the property reader.
-     *
-     * @return the property reader
-     */
-    public SyncPropertyFileReader getPropertyReader() {
+		return PROPERTY_READER;
+	}
 
-        return PROPERTY_READER;
-    }
+	/**
+	 * Returns the edition modules map.
+	 *
+	 * @return the edition modules map
+	 */
+	public Map<String, Set<String>> getEditionModulesMap() {
 
-    /**
-     * Returns the edition modules map.
-     *
-     * @return the edition modules map
-     */
-    public Map<String, Set<String>> getEditionModulesMap() {
+		return EDITION_MODULES_MAP;
+	}
 
-        return EDITION_MODULES_MAP;
-    }
+	/**
+	 * Returns the sync results.
+	 *
+	 * @param service the service
+	 * @return the sync results
+	 * @throws Exception the exception
+	 */
+	private String getSyncResults(final TerminologyService service) throws Exception {
 
-    /**
-     * Returns the sync results.
-     *
-     * @param service the service
-     * @return the sync results
-     * @throws Exception the exception
-     */
-    private String getSyncResults(final TerminologyService service) throws Exception {
+		final ClassPathResource syncTestQueries = new ClassPathResource("sync/syncTestQueries.sql");
 
-        final ClassPathResource syncTestQueries = new ClassPathResource("sync/syncTestQueries.sql");
+		final List<String> sqlQueries = new ArrayList<>();
 
-        final List<String> sqlQueries = new ArrayList<>();
+		try (final BufferedReader reader = new BufferedReader(
+				new InputStreamReader(syncTestQueries.getInputStream()));) {
 
-        try (final BufferedReader reader = new BufferedReader(new InputStreamReader(syncTestQueries.getInputStream()));) {
+			String line = reader.readLine();
 
-            String line = reader.readLine();
+			while (line != null) {
 
-            while (line != null) {
+				if (StringUtils.isNoneBlank(line)) {
 
-                if (StringUtils.isNoneBlank(line)) {
+					sqlQueries.add(line);
+				}
 
-                    sqlQueries.add(line);
-                }
+				line = reader.readLine();
+			}
 
-                line = reader.readLine();
-            }
+		} catch (IOException e) {
 
-        } catch (IOException e) {
+			e.printStackTrace();
+		}
 
-            e.printStackTrace();
-        }
+		final StringBuilder result = new StringBuilder();
 
-        final StringBuilder result = new StringBuilder();
+		// Collect results
 
-        // Collect results
+		for (final String query : sqlQueries) {
 
-        for (final String query : sqlQueries) {
+			if (query == null || query.contains("--") || !query.contains("select ")) {
 
-            if (query == null || query.contains("--") || !query.contains("select ")) {
+				continue;
+			}
 
-                continue;
-            }
+			@SuppressWarnings("unchecked")
+			final List<Object[]> rows = service.getEntityManager().createNativeQuery(query).getResultList();
+			result.append(query).append("\r\n");
 
-            @SuppressWarnings("unchecked")
-            final List<Object[]> rows = service.getEntityManager().createNativeQuery(query).getResultList();
-            result.append(query).append("\r\n");
+			if (rows == null) {
 
-            if (rows == null) {
+				result.append("\r\n");
+				continue;
+			}
 
-                result.append("\r\n");
-                continue;
-            }
+			for (final Object[] row : rows) {
 
-            for (final Object[] row : rows) {
+				for (final Object field : row) {
 
-                for (final Object field : row) {
+					result.append(field).append("|");
+				}
 
-                    result.append(field).append("|");
-                }
+				result.append("\r\n");
+			}
 
-                result.append("\r\n");
-            }
+		}
 
-        }
+		LOG.info("DONE POST SYNC DATA QUERIES");
 
-        LOG.info("DONE POST SYNC DATA QUERIES");
+		return result.toString();
+	}
 
-        return result.toString();
-    }
+	/**
+	 * Email sync results.
+	 *
+	 * @param service the service
+	 * @throws Exception the exception
+	 */
+	public void emailSyncResults(final TerminologyService service) throws Exception {
 
-    /**
-     * Email sync results.
-     *
-     * @param service the service
-     * @throws Exception the exception
-     */
-    public void emailSyncResults(final TerminologyService service) throws Exception {
+		if (!PropertyUtility.getProperties().containsKey("refset.service.env")
+				|| PropertyUtility.getProperties().getProperty("refset.service.env").equals("LOCAL")) {
 
-        if (!PropertyUtility.getProperties().containsKey("refset.service.env") || PropertyUtility.getProperties().getProperty("refset.service.env").equals("LOCAL")) {
+			return;
+		}
 
-            return;
-        }
+		final String results = getSyncResults(service);
 
-        final String results = getSyncResults(service);
+		try {
 
-        try {
+			final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
+			final String fileName = String.format(System.getProperty("java.io.tmpdir") + "/refset-sync-results-%s.txt",
+					dateFormat.format(new Date()));
+			final Path path = Paths.get(fileName);
+			final byte[] queryResultsToBytes = results.getBytes();
 
-            final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
-            final String fileName = String.format(System.getProperty("java.io.tmpdir") + FileSystems.getDefault().getSeparator() + "refset-sync-results-%s.txt", dateFormat.format(new Date()));
-            final Path path = Paths.get(fileName);
-            final byte[] queryResultsToBytes = results.getBytes();
+			Files.write(path, queryResultsToBytes);
+		} catch (IOException e) {
 
-            Files.write(path, queryResultsToBytes);
-        } catch (IOException e) {
+			LOG.error("Error occured writing post sync report to file", e);
+		}
 
-            LOG.error("Error occured writing post sync report to file", e);
-        }
+		RefsetService.clearAllRefsetCaches(null);
+		RefsetMemberService.clearAllMemberCaches(null);
 
-        RefsetService.clearAllRefsetCaches(null);
-        RefsetMemberService.clearAllMemberCaches(null);
+		final String emailReceipients = PropertyUtility.getProperties().getProperty("mail.smtp.postsync.report.to");
 
-        final String emailReceipients = PropertyUtility.getProperties().getProperty("mail.smtp.postsync.report.to");
+		if (StringUtils.isNotBlank(emailReceipients)) {
 
-        if (StringUtils.isNotBlank(emailReceipients)) {
+			EmailUtility.sendEmail("RT2 Post Sync Report", null, emailReceipients, results);
+		}
 
-            EmailUtility.sendEmail("RT2 Post Sync Report", null, emailReceipients, results);
-        }
+		LOG.info("Completed Syncing with Snowstorm");
 
-        LOG.info("Completed Syncing with Snowstorm");
+	}
 
-    }
+	/**
+	 * Indicates whether or not international edition is the case.
+	 *
+	 * @param matchingString the matching string
+	 * @return <code>true</code> if so, <code>false</code> otherwise
+	 */
+	public boolean isInternationalEdition(final String matchingString) {
 
-    /**
-     * Indicates whether or not international edition is the case.
-     *
-     * @param matchingString the matching string
-     * @return <code>true</code> if so, <code>false</code> otherwise
-     */
-    public boolean isInternationalEdition(final String matchingString) {
+		return "international edition".equals(matchingString.toLowerCase())
+				|| "snomedct".equals(matchingString.toLowerCase());
+	}
 
-        return "international edition".equals(matchingString.toLowerCase()) || "snomedct".equals(matchingString.toLowerCase());
-    }
+	/**
+	 * Indicates whether or not developer edition is the case.
+	 *
+	 * @param editionName the edition name
+	 * @return <code>true</code> if so, <code>false</code> otherwise
+	 */
+	// In WCI case, accepts either name or shortName
+	public boolean isDeveloperEdition(final String editionName) {
 
-    /**
-     * Indicates whether or not developer edition is the case.
-     *
-     * @param editionName the edition name
-     * @return <code>true</code> if so, <code>false</code> otherwise
-     */
-    // In WCI case, accepts either name or shortName
-    public boolean isDeveloperEdition(final String editionName) {
+		return editionName.toLowerCase().contains(DEVELOPER_ORGANIZATION_NAME_KEYWORD.toLowerCase());
+	}
 
-        return editionName.toLowerCase().contains(DEVELOPER_ORGANIZATION_NAME_KEYWORD.toLowerCase());
-    }
+	/**
+	 * Clear previous run.
+	 */
+	public void clearPreviousRun() {
 
-    /**
-     * Clear previous run.
-     */
-    public void clearPreviousRun() {
+		EDITION_MODULES_MAP.clear();
+		CORE_MODULES.clear();
+		CORE_REFSETS.clear();
+		undefinedDefaultLanguageRefsets = PROPERTY_READER.readUndefinedDefaultLanguageRefsets();
+	}
 
-        EDITION_MODULES_MAP.clear();
-        CORE_MODULES.clear();
-        CORE_REFSETS.clear();
-        undefinedDefaultLanguageRefsets = PROPERTY_READER.readUndefinedDefaultLanguageRefsets();
-    }
+	/**
+	 * Validate matches.
+	 *
+	 * @param stream                   the stream
+	 * @param matchingValueDescription the matching value description
+	 * @return the object
+	 * @throws Exception the exception
+	 */
+	public Object validateMatches(final Stream<?> stream, final String matchingValueDescription) throws Exception {
 
-    /**
-     * Validate matches.
-     *
-     * @param stream the stream
-     * @param matchingValueDescription the matching value description
-     * @return the object
-     * @throws Exception the exception
-     */
-    public Object validateMatches(final Stream<?> stream, final String matchingValueDescription) throws Exception {
+		final List<?> items = stream.collect(Collectors.toList());
 
-        final List<?> items = stream.collect(Collectors.toList());
+		if (items.size() == 1) {
 
-        if (items.size() == 1) {
+			return items.get(0);
+		}
 
-            return items.get(0);
-        }
+		if (items.isEmpty()) {
 
-        if (items.isEmpty()) {
+			throw new Exception("Cannot find an element to matching value: " + matchingValueDescription);
+		} else {
 
-            throw new Exception("Cannot find an element to matching value: " + matchingValueDescription);
-        } else {
+			throw new Exception("Found multiple elements with same matching value: " + matchingValueDescription
+					+ " has items:  " + items);
+		}
 
-            throw new Exception("Found multiple elements with same matching value: " + matchingValueDescription + " has items:  " + items);
-        }
+	}
 
-    }
+	/**
+	 * Identify maintainer type.
+	 *
+	 * @param codeSystem       the code system
+	 * @param editionShortName the edition short name
+	 * @return the string
+	 * @throws Exception the exception
+	 */
+	public String identifyMaintainerType(final JsonNode codeSystem, final String editionShortName) throws Exception {
 
-    /**
-     * Identify maintainer type.
-     *
-     * @param codeSystem the code system
-     * @param editionShortName the edition short name
-     * @return the string
-     * @throws Exception the exception
-     */
-    public String identifyMaintainerType(final JsonNode codeSystem, final String editionShortName) throws Exception {
+		String codeSystemType = codeSystem.has("maintainerType") ? codeSystem.get("maintainerType").asText() : "";
 
-        String codeSystemType = codeSystem.has("maintainerType") ? codeSystem.get("maintainerType").asText() : "";
+		// SNOMED Core Edition are blank in Snowstorm, but we treat them identically to
+		// the Managed Service maintainerType
+		if (codeSystemType.isBlank()) {
 
-        // SNOMED Core Edition are blank in Snowstorm, but we treat them identically to the Managed Service maintainerType
-        if (codeSystemType.isBlank()) {
+			if (isInternationalEdition(editionShortName)) {
 
-            if (isInternationalEdition(editionShortName)) {
+				codeSystemType = "Managed Service";
 
-                codeSystemType = "Managed Service";
+			} else {
 
-            } else {
+				LOG.info("{} edition is missing a maintainerType {}", codeSystem, editionShortName);
+			}
 
-                LOG.info("{} edition is missing a maintainerType {}", codeSystem, editionShortName);
-            }
+		}
 
-        }
+		return codeSystemType;
+	}
 
-        return codeSystemType;
-    }
+	/**
+	 * Initialize workflow status.
+	 *
+	 * @param service the service
+	 * @param refset  the refset
+	 * @return the refset
+	 * @throws Exception the exception
+	 */
+	public Refset initializeWorkflowStatus(final TerminologyService service, final Refset refset) throws Exception {
 
-    /**
-     * Initialize workflow status.
-     *
-     * @param service the service
-     * @param refset the refset
-     * @return the refset
-     * @throws Exception the exception
-     */
-    public Refset initializeWorkflowStatus(final TerminologyService service, final Refset refset) throws Exception {
+		if (!isDeveloperEdition(refset.getEdition().getShortName())) {
 
-        if (!isDeveloperEdition(refset.getEdition().getShortName())) {
+			throw new Exception("Cannot modify the workflow status of anything other than the developer org");
+		}
 
-            throw new Exception("Cannot modify the workflow status of anything other than the developer org");
-        }
+		final String currentStatus = refset.getWorkflowStatus();
 
-        final String currentStatus = refset.getWorkflowStatus();
+		try {
 
-        try {
+			// if the status is Published then create a new version of the refset that is
+			// ready to be edited
+			final Refset updatedRefset = WorkflowService.setWorkflowStatusByAction(service,
+					SecurityService.getUserFromSession(), WorkflowService.FINISH_EDIT, refset, "");
 
-            // if the status is Published then create a new version of the refset that is ready to be edited
-            final Refset updatedRefset = WorkflowService.setWorkflowStatusByAction(service, SecurityService.getUserFromSession(), WorkflowService.FINISH_EDIT, refset, "");
+			// if the status changed return the updated refset else return null
+			if (!currentStatus.equals(updatedRefset.getWorkflowStatus())) {
 
-            // if the status changed return the updated refset else return null
-            if (!currentStatus.equals(updatedRefset.getWorkflowStatus())) {
+				return updatedRefset;
+			} else {
 
-                return updatedRefset;
-            } else {
+				return null;
+			}
 
-                return null;
-            }
+		} catch (Exception e) {
 
-        } catch (Exception e) {
+			LOG.error("Failed to initialize workflow on developer refset: " + refset + " with Exception --> "
+					+ e.getMessage());
 
-            LOG.error("Failed to initialize workflow on developer refset: " + refset + " with Exception --> " + e.getMessage());
+			e.printStackTrace();
 
-            e.printStackTrace();
+			return null;
+		}
 
-            return null;
-        }
+	}
 
-    }
+	/**
+	 * Returns the processing minutes.
+	 *
+	 * @param operationType the operation type
+	 * @param startTime     the start time
+	 * @return the processing minutes
+	 */
+	public long getProcessingMinutes(final String operationType, final Date startTime) {
 
-    /**
-     * Returns the processing minutes.
-     *
-     * @param operationType the operation type
-     * @param startTime the start time
-     * @return the processing minutes
-     */
-    public long getProcessingMinutes(final String operationType, final Date startTime) {
+		final Date end = new Date();
+		final SimpleDateFormat sdf = new SimpleDateFormat("hh:mm:ss");
 
-        final Date end = new Date();
-        final SimpleDateFormat sdf = new SimpleDateFormat("hh:mm:ss");
+		final long differenceInMinutes = ((end.getTime() - startTime.getTime()) / (1000 * 60)) % 60;
 
-        final long differenceInMinutes = ((end.getTime() - startTime.getTime()) / (1000 * 60)) % 60;
+		LOG.info("start date: {}", sdf.format(new Date(startTime.getTime())));
+		LOG.info("end date: {}", sdf.format(new Date(end.getTime())));
+		LOG.info("Operation took " + differenceInMinutes + " minutes to run");
 
-        LOG.info("start date: {}", sdf.format(new Date(startTime.getTime())));
-        LOG.info("end date: {}", sdf.format(new Date(end.getTime())));
-        LOG.info("Operation took " + differenceInMinutes + " minutes to run");
+		return differenceInMinutes;
 
-        return differenceInMinutes;
+	}
 
-    }
+	/**
+	 * Creates the admin organization team.
+	 *
+	 * @param service      the service
+	 * @param organization the organization
+	 * @return the team
+	 * @throws Exception the exception
+	 */
+	public Team getOrCreateAdminOrganizationTeam(final TerminologyService service, final Organization organization)
+			throws Exception {
 
-    /**
-     * Creates the admin organization team.
-     *
-     * @param service the service
-     * @param organization the organization
-     * @return the team
-     * @throws Exception the exception
-     */
-    public Team getOrCreateAdminOrganizationTeam(final TerminologyService service, final Organization organization) throws Exception {
+		try {
 
-        try {
+			Team adminTeam = OrganizationService.getActiveOrganizationAdminTeam(service, organization.getId());
 
-            Team adminTeam = OrganizationService.getActiveOrganizationAdminTeam(service, organization.getId());
+			if (adminTeam != null) {
 
-            if (adminTeam != null) {
+				LOG.info("Using existing team '{}' ({}) for {}", adminTeam.getName(), adminTeam.getId(),
+						organization.getName());
+				return adminTeam;
+			}
 
-                LOG.info("Using existing team '{}' ({}) for {}", adminTeam.getName(), adminTeam.getId(), organization.getName());
-                return adminTeam;
-            }
+			Team inactiveAdminTeam = OrganizationService.getOrganizationAdminTeam(service, organization.getId());
 
-            Team inactiveAdminTeam = OrganizationService.getOrganizationAdminTeam(service, organization.getId());
+			if (inactiveAdminTeam == null) {
 
-            if (inactiveAdminTeam == null) {
+				adminTeam = dbHandler.addTeam(service, TeamService.generateOrganizationTeamName(organization),
+						TeamService.getOrganizationTeamDescription(organization), organization,
+						TeamType.ORGANIZATION.getText());
 
-                adminTeam = dbHandler.addTeam(service, TeamService.generateOrganizationTeamName(organization), TeamService.getOrganizationTeamDescription(organization), organization,
-                    TeamType.ORGANIZATION.getText());
+			} else if (!inactiveAdminTeam.isActive()) {
 
-            } else if (!inactiveAdminTeam.isActive()) {
+				inactiveAdminTeam.setActive(true);
+				adminTeam = service.update(inactiveAdminTeam);
+			} else {
 
-                inactiveAdminTeam.setActive(true);
-                adminTeam = service.update(inactiveAdminTeam);
-            } else {
+				throw new Exception("Odd state for existing admin team: " + inactiveAdminTeam);
+			}
 
-                throw new Exception("Odd state for existing admin team: " + inactiveAdminTeam);
-            }
+			for (final UserRole role : UserRole.getAllRoles()) {
 
-            for (final UserRole role : UserRole.getAllRoles()) {
+				adminTeam = TeamService.addRoleToTeam(SecurityService.getUserFromSession(), adminTeam.getId(),
+						UserRole.getRoleString(role).toUpperCase());
+			}
 
-                adminTeam = TeamService.addRoleToTeam(SecurityService.getUserFromSession(), adminTeam.getId(), UserRole.getRoleString(role).toUpperCase());
-            }
+			return adminTeam;
+		} catch (Exception e) {
 
-            return adminTeam;
-        } catch (Exception e) {
+			LOG.error("Failed to create admin team with Exception --> " + e.getMessage());
 
-            LOG.error("Failed to create admin team with Exception --> " + e.getMessage());
+			return null;
+		}
 
-            return null;
-        }
-
-    }
+	}
 }

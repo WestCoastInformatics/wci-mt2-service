@@ -18,6 +18,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Artifact;
+import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.terminologyservice.ArtifactService;
 import org.ihtsdo.refsetservice.util.FileUtility;
@@ -37,7 +38,6 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -45,286 +45,277 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
 /**
  * Controller for /artifact endpoints.
  */
 @RestController
-@Api(tags = "artifacts", description = "Endpoints for adding, updating, and removing reference set artifacts.")
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
 public class ArtifactController extends BaseController {
 
-    /** The Constant LOG. */
-    private static final Logger LOG = LoggerFactory.getLogger(ArtifactController.class);
+	/** The Constant LOG. */
+	@SuppressWarnings("unused")
+	private static final Logger LOG = LoggerFactory.getLogger(ArtifactController.class);
 
-    /**
-     * Returns the artifact entry.
-     *
-     * @param id the id
-     * @return the artifact entry
-     * @throws Exception the exception
-     */
-    @SuppressWarnings("unchecked")
-    @RequestMapping(method = RequestMethod.GET, value = "/artifact/{id}")
-    @ApiOperation(value = "Get artifact.", response = Artifact.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 500, message = "Internal server error")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "id", value = "Artifact id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path")
-    })
-    @RecordMetric
-    public @ResponseBody ResponseEntity<Artifact> getArtifact(@PathVariable(value = "id") final String id) throws Exception {
+	/**
+	 * Returns the artifact entry.
+	 *
+	 * @param id the id
+	 * @return the artifact entry
+	 * @throws Exception the exception
+	 */
+	@RequestMapping(method = RequestMethod.GET, value = "/artifact/{id}")
+	@Operation(summary = "Get artifact.", tags = { "artifact" }, responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Artifact.class))) }, parameters = {
+					@Parameter(name = "id", description = "Artifact id, e.g. &lt;uuid&gt;", required = true, schema = @Schema(implementation = String.class)) })
+	@RecordMetric
+	public @ResponseBody ResponseEntity<Artifact> getArtifact(@PathVariable(value = "id") final String id)
+			throws Exception {
 
-        LOG.info("Get artifact entry: {}", id);
+		// no auth required
+		try {
 
-        // no auth required
+			final Artifact artifact = ArtifactService.getArtifact(id);
+			return new ResponseEntity<>(artifact, HttpStatus.OK);
 
-        try {
+		} catch (final Exception e) {
+			handleException(e);
+			return null;
+		}
 
-            final Artifact artifact = ArtifactService.getArtifact(id);
+	}
 
-            return new ResponseEntity<>(artifact, HttpStatus.OK);
+	/**
+	 * Search artifact entries.
+	 *
+	 * @param searchParameters the search parameters
+	 * @param bindingResult    the binding result
+	 * @return the string
+	 * @throws Exception the exception
+	 */
+	@RequestMapping(method = RequestMethod.GET, value = "/artifact", produces = MediaType.APPLICATION_JSON)
+	@Operation(summary = "Find artifacts.", tags = { "artifact" }, responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Artifact.class))),
+			@ApiResponse(responseCode = "417", description = "Expecation failed") })
+	// @ModelAttribute API params documented in SearchParameter
+	@RecordMetric
+	public @ResponseBody ResponseEntity<ResultList<Artifact>> findArtifacts(
+			@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult)
+			throws Exception {
 
-        } catch (final Exception e) {
-            LOG.error("Error getting artifactd  {}.", id);
-            return handleException(e);
-        }
+		// Check to make sure parameters were properly bound to variables.
+		checkBinding(bindingResult);
 
-    }
+		// no auth required
+		try {
 
-    /**
-     * Search artifact entries.
-     *
-     * @param searchParameters the search parameters
-     * @param bindingResult the binding result
-     * @return the string
-     * @throws Exception the exception
-     */
-    @SuppressWarnings("unchecked")
-    @RequestMapping(method = RequestMethod.GET, value = "/artifact", produces = MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Find artifacts.", response = ResultList.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 401, message = "Unauthorized"),
-        @ApiResponse(code = 500, message = "Internal server error")
-    })
-    // @ModelAttribute API params documented in SearchParameter
-    @RecordMetric
-    public @ResponseBody ResponseEntity<ResultList<Artifact>> findArtifacts(@ModelAttribute final SearchParameters searchParameters,
-        final BindingResult bindingResult) throws Exception {
+			if (searchParameters != null) {
+				searchParameters.setActiveOnly(true);
+			}
+			final ResultList<Artifact> results = ArtifactService.findArtifacts(searchParameters);
 
-        // Check to make sure parameters were properly bound to variables.
-        checkBinding(bindingResult);
+			if (results != null && results.getItems() != null && !results.getItems().isEmpty()) {
+				for (final Artifact artifact : results.getItems()) {
+					artifact.setDownloadUrl("/artifact/" + artifact.getId() + "/file");
+				}
+			}
 
-        // no auth required
+			return new ResponseEntity<>(results, HttpStatus.OK);
 
-        LOG.info("Search artifact entry search parameters: {}", ModelUtility.toJson(searchParameters));
+		} catch (final Exception e) {
+			handleException(e);
+			return null;
+		}
+	}
 
-        try {
+	/**
+	 * Adds the artifact.
+	 *
+	 * @param artifact  the artifact entry
+	 * @param inputFile the input file
+	 * @return the response entity
+	 * @throws Exception the exception
+	 */
+	@PostMapping(value = "/artifact")
+	@Operation(summary = "Add artifact. This call requires authentication with the correct role.", tags = {
+			"artifact" }, responses = {
+					@ApiResponse(responseCode = "202", description = "Added artifact", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Artifact.class))),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "417", description = "Expectation failed") }, requestBody = @RequestBody(description = "Artifact to add", required = true, content = {
+							@Content(mediaType = "application/json", schema = @Schema(implementation = Artifact.class)) }))
+	@Parameters({ @Parameter(name = "file", description = "Artifact contents", required = true) })
+	@RecordMetric
+	public ResponseEntity<?> addArtifact(@RequestParam final String artifactStr,
+			@RequestParam("file") final MultipartFile inputFile) throws Exception {
 
-            if (searchParameters != null) {
-                searchParameters.setActiveOnly(true);
-            }
-            final ResultList<Artifact> results = ArtifactService.findArtifacts(searchParameters);
+		final User authUser = authorizeUser();
 
-            if (results != null && results.getItems() != null && !results.getItems().isEmpty()) {
-                for (final Artifact artifact : results.getItems()) {
-                    artifact.setDownloadUrl("/artifact/" + artifact.getId() + "/file");
-                }
-            }
+		try {
 
-            return new ResponseEntity<>(results, HttpStatus.OK);
+			Artifact artifact = null;
+			try {
+				artifact = ModelUtility.fromJson(artifactStr, Artifact.class);
+			} catch (Exception e) {
+				throw new RestException(false, 417, "Expectation Failed ", "Unable to parse artifact = " + artifactStr);
+			}
 
-        } catch (final Exception e) {
-            LOG.error("Error searching artifacts.  Search criteria: {} ", searchParameters == null ? null : searchParameters.toString());
-            return handleException(e);
-        }
-    }
+			// TODO: check required values.
 
-    /**
-     * Adds the artifact.
-     *
-     * @param artifact the artifact entry
-     * @param inputFile the input file
-     * @return the response entity
-     * @throws Exception the exception
-     */
-    @PostMapping(value = "/artifact")
-    @ApiOperation(value = "Add artifact. This call requires authentication with the correct role.", response = Artifact.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 202, message = "Added artifact"), @ApiResponse(code = 401, message = "Unauthorized"),
-        @ApiResponse(code = 500, message = "Internal server error")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "artifact", value = "Artifact object", required = true, dataTypeClass = Artifact.class, paramType = "body")
-    })
-    @RecordMetric
-    public ResponseEntity<?> addArtifact(@RequestParam final String artifact, @RequestParam("file") final MultipartFile inputFile) throws Exception {
+			final File file = FileUtility.saveArtifactFile(inputFile,
+					artifact.getEntityType() + "-" + artifact.getEntityId(), null);
 
-        LOG.info("Add artifact: " + artifact);
-        final User authUser = authorizeUser();
+			artifact.setStoredFileName(file.getName());
+			artifact.setFileName(inputFile.getOriginalFilename());
 
-        try {
+			final String fileType = (FilenameUtils.getExtension(file.getCanonicalFile().toString()));
+			if (StringUtils.isNotBlank(fileType)) {
+				artifact.setFileType(fileType.toUpperCase());
+			}
 
-            final Artifact artifactEntry = ModelUtility.fromJson(artifact, Artifact.class);
+			final Artifact newArtifact = ArtifactService.addArtifact(authUser, artifact);
 
-            // TODO: check required values.
+			return ResponseEntity.status(HttpStatus.ACCEPTED).body(newArtifact);
 
-            final File file = FileUtility.saveArtifactFile(inputFile, artifactEntry.getEntityType() + "-" + artifactEntry.getEntityId(), null);
+		} catch (final Exception e) {
+			handleException(e);
+			return null;
+		}
+	}
 
-            artifactEntry.setStoredFileName(file.getName());
-            artifactEntry.setFileName(inputFile.getOriginalFilename());
+	/**
+	 * Update artifact.
+	 *
+	 * @param id       the id
+	 * @param artifact the artifact
+	 * @return the response entity
+	 * @throws Exception the exception
+	 */
+	@SuppressWarnings("rawtypes")
+	@PutMapping(value = "/artifact/{id}")
+	@Operation(summary = "Update artifact. This call requires authentication with the correct role.", tags = {
+			"artifact" }, responses = { @ApiResponse(responseCode = "200", description = "Updated artifact"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Not found"),
+					@ApiResponse(responseCode = "417", description = "Expecation failed") }, requestBody = @RequestBody(description = "Artifact to update", required = true, content = {
+							@Content(mediaType = "application/json", schema = @Schema(implementation = Artifact.class)) }))
+	@Parameters({ @Parameter(name = "id", description = "Artifact id, e.g. &lt;uuid&gt;", required = true) })
+	@RecordMetric
+	public ResponseEntity updateArtifact(final @PathVariable String id,
+			final @org.springframework.web.bind.annotation.RequestBody String artifactStr) throws Exception {
 
-            final String fileType = (FilenameUtils.getExtension(file.getCanonicalFile().toString()));
-            if (StringUtils.isNotBlank(fileType)) {
-                artifactEntry.setFileType(fileType.toUpperCase());
-            }
+		final User authUser = authorizeUser();
 
-            final Artifact newArtifact = ArtifactService.addArtifact(authUser, artifactEntry);
+		try {
 
-            return ResponseEntity.status(HttpStatus.ACCEPTED).body(newArtifact);
+			final Artifact existingArtifact = ArtifactService.getArtifact(id);
+			if (existingArtifact == null) {
+				throw new RestException(false, 404, "Not found", "Unable to find artifact by id = " + id);
+			}
+			Artifact artifact = null;
+			try {
+				artifact = ModelUtility.fromJson(artifactStr, Artifact.class);
+			} catch (Exception e) {
+				throw new RestException(false, 417, "Expectation Failed ", "Unable to parse artifact = " + artifactStr);
 
-        } catch (final Exception e) {
+			}
 
-            LOG.error("Trying to add artifact " + artifact, e);
-            return handleException(e);
-        }
-    }
+			existingArtifact.populateFrom(artifact);
+			final Artifact returnArtifact = ArtifactService.updateArtifact(authUser, existingArtifact);
 
-    /**
-     * Update artifact.
-     *
-     * @param id the id
-     * @param artifact the artifact
-     * @return the response entity
-     * @throws Exception the exception
-     */
-    @SuppressWarnings("rawtypes")
-    @PutMapping(value = "/artifact/{id}")
-    @ApiOperation(value = "Update artifact. This call requires authentication with the correct role.", response = Artifact.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Updated artifact"), @ApiResponse(code = 401, message = "Unauthorized"),
-        @ApiResponse(code = 500, message = "Internal server error")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "id", value = "Artifact id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path"),
-        @ApiImplicitParam(name = "artifact", value = "Artifact object", required = true, dataTypeClass = Artifact.class, paramType = "body")
-    })
-    @RecordMetric
-    public ResponseEntity updateArtifact(final @PathVariable String id, final @RequestBody String artifact) throws Exception {
+			return ResponseEntity.status(HttpStatus.OK).body(returnArtifact);
 
-        LOG.info("Update artifact: " + artifact);
-        final User authUser = authorizeUser();
+		} catch (final Exception e) {
+			handleException(e);
+			return null;
+		}
+	}
 
-        try {
+	/**
+	 * Inactivate artifact.
+	 *
+	 * @param id the id
+	 * @return the response entity
+	 * @throws Exception the exception
+	 */
+	@SuppressWarnings("rawtypes")
+	@DeleteMapping(value = "/artifact/{id}")
+	@Operation(summary = "Inactivate artifact. This call requires authentication with the correct role.", tags = {
+			"artifact" }, responses = {
+					@ApiResponse(responseCode = "204", description = "Successfully inactivated artifact"),
+					@ApiResponse(responseCode = "401", description = "Unauthorized"),
+					@ApiResponse(responseCode = "403", description = "Forbidden"),
+					@ApiResponse(responseCode = "404", description = "Not found") })
+	@Parameters({ @Parameter(name = "id", description = "Artifact id, e.g. &lt;uuid&gt;", required = true) })
+	@RecordMetric
+	public ResponseEntity inactivateArtifact(final @PathVariable String id) throws Exception {
 
-            final Artifact existingArtifact = ArtifactService.getArtifact(id);
-            final Artifact artifactEntry = ModelUtility.fromJson(artifact, Artifact.class);
+		final User authUser = authorizeUser();
+		try {
 
-            existingArtifact.populateFrom(artifactEntry);
-            final Artifact returnArtifact = ArtifactService.updateArtifact(authUser, existingArtifact);
+			final Artifact artifact = ArtifactService.getArtifact(id);
+			if (artifact == null) {
+				throw new RestException(false, 404, "Not found", "Unable to find artifact by id = " + id);
+			}
 
-            return ResponseEntity.status(HttpStatus.OK).body(returnArtifact);
+			artifact.setActive(false);
+			ArtifactService.updateArtifact(authUser, artifact);
+			return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 
-        } catch (final Exception e) {
+		} catch (final Exception e) {
+			handleException(e);
+			return null;
+		}
+	}
 
-            LOG.error("Trying to add artifact " + artifact, e);
-            return handleException(e);
-        }
-    }
+	/**
+	 * Download artifact.
+	 *
+	 * @param id the id
+	 * @return the response entity
+	 * @throws Exception the exception
+	 */
+	@GetMapping(value = "/artifact/{id}/file")
+	@Operation(summary = "Download artifact.", tags = { "artifact" }, responses = {
+			@ApiResponse(responseCode = "200", description = "Retrieved artifact"),
+			@ApiResponse(responseCode = "404", description = "Not Found") })
+	@Parameters({ @Parameter(name = "id", description = "Artifact id, e.g. &lt;uuid&gt;", required = true) })
+	@RecordMetric
+	public ResponseEntity<Resource> downloadArtifact(@PathVariable("id") final String id) throws Exception {
 
-    /**
-     * Inactivate artifact.
-     *
-     * @param id the id
-     * @return the response entity
-     * @throws Exception the exception
-     */
-    @SuppressWarnings("rawtypes")
-    @DeleteMapping(value = "/artifact/{id}")
-    @ApiOperation(value = "Inactivate artifact. This call requires authentication with the correct role.", response = Void.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 204, message = "Successfully inactivated artifact"), @ApiResponse(code = 401, message = "Unauthorized"),
-        @ApiResponse(code = 500, message = "Internal server error")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "id", value = "Artifact id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path")
-    })
-    @RecordMetric
-    public ResponseEntity inactivateArtifact(final @PathVariable String id) throws Exception {
+		// no auth required
+		try {
 
-        LOG.info("Inactivate artifact: " + id);
+			final Artifact artifact = ArtifactService.getArtifact(id);
+			if (artifact == null) {
+				throw new RestException(false, 404, "Not found", "Unable to find artifact by id = " + id);
+			}
 
-        final User authUser = authorizeUser();
+			final Resource file = FileUtility.getArtifactFile(artifact.getStoredFileName());
 
-        try {
-            final Artifact artifact = ArtifactService.getArtifact(id);
-            artifact.setActive(false);
-            ArtifactService.updateArtifact(authUser, artifact);
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+			if (file == null) {
+				throw new RestException(false, 404, "Not found",
+						"Unable to get artifact file = " + artifact.getStoredFileName());
+			}
 
-        } catch (final Exception e) {
+			return ResponseEntity.ok()
+					.header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION)
+					.header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(file.getFile().toPath()))
+					.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + artifact.getFileName() + "\"")
+					.contentLength(file.contentLength()).body(file);
 
-            LOG.error("Trying to Inactivate artifact " + id, e);
-            return handleException(e);
-        }
-    }
-
-    /**
-     * Download artifact.
-     *
-     * @param id the id
-     * @return the response entity
-     * @throws Exception the exception
-     */
-    @SuppressWarnings("unchecked")
-    @GetMapping(value = "/artifact/{id}/file")
-    @ApiOperation(value = "Download artifact.", response = Resource.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Retrieved artifact"), @ApiResponse(code = 401, message = "Unauthorized"),
-        @ApiResponse(code = 404, message = "Not Found"), @ApiResponse(code = 500, message = "Internal server error")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "id", value = "Artifact id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path")
-    })
-    @RecordMetric
-    public ResponseEntity<Resource> downloadArtifact(@PathVariable("id") final String id) throws Exception {
-
-        LOG.info("Download artifact: " + id);
-
-        // no auth required
-
-        try {
-
-            final Artifact artifact = ArtifactService.getArtifact(id);
-            if (artifact == null) {
-                LOG.info("Artifact: " + id + " not found.");
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
-
-            final Resource file = FileUtility.getArtifactFile(artifact.getStoredFileName());
-
-            if (file == null) {
-                LOG.error("Artifact: file " + artifact.getStoredFileName() + " not found.");
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
-
-            return ResponseEntity.ok().header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION)
-                .header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(file.getFile().toPath()))
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + artifact.getFileName() + "\"").contentLength(file.contentLength())
-                .body(file);
-
-        } catch (final Exception e) {
-
-            LOG.error("Trying to download artifact for id:" + id + ".", e);
-            return handleException(e);
-        }
-    }
+		} catch (final Exception e) {
+			handleException(e);
+			return null;
+		}
+	}
 
 }

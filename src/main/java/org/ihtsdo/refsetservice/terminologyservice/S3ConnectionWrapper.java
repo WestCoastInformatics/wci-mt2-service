@@ -94,7 +94,8 @@ public final class S3ConnectionWrapper {
     /**
      * Connect to amazon S 3.
      */
-    private static void connectToAmazonS3() {
+    @SuppressWarnings("resource")
+	private static void connectToAmazonS3() {
 
         if (s3Client != null) {
             return;

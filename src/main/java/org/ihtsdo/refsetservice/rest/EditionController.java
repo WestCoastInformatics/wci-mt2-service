@@ -14,7 +14,6 @@ import javax.ws.rs.core.MediaType;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.terminologyservice.EditionService;
-import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
@@ -29,121 +28,102 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
 /**
  * Controller for /edition endpoints.
  */
 @RestController
-@Api(tags = "editions", description = "Endpoints for retrieving editions.")
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
 public class EditionController extends BaseController {
 
-    /** The Constant LOG. */
-    private static final Logger LOG = LoggerFactory.getLogger(EditionController.class);
+	/** The Constant LOG. */
+	@SuppressWarnings("unused")
+	private static final Logger LOG = LoggerFactory.getLogger(EditionController.class);
 
-    /**
-     * Return the edition.
-     *
-     * @param id the id
-     * @return the edition
-     * @throws Exception the exception
-     */
-    @SuppressWarnings("unchecked")
-    @ApiOperation(value = "Get edition", response = Edition.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 401, message = "Unauthorized"),
-        @ApiResponse(code = 404, message = "Resource not found"), @ApiResponse(code = 417, message = "Failed Expectation"),
-        @ApiResponse(code = 500, message = "Internal server error")
-    })
-    @ApiImplicitParams({
-        @ApiImplicitParam(name = "id", value = "Edition id, e.g. &lt;uuid&gt;", required = true, dataTypeClass = String.class, paramType = "path")
-    })
-    @RecordMetric
-    @RequestMapping(value = "/edition/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
-    // no auth required
-    public ResponseEntity<Edition> getEdition(@PathVariable(value = "id") final String id) throws Exception {
+	/**
+	 * Return the edition.
+	 *
+	 * @param id the id
+	 * @return the edition
+	 * @throws Exception the exception
+	 */
+	@RequestMapping(method = RequestMethod.GET, value = "/edition/{id}", produces = MediaType.APPLICATION_JSON)
+	@Operation(summary = "Get edition", tags = { "edition" }, responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information") })
+	@Parameters({ @Parameter(name = "id", description = "Edition id, e.g. &lt;uuid&gt;", required = true) })
+	@RecordMetric
+	public ResponseEntity<Edition> getEdition(@PathVariable(value = "id") final String id) throws Exception {
 
-        LOG.info("Get edition for id: {}", id);
+		// no auth required
+		try {
+			final Edition edition = EditionService.getEdition(id);
+			return new ResponseEntity<>(edition, HttpStatus.OK);
 
-        try {
-            final Edition edition = EditionService.getEdition(id);
-            return new ResponseEntity<>(edition, HttpStatus.OK);
+		} catch (final Exception e) {
+			handleException(e);
+			return null;
+		}
+	}
 
-        } catch (final Exception e) {
-            return handleException(e);
-        }
-    }
+	/**
+	 * Return the editions.
+	 *
+	 * @return the editions
+	 * @throws Exception the exception
+	 */
+	@RequestMapping(method = RequestMethod.GET, value = "/edition/", produces = MediaType.APPLICATION_JSON)
+	@Operation(summary = "Get all editions", tags = { "edition" }, responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information") })
+	@RecordMetric
+	public ResponseEntity<ResultList<Edition>> getEditions() throws Exception {
+		// no auth required
 
-    /**
-     * Return the editions.
-     *
-     * @return the editions
-     * @throws Exception the exception
-     */
-    @SuppressWarnings("unchecked")
-    @ApiOperation(value = "Get all editions", response = ResultList.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 417, message = "Failed Expectation"),
-        @ApiResponse(code = 500, message = "Internal server error")
-    })
-    @RecordMetric
-    @RequestMapping(value = "/edition/", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON)
-    // no auth required
-    public ResponseEntity<ResultList<Edition>> getEditions() throws Exception {
+		try {
 
-        LOG.info("Get all editions");
+			final ResultList<Edition> results = EditionService.getEditions();
+			return new ResponseEntity<>(results, HttpStatus.OK);
 
-        try {
+		} catch (final Exception e) {
+			handleException(e);
+			return null;
+		}
+	}
 
-            final ResultList<Edition> results = EditionService.getEditions();
-            return new ResponseEntity<>(results, HttpStatus.OK);
+	/**
+	 * Search Editions.
+	 *
+	 * @param searchParameters the search parameters
+	 * @param bindingResult    the binding result
+	 * @return the string
+	 * @throws Exception the exception
+	 */
+	@RequestMapping(method = RequestMethod.GET, value = "/edition/search", produces = MediaType.APPLICATION_JSON)
+	@Operation(summary = "Find editions.", tags = { "edition" }, responses = {
+			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
+	// @ModelAttribute API params documented in SearchParameter
+	@RecordMetric
+	public @ResponseBody ResponseEntity<ResultList<Edition>> getEditions(
+			@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult)
+			throws Exception {
+		// no auth required
 
-        } catch (final Exception e) {
-            return handleException(e);
-        }
-    }
+		// Check to make sure parameters were properly bound to variables.
+		checkBinding(bindingResult);
 
-    /**
-     * Search Editions.
-     *
-     * @param searchParameters the search parameters
-     * @param bindingResult the binding result
-     * @return the string
-     * @throws Exception the exception
-     */
-    @SuppressWarnings("unchecked")
-    @ApiOperation(value = "Find editions.", response = ResultList.class)
-    @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "Successfully retrieved the requested information"), @ApiResponse(code = 404, message = "Resource not found"),
-        @ApiResponse(code = 417, message = "Failed Expectation"), @ApiResponse(code = 500, message = "Internal server error")
-    })
-    // @ModelAttribute API params documented in SearchParameter
-    @RecordMetric
-    @RequestMapping(method = RequestMethod.GET, value = "/edition/search", produces = MediaType.APPLICATION_JSON)
-    // no auth required
-    public @ResponseBody ResponseEntity<ResultList<Edition>> getEditions(@ModelAttribute final SearchParameters searchParameters,
-        final BindingResult bindingResult) throws Exception {
+		try {
 
-        LOG.info("getEditions searchParameters: " + ModelUtility.toJson(searchParameters));
+			final ResultList<Edition> results = EditionService.searchEditions(searchParameters);
+			return new ResponseEntity<>(results, HttpStatus.OK);
 
-        // Check to make sure parameters were properly bound to variables.
-        checkBinding(bindingResult);
-
-        try {
-
-            final ResultList<Edition> results = EditionService.searchEditions(searchParameters);
-            return new ResponseEntity<>(results, HttpStatus.OK);
-
-        } catch (final Exception e) {
-
-            return handleException(e);
-        }
-    }
+		} catch (final Exception e) {
+			handleException(e);
+			return null;
+		}
+	}
 
 }

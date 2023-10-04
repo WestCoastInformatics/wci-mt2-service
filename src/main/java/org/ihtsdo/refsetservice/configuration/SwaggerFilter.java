@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
- * The Class SwaggerFilter.
+ * Filter to ensure only authenticated users can access swagger or api-docs.
  */
 @Component
 public class SwaggerFilter implements Filter {
