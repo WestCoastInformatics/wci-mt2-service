@@ -11,6 +11,7 @@ package org.ihtsdo.refsetservice.rest;
 
 import java.util.Arrays;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.MediaType;
 
@@ -26,6 +27,7 @@ import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -56,6 +58,10 @@ public class TeamController extends BaseController {
 	@SuppressWarnings("unused")
 	private static final Logger LOG = LoggerFactory.getLogger(TeamController.class);
 
+    /** The request. */
+    @Autowired
+    private HttpServletRequest request;
+    
 	/** Search teams API notes. */
 	private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
 
@@ -79,7 +85,7 @@ public class TeamController extends BaseController {
 	public @ResponseBody ResponseEntity<Team> getTeam(@PathVariable(value = "id") final String id,
 			@RequestParam(value = "includeMembers") final boolean includeMembers) throws Exception {
 
-		authorizeUser();
+		authorizeUser(request);
 
 		try {
 
@@ -125,7 +131,7 @@ public class TeamController extends BaseController {
 			@RequestParam(value = "onlyUsersTeams") final boolean onlyUsersTeams,
 			@RequestParam(value = "hideOrganizationTeams") final Boolean hideOrganizationTeams) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		boolean noOrganizationTeams = false;
 
@@ -170,7 +176,7 @@ public class TeamController extends BaseController {
 	public @ResponseBody ResponseEntity<Team> addTeam(
 			@org.springframework.web.bind.annotation.RequestBody final Team team) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try {
 
@@ -217,7 +223,7 @@ public class TeamController extends BaseController {
 	public @ResponseBody ResponseEntity<Team> updateTeam(@PathVariable(value = "id") final String id,
 			@org.springframework.web.bind.annotation.RequestBody final Team team) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try {
 
@@ -261,7 +267,7 @@ public class TeamController extends BaseController {
 	@RecordMetric
 	public ResponseEntity<Object> getOrganizationUsers(@PathVariable final String id) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try {
 
@@ -293,7 +299,7 @@ public class TeamController extends BaseController {
 	public @ResponseBody ResponseEntity<String> addUsersToTeam(@PathVariable final String id, final String emails)
 			throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		if (StringUtils.isBlank(emails)) {
 			throw new RestException(false, 417, "Expecation failed", "Unexpected blank emails");
@@ -343,7 +349,7 @@ public class TeamController extends BaseController {
 	public @ResponseBody ResponseEntity<Void> removeUserFromTeam(@PathVariable final String id,
 			@PathVariable final String userId) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try {
 			final Team team = TeamService.getTeam(id, false);
@@ -381,7 +387,7 @@ public class TeamController extends BaseController {
 	public @ResponseBody ResponseEntity<Void> addRoleToTeam(@PathVariable final String id,
 			@PathVariable final String role) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try {
 
@@ -417,7 +423,7 @@ public class TeamController extends BaseController {
 	public @ResponseBody ResponseEntity<Void> removeRoleFromTeam(@PathVariable final String id,
 			@PathVariable final String role) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try {
 
@@ -449,7 +455,7 @@ public class TeamController extends BaseController {
 	@RecordMetric
 	public ResponseEntity<Void> deleteTeam(@PathVariable("id") final String id) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try {
 

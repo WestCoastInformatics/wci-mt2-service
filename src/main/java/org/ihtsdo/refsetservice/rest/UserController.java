@@ -12,6 +12,7 @@ package org.ihtsdo.refsetservice.rest;
 import java.io.File;
 import java.nio.file.Files;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 
 import org.ihtsdo.refsetservice.app.RecordMetric;
@@ -26,6 +27,7 @@ import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -59,6 +61,10 @@ public class UserController extends BaseController {
 	@SuppressWarnings("unused")
 	private static final Logger LOG = LoggerFactory.getLogger(UserController.class);
 
+    /** The request. */
+    @Autowired
+    private HttpServletRequest request;
+    
 	/** Search users API notes. */
 	private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
 
@@ -88,7 +94,7 @@ public class UserController extends BaseController {
 			@RequestParam(value = "includeOrganizations") final boolean includeOrganizations,
 			@RequestParam(value = "includeTeams") final boolean includeTeams) throws Exception {
 
-		authorizeUser();
+		authorizeUser(request);
 
 		try {
 
@@ -123,7 +129,7 @@ public class UserController extends BaseController {
 	public @ResponseBody ResponseEntity<User> updateUser(@PathVariable(value = "id") final String id,
 			@org.springframework.web.bind.annotation.RequestBody final String userStr) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try {
 			User user = null;
@@ -169,7 +175,7 @@ public class UserController extends BaseController {
 	public @ResponseBody ResponseEntity<User> deleteUserIcon(@PathVariable(value = "id") final String id)
 			throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try {
 			final User user = UserService.getUser(id, false);
@@ -219,7 +225,7 @@ public class UserController extends BaseController {
 			@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult)
 			throws Exception {
 
-		authorizeUser();
+		authorizeUser(request);
 
 		// Check to make sure parameters were properly bound to variables.
 		checkBinding(bindingResult);
@@ -302,7 +308,7 @@ public class UserController extends BaseController {
 	public ResponseEntity<String> editUserIcon(@PathVariable("id") final String id,
 			@RequestParam("file") final MultipartFile inputFile) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try {
 

@@ -63,6 +63,7 @@ import org.ihtsdo.refsetservice.util.StringUtility;
 import org.ihtsdo.refsetservice.util.TaxonomyParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -96,6 +97,10 @@ public class RefsetController extends BaseController {
 	/** The Constant LOG. */
 	private static final Logger LOG = LoggerFactory.getLogger(RefsetController.class);
 
+    /** The request. */
+    @Autowired
+    private HttpServletRequest request;
+    
 	/** The local directory to store exported refset files. */
 	private static String exportFileDir;
 
@@ -130,7 +135,7 @@ public class RefsetController extends BaseController {
 	public @ResponseBody ResponseEntity<Refset> getRefset(@PathVariable(value = "refsetId") final String refsetId,
 			@PathVariable(value = "versionDate") final String versionDate) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		try (final TerminologyService service = new TerminologyService()) {
 
 			final Refset refset = RefsetService.getRefset(service, authUser, refsetId, versionDate);
@@ -199,7 +204,7 @@ public class RefsetController extends BaseController {
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId, final HttpServletRequest request)
 			throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		try (final TerminologyService service = new TerminologyService()) {
 
 			final Refset refset = service.findSingle("id:" + QueryParserBase.escape(refsetInternalId) + "",
@@ -245,7 +250,7 @@ public class RefsetController extends BaseController {
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId, final HttpServletRequest request)
 			throws Exception {
 
-		authorizeUser();
+		authorizeUser(request);
 		try {
 
 			final boolean isLocked = RefsetMemberService.REFSETS_BEING_UPDATED.contains(refsetInternalId);
@@ -305,7 +310,7 @@ public class RefsetController extends BaseController {
 			@RequestParam(required = false) final MultipartFile conceptFile,
 			@RequestParam(required = false) final String fileType) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		try (final TerminologyService service = new TerminologyService()) {
 
 			RefsetMemberService.REFSETS_BEING_UPDATED.add(refsetInternalId);
@@ -424,7 +429,7 @@ public class RefsetController extends BaseController {
 			@RequestParam(required = false) final MultipartFile conceptFile,
 			@RequestParam(required = false) final String fileType) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		try (final TerminologyService service = new TerminologyService()) {
 
 			RefsetMemberService.REFSETS_BEING_UPDATED.add(refsetInternalId);
@@ -544,7 +549,7 @@ public class RefsetController extends BaseController {
 			@RequestParam(required = false) final String fileType,
 			@RequestParam(required = false) final String definitionExceptionType) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -628,7 +633,7 @@ public class RefsetController extends BaseController {
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId,
 			@PathVariable(value = "definitionExceptionId") final String definitionExceptionId) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -693,7 +698,7 @@ public class RefsetController extends BaseController {
 		// Check to make sure parameters were properly bound to variables.
 		checkBinding(bindingResult);
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		String newRefsetInternalId = null;
 		try (final TerminologyService service = new TerminologyService()) {
@@ -763,7 +768,7 @@ public class RefsetController extends BaseController {
 		// Check to make sure parameters were properly bound to variables.
 		checkBinding(bindingResult);
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		try (final TerminologyService service = new TerminologyService()) {
 
 			RefsetMemberService.REFSETS_BEING_UPDATED.add(refsetInternalId);
@@ -818,7 +823,7 @@ public class RefsetController extends BaseController {
 	public @ResponseBody ResponseEntity<String> recalculateRefsetDefinition(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		try (final TerminologyService service = new TerminologyService()) {
 
 			RefsetMemberService.REFSETS_BEING_UPDATED.add(refsetInternalId);
@@ -883,7 +888,7 @@ public class RefsetController extends BaseController {
 		// Check to make sure parameters were properly bound to variables.
 		checkBinding(bindingResult);
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		try (final TerminologyService service = new TerminologyService()) {
 
 			// LOG.debug("getWorkflowHistory refsetInternalId: " + refsetInternalId + " ;
@@ -927,7 +932,7 @@ public class RefsetController extends BaseController {
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId, @RequestParam final String action,
 			@RequestParam(required = false) final String notes) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		try (final TerminologyService service = new TerminologyService()) {
 
 			LOG.debug("setWorkflowStatus: refsetInternalId: " + refsetInternalId + " ; action: " + action + " ; notes: "
@@ -1013,7 +1018,7 @@ public class RefsetController extends BaseController {
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId,
 			@org.springframework.web.bind.annotation.RequestBody(required = true) final String notes) throws Exception {
 
-		final User authUer = authorizeUser();
+		final User authUer = authorizeUser(request);
 		try (final TerminologyService service = new TerminologyService()) {
 
 			service.setModifiedBy(authUer.getUserName());
@@ -1063,7 +1068,7 @@ public class RefsetController extends BaseController {
 	public @ResponseBody ResponseEntity<String> startAllRefsetPublications(
 			@RequestParam(required = true) final String codeSystem) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		if (!authUser.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
 			throw new RestException(false, 403, "Forbidden", "User does not have permission to perform this action");
@@ -1154,7 +1159,7 @@ public class RefsetController extends BaseController {
 			@RequestParam(required = true) final String codeSystem,
 			@RequestParam(required = false) final String publishType) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		String typeToPublish = "regular";
 
 		if (StringUtility.isEmpty(codeSystem)) {
@@ -1287,7 +1292,7 @@ public class RefsetController extends BaseController {
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId,
 			@RequestParam(required = true) final String versionDate) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -1359,7 +1364,7 @@ public class RefsetController extends BaseController {
 			@RequestParam(required = true) final String refsetIds, @RequestParam(required = true) final String notes)
 			throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		if (!authUser.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
 			throw new RestException(false, 403, "Forbidden",
@@ -1426,7 +1431,7 @@ public class RefsetController extends BaseController {
 	public @ResponseBody ResponseEntity<String> createNewRefsetVersion(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -1475,7 +1480,7 @@ public class RefsetController extends BaseController {
 	public @ResponseBody ResponseEntity<String> updateRefsetStatus(final @PathVariable String refsetInternalId,
 			final boolean active) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		try (final TerminologyService service = new TerminologyService()) {
 
 			final Refset refset = RefsetService.getRefset(service, authUser, refsetInternalId);
@@ -1515,7 +1520,7 @@ public class RefsetController extends BaseController {
 	public @ResponseBody ResponseEntity<String> convertToExtensional(final @PathVariable String refsetInternalId)
 			throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		try (final TerminologyService service = new TerminologyService()) {
 
 			RefsetMemberService.REFSETS_BEING_UPDATED.add(refsetInternalId);
@@ -1562,7 +1567,7 @@ public class RefsetController extends BaseController {
 	public @ResponseBody ResponseEntity<String> deleteRefsetEditVersion(final @PathVariable String refsetInternalId)
 			throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		try (final TerminologyService service = new TerminologyService()) {
 
 			final Refset refset = RefsetService.getRefset(service, authUser, refsetInternalId);
@@ -1620,7 +1625,7 @@ public class RefsetController extends BaseController {
 
 		// Check to make sure parameters were properly bound to variables.
 		checkBinding(bindingResult);
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		final boolean includeInDevelopment = (showInDevelopment != null) ? showInDevelopment : true;
 		final boolean onlyShowPermitted = (showOnlyPermitted != null) ? showOnlyPermitted : false;
@@ -1681,7 +1686,7 @@ public class RefsetController extends BaseController {
 
 		// Check to make sure parameters were properly bound to variables.
 		checkBinding(bindingResult);
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		boolean searchRefsetMembers = false;
 		final String uri = request.getRequestURI();
@@ -1750,7 +1755,7 @@ public class RefsetController extends BaseController {
 			final BindingResult bindingResult) throws Exception {
 
 		checkBinding(bindingResult);
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -1807,7 +1812,7 @@ public class RefsetController extends BaseController {
 			@PathVariable(value = "refsetId") final String refsetId,
 			@PathVariable(value = "versionDate") final String versionDate) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		try (final TerminologyService service = new TerminologyService()) {
 
 			LOG.debug("cacheMemberAncestors: refsetId: " + refsetId + " ; versionDate: " + versionDate);
@@ -1874,7 +1879,7 @@ public class RefsetController extends BaseController {
 			final String startEffectiveTime, final String transientEffectiveTime, final boolean exportMetadata)
 			throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		try (final TerminologyService service = new TerminologyService()) {
 
 			LOG.debug("exportRefset: refsetInternalId: " + refsetInternalId + " ; format: " + format + " ; type: "
@@ -1956,7 +1961,7 @@ public class RefsetController extends BaseController {
 			@PathVariable(value = "projectId") final String projectId, final String format, final String languageId,
 			final String fileNameDate, final boolean exportMetadata) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		try (final TerminologyService service = new TerminologyService()) {
 
 			LOG.debug("exportAllRefsetsForProject: projectId: " + projectId + " ; fileNameDate: " + fileNameDate);
@@ -1992,7 +1997,7 @@ public class RefsetController extends BaseController {
 	public @ResponseBody ResponseEntity<Resource> downloadExport(
 			@PathVariable(value = "fileName") final String fileName) throws Exception {
 
-		authorizeUser();
+		authorizeUser(request);
 		try {
 
 			final Path filePath = Paths.get(exportFileDir + fileName);
@@ -2040,7 +2045,7 @@ public class RefsetController extends BaseController {
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId,
 			@PathVariable(value = "conceptId") final String conceptId) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		LOG.debug("getMemberHistory: memberId: " + conceptId + "; refsetInternalId: " + refsetInternalId);
 
@@ -2093,7 +2098,7 @@ public class RefsetController extends BaseController {
 	public @ResponseBody ResponseEntity<Concept> getConceptDetails(
 			@PathVariable(value = "conceptId") final String conceptId, final String refsetInternalId) throws Exception {
 
-		authorizeUser();
+		authorizeUser(request);
 
 		// LOG.debug("getConceptDetails: conceptId: " + conceptId + ";
 		// refsetInternalId: " + refsetInternalId);
@@ -2166,7 +2171,7 @@ public class RefsetController extends BaseController {
 			@RequestParam(required = false) final Boolean forProduction,
 			@RequestParam(required = false) final Boolean ignoreCoreRefsets) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		if (!authUser.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
 			throw new RestException(false, 403, "Forbidden",
@@ -2231,7 +2236,7 @@ public class RefsetController extends BaseController {
 	@RequestMapping(method = RequestMethod.GET, value = "/admin/sync/feedback", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<String> createNewFeedbackTestingRefset() throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		try {
 
 			if (!authUser.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
@@ -2270,7 +2275,7 @@ public class RefsetController extends BaseController {
 	@RequestMapping(method = RequestMethod.GET, value = "/admin/sync/intensional", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<String> createNewIntensionalTestingRefset() throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		try {
 
 			if (!authUser.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
@@ -2309,7 +2314,7 @@ public class RefsetController extends BaseController {
 	@RecordMetric
 	public @ResponseBody ResponseEntity<ResultList<TypeKeyValue>> getVersionStatuses() throws Exception {
 
-		authorizeUser();
+		authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -2347,7 +2352,7 @@ public class RefsetController extends BaseController {
 	@RecordMetric
 	public @ResponseBody ResponseEntity<ResultList<TypeKeyValue>> getVersions() throws Exception {
 
-		authorizeUser();
+		authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -2415,7 +2420,7 @@ public class RefsetController extends BaseController {
 	public @ResponseBody ResponseEntity<ResultList<TypeKeyValue>> getEditions(
 			@RequestParam(value = "onlyUsersTeams") final boolean onlyEditionsWithoutOrganizations) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -2513,7 +2518,7 @@ public class RefsetController extends BaseController {
 	public @ResponseBody ResponseEntity<ConceptResultList> getRefsetConcepts(final String branch,
 			final boolean areParentConcepts) throws Exception {
 
-		authorizeUser();
+		authorizeUser(request);
 		try (final TerminologyService service = new TerminologyService()) {
 
 			// LOG.debug("getRefsetConcepts: branch: " + branch + "; areParentConcepts: "
@@ -2549,7 +2554,7 @@ public class RefsetController extends BaseController {
 	@RecordMetric
 	public @ResponseBody ResponseEntity<ResultList<String>> getBranchVersions(final String branch) throws Exception {
 
-		authorizeUser();
+		authorizeUser(request);
 		try {
 			final ResultList<String> results = new ResultList<>();
 			results.setItems(RefsetService.getBranchVersions(branch));
@@ -2579,7 +2584,7 @@ public class RefsetController extends BaseController {
 	@RecordMetric
 	public @ResponseBody ResponseEntity<ResultList<TypeKeyValue>> getOrganizations() throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -2664,7 +2669,7 @@ public class RefsetController extends BaseController {
 	public @ResponseBody ResponseEntity<String> getRefsetAncestorCache(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -2713,7 +2718,7 @@ public class RefsetController extends BaseController {
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId,
 			@PathVariable(value = "conceptId") final String conceptId) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		try (final TerminologyService service = new TerminologyService()) {
 
 			LOG.debug(
@@ -2755,7 +2760,7 @@ public class RefsetController extends BaseController {
 	public @ResponseBody ResponseEntity<String> compileUpgradeData(
 			@PathVariable(value = "refsetInternalIds") final String refsetInternalIds) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		final Thread t = new Thread(new Runnable() {
 
@@ -2843,7 +2848,7 @@ public class RefsetController extends BaseController {
 	public @ResponseBody ResponseEntity<ResultList<UpgradeInactiveConcept>> getUpgradeData(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -2903,7 +2908,7 @@ public class RefsetController extends BaseController {
 			@org.springframework.web.bind.annotation.RequestBody(required = false) final UpgradeReplacementConcept manualReplacementConcept)
 			throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -2953,7 +2958,7 @@ public class RefsetController extends BaseController {
 	public @ResponseBody ResponseEntity<String> removeAllUpgradeInactiveConcepts(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -3000,7 +3005,7 @@ public class RefsetController extends BaseController {
 	public @ResponseBody ResponseEntity<String> addAllUpgradeReplacementConcepts(
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -3057,7 +3062,7 @@ public class RefsetController extends BaseController {
 		// Check to make sure parameters were properly bound to variables.
 		checkBinding(bindingResult);
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -3106,7 +3111,7 @@ public class RefsetController extends BaseController {
 		// Check to make sure parameters were properly bound to variables.
 		checkBinding(bindingResult);
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -3154,7 +3159,7 @@ public class RefsetController extends BaseController {
 			@PathVariable(value = "activeRefsetInternalId") final String activeRefsetInternalId,
 			@RequestParam(required = true) final String comparisonRefsetInternalId) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -3206,7 +3211,7 @@ public class RefsetController extends BaseController {
 			@PathVariable(value = "activeRefsetInternalId") final String activeRefsetInternalId,
 			final HttpServletRequest request) throws Exception {
 
-		authorizeUser();
+		authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -3256,7 +3261,7 @@ public class RefsetController extends BaseController {
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId, final String comments)
 			throws Exception {
 
-		authorizeUser();
+		authorizeUser(request);
 		try (final TerminologyService service = new TerminologyService()) {
 
 			// TODO: nothing happens here !!
@@ -3290,7 +3295,7 @@ public class RefsetController extends BaseController {
 			@org.springframework.web.bind.annotation.RequestBody(required = true) final SendCommunicationEmailInfo emailInfo)
 			throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		try {
 
 			RefsetService.shareRefset(authUser, refsetInternalId, emailInfo.getRecipient(),
@@ -3328,7 +3333,7 @@ public class RefsetController extends BaseController {
 			@org.springframework.web.bind.annotation.RequestBody(required = true) final SendCommunicationEmailInfo emailInfo)
 			throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		try {
 			RefsetService.requestProjectAccess(authUser, refsetInternalId, emailInfo.getRecipient(),
 					emailInfo.getAdditionalMessage());
@@ -3384,7 +3389,7 @@ public class RefsetController extends BaseController {
 			@RequestParam final String parentConceptId, @RequestParam final String newRefsetConceptId)
 			throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		// TODO: Add support for providing a zip RF2 or a refset file to clone off of.
 		// Questions to be answered first: Always use a) latest version for refsetId
@@ -3437,7 +3442,7 @@ public class RefsetController extends BaseController {
 	@RecordMetric
 	public @ResponseBody ResponseEntity<String> resetRefset(@PathVariable final String refsetId) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		if (!authUser.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
 			throw new RestException(false, 403, "Forbidden",
@@ -3484,7 +3489,7 @@ public class RefsetController extends BaseController {
 			@org.springframework.web.bind.annotation.RequestBody(required = true) final SendCommunicationEmailInfo emailInfo)
 			throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		try {
 
 			RefsetService.inviteUserToOrganization(authUser, refsetInternalId, emailInfo.getRecipient(),

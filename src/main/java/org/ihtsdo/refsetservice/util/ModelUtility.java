@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Utility for interacting with domain objects. TODO: clean this up and reconcile with NormUtility (push all logic here).
@@ -241,6 +242,27 @@ public final class ModelUtility {
 
         final ObjectMapper mapper = new ObjectMapper();
         return mapper.writeValueAsString(object);
+    }
+
+    /**
+     * Returns the json for graph with placeholder text for authToken and password.
+     *
+     * @param object the object
+     * @return the json for graph
+     * @throws Exception the exception
+     */
+    public static String logJson(final Object object) throws Exception {
+
+        final ObjectMapper mapper = new ObjectMapper();
+        final JsonNode jsonNode = mapper.valueToTree(object);
+
+        if (jsonNode.has("authToken")) {
+            ((ObjectNode) jsonNode).put("authToken", "******");
+        }
+        if (jsonNode.has("password")) {
+            ((ObjectNode) jsonNode).put("password", "******");
+        }
+        return mapper.writeValueAsString(jsonNode);
     }
 
     /**

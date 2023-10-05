@@ -20,6 +20,7 @@ import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,36 +51,9 @@ public class SecurityController extends BaseController {
 	@SuppressWarnings("unused")
 	private static final Logger LOG = LoggerFactory.getLogger(SecurityController.class);
 
-	/**
-	 * TODO - REMOVE AFTER PERMISSIONS CONVERTED.
-	 *
-	 * @param request the request
-	 * @return the response entity
-	 * @throws Exception the exception
-	 */
-	@RequestMapping(method = RequestMethod.GET, value = "/internalSecurity/convertPermissions")
-	public @ResponseBody ResponseEntity<String> convertPermissions(final HttpServletRequest request) throws Exception {
-
-		final User user = authorizeUser();
-		try (final SecurityService securityService = new SecurityService()) {
-
-			String results = "Didn't work";
-
-			if (user.getUserName().equals("refset-dev") || user.getUserName().equals("twhalen")) {
-
-				ImsSecurityServiceHandler handler = (ImsSecurityServiceHandler) HandlerUtility
-						.newStandardHandlerInstanceWithConfiguration("security.handler", "IMS",
-								SecurityServiceHandler.class);
-				results = handler.convertRolesForAllUsers();
-			}
-
-			return new ResponseEntity<>(results, new HttpHeaders(), HttpStatus.OK);
-
-		} catch (final Exception e) {
-			handleException(e);
-			return null;
-		}
-	}
+    /** The request. */
+    @Autowired
+    private HttpServletRequest request;
 
 	/**
 	 * Returns the user.
@@ -133,7 +107,8 @@ public class SecurityController extends BaseController {
 
 		try (final SecurityService securityService = new SecurityService()) {
 
-			securityService.logout(userName);
+            final String authToken = getJwt(request);
+            securityService.logout(userName, authToken);
 
 			return new ResponseEntity<>(new HttpHeaders(), HttpStatus.OK);
 
