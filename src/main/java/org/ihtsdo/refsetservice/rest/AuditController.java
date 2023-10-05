@@ -9,6 +9,7 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
@@ -28,6 +29,7 @@ import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -54,7 +56,11 @@ public class AuditController extends BaseController {
 
 	/** The Constant LOG. */
 	private static final Logger LOG = LoggerFactory.getLogger(AuditController.class);
-
+    
+	/** The request. */
+    @Autowired
+    private HttpServletRequest request;
+    
 	/**
 	 * Returns the auditEntryImpl.
 	 *
@@ -115,7 +121,7 @@ public class AuditController extends BaseController {
 
 		// Check to make sure parameters were properly bound to variables.
 		checkBinding(bindingResult);
-		authorizeUser();
+		authorizeUser(request);
 
 		try {
 
@@ -159,7 +165,7 @@ public class AuditController extends BaseController {
 			@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult)
 			throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		// Check to make sure parameters were properly bound to variables.
 		checkBinding(bindingResult);

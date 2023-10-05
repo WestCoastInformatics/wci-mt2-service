@@ -13,6 +13,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.util.Arrays;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.MediaType;
 
@@ -35,6 +36,7 @@ import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -67,6 +69,10 @@ public class OrganizationController extends BaseController {
 	/** The Constant LOG. */
 	private static final Logger LOG = LoggerFactory.getLogger(OrganizationController.class);
 
+    /** The request. */
+    @Autowired
+    private HttpServletRequest request;
+    
 	/** Search teams API notes. */
 	private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
 
@@ -97,7 +103,7 @@ public class OrganizationController extends BaseController {
 			throws Exception {
 
 		LOG.info("Get organization {}", id);
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -137,7 +143,7 @@ public class OrganizationController extends BaseController {
 			throws Exception {
 
 		LOG.info("Search organizations: {}", ModelUtility.toJson(searchParameters));
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		// Check to make sure parameters were properly bound to variables.
 		checkBinding(bindingResult);
@@ -176,7 +182,7 @@ public class OrganizationController extends BaseController {
 			@org.springframework.web.bind.annotation.RequestBody final Organization organization) throws Exception {
 
 		LOG.info("Add organization: {}", organization);
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -226,7 +232,7 @@ public class OrganizationController extends BaseController {
 			@org.springframework.web.bind.annotation.RequestBody final Organization organization) throws Exception {
 
 		LOG.info("Update organization: {}", organization);
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		if (organization == null || !org.apache.commons.lang3.StringUtils.equals(id, organization.getId())) {
 
@@ -274,7 +280,7 @@ public class OrganizationController extends BaseController {
 	public ResponseEntity<Void> deleteOrganization(@PathVariable("id") final String id) throws Exception {
 
 		LOG.info("Inactivate organization: {}", id);
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -309,10 +315,10 @@ public class OrganizationController extends BaseController {
 			@RequestParam(value = "includeTeams") final boolean includeTeams) throws Exception {
 
 		LOG.info("Get organization users. Id: {}", id);
-		authorizeUser();
+		authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
-			final User authUser = authorizeUser();
+			final User authUser = authorizeUser(request);
 
 			final Organization organization = OrganizationService.getOrganization(service, authUser, id, true);
 
@@ -347,7 +353,7 @@ public class OrganizationController extends BaseController {
 			throws Exception {
 
 		LOG.info("Get organization teams. Id: {}", id);
-		authorizeUser();
+		authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -381,7 +387,7 @@ public class OrganizationController extends BaseController {
 			throws Exception {
 
 		LOG.info("Get organization teams. Id: {}", id);
-		authorizeUser();
+		authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -417,7 +423,7 @@ public class OrganizationController extends BaseController {
 			final String emails) throws Exception {
 
 		LOG.info("Add user(s): {} to organization: {}.", emails, id);
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		if (StringUtils.isBlank(emails)) {
 			throw new RestException(false, 417, "Expectation failed", "Unexpected blank emails");
@@ -468,7 +474,7 @@ public class OrganizationController extends BaseController {
 			throws Exception {
 
 		LOG.info("Add user: {} to organization: {}.", userId, id);
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -544,7 +550,7 @@ public class OrganizationController extends BaseController {
 			@RequestParam("file") final MultipartFile inputFile) throws Exception {
 
 		LOG.info("Update icon for organization: {}.", id);
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -593,7 +599,7 @@ public class OrganizationController extends BaseController {
 			@PathVariable(value = "id") final String id) throws Exception {
 
 		LOG.info("Delete organization icon: {}", id);
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -649,7 +655,7 @@ public class OrganizationController extends BaseController {
 			@org.springframework.web.bind.annotation.RequestBody(required = true) final SendCommunicationEmailInfo emailInfo)
 			throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try {
 

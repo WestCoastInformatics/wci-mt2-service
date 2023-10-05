@@ -9,6 +9,7 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 
 import org.ihtsdo.refsetservice.app.RecordMetric;
@@ -24,6 +25,7 @@ import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -53,6 +55,10 @@ public class DiscussionController extends BaseController {
 	@SuppressWarnings("unused")
 	private static final Logger LOG = LoggerFactory.getLogger(DiscussionController.class);
 
+    /** The request. */
+    @Autowired
+    private HttpServletRequest request;
+    
 	/**
 	 * Returns a list of discussion threads based on the refset and possibly member
 	 * ID.
@@ -80,7 +86,7 @@ public class DiscussionController extends BaseController {
 			@PathVariable(value = "refsetInternalId") final String refsetInternalId,
 			@RequestParam(required = false) final String conceptId) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		try {
 
 			try (final TerminologyService service = new TerminologyService()) {
@@ -118,7 +124,7 @@ public class DiscussionController extends BaseController {
 	public @ResponseBody ResponseEntity<DiscussionThread> getDiscussion(@PathVariable(value = "id") final String id)
 			throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -154,7 +160,7 @@ public class DiscussionController extends BaseController {
 	public @ResponseBody ResponseEntity<DiscussionThread> createDiscussionThread(
 			@RequestBody final DiscussionThread thread) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -213,7 +219,7 @@ public class DiscussionController extends BaseController {
 			@PathVariable(value = "threadId") final String threadId, @RequestBody final DiscussionPost post)
 			throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		try (final TerminologyService service = new TerminologyService()) {
 
 			final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
@@ -277,7 +283,7 @@ public class DiscussionController extends BaseController {
 			@PathVariable(value = "threadId") final String threadId, @RequestBody final DiscussionThread thread)
 			throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		try (final TerminologyService service = new TerminologyService()) {
 
 			final DiscussionThread originalThread = service.get(threadId, DiscussionThread.class);
@@ -347,7 +353,7 @@ public class DiscussionController extends BaseController {
 			@PathVariable(value = "threadId") final String threadId, @RequestParam final String status)
 			throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		try (final TerminologyService service = new TerminologyService()) {
 
 			final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
@@ -410,7 +416,7 @@ public class DiscussionController extends BaseController {
 			@PathVariable(value = "threadId") final String threadId, @RequestParam final boolean isPrivate)
 			throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -478,7 +484,7 @@ public class DiscussionController extends BaseController {
 			@PathVariable(value = "threadId") final String threadId, @RequestParam final String visibility)
 			throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		try (final TerminologyService service = new TerminologyService()) {
 
 			final DiscussionThread thread = service.get(threadId, DiscussionThread.class);
@@ -544,7 +550,7 @@ public class DiscussionController extends BaseController {
 			@PathVariable(value = "postId") final String postId, @RequestParam final boolean isPrivate)
 			throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -627,7 +633,7 @@ public class DiscussionController extends BaseController {
 			@PathVariable(value = "postId") final String postId, @RequestBody final DiscussionPost updatedPost)
 			throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try (final TerminologyService service = new TerminologyService()) {
 
@@ -713,7 +719,7 @@ public class DiscussionController extends BaseController {
 			@PathVariable(value = "threadId") final String threadId,
 			@PathVariable(value = "postId") final String postId) throws Exception {
 
-		final User user = authorizeUser();
+		final User user = authorizeUser(request);
 		try (final TerminologyService service = new TerminologyService()) {
 
 			service.setModifiedBy(user.getUserName());
@@ -750,7 +756,7 @@ public class DiscussionController extends BaseController {
 	public @ResponseBody ResponseEntity<String> deleteDiscussionThread(
 			@PathVariable(value = "threadId") final String threadId) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		try (final TerminologyService service = new TerminologyService()) {
 
 			service.setModifiedBy(authUser.getUserName());

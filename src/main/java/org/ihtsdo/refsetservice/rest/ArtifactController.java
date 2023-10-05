@@ -12,6 +12,7 @@ package org.ihtsdo.refsetservice.rest;
 import java.io.File;
 import java.nio.file.Files;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.io.FilenameUtils;
@@ -27,6 +28,7 @@ import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -64,6 +66,10 @@ public class ArtifactController extends BaseController {
 	@SuppressWarnings("unused")
 	private static final Logger LOG = LoggerFactory.getLogger(ArtifactController.class);
 
+    /** The request. */
+    @Autowired
+    private HttpServletRequest request;
+    
 	/**
 	 * Returns the artifact entry.
 	 *
@@ -156,7 +162,7 @@ public class ArtifactController extends BaseController {
 	public ResponseEntity<?> addArtifact(@RequestParam final String artifactStr,
 			@RequestParam("file") final MultipartFile inputFile) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try {
 
@@ -212,7 +218,7 @@ public class ArtifactController extends BaseController {
 	public ResponseEntity updateArtifact(final @PathVariable String id,
 			final @org.springframework.web.bind.annotation.RequestBody String artifactStr) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try {
 
@@ -258,7 +264,7 @@ public class ArtifactController extends BaseController {
 	@RecordMetric
 	public ResponseEntity inactivateArtifact(final @PathVariable String id) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 		try {
 
 			final Artifact artifact = ArtifactService.getArtifact(id);

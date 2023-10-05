@@ -12,6 +12,7 @@ package org.ihtsdo.refsetservice.rest;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.MediaType;
 
@@ -29,6 +30,7 @@ import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -59,6 +61,10 @@ public class ProjectController extends BaseController {
 	/** The Constant LOG. */
 	private static final Logger LOG = LoggerFactory.getLogger(ProjectController.class);
 
+    /** The request. */
+    @Autowired
+    private HttpServletRequest request;
+    
 	/** Search projects API note. */
 	private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
 
@@ -92,7 +98,7 @@ public class ProjectController extends BaseController {
 			throws Exception {
 
 		LOG.info("Project: id: " + id);
-		authorizeUser();
+		authorizeUser(request);
 
 		try {
 			final Project project = ProjectService.getProject(id, includeMembers);
@@ -126,7 +132,7 @@ public class ProjectController extends BaseController {
 			throws Exception {
 
 		LOG.info("Project: id: " + id);
-		authorizeUser();
+		authorizeUser(request);
 
 		try {
 
@@ -172,7 +178,7 @@ public class ProjectController extends BaseController {
 			@RequestParam(value = "icludeTeamDetails", required = false, defaultValue = "false") final Boolean includeTeamDetails)
 			throws Exception {
 
-		authorizeUser();
+		authorizeUser(request);
 
 		// Check to make sure parameters were properly bound to variables.
 		checkBinding(bindingResult);
@@ -181,7 +187,7 @@ public class ProjectController extends BaseController {
 		final boolean addTeamDetails = includeTeamDetails != null && includeTeamDetails;
 
 		try {
-			final User authUser = authorizeUser();
+			final User authUser = authorizeUser(request);
 			final ResultList<Project> results = ProjectService.searchProjects(authUser, searchParameters);
 
 			if (results == null || results.getItems() == null || results.getItems().isEmpty()) {
@@ -246,7 +252,7 @@ public class ProjectController extends BaseController {
 	public @ResponseBody ResponseEntity<Project> addProject(
 			@org.springframework.web.bind.annotation.RequestBody final Project project) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		try {
 
@@ -321,7 +327,7 @@ public class ProjectController extends BaseController {
 	public @ResponseBody ResponseEntity<Project> updateProject(@PathVariable(value = "id") final String id,
 			@org.springframework.web.bind.annotation.RequestBody final Project project) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		if (project == null || !org.apache.commons.lang3.StringUtils.equals(id, project.getId())) {
 
@@ -367,7 +373,7 @@ public class ProjectController extends BaseController {
 	@RecordMetric
 	public ResponseEntity<Void> deleteProject(@PathVariable("id") final String id) throws Exception {
 
-		final User authUser = authorizeUser();
+		final User authUser = authorizeUser(request);
 
 		ProjectService.getProject(id, false);
 
