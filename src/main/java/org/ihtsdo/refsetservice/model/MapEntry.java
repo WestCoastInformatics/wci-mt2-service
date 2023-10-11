@@ -1,91 +1,48 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 package org.ihtsdo.refsetservice.model;
 
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.persistence.CollectionTable;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToMany;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
-import javax.xml.bind.annotation.XmlTransient;
-
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
-import org.hibernate.search.engine.backend.types.Projectable;
-import org.hibernate.search.engine.backend.types.Searchable;
-import org.hibernate.search.engine.backend.types.Sortable;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmbedded;
-
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
-import io.swagger.v3.oas.annotations.media.Schema;
-
 /**
  * The Map Entry object.
  *
  */
-@Entity
-@Schema(description = "Represents a map entry")
-@Table(name = "map_entries")
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class MapEntry extends AbstractHasId {
+public class MapEntry {
 
-    /** The map record. */
-    @ManyToOne(targetEntity = MapRecord.class, optional = false)
-    // @ContainedIn
-    @Fetch(FetchMode.JOIN)
-    private MapRecord mapRecord;
-
-    /** The map advices. */
-    @ManyToMany(targetEntity = MapAdvice.class, fetch = FetchType.LAZY)
-    @CollectionTable(name = "map_entries_map_advices", joinColumns = @JoinColumn(name = "map_entries_id"))
-    @IndexedEmbedded(targetType = MapAdvice.class)
-    private Set<MapAdvice> mapAdvices = new HashSet<>();
+    /** The advices. */
+    private Set<String> advices = new HashSet<>();
 
     /** The additional map entry info. */
-    @ManyToMany(targetEntity = AdditionalMapEntryInfo.class, fetch = FetchType.LAZY)
-    @CollectionTable(name = "map_entries_additional_map_entry_info", joinColumns = @JoinColumn(name = "map_entries_id"))
-    @IndexedEmbedded(targetType = AdditionalMapEntryInfo.class)
     private Set<AdditionalMapEntryInfo> additionalMapEntryInfos = new HashSet<>();
 
     /** The target. */
-    @Column(nullable = true, length = 4000)
-    private String targetId;
+    private String toCode;
 
     /** The target name. */
-    @Column(nullable = true, length = 4000)
-    @FullTextField(analyzer = "noStopWord")
-    private String targetName;
+    private String toName;
 
     /** The rule. */
-    @Column(nullable = true, length = 4000)
     private String rule;
 
     /** The map priority. */
-    @Column(nullable = false)
     private int priority;
 
-    /** The map relation. */
-    @OneToOne(targetEntity = MapRelation.class, fetch = FetchType.EAGER)
-    @IndexedEmbedded(targetType = MapRelation.class)
-    @JsonIgnoreProperties({
-        "hibernateLazyInitializer", "handler"
-    })
-    private MapRelation mapRelation;
+    /** The relation. */
+    private String relation;
 
     /** The map block. */
-    @Column(nullable = false)
     private int block;
 
     /** The index (map group). */
-    @Column(nullable = false)
     private int group;
 
     /**
@@ -97,154 +54,86 @@ public class MapEntry extends AbstractHasId {
     }
 
     /**
-     * Constructor using fields.
+     * Returns the to code.
      *
-     * @param id the id
-     * @param mapRecord the map record
-     * @param mapAdvices the map advices
-     * @param targetId the target id
-     * @param targetName the target name
-     * @param rule the rule
-     * @param priority the map priority
-     * @param mapRelation the map relation
-     * @param block the map block
-     * @param group the map group
+     * @return the to code
      */
-    public MapEntry(final Long id, final MapRecord mapRecord, final Set<MapAdvice> mapAdvices, final String targetId, final String targetName,
-        final String rule, final int priority, final MapRelation mapRelation, final int block, final int group) {
+    public String getToCode() {
 
-        super();
-        this.mapRecord = mapRecord;
-        this.mapAdvices = mapAdvices;
-        this.targetId = targetId;
-        this.targetName = targetName;
-        this.rule = rule;
-        this.priority = priority;
-        this.mapRelation = mapRelation;
-        this.block = block;
-        this.group = group;
+        return toCode;
     }
 
     /**
-     * Deep copy constructor.
+     * Sets the to code.
      *
-     * @param mapEntry the map entry
-     * @param keepIds the keep ids
+     * @param toCode the to code
      */
-    public MapEntry(final MapEntry mapEntry, final boolean keepIds) {
+    public void setToCode(final String toCode) {
 
-        super();
+        this.toCode = toCode;
+    }
 
-        // copy id, otherwise leave null
-        if (keepIds) {
-            super.setId(mapEntry.getId());
-        }
-        this.mapRecord = mapEntry.getMapRecord();
+    /**
+     * Returns the to name.
+     *
+     * @return the to name
+     */
+    public String getToName() {
 
-        // copy basic type fields (non-persisted objects)
-        this.targetId = mapEntry.getTargetId();
-        this.targetName = mapEntry.getTargetName();
-        this.rule = mapEntry.getRule();
-        this.priority = mapEntry.getMapPriority();
-        this.block = mapEntry.getMapBlock();
-        this.group = mapEntry.getMapGroup();
+        return this.toName;
+    }
 
-        // copy advices
-        for (final MapAdvice mapAdvice : mapEntry.getMapAdvices()) {
-            addMapAdvice(new MapAdvice(mapAdvice));
-        }
+    /**
+     * Sets the to name.
+     *
+     * @param toName the to name
+     */
+    public void setToName(final String toName) {
 
-        // copy entries
-        if (mapEntry.getMapRelation() != null) {
-            this.mapRelation = new MapRelation(mapEntry.getMapRelation());
-        }
+        this.toName = toName;
 
     }
 
     /**
-     * Gets the target id.
+     * Gets the relation.
      *
-     * @return the target id
+     * @return the relation
      */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
-    public String getTargetId() {
+    public String getRelation() {
 
-        return targetId;
+        return relation;
     }
 
     /**
-     * Sets the target id.
+     * Sets the relation.
      *
-     * @param targetId the new target id
+     * @param relation the relation
      */
-    public void setTargetId(final String targetId) {
+    public void setRelation(final String relation) {
 
-        this.targetId = targetId;
+        this.relation = relation;
     }
 
     /**
-     * Gets the target name.
+     * Gets the advices.
      *
-     * @return the target name
+     * @return the advices
      */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
-    @FullTextField(analyzer = "noStopWord")
-    public String getTargetName() {
+    public Set<String> getAdvices() {
 
-        return this.targetName;
+        if (advices == null)
+            advices = new HashSet<>();// ensures proper serialization
+        return advices;
     }
 
     /**
-     * Sets the target name.
+     * Sets the advices.
      *
-     * @param targetName the new target name
+     * @param advices the advices
      */
-    public void setTargetName(final String targetName) {
+    public void setAdvices(final Set<String> advices) {
 
-        this.targetName = targetName;
-
-    }
-
-    /**
-     * Gets the map relation.
-     *
-     * @return the map relation
-     */
-    public MapRelation getMapRelation() {
-
-        return mapRelation;
-    }
-
-    /**
-     * Sets the map relation.
-     *
-     * @param mapRelation the new map relation
-     */
-    public void setMapRelation(final MapRelation mapRelation) {
-
-        this.mapRelation = mapRelation;
-    }
-
-    /**
-     * Gets the map advices.
-     *
-     * @return the map advices
-     */
-    public Set<MapAdvice> getMapAdvices() {
-
-        if (mapAdvices == null)
-            mapAdvices = new HashSet<>();// ensures proper serialization
-        return mapAdvices;
-    }
-
-    /**
-     * Sets the map advices.
-     *
-     * @param mapAdvices the new map advices
-     */
-    public void setMapAdvices(final Set<MapAdvice> mapAdvices) {
-
-        this.mapAdvices = mapAdvices;
+        this.advices = advices;
     }
 
     /**
@@ -270,23 +159,23 @@ public class MapEntry extends AbstractHasId {
     }
 
     /**
-     * Adds the map advice.
+     * Adds the advice.
      *
-     * @param mapAdvice the map advice
+     * @param advice the advice
      */
-    public void addMapAdvice(final MapAdvice mapAdvice) {
+    public void addAdvice(final String advice) {
 
-        mapAdvices.add(mapAdvice);
+        advices.add(advice);
     }
 
     /**
-     * Removes the map advice.
+     * Removes the advice.
      *
-     * @param mapAdvice the map advice
+     * @param advice the advice
      */
-    public void removeMapAdvice(final MapAdvice mapAdvice) {
+    public void removeAdvice(final String advice) {
 
-        mapAdvices.remove(mapAdvice);
+        advices.remove(advice);
     }
 
     /**
@@ -294,7 +183,6 @@ public class MapEntry extends AbstractHasId {
      *
      * @return the rule
      */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getRule() {
 
         return rule;
@@ -311,292 +199,246 @@ public class MapEntry extends AbstractHasId {
     }
 
     /**
-     * Gets the map priority.
+     * Returns the priority.
      *
-     * @return the map priority
+     * @return the priority
      */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
-    public int getMapPriority() {
+    public int getPriority() {
 
         return priority;
     }
 
     /**
-     * Sets the map priority.
+     * Sets the priority.
      *
-     * @param priority the new map priority
+     * @param priority the priority
      */
-    public void setMapPriority(final int priority) {
+    public void setPriority(final int priority) {
 
         this.priority = priority;
     }
 
     /**
-     * Gets the map record.
+     * Returns the group.
      *
-     * @return the map record
+     * @return the group
      */
-    @XmlTransient
-    public MapRecord getMapRecord() {
-
-        return this.mapRecord;
-    }
-
-    /**
-     * Sets the map record.
-     *
-     * @param mapRecord the new map record
-     */
-    public void setMapRecord(final MapRecord mapRecord) {
-
-        this.mapRecord = mapRecord;
-    }
-
-    /**
-     * Returns the map record id.
-     *
-     * @return the map record id
-     */
-    public String getMapRecordId() {
-
-        return mapRecord != null ? mapRecord.getId() : null;
-    }
-
-    /**
-     * Sets the map record based on serialized id Necessary when receiving a serialized entry with only mapRecordId.
-     *
-     * @param mapRecordId the map record id
-     */
-    public void setMapRecordId(final String mapRecordId) {
-
-        if (this.mapRecord == null) {
-            this.mapRecord = new MapRecord();
-            this.mapRecord.setId(mapRecordId);
-        }
-    }
-
-    /**
-     * Gets the map group.
-     *
-     * @return the map group
-     */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
-    public int getMapGroup() {
+    public int getGroup() {
 
         return this.group;
     }
 
     /**
-     * Sets the map group.
+     * Sets the group.
      *
-     * @param group the new map group
+     * @param group the group
      */
-    public void setMapGroup(final int group) {
+    public void setGroup(final int group) {
 
         this.group = group;
 
     }
 
     /**
-     * Gets the map block.
+     * Returns the block.
      *
-     * @return the map block
+     * @return the block
      */
-    public int getMapBlock() {
+    public int getBlock() {
 
         return this.block;
     }
 
     /**
-     * Sets the map block.
+     * Sets the block.
      *
-     * @param block the new map block
+     * @param block the new block
      */
-    public void setMapBlock(final int block) {
+    public void setBlock(final int block) {
 
         this.block = block;
 
     }
 
-    /**
-     * Hash code.
-     *
-     * @return the int
-     */
-    /* see superclass */
-    @Override
-    public int hashCode() {
-
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((mapAdvices == null) ? 0 : mapAdvices.hashCode());
-        result = prime * result + block;
-        result = prime * result + group;
-        result = prime * result + priority;
-
-        // note: use map record id instead of map record to prevent hashCode()
-        // circular reference chain
-        result = prime * result + ((mapRecord.getId() == null) ? 0 : mapRecord.getId().hashCode());
-        result = prime * result + ((mapRelation == null) ? 0 : mapRelation.hashCode());
-        result = prime * result + ((rule == null) ? 0 : rule.hashCode());
-        result = prime * result + ((targetId == null) ? 0 : targetId.hashCode());
-        result = prime * result + ((targetName == null) ? 0 : targetName.hashCode());
-
-        return result;
-    }
-
-    /**
-     * Equals.
-     *
-     * @param obj the obj
-     * @return true, if successful
-     */
-    /* see superclass */
-    @Override
-    public boolean equals(final Object obj) {
-
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        final MapEntry other = (MapEntry) obj;
-        if (mapAdvices == null) {
-            if (other.mapAdvices != null)
-                return false;
-        } else if (!mapAdvices.equals(other.mapAdvices))
-            return false;
-        if (block != other.block)
-            return false;
-        if (group != other.group)
-            return false;
-        if (priority != other.priority)
-            return false;
-
-        // note: only compare map record id, otherwise equals() circular
-        // reference chain
-        if (mapRecord.getId() == null) {
-            if (other.mapRecord.getId() != null)
-                return false;
-        } else if (!mapRecord.getId().equals(other.mapRecord.getId()))
-            return false;
-        if (mapRelation == null) {
-            if (other.mapRelation != null)
-                return false;
-        } else if (!mapRelation.equals(other.mapRelation))
-            return false;
-        if (rule == null) {
-            if (other.rule != null)
-                return false;
-        } else if (!rule.equals(other.rule))
-            return false;
-        if (targetId == null) {
-            if (other.targetId != null)
-                return false;
-        } else if (!targetId.equals(other.targetId))
-            return false;
-        if (targetName == null) {
-            if (other.targetName != null)
-                return false;
-        } else if (!targetName.equals(other.targetName))
-            return false;
-        return true;
-    }
-
-    /**
-     * To string.
-     *
-     * @return the string
-     */
-    /* see superclass */
-    @Override
-    public String toString() {
-
-        return "MapEntry [id=" + super.getId() + ", mapRecord=" + (mapRecord == null ? "" : mapRecord.getId()) + ", mapAdvices="
-            + (mapAdvices == null ? "null" : mapAdvices) + ", targetId=" + targetId + ", targetName=" + targetName + ", rule=" + rule + ", priority=" + priority
-            + ", mapRelation=" + (mapRelation == null ? "null" : mapRelation) + ", block=" + block + ", group=" + group + "]";
-    }
-
-    /**
-     * Checks if is equivalent.
-     *
-     * @param me the me
-     * @return true, if is equivalent
-     */
-    public boolean isEquivalent(final MapEntry me) {
-
-        // if comparison entry is null, return false
-        if (me == null) {
-            return false;
-        }
-
-        // targets must be equal
-        final String id1 = this.targetId == null ? "" : this.targetId;
-        final String id2 = me.getTargetId() == null ? "" : me.getTargetId();
-        if (!id1.equals(id2)) {
-            return false;
-        }
-
-        // rules must be identical
-        if (this.rule == null && me.getRule() != null) {
-            return false;
-        }
-        if (this.rule != null && !this.rule.equals(me.getRule())) {
-            return false;
-        }
-
-        // relation must be identical
-        if (this.mapRelation != null) {
-
-            // if both non-null, return false if non equal
-            if (me.getMapRelation() != null) {
-                if (!this.mapRelation.equals(me.getMapRelation())) {
-                    return false;
-                }
-
-                // return false if this relation is non-null and me's relation
-                // is null
-            } else {
-                return false;
-            }
-
-            // if this relation is null and me's relation is non-null, return
-            // false
-        } else if (me.getMapRelation() != null) {
-            return false;
-        }
-        // advices must be identical
-        if (this.mapAdvices == null && me.getMapAdvices() != null) {
-            return false;
-        } else if (this.mapAdvices != null && me.getMapAdvices() == null) {
-            return false;
-        } else if (mapAdvices != null && mapAdvices.size() != me.getMapAdvices().size()) {
-            return false;
-        } else if (mapAdvices != null) {
-            for (final MapAdvice ma : this.mapAdvices) {
-                if (!me.getMapAdvices().contains(ma)) {
-                    return false;
-                }
-            }
-        }
-
-        // additional map entry info must be identical
-        if (this.additionalMapEntryInfos == null && me.getAdditionalMapEntryInfos() != null) {
-            return false;
-        } else if (this.additionalMapEntryInfos != null && me.getAdditionalMapEntryInfos() == null) {
-            return false;
-        } else if (additionalMapEntryInfos != null && additionalMapEntryInfos.size() != me.getAdditionalMapEntryInfos().size()) {
-            return false;
-        } else if (additionalMapEntryInfos != null) {
-            for (final AdditionalMapEntryInfo mi : this.additionalMapEntryInfos) {
-                if (!me.getAdditionalMapEntryInfos().contains(mi)) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
+    // /**
+    // * Hash code.
+    // *
+    // * @return the int
+    // */
+    // /* see superclass */
+    // @Override
+    // public int hashCode() {
+    //
+    // final int prime = 31;
+    // int result = 1;
+    // result = prime * result + ((advices == null) ? 0 : advices.hashCode());
+    // result = prime * result + block;
+    // result = prime * result + group;
+    // result = prime * result + priority;
+    //
+    // // note: use map record id instead of map record to prevent hashCode()
+    // // circular reference chain
+    // result = prime * result + ((mapRecord.getId() == null) ? 0 : mapRecord.getId().hashCode());
+    // result = prime * result + ((relation == null) ? 0 : relation.hashCode());
+    // result = prime * result + ((rule == null) ? 0 : rule.hashCode());
+    // result = prime * result + ((toId == null) ? 0 : toId.hashCode());
+    // result = prime * result + ((toName == null) ? 0 : toName.hashCode());
+    //
+    // return result;
+    // }
+    //
+    // /**
+    // * Equals.
+    // *
+    // * @param obj the obj
+    // * @return true, if successful
+    // */
+    // /* see superclass */
+    // @Override
+    // public boolean equals(final Object obj) {
+    //
+    // if (this == obj)
+    // return true;
+    // if (obj == null)
+    // return false;
+    // if (getClass() != obj.getClass())
+    // return false;
+    // final MapEntry other = (MapEntry) obj;
+    // if (advices == null) {
+    // if (other.advices != null)
+    // return false;
+    // } else if (!advices.equals(other.advices))
+    // return false;
+    // if (block != other.block)
+    // return false;
+    // if (group != other.group)
+    // return false;
+    // if (priority != other.priority)
+    // return false;
+    //
+    // // note: only compare map record id, otherwise equals() circular
+    // // reference chain
+    // if (mapRecord.getId() == null) {
+    // if (other.mapRecord.getId() != null)
+    // return false;
+    // } else if (!mapRecord.getId().equals(other.mapRecord.getId()))
+    // return false;
+    // if (relation == null) {
+    // if (other.relation != null)
+    // return false;
+    // } else if (!relation.equals(other.relation))
+    // return false;
+    // if (rule == null) {
+    // if (other.rule != null)
+    // return false;
+    // } else if (!rule.equals(other.rule))
+    // return false;
+    // if (toId == null) {
+    // if (other.toId != null)
+    // return false;
+    // } else if (!toId.equals(other.toId))
+    // return false;
+    // if (toName == null) {
+    // if (other.toName != null)
+    // return false;
+    // } else if (!toName.equals(other.toName))
+    // return false;
+    // return true;
+    // }
+    //
+    // /**
+    // * To string.
+    // *
+    // * @return the string
+    // */
+    // /* see superclass */
+    // @Override
+    // public String toString() {
+    //
+    // return "MapEntry [id=" + super.getId() + ", mapRecord=" + (mapRecord == null ? "" : mapRecord.getId()) + ", mapAdvices="
+    // + (advices == null ? "null" : advices) + ", targetId=" + toId + ", targetName=" + toName + ", rule=" + rule + ", priority=" + priority
+    // + ", mapRelation=" + (relation == null ? "null" : relation) + ", block=" + block + ", group=" + group + "]";
+    // }
+    //
+    // /**
+    // * Checks if is equivalent.
+    // *
+    // * @param me the me
+    // * @return true, if is equivalent
+    // */
+    // public boolean isEquivalent(final MapEntry me) {
+    //
+    // // if comparison entry is null, return false
+    // if (me == null) {
+    // return false;
+    // }
+    //
+    // // targets must be equal
+    // final String id1 = this.toId == null ? "" : this.toId;
+    // final String id2 = me.getTargetId() == null ? "" : me.getTargetId();
+    // if (!id1.equals(id2)) {
+    // return false;
+    // }
+    //
+    // // rules must be identical
+    // if (this.rule == null && me.getRule() != null) {
+    // return false;
+    // }
+    // if (this.rule != null && !this.rule.equals(me.getRule())) {
+    // return false;
+    // }
+    //
+    // // relation must be identical
+    // if (this.relation != null) {
+    //
+    // // if both non-null, return false if non equal
+    // if (me.getMapRelation() != null) {
+    // if (!this.relation.equals(me.getMapRelation())) {
+    // return false;
+    // }
+    //
+    // // return false if this relation is non-null and me's relation
+    // // is null
+    // } else {
+    // return false;
+    // }
+    //
+    // // if this relation is null and me's relation is non-null, return
+    // // false
+    // } else if (me.getMapRelation() != null) {
+    // return false;
+    // }
+    // // advices must be identical
+    // if (this.advices == null && me.getMapAdvices() != null) {
+    // return false;
+    // } else if (this.advices != null && me.getMapAdvices() == null) {
+    // return false;
+    // } else if (advices != null && advices.size() != me.getMapAdvices().size()) {
+    // return false;
+    // } else if (advices != null) {
+    // for (final MapAdvice ma : this.advices) {
+    // if (!me.getMapAdvices().contains(ma)) {
+    // return false;
+    // }
+    // }
+    // }
+    //
+    // // additional map entry info must be identical
+    // if (this.additionalMapEntryInfos == null && me.getAdditionalMapEntryInfos() != null) {
+    // return false;
+    // } else if (this.additionalMapEntryInfos != null && me.getAdditionalMapEntryInfos() == null) {
+    // return false;
+    // } else if (additionalMapEntryInfos != null && additionalMapEntryInfos.size() != me.getAdditionalMapEntryInfos().size()) {
+    // return false;
+    // } else if (additionalMapEntryInfos != null) {
+    // for (final AdditionalMapEntryInfo mi : this.additionalMapEntryInfos) {
+    // if (!me.getAdditionalMapEntryInfos().contains(mi)) {
+    // return false;
+    // }
+    // }
+    // }
+    //
+    // return true;
+    // }
 
 }

@@ -16,6 +16,8 @@ import java.util.Set;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Configurable;
 import org.ihtsdo.refsetservice.model.Edition;
+import org.ihtsdo.refsetservice.model.MapSet;
+import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
@@ -505,5 +507,34 @@ public interface TerminologyServerHandler extends Configurable {
      */
     public String modifyUpgradeConcept(final TerminologyService service, final User user, final Refset refset, final String inactiveConceptId,
         final String replacementConceptId, final UpgradeReplacementConcept manualReplacementConcept, final String changed) throws Exception;
+   
+
+    /*Mapping Service calls*/
     
+    
+    /**
+     * Returns the map sets.
+     *
+     * @return the map sets
+     * @throws Exception the exception
+     */
+    public List<MapSet> getMapSets() throws Exception;
+    
+    /**
+     * Returns the mappings.
+     *
+     * @param mapSet the map set
+     * @return the mappings
+     * @throws Exception the exception
+     */
+    public List<Mapping> getMappings(MapSet mapSet) throws Exception;
+    
+    /**
+     * Returns the concept.
+     *
+     * @param code the code
+     * @return the concept
+     * @throws Exception the exception
+     */
+    public Concept getConcept(String code) throws Exception;
 }

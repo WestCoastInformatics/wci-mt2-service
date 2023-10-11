@@ -9,6 +9,7 @@
  */
 package org.ihtsdo.refsetservice.handler;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.channels.Channels;
@@ -42,6 +43,9 @@ import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
+import org.ihtsdo.refsetservice.model.MapEntry;
+import org.ihtsdo.refsetservice.model.MapSet;
+import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RestException;
@@ -4231,6 +4235,27 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 		}
 	}
 
+    @Override
+    public List<MapSet> getMapSets() throws Exception {
+        // N/A
+        return null;
+    }
+    
+    /* see superclass */
+    @Override
+    public List<Mapping> getMappings(MapSet mapSet) throws Exception {
+        // N/A
+        return null;
+    }
+    
+    /* see superclass */
+    @Override
+    public Concept getConcept(String code) throws Exception {
+        // N/A
+        return null;
+    }
+
+	
 	/* see superclass */
 	@Override
 	public String getName() {
