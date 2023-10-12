@@ -93,7 +93,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
      * REFSET FUNCTIONALITY
      * 
      */
-    
+
     /* see superclass */
     @Override
     public String createBranch(final String parentBranchPath, final String branchName) throws Exception {
@@ -4082,41 +4082,42 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             RefsetMemberService.REFSETS_BEING_UPDATED.remove(refset.getId());
         }
     }
-    
+
     /*
      * 
      * MAPPING FUNCTIONALITY
      * 
      */
-    
+
     /* see superclass */
     @Override
     public List<MapSet> getMapSets() throws Exception {
+
         File f = new File(handlerProperties.getProperty("dir") + "/MapSets.json");
-        if(!f.exists()) {
+        if (!f.exists()) {
             LOG.error("MapSet file doesn't exist: " + f.getPath());
             return null;
         }
-        
+
         ArrayList<MapSet> mapSets = new ArrayList<>();
-        
+
         final ObjectMapper mapper = new ObjectMapper();
-        
+
         final JsonNode root = mapper.readTree(f.toString());
         final JsonNode mapSetsBatch = root.get("items");
-        
+
         final Iterator<JsonNode> itemIterator = mapSetsBatch.iterator();
 
         // parse items to retrieve matching concept
         while (itemIterator.hasNext()) {
 
             final JsonNode mapSetNode = itemIterator.next();
-            
+
             final MapSet mapSet = new MapSet();
             mapSet.setRefSetId(mapSetNode.get("id").asText());
             mapSet.setModuleId(mapSetNode.get("moduleId").asText());
 
-            //Set refset name to FSN if it exists, defaulting to PT if not.
+            // Set refset name to FSN if it exists, defaulting to PT if not.
             if (mapSetNode.get("pt") != null) {
 
                 mapSet.setRefSetName(mapSetNode.get("pt").get("term").asText());
@@ -4125,58 +4126,111 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                 mapSet.setRefSetName(mapSetNode.get("fsn").get("term").asText());
             }
-            
+
             mapSets.add(mapSet);
         }
-        
+
         return mapSets;
     }
-    
+
+    /* see superclass */
+    @Override
+    public MapSet getMapSet(String code) throws Exception {
+
+        File f = new File(handlerProperties.getProperty("dir") + "/MapSets.json");
+        if (!f.exists()) {
+            LOG.error("MapSet file doesn't exist: " + f.getPath());
+            return null;
+        }
+
+        final ObjectMapper mapper = new ObjectMapper();
+
+        final JsonNode root = mapper.readTree(f.toString());
+        final JsonNode mapSetsBatch = root.get("items");
+
+        final Iterator<JsonNode> itemIterator = mapSetsBatch.iterator();
+
+        // parse items to retrieve matching concept
+        while (itemIterator.hasNext()) {
+
+            final JsonNode mapSetNode = itemIterator.next();
+
+            // Pull the requested mapSet
+            if (!(mapSetNode.get("conceptId").asText().equals(code))) {
+                continue;
+            }
+
+            final MapSet mapSet = new MapSet();
+            mapSet.setRefSetId(mapSetNode.get("id").asText());
+            mapSet.setModuleId(mapSetNode.get("moduleId").asText());
+
+            // Set refset name to FSN if it exists, defaulting to PT if not.
+            if (mapSetNode.get("pt") != null) {
+
+                mapSet.setRefSetName(mapSetNode.get("pt").get("term").asText());
+            }
+            if (mapSetNode.get("fsn") != null && mapSetNode.get("fsn").get("term") != null) {
+
+                mapSet.setRefSetName(mapSetNode.get("fsn").get("term").asText());
+            }
+
+            JsonNode additionalFields = mapSetNode.get("additionalFields");
+
+            mapSet.setFromTerminology(additionalFields.get("fromTerminology").asText());
+            mapSet.setToTerminology(additionalFields.get("toTerminology").asText());
+
+            return mapSet;
+        }
+
+        return null;
+    }
+
     /* see superclass */
     @Override
     public List<Mapping> getMappings(MapSet mapSet) throws Exception {
+
         File f = new File(handlerProperties.getProperty("dir") + "/Mappings.json");
-        if(!f.exists()) {
+        if (!f.exists()) {
             LOG.error("Mappings file doesn't exist: " + f.getPath());
             return null;
         }
-        
-        Map<String,Mapping> conceptIdToMappingMap = new HashMap<>();
-        
+
+        Map<String, Mapping> conceptIdToMappingMap = new HashMap<>();
+
         final ObjectMapper mapper = new ObjectMapper();
-        
+
         final JsonNode root = mapper.readTree(f.toString());
         final JsonNode mappingsBatch = root.get("items");
-        
+
         final Iterator<JsonNode> itemIterator = mappingsBatch.iterator();
 
         // parse items to retrieve matching concept
         while (itemIterator.hasNext()) {
 
             final JsonNode mappingNode = itemIterator.next();
-            
+
             // Only process active mappings from the correct mapset
             if (!(mappingNode.get("refsetId").asText().equals(mapSet.getRefSetId()) && mappingNode.get("active").asText().equals("true"))) {
                 continue;
             }
-            
-            //If this is the first time a fromConcept is encountered, set up the mapping and add it to the tracker
-            if(!conceptIdToMappingMap.containsKey(mappingNode.get("referencedComponentId").asText())) {
+
+            // If this is the first time a fromConcept is encountered, set up the mapping and add it to the tracker
+            if (!conceptIdToMappingMap.containsKey(mappingNode.get("referencedComponentId").asText())) {
                 final Mapping mapping = new Mapping();
                 mapping.setCode(mappingNode.get("referencedComponentId").asText());
-                mapping.setName(getConcept(mapping.getCode()).getName());
+                mapping.setName(getConcept(mapSet.getFromTerminology(), mapping.getCode()).getName());
                 mapping.setMapSetId(mapSet.getId());
                 mapping.setMapEntries(new ArrayList<>());
-                
+
                 conceptIdToMappingMap.put(mappingNode.get("referencedComponentId").asText(), mapping);
             }
-            
-            //Add an entry to the mapping
+
+            // Add an entry to the mapping
             Mapping mapping = conceptIdToMappingMap.get(mappingNode.get("referencedComponentId").asText());
             MapEntry mapEntry = new MapEntry();
-            
+
             JsonNode additionalFields = mappingNode.get("additionalFields");
-            
+
             mapEntry.setRule(additionalFields.get("mapRule").asText());
             mapEntry.setPriority(additionalFields.get("mapPriority").asInt());
             mapEntry.setGroup(additionalFields.get("mapGroup").asInt());
@@ -4185,49 +4239,50 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             advices.add(additionalFields.get("mapAdvice").asText());
             mapEntry.setAdvices(advices);
 
-            Concept relationConcept = getConcept(additionalFields.get("mapCategoryId").asText());
+            Concept relationConcept = getConcept(mapSet.getFromTerminology(), additionalFields.get("mapCategoryId").asText());
             if (relationConcept != null) {
                 mapEntry.setRelation(relationConcept.getName());
-              } else {
+            } else {
                 mapEntry.setRelation(mapEntry.getToCode() + " DOES NOT EXIST");
-              }
+            }
 
             mapEntry.setToCode(additionalFields.get("mapTarget").asText());
-            
-            Concept toConcept = getConcept(additionalFields.get("mapTarget").asText());
-            
+
+            Concept toConcept = getConcept(mapSet.getToTerminology(), additionalFields.get("mapTarget").asText());
+
             if (toConcept != null) {
-              mapEntry.setToName(toConcept.getName());
+                mapEntry.setToName(toConcept.getName());
             } else {
-              mapEntry.setToName(mapEntry.getToCode() + " DOES NOT EXIST");
+                mapEntry.setToName(mapEntry.getToCode() + " DOES NOT EXIST");
             }
 
             List<MapEntry> mapEntries = mapping.getMapEntries();
             mapEntries.add(mapEntry);
             mapping.setMapEntries(mapEntries);
-            
+
         }
-        
-        //Once the file is completed parsed, return mappings as list
+
+        // Once the file is completed parsed, return mappings as list
         ArrayList<Mapping> mappings = new ArrayList<>(conceptIdToMappingMap.values());
-        
+
         return mappings;
     }
-    
+
     /* see superclass */
     @Override
-    public Concept getConcept(String code) throws Exception {
-        File f = new File(handlerProperties.getProperty("dir") + "/Concepts.json");
-        if(!f.exists()) {
+    public Concept getConcept(String terminology, String code) throws Exception {
+
+        File f = new File(handlerProperties.getProperty("dir") + "/Concepts" + terminology + ".json");
+        if (!f.exists()) {
             LOG.error("File for specified terminology doesn't exist: " + f.getPath());
             return null;
         }
-        
+
         final ObjectMapper mapper = new ObjectMapper();
-        
+
         final JsonNode root = mapper.readTree(f.toString());
         final JsonNode conceptNodeBatch = root.get("items");
-        
+
         final Iterator<JsonNode> itemIterator = conceptNodeBatch.iterator();
 
         // parse items to retrieve matching concept
@@ -4239,7 +4294,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             if (!(conceptNode.get("conceptId").asText().equals(code) && conceptNode.get("active").asText().equals("true"))) {
                 continue;
             }
-            
+
             final Concept concept = new Concept();
             concept.setActive(conceptNode.get("active").asBoolean());
             concept.setId(conceptNode.get("id").asText());
@@ -4262,14 +4317,14 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                 concept.setFsn(conceptNode.get("fsn").get("term").asText());
             }
-            
+
             return concept;
         }
-        
-        //If no concept with the specified terminology and code found, return null
+
+        // If no concept with the specified terminology and code found, return null
         return null;
     }
-    
+
     /* see superclass */
     @Override
     public String getName() {

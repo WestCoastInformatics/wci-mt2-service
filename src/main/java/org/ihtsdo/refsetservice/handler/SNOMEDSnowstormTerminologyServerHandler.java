@@ -4241,6 +4241,12 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
         return null;
     }
     
+    @Override
+    public MapSet getMapSet(String code) throws Exception {
+        // N/A
+        return null;
+    }
+    
     /* see superclass */
     @Override
     public List<Mapping> getMappings(MapSet mapSet) throws Exception {
@@ -4250,7 +4256,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
     
     /* see superclass */
     @Override
-    public Concept getConcept(String code) throws Exception {
+    public Concept getConcept(String terminology, String code) throws Exception {
         // N/A
         return null;
     }

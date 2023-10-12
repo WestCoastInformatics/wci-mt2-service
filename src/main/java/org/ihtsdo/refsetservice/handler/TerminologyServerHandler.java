@@ -519,6 +519,16 @@ public interface TerminologyServerHandler extends Configurable {
      * @throws Exception the exception
      */
     public List<MapSet> getMapSets() throws Exception;
+
+
+    /**
+     * Returns the map set.
+     *
+     * @param code the code
+     * @return the map set
+     * @throws Exception the exception
+     */
+    public MapSet getMapSet(String code) throws Exception;
     
     /**
      * Returns the mappings.
@@ -529,12 +539,14 @@ public interface TerminologyServerHandler extends Configurable {
      */
     public List<Mapping> getMappings(MapSet mapSet) throws Exception;
     
+
     /**
      * Returns the concept.
      *
+     * @param terminology the terminology
      * @param code the code
      * @return the concept
      * @throws Exception the exception
      */
-    public Concept getConcept(String code) throws Exception;
+    public Concept getConcept(String terminology, String code) throws Exception;
 }
