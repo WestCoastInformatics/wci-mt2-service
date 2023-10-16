@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 package org.ihtsdo.refsetservice.model;
 
 import javax.persistence.Column;
@@ -8,6 +17,7 @@ import javax.persistence.UniqueConstraint;
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 
@@ -27,10 +37,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 })
 @Indexed
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class MapSet extends AbstractHasId {
+public class MapSet extends AbstractHasModified {
 
-    /** The ref set id. */
-    private String refSetId;
+    /** The ref set code. */
+    private String refSetCode;
 
     /** The ref set name. */
     private String refSetName;
@@ -43,9 +53,17 @@ public class MapSet extends AbstractHasId {
     @Column(nullable = false)
     private String name;
 
+    /** The version status. */
+    @Column(nullable = false, length = 256)
+    private String versionStatus;
+    
     /** The branch path. */
     @Column(nullable = false)
     private String branchPath;
+
+    /** The version. */
+    @Column(nullable = false)
+    private String version;
 
     /** The branch path. */
     @Column(nullable = false)
@@ -88,7 +106,7 @@ public class MapSet extends AbstractHasId {
 
         super();
         super.setId(mapSet.getId());
-        this.refSetId = mapSet.getRefSetId();
+        this.refSetCode = mapSet.getRefSetCode();
         this.refSetName = mapSet.getRefSetName();
         this.moduleId = mapSet.getModuleId();
         this.name = mapSet.getName();
@@ -123,6 +141,48 @@ public class MapSet extends AbstractHasId {
     }
 
     /**
+     * Returns the version status.
+     *
+     * @return the version status
+     */
+    @FullTextField(analyzer = "standard")
+    @GenericField(name = "versionStatusSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    public String getVersionStatus() {
+
+        return versionStatus;
+    }
+
+    /**
+     * Sets the version.
+     *
+     * @param versionStatus the version status
+     */
+    public void setVersionStatus(final String versionStatus) {
+
+        this.versionStatus = versionStatus;
+    }    
+
+    /**
+     * Returns the version.
+     *
+     * @return the version
+     */
+    public String getVersion() {
+
+        return version;
+    }
+
+    /**
+     * Sets the version.
+     *
+     * @param version the version
+     */
+    public void setVersion(final String version) {
+
+        this.version = version;
+    }    
+    
+    /**
      * Gets the ref set name.
      *
      * @return the ref set name
@@ -143,25 +203,27 @@ public class MapSet extends AbstractHasId {
 
     }
 
+
     /**
-     * Gets the ref set id.
+     * Returns the ref set code.
      *
-     * @return the ref set id
+     * @return the ref set code
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
-    public String getRefSetId() {
+    public String getRefSetCode() {
 
-        return refSetId;
+        return refSetCode;
     }
 
-    /**
-     * Sets the ref set id.
-     *
-     * @param refSetId the new ref set id
-     */
-    public void setRefSetId(final String refSetId) {
 
-        this.refSetId = refSetId;
+    /**
+     * Sets the ref set code.
+     *
+     * @param refSetCode the ref set code
+     */
+    public void setRefSetCode(final String refSetCode) {
+
+        this.refSetCode = refSetCode;
     }
 
     /**
@@ -322,6 +384,11 @@ public class MapSet extends AbstractHasId {
     public void setToBranchPath(final String toBranchPath) {
 
         this.toBranchPath = toBranchPath;
+    }
+
+    @Override
+    public void lazyInit() {
+        // n/a
     }
 
 }

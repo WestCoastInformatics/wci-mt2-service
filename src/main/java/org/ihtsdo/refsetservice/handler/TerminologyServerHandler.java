@@ -36,9 +36,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
  */
 public interface TerminologyServerHandler extends Configurable {
 
-    
-    /*Workflow Service calls*/
-    
+    /* Workflow Service calls */
+
     /**
      * Creates the branch.
      *
@@ -57,7 +56,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @throws Exception the exception
      */
     public boolean deleteBranch(final String branchPath) throws Exception;
-    
+
     /**
      * Does branch exist.
      *
@@ -95,8 +94,8 @@ public interface TerminologyServerHandler extends Configurable {
      * @return the string
      * @throws Exception the exception
      */
-    public String mergeRebaseReview(final String sourceBranchPath, final String targetBranchPath) throws Exception;  
-    
+    public String mergeRebaseReview(final String sourceBranchPath, final String targetBranchPath) throws Exception;
+
     /**
      * Returns the new refset id.
      *
@@ -105,9 +104,9 @@ public interface TerminologyServerHandler extends Configurable {
      * @throws Exception the exception
      */
     public String getNewRefsetId(final String editionBranchPath) throws Exception;
-    
-    /*Refset Service calls*/
-    
+
+    /* Refset Service calls */
+
     /**
      * Returns the branch versions.
      *
@@ -139,7 +138,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @throws Exception the exception
      */
     public ConceptResultList getRefsetConcepts(final TerminologyService service, final String branch, final boolean areParentConcepts) throws Exception;
-    
+
     /**
      * Update refset concept.
      *
@@ -150,9 +149,8 @@ public interface TerminologyServerHandler extends Configurable {
      */
     public void updateRefsetConcept(final Refset refset, final boolean active, final String moduleId) throws Exception;
 
-    
-    /*Export Handler calls*/
-       
+    /* Export Handler calls */
+
     /**
      * Generate version file.
      *
@@ -171,7 +169,7 @@ public interface TerminologyServerHandler extends Configurable {
      */
     public void downloadGeneratedFile(final String versionFileUrl, final String localVersionPath) throws Exception;
 
-    /*Project Service calls*/
+    /* Project Service calls */
 
     /**
      * Gets the module names.
@@ -182,8 +180,8 @@ public interface TerminologyServerHandler extends Configurable {
      */
     public Map<String, String> getModuleNames(Project project) throws Exception;
 
-    /*Edition Service calls*/    
-    
+    /* Edition Service calls */
+
     /**
      * Returns the affiliate edition list.
      *
@@ -192,9 +190,8 @@ public interface TerminologyServerHandler extends Configurable {
      */
     public List<Edition> getAffiliateEditionList() throws Exception;
 
+    /* Refset Member Service calls */
 
-    /*Refset Member Service calls*/
-    
     /**
      * Returns the all refset members.
      *
@@ -207,7 +204,7 @@ public interface TerminologyServerHandler extends Configurable {
      */
     public List<Concept> getAllRefsetMembers(final TerminologyService service, final String refsetInternalId, final String searchAfter,
         final List<Concept> concepts) throws Exception;
-        
+
     /**
      * Returns the directory members.
      *
@@ -216,7 +213,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @throws Exception the exception
      */
     public Set<String> getDirectoryMembers(final String snowstormQuery) throws Exception;
-    
+
     /**
      * Search multisearch descriptions.
      *
@@ -226,8 +223,8 @@ public interface TerminologyServerHandler extends Configurable {
      * @return the sets the
      * @throws Exception the exception
      */
-    public Set<String> searchMultisearchDescriptions(final SearchParameters searchParameters, final String ecl,
-        final Set<String> nonPublishedBranchPaths) throws Exception;
+    public Set<String> searchMultisearchDescriptions(final SearchParameters searchParameters, final String ecl, final Set<String> nonPublishedBranchPaths)
+        throws Exception;
 
     /**
      * Returns the member sctids.
@@ -249,7 +246,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @throws Exception the exception
      */
     public void populateAllLanguageDescriptions(final Refset refset, final List<Concept> conceptsToProcess) throws Exception;
-    
+
     /**
      * Populate concept leaf status.
      *
@@ -268,7 +265,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @throws Exception the exception
      */
     public Concept getConceptAncestors(final Refset refset, final String conceptId) throws Exception;
-    
+
     /**
      * Search concepts.
      *
@@ -281,7 +278,7 @@ public interface TerminologyServerHandler extends Configurable {
      */
     public ConceptResultList searchConcepts(final Refset refset, final SearchParameters searchParameters, final String searchMembersMode,
         final int limitReturnNumber) throws Exception;
-    
+
     /**
      * Returns the member count.
      *
@@ -290,7 +287,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @throws Exception the exception
      */
     public int getMemberCount(final Refset refset) throws Exception;
-    
+
     /**
      * Returns the member list.
      *
@@ -334,7 +331,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @throws Exception the exception
      */
     public ConceptResultList getChildren(final String conceptId, final Refset refset, final String language) throws Exception;
-    
+
     /**
      * Returns the concepts from snowstorm.
      *
@@ -366,7 +363,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @throws Exception the exception
      */
     public Long getLatestChangedVersionDate(final String branch, final String refsetId) throws Exception;
-    
+
     /**
      * Returns the refset concept release date.
      *
@@ -376,7 +373,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @throws Exception the exception
      */
     public Long getRefsetConceptReleaseDate(final String refsetId, final String branch) throws Exception;
-    
+
     /**
      * Returns the member history.
      *
@@ -397,7 +394,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @throws Exception the exception
      */
     public boolean cacheMemberAncestors(final Refset refset) throws Exception;
-    
+
     /**
      * Adds the refset members.
      *
@@ -410,7 +407,7 @@ public interface TerminologyServerHandler extends Configurable {
      */
     public List<String> addRefsetMembers(final TerminologyService service, final User user, final Refset refset, final List<String> conceptIds)
         throws Exception;
-    
+
     /**
      * Call add member single.
      *
@@ -422,7 +419,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @throws Exception the exception
      */
     public List<String> callAddMemberSingle(final String refsetId, final String url, final String conceptId, final String moduleId) throws Exception;
-    
+
     /**
      * Call add members bulk.
      *
@@ -433,8 +430,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @return the list
      * @throws Exception the exception
      */
-    public List<String> callAddMembersBulk(final String refsetId, final String url, final List<String> conceptIds, final String moduleId)
-        throws Exception;
+    public List<String> callAddMembersBulk(final String refsetId, final String url, final List<String> conceptIds, final String moduleId) throws Exception;
 
     /**
      * Removes the refset members.
@@ -446,9 +442,8 @@ public interface TerminologyServerHandler extends Configurable {
      * @return the list
      * @throws Exception the exception
      */
-    public List<String> removeRefsetMembers(final TerminologyService service, final User user, final Refset refset, final String conceptIds)
-        throws Exception;
-    
+    public List<String> removeRefsetMembers(final TerminologyService service, final User user, final Refset refset, final String conceptIds) throws Exception;
+
     /**
      * Call update member single.
      *
@@ -459,7 +454,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @throws Exception the exception
      */
     public List<String> callUpdateMemberSingle(final String refsetId, final String url, final JsonNode memberBody) throws Exception;
-    
+
     /**
      * Call update members bulk.
      *
@@ -507,11 +502,9 @@ public interface TerminologyServerHandler extends Configurable {
      */
     public String modifyUpgradeConcept(final TerminologyService service, final User user, final Refset refset, final String inactiveConceptId,
         final String replacementConceptId, final UpgradeReplacementConcept manualReplacementConcept, final String changed) throws Exception;
-   
 
-    /*Mapping Service calls*/
-    
-    
+    /* Mapping Service calls */
+
     /**
      * Returns the map sets.
      *
@@ -519,7 +512,6 @@ public interface TerminologyServerHandler extends Configurable {
      * @throws Exception the exception
      */
     public List<MapSet> getMapSets() throws Exception;
-
 
     /**
      * Returns the map set.
@@ -529,16 +521,15 @@ public interface TerminologyServerHandler extends Configurable {
      * @throws Exception the exception
      */
     public MapSet getMapSet(String code) throws Exception;
-    
+
     /**
      * Returns the mappings.
      *
-     * @param mapSet the map set
+     * @param mapSetCode the map set code
      * @return the mappings
      * @throws Exception the exception
      */
-    public List<Mapping> getMappings(MapSet mapSet) throws Exception;
-    
+    public List<Mapping> getMappings(String mapSetCode) throws Exception;
 
     /**
      * Returns the concept.

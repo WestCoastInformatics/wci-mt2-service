@@ -24,7 +24,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Table(name = "mappings")
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Indexed
-public class Mapping extends AbstractHasId {
+public class Mapping extends AbstractHasModified {
 
     /** The code. */
     @Column(nullable = true, length = 4000)
@@ -166,6 +166,11 @@ public class Mapping extends AbstractHasId {
     public String toString() {
 
         return "Mapping [code=" + code + ", name=" + name + ", mapSetId=" + mapSetId + ", mapEntries=" + mapEntries + "]";
+    }
+
+    @Override
+    public void lazyInit() {
+        // n/a
     }
 
 }

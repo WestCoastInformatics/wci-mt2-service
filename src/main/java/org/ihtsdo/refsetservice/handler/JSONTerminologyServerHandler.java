@@ -4114,7 +4114,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             final JsonNode mapSetNode = itemIterator.next();
 
             final MapSet mapSet = new MapSet();
-            mapSet.setRefSetId(mapSetNode.get("id").asText());
+            mapSet.setRefSetCode(mapSetNode.get("id").asText());
             mapSet.setModuleId(mapSetNode.get("moduleId").asText());
 
             // Set refset name to FSN if it exists, defaulting to PT if not.
@@ -4161,7 +4161,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             }
 
             final MapSet mapSet = new MapSet();
-            mapSet.setRefSetId(mapSetNode.get("id").asText());
+            mapSet.setRefSetCode(mapSetNode.get("id").asText());
             mapSet.setModuleId(mapSetNode.get("moduleId").asText());
 
             // Set refset name to FSN if it exists, defaulting to PT if not.
@@ -4187,7 +4187,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
     /* see superclass */
     @Override
-    public List<Mapping> getMappings(MapSet mapSet) throws Exception {
+    public List<Mapping> getMappings(String mapSetCode) throws Exception {
 
         File f = new File(handlerProperties.getProperty("dir") + "/Mappings.json");
         if (!f.exists()) {
@@ -4195,6 +4195,9 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             return null;
         }
 
+        // Grab the specified mapSet
+        MapSet mapSet = getMapSet(mapSetCode);
+        
         Map<String, Mapping> conceptIdToMappingMap = new HashMap<>();
 
         final ObjectMapper mapper = new ObjectMapper();
@@ -4210,7 +4213,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             final JsonNode mappingNode = itemIterator.next();
 
             // Only process active mappings from the correct mapset
-            if (!(mappingNode.get("refsetId").asText().equals(mapSet.getRefSetId()) && mappingNode.get("active").asText().equals("true"))) {
+            if (!(mappingNode.get("refsetId").asText().equals(mapSet.getRefSetCode()) && mappingNode.get("active").asText().equals("true"))) {
                 continue;
             }
 
