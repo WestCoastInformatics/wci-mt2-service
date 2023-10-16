@@ -4249,7 +4249,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
     
     /* see superclass */
     @Override
-    public List<Mapping> getMappings(MapSet mapSet) throws Exception {
+    public List<Mapping> getMappings(String mapSetCode) throws Exception {
         // N/A
         return null;
     }
