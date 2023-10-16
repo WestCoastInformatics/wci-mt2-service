@@ -4127,6 +4127,14 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 mapSet.setRefSetName(mapSetNode.get("fsn").get("term").asText());
             }
 
+            JsonNode additionalFields = mapSetNode.get("additionalFields");
+
+            mapSet.setVersionStatus(additionalFields.get("versionStatus").asText());
+            mapSet.setVersion(additionalFields.get("version").asText());
+            mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse(additionalFields.get("lastModified").asText()));
+            mapSet.setFromTerminology(additionalFields.get("fromTerminology").asText());
+            mapSet.setToTerminology(additionalFields.get("toTerminology").asText());
+
             mapSets.add(mapSet);
         }
 
@@ -4176,6 +4184,9 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             JsonNode additionalFields = mapSetNode.get("additionalFields");
 
+            mapSet.setVersionStatus(additionalFields.get("versionStatus").asText());
+            mapSet.setVersion(additionalFields.get("version").asText());
+            mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse(additionalFields.get("lastModified").asText()));
             mapSet.setFromTerminology(additionalFields.get("fromTerminology").asText());
             mapSet.setToTerminology(additionalFields.get("toTerminology").asText());
 
@@ -4232,6 +4243,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             Mapping mapping = conceptIdToMappingMap.get(mappingNode.get("referencedComponentId").asText());
             MapEntry mapEntry = new MapEntry();
 
+            mapEntry.setModified(new SimpleDateFormat("yyyyMMdd").parse(mappingNode.get("effectiveTime").asText()));
+            
             JsonNode additionalFields = mappingNode.get("additionalFields");
 
             mapEntry.setRule(additionalFields.get("mapRule").asText());

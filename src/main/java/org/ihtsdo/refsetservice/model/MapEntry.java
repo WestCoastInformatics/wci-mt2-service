@@ -16,7 +16,7 @@ import java.util.Set;
  * The Map Entry object.
  *
  */
-public class MapEntry {
+public class MapEntry extends AbstractHasModified {
 
     /** The advices. */
     private Set<String> advices = new HashSet<>();
@@ -258,6 +258,11 @@ public class MapEntry {
 
         this.block = block;
 
+    }
+
+    @Override
+    public void lazyInit() {
+        // N/A
     }
 
     // /**
