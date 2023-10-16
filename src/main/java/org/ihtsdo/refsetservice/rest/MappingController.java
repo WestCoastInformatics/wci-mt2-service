@@ -88,15 +88,15 @@ public class MappingController extends BaseController {
         @Parameter(name = "id", description = "Mappings identifier, e.g. &lt;uuid&gt;", required = true)
     })
     @RecordMetric
-    public @ResponseBody ResponseEntity<List<Mapping>> getMappings(@ModelAttribute final MapSet mapSet, @ModelAttribute final SearchParameters searchParameters)
+    public @ResponseBody ResponseEntity<List<Mapping>> getMappings(@ModelAttribute final String mapSetCode, @ModelAttribute final SearchParameters searchParameters)
         throws Exception {
 
-        LOG.info("Mappings for a Mapset {}", ModelUtility.toJson(searchParameters));
+        LOG.info("Mappings for a Mapset " + mapSetCode, ModelUtility.toJson(searchParameters));
         // final User authUser = authorizeUser(request);
 
         try {
 
-            final List<Mapping> mappings = MappingService.getMappings(mapSet);
+            final List<Mapping> mappings = MappingService.getMappings(mapSetCode);
 
             return new ResponseEntity<>(mappings, HttpStatus.OK);
 

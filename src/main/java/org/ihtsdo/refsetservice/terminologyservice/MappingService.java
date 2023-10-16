@@ -61,15 +61,16 @@ public final class MappingService {
         // n/a
     }
 
+
     /**
      * Returns the mappings.
      *
-     * @param mapSet the map set
+     * @param mapSetCode the map set code
      * @return the mappings
      * @throws Exception the exception
      */
-    public static List<Mapping> getMappings(MapSet mapSet) throws Exception {
+    public static List<Mapping> getMappings(String mapSetCode) throws Exception {
 
-        return terminologyHandler.getMappings(mapSet);
+        return terminologyHandler.getMappings(mapSetCode);
     }
 }
