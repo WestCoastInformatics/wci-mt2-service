@@ -1,26 +1,21 @@
 package org.ihtsdo.refsetservice.model;
 
 import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
 import javax.xml.bind.annotation.XmlAttribute;
-
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
  * The Class MapRelation.
  */
-@Entity
-@Table(name = "map_relations", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {
-        "name"
-    })
-})
+// @Entity
+// @Table(name = "map_relations", uniqueConstraints = {
+// @UniqueConstraint(columnNames = {
+// "name"
+// })
+// })
 @JsonIgnoreProperties(ignoreUnknown = true)
-@Indexed
+// @Indexed
 public class MapRelation extends AbstractHasId {
 
     /** The terminology id. */

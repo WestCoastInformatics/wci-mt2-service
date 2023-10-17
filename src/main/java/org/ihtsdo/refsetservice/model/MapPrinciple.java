@@ -1,15 +1,11 @@
 package org.ihtsdo.refsetservice.model;
 
 import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
 
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -17,14 +13,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 /**
  * A JPA enabled implementation of {@link MapPrinciple}.
  */
-@Entity
-@Table(name = "map_principles", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {
-        "name", "principleId"
-    })
-})
+// @Entity
+// @Table(name = "map_principles", uniqueConstraints = {
+// @UniqueConstraint(columnNames = {
+// "name", "principleId"
+// })
+// })
 @JsonIgnoreProperties(ignoreUnknown = true)
-@Indexed
+// @Indexed
 public class MapPrinciple extends AbstractHasId {
 
     /** The principle id. */

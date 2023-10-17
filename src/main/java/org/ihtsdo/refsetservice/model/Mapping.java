@@ -4,26 +4,21 @@ import java.util.List;
 import java.util.Objects;
 
 import javax.persistence.Column;
-import javax.persistence.Entity;
 import javax.persistence.ManyToOne;
-import javax.persistence.Table;
 
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
-import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * The Class Mapping.
  */
-@Entity
-@Schema(description = "Represents a mapping")
-@Table(name = "mappings")
+// @Entity
+// @Schema(description = "Represents a mapping")
+// @Table(name = "mappings")
 @JsonIgnoreProperties(ignoreUnknown = true)
-@Indexed
+// @Indexed
 public class Mapping extends AbstractHasModified {
 
     /** The code. */
@@ -170,6 +165,7 @@ public class Mapping extends AbstractHasModified {
 
     @Override
     public void lazyInit() {
+
         // n/a
     }
 

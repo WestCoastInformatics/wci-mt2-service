@@ -10,32 +10,26 @@
 package org.ihtsdo.refsetservice.model;
 
 import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
 
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
-import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * The Class MapSet.
  */
-@Entity
-@Schema(description = "Represents a map set")
-@Table(name = "map_sets", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {
-        "name"
-    })
-})
-@Indexed
+// @Entity
+// @Schema(description = "Represents a map set")
+// @Table(name = "map_sets", uniqueConstraints = {
+// @UniqueConstraint(columnNames = {
+// "name"
+// })
+// })
+// @Indexed
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MapSet extends AbstractHasModified {
 
@@ -56,7 +50,7 @@ public class MapSet extends AbstractHasModified {
     /** The version status. */
     @Column(nullable = false, length = 256)
     private String versionStatus;
-    
+
     /** The branch path. */
     @Column(nullable = false)
     private String branchPath;
@@ -160,7 +154,7 @@ public class MapSet extends AbstractHasModified {
     public void setVersionStatus(final String versionStatus) {
 
         this.versionStatus = versionStatus;
-    }    
+    }
 
     /**
      * Returns the version.
@@ -180,8 +174,8 @@ public class MapSet extends AbstractHasModified {
     public void setVersion(final String version) {
 
         this.version = version;
-    }    
-    
+    }
+
     /**
      * Gets the ref set name.
      *
@@ -203,7 +197,6 @@ public class MapSet extends AbstractHasModified {
 
     }
 
-
     /**
      * Returns the ref set code.
      *
@@ -214,7 +207,6 @@ public class MapSet extends AbstractHasModified {
 
         return refSetCode;
     }
-
 
     /**
      * Sets the ref set code.
@@ -388,6 +380,7 @@ public class MapSet extends AbstractHasModified {
 
     @Override
     public void lazyInit() {
+
         // n/a
     }
 

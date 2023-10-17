@@ -1,30 +1,26 @@
 package org.ihtsdo.refsetservice.model;
 
 import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
 import javax.xml.bind.annotation.XmlAttribute;
 
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
  * The Class MapAdvice.
  */
-@Entity
-@Table(name = "map_advices", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {
-        "name"
-    })
-})
+// @Entity
+// @Table(name = "map_advices", uniqueConstraints = {
+// @UniqueConstraint(columnNames = {
+// "name"
+// })
+// })
 @JsonIgnoreProperties(ignoreUnknown = true)
-@Indexed
+// @Indexed
 public class MapAdvice extends AbstractHasId {
 
     /** The name. */

@@ -1,10 +1,6 @@
 package org.ihtsdo.refsetservice.model;
 
 import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -12,10 +8,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 /**
  * The additional Map Entry Info.
  */
-@Entity
-@Table(name = "additional_map_entry_info")
+// @Entity
+// @Table(name = "additional_map_entry_info")
 @JsonIgnoreProperties(ignoreUnknown = true)
-@Indexed
+// @Indexed
 public class AdditionalMapEntryInfo extends AbstractHasId {
 
     /**
