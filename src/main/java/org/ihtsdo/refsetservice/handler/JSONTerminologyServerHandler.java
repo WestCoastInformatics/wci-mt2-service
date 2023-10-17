@@ -15,6 +15,8 @@ import java.io.InputStream;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -86,12 +88,12 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
     private static final Logger LOG = LoggerFactory.getLogger(JSONTerminologyServerHandler.class);
 
     /** The handler properties. */
-    private Properties handlerProperties = new Properties();
+    private final Properties handlerProperties = new Properties();
 
     /*
-     * 
+     *
      * REFSET FUNCTIONALITY
-     * 
+     *
      */
 
     /* see superclass */
@@ -2808,7 +2810,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             }
 
             // gather any input concept not in the validated list
-            final List<String> invalidConcepts = conceptBatch.stream().filter((inputConceptId) -> {
+            final List<String> invalidConcepts = conceptBatch.stream().filter(inputConceptId -> {
 
                 final boolean found = validatedConcepts.contains(inputConceptId);
 
@@ -4084,26 +4086,28 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
     }
 
     /*
-     * 
+     *
      * MAPPING FUNCTIONALITY
-     * 
+     *
      */
 
     /* see superclass */
     @Override
     public List<MapSet> getMapSets() throws Exception {
 
-        File f = new File(handlerProperties.getProperty("dir") + "/MapSets.json");
+        final File f = new File(handlerProperties.getProperty("dir") + "/MapSets.json");
         if (!f.exists()) {
             LOG.error("MapSet file doesn't exist: " + f.getPath());
             return null;
         }
 
-        ArrayList<MapSet> mapSets = new ArrayList<>();
+        final List<String> lines = Files.readAllLines(Paths.get(f.getPath()));
+
+        final ArrayList<MapSet> mapSets = new ArrayList<>();
 
         final ObjectMapper mapper = new ObjectMapper();
 
-        final JsonNode root = mapper.readTree(f.toString());
+        final JsonNode root = mapper.readTree(lines.toString());
         final JsonNode mapSetsBatch = root.get("items");
 
         final Iterator<JsonNode> itemIterator = mapSetsBatch.iterator();
@@ -4127,7 +4131,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 mapSet.setRefSetName(mapSetNode.get("fsn").get("term").asText());
             }
 
-            JsonNode additionalFields = mapSetNode.get("additionalFields");
+            final JsonNode additionalFields = mapSetNode.get("additionalFields");
 
             mapSet.setVersionStatus(additionalFields.get("versionStatus").asText());
             mapSet.setVersion(additionalFields.get("version").asText());
@@ -4143,17 +4147,19 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
     /* see superclass */
     @Override
-    public MapSet getMapSet(String code) throws Exception {
+    public MapSet getMapSet(final String code) throws Exception {
 
-        File f = new File(handlerProperties.getProperty("dir") + "/MapSets.json");
+        final File f = new File(handlerProperties.getProperty("dir") + "/MapSets.json");
         if (!f.exists()) {
             LOG.error("MapSet file doesn't exist: " + f.getPath());
             return null;
         }
 
+        final List<String> lines = Files.readAllLines(Paths.get(f.getPath()));
+
         final ObjectMapper mapper = new ObjectMapper();
 
-        final JsonNode root = mapper.readTree(f.toString());
+        final JsonNode root = mapper.readTree(lines.toString());
         final JsonNode mapSetsBatch = root.get("items");
 
         final Iterator<JsonNode> itemIterator = mapSetsBatch.iterator();
@@ -4182,7 +4188,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 mapSet.setRefSetName(mapSetNode.get("fsn").get("term").asText());
             }
 
-            JsonNode additionalFields = mapSetNode.get("additionalFields");
+            final JsonNode additionalFields = mapSetNode.get("additionalFields");
 
             mapSet.setVersionStatus(additionalFields.get("versionStatus").asText());
             mapSet.setVersion(additionalFields.get("version").asText());
@@ -4198,22 +4204,24 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
     /* see superclass */
     @Override
-    public List<Mapping> getMappings(String mapSetCode) throws Exception {
+    public List<Mapping> getMappings(final String mapSetCode) throws Exception {
 
-        File f = new File(handlerProperties.getProperty("dir") + "/Mappings.json");
+        final File f = new File(handlerProperties.getProperty("dir") + "/Mappings.json");
         if (!f.exists()) {
             LOG.error("Mappings file doesn't exist: " + f.getPath());
             return null;
         }
 
+        final List<String> lines = Files.readAllLines(Paths.get(f.getPath()));
+
         // Grab the specified mapSet
-        MapSet mapSet = getMapSet(mapSetCode);
-        
-        Map<String, Mapping> conceptIdToMappingMap = new HashMap<>();
+        final MapSet mapSet = getMapSet(mapSetCode);
+
+        final Map<String, Mapping> conceptIdToMappingMap = new HashMap<>();
 
         final ObjectMapper mapper = new ObjectMapper();
 
-        final JsonNode root = mapper.readTree(f.toString());
+        final JsonNode root = mapper.readTree(lines.toString());
         final JsonNode mappingsBatch = root.get("items");
 
         final Iterator<JsonNode> itemIterator = mappingsBatch.iterator();
@@ -4240,22 +4248,22 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             }
 
             // Add an entry to the mapping
-            Mapping mapping = conceptIdToMappingMap.get(mappingNode.get("referencedComponentId").asText());
-            MapEntry mapEntry = new MapEntry();
+            final Mapping mapping = conceptIdToMappingMap.get(mappingNode.get("referencedComponentId").asText());
+            final MapEntry mapEntry = new MapEntry();
 
             mapEntry.setModified(new SimpleDateFormat("yyyyMMdd").parse(mappingNode.get("effectiveTime").asText()));
-            
-            JsonNode additionalFields = mappingNode.get("additionalFields");
+
+            final JsonNode additionalFields = mappingNode.get("additionalFields");
 
             mapEntry.setRule(additionalFields.get("mapRule").asText());
             mapEntry.setPriority(additionalFields.get("mapPriority").asInt());
             mapEntry.setGroup(additionalFields.get("mapGroup").asInt());
 
-            Set<String> advices = new HashSet<>();
+            final Set<String> advices = new HashSet<>();
             advices.add(additionalFields.get("mapAdvice").asText());
             mapEntry.setAdvices(advices);
 
-            Concept relationConcept = getConcept(mapSet.getFromTerminology(), additionalFields.get("mapCategoryId").asText());
+            final Concept relationConcept = getConcept(mapSet.getFromTerminology(), additionalFields.get("mapCategoryId").asText());
             if (relationConcept != null) {
                 mapEntry.setRelation(relationConcept.getName());
             } else {
@@ -4264,7 +4272,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             mapEntry.setToCode(additionalFields.get("mapTarget").asText());
 
-            Concept toConcept = getConcept(mapSet.getToTerminology(), additionalFields.get("mapTarget").asText());
+            final Concept toConcept = getConcept(mapSet.getToTerminology(), additionalFields.get("mapTarget").asText());
 
             if (toConcept != null) {
                 mapEntry.setToName(toConcept.getName());
@@ -4272,31 +4280,33 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 mapEntry.setToName(mapEntry.getToCode() + " DOES NOT EXIST");
             }
 
-            List<MapEntry> mapEntries = mapping.getMapEntries();
+            final List<MapEntry> mapEntries = mapping.getMapEntries();
             mapEntries.add(mapEntry);
             mapping.setMapEntries(mapEntries);
 
         }
 
         // Once the file is completed parsed, return mappings as list
-        ArrayList<Mapping> mappings = new ArrayList<>(conceptIdToMappingMap.values());
+        final ArrayList<Mapping> mappings = new ArrayList<>(conceptIdToMappingMap.values());
 
         return mappings;
     }
 
     /* see superclass */
     @Override
-    public Concept getConcept(String terminology, String code) throws Exception {
+    public Concept getConcept(final String terminology, final String code) throws Exception {
 
-        File f = new File(handlerProperties.getProperty("dir") + "/Concepts" + terminology + ".json");
+        final File f = new File(handlerProperties.getProperty("dir") + "/Concepts" + terminology + ".json");
         if (!f.exists()) {
             LOG.error("File for specified terminology doesn't exist: " + f.getPath());
             return null;
         }
 
+        final List<String> lines = Files.readAllLines(Paths.get(f.getPath()));
+
         final ObjectMapper mapper = new ObjectMapper();
 
-        final JsonNode root = mapper.readTree(f.toString());
+        final JsonNode root = mapper.readTree(lines.toString());
         final JsonNode conceptNodeBatch = root.get("items");
 
         final Iterator<JsonNode> itemIterator = conceptNodeBatch.iterator();
