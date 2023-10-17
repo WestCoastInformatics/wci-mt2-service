@@ -15,8 +15,6 @@ import java.io.InputStream;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -4101,13 +4099,11 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             return null;
         }
 
-        final List<String> lines = Files.readAllLines(Paths.get(f.getPath()));
-
         final ArrayList<MapSet> mapSets = new ArrayList<>();
 
         final ObjectMapper mapper = new ObjectMapper();
 
-        final JsonNode root = mapper.readTree(lines.toString());
+        final JsonNode root = mapper.readTree(f);
         final JsonNode mapSetsBatch = root.get("items");
 
         final Iterator<JsonNode> itemIterator = mapSetsBatch.iterator();
@@ -4155,11 +4151,9 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             return null;
         }
 
-        final List<String> lines = Files.readAllLines(Paths.get(f.getPath()));
-
         final ObjectMapper mapper = new ObjectMapper();
 
-        final JsonNode root = mapper.readTree(lines.toString());
+        final JsonNode root = mapper.readTree(f);
         final JsonNode mapSetsBatch = root.get("items");
 
         final Iterator<JsonNode> itemIterator = mapSetsBatch.iterator();
@@ -4212,8 +4206,6 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             return null;
         }
 
-        final List<String> lines = Files.readAllLines(Paths.get(f.getPath()));
-
         // Grab the specified mapSet
         final MapSet mapSet = getMapSet(mapSetCode);
 
@@ -4221,7 +4213,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
         final ObjectMapper mapper = new ObjectMapper();
 
-        final JsonNode root = mapper.readTree(lines.toString());
+        final JsonNode root = mapper.readTree(f);
         final JsonNode mappingsBatch = root.get("items");
 
         final Iterator<JsonNode> itemIterator = mappingsBatch.iterator();
@@ -4302,11 +4294,9 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             return null;
         }
 
-        final List<String> lines = Files.readAllLines(Paths.get(f.getPath()));
-
         final ObjectMapper mapper = new ObjectMapper();
 
-        final JsonNode root = mapper.readTree(lines.toString());
+        final JsonNode root = mapper.readTree(f);
         final JsonNode conceptNodeBatch = root.get("items");
 
         final Iterator<JsonNode> itemIterator = conceptNodeBatch.iterator();
