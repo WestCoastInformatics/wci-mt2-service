@@ -4252,7 +4252,11 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             mapEntry.setGroup(additionalFields.get("mapGroup").asInt());
 
             final Set<String> advices = new HashSet<>();
-            advices.add(additionalFields.get("mapAdvice").asText());
+            String mapAdviceString = additionalFields.get("mapAdvice").asText();
+            //Store each pipe-delimited section of the map advice string as a separate map advice
+            for(String mapAdvice : mapAdviceString.split("\\|")) {
+                advices.add(mapAdvice.trim());
+            }
             mapEntry.setAdvices(advices);
 
             final Concept relationConcept = getConcept(mapSet.getFromTerminology(), additionalFields.get("mapCategoryId").asText());
