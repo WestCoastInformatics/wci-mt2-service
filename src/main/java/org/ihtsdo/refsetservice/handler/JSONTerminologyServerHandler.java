@@ -4290,6 +4290,97 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
     /* see superclass */
     @Override
+    public Mapping getMapping(final String mapSetCode, final String conceptCode) throws Exception {
+
+        final File f = new File(handlerProperties.getProperty("dir") + "/Mappings.json");
+        if (!f.exists()) {
+            LOG.error("Mappings file doesn't exist: " + f.getPath());
+            return null;
+        }
+
+        // Grab the specified mapSet
+        final MapSet mapSet = getMapSet(mapSetCode);
+
+        final Mapping mapping = new Mapping();
+
+        final ObjectMapper mapper = new ObjectMapper();
+
+        final JsonNode root = mapper.readTree(f);
+        final JsonNode mappingsBatch = root.get("items");
+
+        final Iterator<JsonNode> itemIterator = mappingsBatch.iterator();
+
+        // parse items to retrieve matching concept
+        while (itemIterator.hasNext()) {
+
+            final JsonNode mappingNode = itemIterator.next();
+
+            // Only process active mappings from the correct mapset
+            if (!(mappingNode.get("refsetId").asText().equals(mapSet.getRefSetCode()) && mappingNode.get("active").asText().equals("true"))) {
+                continue;
+            }
+            
+            // Only process the requested concept
+            if (!mappingNode.get("referencedComponentId").asText().equals(conceptCode)) {
+                continue;
+            }            
+
+            // If this is the first time the fromConcept is encountered, set up the mapping
+            if (mapping.getCode() == null || mapping.getCode().isEmpty()) {
+                mapping.setCode(mappingNode.get("referencedComponentId").asText());
+                mapping.setName(getConcept(mapSet.getFromTerminology(), mapping.getCode()).getName());
+                mapping.setMapSetId(mapSet.getId());
+                mapping.setMapEntries(new ArrayList<>());
+            }
+
+            // Add an entry to the mapping
+            final MapEntry mapEntry = new MapEntry();
+
+            mapEntry.setModified(new SimpleDateFormat("yyyyMMdd").parse(mappingNode.get("effectiveTime").asText()));
+
+            final JsonNode additionalFields = mappingNode.get("additionalFields");
+
+            mapEntry.setRule(additionalFields.get("mapRule").asText());
+            mapEntry.setPriority(additionalFields.get("mapPriority").asInt());
+            mapEntry.setGroup(additionalFields.get("mapGroup").asInt());
+
+            final Set<String> advices = new HashSet<>();
+            String mapAdviceString = additionalFields.get("mapAdvice").asText();
+            //Store each pipe-delimited section of the map advice string as a separate map advice
+            for(String mapAdvice : mapAdviceString.split("\\|")) {
+                advices.add(mapAdvice.trim());
+            }
+            mapEntry.setAdvices(advices);
+
+            final Concept relationConcept = getConcept(mapSet.getFromTerminology(), additionalFields.get("mapCategoryId").asText());
+            if (relationConcept != null) {
+                mapEntry.setRelation(relationConcept.getName());
+            } else {
+                mapEntry.setRelation(mapEntry.getToCode() + " DOES NOT EXIST");
+            }
+
+            mapEntry.setToCode(additionalFields.get("mapTarget").asText());
+
+            final Concept toConcept = getConcept(mapSet.getToTerminology(), additionalFields.get("mapTarget").asText());
+
+            if (toConcept != null) {
+                mapEntry.setToName(toConcept.getName());
+            } else {
+                mapEntry.setToName(mapEntry.getToCode() + " DOES NOT EXIST");
+            }
+
+            final List<MapEntry> mapEntries = mapping.getMapEntries();
+            mapEntries.add(mapEntry);
+            mapping.setMapEntries(mapEntries);
+        }
+
+        // Once the file is completed parsing, return the mapping
+        return mapping;
+    }
+    
+    
+    /* see superclass */
+    @Override
     public Concept getConcept(final String terminology, final String code) throws Exception {
 
         final File f = new File(handlerProperties.getProperty("dir") + "/Concepts" + terminology + ".json");

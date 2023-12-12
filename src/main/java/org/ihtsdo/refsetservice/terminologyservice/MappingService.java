@@ -12,7 +12,6 @@ package org.ihtsdo.refsetservice.terminologyservice;
 import java.util.List;
 
 import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
-import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
@@ -61,7 +60,6 @@ public final class MappingService {
         // n/a
     }
 
-
     /**
      * Returns the mappings.
      *
@@ -72,5 +70,18 @@ public final class MappingService {
     public static List<Mapping> getMappings(String mapSetCode) throws Exception {
 
         return terminologyHandler.getMappings(mapSetCode);
+    }
+
+    /**
+     * Returns the mapping.
+     *
+     * @param mapSetCode the map set code
+     * @param conceptCode the concept code
+     * @return the mapping
+     * @throws Exception the exception
+     */
+    public static Mapping getMapping(String mapSetCode, String conceptCode) throws Exception {
+
+        return terminologyHandler.getMapping(mapSetCode, conceptCode);
     }
 }

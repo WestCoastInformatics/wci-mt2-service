@@ -532,6 +532,16 @@ public interface TerminologyServerHandler extends Configurable {
     public List<Mapping> getMappings(String mapSetCode) throws Exception;
 
     /**
+     * Returns the mapping.
+     *
+     * @param mapSetCode the map set code
+     * @param conceptCode the concept code
+     * @return the mapping
+     * @throws Exception the exception
+     */
+    public Mapping getMapping(String mapSetCode, String conceptCode) throws Exception;
+
+    /**
      * Returns the concept.
      *
      * @param terminology the terminology

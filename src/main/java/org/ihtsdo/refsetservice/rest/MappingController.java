@@ -45,7 +45,7 @@ public class MappingController extends BaseController {
     /** Search teams API notes. */
     private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
 
-    @RequestMapping(method = RequestMethod.GET, value = "/mapping/{mapSetCode}", produces = MediaType.APPLICATION_JSON)
+    @RequestMapping(method = RequestMethod.GET, value = "/mapset/{mapSetCode}/mappings", produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Get map set. This call requires authentication with the correct role.", tags = {
         "mapset"
     }, responses = {
@@ -76,4 +76,36 @@ public class MappingController extends BaseController {
         }
     }
 
+    @RequestMapping(method = RequestMethod.GET, value = "/mapset/{mapSetCode}/mappings/{conceptCode}", produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Get mapping. This call requires authentication with the correct role.", tags = {
+        "mapset"
+    }, responses = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"), @ApiResponse(responseCode = "403", description = "Forbidden"),
+        @ApiResponse(responseCode = "404", description = "Resource not found"), @ApiResponse(responseCode = "417", description = "Failed Expectation")
+    })
+    @Parameters({
+        @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. &lt;uuid&gt;", required = true),
+        @Parameter(name = "conceptCode", description = "Source concept code identifier, e.g. &lt;uuid&gt;", required = true)
+    })
+    @RecordMetric
+    public @ResponseBody ResponseEntity<Mapping> getMapping(@PathVariable final String mapSetCode, @PathVariable final String conceptCode,
+        @ModelAttribute final SearchParameters searchParameters) throws Exception {
+
+        LOG.info("Mapping for Mapset " + mapSetCode + ", Source Concept " + conceptCode, ModelUtility.toJson(searchParameters));
+        // final User authUser = authorizeUser(request);
+
+        try {
+
+            final Mapping mapping = MappingService.getMapping(mapSetCode, conceptCode);
+
+            return new ResponseEntity<>(mapping, HttpStatus.OK);
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }    
+    
 }
