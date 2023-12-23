@@ -35,6 +35,9 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
 
@@ -62,7 +65,9 @@ import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
 import org.ihtsdo.refsetservice.util.ConceptLookupParameters;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
+import org.ihtsdo.refsetservice.util.ConfigUtility;
 import org.ihtsdo.refsetservice.util.DateUtility;
+import org.ihtsdo.refsetservice.util.LocalException;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
@@ -4242,35 +4247,431 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
      */
 	
     @Override
-    public List<MapSet> getMapSets() throws Exception {
-        // N/A
-        return null;
+    public List<MapSet> getMapSets() throws Exception { 
+               
+        final ArrayList<MapSet> mapSets = new ArrayList<>();
+        
+        // Connect to snowstorm
+        final Client client = ClientBuilder.newClient();
+        final String accept = "application/json";
+
+        String searchAfter = null;
+        final ObjectMapper mapper = new ObjectMapper();
+        
+        int limit = 50;        
+        
+        String targetUri = "https://snowstorm.ihtsdotools.org/snowstorm/snomed-ct/MAIN%2FSNOMEDCT-NO%2F2023-12-15/concepts?activeFilter=true&ecl=%3C609331003&includeLeafFlag=false&form=inferred&offset=0&limit=" + limit+ (searchAfter != null ? "&searchAfter=" + searchAfter : "");
+        LOG.info("getSnowstormMapsets url: " + targetUri);
+
+        WebTarget target = client.target(targetUri);
+        target = client.target(targetUri);
+//        Logger.getLogger(getClass()).info(targetUri);
+     
+        Response response =
+            target.request(accept)
+//            .header("Cookie", ConfigUtility.getGenericUserCookie())
+            .get();
+        String resultString = response.readEntity(String.class);
+        if (response.getStatusInfo().getFamily() == Family.SUCCESSFUL) {
+          // n/a
+        } else {
+          throw new LocalException(
+              "Unexpected terminology server failure. Message = " + resultString);
+        }
+        
+        final JsonNode doc = mapper.readTree(resultString);
+
+        final JsonNode mappingsBatch = doc.get("items");
+
+        final Iterator<JsonNode> itemIterator = mappingsBatch.iterator();
+
+        // parse items to retrieve matching concept
+        while (itemIterator.hasNext()) {
+
+            final JsonNode mapSetNode = itemIterator.next();
+
+            final MapSet mapSet = new MapSet();
+            mapSet.setRefSetCode(mapSetNode.get("conceptId").asText());
+            mapSet.setModuleId(mapSetNode.get("moduleId").asText());
+
+            // Set refset name to FSN if it exists, defaulting to PT if not.
+            if (mapSetNode.get("pt") != null) {
+
+                mapSet.setRefSetName(mapSetNode.get("pt").get("term").asText());
+            }
+            if (mapSetNode.get("fsn") != null && mapSetNode.get("fsn").get("term") != null) {
+
+                mapSet.setRefSetName(mapSetNode.get("fsn").get("term").asText());
+            }
+
+            //TODO - unhack this.  Some will need to be pulled from database rather than snowstorm
+            
+            final JsonNode additionalFields = mapSetNode.get("additionalFields");
+
+            mapSet.setVersionStatus("Published");
+            mapSet.setVersion("2023-12-15");
+            mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse("2023-12-15"));
+            mapSet.setFromTerminology("SNOMEDCT-NO");
+            mapSet.setToTerminology("TBD");
+
+            mapSets.add(mapSet);
+        }
+
+        return mapSets;
     }
     
     @Override
     public MapSet getMapSet(final String code) throws Exception {
-        // N/A
+
+        final Client client = ClientBuilder.newClient();
+        final String accept = "application/json";
+
+        String searchAfter = null;
+        final ObjectMapper mapper = new ObjectMapper();
+        
+        int limit = 50;
+
+        
+        String targetUri = "https://snowstorm.ihtsdotools.org/snowstorm/snomed-ct/MAIN%2FSNOMEDCT-NO%2F2023-12-15/concepts?activeFilter=true&includeLeafFlag=false&form=inferred&conceptIds="+code+"&offset=0&limit=" + limit+ (searchAfter != null ? "&searchAfter=" + searchAfter : "");
+        LOG.info("getSnowstormMapset url: " + targetUri);
+
+        WebTarget target = client.target(targetUri);
+        target = client.target(targetUri);
+//        Logger.getLogger(getClass()).info(targetUri);
+     
+        Response response =
+            target.request(accept)
+//            .header("Cookie", ConfigUtility.getGenericUserCookie())
+            .get();
+        String resultString = response.readEntity(String.class);
+        if (response.getStatusInfo().getFamily() == Family.SUCCESSFUL) {
+          // n/a
+        } else {
+          throw new LocalException(
+              "Unexpected terminology server failure. Message = " + resultString);
+        }
+        
+        final JsonNode doc = mapper.readTree(resultString);
+     
+        final JsonNode mapSetsBatch = doc.get("items");
+
+        final Iterator<JsonNode> itemIterator = mapSetsBatch.iterator();
+
+        // parse items to retrieve matching concept
+        while (itemIterator.hasNext()) {
+
+            final JsonNode mapSetNode = itemIterator.next();
+
+            final MapSet mapSet = new MapSet();
+            mapSet.setRefSetCode(mapSetNode.get("conceptId").asText());
+            mapSet.setModuleId(mapSetNode.get("moduleId").asText());
+
+            // Set refset name to FSN if it exists, defaulting to PT if not.
+            if (mapSetNode.get("pt") != null) {
+
+                mapSet.setRefSetName(mapSetNode.get("pt").get("term").asText());
+            }
+            if (mapSetNode.get("fsn") != null && mapSetNode.get("fsn").get("term") != null) {
+
+                mapSet.setRefSetName(mapSetNode.get("fsn").get("term").asText());
+            }
+
+            //TODO - unhack this.  Some will need to be pulled from database rather than snowstorm
+            
+            final JsonNode additionalFields = mapSetNode.get("additionalFields");
+
+            mapSet.setVersionStatus("Published");
+            mapSet.setVersion("2023-12-15");
+            mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse("2023-12-15"));
+            mapSet.setFromTerminology("SNOMEDCT-NO");
+            mapSet.setToTerminology("TBD");
+
+            return mapSet;
+        }
+        
         return null;
     }
     
     /* see superclass */
     @Override
     public List<Mapping> getMappings(final String mapSetCode) throws Exception {
-        // N/A
-        return null;
+
+        // Grab the specified mapSet
+        final MapSet mapSet = getMapSet(mapSetCode);
+
+        final Map<String, Mapping> conceptIdToMappingMap = new HashMap<>();
+        
+        // Connect to snowstorm
+        final Client client = ClientBuilder.newClient();
+        final String accept = "application/json";
+
+        String searchAfter = null;
+        final ObjectMapper mapper = new ObjectMapper();
+        
+        int limit = 10;        
+        
+        String targetUri = "https://snowstorm.ihtsdotools.org/snowstorm/snomed-ct/MAIN%2FSNOMEDCT-NO%2F2023-12-15/members?referenceSet="+mapSetCode+"&active=true&limit="+limit+ (searchAfter != null ? "&searchAfter=" + searchAfter : "");
+        LOG.info("getSnowstormMappings url: " + targetUri);
+
+        WebTarget target = client.target(targetUri);
+        target = client.target(targetUri);
+//        Logger.getLogger(getClass()).info(targetUri);
+     
+        Response response =
+            target.request(accept)
+//            .header("Cookie", ConfigUtility.getGenericUserCookie())
+            .get();
+        String resultString = response.readEntity(String.class);
+        if (response.getStatusInfo().getFamily() == Family.SUCCESSFUL) {
+          // n/a
+        } else {
+          throw new LocalException(
+              "Unexpected terminology server failure. Message = " + resultString);
+        }
+        
+        final JsonNode doc = mapper.readTree(resultString);
+
+        final JsonNode mappingsBatch = doc.get("items");
+
+        final Iterator<JsonNode> itemIterator = mappingsBatch.iterator();
+
+        // parse items to retrieve matching concept
+        while (itemIterator.hasNext()) {
+
+            final JsonNode mappingNode = itemIterator.next();
+
+            // If this is the first time a fromConcept is encountered, set up the mapping and add it to the tracker
+            if (!conceptIdToMappingMap.containsKey(mappingNode.get("referencedComponentId").asText())) {
+                final Mapping mapping = new Mapping();
+                mapping.setCode(mappingNode.get("referencedComponentId").asText());
+                mapping.setName(getConcept(mapSet.getFromTerminology(), mapping.getCode()).getName());
+                mapping.setMapSetId(mapSet.getId());
+                mapping.setMapEntries(new ArrayList<>());
+
+                conceptIdToMappingMap.put(mappingNode.get("referencedComponentId").asText(), mapping);
+            }
+
+            // Add an entry to the mapping
+            final Mapping mapping = conceptIdToMappingMap.get(mappingNode.get("referencedComponentId").asText());
+            final MapEntry mapEntry = new MapEntry();
+
+            mapEntry.setModified(new SimpleDateFormat("yyyyMMdd").parse(mappingNode.get("effectiveTime").asText()));
+
+            final JsonNode additionalFields = mappingNode.get("additionalFields");
+
+            mapEntry.setRule(additionalFields.get("mapRule").asText());
+            mapEntry.setPriority(additionalFields.get("mapPriority").asInt());
+            mapEntry.setGroup(additionalFields.get("mapGroup").asInt());
+
+            final Set<String> advices = new HashSet<>();
+            String mapAdviceString = additionalFields.get("mapAdvice").asText();
+            //Store each pipe-delimited section of the map advice string as a separate map advice
+            for(String mapAdvice : mapAdviceString.split("\\|")) {
+                advices.add(mapAdvice.trim());
+            }
+            mapEntry.setAdvices(advices);
+
+            final Concept relationConcept = getConcept(mapSet.getFromTerminology(), additionalFields.get("mapCategoryId").asText());
+            if (relationConcept != null) {
+                mapEntry.setRelation(relationConcept.getName());
+            } else {
+                mapEntry.setRelation(mapEntry.getToCode() + " DOES NOT EXIST");
+            }
+
+            mapEntry.setToCode(additionalFields.get("mapTarget").asText());
+
+            final Concept toConcept = getConcept(mapSet.getToTerminology(), additionalFields.get("mapTarget").asText());
+
+            if (toConcept != null) {
+                mapEntry.setToName(toConcept.getName());
+            } else {
+                mapEntry.setToName(mapEntry.getToCode() + " DOES NOT EXIST");
+            }
+
+            final List<MapEntry> mapEntries = mapping.getMapEntries();
+            mapEntries.add(mapEntry);
+            mapping.setMapEntries(mapEntries);
+
+        }
+
+        // Once the file is completed parsed, return mappings as list
+        final ArrayList<Mapping> mappings = new ArrayList<>(conceptIdToMappingMap.values());
+
+        return mappings;     
+        
     }
     
     /* see superclass */
     @Override
     public Mapping getMapping(final String mapSetCode, final String conceptCode) throws Exception {
-        // N/A
-        return null;
+
+        // Grab the specified mapSet
+        final MapSet mapSet = getMapSet(mapSetCode);
+
+        final Mapping mapping = new Mapping();
+
+        // Connect to snowstorm
+        final Client client = ClientBuilder.newClient();
+        final String accept = "application/json";
+
+        String searchAfter = null;
+        final ObjectMapper mapper = new ObjectMapper();
+        
+        int limit = 50;        
+        
+        String targetUri = "https://snowstorm.ihtsdotools.org/snowstorm/snomed-ct/MAIN%2FSNOMEDCT-NO%2F2023-12-15/members?referenceSet="+mapSetCode+"&referencedComponentId="+conceptCode+"&active=true&limit="+limit+ (searchAfter != null ? "&searchAfter=" + searchAfter : "");
+        LOG.info("getSnowstormMapping url: " + targetUri);
+        
+        WebTarget target = client.target(targetUri);
+        target = client.target(targetUri);
+//        Logger.getLogger(getClass()).info(targetUri);
+     
+        Response response =
+            target.request(accept)
+//            .header("Cookie", ConfigUtility.getGenericUserCookie())
+            .get();
+        String resultString = response.readEntity(String.class);
+        if (response.getStatusInfo().getFamily() == Family.SUCCESSFUL) {
+          // n/a
+        } else {
+          throw new LocalException(
+              "Unexpected terminology server failure. Message = " + resultString);
+        }
+        
+        final JsonNode doc = mapper.readTree(resultString);
+
+        final JsonNode mappingsBatch = doc.get("items");
+
+        final Iterator<JsonNode> itemIterator = mappingsBatch.iterator();
+
+        // parse items to retrieve matching concept
+        while (itemIterator.hasNext()) {
+
+            final JsonNode mappingNode = itemIterator.next();
+            
+            // If this is the first time the fromConcept is encountered, set up the mapping
+            if (mapping.getCode() == null || mapping.getCode().isEmpty()) {
+                mapping.setCode(mappingNode.get("referencedComponentId").asText());
+                mapping.setName(getConcept(mapSet.getFromTerminology(), mapping.getCode()).getName());
+                mapping.setMapSetId(mapSet.getId());
+                mapping.setMapEntries(new ArrayList<>());
+            }
+
+            // Add an entry to the mapping
+            final MapEntry mapEntry = new MapEntry();
+
+            mapEntry.setModified(new SimpleDateFormat("yyyyMMdd").parse(mappingNode.get("effectiveTime").asText()));
+
+            final JsonNode additionalFields = mappingNode.get("additionalFields");
+
+            mapEntry.setRule(additionalFields.get("mapRule").asText());
+            mapEntry.setPriority(additionalFields.get("mapPriority").asInt());
+            mapEntry.setGroup(additionalFields.get("mapGroup").asInt());
+
+            final Set<String> advices = new HashSet<>();
+            String mapAdviceString = additionalFields.get("mapAdvice").asText();
+            //Store each pipe-delimited section of the map advice string as a separate map advice
+            for(String mapAdvice : mapAdviceString.split("\\|")) {
+                advices.add(mapAdvice.trim());
+            }
+            mapEntry.setAdvices(advices);
+
+            final Concept relationConcept = getConcept(mapSet.getFromTerminology(), additionalFields.get("mapCategoryId").asText());
+            if (relationConcept != null) {
+                mapEntry.setRelation(relationConcept.getName());
+            } else {
+                mapEntry.setRelation(mapEntry.getToCode() + " DOES NOT EXIST");
+            }
+
+            mapEntry.setToCode(additionalFields.get("mapTarget").asText());
+
+            final Concept toConcept = getConcept(mapSet.getToTerminology(), additionalFields.get("mapTarget").asText());
+
+            if (toConcept != null) {
+                mapEntry.setToName(toConcept.getName());
+            } else {
+                mapEntry.setToName(mapEntry.getToCode() + " DOES NOT EXIST");
+            }
+
+            final List<MapEntry> mapEntries = mapping.getMapEntries();
+            mapEntries.add(mapEntry);
+            mapping.setMapEntries(mapEntries);
+        }
+
+        // Once the file is completed parsing, return the mapping
+        return mapping;
     }    
     
     /* see superclass */
     @Override
     public Concept getConcept(final String terminology, final String code) throws Exception {
-        // N/A
+
+        // Connect to snowstorm
+        final Client client = ClientBuilder.newClient();
+        final String accept = "application/json";
+
+        String searchAfter = null;
+        final ObjectMapper mapper = new ObjectMapper();
+        
+        int limit = 50;       
+        
+        String targetUri = "https://snowstorm.ihtsdotools.org/snowstorm/snomed-ct/MAIN%2FSNOMEDCT-NO%2F2023-12-15/concepts?activeFilter=true&includeLeafFlag=false&form=inferred&conceptIds="+code+"&offset=0&limit="+limit+ (searchAfter != null ? "&searchAfter=" + searchAfter : "");
+        LOG.info("getSnowstormConcept url: " + targetUri);
+
+        WebTarget target = client.target(targetUri);
+        target = client.target(targetUri);
+//        Logger.getLogger(getClass()).info(targetUri);
+     
+        Response response =
+            target.request(accept)
+//            .header("Cookie", ConfigUtility.getGenericUserCookie())
+            .get();
+        String resultString = response.readEntity(String.class);
+        if (response.getStatusInfo().getFamily() == Family.SUCCESSFUL) {
+          // n/a
+        } else {
+          throw new LocalException(
+              "Unexpected terminology server failure. Message = " + resultString);
+        }
+        
+        final JsonNode doc = mapper.readTree(resultString);
+        
+        final JsonNode conceptNodeBatch = doc.get("items");
+
+        final Iterator<JsonNode> itemIterator = conceptNodeBatch.iterator();
+
+        // parse items to retrieve matching concept
+        while (itemIterator.hasNext()) {
+
+            final JsonNode conceptNode = itemIterator.next();
+
+            final Concept concept = new Concept();
+            concept.setActive(conceptNode.get("active").asBoolean());
+            concept.setId(conceptNode.get("id").asText());
+            concept.setCode(conceptNode.get("id").asText());
+
+            if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
+
+                concept.setDefined(true);
+            } else {
+
+                concept.setDefined(false);
+            }
+
+            if (conceptNode.get("pt") != null) {
+
+                concept.setName(conceptNode.get("pt").get("term").asText());
+            }
+
+            if (conceptNode.get("fsn") != null && conceptNode.get("fsn").get("term") != null) {
+
+                concept.setFsn(conceptNode.get("fsn").get("term").asText());
+            }
+
+            return concept;
+        }
+
+        // If no concept with the specified terminology and code found, return null
         return null;
     }
 
