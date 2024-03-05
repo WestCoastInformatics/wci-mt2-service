@@ -148,11 +148,9 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                 LOG.info("Deleted branch " + branchPath + ". Time: " + (System.currentTimeMillis() - start));
                 return true;
-            } else {
-
-                LOG.error("Could not delete branch " + branchPath);
-                return false;
             }
+            LOG.error("Could not delete branch " + branchPath);
+            return false;
 
         }
     }
@@ -173,11 +171,9 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                 LOG.debug("doesBranchExist: true. Time: " + (System.currentTimeMillis() - start));
                 return true;
-            } else {
-
-                LOG.debug("doesBranchExist: false. Time: " + (System.currentTimeMillis() - start));
-                return false;
             }
+            LOG.debug("doesBranchExist: false. Time: " + (System.currentTimeMillis() - start));
+            return false;
 
         }
     }
@@ -269,7 +265,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                     LOG.info("Merge status is: " + status);
 
-                    if (status.equals("FAILED")) {
+                    if ("FAILED".equals(status)) {
 
                         final String message = root.get("message").asText();
                         jobDone = true;
@@ -280,11 +276,10 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                             LOG.error(error);
                             throw new Exception(error);
 
-                        } else {
-                            LOG.debug("Merge did not occurr. " + message);
                         }
+                        LOG.debug("Merge did not occurr. " + message);
 
-                    } else if (status.equals("PENDING") || status.equals("IN_PROGRESS") || status.equals("SCHEDULED")) {
+                    } else if ("PENDING".equals(status) || "IN_PROGRESS".equals(status) || "SCHEDULED".equals(status)) {
 
                         LOG.debug("Merge hasn't finished yet...");
 
@@ -328,7 +323,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                                     LOG.info("Promoted branch state is: " + state);
 
-                                    if (state.equals("FORWARD") || state.equals("CURRENT") || state.equals("UP_TO_DATE")) {
+                                    if ("FORWARD".equals(state) || "CURRENT".equals(state) || "UP_TO_DATE".equals(state)) {
                                         stateGood = true;
 
                                     } else {
@@ -397,7 +392,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 final String status = root.get("status").asText();
                 LOG.debug("merge review status: " + status);
 
-                if (status.equalsIgnoreCase("PENDING")) {
+                if ("PENDING".equalsIgnoreCase(status)) {
 
                     LOG.debug("Merge review hasn't finished yet...");
 
@@ -407,13 +402,13 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                         Thread.currentThread().interrupt();
                     }
 
-                } else if (status.equalsIgnoreCase("failed")) {
+                } else if ("failed".equalsIgnoreCase(status)) {
 
                     error += "Job failed with: " + root.get("message").asText();
                     LOG.error(error);
                     throw new Exception(error);
 
-                } else if (status.equalsIgnoreCase("stale")) {
+                } else if ("stale".equalsIgnoreCase(status)) {
 
                     reviewId = mergeRebaseReview(sourceBranchPath, targetBranchPath);
                     jobDone = true;
@@ -471,13 +466,11 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             final JsonNode root = mapper.readTree(resultString.toString());
             final JsonNode conceptNode = root;
 
-            if (conceptNode.has("conceptId")) {
-
-                refsetConceptId = conceptNode.get("conceptId").asText();
-            } else {
+            if (!conceptNode.has("conceptId")) {
 
                 throw new Exception("Unable to create new refset concept.");
             }
+            refsetConceptId = conceptNode.get("conceptId").asText();
 
         }
 
@@ -702,20 +695,10 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     if (codeSystem.has("active") && !codeSystem.get("active").asBoolean()) {
                         continue;
                     }
-
-                    // Code System has been defined as to-be-ignored (either by specifying name or
-                    // shortname).
-                    else if (syncUtilities.getPropertyReader().getCodeSystemsToIgnore().contains(editionShortName)) {
+                    if (syncUtilities.getPropertyReader().getCodeSystemsToIgnore().contains(editionShortName)) {
                         continue;
                     }
-
-                    // deal only with Type-3 (non-Managed Service)
-                    // else if (!maintainerType.equalsIgnoreCase("Managed Service")) {
-                    // continue;
-                    // }
-
-                    // deal only with official affiliate code systems
-                    else if (!editionShortName.toLowerCase().contains("-affiliate")) {
+                    if (!editionShortName.toLowerCase().contains("-affiliate")) {
                         continue;
                     }
 
@@ -847,13 +830,11 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 final JsonNode root = mapper.readTree(resultString.toString());
                 final JsonNode conceptNode = root;
 
-                if (conceptNode.has("conceptId")) {
-
-                    refsetConceptId = conceptNode.get("conceptId").asText();
-                } else {
+                if (!conceptNode.has("conceptId")) {
 
                     throw new Exception("Unable to create new reference set concept.");
                 }
+                refsetConceptId = conceptNode.get("conceptId").asText();
 
             }
 
@@ -874,7 +855,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         refset.setEditBranchId(editBranchId);
         refset.setRefsetBranchId(refsetBranchId);
 
-        if (refset.getType().equals(Refset.INTENSIONAL)) {
+        if (Refset.INTENSIONAL.equals(refset.getType())) {
 
             // Add definition clauses to the DB
             for (final DefinitionClause clause : refset.getDefinitionClauses()) {
@@ -905,7 +886,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
         RefsetMemberService.REFSETS_UPDATED_MEMBERS.put(newInternalRefsetId, new HashMap<>());
 
-        if (refset.getType().equals(Refset.INTENSIONAL)) {
+        if (Refset.INTENSIONAL.equals(refset.getType())) {
 
             refset.setBranchPath(RefsetService.getBranchPath(refset));
 
@@ -1212,7 +1193,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         final Set<String> refsetIds = new HashSet<>();
 
         // if there are no query terms just exit the method
-        if (snowstormQuery.equals("")) {
+        if ("".equals(snowstormQuery)) {
 
             return refsetIds;
         }
@@ -1275,9 +1256,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             if (keyValue.length > 1 && directoryColumns.contains(keyValue[0])) {
                 continue;
-            } else {
-                snowstormQuery += queryPart + " AND ";
             }
+            snowstormQuery += queryPart + " AND ";
         }
 
         snowstormQuery = StringUtils.removeEnd(snowstormQuery, " AND ");
@@ -1443,7 +1423,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                             continue;
                         }
 
-                        if (description.get(RefsetMemberService.LANGUAGE_ID).equals(RefsetMemberService.PREFERRED_TERM_EN)) {
+                        if (RefsetMemberService.PREFERRED_TERM_EN.equals(description.get(RefsetMemberService.LANGUAGE_ID))) {
 
                             concept.setName(description.get(RefsetMemberService.DESCRIPTION_TERM));
                             break;
@@ -1624,11 +1604,11 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             limit = limitReturnNumber;
         }
 
-        if (searchMembersMode.equals("members")) {
+        if ("members".equals(searchMembersMode)) {
 
             searchOnlyRefsetMembers = true;
 
-        } else if (searchMembersMode.equals("non members")) {
+        } else if ("non members".equals(searchMembersMode)) {
 
             limitToNonMembers = true;
         }
@@ -1760,7 +1740,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                         concept.setId(conceptNode.get("id").asText());
                         concept.setCode(conceptNode.get("id").asText());
 
-                        if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
+                        if (!"PRIMITIVE".equals(conceptNode.get("definitionStatus").asText())) {
 
                             concept.setDefined(true);
                         } else {
@@ -2381,11 +2361,9 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         if (RefsetMemberService.REFSET_TO_PUBLISHED_VERSION_MAP.get(refsetId).contains(refsetLatestVersion)) {
 
             return null;
-        } else {
-
-            RefsetMemberService.REFSET_TO_PUBLISHED_VERSION_MAP.get(refsetId).add(refsetLatestVersion);
-            return refsetLatestVersion;
         }
+        RefsetMemberService.REFSET_TO_PUBLISHED_VERSION_MAP.get(refsetId).add(refsetLatestVersion);
+        return refsetLatestVersion;
     }
 
     /* see superclass */
@@ -2537,7 +2515,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     final Map<String, String> historyEntry = new HashMap<>();
                     historyEntry.put("version", currentVersionDate);
 
-                    if (currentStatus.equals("Active")) {
+                    if ("Active".equals(currentStatus)) {
 
                         historyEntry.put("change", "Activated");
                     } else {
@@ -2815,11 +2793,9 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 if (found) {
 
                     return false;
-                } else {
-
-                    LOG.debug("The ID " + inputConceptId + " is not a valid concept.");
-                    return true;
                 }
+                LOG.debug("The ID " + inputConceptId + " is not a valid concept.");
+                return true;
 
             }).collect(Collectors.toList());
 
@@ -3035,11 +3011,11 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     // LOG.debug("addRefsetMembers job status response: " + root);
                     final String status = root.get("status").asText();
 
-                    if (status.equalsIgnoreCase("COMPLETED")) {
+                    if ("COMPLETED".equalsIgnoreCase(status)) {
 
                         jobDone = true;
 
-                    } else if (status.equalsIgnoreCase("failed")) {
+                    } else if ("failed".equalsIgnoreCase(status)) {
 
                         jobDone = true;
                         LOG.error(errorMessage + " Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
@@ -3347,11 +3323,11 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     // LOG.debug("addRefsetMembers job status response: " + root);
                     final String status = root.get("status").asText();
 
-                    if (status.equalsIgnoreCase("COMPLETED")) {
+                    if ("COMPLETED".equalsIgnoreCase(status)) {
 
                         jobDone = true;
 
-                    } else if (status.equalsIgnoreCase("failed")) {
+                    } else if ("failed".equalsIgnoreCase(status)) {
 
                         jobDone = true;
                         LOG.error(errorMessage + root.get("message").asText());
@@ -3462,13 +3438,13 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
         WorkflowService.canUserPerformWorkflowAction(user, tempRefset, WorkflowService.UPGRADE);
 
-        if (tempRefset.getWorkflowStatus().equals(WorkflowService.PUBLISHED) && tempRefset.getAvailableActions().contains(WorkflowService.UPGRADE)) {
+        if (WorkflowService.PUBLISHED.equals(tempRefset.getWorkflowStatus()) && tempRefset.getAvailableActions().contains(WorkflowService.UPGRADE)) {
 
             final String newRefsetInternalId = RefsetService.createNewRefsetVersion(service, user, tempRefset.getId(), false);
             tempRefset = service.get(newRefsetInternalId, Refset.class);
         }
 
-        if (!tempRefset.getWorkflowStatus().equals(WorkflowService.READY_FOR_EDIT)) {
+        if (!WorkflowService.READY_FOR_EDIT.equals(tempRefset.getWorkflowStatus())) {
 
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Reference Set is in the wrong status to be Upgraded");
         }
@@ -3833,11 +3809,11 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                         upgradeReplacementConcept = replacementConcept;
                         conceptIdToChange = replacementConceptId;
 
-                        if (upgradeInactiveConcept.isStillMember() && changed.equals(RefsetMemberService.REPLACEMENT_ADDED)) {
+                        if (upgradeInactiveConcept.isStillMember() && RefsetMemberService.REPLACEMENT_ADDED.equals(changed)) {
 
                             removeInactiveAlso = true;
 
-                        } else if (changed.equals(RefsetMemberService.REMOVED_MANUAL_REPLACEMENT) && !upgradeReplacementConcept.isAdded()) {
+                        } else if (RefsetMemberService.REMOVED_MANUAL_REPLACEMENT.equals(changed) && !upgradeReplacementConcept.isAdded()) {
 
                             memberChange = false;
                         }
@@ -3846,7 +3822,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                 }
 
-            } else if (changed.equals(RefsetMemberService.NEW_MANUAL_REPLACEMENT)) {
+            } else if (RefsetMemberService.NEW_MANUAL_REPLACEMENT.equals(changed)) {
 
                 upgradeReplacementConcept = manualReplacementConcept;
                 memberChange = false;
@@ -3890,7 +3866,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             }
 
-            if (changed.equals(RefsetMemberService.INACTIVE_REMOVED)) {
+            if (RefsetMemberService.INACTIVE_REMOVED.equals(changed)) {
 
                 upgradeInactiveConcept.setStillMember(false);
 
@@ -3940,7 +3916,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                     // If a replacement was successfully added for the first time then populate the
                     // member ID
-                    if (changed.equals(RefsetMemberService.REPLACEMENT_ADDED) && unchangedConcepts.size() == 0) {
+                    if (RefsetMemberService.REPLACEMENT_ADDED.equals(changed) && unchangedConcepts.size() == 0) {
 
                         // when searching for members we only want concepts whose membership is active
                         // (though the concept itself can be inactive)
@@ -3973,13 +3949,11 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                                 final JsonNode conceptNode = iterator.next();
 
-                                if (conceptNode.get("referencedComponentId").asText().equals(conceptIdToChange)) {
-
-                                    upgradeReplacementConcept.setMemberId(conceptNode.get("memberId").asText());
-                                } else {
+                                if (!conceptNode.get("referencedComponentId").asText().equals(conceptIdToChange)) {
 
                                     throw new Exception("There was a problem getting the member ID");
                                 }
+                                upgradeReplacementConcept.setMemberId(conceptNode.get("memberId").asText());
 
                             }
 
@@ -3990,7 +3964,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 }
 
                 // save or remove the replacement concept
-                if (changed.equals(RefsetMemberService.REMOVED_MANUAL_REPLACEMENT)) {
+                if (RefsetMemberService.REMOVED_MANUAL_REPLACEMENT.equals(changed)) {
 
                     upgradeInactiveConcept.getReplacementConcepts().remove(upgradeReplacementConcept);
                     service.remove(upgradeReplacementConcept);
@@ -4002,7 +3976,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     LOG.debug("modifyUpgradeConcept: updated the replacement concept: " + conceptIdToChange);
                 }
 
-            } else if (changed.equals(RefsetMemberService.INACTIVE_ADDED)) {
+            } else if (RefsetMemberService.INACTIVE_ADDED.equals(changed)) {
 
                 upgradeInactiveConcept.setStillMember(true);
             }
@@ -4224,7 +4198,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             final JsonNode mappingNode = itemIterator.next();
 
             // Only process active mappings from the correct mapset
-            if (!(mappingNode.get("refsetId").asText().equals(mapSet.getRefSetCode()) && mappingNode.get("active").asText().equals("true"))) {
+            if (!(mappingNode.get("refsetId").asText().equals(mapSet.getRefSetCode()) && "true".equals(mappingNode.get("active").asText()))) {
                 continue;
             }
 
@@ -4252,9 +4226,9 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             mapEntry.setGroup(additionalFields.get("mapGroup").asInt());
 
             final Set<String> advices = new HashSet<>();
-            String mapAdviceString = additionalFields.get("mapAdvice").asText();
-            //Store each pipe-delimited section of the map advice string as a separate map advice
-            for(String mapAdvice : mapAdviceString.split("\\|")) {
+            final String mapAdviceString = additionalFields.get("mapAdvice").asText();
+            // Store each pipe-delimited section of the map advice string as a separate map advice
+            for (final String mapAdvice : mapAdviceString.split("\\|")) {
                 advices.add(mapAdvice.trim());
             }
             mapEntry.setAdvices(advices);
@@ -4316,14 +4290,14 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             final JsonNode mappingNode = itemIterator.next();
 
             // Only process active mappings from the correct mapset
-            if (!(mappingNode.get("refsetId").asText().equals(mapSet.getRefSetCode()) && mappingNode.get("active").asText().equals("true"))) {
+            if (!(mappingNode.get("refsetId").asText().equals(mapSet.getRefSetCode()) && "true".equals(mappingNode.get("active").asText()))) {
                 continue;
             }
-            
+
             // Only process the requested concept
             if (!mappingNode.get("referencedComponentId").asText().equals(conceptCode)) {
                 continue;
-            }            
+            }
 
             // If this is the first time the fromConcept is encountered, set up the mapping
             if (mapping.getCode() == null || mapping.getCode().isEmpty()) {
@@ -4345,9 +4319,9 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             mapEntry.setGroup(additionalFields.get("mapGroup").asInt());
 
             final Set<String> advices = new HashSet<>();
-            String mapAdviceString = additionalFields.get("mapAdvice").asText();
-            //Store each pipe-delimited section of the map advice string as a separate map advice
-            for(String mapAdvice : mapAdviceString.split("\\|")) {
+            final String mapAdviceString = additionalFields.get("mapAdvice").asText();
+            // Store each pipe-delimited section of the map advice string as a separate map advice
+            for (final String mapAdvice : mapAdviceString.split("\\|")) {
                 advices.add(mapAdvice.trim());
             }
             mapEntry.setAdvices(advices);
@@ -4377,8 +4351,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         // Once the file is completed parsing, return the mapping
         return mapping;
     }
-    
-    
+
     /* see superclass */
     @Override
     public Concept getConcept(final String terminology, final String code) throws Exception {
@@ -4402,7 +4375,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             final JsonNode conceptNode = itemIterator.next();
 
             // Pull the requested, active concept
-            if (!(conceptNode.get("conceptId").asText().equals(code) && conceptNode.get("active").asText().equals("true"))) {
+            if (!(conceptNode.get("conceptId").asText().equals(code) && "true".equals(conceptNode.get("active").asText()))) {
                 continue;
             }
 
@@ -4411,7 +4384,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             concept.setId(conceptNode.get("id").asText());
             concept.setCode(conceptNode.get("id").asText());
 
-            if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
+            if (!"PRIMITIVE".equals(conceptNode.get("definitionStatus").asText())) {
 
                 concept.setDefined(true);
             } else {
@@ -4448,6 +4421,23 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
     public void setProperties(final Properties properties) throws Exception {
 
         handlerProperties.putAll(properties);
+    }
+
+    /* see superclass */
+    @Override
+    public Mapping createMapping(final String mapSetCode, final Mapping mapping) throws Exception {
+
+        // This class is temporary to read and return data from json file.
+        // This method is not implemented.
+        return null;
+    }
+
+    /* see superclass */
+    @Override
+    public void updateMapping(final String mapSetCode, final Mapping mapping) throws Exception {
+
+        // This class is temporary to read and return data from json file.
+        // This method is not implemented.
     }
 
 }

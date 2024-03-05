@@ -520,7 +520,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @return the map set
      * @throws Exception the exception
      */
-    public MapSet getMapSet(String code) throws Exception;
+    public MapSet getMapSet(final String code) throws Exception;
 
     /**
      * Returns the mappings.
@@ -529,7 +529,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @return the mappings
      * @throws Exception the exception
      */
-    public List<Mapping> getMappings(String mapSetCode) throws Exception;
+    public List<Mapping> getMappings(final String mapSetCode) throws Exception;
 
     /**
      * Returns the mapping.
@@ -539,7 +539,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @return the mapping
      * @throws Exception the exception
      */
-    public Mapping getMapping(String mapSetCode, String conceptCode) throws Exception;
+    public Mapping getMapping(final String mapSetCode, final String conceptCode) throws Exception;
 
     /**
      * Returns the concept.
@@ -550,4 +550,24 @@ public interface TerminologyServerHandler extends Configurable {
      * @throws Exception the exception
      */
     public Concept getConcept(String terminology, String code) throws Exception;
+
+    /**
+     * Create mapping.
+     *
+     * @param mapSetCode the map set code
+     * @param mapping the mapping
+     * @return the mapping
+     * @throws Exception the exception
+     */
+    public Mapping createMapping(final String mapSetCode, final Mapping mapping) throws Exception;
+
+    /**
+     * Update mapping.
+     *
+     * @param mapSetCode the map set code
+     * @param mapping the mapping
+     * @throws Exception the exception
+     */
+    public void updateMapping(final String mapSetCode, final Mapping mapping) throws Exception;
+
 }

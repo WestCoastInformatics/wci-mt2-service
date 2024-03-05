@@ -81,7 +81,7 @@ apply plugin: "org.springframework.boot"
 apply plugin: "checkstyle"
 /*
  * The dependency management plugin remains a transitive dependency of spring-boot-gradle-plugin
- * so there’s no need for it to be listed as a classpath dependency in the buildscript configuration.
+ * so there is no need for it to be listed as a classpath dependency in the buildscript configuration.
  */
 apply plugin: "io.spring.dependency-management"
 apply plugin: "maven"
@@ -182,6 +182,7 @@ dependencies {
   implementation "org.reflections:reflections:0.9.11"
   implementation "javax.ws.rs:javax.ws.rs-api:2.1.1"
   implementation "com.sun.mail:javax.mail:1.6.2"
+  // the below were need due to Snowstorm DELETE API with body
   //implementation "org.jboss.resteasy:resteasy-client:4.7.2.Final"
   //implementation "org.jboss.resteasy:resteasy-jackson2-provider:4.7.2.Final"
   implementation "mysql:mysql-connector-java"
