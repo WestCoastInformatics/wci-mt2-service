@@ -12,7 +12,6 @@ package org.ihtsdo.refsetservice.handler;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Random;
 import java.util.Set;
 
 import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormBranch;
@@ -73,14 +72,14 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
     throws Exception {
 
     return SnowstormBranch.createBranch(parentBranchPath, branchName);
-      }
+  }
 
   /* see superclass */
   @Override
   public boolean deleteBranch(final String branchPath) throws Exception {
 
     return SnowstormBranch.deleteBranch(branchPath);
-      }
+  }
 
   /* see superclass */
   @Override
@@ -88,14 +87,14 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     return SnowstormBranch.doesBranchExist(branchPath);
 
-      }
+  }
 
   /* see superclass */
   @Override
   public List<String> getBranchChildren(final String branchPath) throws Exception {
 
     return SnowstormBranch.getBranchChildren(branchPath);
-      }
+  }
 
   /* see superclass */
   @Override
@@ -104,7 +103,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     SnowstormBranch.mergeBranch(sourceBranchPath, targetBranchPath, comment, rebase);
 
-    }
+  }
 
   /* see superclass */
   @Override
@@ -112,21 +111,21 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
     throws Exception {
 
     return SnowstormBranch.mergeRebaseReview(sourceBranchPath, targetBranchPath);
-      }
+  }
 
   /* see superclass */
   @Override
   public String getNewRefsetId(final String editionBranchPath) throws Exception {
 
     return SnowstormRefset.getNewRefsetId(editionBranchPath);
-    }
+  }
 
   /* see superclass */
   @Override
   public List<String> getBranchVersions(final String editionPath) throws Exception {
 
     return SnowstormBranch.getBranchVersions(editionPath);
-    }
+  }
 
   /* see superclass */
   @Override
@@ -134,7 +133,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     return SnowstormExport.generateVersionFile(entityString);
 
-    }
+  }
 
   /* see superclass */
   @Override
@@ -143,7 +142,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     SnowstormExport.downloadGeneratedFile(snowVersionFileUrl, localSnowVersionPath);
 
-    }
+  }
 
   /* see superclass */
   @Override
@@ -151,7 +150,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     return SnowstormConcept.getModuleNames(project);
 
-    }
+  }
 
   /* see superclass */
   @Override
@@ -159,7 +158,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     return SnowstormCodeSystem.getAffiliateEditionList();
 
-          }
+  }
 
   /* see superclass */
   @Override
@@ -168,7 +167,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     return SnowstormRefset.createRefset(service, user, refsetEditParameters);
 
-    }
+  }
 
   /* see superclass */
   @Override
@@ -177,7 +176,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     return SnowstormConcept.getRefsetConcepts(service, branch, areParentConcepts);
 
-    }
+  }
 
   /* see superclass */
   @Override
@@ -186,7 +185,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     SnowstormConcept.updateRefsetConcept(refset, active, moduleId);
 
-      }
+  }
 
   /* Refset Member Service calls */
 
@@ -199,7 +198,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
     return SnowstormRefsetMember.getAllRefsetMembers(service, refsetInternalId, searchAfter,
         concepts);
 
-    }
+  }
 
   /* see superclass */
   @Override
@@ -207,7 +206,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     return SnowstormMultiSearch.getDirectoryMembers(snowstormQuery);
 
-    }
+  }
 
   /* see superclass */
   @Override
@@ -217,7 +216,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
     return SnowstormMultiSearch.searchMultisearchDescriptions(searchParameters, ecl,
         nonPublishedBranchPaths);
 
-      }
+  }
 
   /* see superclass */
   @Override
@@ -226,7 +225,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     return SnowstormRefsetMember.getMemberSctids(refsetId, limit, searchAfter, branchPath);
 
-      }
+  }
 
   /* see superclass */
   @Override
@@ -235,7 +234,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     SnowstormDescription.populateAllLanguageDescriptions(refset, conceptsToProcess);
 
-      }
+  }
 
   /* see superclass */
   @Override
@@ -244,7 +243,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     SnowstormConcept.populateConceptLeafStatus(refset, conceptsToProcess);
 
-      }
+  }
 
   /* see superclass */
   @Override
@@ -252,7 +251,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     return SnowstormConcept.getConceptAncestors(refset, conceptId);
 
-    }
+  }
 
   /* see superclass */
   @Override
@@ -263,7 +262,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
     return SnowstormConcept.searchConcepts(refset, searchParameters, searchMembersMode,
         limitReturnNumber);
 
-    }
+  }
 
   /* see superclass */
   @Override
@@ -271,7 +270,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     return SnowstormRefsetMember.getMemberCount(refset);
 
-      }
+  }
 
   /* see superclass */
   @Override
@@ -281,15 +280,15 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     return SnowstormRefsetMember.getMemberList(refset, nonDefaultPreferredTerms, searchParameters);
 
-    }
+  }
 
-            /* see superclass */
-            @Override
+  /* see superclass */
+  @Override
   public Concept getConceptDetails(final String conceptId, final Refset refset) throws Exception {
 
     return SnowstormConcept.getConceptDetails(conceptId, refset);
 
-    }
+  }
 
   /* see superclass */
   @Override
@@ -298,7 +297,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     return SnowstormConcept.getParents(conceptId, refset, language);
 
-      }
+  }
 
   /* see superclass */
   @Override
@@ -307,7 +306,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     return SnowstormConcept.getChildren(conceptId, refset, language);
 
-      }
+  }
 
   /* see superclass */
   @Override
@@ -316,7 +315,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     return SnowstormConcept.getConceptsFromSnowstorm(url, refset, lookupParameters, language);
 
-    }
+  }
 
   /* see superclass */
   @Override
@@ -325,7 +324,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     SnowstormRefsetMember.populateMembershipInformation(refset, concepts);
 
-                  }
+  }
 
   /* see superclass */
   @Override
@@ -334,7 +333,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     return SnowstormRefset.getLatestChangedVersionDate(branch, refsetId);
 
-        }
+  }
 
   /* see superclass */
   @Override
@@ -343,7 +342,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     return SnowstormRefset.getRefsetConceptReleaseDate(refsetId, branch);
 
-      }
+  }
 
   /* see superclass */
   @Override
@@ -352,7 +351,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     return SnowstormRefsetMember.getMemberHistory(service, referencedComponentId, versions);
 
-      }
+  }
 
   /* see superclass */
   @Override
@@ -360,16 +359,16 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     return SnowstormRefsetMember.cacheMemberAncestors(refset);
 
-    }
+  }
 
-        /* see superclass */
-        @Override
+  /* see superclass */
+  @Override
   public List<String> addRefsetMembers(final TerminologyService service, final User user,
     final Refset refset, final List<String> conceptIds) throws Exception {
 
     return SnowstormRefsetMember.addRefsetMembers(service, user, refset, conceptIds);
 
-    }
+  }
 
   /* see superclass */
   @Override
@@ -378,7 +377,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     return SnowstormRefsetMember.callAddMemberSingle(refsetId, url, conceptId, moduleId);
 
-      }
+  }
 
   /* see superclass */
   @Override
@@ -387,7 +386,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     return SnowstormRefsetMember.callAddMembersBulk(refsetId, url, conceptIds, moduleId);
 
-    }
+  }
 
   /* see superclass */
   @Override
@@ -396,7 +395,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     return SnowstormRefsetMember.removeRefsetMembers(service, user, refset, conceptIds);
 
-    }
+  }
 
   /* see superclass */
   @Override
@@ -405,7 +404,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     return SnowstormRefsetMember.callUpdateMemberSingle(refsetId, url, memberBody);
 
-      }
+  }
 
   /* see superclass */
   @Override
@@ -414,7 +413,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     return SnowstormRefsetMember.callUpdateMembersBulk(refsetId, url, memberBodies);
 
-      }
+  }
 
   /* see superclass */
   @Override
@@ -422,7 +421,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     return SnowstormConcept.getConceptIdsFromEcl(branch, ecl);
 
-        }
+  }
 
   /* see superclass */
   @Override
@@ -431,10 +430,10 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     return RefsetMemberService.compileUpgradeData(service, user, refsetInternalId);
 
-    }
+  }
 
-                /* see superclass */
-                @Override
+  /* see superclass */
+  @Override
   public String modifyUpgradeConcept(final TerminologyService service, final User user,
     final Refset refset, final String inactiveConceptId, final String replacementConceptId,
     final UpgradeReplacementConcept manualReplacementConcept, final String changed)
@@ -443,7 +442,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
     return RefsetMemberService.modifyUpgradeConcept(service, user, refset, inactiveConceptId,
         replacementConceptId, manualReplacementConcept, changed);
 
-      }
+  }
 
   /*
    *
@@ -456,7 +455,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
   public List<MapSet> getMapSets() throws Exception {
 
     return SnowstormMapping.getMapSets();
-    }
+  }
 
   /* see superclass */
   @Override
@@ -464,24 +463,25 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     return SnowstormMapping.getMapSet(code);
 
-    }
+  }
 
   /* see superclass */
   @Override
   public ResultList<Mapping> getMappings(final String mapSetCode,
-    final SearchParameters searchParameters, final String filter, final List<String> conceptCodes) throws Exception {
+    final SearchParameters searchParameters, final String filter, final List<String> conceptCodes)
+    throws Exception {
 
     return SnowstormMapping.getMappings(mapSetCode, searchParameters, filter, conceptCodes);
 
   }
-    
+
   /* see superclass */
   @Override
   public Mapping getMapping(final String mapSetCode, final String conceptCode) throws Exception {
 
     return SnowstormMapping.getMapping(mapSetCode, conceptCode);
 
-    }
+  }
 
   /* see superclass */
   @Override
@@ -489,7 +489,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     return SnowstormConcept.getConcept(terminology, code);
 
-    }
+  }
 
   /* see superclass */
   @Override
@@ -503,6 +503,21 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
   public void setProperties(final Properties properties) throws Exception {
 
     handlerProperties.putAll(properties);
+  }
+
+  /* see superclass */
+  @Override
+  public Mapping createMapping(final String mapSetCode, final Mapping mapping) throws Exception {
+
+    // TODO implement with Snowstorm
+    return null;
+  }
+
+  /* see superclass */
+  @Override
+  public void updateMapping(final String mapSetCode, final Mapping mapping) throws Exception {
+
+    // TODO implement with Snowstorm
   }
 
 }
