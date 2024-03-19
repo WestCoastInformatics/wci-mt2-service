@@ -12,37 +12,73 @@ package org.ihtsdo.refsetservice.model;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.ElementCollection;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.OneToMany;
+import javax.persistence.OrderBy;
+import javax.persistence.Table;
+
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
+import org.hibernate.search.engine.backend.types.Projectable;
+import org.hibernate.search.engine.backend.types.Searchable;
+import org.hibernate.search.engine.backend.types.Sortable;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 /**
  * The Map Entry object.
  *
  */
+@Entity
+@Table(name = "map_entries")
+@JsonIgnoreProperties(ignoreUnknown = true, value = {
+    "hibernateLazyInitializer", "handler"
+})
+@Indexed
 public class MapEntry extends AbstractHasModified {
 
     /** The advices. */
+    @ElementCollection
+    @Fetch(FetchMode.JOIN)
     private Set<String> advices = new HashSet<>();
 
     /** The additional map entry info. */
+    @OneToMany(cascade = CascadeType.ALL, targetEntity = AdditionalMapEntryInfo.class, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OrderBy("created ASC")
     private Set<AdditionalMapEntryInfo> additionalMapEntryInfos = new HashSet<>();
 
     /** The target. */
+    @Column(nullable = false, length = 4000)
     private String toCode;
 
     /** The target name. */
+    @Column(nullable = false, length = 4000)
     private String toName;
 
     /** The rule. */
+    @Column(nullable = false, length = 4000)
     private String rule;
 
     /** The map priority. */
+    @Column(nullable = false)
     private int priority;
 
     /** The relation. */
+    @Column(nullable = false, length = 4000)
     private String relation;
 
     /** The map block. */
+    @Column(nullable = false)
     private int block;
 
     /** The index (map group). */
+    @Column(nullable = false, name = "map_group")
     private int group;
 
     /**
@@ -58,6 +94,7 @@ public class MapEntry extends AbstractHasModified {
      *
      * @return the to code
      */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getToCode() {
 
         return toCode;
@@ -78,6 +115,7 @@ public class MapEntry extends AbstractHasModified {
      *
      * @return the to name
      */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getToName() {
 
         return this.toName;
@@ -99,6 +137,7 @@ public class MapEntry extends AbstractHasModified {
      *
      * @return the relation
      */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getRelation() {
 
         return relation;
@@ -121,8 +160,9 @@ public class MapEntry extends AbstractHasModified {
      */
     public Set<String> getAdvices() {
 
-        if (advices == null)
+        if (advices == null) {
             advices = new HashSet<>();// ensures proper serialization
+        }
         return advices;
     }
 
@@ -143,8 +183,9 @@ public class MapEntry extends AbstractHasModified {
      */
     public Set<AdditionalMapEntryInfo> getAdditionalMapEntryInfos() {
 
-        if (additionalMapEntryInfos == null)
+        if (additionalMapEntryInfos == null) {
             additionalMapEntryInfos = new HashSet<>();// ensures proper serialization
+        }
         return additionalMapEntryInfos;
     }
 
@@ -260,8 +301,12 @@ public class MapEntry extends AbstractHasModified {
 
     }
 
+    /**
+     * Lazy init.
+     */
     @Override
     public void lazyInit() {
+
         // N/A
     }
 

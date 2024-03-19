@@ -1,26 +1,29 @@
 package org.ihtsdo.refsetservice.model;
 
 import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-// TODO: Auto-generated Javadoc
 /**
  * A JPA enabled implementation of {@link MapPrinciple}.
  */
-// @Entity
-// @Table(name = "map_principles", uniqueConstraints = {
-// @UniqueConstraint(columnNames = {
-// "name", "principleId"
-// })
-// })
+@Entity
+@Table(name = "map_principles", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {
+        "name", "principleId"
+    })
+})
 @JsonIgnoreProperties(ignoreUnknown = true)
-// @Indexed
+@Indexed
 public class MapPrinciple extends AbstractHasId {
 
     /** The principle id. */
@@ -182,33 +185,44 @@ public class MapPrinciple extends AbstractHasId {
     @Override
     public boolean equals(final Object obj) {
 
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         final MapPrinciple other = (MapPrinciple) obj;
         if (detail == null) {
-            if (other.detail != null)
+            if (other.detail != null) {
                 return false;
-        } else if (!detail.equals(other.detail))
+            }
+        } else if (!detail.equals(other.detail)) {
             return false;
+        }
         if (name == null) {
-            if (other.name != null)
+            if (other.name != null) {
                 return false;
-        } else if (!name.equals(other.name))
+            }
+        } else if (!name.equals(other.name)) {
             return false;
+        }
         if (principleId == null) {
-            if (other.principleId != null)
+            if (other.principleId != null) {
                 return false;
-        } else if (!principleId.equals(other.principleId))
+            }
+        } else if (!principleId.equals(other.principleId)) {
             return false;
+        }
         if (sectionRef == null) {
-            if (other.sectionRef != null)
+            if (other.sectionRef != null) {
                 return false;
-        } else if (!sectionRef.equals(other.sectionRef))
+            }
+        } else if (!sectionRef.equals(other.sectionRef)) {
             return false;
+        }
         return true;
     }
 

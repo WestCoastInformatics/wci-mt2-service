@@ -1,30 +1,34 @@
 package org.ihtsdo.refsetservice.model;
 
 import javax.persistence.Column;
+import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.persistence.Table;
 import javax.persistence.Transient;
+import javax.persistence.UniqueConstraint;
 
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
  * A JPA-enabled implementation of {@link MapUser}.
  */
-// @Entity
-// @Table(name = "map_users", uniqueConstraints = {
-// @UniqueConstraint(columnNames = {
-// "userName"
-// })
-// })
+@Entity
+@Table(name = "map_users", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {
+        "userName"
+    })
+})
 @JsonIgnoreProperties(ignoreUnknown = true, value = {
     "hibernateLazyInitializer", "handler"
 })
-// @Indexed
+@Indexed
 public class MapUser extends AbstractHasId {
 
     /** The user name. */
@@ -195,35 +199,47 @@ public class MapUser extends AbstractHasId {
     @Override
     public boolean equals(final Object obj) {
 
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         final MapUser other = (MapUser) obj;
-        if (applicationRole != other.applicationRole)
+        if (applicationRole != other.applicationRole) {
             return false;
+        }
         if (email == null) {
-            if (other.email != null)
+            if (other.email != null) {
                 return false;
-        } else if (!email.equals(other.email))
+            }
+        } else if (!email.equals(other.email)) {
             return false;
+        }
         if (team == null) {
-            if (other.team != null)
+            if (other.team != null) {
                 return false;
-        } else if (!team.equals(other.team))
+            }
+        } else if (!team.equals(other.team)) {
             return false;
+        }
         if (name == null) {
-            if (other.name != null)
+            if (other.name != null) {
                 return false;
-        } else if (!name.equals(other.name))
+            }
+        } else if (!name.equals(other.name)) {
             return false;
+        }
         if (userName == null) {
-            if (other.userName != null)
+            if (other.userName != null) {
                 return false;
-        } else if (!userName.equals(other.userName))
+            }
+        } else if (!userName.equals(other.userName)) {
             return false;
+        }
         return true;
     }
 

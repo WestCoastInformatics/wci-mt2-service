@@ -10,26 +10,32 @@
 package org.ihtsdo.refsetservice.model;
 
 import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * The Class MapSet.
  */
-// @Entity
-// @Schema(description = "Represents a map set")
-// @Table(name = "map_sets", uniqueConstraints = {
-// @UniqueConstraint(columnNames = {
-// "name"
-// })
-// })
-// @Indexed
+@Entity
+@Schema(description = "Represents a map set")
+@Table(name = "map_sets", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {
+        "name"
+    })
+})
+@Indexed
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MapSet extends AbstractHasModified {
 
@@ -378,6 +384,9 @@ public class MapSet extends AbstractHasModified {
         this.toBranchPath = toBranchPath;
     }
 
+    /**
+     * Lazy init.
+     */
     @Override
     public void lazyInit() {
 

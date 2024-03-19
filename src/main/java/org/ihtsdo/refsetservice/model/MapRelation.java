@@ -1,21 +1,26 @@
 package org.ihtsdo.refsetservice.model;
 
 import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 import javax.xml.bind.annotation.XmlAttribute;
+
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
  * The Class MapRelation.
  */
-// @Entity
-// @Table(name = "map_relations", uniqueConstraints = {
-// @UniqueConstraint(columnNames = {
-// "name"
-// })
-// })
+@Entity
+@Table(name = "map_relations", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {
+        "name"
+    })
+})
 @JsonIgnoreProperties(ignoreUnknown = true)
-// @Indexed
+@Indexed
 public class MapRelation extends AbstractHasId {
 
     /** The terminology id. */
@@ -146,18 +151,23 @@ public class MapRelation extends AbstractHasId {
     @Override
     public boolean equals(final Object obj) {
 
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         final MapRelation other = (MapRelation) obj;
         if (terminologyId == null) {
-            if (other.terminologyId != null)
+            if (other.terminologyId != null) {
                 return false;
-        } else if (!terminologyId.equals(other.terminologyId))
+            }
+        } else if (!terminologyId.equals(other.terminologyId)) {
             return false;
+        }
         return true;
     }
 
