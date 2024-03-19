@@ -28,11 +28,24 @@
     <class>org.ihtsdo.refsetservice.model.DiscussionThread</class>
     <class>org.ihtsdo.refsetservice.model.AuditEntry</class>
     <class>org.ihtsdo.refsetservice.model.Artifact</class>
-    
+    <class>org.ihtsdo.refsetservice.model.InviteRequest</class>
+        
     <!--  import models for auth -->
     <class>org.ihtsdo.refsetservice.model.User</class>
     
-    <class>org.ihtsdo.refsetservice.model.InviteRequest</class>
+    <!-- import mapping models -->
+    <class>org.ihtsdo.refsetservice.model.MapUser</class>
+    <class>org.ihtsdo.refsetservice.model.AdditionalMapEntryInfo</class>
+    <class>org.ihtsdo.refsetservice.model.MapEntry</class>
+    <class>org.ihtsdo.refsetservice.model.MapPrinciple</class>
+    <class>org.ihtsdo.refsetservice.model.MapRelation</class>
+    <class>org.ihtsdo.refsetservice.model.MapAdvice</class>
+    <class>org.ihtsdo.refsetservice.model.MapNote</class>
+    <class>org.ihtsdo.refsetservice.model.Mapping</class>
+    <class>org.ihtsdo.refsetservice.model.MapSet</class>
+    
+    
+    
 
   </persistence-unit>
 </persistence>
