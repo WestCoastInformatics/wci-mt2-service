@@ -4,21 +4,26 @@ import java.util.List;
 import java.util.Objects;
 
 import javax.persistence.Column;
+import javax.persistence.Entity;
 import javax.persistence.ManyToOne;
+import javax.persistence.Table;
 
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * The Class Mapping.
  */
-// @Entity
-// @Schema(description = "Represents a mapping")
-// @Table(name = "mappings")
+@Entity
+@Schema(description = "Represents a mapping")
+@Table(name = "mappings")
 @JsonIgnoreProperties(ignoreUnknown = true)
-// @Indexed
+@Indexed
 public class Mapping extends AbstractHasModified {
 
     /** The code. */
@@ -141,12 +146,15 @@ public class Mapping extends AbstractHasModified {
     @Override
     public boolean equals(final Object obj) {
 
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (!super.equals(obj))
+        }
+        if (!super.equals(obj)) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         final Mapping other = (Mapping) obj;
         return Objects.equals(code, other.code) && Objects.equals(mapEntries, other.mapEntries) && Objects.equals(mapSetId, other.mapSetId)
             && Objects.equals(name, other.name);

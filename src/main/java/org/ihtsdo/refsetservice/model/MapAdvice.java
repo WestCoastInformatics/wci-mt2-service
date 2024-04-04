@@ -1,26 +1,30 @@
 package org.ihtsdo.refsetservice.model;
 
 import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 import javax.xml.bind.annotation.XmlAttribute;
 
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
  * The Class MapAdvice.
  */
-// @Entity
-// @Table(name = "map_advices", uniqueConstraints = {
-// @UniqueConstraint(columnNames = {
-// "name"
-// })
-// })
+@Entity
+@Table(name = "map_advices", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {
+        "name"
+    })
+})
 @JsonIgnoreProperties(ignoreUnknown = true)
-// @Indexed
+@Indexed
 public class MapAdvice extends AbstractHasId {
 
     /** The name. */
@@ -186,23 +190,30 @@ public class MapAdvice extends AbstractHasId {
     @Override
     public boolean equals(final Object obj) {
 
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         final MapAdvice other = (MapAdvice) obj;
         if (detail == null) {
-            if (other.detail != null)
+            if (other.detail != null) {
                 return false;
-        } else if (!detail.equals(other.detail))
+            }
+        } else if (!detail.equals(other.detail)) {
             return false;
+        }
         if (name == null) {
-            if (other.name != null)
+            if (other.name != null) {
                 return false;
-        } else if (!name.equals(other.name))
+            }
+        } else if (!name.equals(other.name)) {
             return false;
+        }
         return true;
     }
 

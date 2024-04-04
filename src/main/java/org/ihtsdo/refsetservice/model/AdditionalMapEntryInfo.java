@@ -1,17 +1,20 @@
 package org.ihtsdo.refsetservice.model;
 
 import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Table;
+
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-// TODO: Auto-generated Javadoc
 /**
  * The additional Map Entry Info.
  */
-// @Entity
-// @Table(name = "additional_map_entry_info")
+@Entity
+@Table(name = "additional_map_entry_info")
 @JsonIgnoreProperties(ignoreUnknown = true)
-// @Indexed
+@Indexed
 public class AdditionalMapEntryInfo extends AbstractHasId {
 
     /**
@@ -148,28 +151,37 @@ public class AdditionalMapEntryInfo extends AbstractHasId {
     @Override
     public boolean equals(final Object obj) {
 
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         final AdditionalMapEntryInfo other = (AdditionalMapEntryInfo) obj;
         if (name == null) {
-            if (other.name != null)
+            if (other.name != null) {
                 return false;
-        } else if (!name.equals(other.name))
+            }
+        } else if (!name.equals(other.name)) {
             return false;
+        }
         if (field == null) {
-            if (other.field != null)
+            if (other.field != null) {
                 return false;
-        } else if (!field.equals(other.field))
+            }
+        } else if (!field.equals(other.field)) {
             return false;
+        }
         if (value == null) {
-            if (other.value != null)
+            if (other.value != null) {
                 return false;
-        } else if (!value.equals(other.value))
+            }
+        } else if (!value.equals(other.value)) {
             return false;
+        }
         return true;
     }
 
