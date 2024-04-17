@@ -16,26 +16,26 @@ package org.ihtsdo.refsetservice.model;
  */
 public interface ValidateCrud<T> {
 
-    /**
-     * Validate add.
-     *
-     * @throws Exception the exception indicating validation failure
-     */
-    public void validateAdd() throws Exception;
+  /**
+   * Validate add.
+   *
+   * @throws Exception the exception indicating validation failure
+   */
+  public void validateAdd() throws Exception;
 
-    /**
-     * Validate update.
-     *
-     * @param other the other
-     * @throws Exception the exception indicating validation failure
-     */
-    public void validateUpdate(T other) throws Exception;
+  /**
+   * Validate update.
+   *
+   * @param other the other
+   * @throws Exception the exception indicating validation failure
+   */
+  public void validateUpdate(T other) throws Exception;
 
-    /**
-     * Validate delete.
-     *
-     * @throws Exception the exception indicating validation failure
-     */
-    public void validateDelete() throws Exception;
+  /**
+   * Validate delete.
+   *
+   * @throws Exception the exception indicating validation failure
+   */
+  public void validateDelete() throws Exception;
 
 }

@@ -6,17 +6,17 @@ package org.ihtsdo.refsetservice.model;
  */
 public interface HasActive {
 
-    /**
-     * Indicates whether or not active is the case.
-     *
-     * @return <code>true</code> if so, <code>false</code> otherwise
-     */
-    public boolean isActive();
+  /**
+   * Indicates whether or not active is the case.
+   *
+   * @return <code>true</code> if so, <code>false</code> otherwise
+   */
+  public boolean isActive();
 
-    /**
-     * Sets the active.
-     *
-     * @param active the active
-     */
-    public void setActive(final boolean active);
+  /**
+   * Sets the active.
+   *
+   * @param active the active
+   */
+  public void setActive(final boolean active);
 }

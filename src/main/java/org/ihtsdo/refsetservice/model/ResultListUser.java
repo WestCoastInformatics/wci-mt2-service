@@ -19,23 +19,23 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "Represents a list of users returned from a find call")
 public class ResultListUser extends ResultList<User> {
 
-    /**
-     * Instantiates an empty {@link ResultListUser}.
-     */
-    public ResultListUser() {
+  /**
+   * Instantiates an empty {@link ResultListUser}.
+   */
+  public ResultListUser() {
 
-        // n/a
-    }
+    // n/a
+  }
 
-    /**
-     * Instantiates a {@link ResultListUser} from the specified parameters.
-     *
-     * @param list the list
-     */
-    public ResultListUser(final ResultList<User> list) {
+  /**
+   * Instantiates a {@link ResultListUser} from the specified parameters.
+   *
+   * @param list the list
+   */
+  public ResultListUser(final ResultList<User> list) {
 
-        this.setItems(list.getItems());
-        this.setParameters(list.getParameters());
-        this.setTotal(list.getTotal());
-    }
+    this.setItems(list.getItems());
+    this.setParameters(list.getParameters());
+    this.setTotal(list.getTotal());
+  }
 }

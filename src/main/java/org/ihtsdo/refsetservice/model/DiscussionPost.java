@@ -33,208 +33,208 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Indexed
 public class DiscussionPost extends AbstractHasModified {
 
-    /** The Constant serialVersionUID. */
-    private static final long serialVersionUID = -4303326622967031897L;
+  /** The Constant serialVersionUID. */
+  private static final long serialVersionUID = -4303326622967031897L;
 
-    /** The Constant LOG. */
-    @SuppressWarnings("unused")
-    private static final Logger LOG = LoggerFactory.getLogger(DiscussionPost.class);
+  /** The Constant LOG. */
+  @SuppressWarnings("unused")
+  private static final Logger LOG = LoggerFactory.getLogger(DiscussionPost.class);
 
-    /** The user. */
-    @OneToOne(targetEntity = User.class)
-    private User user;
+  /** The user. */
+  @OneToOne(targetEntity = User.class)
+  private User user;
 
-    /** The message. */
-    @Column(nullable = false, length = 4000)
-    private String message;
+  /** The message. */
+  @Column(nullable = false, length = 4000)
+  private String message;
 
-    /** Indicate if post is private. */
-    @Column(nullable = false)
-    private boolean privatePost;
+  /** Indicate if post is private. */
+  @Column(nullable = false)
+  private boolean privatePost;
 
-    /** The visibility of the post. */
-    @Column(nullable = false, length = 64)
-    private String visibility;
+  /** The visibility of the post. */
+  @Column(nullable = false, length = 64)
+  private String visibility;
 
-    /**
-     * Populate from.
-     *
-     * @param other the other
-     */
-    public void populateFrom(final DiscussionPost other) {
+  /**
+   * Populate from.
+   *
+   * @param other the other
+   */
+  public void populateFrom(final DiscussionPost other) {
 
-        super.populateFrom(other);
-        user = other.getUser();
-        message = other.getMessage();
-        privatePost = other.isPrivatePost();
-        visibility = other.getVisibility();
+    super.populateFrom(other);
+    user = other.getUser();
+    message = other.getMessage();
+    privatePost = other.isPrivatePost();
+    visibility = other.getVisibility();
+  }
+
+  /**
+   * Returns the user.
+   *
+   * @return the user
+   */
+  public User getUser() {
+
+    return user;
+  }
+
+  /**
+   * Sets the user.
+   *
+   * @param user the user to set
+   */
+  public void setUser(final User user) {
+
+    this.user = user;
+  }
+
+  /**
+   * Returns the message.
+   *
+   * @return the message
+   */
+  public String getMessage() {
+
+    return message;
+  }
+
+  /**
+   * Sets the message.
+   *
+   * @param message the message to set
+   */
+  public void setMessage(final String message) {
+
+    this.message = message;
+  }
+
+  /**
+   * Indicates whether or not private post is the case.
+   *
+   * @return the privatePost
+   */
+  public boolean isPrivatePost() {
+
+    return privatePost;
+  }
+
+  /**
+   * Sets the private post.
+   *
+   * @param privatePost the privatePost to set
+   */
+  public void setPrivatePost(final boolean privatePost) {
+
+    this.privatePost = privatePost;
+  }
+
+  /**
+   * Get the visibility of the thread.
+   *
+   * @return the visibility of the thread
+   */
+  public String getVisibility() {
+
+    return visibility;
+  }
+
+  /**
+   * Sets the visibility of the thread.
+   *
+   * @param visibility the visibility of the thread
+   */
+  public void setVisibility(final String visibility) {
+
+    this.visibility = visibility;
+  }
+
+  /* see superclass */
+  @Override
+  public int hashCode() {
+
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((user == null) ? 0 : user.hashCode());
+    result = prime * result + ((message == null) ? 0 : message.hashCode());
+    result = prime * result + (privatePost ? 1 : 0);
+    result = prime * result + ((visibility == null) ? 0 : visibility.hashCode());
+    return result;
+  }
+
+  /* see superclass */
+  @Override
+  public boolean equals(final Object object) {
+
+    if (this == object) {
+      return true;
     }
 
-    /**
-     * Returns the user.
-     *
-     * @return the user
-     */
-    public User getUser() {
-
-        return user;
+    if (!super.equals(object)) {
+      return false;
     }
 
-    /**
-     * Sets the user.
-     *
-     * @param user the user to set
-     */
-    public void setUser(final User user) {
-
-        this.user = user;
+    if (getClass() != object.getClass()) {
+      return false;
     }
 
-    /**
-     * Returns the message.
-     *
-     * @return the message
-     */
-    public String getMessage() {
+    final DiscussionPost other = (DiscussionPost) object;
 
-        return message;
+    if (user == null) {
+
+      if (other.user != null) {
+        return false;
+      }
+
+    } else if (!user.equals(other.user)) {
+      return false;
     }
 
-    /**
-     * Sets the message.
-     *
-     * @param message the message to set
-     */
-    public void setMessage(final String message) {
+    if (message == null) {
 
-        this.message = message;
+      if (other.message != null) {
+        return false;
+      }
+
+    } else if (!message.equals(other.message)) {
+      return false;
     }
 
-    /**
-     * Indicates whether or not private post is the case.
-     *
-     * @return the privatePost
-     */
-    public boolean isPrivatePost() {
+    if (visibility == null) {
 
-        return privatePost;
+      if (other.visibility != null) {
+        return false;
+      }
+
+    } else if (!visibility.equals(other.visibility)) {
+      return false;
     }
 
-    /**
-     * Sets the private post.
-     *
-     * @param privatePost the privatePost to set
-     */
-    public void setPrivatePost(final boolean privatePost) {
-
-        this.privatePost = privatePost;
+    if (privatePost != other.privatePost) {
+      return false;
     }
 
-    /**
-     * Get the visibility of the thread.
-     *
-     * @return the visibility of the thread
-     */
-    public String getVisibility() {
+    return true;
+  }
 
-        return visibility;
+  /* see superclass */
+  @Override
+  public String toString() {
+
+    try {
+      return ModelUtility.toJson(this);
+    } catch (final Exception e) {
+      return e.getMessage();
     }
+  }
 
-    /**
-     * Sets the visibility of the thread.
-     *
-     * @param visibility the visibility of the thread
-     */
-    public void setVisibility(final String visibility) {
+  /* see superclass */
+  @Override
+  public void lazyInit() {
 
-        this.visibility = visibility;
-    }
+    // n/a
 
-    /* see superclass */
-    @Override
-    public int hashCode() {
-
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((user == null) ? 0 : user.hashCode());
-        result = prime * result + ((message == null) ? 0 : message.hashCode());
-        result = prime * result + (privatePost ? 1 : 0);
-        result = prime * result + ((visibility == null) ? 0 : visibility.hashCode());
-        return result;
-    }
-
-    /* see superclass */
-    @Override
-    public boolean equals(final Object object) {
-
-        if (this == object) {
-            return true;
-        }
-
-        if (!super.equals(object)) {
-            return false;
-        }
-
-        if (getClass() != object.getClass()) {
-            return false;
-        }
-
-        final DiscussionPost other = (DiscussionPost) object;
-
-        if (user == null) {
-
-            if (other.user != null) {
-                return false;
-            }
-
-        } else if (!user.equals(other.user)) {
-            return false;
-        }
-
-        if (message == null) {
-
-            if (other.message != null) {
-                return false;
-            }
-
-        } else if (!message.equals(other.message)) {
-            return false;
-        }
-
-        if (visibility == null) {
-
-            if (other.visibility != null) {
-                return false;
-            }
-
-        } else if (!visibility.equals(other.visibility)) {
-            return false;
-        }
-
-        if (privatePost != other.privatePost) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /* see superclass */
-    @Override
-    public String toString() {
-
-        try {
-            return ModelUtility.toJson(this);
-        } catch (final Exception e) {
-            return e.getMessage();
-        }
-    }
-
-    /* see superclass */
-    @Override
-    public void lazyInit() {
-
-        // n/a
-
-    }
+  }
 
 }

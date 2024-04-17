@@ -16,18 +16,18 @@ package org.ihtsdo.refsetservice.model;
  */
 public interface Copyable<T> {
 
-    /**
-     * Populate from (used by copy constructor).
-     *
-     * @param other the other
-     */
-    public void populateFrom(T other);
+  /**
+   * Populate from (used by copy constructor).
+   *
+   * @param other the other
+   */
+  public void populateFrom(T other);
 
-    /**
-     * Patch from.
-     *
-     * @param other the other
-     */
-    public void patchFrom(T other);
+  /**
+   * Patch from.
+   *
+   * @param other the other
+   */
+  public void patchFrom(T other);
 
 }

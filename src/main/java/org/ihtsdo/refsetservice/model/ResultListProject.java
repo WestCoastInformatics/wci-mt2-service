@@ -19,23 +19,23 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "Represents a list of projects returned from a find call")
 public class ResultListProject extends ResultList<Project> {
 
-    /**
-     * Instantiates an empty {@link ResultListProject}.
-     */
-    public ResultListProject() {
+  /**
+   * Instantiates an empty {@link ResultListProject}.
+   */
+  public ResultListProject() {
 
-        // n/a
-    }
+    // n/a
+  }
 
-    /**
-     * Instantiates a {@link ResultListProject} from the specified parameters.
-     *
-     * @param list the list
-     */
-    public ResultListProject(final ResultList<Project> list) {
+  /**
+   * Instantiates a {@link ResultListProject} from the specified parameters.
+   *
+   * @param list the list
+   */
+  public ResultListProject(final ResultList<Project> list) {
 
-        this.setItems(list.getItems());
-        this.setParameters(list.getParameters());
-        this.setTotal(list.getTotal());
-    }
+    this.setItems(list.getItems());
+    this.setParameters(list.getParameters());
+    this.setTotal(list.getTotal());
+  }
 }

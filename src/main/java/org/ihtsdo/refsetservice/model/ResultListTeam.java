@@ -19,23 +19,23 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "Represents a list of teams returned from a find call")
 public class ResultListTeam extends ResultList<Team> {
 
-    /**
-     * Instantiates an empty {@link ResultListTeam}.
-     */
-    public ResultListTeam() {
+  /**
+   * Instantiates an empty {@link ResultListTeam}.
+   */
+  public ResultListTeam() {
 
-        // n/a
-    }
+    // n/a
+  }
 
-    /**
-     * Instantiates a {@link ResultListTeam} from the specified parameters.
-     *
-     * @param list the list
-     */
-    public ResultListTeam(final ResultList<Team> list) {
+  /**
+   * Instantiates a {@link ResultListTeam} from the specified parameters.
+   *
+   * @param list the list
+   */
+  public ResultListTeam(final ResultList<Team> list) {
 
-        this.setItems(list.getItems());
-        this.setParameters(list.getParameters());
-        this.setTotal(list.getTotal());
-    }
+    this.setItems(list.getItems());
+    this.setParameters(list.getParameters());
+    this.setTotal(list.getTotal());
+  }
 }

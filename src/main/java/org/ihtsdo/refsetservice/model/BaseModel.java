@@ -10,22 +10,22 @@ import org.ihtsdo.refsetservice.util.ModelUtility;
 @MappedSuperclass
 public abstract class BaseModel {
 
-    /**
-     * Instantiates an empty {@link BaseModel}.
-     */
-    protected BaseModel() {
+  /**
+   * Instantiates an empty {@link BaseModel}.
+   */
+  protected BaseModel() {
 
-        // n/a
+    // n/a
+  }
+
+  /* see superclass */
+  @Override
+  public String toString() {
+
+    try {
+      return ModelUtility.toJson(this);
+    } catch (final Exception e) {
+      return e.getMessage();
     }
-
-    /* see superclass */
-    @Override
-    public String toString() {
-
-        try {
-            return ModelUtility.toJson(this);
-        } catch (final Exception e) {
-            return e.getMessage();
-        }
-    }
+  }
 }

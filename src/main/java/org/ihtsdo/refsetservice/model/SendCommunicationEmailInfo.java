@@ -14,50 +14,50 @@ package org.ihtsdo.refsetservice.model;
  */
 public class SendCommunicationEmailInfo {
 
-    /** The recipient. */
-    private String recipient;
+  /** The recipient. */
+  private String recipient;
 
-    /** The additional message. */
-    private String additionalMessage;
+  /** The additional message. */
+  private String additionalMessage;
 
-    /**
-     * Returns the recipient.
-     *
-     * @return the recipient
-     */
-    public String getRecipient() {
+  /**
+   * Returns the recipient.
+   *
+   * @return the recipient
+   */
+  public String getRecipient() {
 
-        return recipient;
-    }
+    return recipient;
+  }
 
-    /**
-     * Sets the recipient.
-     *
-     * @param recipient the recipient
-     */
-    public void setRecipient(final String recipient) {
+  /**
+   * Sets the recipient.
+   *
+   * @param recipient the recipient
+   */
+  public void setRecipient(final String recipient) {
 
-        this.recipient = recipient;
-    }
+    this.recipient = recipient;
+  }
 
-    /**
-     * Returns the additional message.
-     *
-     * @return the additional message
-     */
-    public String getAdditionalMessage() {
+  /**
+   * Returns the additional message.
+   *
+   * @return the additional message
+   */
+  public String getAdditionalMessage() {
 
-        return additionalMessage;
-    }
+    return additionalMessage;
+  }
 
-    /**
-     * Sets the additional message.
-     *
-     * @param additionalMessage the additional message
-     */
-    public void setAdditionalMessage(final String additionalMessage) {
+  /**
+   * Sets the additional message.
+   *
+   * @param additionalMessage the additional message
+   */
+  public void setAdditionalMessage(final String additionalMessage) {
 
-        this.additionalMessage = additionalMessage;
-    }
+    this.additionalMessage = additionalMessage;
+  }
 
 }

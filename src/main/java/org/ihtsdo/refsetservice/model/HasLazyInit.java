@@ -6,9 +6,9 @@ package org.ihtsdo.refsetservice.model;
  */
 public interface HasLazyInit {
 
-    /**
-     * Lazy init.
-     */
-    public void lazyInit();
+  /**
+   * Lazy init.
+   */
+  public void lazyInit();
 
 }

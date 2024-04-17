@@ -17,175 +17,175 @@ import java.util.Map;
  */
 public class AuthContext extends BaseModel {
 
-    /** The claims. */
-    private Map<String, String> claims;
+  /** The claims. */
+  private Map<String, String> claims;
 
-    /** The jwt. */
-    private String jwt;
+  /** The jwt. */
+  private String jwt;
 
-    /** The user id. */
-    private String userId;
+  /** The user id. */
+  private String userId;
 
-    /** The organization id. */
-    private String organizationId;
+  /** The organization id. */
+  private String organizationId;
 
-    /** The correlation id. */
-    private String correlationId;
+  /** The correlation id. */
+  private String correlationId;
 
-    /** The role. */
-    private String role;
+  /** The role. */
+  private String role;
 
-    /** The skip header. */
-    private boolean skipHeader;
+  /** The skip header. */
+  private boolean skipHeader;
 
-    /**
-     * Instantiates an empty {@link AuthContext}.
-     */
-    public AuthContext() {
+  /**
+   * Instantiates an empty {@link AuthContext}.
+   */
+  public AuthContext() {
 
-        // n/a
+    // n/a
+  }
+
+  /**
+   * Returns the claims.
+   *
+   * @return the claims
+   */
+  public Map<String, String> getClaims() {
+
+    if (claims == null) {
+      claims = new HashMap<>();
     }
+    return claims;
+  }
 
-    /**
-     * Returns the claims.
-     *
-     * @return the claims
-     */
-    public Map<String, String> getClaims() {
+  /**
+   * Sets the claims.
+   *
+   * @param claims the claims
+   */
+  public void setClaims(final Map<String, String> claims) {
 
-        if (claims == null) {
-            claims = new HashMap<>();
-        }
-        return claims;
-    }
+    this.claims = claims;
+  }
 
-    /**
-     * Sets the claims.
-     *
-     * @param claims the claims
-     */
-    public void setClaims(final Map<String, String> claims) {
+  /**
+   * Returns the jwt.
+   *
+   * @return the jwt
+   */
+  public String getJwt() {
 
-        this.claims = claims;
-    }
+    return jwt;
+  }
 
-    /**
-     * Returns the jwt.
-     *
-     * @return the jwt
-     */
-    public String getJwt() {
+  /**
+   * Sets the jwt.
+   *
+   * @param jwt the jwt
+   */
+  public void setJwt(final String jwt) {
 
-        return jwt;
-    }
+    this.jwt = jwt;
+  }
 
-    /**
-     * Sets the jwt.
-     *
-     * @param jwt the jwt
-     */
-    public void setJwt(final String jwt) {
+  /**
+   * Returns the userid.
+   *
+   * @return the user id
+   */
+  public String getUserId() {
 
-        this.jwt = jwt;
-    }
+    return userId;
+  }
 
-    /**
-     * Returns the userid.
-     *
-     * @return the user id
-     */
-    public String getUserId() {
+  /**
+   * Sets the user id.
+   *
+   * @param userId the user id
+   */
+  public void setUserId(final String userId) {
 
-        return userId;
-    }
+    this.userId = userId;
+  }
 
-    /**
-     * Sets the user id.
-     *
-     * @param userId the user id
-     */
-    public void setUserId(final String userId) {
+  /**
+   * Returns the organization id.
+   *
+   * @return the organization id
+   */
+  public String getOrganizationId() {
 
-        this.userId = userId;
-    }
+    return organizationId;
+  }
 
-    /**
-     * Returns the organization id.
-     *
-     * @return the organization id
-     */
-    public String getOrganizationId() {
+  /**
+   * Sets the organization id.
+   *
+   * @param organizationId the organization id
+   */
+  public void setOrganizationId(final String organizationId) {
 
-        return organizationId;
-    }
+    this.organizationId = organizationId;
+  }
 
-    /**
-     * Sets the organization id.
-     *
-     * @param organizationId the organization id
-     */
-    public void setOrganizationId(final String organizationId) {
+  /**
+   * Returns the correlation id.
+   *
+   * @return the correlation id
+   */
+  public String getCorrelationId() {
 
-        this.organizationId = organizationId;
-    }
+    return correlationId;
+  }
 
-    /**
-     * Returns the correlation id.
-     *
-     * @return the correlation id
-     */
-    public String getCorrelationId() {
+  /**
+   * Sets the correlation id.
+   *
+   * @param correlationId the correlation id
+   */
+  public void setCorrelationId(final String correlationId) {
 
-        return correlationId;
-    }
+    this.correlationId = correlationId;
+  }
 
-    /**
-     * Sets the correlation id.
-     *
-     * @param correlationId the correlation id
-     */
-    public void setCorrelationId(final String correlationId) {
+  /**
+   * Returns the role.
+   *
+   * @return the role
+   */
+  public String getRole() {
 
-        this.correlationId = correlationId;
-    }
+    return role;
+  }
 
-    /**
-     * Returns the role.
-     *
-     * @return the role
-     */
-    public String getRole() {
+  /**
+   * Sets the role.
+   *
+   * @param role the role
+   */
+  public void setRole(final String role) {
 
-        return role;
-    }
+    this.role = role;
+  }
 
-    /**
-     * Sets the role.
-     *
-     * @param role the role
-     */
-    public void setRole(final String role) {
+  /**
+   * Indicates whether or not skip header is the case.
+   *
+   * @return <code>true</code> if so, <code>false</code> otherwise
+   */
+  public boolean isSkipHeader() {
 
-        this.role = role;
-    }
+    return skipHeader;
+  }
 
-    /**
-     * Indicates whether or not skip header is the case.
-     *
-     * @return <code>true</code> if so, <code>false</code> otherwise
-     */
-    public boolean isSkipHeader() {
+  /**
+   * Sets the skip header.
+   *
+   * @param skipHeader the skip header
+   */
+  public void setSkipHeader(final boolean skipHeader) {
 
-        return skipHeader;
-    }
-
-    /**
-     * Sets the skip header.
-     *
-     * @param skipHeader the skip header
-     */
-    public void setSkipHeader(final boolean skipHeader) {
-
-        this.skipHeader = skipHeader;
-    }
+    this.skipHeader = skipHeader;
+  }
 }

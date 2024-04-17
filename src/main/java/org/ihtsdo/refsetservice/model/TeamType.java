@@ -14,32 +14,32 @@ package org.ihtsdo.refsetservice.model;
  */
 public enum TeamType {
 
-    /** For organization administration team. */
-    ORGANIZATION("O"),
-    /** For project team. */
-    PPROJECT("P");
+  /** For organization administration team. */
+  ORGANIZATION("O"),
+  /** For project team. */
+  PPROJECT("P");
 
-    /** The text. */
-    private final String text;
+  /** The text. */
+  private final String text;
 
-    /**
-     * Instantiates a {@link TeamType} from the specified parameters.
-     *
-     * @param text the text
-     */
-    private TeamType(final String text) {
+  /**
+   * Instantiates a {@link TeamType} from the specified parameters.
+   *
+   * @param text the text
+   */
+  private TeamType(final String text) {
 
-        this.text = text;
-    }
+    this.text = text;
+  }
 
-    /**
-     * Returns the text.
-     *
-     * @return the text
-     */
-    public String getText() {
+  /**
+   * Returns the text.
+   *
+   * @return the text
+   */
+  public String getText() {
 
-        return this.text;
-    }
+    return this.text;
+  }
 
 }

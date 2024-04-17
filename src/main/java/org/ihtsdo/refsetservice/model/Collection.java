@@ -10,60 +10,60 @@ import java.util.List;
  */
 public interface Collection<T> {
 
-    /**
-     * Returns the items.
-     *
-     * @return the items
-     */
-    public List<T> getItems();
+  /**
+   * Returns the items.
+   *
+   * @return the items
+   */
+  public List<T> getItems();
 
-    /**
-     * Sets the items.
-     *
-     * @param items the items
-     */
-    public void setItems(List<T> items);
+  /**
+   * Sets the items.
+   *
+   * @param items the items
+   */
+  public void setItems(List<T> items);
 
-    /**
-     * Returns the total.
-     *
-     * @return the total
-     */
-    public int getTotal();
+  /**
+   * Returns the total.
+   *
+   * @return the total
+   */
+  public int getTotal();
 
-    /**
-     * Sets the total.
-     *
-     * @param total the total
-     */
-    public void setTotal(int total);
+  /**
+   * Sets the total.
+   *
+   * @param total the total
+   */
+  public void setTotal(int total);
 
-    /**
-     * Returns the limit.
-     *
-     * @return the limit
-     */
-    public int getLimit();
+  /**
+   * Returns the limit.
+   *
+   * @return the limit
+   */
+  public int getLimit();
 
-    /**
-     * Sets the limit.
-     *
-     * @param limit the limit
-     */
-    public void setLimit(int limit);
+  /**
+   * Sets the limit.
+   *
+   * @param limit the limit
+   */
+  public void setLimit(int limit);
 
-    /**
-     * Returns the offset.
-     *
-     * @return the offset
-     */
-    public int getOffset();
+  /**
+   * Returns the offset.
+   *
+   * @return the offset
+   */
+  public int getOffset();
 
-    /**
-     * Sets the offset.
-     *
-     * @param offset the offset
-     */
-    public void setOffset(int offset);
+  /**
+   * Sets the offset.
+   *
+   * @param offset the offset
+   */
+  public void setOffset(int offset);
 
 }

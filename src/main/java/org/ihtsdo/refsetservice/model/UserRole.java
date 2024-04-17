@@ -18,70 +18,70 @@ import java.util.List;
  */
 public enum UserRole {
 
-    /** The viewer. */
-    VIEWER("Viewer"),
+  /** The viewer. */
+  VIEWER("Viewer"),
 
-    /** The author. */
-    AUTHOR("Author"),
+  /** The author. */
+  AUTHOR("Author"),
 
-    /** The reviewer. */
-    REVIEWER("Reviewer"),
+  /** The reviewer. */
+  REVIEWER("Reviewer"),
 
-    /** The administrator. */
-    ADMIN("Admin");
+  /** The administrator. */
+  ADMIN("Admin");
 
-    /** The value. */
-    private String value;
+  /** The value. */
+  private String value;
 
-    /** Enums as list. */
-    private static final List<UserRole> ALL_ROLES = new ArrayList<>();
+  /** Enums as list. */
+  private static final List<UserRole> ALL_ROLES = new ArrayList<>();
 
-    /**
-     * Instantiates a {@link UserRole} from the specified parameters.
-     *
-     * @param value the value
-     */
-    private UserRole(final String value) {
+  /**
+   * Instantiates a {@link UserRole} from the specified parameters.
+   *
+   * @param value the value
+   */
+  private UserRole(final String value) {
 
-        this.value = value;
+    this.value = value;
+  }
+
+  /**
+   * Returns the value.
+   *
+   * @return the value
+   */
+  public String getValue() {
+
+    return value;
+  }
+
+  /**
+   * Returns the all roles.
+   *
+   * @return the all roles
+   */
+  public static List<UserRole> getAllRoles() {
+
+    if (ALL_ROLES.isEmpty()) {
+
+      ALL_ROLES.add(ADMIN);
+      ALL_ROLES.add(AUTHOR);
+      ALL_ROLES.add(REVIEWER);
+      ALL_ROLES.add(VIEWER);
     }
+    return ALL_ROLES;
+  }
 
-    /**
-     * Returns the value.
-     *
-     * @return the value
-     */
-    public String getValue() {
+  /**
+   * Returns the role string.
+   *
+   * @param userRole the user role
+   * @return the UserRole as a string
+   */
+  public static String getRoleString(final UserRole userRole) {
 
-        return value;
-    }
+    return (userRole != null) ? userRole.getValue() : null;
 
-    /**
-     * Returns the all roles.
-     *
-     * @return the all roles
-     */
-    public static List<UserRole> getAllRoles() {
-
-        if (ALL_ROLES.isEmpty()) {
-
-            ALL_ROLES.add(ADMIN);
-            ALL_ROLES.add(AUTHOR);
-            ALL_ROLES.add(REVIEWER);
-            ALL_ROLES.add(VIEWER);
-        }
-        return ALL_ROLES;
-    }
-
-    /**
-     * Returns the role string.
-     *
-     * @param userRole the user role
-     * @return the UserRole as a string
-     */
-    public static String getRoleString(final UserRole userRole) {
-
-        return (userRole != null) ? userRole.getValue() : null;
-
-    }
+  }
 }

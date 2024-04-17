@@ -19,73 +19,74 @@ import org.ihtsdo.refsetservice.util.ModelUtility;
 @MappedSuperclass
 public abstract class AbstractHasIdNoEquals implements HasId {
 
-    /** The id. */
-    @Id
-    @GeneratedValue(generator = "uuid")
-    @GenericGenerator(name = "uuid", strategy = "uuid2")
-    @Column(updatable = false, nullable = false, length = 64)
-    private String id;
+  /** The id. */
+  @Id
+  @GeneratedValue(generator = "uuid")
+  @GenericGenerator(name = "uuid", strategy = "uuid2")
+  @Column(updatable = false, nullable = false, length = 64)
+  private String id;
 
-    /**
-     * Instantiates an empty {@link AbstractHasIdNoEquals}.
-     */
-    protected AbstractHasIdNoEquals() {
+  /**
+   * Instantiates an empty {@link AbstractHasIdNoEquals}.
+   */
+  protected AbstractHasIdNoEquals() {
 
-        // n/a
+    // n/a
+  }
+
+  /**
+   * Instantiates a {@link AbstractHasIdNoEquals} from the specified parameters.
+   *
+   * @param other the other
+   */
+  protected AbstractHasIdNoEquals(final HasId other) {
+
+    populateFrom(other);
+  }
+
+  /**
+   * Populate from.
+   *
+   * @param other the other
+   */
+  public void populateFrom(final HasId other) {
+
+    this.id = other.getId();
+  }
+
+  /**
+   * Returns the id. NOTE: this causes a hibernate warning, but the background
+   * behavior is correct. Moving it or removing it causes either other problems
+   * or the field to not be indexed.
+   * @return the id
+   */
+  @Override
+  @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+  public String getId() {
+
+    return id;
+  }
+
+  /**
+   * Sets the id.
+   *
+   * @param id the id
+   */
+  @Override
+  public void setId(final String id) {
+
+    this.id = id;
+  }
+
+  /* see superclass */
+  @Override
+  public String toString() {
+
+    try {
+      return ModelUtility.toJson(this);
+    } catch (final Exception e) {
+      return e.getMessage();
     }
-
-    /**
-     * Instantiates a {@link AbstractHasIdNoEquals} from the specified parameters.
-     *
-     * @param other the other
-     */
-    protected AbstractHasIdNoEquals(final HasId other) {
-
-        populateFrom(other);
-    }
-
-    /**
-     * Populate from.
-     *
-     * @param other the other
-     */
-    public void populateFrom(final HasId other) {
-
-        this.id = other.getId();
-    }
-
-    /**
-     * Returns the id. NOTE: this causes a hibernate warning, but the background behavior is correct. Moving it or removing it causes either other problems or
-     * the field to not be indexed.
-     * @return the id
-     */
-    @Override
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
-    public String getId() {
-
-        return id;
-    }
-
-    /**
-     * Sets the id.
-     *
-     * @param id the id
-     */
-    @Override
-    public void setId(final String id) {
-
-        this.id = id;
-    }
-
-    /* see superclass */
-    @Override
-    public String toString() {
-
-        try {
-            return ModelUtility.toJson(this);
-        } catch (final Exception e) {
-            return e.getMessage();
-        }
-    }
+  }
 
 }

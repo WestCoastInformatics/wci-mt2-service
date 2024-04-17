@@ -1,15 +1,26 @@
+/*
+ * Copyright 2024 West Coast Informatics - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of West Coast Informatics
+ * The intellectual and technical concepts contained herein are proprietary to
+ * West Coast Informatics and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 package org.ihtsdo.refsetservice.model;
+
+import java.util.Objects;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
-import javax.xml.bind.annotation.XmlAttribute;
 
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+// TODO: Auto-generated Javadoc
 /**
  * The Class MapRelation.
  */
@@ -23,159 +34,216 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @Indexed
 public class MapRelation extends AbstractHasId {
 
-    /** The terminology id. */
-    @Column(nullable = false)
-    private String terminologyId;
+  /** The terminology id. */
+  @Column(nullable = false)
+  private String terminologyId;
 
-    /** The name. */
-    @Column(nullable = false)
-    private String name;
+  /** The name. */
+  @Column(nullable = false)
+  private String name;
 
-    /** The abbreviation for display. */
-    @Column(nullable = true)
-    private String abbreviation;
+  /** The abbreviation for display. */
+  @Column(nullable = true)
+  private String abbreviation;
 
-    /** Whether this relation can be used for null targets. */
-    @Column(nullable = false)
-    private boolean isAllowableForNullTarget;
+  /** Whether this relation can be used for null targets. */
+  @Column(nullable = false)
+  private boolean isAllowableForNullTarget;
 
-    /** Whether this relation is computed. */
-    @Column(nullable = false)
-    private boolean isComputed;
+  /** Whether this relation is computed. */
+  @Column(nullable = false)
+  private boolean isComputed;
 
-    /**
-     * Instantiates a new map relation jpa.
-     */
-    public MapRelation() {
+  /**
+   * Instantiates a new map relation.
+   */
+  public MapRelation() {
 
-        // do nothing
-    }
+    // do nothing
+  }
 
-    /**
-     * Instantiates a new map relation jpa.
-     *
-     * @param id the id
-     * @param terminologyId the terminology id
-     * @param name the name
-     * @param abbreviation the abbreviation
-     * @param isAllowableForNullTarget the is allowable for null target
-     * @param isComputed the is computed
-     */
-    public MapRelation(final Long id, final String terminologyId, final String name, final String abbreviation, final boolean isAllowableForNullTarget,
-        final boolean isComputed) {
+  /**
+   * Instantiates a new map relation.
+   *
+   * @param id the id
+   * @param terminologyId the terminology id
+   * @param name the name
+   * @param abbreviation the abbreviation
+   * @param isAllowableForNullTarget the is allowable for null target
+   * @param isComputed the is computed
+   */
+  public MapRelation(final Long id, final String terminologyId, final String name,
+      final String abbreviation, final boolean isAllowableForNullTarget, final boolean isComputed) {
 
-        super();
-        this.terminologyId = terminologyId;
-        this.name = name;
-        this.abbreviation = abbreviation;
-        this.isAllowableForNullTarget = isAllowableForNullTarget;
-        this.isComputed = isComputed;
-    }
+    super();
+    this.terminologyId = terminologyId;
+    this.name = name;
+    this.abbreviation = abbreviation;
+    this.isAllowableForNullTarget = isAllowableForNullTarget;
+    this.isComputed = isComputed;
+  }
 
-    /**
-     * Instantiates a new map relation jpa.
-     *
-     * @param mapRelation the map relation
-     */
-    public MapRelation(final MapRelation mapRelation) {
+  /**
+   * Instantiates a new map relation jpa.
+   *
+   * @param mapRelation the map relation
+   */
+  public MapRelation(final MapRelation mapRelation) {
 
-        super();
-        this.terminologyId = mapRelation.getTerminologyId();
-        this.name = mapRelation.getName();
-        this.abbreviation = mapRelation.getAbbreviation();
-        this.isAllowableForNullTarget = mapRelation.isAllowableForNullTarget();
-        this.isComputed = mapRelation.isComputed();
-    }
+    super();
+    this.terminologyId = mapRelation.getTerminologyId();
+    this.name = mapRelation.getName();
+    this.abbreviation = mapRelation.getAbbreviation();
+    this.isAllowableForNullTarget = mapRelation.isAllowableForNullTarget();
+    this.isComputed = mapRelation.isComputed();
+  }
 
-    public String getTerminologyId() {
+  /**
+   * Gets the terminology id.
+   *
+   * @return the terminology id
+   */
+  public String getTerminologyId() {
 
-        return terminologyId;
-    }
+    return terminologyId;
+  }
 
-    public void setTerminologyId(final String terminologyId) {
+  /**
+   * Sets the terminology id.
+   *
+   * @param terminologyId the new terminology id
+   */
+  public void setTerminologyId(final String terminologyId) {
 
-        this.terminologyId = terminologyId;
-    }
+    this.terminologyId = terminologyId;
+  }
 
-    public String getName() {
+  /**
+   * Gets the name.
+   *
+   * @return the name
+   */
+  public String getName() {
 
-        return name;
-    }
+    return name;
+  }
 
-    public void setName(final String name) {
+  /**
+   * Sets the name.
+   *
+   * @param name the new name
+   */
+  public void setName(final String name) {
 
-        this.name = name;
-    }
+    this.name = name;
+  }
 
-    public String getAbbreviation() {
+  /**
+   * Gets the abbreviation.
+   *
+   * @return the abbreviation
+   */
+  public String getAbbreviation() {
 
-        return abbreviation;
-    }
+    return abbreviation;
+  }
 
-    public void setAbbreviation(final String abbreviation) {
+  /**
+   * Sets the abbreviation.
+   *
+   * @param abbreviation the new abbreviation
+   */
+  public void setAbbreviation(final String abbreviation) {
 
-        this.abbreviation = abbreviation;
-    }
+    this.abbreviation = abbreviation;
+  }
 
-    @XmlAttribute(name = "isAllowableForNullTarget")
-    public boolean isAllowableForNullTarget() {
+  /**
+   * Checks if is allowable for null target.
+   *
+   * @return true, if is allowable for null target
+   */
+  public boolean isAllowableForNullTarget() {
 
-        return isAllowableForNullTarget;
-    }
+    return isAllowableForNullTarget;
+  }
 
-    public void setAllowableForNullTarget(final boolean isAllowableForNullTarget) {
+  /**
+   * Sets the allowable for null target.
+   *
+   * @param isAllowableForNullTarget the new allowable for null target
+   */
+  public void setAllowableForNullTarget(final boolean isAllowableForNullTarget) {
 
-        this.isAllowableForNullTarget = isAllowableForNullTarget;
-    }
+    this.isAllowableForNullTarget = isAllowableForNullTarget;
+  }
 
-    @XmlAttribute(name = "isComputed")
-    public boolean isComputed() {
+  /**
+   * Checks if is computed.
+   *
+   * @return true, if is computed
+   */
+  public boolean isComputed() {
 
-        return isComputed;
-    }
+    return isComputed;
+  }
 
-    public void setComputed(final boolean isComputed) {
+  /**
+   * Sets the computed.
+   *
+   * @param isComputed the new computed
+   */
+  public void setComputed(final boolean isComputed) {
 
-        this.isComputed = isComputed;
-    }
+    this.isComputed = isComputed;
+  }
 
-    @Override
-    public int hashCode() {
+  /**
+   * Hash code.
+   *
+   * @return the int
+   */
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = super.hashCode();
+    result = prime * result
+        + Objects.hash(abbreviation, isAllowableForNullTarget, isComputed, name, terminologyId);
+    return result;
+  }
 
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((terminologyId == null) ? 0 : terminologyId.hashCode());
-        return result;
-    }
+  /**
+   * Equals.
+   *
+   * @param obj the obj
+   * @return true, if successful
+   */
+  @Override
+  public boolean equals(final Object obj) {
+    if (this == obj)
+      return true;
+    if (!super.equals(obj))
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    final MapRelation other = (MapRelation) obj;
+    return Objects.equals(abbreviation, other.abbreviation)
+        && isAllowableForNullTarget == other.isAllowableForNullTarget
+        && isComputed == other.isComputed && Objects.equals(name, other.name)
+        && Objects.equals(terminologyId, other.terminologyId);
+  }
 
-    @Override
-    public boolean equals(final Object obj) {
+  /**
+   * To string.
+   *
+   * @return the string
+   */
+  @Override
+  public String toString() {
 
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final MapRelation other = (MapRelation) obj;
-        if (terminologyId == null) {
-            if (other.terminologyId != null) {
-                return false;
-            }
-        } else if (!terminologyId.equals(other.terminologyId)) {
-            return false;
-        }
-        return true;
-    }
-
-    @Override
-    public String toString() {
-
-        return "MapRelation [id=" + super.getId() + ", terminologyId=" + terminologyId + ", name=" + name + ", abbreviation=" + abbreviation
-            + ", isAllowableForNullTarget=" + isAllowableForNullTarget + ", isComputed=" + isComputed + "]";
-    }
+    return "MapRelation [id=" + super.getId() + ", terminologyId=" + terminologyId + ", name="
+        + name + ", abbreviation=" + abbreviation + ", isAllowableForNullTarget="
+        + isAllowableForNullTarget + ", isComputed=" + isComputed + "]";
+  }
 
 }

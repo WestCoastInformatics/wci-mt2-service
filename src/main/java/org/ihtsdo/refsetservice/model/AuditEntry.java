@@ -37,232 +37,236 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Indexed
 public class AuditEntry extends AbstractHasModified {
 
-    /** The entity type. */
-    @Column(nullable = false, length = 64)
-    private String entityType;
+  /** The entity type. */
+  @Column(nullable = false, length = 64)
+  private String entityType;
 
-    /** The entity id. */
-    @Column(nullable = false, length = 64)
-    private String entityId;
+  /** The entity id. */
+  @Column(nullable = false, length = 64)
+  private String entityId;
 
-    /** The message. */
-    @Column(nullable = true, length = 255)
-    private String message;
+  /** The message. */
+  @Column(nullable = true, length = 255)
+  private String message;
 
-    /** The details. */
-    @Column(nullable = true, length = 4000)
-    private String details;
+  /** The details. */
+  @Column(nullable = true, length = 4000)
+  private String details;
 
-    /**
-     * Instantiates an empty {@link AuditEntry}.
-     */
-    public AuditEntry() {
+  /**
+   * Instantiates an empty {@link AuditEntry}.
+   */
+  public AuditEntry() {
 
-        // n/a
+    // n/a
+  }
+
+  /**
+   * Instantiates a {@link AuditEntry} from the specified parameters.
+   *
+   * @param entityType the entity type
+   * @param entityId the entity id
+   * @param message the message
+   * @param details the details
+   */
+  public AuditEntry(final String entityType, final String entityId, final String message,
+      final String details) {
+
+    this.entityType = entityType;
+    this.entityId = entityId;
+    this.message = message;
+    this.details = details;
+  }
+
+  /**
+   * Instantiates a {@link AuditEntry} from the specified parameters.
+   *
+   * @param other the other
+   */
+  public AuditEntry(final AuditEntry other) {
+
+    populateFrom(other);
+  }
+
+  /**
+   * Populate from.
+   *
+   * @param other the other
+   */
+  public void populateFrom(final AuditEntry other) {
+
+    super.populateFrom(other);
+    entityType = other.getEntityType();
+    entityId = other.getEntityId();
+    message = other.getMessage();
+    details = other.getDetails();
+
+  }
+
+  /**
+   * Returns the entity type.
+   *
+   * @return the entityType
+   */
+  @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+  public String getEntityType() {
+
+    return entityType;
+  }
+
+  /**
+   * Sets the entity type.
+   *
+   * @param entityType the entityType to set
+   */
+  public void setEntityType(final String entityType) {
+
+    this.entityType = entityType;
+  }
+
+  /**
+   * Returns the entity id.
+   *
+   * @return the entityId
+   */
+  @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+  public String getEntityId() {
+
+    return entityId;
+  }
+
+  /**
+   * Sets the entity id.
+   *
+   * @param entityId the entityId to set
+   */
+  public void setEntityId(final String entityId) {
+
+    this.entityId = entityId;
+  }
+
+  /**
+   * Returns the message.
+   *
+   * @return the message
+   */
+  @FullTextField(analyzer = "standard")
+  @GenericField(name = "messageSort", searchable = Searchable.YES, projectable = Projectable.NO,
+      sortable = Sortable.YES)
+  public String getMessage() {
+
+    return message;
+  }
+
+  /**
+   * Sets the message.
+   *
+   * @param message the message to set
+   */
+  public void setMessage(final String message) {
+
+    this.message = message;
+  }
+
+  /**
+   * Returns the details.
+   *
+   * @return the details
+   */
+  @FullTextField(analyzer = "standard")
+  @GenericField(name = "detailsSort", searchable = Searchable.YES, projectable = Projectable.NO,
+      sortable = Sortable.YES)
+  public String getDetails() {
+
+    return details;
+  }
+
+  /**
+   * Sets the details.
+   *
+   * @param details the details to set
+   */
+  public void setDetails(final String details) {
+
+    this.details = details;
+  }
+
+  /* see superclass */
+  @Override
+  public int hashCode() {
+
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((details == null) ? 0 : details.hashCode());
+    result = prime * result + ((entityId == null) ? 0 : entityId.hashCode());
+    result = prime * result + ((entityType == null) ? 0 : entityType.hashCode());
+    result = prime * result + ((message == null) ? 0 : message.hashCode());
+    return result;
+  }
+
+  /* see superclass */
+  @Override
+  public boolean equals(final Object obj) {
+
+    if (this == obj) {
+      return true;
     }
-
-    /**
-     * Instantiates a {@link AuditEntry} from the specified parameters.
-     *
-     * @param entityType the entity type
-     * @param entityId the entity id
-     * @param message the message
-     * @param details the details
-     */
-    public AuditEntry(final String entityType, final String entityId, final String message, final String details) {
-
-        this.entityType = entityType;
-        this.entityId = entityId;
-        this.message = message;
-        this.details = details;
+    if (!super.equals(obj)) {
+      return false;
     }
-
-    /**
-     * Instantiates a {@link AuditEntry} from the specified parameters.
-     *
-     * @param other the other
-     */
-    public AuditEntry(final AuditEntry other) {
-
-        populateFrom(other);
+    if (!(obj instanceof AuditEntry)) {
+      return false;
     }
-
-    /**
-     * Populate from.
-     *
-     * @param other the other
-     */
-    public void populateFrom(final AuditEntry other) {
-
-        super.populateFrom(other);
-        entityType = other.getEntityType();
-        entityId = other.getEntityId();
-        message = other.getMessage();
-        details = other.getDetails();
-
+    final AuditEntry other = (AuditEntry) obj;
+    if (details == null) {
+      if (other.details != null) {
+        return false;
+      }
+    } else if (!details.equals(other.details)) {
+      return false;
     }
-
-    /**
-     * Returns the entity type.
-     *
-     * @return the entityType
-     */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
-    public String getEntityType() {
-
-        return entityType;
+    if (entityId == null) {
+      if (other.entityId != null) {
+        return false;
+      }
+    } else if (!entityId.equals(other.entityId)) {
+      return false;
     }
-
-    /**
-     * Sets the entity type.
-     *
-     * @param entityType the entityType to set
-     */
-    public void setEntityType(final String entityType) {
-
-        this.entityType = entityType;
+    if (entityType == null) {
+      if (other.entityType != null) {
+        return false;
+      }
+    } else if (!entityType.equals(other.entityType)) {
+      return false;
     }
-
-    /**
-     * Returns the entity id.
-     *
-     * @return the entityId
-     */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
-    public String getEntityId() {
-
-        return entityId;
+    if (message == null) {
+      if (other.message != null) {
+        return false;
+      }
+    } else if (!message.equals(other.message)) {
+      return false;
     }
+    return true;
+  }
 
-    /**
-     * Sets the entity id.
-     *
-     * @param entityId the entityId to set
-     */
-    public void setEntityId(final String entityId) {
+  /**
+   * To log string.
+   *
+   * @return the string
+   */
+  public String toLogString() {
 
-        this.entityId = entityId;
-    }
+    return "AUDIT [entityType=" + entityType + ", entityId=" + entityId + ", message=" + message
+        + ", details=" + details + ", modified=" + getModified() + ", modified=" + getModifiedBy()
+        + "]";
+  }
 
-    /**
-     * Returns the message.
-     *
-     * @return the message
-     */
-    @FullTextField(analyzer = "standard")
-    @GenericField(name = "messageSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
-    public String getMessage() {
+  /* see superclass */
+  @Override
+  public void lazyInit() {
 
-        return message;
-    }
+    // n/a
 
-    /**
-     * Sets the message.
-     *
-     * @param message the message to set
-     */
-    public void setMessage(final String message) {
-
-        this.message = message;
-    }
-
-    /**
-     * Returns the details.
-     *
-     * @return the details
-     */
-    @FullTextField(analyzer = "standard")
-    @GenericField(name = "detailsSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
-    public String getDetails() {
-
-        return details;
-    }
-
-    /**
-     * Sets the details.
-     *
-     * @param details the details to set
-     */
-    public void setDetails(final String details) {
-
-        this.details = details;
-    }
-
-    /* see superclass */
-    @Override
-    public int hashCode() {
-
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((details == null) ? 0 : details.hashCode());
-        result = prime * result + ((entityId == null) ? 0 : entityId.hashCode());
-        result = prime * result + ((entityType == null) ? 0 : entityType.hashCode());
-        result = prime * result + ((message == null) ? 0 : message.hashCode());
-        return result;
-    }
-
-    /* see superclass */
-    @Override
-    public boolean equals(final Object obj) {
-
-        if (this == obj) {
-            return true;
-        }
-        if (!super.equals(obj)) {
-            return false;
-        }
-        if (!(obj instanceof AuditEntry)) {
-            return false;
-        }
-        final AuditEntry other = (AuditEntry) obj;
-        if (details == null) {
-            if (other.details != null) {
-                return false;
-            }
-        } else if (!details.equals(other.details)) {
-            return false;
-        }
-        if (entityId == null) {
-            if (other.entityId != null) {
-                return false;
-            }
-        } else if (!entityId.equals(other.entityId)) {
-            return false;
-        }
-        if (entityType == null) {
-            if (other.entityType != null) {
-                return false;
-            }
-        } else if (!entityType.equals(other.entityType)) {
-            return false;
-        }
-        if (message == null) {
-            if (other.message != null) {
-                return false;
-            }
-        } else if (!message.equals(other.message)) {
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * To log string.
-     *
-     * @return the string
-     */
-    public String toLogString() {
-
-        return "AUDIT [entityType=" + entityType + ", entityId=" + entityId + ", message=" + message + ", details=" + details + ", modified=" + getModified()
-            + ", modified=" + getModifiedBy() + "]";
-    }
-
-    /* see superclass */
-    @Override
-    public void lazyInit() {
-
-        // n/a
-
-    }
+  }
 
 }
