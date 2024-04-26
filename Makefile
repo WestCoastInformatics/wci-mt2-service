@@ -24,25 +24,33 @@ clean:
 
 # Build the library without tests
 build:
-	./gradlew clean build buildDeb -x test -x spotbugsMain -x spotbugsTest -x checkstyleTest -x checkstyleMain
+	./gradlew clean test dependencyCheckAnalyze build buildDeb -x spotbugsMain -x spotbugsTest -x checkstyleMain -x checkstyleTest
+
+devBuild:
+	./gradlew clean build -x buildDeb -x test -x dependencyCheckAnalyze -x spotbugsMain -x spotbugsTest -x checkstyleMain -x checkstyleTest
 
 # Build the library and check style
 checkstyle:
-	./gradlew clean build buildDeb -x test -x spotbugsMain -x spotbugsTest
+	./gradlew --daemon checkstyleMain checkstyleTest -x clean -x build -x buildDeb -x test -x spotbugsMain -x spotbugsTest
 
 # Build the library and check for bugs
 spotbugs:
-	./gradlew clean build buildDeb -x test -x checkstyleTest -x checkstyleMain
-	
+	./gradlew spotbugsMain -x clean -x build -x buildDeb -x test -x checkstyleTest -x checkstyleMain
+
+dependencyCheck:
+	./gradlew dependencyCheckAnalyze
+
+je:
+	java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5555 -jar build/libs/snomed-refset-service-*-SNAPSHOT.jar > output.log 2>&1 
+
 test:
 	./gradlew test
+	
+run:
+	java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5555 -jar build/libs/snomed-refset-service-*-SNAPSHOT.jar > build/log.log 2>&1 &
 
 install:
 	./gradlew clean build install -x test -x spotbugsMain -x spotbugsTest
-
-# Run the spring-boot jar with the debugging agent
-run:
-	java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5555 -jar build/libs/snomed-refset-service-*-SNAPSHOT.jar &
 
 # Publish artifacts to nexus (requires a local .gradle/gradle.properties properly configured)
 release:
