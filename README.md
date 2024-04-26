@@ -12,7 +12,7 @@ git config --global core.autocrlf false
 git clone https://github.com/IHTSDO/snomed-refset-service.git
 ```
 
-* Install JDK 11
+* Install JDK 17
 * Install Gradle
 * Set up a ~/.gradle/gradle.properties file
 

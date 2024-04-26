@@ -121,7 +121,7 @@ public class ProxyTester {
         // Verify there is a no-argument constructor
         Object o = null;
         try {
-            o = clazz.newInstance();
+            o = clazz.getDeclaredConstructor().newInstance();
         } catch (final Exception e) {
             throw new Exception("Class " + clazz + " unexpectedly does not have a no-argument constructor");
         }
@@ -286,7 +286,7 @@ public class ProxyTester {
      * @throws Exception the exception
      */
     @SuppressWarnings({
-        "rawtypes", "deprecation"
+        "rawtypes"
     })
     protected Object makeProxy(final String fieldName, final Class<?> type, final int initializer) throws Exception {
 
@@ -316,22 +316,22 @@ public class ProxyTester {
             return LocalDateTime.of(initializer, initializer, initializer, initializer, initializer);
         }
         if (type == Boolean.class || type == boolean.class) {
-            return new Boolean((initializer & 1) == 0);
+            return Boolean.valueOf((initializer & 1) == 0);
         }
         if (type == Integer.class || type == int.class) {
-            return new Integer(initializer);
+            return Integer.valueOf(initializer);
         }
         if (type == Long.class || type == long.class) {
-            return new Long(initializer);
+            return Long.valueOf(initializer);
         }
         if (type == Double.class || type == double.class) {
-            return new Double((initializer * 1.0) / 100);
+            return Double.valueOf((initializer * 1.0) / 100);
         }
         if (type == Float.class || type == float.class) {
-            return new Float((initializer * 1.0) / 100);
+            return Float.valueOf((float) (initializer * 1.0) / 100);
         }
         if (type == Character.class || type == char.class) {
-            return new Character((char) ('a' + initializer));
+            return Character.valueOf((char) ('a' + initializer));
         }
         if (type == BigDecimal.class) {
             return new BigDecimal(initializer);
