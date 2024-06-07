@@ -9,6 +9,7 @@ import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.terminologyservice.MappingService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,15 +58,19 @@ public class MappingController extends BaseController {
         @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. &lt;uuid&gt;", required = true)
     })
     @RecordMetric
-    public @ResponseBody ResponseEntity<List<Mapping>> getMappings(@PathVariable final String mapSetCode,
+    public @ResponseBody ResponseEntity<ResultList<Mapping>> getMappings(@PathVariable final String mapSetCode,
         @ModelAttribute final SearchParameters searchParameters) throws Exception {
 
         LOG.info("Mappings for a Mapset " + mapSetCode, ModelUtility.toJson(searchParameters));
         // final User authUser = authorizeUser(request);
 
         try {
+            final SearchParameters sp = (searchParameters != null) ? searchParameters : new SearchParameters();
+            if (sp.getLimit() == null || sp.getLimit() == 0) {
+                sp.setLimit(100);
+            }
 
-            final List<Mapping> mappings = MappingService.getMappings(mapSetCode);
+            final ResultList<Mapping> mappings = MappingService.getMappings(mapSetCode, sp);
 
             return new ResponseEntity<>(mappings, HttpStatus.OK);
 

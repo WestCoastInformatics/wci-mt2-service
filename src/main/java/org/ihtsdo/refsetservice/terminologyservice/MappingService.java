@@ -15,6 +15,8 @@ import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
+import org.ihtsdo.refsetservice.util.ResultList;
+import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,9 +69,9 @@ public final class MappingService {
      * @return the mappings
      * @throws Exception the exception
      */
-    public static List<Mapping> getMappings(String mapSetCode) throws Exception {
+    public static ResultList<Mapping> getMappings(String mapSetCode, final SearchParameters searchParameters) throws Exception {
 
-        return terminologyHandler.getMappings(mapSetCode);
+        return terminologyHandler.getMappings(mapSetCode, searchParameters);
     }
 
     /**
