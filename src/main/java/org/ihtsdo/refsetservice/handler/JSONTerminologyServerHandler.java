@@ -4172,7 +4172,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
     /* see superclass */
     @Override
-    public List<Mapping> getMappings(final String mapSetCode) throws Exception {
+    public ResultList<Mapping> getMappings(final String mapSetCode, final SearchParameters searchParameters) throws Exception {
 
         final File f = new File(handlerProperties.getProperty("dir") + "/Mappings.json");
         if (!f.exists()) {
@@ -4257,7 +4257,10 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         }
 
         // Once the file is completed parsed, return mappings as list
-        final ArrayList<Mapping> mappings = new ArrayList<>(conceptIdToMappingMap.values());
+        final ResultList<Mapping> mappings = new ResultList<>();
+        mappings.getItems().addAll(conceptIdToMappingMap.values());
+        mappings.setTotal(conceptIdToMappingMap.size());
+        mappings.setLimit(searchParameters.getLimit());
 
         return mappings;
     }

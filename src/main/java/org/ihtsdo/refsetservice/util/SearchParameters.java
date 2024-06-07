@@ -1,3 +1,12 @@
+/*
+ * Copyright 2024 West Coast Informatics - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of West Coast Informatics
+ * The intellectual and technical concepts contained herein are proprietary to
+ * West Coast Informatics and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.util;
 
@@ -33,6 +42,9 @@ public class SearchParameters {
 
 	/** Flag for if this search is for editing. */
 	private Boolean editing = false;
+	
+	/** The search after. */
+	private String searchAfter;
 
 	/**
 	 * Instantiates an empty {@link SearchParameters}.
@@ -66,6 +78,7 @@ public class SearchParameters {
 		sort = other.getSort();
 		sortAscending = other.getSortAscending();
 		editing = other.getEditing();
+		searchAfter = other.getSearchAfter();
 	}
 
 	/**
@@ -216,6 +229,28 @@ public class SearchParameters {
 
 		this.editing = editing;
 	}
+	
+	
+    /**
+     * Returns the searchAfter.
+     *
+     * @return the searchAfter
+     */
+    @Schema(description = "Indicates the searchAfter value for search results")
+    public String getSearchAfter() {
+
+      return searchAfter;
+    }
+
+    /**
+     * Sets the search after.
+     *
+     * @param searchAfter the new search after
+     */
+    public void setSearchAfter(final String searchAfter) {
+
+      this.searchAfter = searchAfter;
+    }
 
 	/**
 	 * Sets the sort ascending.
@@ -291,6 +326,10 @@ public class SearchParameters {
 		if (!editing.equals(other.editing)) {
 			return false;
 		}
+		
+		if (!searchAfter.equals(other.searchAfter)) {
+          return false;
+      }
 
 		return true;
 	}
@@ -312,9 +351,15 @@ public class SearchParameters {
 		result = prime * result + (activeOnly ? 1 : 0);
 		result = prime * result + (sortAscending ? 1 : 0);
 		result = prime * result + (editing ? 1 : 0);
+		result = prime * result + ((searchAfter == null) ? 0 : searchAfter.hashCode());
 		return result;
 	}
 
+	/**
+	 * To string.
+	 *
+	 * @return the string
+	 */
 	/* see superclass */
 	@Override
 	public String toString() {
