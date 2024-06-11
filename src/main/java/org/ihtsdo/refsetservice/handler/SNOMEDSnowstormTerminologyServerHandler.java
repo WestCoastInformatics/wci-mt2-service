@@ -101,7 +101,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
   private static ThreadLocal<Client> clients = new ThreadLocal<Client>() {
     @Override
     public Client initialValue() {
-      return getClients().get();
+      return ClientBuilder.newClient();
     }
   };
   
