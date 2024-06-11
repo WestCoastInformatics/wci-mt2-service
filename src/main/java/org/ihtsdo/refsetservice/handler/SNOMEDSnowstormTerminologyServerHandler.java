@@ -4242,6 +4242,8 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
         final JsonNode mappingsBatch = doc.get("items");
 
+    final String searchAfter = (doc.has("searchAfter")) ? doc.get("searchAfter").asText() : "";
+    
         final Iterator<JsonNode> itemIterator = mappingsBatch.iterator();
 
         // parse items to retrieve matching concept
