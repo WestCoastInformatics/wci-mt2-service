@@ -4391,33 +4391,26 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     // Connect to snowstorm
     final Client client = getClients().get();
-
     String searchAfter = null;
-
     int limit = 50;
 
-    String targetUri =
+    final String targetUri =
         SnowstormConnection.getBaseUrl() + "/MAIN%2FSNOMEDCT-NO%2F2023-12-15/concepts?activeFilter=true&ecl=%3C609331003&includeLeafFlag=false&form=inferred&offset=0&limit="
             + limit + (searchAfter != null ? "&searchAfter=" + searchAfter : "");
     LOG.info("getSnowstormMapsets url: " + targetUri);
 
-    WebTarget target = client.target(targetUri);
-    target = client.target(targetUri);
-    // LOG.info(targetUri);
-
-    Response response = target.request(DEFAULT_ACCEPT)
+    final WebTarget target = client.target(targetUri);
+    final Response response = target.request(DEFAULT_ACCEPT)
         // .header("Cookie", ConfigUtility.getGenericUserCookie())
         .get();
-    String resultString = response.readEntity(String.class);
-    if (response.getStatusInfo().getFamily() == Family.SUCCESSFUL) {
+    final String resultString = response.readEntity(String.class);
+    if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
       throw new LocalException("Unexpected terminology server failure. Message = " + resultString);
     }
 
     final ObjectMapper mapper = new ObjectMapper();
     final JsonNode doc = mapper.readTree(resultString);
-
     final JsonNode mappingsBatch = doc.get("items");
-
     final Iterator<JsonNode> itemIterator = mappingsBatch.iterator();
 
     // parse items to retrieve matching concept
