@@ -4075,10 +4075,8 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
         // Connect to snowstorm
         final Client client = ClientBuilder.newClient();
         final String accept = "application/json";
-
         final String searchAfter = null;
         final ObjectMapper mapper = new ObjectMapper();
-
         final int limit = 50;
 
         final String targetUri =
@@ -4099,9 +4097,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
         }
 
         final JsonNode doc = mapper.readTree(resultString);
-
         final JsonNode mappingsBatch = doc.get("items");
-
         final Iterator<JsonNode> itemIterator = mappingsBatch.iterator();
 
         // parse items to retrieve matching concept
