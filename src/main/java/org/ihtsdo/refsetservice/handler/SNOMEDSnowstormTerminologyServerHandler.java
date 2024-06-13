@@ -4300,16 +4300,25 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
                 mapEntry.setToName(toConcept.getName());
             } else {
         LOG.error("Concept not found: terminology:{}, code:{}", fromTerminology, mapping.getCode());
-        //mapping.setName(mapping.getCode() + " CONCEPT NOT FOUND");
-        //FOR TESTING PURPOSES//
-        int randomIndex = random.nextInt(ICD10NO_Codes.size());
-        mapping.setName(ICD10NO_Codes.get(randomIndex));
-        //END FOR TESTING//
+        mapping.setName(mapping.getCode() + " CONCEPT NOT FOUND");
             }
 
             final List<MapEntry> mapEntries = mapping.getMapEntries();
             mapEntries.add(mapEntry);
             mapping.setMapEntries(mapEntries);
+
+        final Concept relationConcept =
+            terminologyConceptMap.get(fromTerminology).get(entry.getRelationCode());
+        entry.setRelation(relationConcept != null ? relationConcept.getName()
+            : entry.getRelationCode() + " CONCEPT NOT FOUND");
+
+        final Concept toConcept = terminologyConceptMap.get(toTerminology).get(entry.getToCode());
+        entry.setToName(
+            toConcept != null ? toConcept.getName() : entry.getToCode() + " CONCEPT NOT FOUND");
+        //FOR TESTING PURPOSES//
+        int randomIndex = random.nextInt(ICD10NO_Codes.size());
+        entry.setToName(ICD10NO_Codes.get(randomIndex));
+        //END FOR TESTING//
 
         }
 
