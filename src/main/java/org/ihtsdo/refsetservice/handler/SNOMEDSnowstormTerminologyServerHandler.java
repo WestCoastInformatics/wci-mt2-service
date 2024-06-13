@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -4529,6 +4530,12 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
         SnowstormConnection.getBaseUrl() + "/MAIN%2FSNOMEDCT-NO%2F2023-12-15/members?referenceSet="
             + mapSetCode + getPagingQueryString(searchParameters);
 
+    //FOR TESTING PURPOSES//
+    List<String> ICD10NO_Codes = new ArrayList<>();
+    ICD10NO_Codes.addAll(Arrays.asList("Kolera som skyldes Vibrio cholerae 01, biovar cholerae","Tyfoidfeber","Salmonellaenteritt","Shigellose","Botulisme"));
+    Random random = new Random();
+    //END FOR TESTING//    
+    
     LOG.info("getSnowstormMappings url: " + targetUri);
 
     final WebTarget target = client.target(targetUri);
@@ -4624,7 +4631,11 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
         mapping.setName(concept.getName());
       } else {
         LOG.error("Concept not found: terminology:{}, code:{}", fromTerminology, mapping.getCode());
-        mapping.setName(mapping.getCode() + " CONCEPT NOT FOUND");
+        //mapping.setName(mapping.getCode() + " CONCEPT NOT FOUND");
+        //FOR TESTING PURPOSES//
+        int randomIndex = random.nextInt(list.size());
+        mapping.setName(ICD10NO_Codes.get(randomIndex));
+        //END FOR TESTING//
       }
 
       for (final MapEntry entry : mapping.getMapEntries()) {
