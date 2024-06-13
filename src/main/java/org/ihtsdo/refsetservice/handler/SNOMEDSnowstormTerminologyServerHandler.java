@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -41,6 +42,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpStatus;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
@@ -72,13 +74,13 @@ import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.StringUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import jdk.nashorn.internal.ir.ObjectNode;
 
 /**
  * Implements a terminology handler that uses SNOMED's Snowstorm terminology server.
@@ -4216,7 +4218,13 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
         // Connect to snowstorm
         final Client client = ClientBuilder.newClient();
         final String accept = "application/json";
-
+    
+    //FOR TESTING PURPOSES//
+    List<String> ICD10NO_Codes = new ArrayList<>();
+    ICD10NO_Codes.addAll(Arrays.asList("Kolera som skyldes Vibrio cholerae 01, biovar cholerae","Tyfoidfeber","Salmonellaenteritt","Shigellose","Botulisme"));
+    Random random = new Random();
+    //END FOR TESTING//
+    
         final String searchAfter = null;
         final ObjectMapper mapper = new ObjectMapper();
 
@@ -4296,7 +4304,12 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
             if (toConcept != null) {
                 mapEntry.setToName(toConcept.getName());
             } else {
-                mapEntry.setToName(mapEntry.getToCode() + " DOES NOT EXIST");
+        LOG.error("Concept not found: terminology:{}, code:{}", fromTerminology, mapping.getCode());
+        //mapping.setName(mapping.getCode() + " CONCEPT NOT FOUND");
+        //FOR TESTING PURPOSES//
+        int randomIndex = random.nextInt(list.size());
+        mapping.setName(ICD10NO_Codes.get(randomIndex));
+        //END FOR TESTING//
             }
 
             final List<MapEntry> mapEntries = mapping.getMapEntries();
