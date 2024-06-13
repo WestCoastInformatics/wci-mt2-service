@@ -4302,7 +4302,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
         LOG.error("Concept not found: terminology:{}, code:{}", fromTerminology, mapping.getCode());
         //mapping.setName(mapping.getCode() + " CONCEPT NOT FOUND");
         //FOR TESTING PURPOSES//
-        int randomIndex = random.nextInt(list.size());
+        int randomIndex = random.nextInt(ICD10NO_Codes.size());
         mapping.setName(ICD10NO_Codes.get(randomIndex));
         //END FOR TESTING//
             }
