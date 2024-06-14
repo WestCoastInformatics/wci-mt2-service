@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -394,6 +395,16 @@ public class SnowstormMapping extends SnowstormAbstract {
 
       }
     }
+    
+    // Sort all of the map entries in Group/Priority order
+    for (final Mapping mapping : conceptIdToMappingMap.values()) {
+
+        List<MapEntry> entries = mapping.getMapEntries();
+        entries.sort(Comparator.comparingInt(MapEntry::getGroup)
+            .thenComparingInt(MapEntry::getPriority));
+        
+        mapping.setMapEntries(entries);
+    }
 
     // Once the file is completed parsed, return mappings as list
     final ResultList<Mapping> mappings = new ResultList<>();
@@ -579,6 +590,11 @@ public class SnowstormMapping extends SnowstormAbstract {
       //TEMPORARY//
 
       final List<MapEntry> mapEntries = mapping.getMapEntries();
+      
+      // Sort all of the map entries in Group/Priority order
+      mapEntries.sort(Comparator.comparingInt(MapEntry::getGroup)
+              .thenComparingInt(MapEntry::getPriority));
+          
       mapEntries.add(mapEntry);
       mapping.setMapEntries(mapEntries);
     }
