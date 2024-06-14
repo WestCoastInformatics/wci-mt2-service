@@ -575,7 +575,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         mapEntry.setToName(mapEntry.getToCode() + " DOES NOT EXIST");
       }
       //TEMPORARY//
-      mapEntry.setToName(getICD10NOName(entry.getToCode()));
+      mapEntry.setToName(getICD10NOName(mapEntry.getToCode()));
       //TEMPORARY//
 
       final List<MapEntry> mapEntries = mapping.getMapEntries();
