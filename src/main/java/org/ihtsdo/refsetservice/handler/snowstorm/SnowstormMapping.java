@@ -647,6 +647,8 @@ public class SnowstormMapping extends SnowstormAbstract {
       return new HashMap<>();
     }
 
+    LOG.debug("Codes to look up: {}", codes);
+
     final Integer fetchLimit = 1000;
     final SearchParameters searchParameters = new SearchParameters();
     searchParameters.setLimit(fetchLimit);
@@ -657,7 +659,8 @@ public class SnowstormMapping extends SnowstormAbstract {
     final String branch = "MAIN%2FSNOMEDCT-NO%2F2023-12-15";
     final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/concepts/search";
     final String requestBodyTempate =
-        "{ \"conceptIds\": [\"CONCEPT_CODES\"], \"searchAfter\": \"SEARCH_AFTER\" }";
+        "{ \"conceptIds\": [\"CONCEPT_CODES\"], \"searchAfter\": \"SEARCH_AFTER\", \"limit\": "
+            + fetchLimit + "}";
     final ObjectMapper mapper = new ObjectMapper();
 
     int maxIterations = Math.floorDiv(codes.size(), fetchLimit) + 1;
@@ -691,12 +694,7 @@ public class SnowstormMapping extends SnowstormAbstract {
           final Concept concept = SnowstormConcept.buildConcept(conceptNode);
           conceptMap.put(concept.getCode(), concept);
         }
-        if (doc.has("searchAfter")) {
-          searchParameters.setSearchAfter(doc.get("searchAfter").asText());
-        }
-
       }
-
     }
 
     return conceptMap;
