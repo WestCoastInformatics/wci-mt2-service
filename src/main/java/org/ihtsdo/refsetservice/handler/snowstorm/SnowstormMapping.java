@@ -60,9 +60,8 @@ public class SnowstormMapping extends SnowstormAbstract {
   /** The Constant DEFAULT_ACCEPT. */
   private static final String DEFAULT_ACCEPT = MediaType.APPLICATION_JSON;
 
-  private static final Map<String,String> icd10noCodeToName = new HashMap<>();
-  
-  
+  private static final Map<String, String> icd10noCodeToName = new HashMap<>();
+
   /** The client. */
   private static ThreadLocal<Client> clients = new ThreadLocal<Client>() {
     @Override
@@ -250,7 +249,7 @@ public class SnowstormMapping extends SnowstormAbstract {
       filteredConceptList.addAll(searchConcepts(mapSetCode, filter));
     }
 
-    final String branch = "MAIN%2FSNOMEDCT-NO%2F2023-12-15"; 
+    final String branch = "MAIN%2FSNOMEDCT-NO%2F2023-12-15";
 
     final StringBuilder requestBody = new StringBuilder();
     requestBody.append("{");
@@ -260,6 +259,15 @@ public class SnowstormMapping extends SnowstormAbstract {
       requestBody.append(",").append("\"referencedComponentIds\": [")
           .append(String.join(",", filteredConceptList)).append("]");
     }
+//    if (searchParameters.getLimit() != null) {
+//      requestBody.append(",").append("\"limit\": ").append(searchParameters.getLimit());
+//    }
+//    if (searchParameters.getOffset() != null) {
+//      requestBody.append(",").append("\"offset\": ").append(searchParameters.getOffset());
+//    }
+//    if (StringUtils.isNotBlank(searchParameters.getSearchAfter())) {
+//      requestBody.append(",").append("\"searchAfter\": ").append(searchParameters.getSearchAfter());
+//    }
     requestBody.append("}");
 
     // Grab the specified mapSet
@@ -275,13 +283,18 @@ public class SnowstormMapping extends SnowstormAbstract {
 
     boolean done = false;
     int i = 0;
-    searchParameters.setOffset(i * searchParameters.getLimit());
+
+    int total = 0;
+    int limit = 0;
+    int offset = 0;
+    String searchAfter = null;
 
     while (!done) {
 
-      final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/search?"
+      final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/search?" 
           + SnowstormApiPaging.getPagingQueryString(searchParameters);
-      LOG.info("getSnowstormMappings url: {}, request body: {}", targetUri, requestBody.toString());
+      LOG.debug("getSnowstormMappings url: {}", targetUri);
+      LOG.debug("request body: {}", requestBody.toString());
 
       try (final Response response =
           SnowstormConnection.postResponse(targetUri, requestBody.toString())) {
@@ -296,6 +309,21 @@ public class SnowstormMapping extends SnowstormAbstract {
         if (mappingsBatch.isArray() && mappingsBatch.isEmpty()) {
           done = true;
           continue;
+        }
+
+        if (searchParameters != null) {
+          if (doc.has("total")) {
+            total = doc.get("total").asInt();
+          }
+          if (doc.has("limit")) {
+            limit = doc.get("limit").asInt();
+          }
+          if (doc.has("offset")) {
+            offset = doc.get("offset").asInt();
+          }
+          if (doc.has("searchAfter")) {
+            searchAfter = doc.get("searchAfter").asText();
+          }
         }
 
         final Iterator<JsonNode> itemIterator = mappingsBatch.iterator();
@@ -356,6 +384,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         }
 
       }
+
       i++;
       searchParameters.setOffset(i * searchParameters.getLimit());
       if (searchParameters.getOffset() >= searchParameters.getLimit()) {
@@ -388,31 +417,32 @@ public class SnowstormMapping extends SnowstormAbstract {
         final Concept toConcept = terminologyConceptMap.get(toTerminology).get(entry.getToCode());
         entry.setToName(
             toConcept != null ? toConcept.getName() : entry.getToCode() + " CONCEPT NOT FOUND");
-        
-        //TEMPORARY//
+
+        // TEMPORARY//
         entry.setToName(getICD10NOName(entry.getToCode()));
-        //TEMPORARY//
+        // TEMPORARY//
 
       }
     }
-    
+
     // Sort all of the map entries in Group/Priority order
     for (final Mapping mapping : conceptIdToMappingMap.values()) {
 
-        List<MapEntry> entries = mapping.getMapEntries();
-        entries.sort(Comparator.comparingInt(MapEntry::getGroup)
-            .thenComparingInt(MapEntry::getPriority));
-        
-        mapping.setMapEntries(entries);
+      List<MapEntry> entries = mapping.getMapEntries();
+      entries.sort(
+          Comparator.comparingInt(MapEntry::getGroup).thenComparingInt(MapEntry::getPriority));
+
+      mapping.setMapEntries(entries);
     }
 
     // Once the file is completed parsed, return mappings as list
     final ResultList<Mapping> mappings = new ResultList<>();
     mappings.getItems().addAll(conceptIdToMappingMap.values());
-    mappings.setTotal(conceptIdToMappingMap.size());
-    mappings.setTotalKnown(true);
-    mappings.setLimit(searchParameters.getLimit());
-    mappings.setOffset(searchParameters.getOffset());
+    mappings.setTotal(total);
+    mappings.setTotalKnown(total > 0);
+    mappings.setLimit(limit);
+    mappings.setOffset(offset);
+    mappings.setSearchAfter(searchAfter);
 
     return mappings;
 
@@ -585,16 +615,16 @@ public class SnowstormMapping extends SnowstormAbstract {
       } else {
         mapEntry.setToName(mapEntry.getToCode() + " DOES NOT EXIST");
       }
-      //TEMPORARY//
+      // TEMPORARY//
       mapEntry.setToName(getICD10NOName(mapEntry.getToCode()));
-      //TEMPORARY//
+      // TEMPORARY//
 
       final List<MapEntry> mapEntries = mapping.getMapEntries();
-      
+
       // Sort all of the map entries in Group/Priority order
-      mapEntries.sort(Comparator.comparingInt(MapEntry::getGroup)
-              .thenComparingInt(MapEntry::getPriority));
-          
+      mapEntries.sort(
+          Comparator.comparingInt(MapEntry::getGroup).thenComparingInt(MapEntry::getPriority));
+
       mapEntries.add(mapEntry);
       mapping.setMapEntries(mapEntries);
     }
@@ -700,45 +730,46 @@ public class SnowstormMapping extends SnowstormAbstract {
     return conceptMap;
 
   }
-  
-  //TEMPORARY//
+
+  // TEMPORARY//
   private static String getICD10NOName(String code) throws Exception {
-      if(icd10noCodeToName.isEmpty()) {
-          cacheICD10NONames();
-      }
-      String ICD10NOName = icd10noCodeToName.get(code);
-      if(ICD10NOName == null || ICD10NOName.isBlank()) {
-          ICD10NOName = "CONCEPT NOT FOUND FOR " + code;
-      }
-      return ICD10NOName;
+    if (icd10noCodeToName.isEmpty()) {
+      cacheICD10NONames();
+    }
+    String ICD10NOName = icd10noCodeToName.get(code);
+    if (ICD10NOName == null || ICD10NOName.isBlank()) {
+      ICD10NOName = "CONCEPT NOT FOUND FOR " + code;
+    }
+    return ICD10NOName;
   }
-  
-  //TEMPORARY//
+
+  // TEMPORARY//
   public static void cacheICD10NONames() throws Exception {
 
-      String dataDir = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.dir");
-      
-      final File f = new File(dataDir + "/ICD10NO_concepts.txt");
-      if (!f.exists()) {
-          LOG.error("ICD10NO file doesn't exist: " + f.getPath());
-          return;
+    String dataDir = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.dir");
+
+    final File f = new File(dataDir + "/ICD10NO_concepts.txt");
+    if (!f.exists()) {
+      LOG.error("ICD10NO file doesn't exist: " + f.getPath());
+      return;
+    }
+
+    try (BufferedReader br = new BufferedReader(new FileReader(f.getPath()))) {
+      String line;
+      while ((line = br.readLine()) != null) {
+        String[] parts = line.split("\\|", 2); // Split the line into two parts
+                                               // at the first occurrence of '|'
+        if (parts.length >= 2) {
+          String key = parts[0].trim();
+          String value = parts[1].trim();
+          icd10noCodeToName.put(key, value);
+        } else {
+          System.out.println("Ignoring malformed line: " + line);
+        }
       }
-      
-      try (BufferedReader br = new BufferedReader(new FileReader(f.getPath()))) {
-          String line;
-          while ((line = br.readLine()) != null) {
-              String[] parts = line.split("\\|", 2); // Split the line into two parts at the first occurrence of '|'
-              if (parts.length >= 2) {
-                  String key = parts[0].trim();
-                  String value = parts[1].trim();
-                  icd10noCodeToName.put(key, value);
-              } else {
-                  System.out.println("Ignoring malformed line: " + line);
-              }
-          }
-      } catch (IOException e) {
-          e.printStackTrace();
-      }
-  }  
-  
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
 }
