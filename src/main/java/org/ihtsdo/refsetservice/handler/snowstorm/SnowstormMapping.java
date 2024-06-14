@@ -509,7 +509,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         // .header("Cookie", ConfigUtility.getGenericUserCookie())
         .get();
     final String resultString = response.readEntity(String.class);
-    if (response.getStatusInfo().getFamily() == Family.SUCCESSFUL) {
+    if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
       throw new LocalException("Unexpected terminology server failure. Message = " + resultString);
     }
 
