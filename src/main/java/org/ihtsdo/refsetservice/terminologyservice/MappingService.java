@@ -15,10 +15,11 @@ import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
+import org.ihtsdo.refsetservice.util.ResultList;
+import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// TODO: Auto-generated Javadoc
 /**
  * Service class to get refset member concept information from a terminology
  * service.
@@ -39,15 +40,15 @@ public final class MappingService {
 
         // Instantiate terminology handler
         try {
-            final String key = "terminology.handler";
-            final String handlerName = PropertyUtility.getProperty(key);
+            String key = "terminology.handler";
+            String handlerName = PropertyUtility.getProperty(key);
             if (handlerName.isEmpty()) {
                 throw new Exception("terminology.handler expected and does not exist.");
             }
 
             terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName, TerminologyServerHandler.class);
 
-        } catch (final Exception e) {
+        } catch (Exception e) {
             LOG.error("Failed to initialize terminology.handler - serious error", e);
             terminologyHandler = null;
         }
@@ -68,9 +69,11 @@ public final class MappingService {
      * @return the mappings
      * @throws Exception the exception
      */
-    public static List<Mapping> getMappings(final String mapSetCode) throws Exception {
+    public static ResultList<Mapping> getMappings(final String mapSetCode,
+      final SearchParameters searchParameters, final String filter, final List<String> conceptCodes)
+      throws Exception {
 
-        return terminologyHandler.getMappings(mapSetCode);
+      return terminologyHandler.getMappings(mapSetCode, searchParameters, filter, conceptCodes);
     }
 
     /**
@@ -84,28 +87,5 @@ public final class MappingService {
     public static Mapping getMapping(final String mapSetCode, final String conceptCode) throws Exception {
 
         return terminologyHandler.getMapping(mapSetCode, conceptCode);
-    }
-
-    /**
-     * Creates the mapping.
-     *
-     * @param mapping the mapping
-     * @return the mapping
-     * @throws Exception the exception
-     */
-    public static Mapping createMapping(final String mapSetCode, final Mapping mapping) throws Exception {
-
-        return terminologyHandler.createMapping(mapSetCode, mapping);
-    }
-
-    /**
-     * Update mapping.
-     *
-     * @param mapping the mapping
-     * @throws Exception the exception
-     */
-    public static void updateMapping(final String mapSetCode, final Mapping mapping) throws Exception {
-
-        terminologyHandler.updateMapping(mapSetCode, mapping);
     }
 }

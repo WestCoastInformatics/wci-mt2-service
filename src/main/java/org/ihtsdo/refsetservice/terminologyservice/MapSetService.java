@@ -29,11 +29,7 @@ public class MapSetService {
     /** The terminology handler. */
     private static TerminologyServerHandler terminologyHandler;
 
-    /** The app url root. */
-    private static String appUrlRoot;
-
     static {
-        appUrlRoot = PropertyUtility.getProperties().getProperty("app.url.root");
 
         // Instantiate terminology handler
         try {
