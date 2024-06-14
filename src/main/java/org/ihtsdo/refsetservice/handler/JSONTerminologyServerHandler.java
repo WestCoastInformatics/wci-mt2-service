@@ -4198,7 +4198,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
     /* see superclass */
     @Override
-    public ResultList<Mapping> getMappings(final String mapSetCode, final SearchParameters searchParameters) throws Exception {
+    public ResultList<Mapping> getMappings(final String mapSetCode,
+      final SearchParameters searchParameters, final String filter, final List<String> conceptCodes) throws Exception {
 
         final File f = new File(handlerProperties.getProperty("dir") + "/Mappings.json");
         if (!f.exists()) {
