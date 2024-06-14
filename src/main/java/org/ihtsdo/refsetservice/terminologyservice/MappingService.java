@@ -69,9 +69,11 @@ public final class MappingService {
      * @return the mappings
      * @throws Exception the exception
      */
-    public static ResultList<Mapping> getMappings(String mapSetCode, final SearchParameters searchParameters) throws Exception {
+    public static ResultList<Mapping> getMappings(final String mapSetCode,
+      final SearchParameters searchParameters, final String filter, final List<String> conceptCodes)
+      throws Exception {
 
-        return terminologyHandler.getMappings(mapSetCode, searchParameters);
+      return terminologyHandler.getMappings(mapSetCode, searchParameters, filter, conceptCodes);
     }
 
     /**
@@ -82,7 +84,7 @@ public final class MappingService {
      * @return the mapping
      * @throws Exception the exception
      */
-    public static Mapping getMapping(String mapSetCode, String conceptCode) throws Exception {
+    public static Mapping getMapping(final String mapSetCode, final String conceptCode) throws Exception {
 
         return terminologyHandler.getMapping(mapSetCode, conceptCode);
     }
