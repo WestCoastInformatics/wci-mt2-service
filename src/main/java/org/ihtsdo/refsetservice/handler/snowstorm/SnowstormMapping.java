@@ -96,7 +96,7 @@ public class SnowstormMapping extends SnowstormAbstract {
     String searchAfter = null;
 
     final int limit = 50;
-    final String branch = "MAIN%2FSNOMEDCT-NO%2F2023-12-15";
+    final String branch = "MAIN%2FSNOMEDCT-NO%2F2024-04-15";
 
     final String targetUri = SnowstormConnection.getBaseUrl() + branch
         + "/concepts?activeFilter=true&ecl=%3C609331003&includeLeafFlag=false&form=inferred&offset=0&limit="
@@ -121,9 +121,17 @@ public class SnowstormMapping extends SnowstormAbstract {
 
     // parse items to retrieve matching concept
     while (itemIterator.hasNext()) {
-
+        
       final JsonNode mapSetNode = itemIterator.next();
 
+      //TESTING - only keep ICD10 (447562003) and ICPC2 (68101000202102)//
+      final String refsetId = mapSetNode.get("conceptId").asText();
+      if (!(refsetId.equals("447562003") || refsetId.equals("68101000202102"))) {
+          continue;
+      }
+      //END TESTING//
+      
+      
       final MapSet mapSet = new MapSet();
       mapSet.setRefSetCode(mapSetNode.get("conceptId").asText());
       mapSet.setModuleId(mapSetNode.get("moduleId").asText());
@@ -143,8 +151,8 @@ public class SnowstormMapping extends SnowstormAbstract {
       final JsonNode additionalFields = mapSetNode.get("additionalFields");
 
       mapSet.setVersionStatus("Published");
-      mapSet.setVersion("2023-12-15");
-      mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse("2023-12-15"));
+      mapSet.setVersion("2024-04-15");
+      mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse("2024-04-15"));
       mapSet.setFromTerminology("SNOMEDCT-NO");
       mapSet.setToTerminology("TBD");
 
@@ -169,7 +177,7 @@ public class SnowstormMapping extends SnowstormAbstract {
     searchParameters.setLimit(50);
     searchParameters.setSearchAfter(null);
 
-    final String branch = "MAIN%2FSNOMEDCT-NO%2F2023-12-15";
+    final String branch = "MAIN%2FSNOMEDCT-NO%2F2024-04-15";
     final String targetUri = SnowstormConnection.getBaseUrl() + branch
         + "/concepts?activeFilter=true&includeLeafFlag=false&form=inferred&conceptIds=" + code
         + SnowstormApiPaging.getPagingQueryString(null);
@@ -216,8 +224,8 @@ public class SnowstormMapping extends SnowstormAbstract {
       final JsonNode additionalFields = mapSetNode.get("additionalFields");
 
       mapSet.setVersionStatus("Published");
-      mapSet.setVersion("2023-12-15");
-      mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse("2023-12-15"));
+      mapSet.setVersion("2024-04-15");
+      mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse("2024-04-15"));
       mapSet.setFromTerminology("SNOMEDCT-NO");
       mapSet.setToTerminology("TBD");
 
@@ -250,7 +258,7 @@ public class SnowstormMapping extends SnowstormAbstract {
       filteredConceptList.addAll(searchConcepts(mapSetCode, filter));
     }
 
-    final String branch = "MAIN%2FSNOMEDCT-NO%2F2023-12-15"; 
+    final String branch = "MAIN%2FSNOMEDCT-NO%2F2024-04-15"; 
 
     final StringBuilder requestBody = new StringBuilder();
     requestBody.append("{");
@@ -429,7 +437,7 @@ public class SnowstormMapping extends SnowstormAbstract {
     throws Exception {
 
     // Connect to snowstorm
-    final String branch = "MAIN%2FSNOMEDCT-NO%2F2023-12-15";
+    final String branch = "MAIN%2FSNOMEDCT-NO%2F2024-04-15";
     String searchAfter = "";
 
     final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/concepts/search";
@@ -509,7 +517,7 @@ public class SnowstormMapping extends SnowstormAbstract {
     int limit = 50;
 
     final String targetUri =
-        SnowstormConnection.getBaseUrl() + "MAIN%2FSNOMEDCT-NO%2F2023-12-15/members?referenceSet="
+        SnowstormConnection.getBaseUrl() + "MAIN%2FSNOMEDCT-NO%2F2024-04-15/members?referenceSet="
             + mapSetCode + "&referencedComponentId=" + conceptCode + "&active=true&limit=" + limit
             + (searchAfter != null ? "&searchAfter=" + searchAfter : "");
     LOG.info("getSnowstormMapping url: " + targetUri);
@@ -656,7 +664,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
     final Map<String, Concept> conceptMap = new HashMap<>();
 
-    final String branch = "MAIN%2FSNOMEDCT-NO%2F2023-12-15";
+    final String branch = "MAIN%2FSNOMEDCT-NO%2F2024-04-15";
     final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/concepts/search";
     final String requestBodyTempate =
         "{ \"conceptIds\": [\"CONCEPT_CODES\"], \"searchAfter\": \"SEARCH_AFTER\", \"limit\": "
