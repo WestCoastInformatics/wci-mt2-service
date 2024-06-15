@@ -61,6 +61,7 @@ public class SnowstormMapping extends SnowstormAbstract {
   private static final String DEFAULT_ACCEPT = MediaType.APPLICATION_JSON;
 
   private static final Map<String, String> icd10noCodeToName = new HashMap<>();
+  private static final Map<String, String> icpc2noCodeToName = new HashMap<>();
 
   /** The client. */
   private static ThreadLocal<Client> clients = new ThreadLocal<Client>() {
@@ -123,12 +124,12 @@ public class SnowstormMapping extends SnowstormAbstract {
         
       final JsonNode mapSetNode = itemIterator.next();
 
-      //TESTING - only keep ICD10 (447562003) and ICPC2 (68101000202102)//
+      //TEMPORARY - only keep ICD10NO (447562003) and ICPC2NO (68101000202102) maps//
       final String refsetId = mapSetNode.get("conceptId").asText();
       if (!(refsetId.equals("447562003") || refsetId.equals("68101000202102"))) {
           continue;
       }
-      //END TESTING//
+      //TEMPORARY//
       
       
       final MapSet mapSet = new MapSet();
@@ -155,6 +156,15 @@ public class SnowstormMapping extends SnowstormAbstract {
       mapSet.setFromTerminology("SNOMEDCT-NO");
       mapSet.setToTerminology("TBD");
 
+      //TEMPORARY//
+      if(mapSet.getRefSetCode().equals("447562003")) {
+          mapSet.setToTerminology("ICD10NO");
+      }
+      else if (mapSet.getRefSetCode().equals("68101000202102")) {
+          mapSet.setToTerminology("ICPC2NO");          
+      }
+      //TEMPORARY//
+      
       mapSets.add(mapSet);
     }
 
@@ -227,6 +237,16 @@ public class SnowstormMapping extends SnowstormAbstract {
       mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse("2024-04-15"));
       mapSet.setFromTerminology("SNOMEDCT-NO");
       mapSet.setToTerminology("TBD");
+      
+      //TEMPORARY//
+      if(mapSet.getRefSetCode().equals("447562003")) {
+          mapSet.setToTerminology("ICD10NO");
+      }
+      else if (mapSet.getRefSetCode().equals("68101000202102")) {
+          mapSet.setToTerminology("ICPC2NO");          
+      }
+      //TEMPORARY//
+      
 
       return mapSet;
     }
@@ -426,9 +446,14 @@ public class SnowstormMapping extends SnowstormAbstract {
         entry.setToName(
             toConcept != null ? toConcept.getName() : entry.getToCode() + " CONCEPT NOT FOUND");
 
-        // TEMPORARY//
-        entry.setToName(getICD10NOName(entry.getToCode()));
-        // TEMPORARY//
+        //TEMPORARY//
+        if(toTerminology.equals("ICD10NO")) {
+            entry.setToName(getICD10NOName(entry.getToCode()));
+        }
+        else if(toTerminology.equals("ICPC2NO")) {
+            entry.setToName(getICPC2NOName(entry.getToCode()));
+        }
+        //END TEMPORARY//
 
       }
     }
@@ -780,4 +805,45 @@ public class SnowstormMapping extends SnowstormAbstract {
       }
   }
 
+  // TEMPORARY//
+  private static String getICPC2NOName(String code) throws Exception {
+    if (icpc2noCodeToName.isEmpty()) {
+      cacheICPC2NONames();
+    }
+    String ICPC2NOName = icpc2noCodeToName.get(code);
+    if (ICPC2NOName == null || ICPC2NOName.isBlank()) {
+        ICPC2NOName = "CONCEPT NOT FOUND FOR " + code;
+    }
+    return ICPC2NOName;
+  }
+
+  // TEMPORARY//
+  public static void cacheICPC2NONames() throws Exception {
+
+    String dataDir = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.dir");
+
+    final File f = new File(dataDir + "/ICPC2NO_concepts.txt");
+    if (!f.exists()) {
+      LOG.error("ICPC2NO file doesn't exist: " + f.getPath());
+      return;
+    }
+
+    try (BufferedReader br = new BufferedReader(new FileReader(f.getPath()))) {
+      String line;
+      while ((line = br.readLine()) != null) {
+        String[] parts = line.split("\\|", 2); // Split the line into two parts
+                                               // at the first occurrence of '|'
+        if (parts.length >= 2) {
+          String key = parts[0].trim();
+          String value = parts[1].trim();
+          icpc2noCodeToName.put(key, value);
+        } else {
+          System.out.println("Ignoring malformed line: " + line);
+        }
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  } 
+  
 }
