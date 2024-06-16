@@ -389,6 +389,7 @@ public class SnowstormMapping extends SnowstormAbstract {
           mapEntry.setRule(additionalFields.get("mapRule").asText());
           mapEntry.setPriority(additionalFields.get("mapPriority").asInt());
           mapEntry.setGroup(additionalFields.get("mapGroup").asInt());
+          mapEntry.setModuleId(mappingNode.get("moduleId").asText());
 
           final Set<String> advices = new HashSet<>();
           final String mapAdviceString = additionalFields.get("mapAdvice").asText();
@@ -458,14 +459,12 @@ public class SnowstormMapping extends SnowstormAbstract {
       }
     }
 
+    // Handle edition-precedence in the map entries
+    handleEditionPrecedence(mapping);
+    
     // Sort all of the map entries in Group/Priority order
     for (final Mapping mapping : conceptIdToMappingMap.values()) {
-
-      List<MapEntry> entries = mapping.getMapEntries();
-      entries.sort(
-          Comparator.comparingInt(MapEntry::getGroup).thenComparingInt(MapEntry::getPriority));
-
-      mapping.setMapEntries(entries);
+        sortMapEntries(mapping);
     }
 
     // Once the file is completed parsed, return mappings as list
@@ -620,6 +619,7 @@ public class SnowstormMapping extends SnowstormAbstract {
       mapEntry.setRule(additionalFields.get("mapRule").asText());
       mapEntry.setPriority(additionalFields.get("mapPriority").asInt());
       mapEntry.setGroup(additionalFields.get("mapGroup").asInt());
+      mapEntry.setModuleId(mappingNode.get("moduleId").asText());
 
       final Set<String> advices = new HashSet<>();
       final String mapAdviceString = additionalFields.get("mapAdvice").asText();
@@ -654,12 +654,12 @@ public class SnowstormMapping extends SnowstormAbstract {
 
       final List<MapEntry> mapEntries = mapping.getMapEntries();
 
+      // Handle edition-precedence in the map entries
+      handleEditionPrecedence(mapping);
+      
       // Sort all of the map entries in Group/Priority order
-      mapEntries.sort(
-          Comparator.comparingInt(MapEntry::getGroup).thenComparingInt(MapEntry::getPriority));
-
-      mapEntries.add(mapEntry);
-      mapping.setMapEntries(mapEntries);
+      sortMapEntries(mapping);
+      
     }
 
     return mapping;
@@ -764,6 +764,37 @@ public class SnowstormMapping extends SnowstormAbstract {
 
   }
 
+  private static void sortMapEntries (Mapping mapping) {
+      List<MapEntry> entries = mapping.getMapEntries();
+      entries.sort(
+          Comparator.comparingInt(MapEntry::getGroup).thenComparingInt(MapEntry::getPriority));
+
+      mapping.setMapEntries(entries);
+  }
+  
+  // Handle edition-precedence in the map entries
+  // For example: if there is an International map entry (module=449080006) for group 1, priority 1,
+  // And also a Norwegian map entry (module=51000202101) for group 1, priority 1,
+  // then the Edition/Norwegian map entry should be kept, and the international one dropped. 
+  private static void handleEditionPrecedence (Mapping mapping) {
+      Map<String, MapEntry> groupPriorityToEntryMap = new HashMap<>();
+      for (MapEntry mapEntry : mapping.getMapEntries()) {
+          String key = mapEntry.getGroup() + "-" + mapEntry.getPriority();
+          if (groupPriorityToEntryMap.containsKey(key)) {
+              MapEntry existingMapEntry = groupPriorityToEntryMap.get(key);
+              if (!existingMapEntry.getModuleId().equals("449080006") && mapEntry.getModuleId().equals("449080006")) {
+                  // Keep existing map entry if it does not have moduleId 449080006
+                  continue;
+              }
+          }
+          groupPriorityToEntryMap.put(key, mapEntry);
+      }
+      
+      //Set the remaining map entries to the mapping
+      List<MapEntry> remainingMapEntries =  new ArrayList<>(groupPriorityToEntryMap.values());
+      mapping.setMapEntries(remainingMapEntries);
+  }
+  
   // TEMPORARY//
   private static String getICD10NOName(String code) throws Exception {
     if (icd10noCodeToName.isEmpty()) {
@@ -777,7 +808,7 @@ public class SnowstormMapping extends SnowstormAbstract {
   }
 
   // TEMPORARY//
-  public static void cacheICD10NONames() throws Exception {
+  private static void cacheICD10NONames() throws Exception {
 
     String dataDir = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.dir");
 
@@ -818,7 +849,7 @@ public class SnowstormMapping extends SnowstormAbstract {
   }
 
   // TEMPORARY//
-  public static void cacheICPC2NONames() throws Exception {
+  private static void cacheICPC2NONames() throws Exception {
 
     String dataDir = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.dir");
 

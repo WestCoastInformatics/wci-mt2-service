@@ -82,9 +82,14 @@ public class MapEntry extends AbstractHasModified {
     @Column(nullable = false)
     private int block;
 
-    /** The index (map group). */
+    /** The map group. */
     @Column(nullable = false, name = "map_group")
     private int group;
+    
+    /** The module id. */
+    @Column(nullable = false)
+    private String moduleId;
+
 
     /**
      * default constructor.
@@ -329,6 +334,27 @@ public class MapEntry extends AbstractHasModified {
 
     }
 
+    /**
+     * Returns the module id.
+     *
+     * @return the module id
+     */
+    public String getModuleId() {
+
+        return this.moduleId;
+    }
+
+    /**
+     * Sets the module id.
+     *
+     * @param module id the new module id
+     */
+    public void setModuleId(final String moduleId) {
+
+        this.moduleId = moduleId;
+
+    }    
+    
     /**
      * Lazy init.
      */
