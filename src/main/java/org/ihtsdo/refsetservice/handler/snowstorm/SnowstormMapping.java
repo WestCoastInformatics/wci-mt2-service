@@ -466,7 +466,7 @@ public class SnowstormMapping extends SnowstormAbstract {
     
     // Sort all of the map entries in Group/Priority order
     for (final Mapping mapping : conceptIdToMappingMap.values()) {
-        sortMapEntries(mapping);
+        //sortMapEntries(mapping);
     }
 
     // Once the file is completed parsed, return mappings as list
@@ -660,7 +660,7 @@ public class SnowstormMapping extends SnowstormAbstract {
       //handleEditionPrecedence(mapping);
       
       // Sort all of the map entries in Group/Priority order
-      sortMapEntries(mapping);
+      //sortMapEntries(mapping);
       
     }
 
