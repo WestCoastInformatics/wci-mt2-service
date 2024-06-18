@@ -460,7 +460,9 @@ public class SnowstormMapping extends SnowstormAbstract {
     }
 
     // Handle edition-precedence in the map entries
-    handleEditionPrecedence(mapping);
+    for (final Mapping mapping : conceptIdToMappingMap.values()) {
+        handleEditionPrecedence(mapping);
+    }
     
     // Sort all of the map entries in Group/Priority order
     for (final Mapping mapping : conceptIdToMappingMap.values()) {
