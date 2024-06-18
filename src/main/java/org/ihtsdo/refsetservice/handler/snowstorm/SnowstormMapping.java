@@ -461,12 +461,12 @@ public class SnowstormMapping extends SnowstormAbstract {
 
     // Handle edition-precedence in the map entries
     for (final Mapping mapping : conceptIdToMappingMap.values()) {
-        //handleEditionPrecedence(mapping);
+        handleEditionPrecedence(mapping);
     }
     
     // Sort all of the map entries in Group/Priority order
     for (final Mapping mapping : conceptIdToMappingMap.values()) {
-        //sortMapEntries(mapping);
+        sortMapEntries(mapping);
     }
 
     // Once the file is completed parsed, return mappings as list
@@ -655,14 +655,16 @@ public class SnowstormMapping extends SnowstormAbstract {
       // TEMPORARY//
 
       final List<MapEntry> mapEntries = mapping.getMapEntries();
-
-      // Handle edition-precedence in the map entries
-      //handleEditionPrecedence(mapping);
-      
-      // Sort all of the map entries in Group/Priority order
-      //sortMapEntries(mapping);
+      mapEntries.add(mapEntry);
+      mapping.setMapEntries(mapEntries);
       
     }
+
+    // Handle edition-precedence in the map entries
+    handleEditionPrecedence(mapping);
+    
+    // Sort all of the map entries in Group/Priority order
+    sortMapEntries(mapping);
 
     return mapping;
   }
