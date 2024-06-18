@@ -461,7 +461,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
     // Handle edition-precedence in the map entries
     for (final Mapping mapping : conceptIdToMappingMap.values()) {
-        handleEditionPrecedence(mapping);
+        //handleEditionPrecedence(mapping);
     }
     
     // Sort all of the map entries in Group/Priority order
@@ -657,7 +657,7 @@ public class SnowstormMapping extends SnowstormAbstract {
       final List<MapEntry> mapEntries = mapping.getMapEntries();
 
       // Handle edition-precedence in the map entries
-      handleEditionPrecedence(mapping);
+      //handleEditionPrecedence(mapping);
       
       // Sort all of the map entries in Group/Priority order
       sortMapEntries(mapping);
