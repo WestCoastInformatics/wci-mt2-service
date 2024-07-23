@@ -559,8 +559,9 @@ public interface TerminologyServerHandler extends Configurable {
    * @return the mappings
    * @throws Exception the exception
    */
-    public ResultList<Mapping> getMappings(final String mapSetCode,
-      final SearchParameters searchParameters, final String filter, final List<String> conceptCodes) throws Exception;
+  public ResultList<Mapping> getMappings(final String mapSetCode,
+    final SearchParameters searchParameters, final String filter, final List<String> conceptCodes)
+    throws Exception;
 
   /**
    * Returns the mapping.
@@ -581,4 +582,23 @@ public interface TerminologyServerHandler extends Configurable {
    * @throws Exception the exception
    */
   public Concept getConcept(final String terminology, final String code) throws Exception;
+
+  /**
+   * Create mapping.
+   *
+   * @param mapSetCode the map set code
+   * @param mapping the mapping
+   * @return the mapping
+   * @throws Exception the exception
+   */
+  public Mapping createMapping(final String mapSetCode, final Mapping mapping) throws Exception;
+
+  /**
+   * Update mapping.
+   *
+   * @param mapSetCode the map set code
+   * @param mapping the mapping
+   * @throws Exception the exception
+   */
+  public void updateMapping(final String mapSetCode, final Mapping mapping) throws Exception;
 }
