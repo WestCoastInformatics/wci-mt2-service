@@ -507,15 +507,16 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
   /* see superclass */
   @Override
-  public Mapping createMapping(final String mapSetCode, final Mapping mapping) throws Exception {
+  public void createMapping(final String branch, final String mapSetCode, final Mapping mapping)
+    throws Exception {
 
     // TODO implement with Snowstorm
-    return null;
   }
 
   /* see superclass */
   @Override
-  public void updateMapping(final String mapSetCode, final Mapping mapping) throws Exception {
+  public void updateMapping(final String branch, final String mapSetCode, final Mapping mapping)
+    throws Exception {
 
     // TODO implement with Snowstorm
   }

@@ -15,14 +15,12 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -61,6 +59,7 @@ public class SnowstormMapping extends SnowstormAbstract {
   private static final String DEFAULT_ACCEPT = MediaType.APPLICATION_JSON;
 
   private static final Map<String, String> icd10noCodeToName = new HashMap<>();
+
   private static final Map<String, String> icpc2noCodeToName = new HashMap<>();
 
   /** The client. */
@@ -121,17 +120,17 @@ public class SnowstormMapping extends SnowstormAbstract {
 
     // parse items to retrieve matching concept
     while (itemIterator.hasNext()) {
-        
+
       final JsonNode mapSetNode = itemIterator.next();
 
-      //TEMPORARY - only keep ICD10NO (447562003) and ICPC2NO (68101000202102) maps//
+      // TEMPORARY - only keep ICD10NO (447562003) and ICPC2NO (68101000202102)
+      // maps//
       final String refsetId = mapSetNode.get("conceptId").asText();
       if (!(refsetId.equals("447562003") || refsetId.equals("68101000202102"))) {
-          continue;
+        continue;
       }
-      //TEMPORARY//
-      
-      
+      // TEMPORARY//
+
       final MapSet mapSet = new MapSet();
       mapSet.setRefSetCode(mapSetNode.get("conceptId").asText());
       mapSet.setModuleId(mapSetNode.get("moduleId").asText());
@@ -156,15 +155,14 @@ public class SnowstormMapping extends SnowstormAbstract {
       mapSet.setFromTerminology("SNOMEDCT-NO");
       mapSet.setToTerminology("TBD");
 
-      //TEMPORARY//
-      if(mapSet.getRefSetCode().equals("447562003")) {
-          mapSet.setToTerminology("ICD10NO");
+      // TEMPORARY//
+      if (mapSet.getRefSetCode().equals("447562003")) {
+        mapSet.setToTerminology("ICD10NO");
+      } else if (mapSet.getRefSetCode().equals("68101000202102")) {
+        mapSet.setToTerminology("ICPC2NO");
       }
-      else if (mapSet.getRefSetCode().equals("68101000202102")) {
-          mapSet.setToTerminology("ICPC2NO");          
-      }
-      //TEMPORARY//
-      
+      // TEMPORARY//
+
       mapSets.add(mapSet);
     }
 
@@ -237,16 +235,14 @@ public class SnowstormMapping extends SnowstormAbstract {
       mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse("2024-04-15"));
       mapSet.setFromTerminology("SNOMEDCT-NO");
       mapSet.setToTerminology("TBD");
-      
-      //TEMPORARY//
-      if(mapSet.getRefSetCode().equals("447562003")) {
-          mapSet.setToTerminology("ICD10NO");
+
+      // TEMPORARY//
+      if (mapSet.getRefSetCode().equals("447562003")) {
+        mapSet.setToTerminology("ICD10NO");
+      } else if (mapSet.getRefSetCode().equals("68101000202102")) {
+        mapSet.setToTerminology("ICPC2NO");
       }
-      else if (mapSet.getRefSetCode().equals("68101000202102")) {
-          mapSet.setToTerminology("ICPC2NO");          
-      }
-      //TEMPORARY//
-      
+      // TEMPORARY//
 
       return mapSet;
     }
@@ -277,7 +273,7 @@ public class SnowstormMapping extends SnowstormAbstract {
       filteredConceptList.addAll(searchConcepts(mapSetCode, filter));
     }
 
-    final String branch = "MAIN%2FSNOMEDCT-NO%2F2024-04-15"; 
+    final String branch = "MAIN%2FSNOMEDCT-NO%2F2024-04-15";
 
     final StringBuilder requestBody = new StringBuilder();
     requestBody.append("{");
@@ -287,15 +283,18 @@ public class SnowstormMapping extends SnowstormAbstract {
       requestBody.append(",").append("\"referencedComponentIds\": [")
           .append(String.join(",", filteredConceptList)).append("]");
     }
-//    if (searchParameters.getLimit() != null) {
-//      requestBody.append(",").append("\"limit\": ").append(searchParameters.getLimit());
-//    }
-//    if (searchParameters.getOffset() != null) {
-//      requestBody.append(",").append("\"offset\": ").append(searchParameters.getOffset());
-//    }
-//    if (StringUtils.isNotBlank(searchParameters.getSearchAfter())) {
-//      requestBody.append(",").append("\"searchAfter\": ").append(searchParameters.getSearchAfter());
-//    }
+    // if (searchParameters.getLimit() != null) {
+    // requestBody.append(",").append("\"limit\":
+    // ").append(searchParameters.getLimit());
+    // }
+    // if (searchParameters.getOffset() != null) {
+    // requestBody.append(",").append("\"offset\":
+    // ").append(searchParameters.getOffset());
+    // }
+    // if (StringUtils.isNotBlank(searchParameters.getSearchAfter())) {
+    // requestBody.append(",").append("\"searchAfter\":
+    // ").append(searchParameters.getSearchAfter());
+    // }
     requestBody.append("}");
 
     // Grab the specified mapSet
@@ -319,7 +318,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
     while (!done) {
 
-      final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/search?" 
+      final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/search?"
           + SnowstormApiPaging.getPagingQueryString(searchParameters);
       LOG.debug("getSnowstormMappings url: {}", targetUri);
       LOG.debug("request body: {}", requestBody.toString());
@@ -447,26 +446,25 @@ public class SnowstormMapping extends SnowstormAbstract {
         entry.setToName(
             toConcept != null ? toConcept.getName() : entry.getToCode() + " CONCEPT NOT FOUND");
 
-        //TEMPORARY//
-        if(toTerminology.equals("ICD10NO")) {
-            entry.setToName(getICD10NOName(entry.getToCode()));
+        // TEMPORARY//
+        if (toTerminology.equals("ICD10NO")) {
+          entry.setToName(getICD10NOName(entry.getToCode()));
+        } else if (toTerminology.equals("ICPC2NO")) {
+          entry.setToName(getICPC2NOName(entry.getToCode()));
         }
-        else if(toTerminology.equals("ICPC2NO")) {
-            entry.setToName(getICPC2NOName(entry.getToCode()));
-        }
-        //END TEMPORARY//
+        // END TEMPORARY//
 
       }
     }
 
     // Handle edition-precedence in the map entries
     for (final Mapping mapping : conceptIdToMappingMap.values()) {
-        handleEditionPrecedence(mapping);
+      handleEditionPrecedence(mapping);
     }
-    
+
     // Sort all of the map entries in Group/Priority order
     for (final Mapping mapping : conceptIdToMappingMap.values()) {
-        sortMapEntries(mapping);
+      sortMapEntries(mapping);
     }
 
     // Once the file is completed parsed, return mappings as list
@@ -657,16 +655,84 @@ public class SnowstormMapping extends SnowstormAbstract {
       final List<MapEntry> mapEntries = mapping.getMapEntries();
       mapEntries.add(mapEntry);
       mapping.setMapEntries(mapEntries);
-      
+
     }
 
     // Handle edition-precedence in the map entries
     handleEditionPrecedence(mapping);
-    
+
     // Sort all of the map entries in Group/Priority order
     sortMapEntries(mapping);
 
     return mapping;
+  }
+
+  /**
+   * Creates the mapping.
+   *
+   * @param branch the branch
+   * @param mapSetCode the map set code
+   * @param mapping the mapping
+   * @return the mapping
+   * @throws Exception the exception
+   */
+  public static void createMapping(final String branch, final String mapSetCode,
+    final Mapping mapping) throws Exception {
+
+    final List<String> mapEntriesJson = new ArrayList<>();
+
+    for (final MapEntry mapEntry : mapping.getMapEntries()) {
+      mapEntriesJson
+          .add(mapEntryToSnowstormMap(mapSetCode, mapping.getName(), mapping.getCode(), mapEntry));
+    }
+
+    final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members";
+
+    // add each map entry to snowstorm
+    for (final String mapEntryJson : mapEntriesJson) {
+
+      try (final Response response = SnowstormConnection.postResponse(targetUri, mapEntryJson)) {
+
+        if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+          throw new LocalException("Unexpected terminology server failure. Message = "
+              + response.readEntity(String.class));
+        }
+
+      }
+    }
+
+  }
+
+  /**
+   * Update mapping.
+   *
+   * @param branch the branch
+   * @param mapSetCode the map set code
+   * @param mapping the mapping
+   * @return the mapping
+   * @throws Exception the exception
+   */
+  public static void updateMapping(final String branch, final String mapSetCode,
+    final Mapping mapping) throws Exception {
+
+    final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/";
+
+    for (final MapEntry mapEntry : mapping.getMapEntries()) {
+      final String mapEntryJson =
+          mapEntryToSnowstormMap(mapSetCode, mapping.getName(), mapping.getCode(), mapEntry);
+
+      try (final Response response =
+          SnowstormConnection.putResponse(targetUri + mapEntry.getId(), mapEntryJson)) {
+
+        if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+          throw new LocalException("Unexpected terminology server failure. Message = "
+              + response.readEntity(String.class));
+        }
+
+      }
+
+    }
+
   }
 
   /**
@@ -768,37 +834,41 @@ public class SnowstormMapping extends SnowstormAbstract {
 
   }
 
-  private static void sortMapEntries (Mapping mapping) {
-      List<MapEntry> entries = mapping.getMapEntries();
-      entries.sort(
-          Comparator.comparingInt(MapEntry::getGroup).thenComparingInt(MapEntry::getPriority));
+  private static void sortMapEntries(Mapping mapping) {
+    List<MapEntry> entries = mapping.getMapEntries();
+    entries
+        .sort(Comparator.comparingInt(MapEntry::getGroup).thenComparingInt(MapEntry::getPriority));
 
-      mapping.setMapEntries(entries);
+    mapping.setMapEntries(entries);
   }
-  
+
   // Handle edition-precedence in the map entries
-  // For example: if there is an International map entry (module=449080006) for group 1, priority 1,
-  // And also a Norwegian map entry (module=51000202101) for group 1, priority 1,
-  // then the Edition/Norwegian map entry should be kept, and the international one dropped. 
-  private static void handleEditionPrecedence (Mapping mapping) {
-      Map<String, MapEntry> groupPriorityToEntryMap = new HashMap<>();
-      for (MapEntry mapEntry : mapping.getMapEntries()) {
-          String key = mapEntry.getGroup() + "-" + mapEntry.getPriority();
-          if (groupPriorityToEntryMap.containsKey(key)) {
-              MapEntry existingMapEntry = groupPriorityToEntryMap.get(key);
-              if (!existingMapEntry.getModuleId().equals("449080006") && mapEntry.getModuleId().equals("449080006")) {
-                  // Keep existing map entry if it does not have moduleId 449080006
-                  continue;
-              }
-          }
-          groupPriorityToEntryMap.put(key, mapEntry);
+  // For example: if there is an International map entry (module=449080006) for
+  // group 1, priority 1,
+  // And also a Norwegian map entry (module=51000202101) for group 1, priority
+  // 1,
+  // then the Edition/Norwegian map entry should be kept, and the international
+  // one dropped.
+  private static void handleEditionPrecedence(Mapping mapping) {
+    Map<String, MapEntry> groupPriorityToEntryMap = new HashMap<>();
+    for (MapEntry mapEntry : mapping.getMapEntries()) {
+      String key = mapEntry.getGroup() + "-" + mapEntry.getPriority();
+      if (groupPriorityToEntryMap.containsKey(key)) {
+        MapEntry existingMapEntry = groupPriorityToEntryMap.get(key);
+        if (!existingMapEntry.getModuleId().equals("449080006")
+            && mapEntry.getModuleId().equals("449080006")) {
+          // Keep existing map entry if it does not have moduleId 449080006
+          continue;
+        }
       }
-      
-      //Set the remaining map entries to the mapping
-      List<MapEntry> remainingMapEntries =  new ArrayList<>(groupPriorityToEntryMap.values());
-      mapping.setMapEntries(remainingMapEntries);
+      groupPriorityToEntryMap.put(key, mapEntry);
+    }
+
+    // Set the remaining map entries to the mapping
+    List<MapEntry> remainingMapEntries = new ArrayList<>(groupPriorityToEntryMap.values());
+    mapping.setMapEntries(remainingMapEntries);
   }
-  
+
   // TEMPORARY//
   private static String getICD10NOName(String code) throws Exception {
     if (icd10noCodeToName.isEmpty()) {
@@ -847,7 +917,7 @@ public class SnowstormMapping extends SnowstormAbstract {
     }
     String ICPC2NOName = icpc2noCodeToName.get(code);
     if (ICPC2NOName == null || ICPC2NOName.isBlank()) {
-        ICPC2NOName = "CONCEPT NOT FOUND FOR " + code;
+      ICPC2NOName = "CONCEPT NOT FOUND FOR " + code;
     }
     return ICPC2NOName;
   }
@@ -879,6 +949,88 @@ public class SnowstormMapping extends SnowstormAbstract {
     } catch (IOException e) {
       e.printStackTrace();
     }
-  } 
-  
+  }
+
+  /**
+   * Map entry to snowstorm map.
+   *
+   * @param refsetId the refset id
+   * @param fromCode the from code
+   * @param fromName the from name
+   * @param mapEntry the map entry
+   * @return the string
+   */
+  private static String mapEntryToSnowstormMap(final String refsetId, final String fromCode,
+    final String fromName, final MapEntry mapEntry) {
+
+    // snowstorm map example
+    /*
+     * { "active": true, "moduleId": "449080006", "released": true,
+     * "releasedEffectiveTime": 20150731, "memberId":
+     * "baaae0b7-f564-505e-b604-0bbdd60a69f4", "refsetId": "447562003",
+     * "referencedComponentId": "70273001", "additionalFields": {
+     * "mapCategoryId": "447637006", "mapRule": "TRUE", "mapAdvice":
+     * "ALWAYS X40 | MAPPED FOLLOWING WHO GUIDANCE | POSSIBLE REQUIREMENT FOR PLACE OF OCCURRENCE"
+     * , "mapPriority": "1", "mapGroup": "2", "correlationId": "447561005",
+     * "mapTarget": "X40" }, "referencedComponent": { "conceptId": "70273001",
+     * "active": true, "definitionStatus": "FULLY_DEFINED", "moduleId":
+     * "900000000000207008", "fsn": { "term":
+     * "Poisoning caused by paracetamol (disorder)", "lang": "en" }, "pt": {
+     * "term": "Poisoning caused by acetaminophen", "lang": "en" }, "id":
+     * "70273001" }, "effectiveTime": "20150731" }
+     */
+
+    final StringBuilder mapEntryJson = new StringBuilder();
+
+    mapEntryJson.append("{");
+    mapEntryJson.append("\"active\": ").append(mapEntry.isActive()).append(",");
+    mapEntryJson.append("\"moduleId\": \"").append(mapEntry.getModuleId()).append("\",");
+    // mapEntryJson.append("\"released\": false,");
+    // mapEntryJson.append("\"releasedEffectiveTime\": 20240415,");
+    mapEntryJson.append("\"refsetId\": \"").append(refsetId).append("\",");
+    mapEntryJson.append("\"referencedComponentId\": \"").append(fromCode).append("\",");
+
+    // additional fields
+    mapEntryJson.append("\"additionalFields\": {");
+    mapEntryJson.append("\"mapCategoryId\": \"").append(mapEntry.getRelationCode()).append("\",");
+    mapEntryJson.append("\"mapRule\": \"").append(mapEntry.getRule()).append("\",");
+    mapEntryJson.append("\"mapAdvice\": \"").append(String.join(" | ", mapEntry.getAdvices()))
+        .append("\",");
+    mapEntryJson.append("\"mapPriority\": ").append(mapEntry.getPriority()).append(",");
+    mapEntryJson.append("\"mapGroup\": ").append(mapEntry.getGroup()).append(",");
+
+    // TODO - what is correlationId?
+    final String correlationId = mapEntry.getAdditionalMapEntryInfos().stream()
+        .filter(info -> info.getName().equals("correlationId")).findFirst().get().getValue();
+    if (StringUtils.isNotBlank(correlationId)) {
+      mapEntryJson.append("\"correlationId\": \"").append(correlationId).append("\",");
+    }
+    mapEntryJson.append("\"mapTarget\": \"").append(mapEntry.getToCode()).append("\"");
+    mapEntryJson.append("},");
+
+    // TODO - might not be needed
+    // mapEntryJson.append("\"referencedComponent\": {");
+    // mapEntryJson.append("\"conceptId\": \"").append(fromCode).append("\",");
+    // mapEntryJson.append("\"active\": true,");
+    // mapEntryJson.append("\"definitionStatus\": \"FULLY_DEFINED\",");
+    // mapEntryJson.append("\"moduleId\": \"900000000000207008\",");
+    // mapEntryJson.append("\"fsn\": {");
+    // mapEntryJson.append("\"term\": \"").append(fromName).append("\",");
+    // mapEntryJson.append("\"lang\": \"en\"");
+    // mapEntryJson.append("},");
+    // mapEntryJson.append("\"pt\": {");
+    // mapEntryJson.append("\"term\": \"").append(fromName).append("\",");
+    // mapEntryJson.append("\"lang\": \"en\"");
+    // mapEntryJson.append("},");
+    // mapEntryJson.append("\"id\": \"").append(fromCode).append("\"");
+    // mapEntryJson.append("},");
+
+    // TODO: replace hard coded effective
+    mapEntryJson.append("\"effectiveTime\": \"20240415\"");
+    mapEntryJson.append("}");
+
+    return mapEntryJson.toString();
+
+  }
+
 }

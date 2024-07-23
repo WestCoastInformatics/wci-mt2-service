@@ -31,7 +31,6 @@ import org.ihtsdo.refsetservice.util.SearchParameters;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
-// TODO: Auto-generated Javadoc
 /**
  * Generically represents a handler for accessing terminology objects.
  */
@@ -584,21 +583,24 @@ public interface TerminologyServerHandler extends Configurable {
   public Concept getConcept(final String terminology, final String code) throws Exception;
 
   /**
-   * Create mapping.
+   * Creates the mapping.
    *
+   * @param branch the branch
    * @param mapSetCode the map set code
    * @param mapping the mapping
-   * @return the mapping
    * @throws Exception the exception
    */
-  public Mapping createMapping(final String mapSetCode, final Mapping mapping) throws Exception;
+  public void createMapping(final String branch, final String mapSetCode, final Mapping mapping)
+    throws Exception;
 
   /**
    * Update mapping.
    *
+   * @param branch the branch
    * @param mapSetCode the map set code
    * @param mapping the mapping
    * @throws Exception the exception
    */
-  public void updateMapping(final String mapSetCode, final Mapping mapping) throws Exception;
+  public void updateMapping(final String branch, final String mapSetCode, final Mapping mapping)
+    throws Exception;
 }
