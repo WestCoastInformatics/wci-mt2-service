@@ -30,62 +30,89 @@ import org.slf4j.LoggerFactory;
  */
 public final class MappingService {
 
-    /** The Constant LOG. */
-    private static final Logger LOG = LoggerFactory.getLogger(MappingService.class);
+  /** The Constant LOG. */
+  private static final Logger LOG = LoggerFactory.getLogger(MappingService.class);
 
-    /** The terminology handler. */
-    private static TerminologyServerHandler terminologyHandler;
+  /** The terminology handler. */
+  private static TerminologyServerHandler terminologyHandler;
 
-    static {
+  static {
 
-        // Instantiate terminology handler
-        try {
-            String key = "terminology.handler";
-            String handlerName = PropertyUtility.getProperty(key);
-            if (handlerName.isEmpty()) {
-                throw new Exception("terminology.handler expected and does not exist.");
-            }
+    // Instantiate terminology handler
+    try {
+      String key = "terminology.handler";
+      String handlerName = PropertyUtility.getProperty(key);
+      if (handlerName.isEmpty()) {
+        throw new Exception("terminology.handler expected and does not exist.");
+      }
 
-            terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName, TerminologyServerHandler.class);
+      terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key,
+          handlerName, TerminologyServerHandler.class);
 
-        } catch (Exception e) {
-            LOG.error("Failed to initialize terminology.handler - serious error", e);
-            terminologyHandler = null;
-        }
+    } catch (Exception e) {
+      LOG.error("Failed to initialize terminology.handler - serious error", e);
+      terminologyHandler = null;
     }
+  }
 
-    /**
-     * Instantiates an empty {@link MappingService}.
-     */
-    private MappingService() {
+  /**
+   * Instantiates an empty {@link MappingService}.
+   */
+  private MappingService() {
 
-        // n/a
-    }
+    // n/a
+  }
 
-    /**
-     * Returns the mappings.
-     *
-     * @param mapSetCode the map set code
-     * @return the mappings
-     * @throws Exception the exception
-     */
-    public static ResultList<Mapping> getMappings(final String mapSetCode,
-      final SearchParameters searchParameters, final String filter, final List<String> conceptCodes)
-      throws Exception {
+  /**
+   * Returns the mappings.
+   *
+   * @param mapSetCode the map set code
+   * @return the mappings
+   * @throws Exception the exception
+   */
+  public static ResultList<Mapping> getMappings(final String mapSetCode,
+    final SearchParameters searchParameters, final String filter, final List<String> conceptCodes)
+    throws Exception {
 
-      return terminologyHandler.getMappings(mapSetCode, searchParameters, filter, conceptCodes);
-    }
+    return terminologyHandler.getMappings(mapSetCode, searchParameters, filter, conceptCodes);
+  }
 
-    /**
-     * Returns the mapping.
-     *
-     * @param mapSetCode the map set code
-     * @param conceptCode the concept code
-     * @return the mapping
-     * @throws Exception the exception
-     */
-    public static Mapping getMapping(final String mapSetCode, final String conceptCode) throws Exception {
+  /**
+   * Returns the mapping.
+   *
+   * @param mapSetCode the map set code
+   * @param conceptCode the concept code
+   * @return the mapping
+   * @throws Exception the exception
+   */
+  public static Mapping getMapping(final String mapSetCode, final String conceptCode)
+    throws Exception {
 
-        return terminologyHandler.getMapping(mapSetCode, conceptCode);
-    }
+    return terminologyHandler.getMapping(mapSetCode, conceptCode);
+  }
+
+  /**
+   * Creates the mapping.
+   *
+   * @param mapping the mapping
+   * @return the mapping
+   * @throws Exception the exception
+   */
+  public static Mapping createMapping(final String mapSetCode, final Mapping mapping)
+    throws Exception {
+
+    return terminologyHandler.createMapping(mapSetCode, mapping);
+  }
+
+  /**
+   * Update mapping.
+   *
+   * @param mapping the mapping
+   * @throws Exception the exception
+   */
+  public static void updateMapping(final String mapSetCode, final Mapping mapping)
+    throws Exception {
+
+    terminologyHandler.updateMapping(mapSetCode, mapping);
+  }
 }
