@@ -66,6 +66,7 @@ public final class MappingService {
   /**
    * Returns the mappings.
    *
+   * @param branch the branch
    * @param mapSetCode the map set code
    * @param searchParameters the search parameters
    * @param filter the filter
@@ -73,25 +74,26 @@ public final class MappingService {
    * @return the mappings
    * @throws Exception the exception
    */
-  public static ResultList<Mapping> getMappings(final String mapSetCode,
+  public static ResultList<Mapping> getMappings(final String branch, final String mapSetCode,
     final SearchParameters searchParameters, final String filter, final List<String> conceptCodes)
     throws Exception {
 
-    return terminologyHandler.getMappings(mapSetCode, searchParameters, filter, conceptCodes);
+    return terminologyHandler.getMappings(branch, mapSetCode, searchParameters, filter, conceptCodes);
   }
 
   /**
    * Returns the mapping.
    *
+   * @param branch the branch
    * @param mapSetCode the map set code
    * @param conceptCode the concept code
    * @return the mapping
    * @throws Exception the exception
    */
-  public static Mapping getMapping(final String mapSetCode, final String conceptCode)
+  public static Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode)
     throws Exception {
 
-    return terminologyHandler.getMapping(mapSetCode, conceptCode);
+    return terminologyHandler.getMapping(branch, mapSetCode, conceptCode);
   }
 
   /**

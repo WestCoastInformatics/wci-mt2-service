@@ -94,8 +94,11 @@ public class MappingController extends BaseController {
       final String filterString =
           (StringUtils.isBlank(filter)) ? StringUtils.EMPTY : StringUtils.trim(filter);
 
+      // TODO: determine branch.
+      final String branch = "MAIN/SNOMEDCT-NO/2024-04-15";
+
       final ResultList<Mapping> mappings =
-          MappingService.getMappings(mapSetCode, sp, filterString, conceptCodesList);
+          MappingService.getMappings(branch, mapSetCode, sp, filterString, conceptCodesList);
 
       return new ResponseEntity<>(mappings, HttpStatus.OK);
 
@@ -136,7 +139,9 @@ public class MappingController extends BaseController {
 
     try {
 
-      final Mapping mapping = MappingService.getMapping(mapSetCode, conceptCode);
+      // TODO: determine branch.
+      final String branch = "MAIN/SNOMEDCT-NO/2024-04-15";
+      final Mapping mapping = MappingService.getMapping(branch, mapSetCode, conceptCode);
 
       return new ResponseEntity<>(mapping, HttpStatus.OK);
 

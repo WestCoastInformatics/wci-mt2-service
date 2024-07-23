@@ -534,23 +534,26 @@ public interface TerminologyServerHandler extends Configurable {
   /**
    * Returns the map sets.
    *
+   * @param branch the branch
    * @return the map sets
    * @throws Exception the exception
    */
-  public List<MapSet> getMapSets() throws Exception;
+  public List<MapSet> getMapSets(final String branch) throws Exception;
 
   /**
    * Returns the map set.
    *
+   * @param branch the branch
    * @param code the code
    * @return the map set
    * @throws Exception the exception
    */
-  public MapSet getMapSet(final String code) throws Exception;
+  public MapSet getMapSet(final String branch, final String code) throws Exception;
 
   /**
    * Returns the mappings.
    *
+   * @param branch the branch
    * @param mapSetCode the map set code
    * @param searchParameters the search parameters
    * @param filter the filter
@@ -558,29 +561,33 @@ public interface TerminologyServerHandler extends Configurable {
    * @return the mappings
    * @throws Exception the exception
    */
-  public ResultList<Mapping> getMappings(final String mapSetCode,
+  public ResultList<Mapping> getMappings(final String branch, final String mapSetCode,
     final SearchParameters searchParameters, final String filter, final List<String> conceptCodes)
     throws Exception;
 
   /**
    * Returns the mapping.
    *
+   * @param branch the branch
    * @param mapSetCode the map set code
    * @param conceptCode the concept code
    * @return the mapping
    * @throws Exception the exception
    */
-  public Mapping getMapping(final String mapSetCode, final String conceptCode) throws Exception;
+  public Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode)
+    throws Exception;
 
   /**
    * Returns the concept.
    *
+   * @param branch the branch
    * @param terminology the terminology
    * @param code the code
    * @return the concept
    * @throws Exception the exception
    */
-  public Concept getConcept(final String terminology, final String code) throws Exception;
+  public Concept getConcept(final String branch, final String terminology, final String code)
+    throws Exception;
 
   /**
    * Creates the mapping.

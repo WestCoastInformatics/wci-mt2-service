@@ -4375,7 +4375,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
   /* see superclass */
   @Override
-  public List<MapSet> getMapSets() throws Exception {
+  public List<MapSet> getMapSets(final String branch) throws Exception {
 
     final File f = new File(handlerProperties.getProperty("dir") + "/MapSets.json");
     if (!f.exists()) {
@@ -4428,7 +4428,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
   /* see superclass */
   @Override
-  public MapSet getMapSet(final String code) throws Exception {
+  public MapSet getMapSet(final String branch, final String code) throws Exception {
 
     final File f = new File(handlerProperties.getProperty("dir") + "/MapSets.json");
     if (!f.exists()) {
@@ -4484,7 +4484,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
   /* see superclass */
   @Override
-  public ResultList<Mapping> getMappings(final String mapSetCode,
+  public ResultList<Mapping> getMappings(final String branch, final String mapSetCode,
     final SearchParameters searchParameters, final String filter, final List<String> conceptCodes)
     throws Exception {
 
@@ -4495,7 +4495,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
     }
 
     // Grab the specified mapSet
-    final MapSet mapSet = getMapSet(mapSetCode);
+    final MapSet mapSet = getMapSet(branch, mapSetCode);
 
     final Map<String, Mapping> conceptIdToMappingMap = new HashMap<>();
 
@@ -4522,7 +4522,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
       if (!conceptIdToMappingMap.containsKey(mappingNode.get("referencedComponentId").asText())) {
         final Mapping mapping = new Mapping();
         mapping.setCode(mappingNode.get("referencedComponentId").asText());
-        mapping.setName(getConcept(mapSet.getFromTerminology(), mapping.getCode()).getName());
+        mapping
+            .setName(getConcept(branch, mapSet.getFromTerminology(), mapping.getCode()).getName());
         mapping.setMapSetId(mapSet.getId());
         mapping.setMapEntries(new ArrayList<>());
 
@@ -4552,8 +4553,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
       }
       mapEntry.setAdvices(advices);
 
-      final Concept relationConcept =
-          getConcept(mapSet.getFromTerminology(), additionalFields.get("mapCategoryId").asText());
+      final Concept relationConcept = getConcept(branch, mapSet.getFromTerminology(),
+          additionalFields.get("mapCategoryId").asText());
       if (relationConcept != null) {
         mapEntry.setRelation(relationConcept.getName());
       } else {
@@ -4563,7 +4564,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
       mapEntry.setToCode(additionalFields.get("mapTarget").asText());
 
       final Concept toConcept =
-          getConcept(mapSet.getToTerminology(), additionalFields.get("mapTarget").asText());
+          getConcept(branch, mapSet.getToTerminology(), additionalFields.get("mapTarget").asText());
 
       if (toConcept != null) {
         mapEntry.setToName(toConcept.getName());
@@ -4588,7 +4589,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
   /* see superclass */
   @Override
-  public Mapping getMapping(final String mapSetCode, final String conceptCode) throws Exception {
+  public Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode)
+    throws Exception {
 
     final File f = new File(handlerProperties.getProperty("dir") + "/Mappings.json");
     if (!f.exists()) {
@@ -4597,7 +4599,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
     }
 
     // Grab the specified mapSet
-    final MapSet mapSet = getMapSet(mapSetCode);
+    final MapSet mapSet = getMapSet(branch, mapSetCode);
 
     final Mapping mapping = new Mapping();
 
@@ -4628,7 +4630,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
       // mapping
       if (mapping.getCode() == null || mapping.getCode().isEmpty()) {
         mapping.setCode(mappingNode.get("referencedComponentId").asText());
-        mapping.setName(getConcept(mapSet.getFromTerminology(), mapping.getCode()).getName());
+        mapping
+            .setName(getConcept(branch, mapSet.getFromTerminology(), mapping.getCode()).getName());
         mapping.setMapSetId(mapSet.getId());
         mapping.setMapEntries(new ArrayList<>());
       }
@@ -4654,8 +4657,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
       }
       mapEntry.setAdvices(advices);
 
-      final Concept relationConcept =
-          getConcept(mapSet.getFromTerminology(), additionalFields.get("mapCategoryId").asText());
+      final Concept relationConcept = getConcept(branch, mapSet.getFromTerminology(),
+          additionalFields.get("mapCategoryId").asText());
       if (relationConcept != null) {
         mapEntry.setRelation(relationConcept.getName());
       } else {
@@ -4665,7 +4668,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
       mapEntry.setToCode(additionalFields.get("mapTarget").asText());
 
       final Concept toConcept =
-          getConcept(mapSet.getToTerminology(), additionalFields.get("mapTarget").asText());
+          getConcept(branch, mapSet.getToTerminology(), additionalFields.get("mapTarget").asText());
 
       if (toConcept != null) {
         mapEntry.setToName(toConcept.getName());
@@ -4684,7 +4687,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
   /* see superclass */
   @Override
-  public Concept getConcept(final String terminology, final String code) throws Exception {
+  public Concept getConcept(final String branch, final String terminology, final String code)
+    throws Exception {
 
     final File f =
         new File(handlerProperties.getProperty("dir") + "/Concepts" + terminology + ".json");

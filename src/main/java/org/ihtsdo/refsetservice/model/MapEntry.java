@@ -345,7 +345,7 @@ public class MapEntry extends AbstractHasModified {
   /**
    * Sets the module id.
    *
-   * @param module id the new module id
+   * @param moduleId the new module id
    */
   public void setModuleId(final String moduleId) {
 

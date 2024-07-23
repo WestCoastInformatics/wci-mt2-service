@@ -34,81 +34,99 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
 public class MapSetController extends BaseController {
 
-    /** The Constant LOG. */
-    private static final Logger LOG = LoggerFactory.getLogger(MapSetController.class);
+  /** The Constant LOG. */
+  private static final Logger LOG = LoggerFactory.getLogger(MapSetController.class);
 
-    /** The request. */
-    @SuppressWarnings("unused")
-    @Autowired
-    private HttpServletRequest request;
+  /** The request. */
+  @SuppressWarnings("unused")
+  @Autowired
+  private HttpServletRequest request;
 
-    /** Search teams API notes. */
-    private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
+  /** Search teams API notes. */
+  private static final String API_NOTES =
+      "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
 
-    @RequestMapping(method = RequestMethod.GET, value = "/mapset/{code}", produces = MediaType.APPLICATION_JSON)
-    @Operation(summary = "Get map set. This call requires authentication with the correct role.", tags = {
-        "mapset"
-    }, responses = {
-        @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-        @ApiResponse(responseCode = "401", description = "Unauthorized"), @ApiResponse(responseCode = "403", description = "Forbidden"),
-        @ApiResponse(responseCode = "404", description = "Resource not found"), @ApiResponse(responseCode = "417", description = "Failed Expectation")
-    })
-    @Parameters({
-        @Parameter(name = "code", description = "MapSet identifier, e.g. &lt;uuid&gt;", required = true)
-    })
-    @RecordMetric
-    public ResponseEntity<MapSet> getMapSet(@PathVariable(value = "code") final String code) throws Exception {
+  @RequestMapping(method = RequestMethod.GET, value = "/mapset/{code}",
+      produces = MediaType.APPLICATION_JSON)
+  @Operation(summary = "Get map set. This call requires authentication with the correct role.",
+      tags = {
+          "mapset"
+      }, responses = {
+          @ApiResponse(responseCode = "200",
+              description = "Successfully retrieved the requested information"),
+          @ApiResponse(responseCode = "401", description = "Unauthorized"),
+          @ApiResponse(responseCode = "403", description = "Forbidden"),
+          @ApiResponse(responseCode = "404", description = "Resource not found"),
+          @ApiResponse(responseCode = "417", description = "Failed Expectation")
+      })
+  @Parameters({
+      @Parameter(name = "code", description = "MapSet identifier, e.g. &lt;uuid&gt;",
+          required = true)
+  })
+  @RecordMetric
+  public ResponseEntity<MapSet> getMapSet(@PathVariable(value = "code") final String code)
+    throws Exception {
 
-        LOG.info("Get mapset {}", code);
-        // final User authUser = authorizeUser(request);
+    LOG.info("Get mapset {}", code);
+    // final User authUser = authorizeUser(request);
 
-        try {
+    try {
 
-            final MapSet mapset = MapSetService.getMapSet(code);
-            return new ResponseEntity<>(mapset, HttpStatus.OK);
+      // TODO: determine branch.
+      final String branch = "MAIN/SNOMEDCT-NO/2024-04-15";
+      final MapSet mapset = MapSetService.getMapSet(branch, code);
+      return new ResponseEntity<>(mapset, HttpStatus.OK);
 
-        } catch (final Exception e) {
+    } catch (final Exception e) {
 
-            handleException(e);
-            return null;
-        }
-
+      handleException(e);
+      return null;
     }
 
-    /**
-     * Search mapsets.
-     *
-     * @param includeMembers the include members
-     * @param searchParameters the search parameters
-     * @param bindingResult the binding result
-     * @return the string
-     * @throws Exception the exception
-     */
-    @RequestMapping(method = RequestMethod.GET, value = "/mapset", produces = MediaType.APPLICATION_JSON)
-    @Operation(summary = "Find mapset. This call requires authentication with the correct role.", description = API_NOTES, tags = {
-        "mapset"
-    }, responses = {
-        @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-        @ApiResponse(responseCode = "401", description = "Unauthorized"), @ApiResponse(responseCode = "403", description = "Forbidden"),
-        @ApiResponse(responseCode = "404", description = "Resource not found"), @ApiResponse(responseCode = "417", description = "Failed Expectation")
-    })
-    @RecordMetric
-    public @ResponseBody ResponseEntity<List<MapSet>> getMapSets(@ModelAttribute final SearchParameters searchParameters) throws Exception {
+  }
 
-        LOG.info("Search mapsets: {}", ModelUtility.toJson(searchParameters));
-        // final User authUser = authorizeUser(request);
+  /**
+   * Search mapsets.
+   *
+   * @param includeMembers the include members
+   * @param searchParameters the search parameters
+   * @param bindingResult the binding result
+   * @return the string
+   * @throws Exception the exception
+   */
+  @RequestMapping(method = RequestMethod.GET, value = "/mapset",
+      produces = MediaType.APPLICATION_JSON)
+  @Operation(summary = "Find mapset. This call requires authentication with the correct role.",
+      description = API_NOTES, tags = {
+          "mapset"
+      }, responses = {
+          @ApiResponse(responseCode = "200",
+              description = "Successfully retrieved the requested information"),
+          @ApiResponse(responseCode = "401", description = "Unauthorized"),
+          @ApiResponse(responseCode = "403", description = "Forbidden"),
+          @ApiResponse(responseCode = "404", description = "Resource not found"),
+          @ApiResponse(responseCode = "417", description = "Failed Expectation")
+      })
+  @RecordMetric
+  public @ResponseBody ResponseEntity<List<MapSet>> getMapSets(
+    @ModelAttribute final SearchParameters searchParameters) throws Exception {
 
-        try {
+    LOG.info("Search mapsets: {}", ModelUtility.toJson(searchParameters));
+    // final User authUser = authorizeUser(request);
 
-            final List<MapSet> mapSets = MapSetService.getMapSets();
+    try {
 
-            return new ResponseEntity<>(mapSets, HttpStatus.OK);
+      // TODO: determine branch.
+      final String branch = "MAIN/SNOMEDCT-NO/2024-04-15";
+      final List<MapSet> mapSets = MapSetService.getMapSets(branch);
 
-        } catch (final Exception e) {
+      return new ResponseEntity<>(mapSets, HttpStatus.OK);
 
-            handleException(e);
-            return null;
-        }
+    } catch (final Exception e) {
+
+      handleException(e);
+      return null;
     }
+  }
 
 }

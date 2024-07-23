@@ -33,6 +33,8 @@ import javax.ws.rs.core.Response.Status.Family;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.Concept;
+import org.ihtsdo.refsetservice.model.Description;
+import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.MapEntry;
 import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.Mapping;
@@ -85,7 +87,7 @@ public class SnowstormMapping extends SnowstormAbstract {
    * @return the map sets
    * @throws Exception the exception
    */
-  public static List<MapSet> getMapSets() throws Exception {
+  public static List<MapSet> getMapSets(final String branch) throws Exception {
 
     final ArrayList<MapSet> mapSets = new ArrayList<>();
 
@@ -95,7 +97,6 @@ public class SnowstormMapping extends SnowstormAbstract {
     String searchAfter = null;
 
     final int limit = 50;
-    final String branch = "MAIN%2FSNOMEDCT-NO%2F2024-04-15";
 
     final String targetUri = SnowstormConnection.getBaseUrl() + branch
         + "/concepts?activeFilter=true&ecl=%3C609331003&includeLeafFlag=false&form=inferred&offset=0&limit="
@@ -176,7 +177,7 @@ public class SnowstormMapping extends SnowstormAbstract {
    * @return the map set
    * @throws Exception the exception
    */
-  public static MapSet getMapSet(final String code) throws Exception {
+  public static MapSet getMapSet(final String branch, final String code) throws Exception {
 
     final Client client = getClients().get();
 
@@ -184,7 +185,6 @@ public class SnowstormMapping extends SnowstormAbstract {
     searchParameters.setLimit(50);
     searchParameters.setSearchAfter(null);
 
-    final String branch = "MAIN%2FSNOMEDCT-NO%2F2024-04-15";
     final String targetUri = SnowstormConnection.getBaseUrl() + branch
         + "/concepts?activeFilter=true&includeLeafFlag=false&form=inferred&conceptIds=" + code
         + SnowstormApiPaging.getPagingQueryString(null);
@@ -260,7 +260,7 @@ public class SnowstormMapping extends SnowstormAbstract {
    * @return the mappings
    * @throws Exception the exception
    */
-  public static ResultList<Mapping> getMappings(final String mapSetCode,
+  public static ResultList<Mapping> getMappings(final String branch, final String mapSetCode,
     final SearchParameters searchParameters, final String filter, final List<String> conceptCodes)
     throws Exception {
 
@@ -270,10 +270,8 @@ public class SnowstormMapping extends SnowstormAbstract {
 
     final List<String> filteredConceptList = new ArrayList<>();
     if (StringUtils.isNotBlank(filter)) {
-      filteredConceptList.addAll(searchConcepts(mapSetCode, filter));
+      filteredConceptList.addAll(searchConcepts(branch, mapSetCode, filter));
     }
-
-    final String branch = "MAIN%2FSNOMEDCT-NO%2F2024-04-15";
 
     final StringBuilder requestBody = new StringBuilder();
     requestBody.append("{");
@@ -298,7 +296,7 @@ public class SnowstormMapping extends SnowstormAbstract {
     requestBody.append("}");
 
     // Grab the specified mapSet
-    final MapSet mapSet = getMapSet(mapSetCode);
+    final MapSet mapSet = getMapSet(branch, mapSetCode);
     final String fromTerminology = mapSet.getFromTerminology();
     final String toTerminology = mapSet.getToTerminology();
     final Map<String, Mapping> conceptIdToMappingMap = new HashMap<>();
@@ -421,7 +419,9 @@ public class SnowstormMapping extends SnowstormAbstract {
     }
 
     // get a list of codes to get concepts
-    final Map<String, Map<String, Concept>> terminologyConceptMap = getConcepts(conceptsToLookup);
+    final Map<String, Map<String, Concept>> terminologyConceptMap =
+        getConcepts(branch, conceptsToLookup);
+    final List<String> conceptIds = new ArrayList<>();
 
     // add names to mappings and to map entries
     for (final Mapping mapping : conceptIdToMappingMap.values()) {
@@ -434,6 +434,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         LOG.error("Concept not found: terminology:{}, code:{}", fromTerminology, mapping.getCode());
         mapping.setName(mapping.getCode() + " CONCEPT NOT FOUND");
       }
+      conceptIds.add(mapping.getCode());
 
       for (final MapEntry entry : mapping.getMapEntries()) {
 
@@ -462,9 +463,23 @@ public class SnowstormMapping extends SnowstormAbstract {
       handleEditionPrecedence(mapping);
     }
 
+    // TODO - do this elsewhere
+    final Edition edition = new Edition();
+    edition.setActive(true);
+    edition.setAbbreviation("NO");
+    edition.setDefaultLanguageCode("no");
+    edition.getDefaultLanguageRefsets().add("61000202103");
+    edition.getDefaultLanguageRefsets().add("900000000000509007");
+    edition.setShortName("SNOMEDCT-NO");
+    edition.setBranch(branch);
+
+    final Map<String, List<Description>> descriptions =
+        SnowstormDescription.getDescriptions(edition, conceptIds);
+
     // Sort all of the map entries in Group/Priority order
     for (final Mapping mapping : conceptIdToMappingMap.values()) {
       sortMapEntries(mapping);
+      mapping.setDescriptions(descriptions.get(mapping.getCode()));
     }
 
     // Once the file is completed parsed, return mappings as list
@@ -487,24 +502,23 @@ public class SnowstormMapping extends SnowstormAbstract {
    * @param searchString the search string
    * @return the list
    */
-  private static List<String> searchConcepts(final String mapSetCode, final String searchString)
-    throws Exception {
+  private static List<String> searchConcepts(final String branch, final String mapSetCode,
+    final String searchString) throws Exception {
 
     // Connect to snowstorm
-    final String branch = "MAIN%2FSNOMEDCT-NO%2F2024-04-15";
     String searchAfter = "";
 
     final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/concepts/search";
 
-    final StringBuilder requestBodyTempate = new StringBuilder();
-    requestBodyTempate.append("{");
-    requestBodyTempate.append("\"termFilter\": \"").append(searchString).append("\",");
-    requestBodyTempate.append("\"eclFilter\": \"^").append(mapSetCode).append("\",");
-    requestBodyTempate.append("\"limit\": ").append(5000).append(",");
-    requestBodyTempate.append("\"returnIdOnly\": true,");
+    final StringBuilder requestBodyTemplate = new StringBuilder();
+    requestBodyTemplate.append("{");
+    requestBodyTemplate.append("\"termFilter\": \"").append(searchString).append("\",");
+    requestBodyTemplate.append("\"eclFilter\": \"^").append(mapSetCode).append("\",");
+    requestBodyTemplate.append("\"limit\": ").append(5000).append(",");
+    requestBodyTemplate.append("\"returnIdOnly\": true,");
     // Is replaced with actual searchAfter value
-    requestBodyTempate.append("\"searchAfter\": \"SEARCH_AFTER\"");
-    requestBodyTempate.append("}");
+    requestBodyTemplate.append("\"searchAfter\": \"SEARCH_AFTER\"");
+    requestBodyTemplate.append("}");
 
     final List<String> conceptCodes = new ArrayList<>();
 
@@ -512,7 +526,7 @@ public class SnowstormMapping extends SnowstormAbstract {
     while (!done) {
 
       final String requestBodyString =
-          requestBodyTempate.toString().replace("SEARCH_AFTER", searchAfter);
+          requestBodyTemplate.toString().replace("SEARCH_AFTER", searchAfter);
 
       try (final Response response =
           SnowstormConnection.postResponse(targetUri, requestBodyString)) {
@@ -557,11 +571,11 @@ public class SnowstormMapping extends SnowstormAbstract {
    * @return the mapping
    * @throws Exception the exception
    */
-  public static Mapping getMapping(final String mapSetCode, final String conceptCode)
-    throws Exception {
+  public static Mapping getMapping(final String branch, final String mapSetCode,
+    final String conceptCode) throws Exception {
 
     // Grab the specified mapSet
-    final MapSet mapSet = getMapSet(mapSetCode);
+    final MapSet mapSet = getMapSet(branch, mapSetCode);
 
     final Mapping mapping = new Mapping();
 
@@ -570,10 +584,9 @@ public class SnowstormMapping extends SnowstormAbstract {
     String searchAfter = null;
     int limit = 50;
 
-    final String targetUri =
-        SnowstormConnection.getBaseUrl() + "MAIN%2FSNOMEDCT-NO%2F2024-04-15/members?referenceSet="
-            + mapSetCode + "&referencedComponentId=" + conceptCode + "&active=true&limit=" + limit
-            + (searchAfter != null ? "&searchAfter=" + searchAfter : "");
+    final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members?referenceSet="
+        + mapSetCode + "&referencedComponentId=" + conceptCode + "&active=true&limit=" + limit
+        + (searchAfter != null ? "&searchAfter=" + searchAfter : "");
     LOG.info("getSnowstormMapping url: " + targetUri);
 
     final WebTarget target = client.target(targetUri);
@@ -602,8 +615,8 @@ public class SnowstormMapping extends SnowstormAbstract {
       // mapping
       if (mapping.getCode() == null || mapping.getCode().isEmpty()) {
         mapping.setCode(mappingNode.get("referencedComponentId").asText());
-        mapping.setName(
-            SnowstormConcept.getConcept(mapSet.getFromTerminology(), mapping.getCode()).getName());
+        mapping.setName(SnowstormConcept
+            .getConcept(branch, mapSet.getFromTerminology(), mapping.getCode()).getName());
         mapping.setMapSetId(mapSet.getId());
         mapping.setMapEntries(new ArrayList<>());
       }
@@ -630,8 +643,8 @@ public class SnowstormMapping extends SnowstormAbstract {
       }
       mapEntry.setAdvices(advices);
 
-      final Concept relationConcept = SnowstormConcept.getConcept(mapSet.getFromTerminology(),
-          additionalFields.get("mapCategoryId").asText());
+      final Concept relationConcept = SnowstormConcept.getConcept(branch,
+          mapSet.getFromTerminology(), additionalFields.get("mapCategoryId").asText());
       if (relationConcept != null) {
         mapEntry.setRelation(relationConcept.getName());
       } else {
@@ -640,7 +653,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
       mapEntry.setToCode(additionalFields.get("mapTarget").asText());
 
-      final Concept toConcept = SnowstormConcept.getConcept(mapSet.getToTerminology(),
+      final Concept toConcept = SnowstormConcept.getConcept(branch, mapSet.getToTerminology(),
           additionalFields.get("mapTarget").asText());
 
       if (toConcept != null) {
@@ -663,6 +676,22 @@ public class SnowstormMapping extends SnowstormAbstract {
 
     // Sort all of the map entries in Group/Priority order
     sortMapEntries(mapping);
+
+    // Get descriptions for mapping
+    final Edition edition = new Edition();
+    edition.setActive(true);
+    edition.setAbbreviation("NO");
+    edition.setDefaultLanguageCode("no");
+    edition.getDefaultLanguageRefsets().add("61000202103");
+    edition.getDefaultLanguageRefsets().add("900000000000509007");
+    edition.setShortName("SNOMEDCT-NO");
+    edition.setBranch(branch);
+
+    final List<String> conceptIds = new ArrayList<>();
+    conceptIds.add(mapping.getCode());
+    final Map<String, List<Description>> descriptions =
+        SnowstormDescription.getDescriptions(edition, conceptIds);
+    mapping.setDescriptions(descriptions.get(mapping.getCode()));
 
     return mapping;
   }
@@ -742,7 +771,7 @@ public class SnowstormMapping extends SnowstormAbstract {
    * @return the concept
    * @throws Exception the exception
    */
-  private static Map<String, Map<String, Concept>> getConcepts(
+  private static Map<String, Map<String, Concept>> getConcepts(final String branch,
     final Map<String, Set<String>> conceptCodes) throws Exception {
 
     // Map<terminology, List<code, concept>>
@@ -755,7 +784,7 @@ public class SnowstormMapping extends SnowstormAbstract {
           .filter(str -> !str.isEmpty()).collect(Collectors.toList());
 
       final Map<String, Concept> concepts =
-          getConceptsFromSnowstorm(terminology, new ArrayList<>(nonEmptyList));
+          getConceptsFromSnowstorm(branch, terminology, new ArrayList<>(nonEmptyList));
 
       terminologyConceptMap.put(terminology, concepts);
 
@@ -773,8 +802,8 @@ public class SnowstormMapping extends SnowstormAbstract {
    * @return the concepts from snowstorm
    * @throws Exception the exception
    */
-  private static Map<String, Concept> getConceptsFromSnowstorm(final String terminology,
-    final List<String> codes) throws Exception {
+  private static Map<String, Concept> getConceptsFromSnowstorm(final String branch,
+    final String terminology, final List<String> codes) throws Exception {
 
     if (codes == null || codes.isEmpty()) {
       return new HashMap<>();
@@ -789,7 +818,6 @@ public class SnowstormMapping extends SnowstormAbstract {
 
     final Map<String, Concept> conceptMap = new HashMap<>();
 
-    final String branch = "MAIN%2FSNOMEDCT-NO%2F2024-04-15";
     final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/concepts/search";
     final String requestBodyTempate =
         "{ \"conceptIds\": [\"CONCEPT_CODES\"], \"searchAfter\": \"SEARCH_AFTER\", \"limit\": "
@@ -834,8 +862,8 @@ public class SnowstormMapping extends SnowstormAbstract {
 
   }
 
-  private static void sortMapEntries(Mapping mapping) {
-    List<MapEntry> entries = mapping.getMapEntries();
+  private static void sortMapEntries(final Mapping mapping) {
+    final List<MapEntry> entries = mapping.getMapEntries();
     entries
         .sort(Comparator.comparingInt(MapEntry::getGroup).thenComparingInt(MapEntry::getPriority));
 
@@ -849,12 +877,12 @@ public class SnowstormMapping extends SnowstormAbstract {
   // 1,
   // then the Edition/Norwegian map entry should be kept, and the international
   // one dropped.
-  private static void handleEditionPrecedence(Mapping mapping) {
-    Map<String, MapEntry> groupPriorityToEntryMap = new HashMap<>();
+  private static void handleEditionPrecedence(final Mapping mapping) {
+    final Map<String, MapEntry> groupPriorityToEntryMap = new HashMap<>();
     for (MapEntry mapEntry : mapping.getMapEntries()) {
-      String key = mapEntry.getGroup() + "-" + mapEntry.getPriority();
+      final String key = mapEntry.getGroup() + "-" + mapEntry.getPriority();
       if (groupPriorityToEntryMap.containsKey(key)) {
-        MapEntry existingMapEntry = groupPriorityToEntryMap.get(key);
+        final MapEntry existingMapEntry = groupPriorityToEntryMap.get(key);
         if (!existingMapEntry.getModuleId().equals("449080006")
             && mapEntry.getModuleId().equals("449080006")) {
           // Keep existing map entry if it does not have moduleId 449080006
@@ -865,7 +893,7 @@ public class SnowstormMapping extends SnowstormAbstract {
     }
 
     // Set the remaining map entries to the mapping
-    List<MapEntry> remainingMapEntries = new ArrayList<>(groupPriorityToEntryMap.values());
+    final List<MapEntry> remainingMapEntries = new ArrayList<>(groupPriorityToEntryMap.values());
     mapping.setMapEntries(remainingMapEntries);
   }
 

@@ -452,42 +452,42 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
   /* see superclass */
   @Override
-  public List<MapSet> getMapSets() throws Exception {
+  public List<MapSet> getMapSets(final String branch) throws Exception {
 
-    return SnowstormMapping.getMapSets();
+    return SnowstormMapping.getMapSets(branch);
   }
 
   /* see superclass */
   @Override
-  public MapSet getMapSet(final String code) throws Exception {
+  public MapSet getMapSet(final String branch, final String code) throws Exception {
 
-    return SnowstormMapping.getMapSet(code);
+    return SnowstormMapping.getMapSet(branch, code);
 
   }
 
   /* see superclass */
   @Override
-  public ResultList<Mapping> getMappings(final String mapSetCode,
+  public ResultList<Mapping> getMappings(final String branch, final String mapSetCode,
     final SearchParameters searchParameters, final String filter, final List<String> conceptCodes)
     throws Exception {
 
-    return SnowstormMapping.getMappings(mapSetCode, searchParameters, filter, conceptCodes);
+    return SnowstormMapping.getMappings(branch, mapSetCode, searchParameters, filter, conceptCodes);
 
   }
 
   /* see superclass */
   @Override
-  public Mapping getMapping(final String mapSetCode, final String conceptCode) throws Exception {
+  public Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode) throws Exception {
 
-    return SnowstormMapping.getMapping(mapSetCode, conceptCode);
+    return SnowstormMapping.getMapping(branch, mapSetCode, conceptCode);
 
   }
 
   /* see superclass */
   @Override
-  public Concept getConcept(final String terminology, final String code) throws Exception {
+  public Concept getConcept(final String branch, final String terminology, final String code) throws Exception {
 
-    return SnowstormConcept.getConcept(terminology, code);
+    return SnowstormConcept.getConcept(branch, terminology, code);
 
   }
 

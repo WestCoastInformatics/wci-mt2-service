@@ -100,7 +100,7 @@ public class SnowstormConcept extends SnowstormAbstract {
    * @return the concept
    * @throws Exception the exception
    */
-  public static Concept getConcept(final String terminology, final String code) throws Exception {
+  public static Concept getConcept(final String branch, final String terminology, final String code) throws Exception {
 
     // Connect to snowstorm
     final Client client = getClients().get();
@@ -109,8 +109,8 @@ public class SnowstormConcept extends SnowstormAbstract {
 
     int limit = 50;
 
-    final String targetUri = SnowstormConnection.getBaseUrl()
-        + "MAIN%2FSNOMEDCT-NO%2F2023-12-15/concepts?activeFilter=true&includeLeafFlag=false&form=inferred&conceptIds="
+    final String targetUri = SnowstormConnection.getBaseUrl() + branch 
+        + "/concepts?activeFilter=true&includeLeafFlag=false&form=inferred&conceptIds="
         + code + "&offset=0&limit=" + limit
         + (searchAfter != null ? "&searchAfter=" + searchAfter : "");
     LOG.info("getSnowstormConcept url: " + targetUri);
