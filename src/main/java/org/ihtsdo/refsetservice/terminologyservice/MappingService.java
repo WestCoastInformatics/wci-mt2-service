@@ -1,9 +1,9 @@
 /*
- * Copyright 2023 SNOMED International - All Rights Reserved.
+ * Copyright 2024 West Coast Informatics - All Rights Reserved.
  *
- * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * NOTICE:  All information contained herein is, and remains the property of West Coast Informatics
  * The intellectual and technical concepts contained herein are proprietary to
- * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * West Coast Informatics and may be covered by U.S. and Foreign Patents, patents in process,
  * and are protected by trade secret or copyright law.  Dissemination of this information
  * or reproduction of this material is strictly forbidden.
  */
@@ -67,6 +67,9 @@ public final class MappingService {
    * Returns the mappings.
    *
    * @param mapSetCode the map set code
+   * @param searchParameters the search parameters
+   * @param filter the filter
+   * @param conceptCodes the concept codes
    * @return the mappings
    * @throws Exception the exception
    */
@@ -94,25 +97,29 @@ public final class MappingService {
   /**
    * Creates the mapping.
    *
+   * @param branch the branch
+   * @param mapSetCode the map set code
    * @param mapping the mapping
    * @return the mapping
    * @throws Exception the exception
    */
-  public static Mapping createMapping(final String mapSetCode, final Mapping mapping)
-    throws Exception {
+  public static void createMapping(final String branch, final String mapSetCode,
+    final Mapping mapping) throws Exception {
 
-    return terminologyHandler.createMapping(mapSetCode, mapping);
+    terminologyHandler.createMapping(branch, mapSetCode, mapping);
   }
 
   /**
    * Update mapping.
    *
+   * @param branch the branch
+   * @param mapSetCode the map set code
    * @param mapping the mapping
    * @throws Exception the exception
    */
-  public static void updateMapping(final String mapSetCode, final Mapping mapping)
-    throws Exception {
+  public static void updateMapping(final String branch, final String mapSetCode,
+    final Mapping mapping) throws Exception {
 
-    terminologyHandler.updateMapping(mapSetCode, mapping);
+    terminologyHandler.updateMapping(branch, mapSetCode, mapping);
   }
 }

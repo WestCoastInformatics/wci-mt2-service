@@ -172,9 +172,12 @@ public class MappingController extends BaseController {
     LOG.info("Create Mapping mapSetCode:{}, mapping:{}", mapSetCode, ModelUtility.toJson(mapping));
 
     try {
-      final Mapping newMapping = MappingService.createMapping(mapSetCode, mapping);
 
-      return new ResponseEntity<Mapping>(newMapping, HttpStatus.CREATED);
+      // TODO: determine branch.
+      final String branch = "MAIN/SNOMEDCT-NO/2024-04-15";
+      MappingService.createMapping(branch, mapSetCode, mapping);
+
+      return new ResponseEntity<Mapping>(HttpStatus.CREATED);
 
     } catch (final Exception e) {
 
@@ -208,7 +211,10 @@ public class MappingController extends BaseController {
     LOG.info("Update Mapping mapSetCode:{}, mapping:{}", mapSetCode, ModelUtility.toJson(mapping));
 
     try {
-      MappingService.updateMapping(mapSetCode, mapping);
+
+      // TODO: determine branch.
+      final String branch = "MAIN/SNOMEDCT-NO/2024-04-15";
+      MappingService.updateMapping(branch, mapSetCode, mapping);
 
       return new ResponseEntity<>(HttpStatus.OK);
 
