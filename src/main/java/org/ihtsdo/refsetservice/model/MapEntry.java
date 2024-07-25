@@ -1,9 +1,9 @@
 /*
- * Copyright 2023 SNOMED International - All Rights Reserved.
+ * Copyright 2024 West Coast Informatics - All Rights Reserved.
  *
- * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * NOTICE:  All information contained herein is, and remains the property of West Coast Informatics
  * The intellectual and technical concepts contained herein are proprietary to
- * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * West Coast Informatics and may be covered by U.S. and Foreign Patents, patents in process,
  * and are protected by trade secret or copyright law.  Dissemination of this information
  * or reproduction of this material is strictly forbidden.
  */
@@ -20,6 +20,7 @@ import javax.persistence.FetchType;
 import javax.persistence.OneToMany;
 import javax.persistence.OrderBy;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
@@ -74,13 +75,20 @@ public class MapEntry extends AbstractHasModified {
   @Column(nullable = false, length = 4000)
   private String relation;
 
+  /** The relation. */
+  private String relationCode;
+
   /** The map block. */
   @Column(nullable = false)
   private int block;
 
-  /** The index (map group). */
+  /** The map group. */
   @Column(nullable = false, name = "map_group")
   private int group;
+
+  /** The module id. */
+  @Column(nullable = false)
+  private String moduleId;
 
   /**
    * default constructor.
@@ -152,6 +160,27 @@ public class MapEntry extends AbstractHasModified {
   public void setRelation(final String relation) {
 
     this.relation = relation;
+  }
+
+  /**
+   * Gets the relation code.
+   *
+   * @return the relation code
+   */
+  @Transient
+  public String getRelationCode() {
+
+    return relationCode;
+  }
+
+  /**
+   * Sets the relation.
+   *
+   * @param relationCode the new relation
+   */
+  public void setRelationCode(final String relationCode) {
+
+    this.relationCode = relationCode;
   }
 
   /**
@@ -300,6 +329,27 @@ public class MapEntry extends AbstractHasModified {
   public void setBlock(final int block) {
 
     this.block = block;
+
+  }
+
+  /**
+   * Returns the module id.
+   *
+   * @return the module id
+   */
+  public String getModuleId() {
+
+    return this.moduleId;
+  }
+
+  /**
+   * Sets the module id.
+   *
+   * @param moduleId the new module id
+   */
+  public void setModuleId(final String moduleId) {
+
+    this.moduleId = moduleId;
 
   }
 

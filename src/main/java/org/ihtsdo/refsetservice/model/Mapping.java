@@ -1,5 +1,6 @@
 package org.ihtsdo.refsetservice.model;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -7,12 +8,16 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -22,6 +27,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Entity
 @Schema(description = "Represents a mapping")
 @Table(name = "mappings")
+@JsonInclude(Include.NON_EMPTY)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Indexed
 public class Mapping extends AbstractHasModified {
@@ -42,6 +48,10 @@ public class Mapping extends AbstractHasModified {
   @ManyToOne(targetEntity = MapEntry.class, optional = false)
   @Fetch(FetchMode.JOIN)
   private List<MapEntry> mapEntries;
+
+  /** The descriptions. */
+  @Transient
+  private List<Description> descriptions = new ArrayList<>();
 
   /**
    * Gets the code.
@@ -124,6 +134,33 @@ public class Mapping extends AbstractHasModified {
   }
 
   /**
+   * Gets the descriptions.
+   *
+   * @return the descriptions
+   */
+  @JsonGetter()
+  public List<Description> getDescriptions() {
+
+    if (descriptions == null) {
+
+      descriptions = new ArrayList<>();
+
+    }
+
+    return descriptions;
+  }
+
+  /**
+   * Sets the descriptions.
+   *
+   * @param descriptions the descriptions
+   */
+  public void setDescriptions(final List<Description> descriptions) {
+
+    this.descriptions = descriptions;
+  }
+
+  /**
    * Hash code.
    *
    * @return the int
@@ -167,9 +204,8 @@ public class Mapping extends AbstractHasModified {
    */
   @Override
   public String toString() {
-
     return "Mapping [code=" + code + ", name=" + name + ", mapSetId=" + mapSetId + ", mapEntries="
-        + mapEntries + "]";
+        + mapEntries + ", descriptions=" + descriptions + "]";
   }
 
   @Override

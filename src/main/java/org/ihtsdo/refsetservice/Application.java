@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
@@ -32,7 +33,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
  * Entry point for webapp.
  */
 @SpringBootApplication(exclude = {
-    FlywayAutoConfiguration.class
+    FlywayAutoConfiguration.class,
+    ElasticsearchRestClientAutoConfiguration.class
 })
 @EnableCaching
 @EnableScheduling

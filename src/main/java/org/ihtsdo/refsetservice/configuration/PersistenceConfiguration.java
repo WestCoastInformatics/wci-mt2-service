@@ -74,7 +74,7 @@ public class PersistenceConfiguration {
         final String jdbcUrl = properties.getProperty("flyway.url");
         final String user = properties.getProperty("spring.jpa.properties.hibernate.connection.username");
         final String pwd = properties.getProperty("spring.jpa.properties.hibernate.connection.password");
-        final String location = "classpath:db/migration";
+        final String location = properties.getProperty("flyway.locations");
         final Map<String, String> placeholders = new HashMap<>();
 
         if (jdbcUrl.toLowerCase().startsWith("jdbc:mysql")) {

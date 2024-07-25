@@ -1,7 +1,8 @@
 buildscript {
   ext {
-    springBootVersion = "2.5.2"
+    springBootVersion = "2.7.18"
   }
+
   repositories {
     mavenLocal()
     mavenCentral()
@@ -16,7 +17,7 @@ buildscript {
     classpath "org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}"
     classpath "gradle.plugin.com.github.spotbugs.snom:spotbugs-gradle-plugin:4.7.0"
     classpath "com.netflix.nebula:gradle-ospackage-plugin:8.4.1"
-
+	classpath "org.owasp:dependency-check-gradle:8.2.1"
   }
 }
 
@@ -84,19 +85,19 @@ apply plugin: "checkstyle"
  * so there’s no need for it to be listed as a classpath dependency in the buildscript configuration.
  */
 apply plugin: "io.spring.dependency-management"
-apply plugin: "maven"
 apply plugin: "maven-publish"
 apply plugin: "application"
-apply plugin: 'nebula.deb'
-apply plugin: 'nebula.ospackage'
+apply plugin: "nebula.deb"
+apply plugin: "nebula.ospackage"
+apply plugin: "org.owasp.dependencycheck"
 
 mainClassName = "org.ihtsdo.refsetservice.Application"
 
 // apply the version tag to the project.version
 version = version + versionTag
 
-sourceCompatibility = 11
-targetCompatibility = 11
+sourceCompatibility = 17
+targetCompatibility = 17
 
 springBoot {
     // generate file META-INF/build-info.properties during the build
@@ -106,6 +107,9 @@ springBoot {
 
 configurations.all {
    exclude group: "org.springframework.boot", module: "spring-boot-starter-logging"
+   resolutionStrategy {
+    force "com.google.guava:guava:33.0.0-jre"
+   }
 }
 
 ospackage {
@@ -137,13 +141,22 @@ ospackage {
 }
 
 // overrides for spring boot dependency versions
-ext['log4j2.version'] = '2.17.2'
+ext['log4j2.version'] = '2.20.0'
+ext['tomcat.version'] = '9.0.84'
+ext['snakeyaml.version'] = '2.2'
+ext['com.h2database']= 'h2:2.1.210'
 
 // Dependencies - https://docs.gradle.org/current/userguide/declaring_dependencies.html
 dependencies {
 
   // NOTE: "spring-boot-starter-web" must be the first dependency
   implementation "org.springframework.boot:spring-boot-starter-web"
+
+  // resteasy required for delete api call with entity
+  implementation "org.jboss.resteasy:resteasy-client:5.0.9.Final"
+  implementation "org.jboss.resteasy:resteasy-jackson2-provider:5.0.9.Final"
+
+  implementation "org.springframework:spring-web:5.3.34"
   implementation "org.springframework.boot:spring-boot-starter-log4j2"
   implementation "org.springframework.boot:spring-boot-devtools"
   implementation "org.springframework.boot:spring-boot-starter-actuator"
@@ -151,63 +164,67 @@ dependencies {
   implementation "org.springframework.boot:spring-boot-starter-jersey"
   implementation "org.springframework.boot:spring-boot-properties-migrator"
   implementation "org.springframework.boot:spring-boot-starter-jdbc"
+  implementation "org.springframework.boot:spring-boot-starter-tomcat"
   implementation "org.springframework.session:spring-session-core"
   implementation "org.springframework.session:spring-session-jdbc"
-  implementation "org.springframework.security:spring-security-core"
-  implementation "org.springframework.security:spring-security-web"
+  implementation "org.springframework.security:spring-security-core:5.8.11"
+  implementation "org.springframework.security:spring-security-crypto:5.8.11"
+  implementation "org.springframework.security:spring-security-web:5.8.11"
   implementation "org.springframework.cloud:spring-cloud-starter-consul-config"
   implementation "org.springframework.cloud:spring-cloud-starter-consul-discovery"
   implementation "org.springframework.cloud:spring-cloud-starter-vault-config"
   implementation "org.springframework:spring-aop"
-  implementation "org.springframework.boot:spring-boot-starter-tomcat"
-  implementation "org.apache.commons:commons-lang3:3.12.0"
-  implementation "commons-io:commons-io:2.6"
-  implementation "com.google.guava:guava:30.1-jre"
+  implementation "org.bouncycastle:bcprov-jdk18on:1.78"
+  implementation "joda-time:joda-time:2.12.7"  
+
+  // Database
+  implementation "org.flywaydb:flyway-mysql:8.5.3"
+  implementation "com.mysql:mysql-connector-j:8.2.0"
+
+  // Hibernate
+  implementation "org.hibernate:hibernate-core:5.6.15.Final"
+  implementation "org.hibernate.search:hibernate-search-mapper-orm:6.0.11.Final"
+  implementation "org.hibernate.search:hibernate-search-backend-lucene:6.0.11.Final"
+  implementation "org.hibernate.search:hibernate-search-backend-elasticsearch:6.0.11.Final"
+  implementation "org.hibernate:hibernate-hikaricp:5.5.9.Final"
+  implementation "com.fasterxml.jackson.datatype:jackson-datatype-hibernate5"
 
   // Springfox is deprecated
-  // mplementation "io.springfox:springfox-boot-starter:3.0.0"
+  // implementation "io.springfox:springfox-boot-starter:3.0.0"
   // implementation "io.springfox:springfox-swagger-ui:3.0.0"
   implementation "org.springdoc:springdoc-openapi-ui:1.7.0"
+  
+  // Others
   implementation "org.aspectj:aspectjweaver:1.9.2"
   implementation "org.apache.commons:commons-text:1.10.0"
-  implementation "javax.cache:cache-api:1.1.1"
-  implementation "org.ehcache:ehcache:3.8.1"
-  implementation "com.fasterxml.jackson.datatype:jackson-datatype-hibernate5"
-  implementation "org.flywaydb:flyway-core"
-  implementation 'org.hibernate:hibernate-core:5.5.3.Final'
-  implementation "org.hibernate.search:hibernate-search-mapper-orm:6.0.5.Final"
-  implementation "org.hibernate.search:hibernate-search-backend-lucene:6.0.5.Final"
-  implementation "org.hibernate.search:hibernate-search-backend-elasticsearch:6.0.5.Final"
-  implementation "org.hibernate:hibernate-hikaricp:5.5.3.Final"
+
   implementation "org.reflections:reflections:0.9.11"
   implementation "javax.ws.rs:javax.ws.rs-api:2.1.1"
   implementation "com.sun.mail:javax.mail:1.6.2"
-  //implementation "org.jboss.resteasy:resteasy-client:4.7.2.Final"
-  //implementation "org.jboss.resteasy:resteasy-jackson2-provider:4.7.2.Final"
-  implementation "mysql:mysql-connector-java"
   implementation "commons-cli:commons-cli:1.4"
   implementation "cglib:cglib:3.3.0"
-  implementation "com.amazonaws:aws-java-sdk-s3:1.11.989"
+  implementation "com.amazonaws:aws-java-sdk-s3:1.12.633"
+
+  // implementation "javax.cache:cache-api:1.1.1"
+  // implementation "org.ehcache:ehcache:3.8.1"
 
   // Security
   implementation "com.auth0:java-jwt:3.8.3"
   implementation "com.auth0:jwks-rsa:0.9.0"
   
   // runtime only
-  runtimeOnly "com.h2database:h2"
+  testRuntimeOnly "com.h2database:h2"
 
   // test dependencies
   testImplementation "org.springframework.boot:spring-boot-starter-test"
-  spotbugs "com.github.spotbugs:spotbugs:4.7.3"
-  // 4.0.0"
+  spotbugs "com.github.spotbugs:spotbugs:4.8.0"
   testImplementation "org.junit.jupiter:junit-jupiter-api:5.6.0"
   testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:5.6.0"
 }
 
 dependencyManagement {
   imports {
-    mavenBom "org.springframework.cloud:spring-cloud-dependencies:2020.0.3"
-
+    mavenBom "org.springframework.cloud:spring-cloud-dependencies:2021.0.9"
   }
 }
 
@@ -238,12 +255,10 @@ spotbugsTest {
 
 checkstyle {
   // config = resources.text.fromFile(file("${project.rootDir}/config/checkstyle/checkstyle.xml"))
-  // toolVersion = "8.29"
-  toolVersion = "7.6.1"
+  toolVersion = "10.3.1"
   ignoreFailures = true
   checkstyleMain.exclude "**/package-info.java"
   checkstyleTest.exclude "**/package-info.java"
-  // checkstyleIntegrationTest.exclude "**/package-info.java"
 
   // end temp
   configProperties = [
@@ -257,11 +272,19 @@ checkstyle {
 tasks.withType(Checkstyle) {
   ignoreFailures = true
   reports {
-    xml.enabled = true
-    html.enabled = false
-    //html.stylesheet resources.text.fromFile("config/xsl/checkstyle-custom.xsl")
+    xml.required = false
+    html.required = true
+    html.stylesheet resources.text.fromFile("config/checkstyle/checkstyle-report.xsl")
   }
 }
+
+dependencyCheck {
+    failBuildOnCVSS = 7.0
+    format = 'XML'
+    outputDirectory = file("$buildDir/reports/dependency-check")
+    suppressionFile = file("dependencies.xml")
+}
+
 test {
    // Use junit platform for unit tests
    systemProperty "spring.profiles.active", "test"
@@ -302,4 +325,9 @@ bootJar {
 }
 
 // We can launch via spring boot by simply running "java -jar *.jar"
-install.dependsOn = [ bootJar ]
+task install(dependsOn: 'publishToMavenLocal')
+
+tasks.named("startScripts").configure { dependsOn("bootJar") }
+tasks.named("distTar").configure { dependsOn("bootJar") }
+tasks.named("distZip").configure { dependsOn("bootJar") }
+tasks.named("buildDeb").configure { dependsOn("bootJar", "jar") }
