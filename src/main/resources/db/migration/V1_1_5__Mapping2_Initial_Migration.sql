@@ -182,7 +182,7 @@ CREATE TABLE `map_projects` (
   `teamBased` bit(1) NOT NULL,
   `useTags` bit(1) NOT NULL,
   `workflowType` varchar(255) DEFAULT NULL,
-  `edition_id` varchar(64) DEFAULT NULL,
+  `edition_id` varchar(64) NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UKc1n6vnli5c9gcm53qv8qsfj25` (`name`),
   KEY `FK70c8p1lcf83c2sxj840vuws8x` (`edition_id`),
