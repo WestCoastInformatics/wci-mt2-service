@@ -45,480 +45,445 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
 /**
- * Implements a terminology handler that uses SNOMED's Snowstorm terminology
- * server.
+ * Implements a terminology handler that uses SNOMED's Snowstorm terminology server.
  */
 public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServerHandler {
 
-  /** The Constant LOG. */
-  @SuppressWarnings("unused")
-  private static final Logger LOG =
-      LoggerFactory.getLogger(SNOMEDSnowstormTerminologyServerHandler.class);
+    /** The Constant LOG. */
+    @SuppressWarnings("unused")
+    private static final Logger LOG = LoggerFactory.getLogger(SNOMEDSnowstormTerminologyServerHandler.class);
 
-  /** The handler properties. */
-  private Properties handlerProperties = new Properties();
+    /** The handler properties. */
+    private Properties handlerProperties = new Properties();
 
-  /**
-   * Creates the branch.
-   *
-   * @param parentBranchPath the parent branch path
-   * @param branchName the branch name
-   * @return the string
-   * @throws Exception the exception
-   */
-  /* see superclass */
-  @Override
-  public String createBranch(final String parentBranchPath, final String branchName)
-    throws Exception {
+    /**
+     * Creates the branch.
+     *
+     * @param parentBranchPath the parent branch path
+     * @param branchName the branch name
+     * @return the string
+     * @throws Exception the exception
+     */
+    /* see superclass */
+    @Override
+    public String createBranch(final String parentBranchPath, final String branchName) throws Exception {
 
-    return SnowstormBranch.createBranch(parentBranchPath, branchName);
-  }
+        return SnowstormBranch.createBranch(parentBranchPath, branchName);
+    }
 
-  /* see superclass */
-  @Override
-  public boolean deleteBranch(final String branchPath) throws Exception {
+    /* see superclass */
+    @Override
+    public boolean deleteBranch(final String branchPath) throws Exception {
 
-    return SnowstormBranch.deleteBranch(branchPath);
-  }
+        return SnowstormBranch.deleteBranch(branchPath);
+    }
 
-  /* see superclass */
-  @Override
-  public boolean doesBranchExist(final String branchPath) throws Exception {
+    /* see superclass */
+    @Override
+    public boolean doesBranchExist(final String branchPath) throws Exception {
 
-    return SnowstormBranch.doesBranchExist(branchPath);
+        return SnowstormBranch.doesBranchExist(branchPath);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public List<String> getBranchChildren(final String branchPath) throws Exception {
+    /* see superclass */
+    @Override
+    public List<String> getBranchChildren(final String branchPath) throws Exception {
 
-    return SnowstormBranch.getBranchChildren(branchPath);
-  }
+        return SnowstormBranch.getBranchChildren(branchPath);
+    }
 
-  /* see superclass */
-  @Override
-  public void mergeBranch(final String sourceBranchPath, final String targetBranchPath,
-    final String comment, final boolean rebase) throws Exception {
+    /* see superclass */
+    @Override
+    public void mergeBranch(final String sourceBranchPath, final String targetBranchPath, final String comment, final boolean rebase) throws Exception {
 
-    SnowstormBranch.mergeBranch(sourceBranchPath, targetBranchPath, comment, rebase);
+        SnowstormBranch.mergeBranch(sourceBranchPath, targetBranchPath, comment, rebase);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public String mergeRebaseReview(final String sourceBranchPath, final String targetBranchPath)
-    throws Exception {
+    /* see superclass */
+    @Override
+    public String mergeRebaseReview(final String sourceBranchPath, final String targetBranchPath) throws Exception {
 
-    return SnowstormBranch.mergeRebaseReview(sourceBranchPath, targetBranchPath);
-  }
+        return SnowstormBranch.mergeRebaseReview(sourceBranchPath, targetBranchPath);
+    }
 
-  /* see superclass */
-  @Override
-  public String getNewRefsetId(final String editionBranchPath) throws Exception {
+    /* see superclass */
+    @Override
+    public String getNewRefsetId(final String editionBranchPath) throws Exception {
 
-    return SnowstormRefset.getNewRefsetId(editionBranchPath);
-  }
+        return SnowstormRefset.getNewRefsetId(editionBranchPath);
+    }
 
-  /* see superclass */
-  @Override
-  public List<String> getBranchVersions(final String editionPath) throws Exception {
+    /* see superclass */
+    @Override
+    public List<String> getBranchVersions(final String editionPath) throws Exception {
 
-    return SnowstormBranch.getBranchVersions(editionPath);
-  }
+        return SnowstormBranch.getBranchVersions(editionPath);
+    }
 
-  /* see superclass */
-  @Override
-  public String generateVersionFile(final String entityString) throws Exception {
+    /* see superclass */
+    @Override
+    public String generateVersionFile(final String entityString) throws Exception {
 
-    return SnowstormExport.generateVersionFile(entityString);
+        return SnowstormExport.generateVersionFile(entityString);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public void downloadGeneratedFile(final String snowVersionFileUrl,
-    final String localSnowVersionPath) throws Exception {
+    /* see superclass */
+    @Override
+    public void downloadGeneratedFile(final String snowVersionFileUrl, final String localSnowVersionPath) throws Exception {
 
-    SnowstormExport.downloadGeneratedFile(snowVersionFileUrl, localSnowVersionPath);
+        SnowstormExport.downloadGeneratedFile(snowVersionFileUrl, localSnowVersionPath);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public Map<String, String> getModuleNames(final Project project) throws Exception {
+    /* see superclass */
+    @Override
+    public Map<String, String> getModuleNames(final Project project) throws Exception {
 
-    return SnowstormConcept.getModuleNames(project);
+        return SnowstormConcept.getModuleNames(project);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public List<Edition> getAffiliateEditionList() throws Exception {
+    /* see superclass */
+    @Override
+    public List<Edition> getAffiliateEditionList() throws Exception {
 
-    return SnowstormCodeSystem.getAffiliateEditionList();
+        return SnowstormCodeSystem.getAffiliateEditionList();
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public Object createRefset(final TerminologyService service, final User user,
-    final Refset refsetEditParameters) throws Exception {
+    /* see superclass */
+    @Override
+    public Object createRefset(final TerminologyService service, final User user, final Refset refsetEditParameters) throws Exception {
 
-    return SnowstormRefset.createRefset(service, user, refsetEditParameters);
+        return SnowstormRefset.createRefset(service, user, refsetEditParameters);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public ConceptResultList getRefsetConcepts(final TerminologyService service, final String branch,
-    final boolean areParentConcepts) throws Exception {
+    /* see superclass */
+    @Override
+    public ConceptResultList getRefsetConcepts(final TerminologyService service, final String branch, final boolean areParentConcepts) throws Exception {
 
-    return SnowstormConcept.getRefsetConcepts(service, branch, areParentConcepts);
+        return SnowstormConcept.getRefsetConcepts(service, branch, areParentConcepts);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public void updateRefsetConcept(final Refset refset, final boolean active, final String moduleId)
-    throws Exception {
+    /* see superclass */
+    @Override
+    public void updateRefsetConcept(final Refset refset, final boolean active, final String moduleId) throws Exception {
 
-    SnowstormConcept.updateRefsetConcept(refset, active, moduleId);
+        SnowstormConcept.updateRefsetConcept(refset, active, moduleId);
 
-  }
+    }
 
-  /* Refset Member Service calls */
+    /* Refset Member Service calls */
 
-  /* see superclass */
-  @Override
-  public List<Concept> getAllRefsetMembers(final TerminologyService service,
-    final String refsetInternalId, final String searchAfter, final List<Concept> concepts)
-    throws Exception {
+    /* see superclass */
+    @Override
+    public List<Concept> getAllRefsetMembers(final TerminologyService service, final String refsetInternalId, final String searchAfter,
+        final List<Concept> concepts) throws Exception {
 
-    return SnowstormRefsetMember.getAllRefsetMembers(service, refsetInternalId, searchAfter,
-        concepts);
+        return SnowstormRefsetMember.getAllRefsetMembers(service, refsetInternalId, searchAfter, concepts);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public Set<String> getDirectoryMembers(final String snowstormQuery) throws Exception {
+    /* see superclass */
+    @Override
+    public Set<String> getDirectoryMembers(final String snowstormQuery) throws Exception {
 
-    return SnowstormMultiSearch.getDirectoryMembers(snowstormQuery);
+        return SnowstormMultiSearch.getDirectoryMembers(snowstormQuery);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public Set<String> searchMultisearchDescriptions(final SearchParameters searchParameters,
-    final String ecl, final Set<String> nonPublishedBranchPaths) throws Exception {
+    /* see superclass */
+    @Override
+    public Set<String> searchMultisearchDescriptions(final SearchParameters searchParameters, final String ecl, final Set<String> nonPublishedBranchPaths)
+        throws Exception {
 
-    return SnowstormMultiSearch.searchMultisearchDescriptions(searchParameters, ecl,
-        nonPublishedBranchPaths);
+        return SnowstormMultiSearch.searchMultisearchDescriptions(searchParameters, ecl, nonPublishedBranchPaths);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public String getMemberSctids(final String refsetId, final int limit, final String searchAfter,
-    final String branchPath) throws Exception {
+    /* see superclass */
+    @Override
+    public String getMemberSctids(final String refsetId, final int limit, final String searchAfter, final String branchPath) throws Exception {
 
-    return SnowstormRefsetMember.getMemberSctids(refsetId, limit, searchAfter, branchPath);
+        return SnowstormRefsetMember.getMemberSctids(refsetId, limit, searchAfter, branchPath);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public void populateAllLanguageDescriptions(final Refset refset,
-    final List<Concept> conceptsToProcess) throws Exception {
+    /* see superclass */
+    @Override
+    public void populateAllLanguageDescriptions(final Refset refset, final List<Concept> conceptsToProcess) throws Exception {
 
-    SnowstormDescription.populateAllLanguageDescriptions(refset, conceptsToProcess);
+        SnowstormDescription.populateAllLanguageDescriptions(refset, conceptsToProcess);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public void populateConceptLeafStatus(final Refset refset, final List<Concept> conceptsToProcess)
-    throws Exception {
+    /* see superclass */
+    @Override
+    public void populateConceptLeafStatus(final Refset refset, final List<Concept> conceptsToProcess) throws Exception {
 
-    SnowstormConcept.populateConceptLeafStatus(refset, conceptsToProcess);
+        SnowstormConcept.populateConceptLeafStatus(refset, conceptsToProcess);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public Concept getConceptAncestors(final Refset refset, final String conceptId) throws Exception {
+    /* see superclass */
+    @Override
+    public Concept getConceptAncestors(final Refset refset, final String conceptId) throws Exception {
 
-    return SnowstormConcept.getConceptAncestors(refset, conceptId);
+        return SnowstormConcept.getConceptAncestors(refset, conceptId);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public ConceptResultList searchConcepts(final Refset refset,
-    final SearchParameters searchParameters, final String searchMembersMode,
-    final int limitReturnNumber) throws Exception {
+    /* see superclass */
+    @Override
+    public ConceptResultList searchConcepts(final Refset refset, final SearchParameters searchParameters, final String searchMembersMode,
+        final int limitReturnNumber) throws Exception {
 
-    return SnowstormConcept.searchConcepts(refset, searchParameters, searchMembersMode,
-        limitReturnNumber);
+        return SnowstormConcept.searchConcepts(refset, searchParameters, searchMembersMode, limitReturnNumber);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public int getMemberCount(final Refset refset) throws Exception {
+    /* see superclass */
+    @Override
+    public int getMemberCount(final Refset refset) throws Exception {
 
-    return SnowstormRefsetMember.getMemberCount(refset);
+        return SnowstormRefsetMember.getMemberCount(refset);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public ConceptResultList getMemberList(final Refset refset,
-    final List<String> nonDefaultPreferredTerms, final SearchParameters searchParameters)
-    throws Exception {
+    /* see superclass */
+    @Override
+    public ConceptResultList getMemberList(final Refset refset, final List<String> nonDefaultPreferredTerms, final SearchParameters searchParameters)
+        throws Exception {
 
-    return SnowstormRefsetMember.getMemberList(refset, nonDefaultPreferredTerms, searchParameters);
+        return SnowstormRefsetMember.getMemberList(refset, nonDefaultPreferredTerms, searchParameters);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public Concept getConceptDetails(final String conceptId, final Refset refset) throws Exception {
+    /* see superclass */
+    @Override
+    public Concept getConceptDetails(final String conceptId, final Refset refset) throws Exception {
 
-    return SnowstormConcept.getConceptDetails(conceptId, refset);
+        return SnowstormConcept.getConceptDetails(conceptId, refset);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public ConceptResultList getParents(final String conceptId, final Refset refset,
-    final String language) throws Exception {
+    /* see superclass */
+    @Override
+    public ConceptResultList getParents(final String conceptId, final Refset refset, final String language) throws Exception {
 
-    return SnowstormConcept.getParents(conceptId, refset, language);
+        return SnowstormConcept.getParents(conceptId, refset, language);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public ConceptResultList getChildren(final String conceptId, final Refset refset,
-    final String language) throws Exception {
+    /* see superclass */
+    @Override
+    public ConceptResultList getChildren(final String conceptId, final Refset refset, final String language) throws Exception {
 
-    return SnowstormConcept.getChildren(conceptId, refset, language);
+        return SnowstormConcept.getChildren(conceptId, refset, language);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public ConceptResultList getConceptsFromSnowstorm(final String url, final Refset refset,
-    final ConceptLookupParameters lookupParameters, final String language) throws Exception {
+    /* see superclass */
+    @Override
+    public ConceptResultList getConceptsFromSnowstorm(final String url, final Refset refset, final ConceptLookupParameters lookupParameters,
+        final String language) throws Exception {
 
-    return SnowstormConcept.getConceptsFromSnowstorm(url, refset, lookupParameters, language);
+        return SnowstormConcept.getConceptsFromSnowstorm(url, refset, lookupParameters, language);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public void populateMembershipInformation(final Refset refset, final List<Concept> concepts)
-    throws Exception {
+    /* see superclass */
+    @Override
+    public void populateMembershipInformation(final Refset refset, final List<Concept> concepts) throws Exception {
 
-    SnowstormRefsetMember.populateMembershipInformation(refset, concepts);
+        SnowstormRefsetMember.populateMembershipInformation(refset, concepts);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public Long getLatestChangedVersionDate(final String branch, final String refsetId)
-    throws Exception {
+    /* see superclass */
+    @Override
+    public Long getLatestChangedVersionDate(final String branch, final String refsetId) throws Exception {
 
-    return SnowstormRefset.getLatestChangedVersionDate(branch, refsetId);
+        return SnowstormRefset.getLatestChangedVersionDate(branch, refsetId);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public Long getRefsetConceptReleaseDate(final String refsetId, final String branch)
-    throws Exception {
+    /* see superclass */
+    @Override
+    public Long getRefsetConceptReleaseDate(final String refsetId, final String branch) throws Exception {
 
-    return SnowstormRefset.getRefsetConceptReleaseDate(refsetId, branch);
+        return SnowstormRefset.getRefsetConceptReleaseDate(refsetId, branch);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public List<Map<String, String>> getMemberHistory(final TerminologyService service,
-    final String referencedComponentId, final List<Map<String, String>> versions) throws Exception {
+    /* see superclass */
+    @Override
+    public List<Map<String, String>> getMemberHistory(final TerminologyService service, final String referencedComponentId,
+        final List<Map<String, String>> versions) throws Exception {
 
-    return SnowstormRefsetMember.getMemberHistory(service, referencedComponentId, versions);
+        return SnowstormRefsetMember.getMemberHistory(service, referencedComponentId, versions);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public boolean cacheMemberAncestors(final Refset refset) throws Exception {
+    /* see superclass */
+    @Override
+    public boolean cacheMemberAncestors(final Refset refset) throws Exception {
 
-    return SnowstormRefsetMember.cacheMemberAncestors(refset);
+        return SnowstormRefsetMember.cacheMemberAncestors(refset);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public List<String> addRefsetMembers(final TerminologyService service, final User user,
-    final Refset refset, final List<String> conceptIds) throws Exception {
+    /* see superclass */
+    @Override
+    public List<String> addRefsetMembers(final TerminologyService service, final User user, final Refset refset, final List<String> conceptIds)
+        throws Exception {
 
-    return SnowstormRefsetMember.addRefsetMembers(service, user, refset, conceptIds);
+        return SnowstormRefsetMember.addRefsetMembers(service, user, refset, conceptIds);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public List<String> callAddMemberSingle(final String refsetId, final String url,
-    final String conceptId, final String moduleId) throws Exception {
+    /* see superclass */
+    @Override
+    public List<String> callAddMemberSingle(final String refsetId, final String url, final String conceptId, final String moduleId) throws Exception {
 
-    return SnowstormRefsetMember.callAddMemberSingle(refsetId, url, conceptId, moduleId);
+        return SnowstormRefsetMember.callAddMemberSingle(refsetId, url, conceptId, moduleId);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public List<String> callAddMembersBulk(final String refsetId, final String url,
-    final List<String> conceptIds, final String moduleId) throws Exception {
+    /* see superclass */
+    @Override
+    public List<String> callAddMembersBulk(final String refsetId, final String url, final List<String> conceptIds, final String moduleId) throws Exception {
 
-    return SnowstormRefsetMember.callAddMembersBulk(refsetId, url, conceptIds, moduleId);
+        return SnowstormRefsetMember.callAddMembersBulk(refsetId, url, conceptIds, moduleId);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public List<String> removeRefsetMembers(final TerminologyService service, final User user,
-    final Refset refset, final String conceptIds) throws Exception {
+    /* see superclass */
+    @Override
+    public List<String> removeRefsetMembers(final TerminologyService service, final User user, final Refset refset, final String conceptIds) throws Exception {
 
-    return SnowstormRefsetMember.removeRefsetMembers(service, user, refset, conceptIds);
+        return SnowstormRefsetMember.removeRefsetMembers(service, user, refset, conceptIds);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public List<String> callUpdateMemberSingle(final String refsetId, final String url,
-    final JsonNode memberBody) throws Exception {
+    /* see superclass */
+    @Override
+    public List<String> callUpdateMemberSingle(final String refsetId, final String url, final JsonNode memberBody) throws Exception {
 
-    return SnowstormRefsetMember.callUpdateMemberSingle(refsetId, url, memberBody);
+        return SnowstormRefsetMember.callUpdateMemberSingle(refsetId, url, memberBody);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public List<String> callUpdateMembersBulk(final String refsetId, final String url,
-    final ArrayNode memberBodies) throws Exception {
+    /* see superclass */
+    @Override
+    public List<String> callUpdateMembersBulk(final String refsetId, final String url, final ArrayNode memberBodies) throws Exception {
 
-    return SnowstormRefsetMember.callUpdateMembersBulk(refsetId, url, memberBodies);
+        return SnowstormRefsetMember.callUpdateMembersBulk(refsetId, url, memberBodies);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public List<String> getConceptIdsFromEcl(final String branch, final String ecl) throws Exception {
+    /* see superclass */
+    @Override
+    public List<String> getConceptIdsFromEcl(final String branch, final String ecl) throws Exception {
 
-    return SnowstormConcept.getConceptIdsFromEcl(branch, ecl);
+        return SnowstormConcept.getConceptIdsFromEcl(branch, ecl);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public String compileUpgradeData(final TerminologyService service, final User user,
-    final String refsetInternalId) throws Exception {
+    /* see superclass */
+    @Override
+    public String compileUpgradeData(final TerminologyService service, final User user, final String refsetInternalId) throws Exception {
 
-    return RefsetMemberService.compileUpgradeData(service, user, refsetInternalId);
+        return RefsetMemberService.compileUpgradeData(service, user, refsetInternalId);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public String modifyUpgradeConcept(final TerminologyService service, final User user,
-    final Refset refset, final String inactiveConceptId, final String replacementConceptId,
-    final UpgradeReplacementConcept manualReplacementConcept, final String changed)
-    throws Exception {
+    /* see superclass */
+    @Override
+    public String modifyUpgradeConcept(final TerminologyService service, final User user, final Refset refset, final String inactiveConceptId,
+        final String replacementConceptId, final UpgradeReplacementConcept manualReplacementConcept, final String changed) throws Exception {
 
-    return RefsetMemberService.modifyUpgradeConcept(service, user, refset, inactiveConceptId,
-        replacementConceptId, manualReplacementConcept, changed);
+        return RefsetMemberService.modifyUpgradeConcept(service, user, refset, inactiveConceptId, replacementConceptId, manualReplacementConcept, changed);
 
-  }
+    }
 
-  /*
-   *
-   * MAPPING FUNCTIONALITY
-   *
-   */
+    /*
+     *
+     * MAPPING FUNCTIONALITY
+     *
+     */
 
-  /* see superclass */
-  @Override
-  public List<MapSet> getMapSets(final String branch) throws Exception {
+    /* see superclass */
+    @Override
+    public List<MapSet> getMapSets(final String branch) throws Exception {
 
-    return SnowstormMapping.getMapSets(branch);
-  }
+        return SnowstormMapping.getMapSets(branch);
+    }
 
-  /* see superclass */
-  @Override
-  public MapSet getMapSet(final String branch, final String code) throws Exception {
+    /* see superclass */
+    @Override
+    public MapSet getMapSet(final String branch, final String code) throws Exception {
 
-    return SnowstormMapping.getMapSet(branch, code);
+        return SnowstormMapping.getMapSet(branch, code);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public ResultList<Mapping> getMappings(final String branch, final String mapSetCode,
-    final SearchParameters searchParameters, final String filter, final List<String> conceptCodes)
-    throws Exception {
+    /* see superclass */
+    @Override
+    public ResultList<Mapping> getMappings(final String branch, final String mapSetCode, final SearchParameters searchParameters, final String filter,
+        final List<String> conceptCodes) throws Exception {
 
-    return SnowstormMapping.getMappings(branch, mapSetCode, searchParameters, filter, conceptCodes);
+        return SnowstormMapping.getMappings(branch, mapSetCode, searchParameters, filter, conceptCodes);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode) throws Exception {
+    /* see superclass */
+    @Override
+    public Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode) throws Exception {
 
-    return SnowstormMapping.getMapping(branch, mapSetCode, conceptCode);
+        return SnowstormMapping.getMapping(branch, mapSetCode, conceptCode);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public Concept getConcept(final String branch, final String terminology, final String code) throws Exception {
+    /* see superclass */
+    @Override
+    public Concept getConcept(final String branch, final String terminology, final String code) throws Exception {
 
-    return SnowstormConcept.getConcept(branch, terminology, code);
+        return SnowstormConcept.getConcept(branch, terminology, code);
 
-  }
+    }
 
-  /* see superclass */
-  @Override
-  public String getName() {
+    /* see superclass */
+    @Override
+    public String getName() {
 
-    return ModelUtility.getNameFromClass(SNOMEDSnowstormTerminologyServerHandler.class);
-  }
+        return ModelUtility.getNameFromClass(SNOMEDSnowstormTerminologyServerHandler.class);
+    }
 
-  /* see superclass */
-  @Override
-  public void setProperties(final Properties properties) throws Exception {
+    /* see superclass */
+    @Override
+    public void setProperties(final Properties properties) throws Exception {
 
-    handlerProperties.putAll(properties);
-  }
+        handlerProperties.putAll(properties);
+    }
 
-  /* see superclass */
-  @Override
-  public void createMapping(final String branch, final String mapSetCode, final Mapping mapping)
-    throws Exception {
+    /* see superclass */
+    @Override
+    public void createMapping(final String branch, final String mapSetCode, final Mapping mapping) throws Exception {
 
-    // TODO implement with Snowstorm
-  }
+        SnowstormMapping.createMapping(branch, mapSetCode, mapping);
+    }
 
-  /* see superclass */
-  @Override
-  public void updateMapping(final String branch, final String mapSetCode, final Mapping mapping)
-    throws Exception {
+    /* see superclass */
+    @Override
+    public void updateMapping(final String branch, final String mapSetCode, final Mapping mapping) throws Exception {
 
-    // TODO implement with Snowstorm
-  }
+        SnowstormMapping.updateMapping(branch, mapSetCode, mapping);
+    }
 
 }

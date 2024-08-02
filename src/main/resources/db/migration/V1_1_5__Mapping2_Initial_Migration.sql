@@ -182,12 +182,12 @@ CREATE TABLE `map_projects` (
   `teamBased` bit(1) NOT NULL,
   `useTags` bit(1) NOT NULL,
   `workflowType` varchar(255) DEFAULT NULL,
-  `edition_id` varchar(64) DEFAULT NULL,
+  `edition_id` varchar(64) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `UKc1n6vnli5c9gcm53qv8qsfj25` (`name`),
-  KEY `FK70c8p1lcf83c2sxj840vuws8x` (`edition_id`),
-  CONSTRAINT `FK70c8p1lcf83c2sxj840vuws8x` FOREIGN KEY (`edition_id`) REFERENCES `editions` (`id`)
+  UNIQUE KEY `UKc1n6vnli5c9gcm53qv8qsfj25` (`name`)
 );
+ALTER TABLE `map_projects` ADD INDEX `FK70c8p1lcf83c2sxj840vuws8x` (`edition_id`);
+ALTER TABLE `map_projects` ADD CONSTRAINT `FK70c8p1lcf83c2sxj840vuws8x` FOREIGN KEY (`edition_id`) REFERENCES `editions` (`id`);
 
 CREATE TABLE `map_report_definitions` (
   `id` varchar(64) NOT NULL,
