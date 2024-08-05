@@ -18,6 +18,7 @@ import javax.ws.rs.core.MediaType;
 
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.IdName;
+import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.Team;
@@ -111,6 +112,43 @@ public class ProjectController extends BaseController {
 		}
 
 	}
+	
+    /**
+     * Returns a specific map project.
+     *
+     * @param id             the map project ID
+     * @param includeMembers the include members
+     * @return the project
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/mapProject/{id}", produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Get map project.  This call requires authentication with the correct role.", tags = {
+            "mapProject" }, responses = {
+                    @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+                    @ApiResponse(responseCode = "401", description = "Unauthorized"),
+                    @ApiResponse(responseCode = "403", description = "Forbidden"),
+                    @ApiResponse(responseCode = "404", description = "Resource not found") })
+    @Parameters({ @Parameter(name = "id", description = "Project id, e.g. &lt;uuid&gt;", required = true),
+            @Parameter(name = "includeMembers", description = "Include project's members (users)", required = false, example = "false") })
+    @RecordMetric
+    public @ResponseBody ResponseEntity<MapProject> getMapProject(@PathVariable(value = "id") final String id,
+            @RequestParam(value = "includeMembers", defaultValue = "false") final boolean includeMembers)
+            throws Exception {
+
+        LOG.info("Project: id: " + id);
+        //authorizeUser(request);
+
+        try {
+            final MapProject mapProject = ProjectService.getMapProject(id, includeMembers);
+            return new ResponseEntity<>(mapProject, HttpStatus.OK);
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+
+    }	
 
 	/**
 	 * Returns the teams assigned to a project.
