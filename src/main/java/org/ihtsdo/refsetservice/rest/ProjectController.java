@@ -121,7 +121,7 @@ public class ProjectController extends BaseController {
      * @return the project
      * @throws Exception the exception
      */
-    @RequestMapping(method = RequestMethod.GET, value = "/mapProject/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @RequestMapping(method = RequestMethod.GET, value = "/mapProject/{id}", produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Get map project.  This call requires authentication with the correct role.", tags = {
             "mapProject" }, responses = {
                     @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
