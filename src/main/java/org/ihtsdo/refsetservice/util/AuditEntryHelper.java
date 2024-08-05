@@ -1,9 +1,9 @@
 /*
- * Copyright 2023 SNOMED International - All Rights Reserved.
+ * Copyright 2024 West Coast Informatics - All Rights Reserved.
  *
- * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * NOTICE:  All information contained herein is, and remains the property of West Coast Informatics
  * The intellectual and technical concepts contained herein are proprietary to
- * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * West Coast Informatics and may be covered by U.S. and Foreign Patents, patents in process,
  * and are protected by trade secret or copyright law.  Dissemination of this information
  * or reproduction of this material is strictly forbidden.
  */
@@ -15,6 +15,9 @@ import org.ihtsdo.refsetservice.model.AuditEntry;
 import org.ihtsdo.refsetservice.model.DiscussionThread;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.HasModified;
+import org.ihtsdo.refsetservice.model.MapAdvice;
+import org.ihtsdo.refsetservice.model.MapProject;
+import org.ihtsdo.refsetservice.model.MapRelation;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
@@ -49,7 +52,15 @@ public final class AuditEntryHelper {
         /** The discussion. */
         DISCUSSION,
         /** The sync. */
-        SYNC
+        SYNC,
+        /** The Map Project. */
+        MAP_PROJECT,
+        /** The map adivce. */
+        MAP_ADVICE,
+        /** The map rule. */
+        MAP_RULE,
+        /** The map relation. */
+        MAP_RELATION
     }
 
     /** The Constant LOG. */
@@ -903,6 +914,163 @@ public final class AuditEntryHelper {
         entry.setEntityId("");
         entry.setMessage("Sync completed successfully in " + processingMinutes + " minutes");
         entry.setDetails("Finish date is " + date.getTime());
+        log(entry);
+        return entry;
+    }
+
+    // MapAdvice
+    /**
+     * Adds the map advice entry.
+     *
+     * @param mapAdvice the map advice
+     * @return the audit entry
+     */
+    public static AuditEntry addMapAdviceEntry(final MapAdvice mapAdvice) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(EntityType.MAP_ADVICE.toString());
+        entry.setEntityId(mapAdvice.getId());
+        entry.setMessage("ADD MapAdvice");
+        entry.setDetails(mapAdvice.toString());
+        log(entry);
+        return entry;
+    }
+
+    /**
+     * Update map advice entry.
+     *
+     * @param mapAdvice the map advice
+     * @return the audit entry
+     */
+    public static AuditEntry updateMapAdviceEntry(final MapAdvice mapAdvice) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(EntityType.MAP_ADVICE.toString());
+        entry.setEntityId(mapAdvice.getId());
+        entry.setMessage("UPDATE MapAdvice");
+        entry.setDetails(mapAdvice.toString());
+        log(entry);
+        return entry;
+    }
+
+    /**
+     * Delete map advice entry.
+     *
+     * @param mapAdvice the map advice
+     * @return the audit entry
+     */
+    public static AuditEntry deleteMapAdviceEntry(final MapAdvice mapAdvice) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(EntityType.MAP_ADVICE.toString());
+        entry.setEntityId(mapAdvice.getId());
+        entry.setMessage("DELETE MapAdvice");
+        entry.setDetails(mapAdvice.getName());
+        log(entry);
+        return entry;
+    }
+
+    // MapProject
+    /**
+     * Adds the map project entry.
+     *
+     * @param mapProject the map project
+     * @return the audit entry
+     */
+    public static AuditEntry addMapProjectEntry(final MapProject mapProject) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(EntityType.MAP_PROJECT.toString());
+        entry.setEntityId(mapProject.getId());
+        entry.setMessage("ADD MapProject");
+        entry.setDetails(mapProject.toString());
+        log(entry);
+        return entry;
+    }
+
+    /**
+     * Update map advice entry.
+     *
+     * @param mapProject the map project
+     * @return the audit entry
+     */
+    public static AuditEntry updateMapProjectEntry(final MapProject mapProject) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(EntityType.MAP_PROJECT.toString());
+        entry.setEntityId(mapProject.getId());
+        entry.setMessage("UPDATE MapProject");
+        entry.setDetails(mapProject.toString());
+        log(entry);
+        return entry;
+    }
+
+    /**
+     * Change map project status entry.
+     *
+     * @param map project the project
+     * @return the audit entry
+     */
+    public static AuditEntry changeMapProjectStatusEntry(final MapProject mapProject) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(EntityType.PROJECT.toString());
+        entry.setEntityId(mapProject.getId());
+
+        if (mapProject.isActive()) {
+            entry.setMessage("REACTIVATE Project");
+        } else {
+            entry.setMessage("INACTIVATE Project");
+        }
+
+        entry.setDetails(mapProject.getName());
+        log(entry);
+        return entry;
+    }
+
+    /**
+     * Delete map advice entry.
+     *
+     * @param mapProject the map project
+     * @return the audit entry
+     */
+    public static AuditEntry deleteMapProjectEntry(final MapProject mapProject) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(EntityType.MAP_PROJECT.toString());
+        entry.setEntityId(mapProject.getId());
+        entry.setMessage("DELETE MapProject");
+        entry.setDetails(mapProject.getName());
+        log(entry);
+        return entry;
+    }
+
+    
+    // Map Relation
+    /**
+     * Adds the map relation entry.
+     *
+     * @param mapRelation the map relation
+     * @return the audit entry
+     */
+    public static AuditEntry addMapRelationEntry(final MapRelation mapRelation) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(EntityType.MAP_RELATION.toString());
+        entry.setEntityId(mapRelation.getId());
+        entry.setMessage("ADD MapRelation");
+        entry.setDetails(mapRelation.toString());
+        log(entry);
+        return entry;
+    }
+
+    public static AuditEntry updateMapRelationEntry(final MapRelation mapRelation) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(EntityType.MAP_RELATION.toString());
+        entry.setEntityId(mapRelation.getId());
+        entry.setMessage("UPDATE MapRelation");
+        entry.setDetails(mapRelation.toString());
         log(entry);
         return entry;
     }

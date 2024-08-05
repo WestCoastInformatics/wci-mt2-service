@@ -20,7 +20,6 @@ import javax.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.env.AbstractEnvironment;
 import org.springframework.core.env.EnumerablePropertySource;
 import org.springframework.core.env.Environment;
@@ -31,8 +30,6 @@ import org.springframework.stereotype.Component;
  * Set up config properties cache.
  */
 @Component
-@PropertySource("classpath:current_si_refsets.properties")
-@PropertySource("classpath:exclude_refsets_from_options.properties")
 public class PropertyUtility {
 
     /** The Constant LOG. */
@@ -164,7 +161,12 @@ public class PropertyUtility {
         final Properties jpaProperties = getPrefixedProperties("spring.jpa.properties.", true);
 
         // additional JPA properties that are not included in the properties file
-        jpaProperties.put("hibernate.search.backend.analysis.configurer", "class:org.ihtsdo.refsetservice.configuration.ElasticsearchCustomAnalysisConfigurer");
+        if (!"[test]".equalsIgnoreCase(properties.getProperty("springProfiles"))) {
+            jpaProperties.put("hibernate.search.backend.analysis.configurer",
+                "class:org.ihtsdo.refsetservice.configuration.ElasticsearchCustomAnalysisConfigurer");
+        } else {
+            jpaProperties.put("hibernate.search.backend.analysis.configurer", "class:org.ihtsdo.refsetservice.configuration.LuceneCustomAnalysisConfigurer");
+        }
 
         return jpaProperties;
     }

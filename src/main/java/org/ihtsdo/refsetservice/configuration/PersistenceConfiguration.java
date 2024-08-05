@@ -1,3 +1,12 @@
+/*
+ * Copyright 2023 SNOMED International - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * The intellectual and technical concepts contained herein are proprietary to
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 
 package org.ihtsdo.refsetservice.configuration;
 
@@ -67,10 +76,7 @@ public class PersistenceConfiguration {
     @Bean
     public Flyway customFlyway() throws Exception {
 
-        final Properties config = PropertyUtility.getProperties();
-        LOG.debug("customFlyway customFlyway config: ", config);
-
-        final String dbName = properties.getProperty("app.db_name");
+        final String dbName = properties.getProperty("flyway.database.name");
         final String jdbcUrl = properties.getProperty("flyway.url");
         final String user = properties.getProperty("spring.jpa.properties.hibernate.connection.username");
         final String pwd = properties.getProperty("spring.jpa.properties.hibernate.connection.password");

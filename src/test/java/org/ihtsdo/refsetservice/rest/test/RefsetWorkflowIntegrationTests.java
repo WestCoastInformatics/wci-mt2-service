@@ -43,10 +43,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 
 @AutoConfigureMockMvc
-public class RefsetWorkflowTests extends AbstractRefsetTests {
+public class RefsetWorkflowIntegrationTests extends AbstractRefsetTests {
 
     /** The Constant LOG. */
-    private static final Logger LOG = LoggerFactory.getLogger(RefsetWorkflowTests.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RefsetWorkflowIntegrationTests.class);
 
     /** The AUTHOR_USER workflow user . */
     public static final String AUTHOR_USER = "AUTHOR_USER";

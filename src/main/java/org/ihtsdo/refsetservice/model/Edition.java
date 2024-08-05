@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.persistence.CollectionTable;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
@@ -80,6 +81,7 @@ public class Edition extends AbstractHasModified {
   /** The modules that are part of this edition. */
   @ElementCollection
   @Fetch(FetchMode.JOIN)
+  @CollectionTable(name = "edition_modules")
   private Set<String> modules = new HashSet<String>();
 
   /** The default language code. */
@@ -89,6 +91,7 @@ public class Edition extends AbstractHasModified {
   /** The default language refsets. */
   @ElementCollection
   @Fetch(FetchMode.JOIN)
+  @CollectionTable(name = "edition_default_language_refsets")
   private Set<String> defaultLanguageRefsets = new HashSet<String>();
 
   /** The organization. */

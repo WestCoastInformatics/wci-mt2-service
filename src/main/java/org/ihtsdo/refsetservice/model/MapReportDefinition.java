@@ -24,6 +24,7 @@ import org.ihtsdo.refsetservice.helpers.ReportFrequency;
 import org.ihtsdo.refsetservice.helpers.ReportQueryType;
 import org.ihtsdo.refsetservice.helpers.ReportResultType;
 import org.ihtsdo.refsetservice.helpers.ReportTimePeriod;
+import org.ihtsdo.refsetservice.util.ModelUtility;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -43,327 +44,351 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Indexed
 public class MapReportDefinition extends AbstractHasId {
 
-  /** The report type name. */
-  @Column(nullable = false)
-  private String name;
+    /** The report type name. */
+    @Column(nullable = false)
+    private String name;
 
-  /** The report description. */
-  @Column(length = 4000, nullable = true)
-  private String description;
+    /** The report description. */
+    @Column(length = 4000, nullable = true)
+    private String description;
 
-  /** The is diff report. */
-  @Column(nullable = false)
-  private boolean isDiffReport = false;
+    /** The is diff report. */
+    @Column(nullable = false)
+    private boolean isDiffReport = false;
 
-  /** The is qa check. */
-  @Column(nullable = false)
-  private boolean isQACheck = false;
+    /** The is qa check. */
+    @Column(nullable = false)
+    private boolean isQACheck = false;
 
-  /** The time period (in days) for diff and rate reports. */
-  @Enumerated(EnumType.STRING)
-  private ReportTimePeriod timePeriod;
+    /** The time period (in days) for diff and rate reports. */
+    @Enumerated(EnumType.STRING)
+    private ReportTimePeriod timePeriod;
 
-  /** The frequency with which the report is run. */
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
-  private ReportFrequency frequency;
+    /** The frequency with which the report is run. */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ReportFrequency frequency;
 
-  /** The result type. */
-  @Enumerated(EnumType.STRING)
-  private ReportResultType resultType;
+    /** The result type. */
+    @Enumerated(EnumType.STRING)
+    private ReportResultType resultType;
 
-  /** The query type. */
-  @Enumerated(EnumType.STRING)
-  private ReportQueryType queryType;
+    /** The query type. */
+    @Enumerated(EnumType.STRING)
+    private ReportQueryType queryType;
 
-  /** The query. */
-  @Column(nullable = true, length = 10000)
-  private String query;
+    /** The query. */
+    @Column(nullable = true, length = 10000)
+    private String query;
 
-  /** The role required. */
-  @Enumerated(EnumType.STRING)
-  private MapUserRole roleRequired;
+    /** The role required. */
+    @Enumerated(EnumType.STRING)
+    private MapUserRole roleRequired;
 
-  /**
-   * The report definition used for constructing diff reports (if applicable).
-   */
-  @Column(nullable = true)
-  private String diffReportDefinitionName;
+    /**
+     * The report definition used for constructing diff reports (if applicable).
+     */
+    @Column(nullable = true)
+    private String diffReportDefinitionName;
 
-  /**
-   * Default constructor.
-   */
-  public MapReportDefinition() {
-  }
+    /**
+     * Default constructor.
+     */
+    public MapReportDefinition() {
 
-  /**
-   * Instantiates a {@link MapReportDefinition} from the specified parameters.
-   *
-   * @param reportDefinition the report definition
-   */
-  public MapReportDefinition(final MapReportDefinition reportDefinition) {
-    super();
-    this.name = reportDefinition.getName();
-    this.description = reportDefinition.getDescription();
-    this.isDiffReport = reportDefinition.isDiffReport();
-    this.isQACheck = reportDefinition.isQACheck();
-    this.timePeriod = reportDefinition.getTimePeriod();
-    this.frequency = reportDefinition.getFrequency();
-    this.resultType = reportDefinition.getResultType();
-    this.queryType = reportDefinition.getQueryType();
-    this.query = reportDefinition.getQuery();
-    this.roleRequired = reportDefinition.getRoleRequired();
-    this.diffReportDefinitionName = reportDefinition.getDiffReportDefinitionName();
-  }
+    }
 
-  /**
-   * Gets the report name.
-   * 
-   * @return the report name
-   */
+    /**
+     * Instantiates a {@link MapReportDefinition} from the specified parameters.
+     *
+     * @param reportDefinition the report definition
+     */
+    public MapReportDefinition(final MapReportDefinition reportDefinition) {
 
-  public String getName() {
-    return name;
-  }
+        super();
+        this.name = reportDefinition.getName();
+        this.description = reportDefinition.getDescription();
+        this.isDiffReport = reportDefinition.isDiffReport();
+        this.isQACheck = reportDefinition.isQACheck();
+        this.timePeriod = reportDefinition.getTimePeriod();
+        this.frequency = reportDefinition.getFrequency();
+        this.resultType = reportDefinition.getResultType();
+        this.queryType = reportDefinition.getQueryType();
+        this.query = reportDefinition.getQuery();
+        this.roleRequired = reportDefinition.getRoleRequired();
+        this.diffReportDefinitionName = reportDefinition.getDiffReportDefinitionName();
+    }
 
-  /**
-   * Sets the report name.
-   * 
-   * @param name the new report name
-   */
+    /**
+     * Gets the report name.
+     * 
+     * @return the report name
+     */
 
-  public void setName(final String name) {
-    this.name = name;
-  }
+    public String getName() {
 
-  /**
-   * Gets the description.
-   *
-   * @return the description
-   */
-  public String getDescription() {
-    return this.description;
-  }
+        return name;
+    }
 
-  /**
-   * Sets the description.
-   *
-   * @param description the new description
-   */
-  public void setDescription(final String description) {
-    this.description = description;
-  }
+    /**
+     * Sets the report name.
+     * 
+     * @param name the new report name
+     */
 
-  /**
-   * Gets the result type.
-   *
-   * @return the result type
-   */
-  public ReportResultType getResultType() {
-    return resultType;
-  }
+    public void setName(final String name) {
 
-  /**
-   * Sets the result type.
-   *
-   * @param resultType the new result type
-   */
-  public void setResultType(final ReportResultType resultType) {
-    this.resultType = resultType;
-  }
+        this.name = name;
+    }
 
-  /**
-   * Gets the query type.
-   *
-   * @return the query type
-   */
-  public ReportQueryType getQueryType() {
-    return queryType;
-  }
+    /**
+     * Gets the description.
+     *
+     * @return the description
+     */
+    public String getDescription() {
 
-  /**
-   * Sets the query type.
-   *
-   * @param queryType the new query type
-   */
-  public void setQueryType(final ReportQueryType queryType) {
-    this.queryType = queryType;
-  }
+        return this.description;
+    }
 
-  /**
-   * Gets the query.
-   *
-   * @return the query
-   */
-  public String getQuery() {
-    return query;
-  }
+    /**
+     * Sets the description.
+     *
+     * @param description the new description
+     */
+    public void setDescription(final String description) {
 
-  /**
-   * Sets the query.
-   *
-   * @param query the new query
-   */
-  public void setQuery(final String query) {
-    this.query = query;
-  }
+        this.description = description;
+    }
 
-  /**
-   * Gets the role required.
-   *
-   * @return the role required
-   */
-  public MapUserRole getRoleRequired() {
-    return roleRequired;
-  }
+    /**
+     * Gets the result type.
+     *
+     * @return the result type
+     */
+    public ReportResultType getResultType() {
 
-  /**
-   * Sets the role required.
-   *
-   * @param roleRequired the new role required
-   */
-  public void setRoleRequired(final MapUserRole roleRequired) {
-    this.roleRequired = roleRequired;
-  }
+        return resultType;
+    }
 
-  /**
-   * Checks if is diff report.
-   *
-   * @return true, if is diff report
-   */
-  public boolean isDiffReport() {
-    return isDiffReport;
-  }
+    /**
+     * Sets the result type.
+     *
+     * @param resultType the new result type
+     */
+    public void setResultType(final ReportResultType resultType) {
 
-  /**
-   * Sets the diff report.
-   *
-   * @param isDiffReport the new diff report
-   */
-  public void setDiffReport(final boolean isDiffReport) {
-    this.isDiffReport = isDiffReport;
-  }
+        this.resultType = resultType;
+    }
 
-  /**
-   * Gets the time period.
-   *
-   * @return the time period
-   */
-  public ReportTimePeriod getTimePeriod() {
-    return this.timePeriod;
-  }
+    /**
+     * Gets the query type.
+     *
+     * @return the query type
+     */
+    public ReportQueryType getQueryType() {
 
-  /**
-   * Sets the time period.
-   *
-   * @param timePeriod the new time period
-   */
-  public void setTimePeriod(final ReportTimePeriod timePeriod) {
-    this.timePeriod = timePeriod;
+        return queryType;
+    }
 
-  }
+    /**
+     * Sets the query type.
+     *
+     * @param queryType the new query type
+     */
+    public void setQueryType(final ReportQueryType queryType) {
 
-  /**
-   * Checks if is QA check.
-   *
-   * @return true, if is QA check
-   */
-  public boolean isQACheck() {
-    return isQACheck;
-  }
+        this.queryType = queryType;
+    }
 
-  /**
-   * Sets the QA check.
-   *
-   * @param isQACheck the new QA check
-   */
-  public void setQACheck(final boolean isQACheck) {
-    this.isQACheck = isQACheck;
-  }
+    /**
+     * Gets the query.
+     *
+     * @return the query
+     */
+    public String getQuery() {
 
-  /**
-   * Gets the frequency.
-   *
-   * @return the frequency
-   */
-  public ReportFrequency getFrequency() {
-    return this.frequency;
-  }
+        return query;
+    }
 
-  /**
-   * Sets the frequency.
-   *
-   * @param timePeriod the new frequency
-   */
-  public void setFrequency(final ReportFrequency timePeriod) {
-    this.frequency = timePeriod;
-  }
+    /**
+     * Sets the query.
+     *
+     * @param query the new query
+     */
+    public void setQuery(final String query) {
 
-  /**
-   * Gets the diff report definition name.
-   *
-   * @return the diff report definition name
-   */
-  public String getDiffReportDefinitionName() {
-    return diffReportDefinitionName;
-  }
+        this.query = query;
+    }
 
-  /**
-   * Sets the diff report definition name.
-   *
-   * @param diffReportDefinitionName the new diff report definition name
-   */
-  public void setDiffReportDefinitionName(final String diffReportDefinitionName) {
-    this.diffReportDefinitionName = diffReportDefinitionName;
-  }
+    /**
+     * Gets the role required.
+     *
+     * @return the role required
+     */
+    public MapUserRole getRoleRequired() {
 
-  /**
-   * To string.
-   *
-   * @return the string
-   */
-  @Override
-  public String toString() {
-    return "MapReportDefinition [id=" + super.getId() + ", name=" + name + ", description="
-        + description + ", isDiffReport=" + isDiffReport + ", isQACheck=" + isQACheck
-        + ", timePeriod=" + timePeriod + ", frequency=" + frequency + ", resultType=" + resultType
-        + ", queryType=" + queryType + ", query=" + query + ", roleRequired=" + roleRequired
-        + ", diffReportDefinitionName=" + diffReportDefinitionName + "]";
-  }
+        return roleRequired;
+    }
 
-  /**
-   * Hash code.
-   *
-   * @return the int
-   */
-  @Override
-  public int hashCode() {
-    return Objects.hash(description, diffReportDefinitionName, frequency, isDiffReport, isQACheck,
-        name, query, queryType, resultType, roleRequired, timePeriod);
-  }
+    /**
+     * Sets the role required.
+     *
+     * @param roleRequired the new role required
+     */
+    public void setRoleRequired(final MapUserRole roleRequired) {
 
-  /**
-   * Equals.
-   *
-   * @param obj the obj
-   * @return true, if successful
-   */
-  @Override
-  public boolean equals(final Object obj) {
-    if (this == obj)
-      return true;
-    if (obj == null)
-      return false;
-    if (getClass() != obj.getClass())
-      return false;
-    final MapReportDefinition other = (MapReportDefinition) obj;
-    return Objects.equals(description, other.description)
-        && Objects.equals(diffReportDefinitionName, other.diffReportDefinitionName)
-        && frequency == other.frequency && isDiffReport == other.isDiffReport
-        && isQACheck == other.isQACheck && Objects.equals(name, other.name)
-        && Objects.equals(query, other.query) && queryType == other.queryType
-        && resultType == other.resultType && roleRequired == other.roleRequired
-        && timePeriod == other.timePeriod;
-  }
+        this.roleRequired = roleRequired;
+    }
+
+    /**
+     * Checks if is diff report.
+     *
+     * @return true, if is diff report
+     */
+    public boolean isDiffReport() {
+
+        return isDiffReport;
+    }
+
+    /**
+     * Sets the diff report.
+     *
+     * @param isDiffReport the new diff report
+     */
+    public void setDiffReport(final boolean isDiffReport) {
+
+        this.isDiffReport = isDiffReport;
+    }
+
+    /**
+     * Gets the time period.
+     *
+     * @return the time period
+     */
+    public ReportTimePeriod getTimePeriod() {
+
+        return this.timePeriod;
+    }
+
+    /**
+     * Sets the time period.
+     *
+     * @param timePeriod the new time period
+     */
+    public void setTimePeriod(final ReportTimePeriod timePeriod) {
+
+        this.timePeriod = timePeriod;
+
+    }
+
+    /**
+     * Checks if is QA check.
+     *
+     * @return true, if is QA check
+     */
+    public boolean isQACheck() {
+
+        return isQACheck;
+    }
+
+    /**
+     * Sets the QA check.
+     *
+     * @param isQACheck the new QA check
+     */
+    public void setQACheck(final boolean isQACheck) {
+
+        this.isQACheck = isQACheck;
+    }
+
+    /**
+     * Gets the frequency.
+     *
+     * @return the frequency
+     */
+    public ReportFrequency getFrequency() {
+
+        return this.frequency;
+    }
+
+    /**
+     * Sets the frequency.
+     *
+     * @param timePeriod the new frequency
+     */
+    public void setFrequency(final ReportFrequency timePeriod) {
+
+        this.frequency = timePeriod;
+    }
+
+    /**
+     * Gets the diff report definition name.
+     *
+     * @return the diff report definition name
+     */
+    public String getDiffReportDefinitionName() {
+
+        return diffReportDefinitionName;
+    }
+
+    /**
+     * Sets the diff report definition name.
+     *
+     * @param diffReportDefinitionName the new diff report definition name
+     */
+    public void setDiffReportDefinitionName(final String diffReportDefinitionName) {
+
+        this.diffReportDefinitionName = diffReportDefinitionName;
+    }
+
+    /**
+     * To string.
+     *
+     * @return the string
+     */
+    @Override
+    public String toString() {
+
+        try {
+            return ModelUtility.toJson(this);
+        } catch (final Exception e) {
+            return e.getMessage();
+        }
+    }
+
+    /**
+     * Hash code.
+     *
+     * @return the int
+     */
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(description, diffReportDefinitionName, frequency, isDiffReport, isQACheck, name, query, queryType, resultType, roleRequired,
+            timePeriod);
+    }
+
+    /**
+     * Equals.
+     *
+     * @param obj the obj
+     * @return true, if successful
+     */
+    @Override
+    public boolean equals(final Object obj) {
+
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        final MapReportDefinition other = (MapReportDefinition) obj;
+        return Objects.equals(description, other.description) && Objects.equals(diffReportDefinitionName, other.diffReportDefinitionName)
+            && frequency == other.frequency && isDiffReport == other.isDiffReport && isQACheck == other.isQACheck && Objects.equals(name, other.name)
+            && Objects.equals(query, other.query) && queryType == other.queryType && resultType == other.resultType && roleRequired == other.roleRequired
+            && timePeriod == other.timePeriod;
+    }
 
 }

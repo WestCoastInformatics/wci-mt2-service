@@ -17,6 +17,7 @@ import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.ihtsdo.refsetservice.util.ModelUtility;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -35,259 +36,280 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Indexed
 public class MapAgeRange extends AbstractHasId {
-  /** The age range preset name. */
-  @Column(nullable = false)
-  private String name;
 
-  /** The lower bound parameters. */
-  @Column(nullable = false)
-  private Integer lowerValue;
+    /** The age range preset name. */
+    @Column(nullable = false)
+    private String name;
 
-  /** The lower units. */
-  @Column(nullable = false)
-  private String lowerUnits;
+    /** The lower bound parameters. */
+    @Column(nullable = false)
+    private Integer lowerValue;
 
-  /** The lower inclusive. */
-  @Column(nullable = false)
-  private boolean lowerInclusive;
+    /** The lower units. */
+    @Column(nullable = false)
+    private String lowerUnits;
 
-  /** The upper bound parameters. */
-  @Column(nullable = false)
-  private Integer upperValue;
+    /** The lower inclusive. */
+    @Column(nullable = false)
+    private boolean lowerInclusive;
 
-  /** The upper units. */
-  @Column(nullable = false)
-  private String upperUnits;
+    /** The upper bound parameters. */
+    @Column(nullable = false)
+    private Integer upperValue;
 
-  /** The upper inclusive. */
-  @Column(nullable = false)
-  private boolean upperInclusive;
+    /** The upper units. */
+    @Column(nullable = false)
+    private String upperUnits;
 
-  /**
-   * Instantiates a new map age range jpa.
-   */
-  public MapAgeRange() {
-    // do nothing
-  }
+    /** The upper inclusive. */
+    @Column(nullable = false)
+    private boolean upperInclusive;
 
-  /**
-   * Instantiates a new map age range jpa.
-   *
-   * @param id the id
-   * @param name the name
-   * @param lowerValue the lower value
-   * @param lowerUnits the lower units
-   * @param lowerInclusive the lower inclusive
-   * @param upperValue the upper value
-   * @param upperUnits the upper units
-   * @param upperInclusive the upper inclusive
-   */
-  public MapAgeRange(final String id, final String name, final Integer lowerValue,
-      final String lowerUnits, final boolean lowerInclusive, final Integer upperValue,
-      final String upperUnits, final boolean upperInclusive) {
-    super();
-    super.setId(id);
-    this.name = name;
-    this.lowerValue = lowerValue;
-    this.lowerUnits = lowerUnits;
-    this.lowerInclusive = lowerInclusive;
-    this.upperValue = upperValue;
-    this.upperUnits = upperUnits;
-    this.upperInclusive = upperInclusive;
-  }
+    /**
+     * Instantiates a new map age range jpa.
+     */
+    public MapAgeRange() {
 
-  /**
-   * Gets the name.
-   *
-   * @return the name
-   */
-  public String getName() {
-    return this.name;
-  }
+        // do nothing
+    }
 
-  /**
-   * Sets the name.
-   *
-   * @param name the new name
-   */
-  public void setName(final String name) {
-    this.name = name;
-  }
+    /**
+     * Instantiates a new map age range jpa.
+     *
+     * @param id the id
+     * @param name the name
+     * @param lowerValue the lower value
+     * @param lowerUnits the lower units
+     * @param lowerInclusive the lower inclusive
+     * @param upperValue the upper value
+     * @param upperUnits the upper units
+     * @param upperInclusive the upper inclusive
+     */
+    public MapAgeRange(final String id, final String name, final Integer lowerValue, final String lowerUnits, final boolean lowerInclusive,
+        final Integer upperValue, final String upperUnits, final boolean upperInclusive) {
 
-  /**
-   * Gets the lower value.
-   *
-   * @return the lower value
-   */
-  public Integer getLowerValue() {
-    return this.lowerValue;
-  }
+        super();
+        super.setId(id);
+        this.name = name;
+        this.lowerValue = lowerValue;
+        this.lowerUnits = lowerUnits;
+        this.lowerInclusive = lowerInclusive;
+        this.upperValue = upperValue;
+        this.upperUnits = upperUnits;
+        this.upperInclusive = upperInclusive;
+    }
 
-  /**
-   * Sets the lower value.
-   *
-   * @param value the new lower value
-   */
-  public void setLowerValue(final Integer value) {
-    this.lowerValue = value;
-  }
+    /**
+     * Gets the name.
+     *
+     * @return the name
+     */
+    public String getName() {
 
-  /**
-   * Gets the lower units.
-   *
-   * @return the lower units
-   */
-  public String getLowerUnits() {
-    return this.lowerUnits;
-  }
+        return this.name;
+    }
 
-  /**
-   * Sets the lower units.
-   *
-   * @param units the new lower units
-   */
-  public void setLowerUnits(final String units) {
-    this.lowerUnits = units;
-  }
+    /**
+     * Sets the name.
+     *
+     * @param name the new name
+     */
+    public void setName(final String name) {
 
-  /**
-   * Gets the lower inclusive.
-   *
-   * @return the lower inclusive
-   */
-  public boolean getLowerInclusive() {
-    return this.lowerInclusive;
-  }
+        this.name = name;
+    }
 
-  /**
-   * Sets the lower inclusive.
-   *
-   * @param inclusive the new lower inclusive
-   */
-  public void setLowerInclusive(final boolean inclusive) {
-    this.lowerInclusive = inclusive;
+    /**
+     * Gets the lower value.
+     *
+     * @return the lower value
+     */
+    public Integer getLowerValue() {
 
-  }
+        return this.lowerValue;
+    }
 
-  /**
-   * Gets the upper value.
-   *
-   * @return the upper value
-   */
-  public Integer getUpperValue() {
-    return this.upperValue;
-  }
+    /**
+     * Sets the lower value.
+     *
+     * @param value the new lower value
+     */
+    public void setLowerValue(final Integer value) {
 
-  /**
-   * Sets the upper value.
-   *
-   * @param value the new upper value
-   */
-  public void setUpperValue(final Integer value) {
-    this.upperValue = value;
-  }
+        this.lowerValue = value;
+    }
 
-  /**
-   * Gets the upper units.
-   *
-   * @return the upper units
-   */
-  public String getUpperUnits() {
-    return this.upperUnits;
-  }
+    /**
+     * Gets the lower units.
+     *
+     * @return the lower units
+     */
+    public String getLowerUnits() {
 
-  /**
-   * Sets the upper units.
-   *
-   * @param units the new upper units
-   */
-  public void setUpperUnits(final String units) {
-    this.upperUnits = units;
-  }
+        return this.lowerUnits;
+    }
 
-  /**
-   * Gets the upper inclusive.
-   *
-   * @return the upper inclusive
-   */
-  public boolean getUpperInclusive() {
-    return this.upperInclusive;
-  }
+    /**
+     * Sets the lower units.
+     *
+     * @param units the new lower units
+     */
+    public void setLowerUnits(final String units) {
 
-  /**
-   * Sets the upper inclusive.
-   *
-   * @param inclusive the new upper inclusive
-   */
-  public void setUpperInclusive(final boolean inclusive) {
-    this.upperInclusive = inclusive;
-  }
+        this.lowerUnits = units;
+    }
 
-  /**
-   * Returns <code>true</code> if lowerValue is -1.
-   *
-   * @return true, if successful
-   */
+    /**
+     * Gets the lower inclusive.
+     *
+     * @return the lower inclusive
+     */
+    public boolean getLowerInclusive() {
 
-  public boolean hasLowerBound() {
-    return this.lowerValue == -1 ? false : true;
-  }
+        return this.lowerInclusive;
+    }
 
-  /**
-   * Returns <code>true</code> if upperValue is -1.
-   *
-   * @return true, if successful
-   */
+    /**
+     * Sets the lower inclusive.
+     *
+     * @param inclusive the new lower inclusive
+     */
+    public void setLowerInclusive(final boolean inclusive) {
 
-  public boolean hasUpperBound() {
-    return this.upperValue == -1 ? false : true;
-  }
+        this.lowerInclusive = inclusive;
 
-  /**
-   * Hash code.
-   *
-   * @return the int
-   */
-  @Override
-  public int hashCode() {
-    final int prime = 31;
-    int result = super.hashCode();
-    result = prime * result + Objects.hash(lowerInclusive, lowerUnits, lowerValue, name,
-        upperInclusive, upperUnits, upperValue);
-    return result;
-  }
+    }
 
-  /**
-   * Equals.
-   *
-   * @param obj the obj
-   * @return true, if successful
-   */
-  @Override
-  public boolean equals(final Object obj) {
-    if (this == obj)
-      return true;
-    if (!super.equals(obj))
-      return false;
-    if (getClass() != obj.getClass())
-      return false;
-    final MapAgeRange other = (MapAgeRange) obj;
-    return lowerInclusive == other.lowerInclusive && Objects.equals(lowerUnits, other.lowerUnits)
-        && Objects.equals(lowerValue, other.lowerValue) && Objects.equals(name, other.name)
-        && upperInclusive == other.upperInclusive && Objects.equals(upperUnits, other.upperUnits)
-        && Objects.equals(upperValue, other.upperValue);
-  }
+    /**
+     * Gets the upper value.
+     *
+     * @return the upper value
+     */
+    public Integer getUpperValue() {
 
-  /**
-   * To string.
-   *
-   * @return the string
-   */
-  @Override
-  public String toString() {
-    return "MapAgeRange [id=" + super.getId() + ", name=" + name + ", lowerValue=" + lowerValue
-        + ", lowerUnits=" + lowerUnits + ", lowerInclusive=" + lowerInclusive + ", upperValue="
-        + upperValue + ", upperUnits=" + upperUnits + ", upperInclusive=" + upperInclusive + "]";
-  }
+        return this.upperValue;
+    }
+
+    /**
+     * Sets the upper value.
+     *
+     * @param value the new upper value
+     */
+    public void setUpperValue(final Integer value) {
+
+        this.upperValue = value;
+    }
+
+    /**
+     * Gets the upper units.
+     *
+     * @return the upper units
+     */
+    public String getUpperUnits() {
+
+        return this.upperUnits;
+    }
+
+    /**
+     * Sets the upper units.
+     *
+     * @param units the new upper units
+     */
+    public void setUpperUnits(final String units) {
+
+        this.upperUnits = units;
+    }
+
+    /**
+     * Gets the upper inclusive.
+     *
+     * @return the upper inclusive
+     */
+    public boolean getUpperInclusive() {
+
+        return this.upperInclusive;
+    }
+
+    /**
+     * Sets the upper inclusive.
+     *
+     * @param inclusive the new upper inclusive
+     */
+    public void setUpperInclusive(final boolean inclusive) {
+
+        this.upperInclusive = inclusive;
+    }
+
+    /**
+     * Returns <code>true</code> if lowerValue is -1.
+     *
+     * @return true, if successful
+     */
+
+    public boolean hasLowerBound() {
+
+        return this.lowerValue == -1 ? false : true;
+    }
+
+    /**
+     * Returns <code>true</code> if upperValue is -1.
+     *
+     * @return true, if successful
+     */
+
+    public boolean hasUpperBound() {
+
+        return this.upperValue == -1 ? false : true;
+    }
+
+    /**
+     * Hash code.
+     *
+     * @return the int
+     */
+    @Override
+    public int hashCode() {
+
+        final int prime = 31;
+        int result = super.hashCode();
+        result = prime * result + Objects.hash(lowerInclusive, lowerUnits, lowerValue, name, upperInclusive, upperUnits, upperValue);
+        return result;
+    }
+
+    /**
+     * Equals.
+     *
+     * @param obj the obj
+     * @return true, if successful
+     */
+    @Override
+    public boolean equals(final Object obj) {
+
+        if (this == obj)
+            return true;
+        if (!super.equals(obj))
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        final MapAgeRange other = (MapAgeRange) obj;
+        return lowerInclusive == other.lowerInclusive && Objects.equals(lowerUnits, other.lowerUnits) && Objects.equals(lowerValue, other.lowerValue)
+            && Objects.equals(name, other.name) && upperInclusive == other.upperInclusive && Objects.equals(upperUnits, other.upperUnits)
+            && Objects.equals(upperValue, other.upperValue);
+    }
+
+    /**
+     * To string.
+     *
+     * @return the string
+     */
+    @Override
+    public String toString() {
+
+        try {
+            return ModelUtility.toJson(this);
+        } catch (final Exception e) {
+            return e.getMessage();
+        }
+    }
 
 }

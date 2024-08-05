@@ -50,7 +50,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 
 @AutoConfigureMockMvc
-public class RefsetControllerTests extends AbstractRefsetTests {
+public class RefsetControllerIntegrationTests extends AbstractRefsetTests {
 
     /**
      * The Enum RefsetConceptStatus.
@@ -65,7 +65,7 @@ public class RefsetControllerTests extends AbstractRefsetTests {
     }
 
     /** The Constant LOG. */
-    private static final Logger LOG = LoggerFactory.getLogger(RefsetControllerTests.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RefsetControllerIntegrationTests.class);
 
     /** The Constant MAIN_TESTING_REFSET_ID. */
     // Belgian simple reference set for translated animal materials w/101
