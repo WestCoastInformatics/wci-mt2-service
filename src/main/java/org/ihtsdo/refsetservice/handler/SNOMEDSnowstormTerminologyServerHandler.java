@@ -27,7 +27,6 @@ import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.Mapping;
-import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
 import org.ihtsdo.refsetservice.model.User;
@@ -140,9 +139,9 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     /* see superclass */
     @Override
-    public Map<String, String> getModuleNames(final Project project) throws Exception {
+    public Map<String, String> getModuleNames(final Edition edition) throws Exception {
 
-        return SnowstormConcept.getModuleNames(project);
+        return SnowstormConcept.getModuleNames(edition);
 
     }
 

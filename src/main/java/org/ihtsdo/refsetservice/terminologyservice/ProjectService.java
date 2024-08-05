@@ -20,6 +20,7 @@ import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotFoundException;
 
 import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
+import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.MapAdvice;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapRelation;
@@ -46,146 +47,147 @@ import org.slf4j.LoggerFactory;
  */
 public class ProjectService extends BaseService {
 
-	/** The Constant LOG. */
-	private static final Logger LOG = LoggerFactory.getLogger(ProjectService.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(ProjectService.class);
 
-	/** The terminology handler. */
-	private static TerminologyServerHandler terminologyHandler;
+    /** The terminology handler. */
+    private static TerminologyServerHandler terminologyHandler;
 
-	/** The crowd unit test skip. */
-	private static String crowdUnitTestSkip;
+    /** The crowd unit test skip. */
+    private static String crowdUnitTestSkip;
 
-	static {
-		crowdUnitTestSkip = PropertyUtility.getProperty("crowd.unit.test.skip");
+    static {
+        crowdUnitTestSkip = PropertyUtility.getProperty("crowd.unit.test.skip");
 
-		// Instantiate terminology handler
-		try {
-			String key = "terminology.handler";
-			String handlerName = PropertyUtility.getProperty(key);
-			if (handlerName.isEmpty()) {
-				throw new Exception("terminology.handler expected and does not exist.");
-			}
+        // Instantiate terminology handler
+        try {
+            String key = "terminology.handler";
+            String handlerName = PropertyUtility.getProperty(key);
+            if (handlerName.isEmpty()) {
+                throw new Exception("terminology.handler expected and does not exist.");
+            }
 
-			terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName,
-					TerminologyServerHandler.class);
+            terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName, TerminologyServerHandler.class);
 
-		} catch (Exception e) {
-			LOG.error("Failed to initialize terminology.handler - serious error", e);
-			terminologyHandler = null;
-		}
-	}
+        } catch (Exception e) {
+            LOG.error("Failed to initialize terminology.handler - serious error", e);
+            terminologyHandler = null;
+        }
+    }
 
-	/**
-	 * Adds the project.
-	 *
-	 * @param user    the user
-	 * @param project the project
-	 * @return the project
-	 * @throws Exception the exception
-	 */
-	public static Project addProject(final User user, final Project project) throws Exception {
-		// When a project is created, it does not have teams, those are added through
-		// update
+    /**
+     * Adds the project.
+     *
+     * @param user the user
+     * @param project the project
+     * @return the project
+     * @throws Exception the exception
+     */
+    public static Project addProject(final User user, final Project project) throws Exception {
+        // When a project is created, it does not have teams, those are added through
+        // update
 
-		try (final TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
-			RefsetService.setProjectPermissions(user, project);
-			checkPermissions(user, project);
+            RefsetService.setProjectPermissions(user, project);
+            checkPermissions(user, project);
 
-			// Allow for defining the
-			if (project.getCrowdProjectId() == null || project.getCrowdProjectId().isEmpty()) {
-				project.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(project.getName()));
-			}
+            // Allow for defining the
+            if (project.getCrowdProjectId() == null || project.getCrowdProjectId().isEmpty()) {
+                project.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(project.getName()));
+            }
 
-			service.setModifiedBy(user.getUserName());
-			service.setTransactionPerOperation(false);
-			service.beginTransaction();
+            service.setModifiedBy(user.getUserName());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
 
-			service.add(project);
-			service.add(AuditEntryHelper.addProjectEntry(project));
-			service.commit();
+            service.add(project);
+            service.add(AuditEntryHelper.addProjectEntry(project));
+            service.commit();
 
-			// Return the response
-			return project;
-		}
+            // Return the response
+            return project;
+        }
 
-	}
+    }
 
-	/**
-	 * Returns the project if active.
-	 *
-	 * @param projectId      the project id
-	 * @param includeMembers the include members
-	 * @return the project
-	 * @throws Exception the exception
-	 */
-	public static Project getProject(final String projectId, final boolean includeMembers) throws Exception {
+    /**
+     * Returns the project if active.
+     *
+     * @param projectId the project id
+     * @param includeMembers the include members
+     * @return the project
+     * @throws Exception the exception
+     */
+    public static Project getProject(final String projectId, final boolean includeMembers) throws Exception {
 
-		try (final TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
-			final Project project = service.findSingle("id: " + projectId + " AND active:true", Project.class, null);
+            final Project project = service.findSingle("id: " + projectId + " AND active:true", Project.class, null);
 
-			if (project == null) {
+            if (project == null) {
 
-				final String errorMessage = "Unable to find project for id " + projectId + ".";
-				LOG.info(errorMessage);
-				throw new NotFoundException(errorMessage);
-			}
+                final String errorMessage = "Unable to find project for id " + projectId + ".";
+                LOG.info(errorMessage);
+                throw new NotFoundException(errorMessage);
+            }
 
-			if (includeMembers) {
+            if (includeMembers) {
 
-				final Set<User> members = new HashSet<>();
+                final Set<User> members = new HashSet<>();
 
-				for (final String teamId : project.getTeams()) {
+                for (final String teamId : project.getTeams()) {
 
-					final Team team = service.get(teamId, Team.class);
+                    final Team team = service.get(teamId, Team.class);
 
-					if (team != null && team.getMembers() != null) {
+                    if (team != null && team.getMembers() != null) {
 
-						for (final String userId : team.getMembers()) {
+                        for (final String userId : team.getMembers()) {
 
-							final User member = service.get(userId, User.class);
-							members.add(member);
-						}
+                            final User member = service.get(userId, User.class);
+                            members.add(member);
+                        }
 
-					}
+                    }
 
-				}
+                }
 
-				project.getMemberList().addAll(members);
-			}
+                project.getMemberList().addAll(members);
+            }
 
-			return project;
-		}
+            return project;
+        }
 
-	}
+    }
 
     /**
      * Returns the map project if active.
      *
-     * @param projectId      the map project id
+     * @param projectId the map project id
      * @param includeMembers the include members
      * @return the project
      * @throws Exception the exception
      */
     public static MapProject getMapProject(final String projectId, final boolean includeMembers) throws Exception {
 
-        //WMT-192 - create a dummy lookup for now, and update once MapProjects are stored in the database
-    
+        // WMT-192 - create a dummy lookup for now, and update once MapProjects are stored in the database
+
         MapProject mapProject = new MapProject();
-        
+
         mapProject.setRefSetId("447562003");
-        mapProject.setRefSetName("SNOMED CT to International Classification of Diseases tenth revision extended map reference set (foundation metadata concept)");
+        mapProject
+            .setRefSetName("SNOMED CT to International Classification of Diseases tenth revision extended map reference set (foundation metadata concept)");
         mapProject.setActive(true);
         mapProject.setSourceTerminology("SNOMEDCT_NO");
         mapProject.setSourceTerminologyVersion("2024-04-15");
         mapProject.setDestinationTerminology("ICD-10-NO");
         mapProject.setDestinationTerminologyVersion("2024-07-24");
-        
-        Set<MapAdvice> mapAdvices = new HashSet<>();
-        List<String> adviceNames = new ArrayList<>(Arrays.asList("MAPPED FOLLOWING WHO GUIDANCE","POSSIBLE REQUIREMENT FOR PLACE OF OCCURRENCE","POSSIBLE REQUIREMENT FOR CAUSATIVE AGENT CODE","POSSIBLE REQUIREMENT FOR MORPHOLOGY CODE","POSSIBLE REQUIREMENT FOR AN EXTERNAL CAUSE CODE"));
 
-        for(String adviceName : adviceNames) {
+        Set<MapAdvice> mapAdvices = new HashSet<>();
+        List<String> adviceNames = new ArrayList<>(Arrays.asList("MAPPED FOLLOWING WHO GUIDANCE", "POSSIBLE REQUIREMENT FOR PLACE OF OCCURRENCE",
+            "POSSIBLE REQUIREMENT FOR CAUSATIVE AGENT CODE", "POSSIBLE REQUIREMENT FOR MORPHOLOGY CODE", "POSSIBLE REQUIREMENT FOR AN EXTERNAL CAUSE CODE"));
+
+        for (String adviceName : adviceNames) {
             MapAdvice mapAdvice = new MapAdvice();
             mapAdvice.setName(adviceName);
             mapAdvice.setDetail(adviceName);
@@ -195,7 +197,7 @@ public class ProjectService extends BaseService {
         }
 
         mapProject.setMapAdvices(mapAdvices);
-        
+
         Set<MapRelation> mapRelations = new HashSet<>();
         MapRelation mapRelation = new MapRelation();
         mapRelation.setTerminologyId("447638001");
@@ -203,411 +205,396 @@ public class ProjectService extends BaseService {
         mapRelation.setAllowableForNullTarget(true);
         mapRelation.setComputed(false);
         mapRelations.add(mapRelation);
-        
+
         mapRelation = new MapRelation();
         mapRelation.setTerminologyId("447637006");
         mapRelation.setName("MAP SOURCE CONCEPT IS PROPERLY CLASSIFIED");
         mapRelation.setAllowableForNullTarget(false);
         mapRelation.setComputed(true);
         mapRelations.add(mapRelation);
-        
+
         mapProject.setMapRelations(mapRelations);
-        
-        mapProject.setRuleBased(false);        
-        
+
+        mapProject.setRuleBased(false);
+
         return mapProject;
-//        
-//        try (final TerminologyService service = new TerminologyService()) {
-//
-//            final Project project = service.findSingle("id: " + projectId + " AND active:true", Project.class, null);
-//
-//            if (project == null) {
-//
-//                final String errorMessage = "Unable to find project for id " + projectId + ".";
-//                LOG.info(errorMessage);
-//                throw new NotFoundException(errorMessage);
-//            }
-//
-//            if (includeMembers) {
-//
-//                final Set<User> members = new HashSet<>();
-//
-//                for (final String teamId : project.getTeams()) {
-//
-//                    final Team team = service.get(teamId, Team.class);
-//
-//                    if (team != null && team.getMembers() != null) {
-//
-//                        for (final String userId : team.getMembers()) {
-//
-//                            final User member = service.get(userId, User.class);
-//                            members.add(member);
-//                        }
-//
-//                    }
-//
-//                }
-//
-//                project.getMemberList().addAll(members);
-//            }
-//
-//            return project;
-//        }
+        //
+        // try (final TerminologyService service = new TerminologyService()) {
+        //
+        // final Project project = service.findSingle("id: " + projectId + " AND active:true", Project.class, null);
+        //
+        // if (project == null) {
+        //
+        // final String errorMessage = "Unable to find project for id " + projectId + ".";
+        // LOG.info(errorMessage);
+        // throw new NotFoundException(errorMessage);
+        // }
+        //
+        // if (includeMembers) {
+        //
+        // final Set<User> members = new HashSet<>();
+        //
+        // for (final String teamId : project.getTeams()) {
+        //
+        // final Team team = service.get(teamId, Team.class);
+        //
+        // if (team != null && team.getMembers() != null) {
+        //
+        // for (final String userId : team.getMembers()) {
+        //
+        // final User member = service.get(userId, User.class);
+        // members.add(member);
+        // }
+        //
+        // }
+        //
+        // }
+        //
+        // project.getMemberList().addAll(members);
+        // }
+        //
+        // return project;
+        // }
 
     }
-	
-	
-	/**
-	 * Returns the project names for edition.
-	 *
-	 * @param editionId the edition id
-	 * @return the project names for edition
-	 * @throws Exception the exception
-	 */
-	public static Set<String> getProjectNamesForEdition(final String editionId) throws Exception {
 
-		final Set<String> projectNames = new HashSet<>();
+    /**
+     * Returns the project names for edition.
+     *
+     * @param editionId the edition id
+     * @return the project names for edition
+     * @throws Exception the exception
+     */
+    public static Set<String> getProjectNamesForEdition(final String editionId) throws Exception {
 
-		final List<Project> projects = getProjectsForEdition(editionId);
+        final Set<String> projectNames = new HashSet<>();
 
-		if (projects != null) {
+        final List<Project> projects = getProjectsForEdition(editionId);
 
-			projects.stream().forEach(project -> projectNames.add(project.getName()));
-		}
+        if (projects != null) {
 
-		return projectNames;
+            projects.stream().forEach(project -> projectNames.add(project.getName()));
+        }
 
-	}
+        return projectNames;
 
-	/**
-	 * Returns the projects for edition.
-	 *
-	 * @param editionId the edition id
-	 * @return the projects for edition
-	 * @throws Exception the exception
-	 */
-	public static List<Project> getProjectsForEdition(final String editionId) throws Exception {
+    }
 
-		try (final TerminologyService service = new TerminologyService()) {
+    /**
+     * Returns the projects for edition.
+     *
+     * @param editionId the edition id
+     * @return the projects for edition
+     * @throws Exception the exception
+     */
+    public static List<Project> getProjectsForEdition(final String editionId) throws Exception {
 
-			final ResultList<Project> projects = service.find("edition.id: " + editionId + " AND active:true", null,
-					Project.class, null);
+        try (final TerminologyService service = new TerminologyService()) {
 
-			if (projects != null) {
-				return projects.getItems();
-			}
+            final ResultList<Project> projects = service.find("edition.id: " + editionId + " AND active:true", null, Project.class, null);
 
-			return new ArrayList<Project>();
-		}
-	}
+            if (projects != null) {
+                return projects.getItems();
+            }
 
-	/**
-	 * Returns the team assigned to this project.
-	 *
-	 * @param projectId the project ID
-	 * @return the project teams
-	 * @throws Exception the exception
-	 */
-	public static ResultList<Team> getProjectTeams(final String projectId) throws Exception {
+            return new ArrayList<Project>();
+        }
+    }
 
-		final Project project = getProject(projectId, false);
-		final ResultList<Team> teams = new ResultList<>();
+    /**
+     * Returns the team assigned to this project.
+     *
+     * @param projectId the project ID
+     * @return the project teams
+     * @throws Exception the exception
+     */
+    public static ResultList<Team> getProjectTeams(final String projectId) throws Exception {
 
-		for (final String teamId : project.getTeams()) {
+        final Project project = getProject(projectId, false);
+        final ResultList<Team> teams = new ResultList<>();
 
-			final Team team = TeamService.getTeam(teamId, true);
-			teams.getItems().add(team);
-		}
-		teams.setTotal(teams.getItems().size());
-		teams.setTotalKnown(true);
+        for (final String teamId : project.getTeams()) {
 
-		return teams;
-	}
+            final Team team = TeamService.getTeam(teamId, true);
+            teams.getItems().add(team);
+        }
+        teams.setTotal(teams.getItems().size());
+        teams.setTotalKnown(true);
 
-	/**
-	 * Search Projects.
-	 *
-	 * @param user             the user
-	 * @param searchParameters the search parameters
-	 * @return the list of projects
-	 * @throws Exception the exception
-	 */
-	public static ResultList<Project> searchProjects(final User user, final SearchParameters searchParameters)
-			throws Exception {
+        return teams;
+    }
 
-		try (final TerminologyService service = new TerminologyService()) {
+    /**
+     * Search Projects.
+     *
+     * @param user the user
+     * @param searchParameters the search parameters
+     * @return the list of projects
+     * @throws Exception the exception
+     */
+    public static ResultList<Project> searchProjects(final User user, final SearchParameters searchParameters) throws Exception {
 
-			final long start = System.currentTimeMillis();
-			String query = getQueryForActiveOnly(searchParameters);
-			final PfsParameter pfs = new PfsParameter();
+        try (final TerminologyService service = new TerminologyService()) {
 
-			if (searchParameters.getOffset() != null) {
+            final long start = System.currentTimeMillis();
+            String query = getQueryForActiveOnly(searchParameters);
+            final PfsParameter pfs = new PfsParameter();
 
-				pfs.setOffset(searchParameters.getOffset());
-			}
+            if (searchParameters.getOffset() != null) {
 
-			if (searchParameters.getLimit() != null) {
+                pfs.setOffset(searchParameters.getOffset());
+            }
 
-				pfs.setLimit(searchParameters.getLimit());
-			}
+            if (searchParameters.getLimit() != null) {
 
-			if (searchParameters.getSortAscending() != null) {
+                pfs.setLimit(searchParameters.getLimit());
+            }
 
-				pfs.setAscending(searchParameters.getSortAscending());
-			}
+            if (searchParameters.getSortAscending() != null) {
 
-			if (searchParameters.getSort() != null) {
+                pfs.setAscending(searchParameters.getSortAscending());
+            }
 
-				pfs.setSort(searchParameters.getSort());
-			} else {
+            if (searchParameters.getSort() != null) {
 
-				pfs.setSort("name");
-			}
+                pfs.setSort(searchParameters.getSort());
+            } else {
 
-			if (query != null && !query.equals("")) {
+                pfs.setSort("name");
+            }
 
-				query = IndexUtility.addWildcardsToQuery(query, Refset.class);
-			}
+            if (query != null && !query.equals("")) {
 
-			final ResultList<Project> results = service.find(query, pfs, Project.class, null);
-			results.setTimeTaken(System.currentTimeMillis() - start);
-			results.setTotalKnown(true);
+                query = IndexUtility.addWildcardsToQuery(query, Refset.class);
+            }
 
-			final List<Project> projectList = new ArrayList<>(results.getItems());
+            final ResultList<Project> results = service.find(query, pfs, Project.class, null);
+            results.setTimeTaken(System.currentTimeMillis() - start);
+            results.setTotalKnown(true);
 
-			for (Project project : projectList) {
+            final List<Project> projectList = new ArrayList<>(results.getItems());
 
-				final Organization organization = OrganizationService.getOrganization(service, user,
-						project.getOrganizationId(), true);
-				if (organization.isAffiliate()
-						&& !organization.getMembers().stream().anyMatch(m -> m.getId().equals(user.getId()))) {
-					results.getItems().remove(project);
-					continue;
-				}
+            for (Project project : projectList) {
 
-				project = RefsetService.setProjectPermissions(user, project);
+                final Organization organization = OrganizationService.getOrganization(service, user, project.getOrganizationId(), true);
+                if (organization.isAffiliate() && !organization.getMembers().stream().anyMatch(m -> m.getId().equals(user.getId()))) {
+                    results.getItems().remove(project);
+                    continue;
+                }
 
-				if (!project.getRoles().contains(User.ROLE_VIEWER)) {
+                project = RefsetService.setProjectPermissions(user, project);
 
-					results.getItems().remove(project);
-				}
+                if (!project.getRoles().contains(User.ROLE_VIEWER)) {
 
-			}
+                    results.getItems().remove(project);
+                }
 
-			return results;
-		}
+            }
 
-	}
+            return results;
+        }
 
-	/**
-	 * Search Projects.
-	 *
-	 * @param project the project
-	 * @return the list of module IDs and names
-	 * @throws Exception the exception
-	 */
-	public static Map<String, String> getModuleNames(final Project project) throws Exception {
+    }
 
-		return terminologyHandler.getModuleNames(project);
+    /**
+     * Search Projects.
+     *
+     * @param project the project
+     * @return the list of module IDs and names
+     * @throws Exception the exception
+     */
+    public static Map<String, String> getModuleNames(final Edition edition) throws Exception {
 
-	}
+        return terminologyHandler.getModuleNames(edition);
 
-	/**
-	 * Update projects.
-	 *
-	 * @param user      the user
-	 * @param projectId the project id
-	 * @param project   the project
-	 * @return the project
-	 * @throws Exception the exception
-	 */
-	public static Project updateProjects(final User user, final String projectId, final Project project)
-			throws Exception {
+    }
 
-		try (final TerminologyService service = new TerminologyService()) {
+    /**
+     * Update projects.
+     *
+     * @param user the user
+     * @param projectId the project id
+     * @param project the project
+     * @return the project
+     * @throws Exception the exception
+     */
+    public static Project updateProjects(final User user, final String projectId, final Project project) throws Exception {
 
-			// Find the project
-			final Project existingProject = getProject(projectId, true);
+        try (final TerminologyService service = new TerminologyService()) {
 
-			RefsetService.setProjectPermissions(user, existingProject);
-			checkPermissions(user, existingProject);
+            // Find the project
+            final Project existingProject = getProject(projectId, true);
 
-			service.setModifiedBy(user.getUserName());
-			service.setTransactionPerOperation(false);
-			service.beginTransaction();
+            RefsetService.setProjectPermissions(user, existingProject);
+            checkPermissions(user, existingProject);
 
-			updateMemberships(existingProject, existingProject.getTeams(), project.getTeams());
+            service.setModifiedBy(user.getUserName());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
 
-			// Apply changes
-			existingProject.patchFrom(project);
+            updateMemberships(existingProject, existingProject.getTeams(), project.getTeams());
 
-			// Update
-			service.update(existingProject);
-			service.add(AuditEntryHelper.updateProjectEntry(existingProject));
-			service.commit();
+            // Apply changes
+            existingProject.patchFrom(project);
 
-			return existingProject;
-		}
+            // Update
+            service.update(existingProject);
+            service.add(AuditEntryHelper.updateProjectEntry(existingProject));
+            service.commit();
 
-	}
+            return existingProject;
+        }
 
-	/**
-	 * Inactivate project. Also inactivates teams and refsets associated with the
-	 * project.
-	 *
-	 * @param user      the user
-	 * @param projectId the project id
-	 * @return the project
-	 * @throws Exception the exception
-	 */
-	public static Project inactivateProject(final User user, final String projectId) throws Exception {
+    }
 
-		try (final TerminologyService service = new TerminologyService()) {
+    /**
+     * Inactivate project. Also inactivates teams and refsets associated with the project.
+     *
+     * @param user the user
+     * @param projectId the project id
+     * @return the project
+     * @throws Exception the exception
+     */
+    public static Project inactivateProject(final User user, final String projectId) throws Exception {
 
-			// Find the object
-			final Project project = getProject(projectId, true);
+        try (final TerminologyService service = new TerminologyService()) {
 
-			RefsetService.setProjectPermissions(user, project);
-			checkPermissions(user, project);
+            // Find the object
+            final Project project = getProject(projectId, true);
 
-			final Set<String> copyOfProjectTeams = (project.getTeams() != null)
-					? new HashSet<String>(project.getTeams())
-					: new HashSet<String>();
+            RefsetService.setProjectPermissions(user, project);
+            checkPermissions(user, project);
 
-			service.setModifiedBy(user.getUserName());
-			service.setTransactionPerOperation(false);
-			service.beginTransaction();
+            final Set<String> copyOfProjectTeams = (project.getTeams() != null) ? new HashSet<String>(project.getTeams()) : new HashSet<String>();
 
-			// inactivate projects, clear teams, and inactivate refsets
-			project.setActive(false);
+            service.setModifiedBy(user.getUserName());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
 
-			updateMemberships(project, copyOfProjectTeams, null);
+            // inactivate projects, clear teams, and inactivate refsets
+            project.setActive(false);
 
-			if (project.getTeams() != null && !project.getTeams().isEmpty()) {
+            updateMemberships(project, copyOfProjectTeams, null);
 
-				for (final String teamId : project.getTeams()) {
+            if (project.getTeams() != null && !project.getTeams().isEmpty()) {
 
-					final Team team = service.get(teamId, Team.class);
+                for (final String teamId : project.getTeams()) {
 
-					if (team != null && !team.getMembers().isEmpty()) {
+                    final Team team = service.get(teamId, Team.class);
 
-						team.getMembers().clear();
-						service.update(team);
-					}
+                    if (team != null && !team.getMembers().isEmpty()) {
 
-				}
+                        team.getMembers().clear();
+                        service.update(team);
+                    }
 
-				project.getTeams().clear();
-			}
+                }
 
-			// also inactivate refsets
-			final ResultList<Refset> projRefsets = service.find("projectId:" + project.getId() + " AND active:true",
-					null, Refset.class, null);
+                project.getTeams().clear();
+            }
 
-			if (projRefsets.getItems() != null && !projRefsets.getItems().isEmpty()) {
+            // also inactivate refsets
+            final ResultList<Refset> projRefsets = service.find("projectId:" + project.getId() + " AND active:true", null, Refset.class, null);
 
-				for (final Refset refset : projRefsets.getItems()) {
+            if (projRefsets.getItems() != null && !projRefsets.getItems().isEmpty()) {
 
-					if (refset != null && !projRefsets.getItems().isEmpty()) {
+                for (final Refset refset : projRefsets.getItems()) {
 
-						refset.setBranchPath(RefsetService.getBranchPath(refset));
-						RefsetService.updatedRefsetStatus(service, user, refset, false);
-					}
+                    if (refset != null && !projRefsets.getItems().isEmpty()) {
 
-				}
+                        refset.setBranchPath(RefsetService.getBranchPath(refset));
+                        RefsetService.updatedRefsetStatus(service, user, refset, false);
+                    }
 
-			}
+                }
 
-			final Project updatedProject = service.update(project);
-			service.add(AuditEntryHelper.changeProjectStatusEntry(project));
-			service.commit();
+            }
 
-			return updatedProject;
-		}
+            final Project updatedProject = service.update(project);
+            service.add(AuditEntryHelper.changeProjectStatusEntry(project));
+            service.commit();
 
-	}
+            return updatedProject;
+        }
 
-	/**
-	 * Check if a user can edit a project.
-	 *
-	 * @param user    the user
-	 * @param project the project
-	 * @throws Exception the exception
-	 */
-	public static void checkPermissions(final User user, final Project project) throws Exception {
+    }
 
-		if (!project.getRoles().contains(User.ROLE_ADMIN)) {
+    /**
+     * Check if a user can edit a project.
+     *
+     * @param user the user
+     * @param project the project
+     * @throws Exception the exception
+     */
+    public static void checkPermissions(final User user, final Project project) throws Exception {
 
-			LOG.error("User does not have permission to edit this project.");
-			throw new ForbiddenException("User does not have permission to edit this project.");
-		}
+        if (!project.getRoles().contains(User.ROLE_ADMIN)) {
 
-	}
+            LOG.error("User does not have permission to edit this project.");
+            throw new ForbiddenException("User does not have permission to edit this project.");
+        }
 
-	/**
-	 * Add or removes users from Crowd based on addition or removal from teams from
-	 * a project.
-	 *
-	 * @param project  the project
-	 * @param oldTeams the old teams
-	 * @param newTeams the new teams
-	 * @throws Exception the exception
-	 */
-	private static void updateMemberships(final Project project, final Set<String> oldTeams, final Set<String> newTeams)
-			throws Exception {
+    }
 
-		if (crowdUnitTestSkip == null || !"true".equalsIgnoreCase(crowdUnitTestSkip)) {
+    /**
+     * Add or removes users from Crowd based on addition or removal from teams from a project.
+     *
+     * @param project the project
+     * @param oldTeams the old teams
+     * @param newTeams the new teams
+     * @throws Exception the exception
+     */
+    private static void updateMemberships(final Project project, final Set<String> oldTeams, final Set<String> newTeams) throws Exception {
 
-			LOG.info("CALLING CROWD API from ProjectService updateMemberships");
+        if (crowdUnitTestSkip == null || !"true".equalsIgnoreCase(crowdUnitTestSkip)) {
 
-			final String organizationName = project.getEdition().getOrganizationName();
-			final String editionName = project.getEdition().getShortName();
-			final Set<String> copyOfOldTeams = (oldTeams != null) ? new HashSet<String>(oldTeams)
-					: new HashSet<String>();
-			final Set<String> copyOfNewTeams = (newTeams != null) ? new HashSet<String>(newTeams)
-					: new HashSet<String>();
+            LOG.info("CALLING CROWD API from ProjectService updateMemberships");
 
-			if (oldTeams != null) {
+            final String organizationName = project.getEdition().getOrganizationName();
+            final String editionName = project.getEdition().getShortName();
+            final Set<String> copyOfOldTeams = (oldTeams != null) ? new HashSet<String>(oldTeams) : new HashSet<String>();
+            final Set<String> copyOfNewTeams = (newTeams != null) ? new HashSet<String>(newTeams) : new HashSet<String>();
 
-				copyOfNewTeams.removeAll(oldTeams);
-			}
+            if (oldTeams != null) {
 
-			if (!copyOfNewTeams.isEmpty()) {
-				for (final String teamId : copyOfNewTeams) {
-					final Team team = TeamService.getTeam(teamId, true);
-					// ignores 400 errors, if the group already exists
-					CrowdAPIClient.addGroup(organizationName, editionName, project.getName(), project.getDescription(),
-							true, false);
-					if (team != null && team.getMemberList() != null) {
-						for (final String role : team.getRoles()) {
-							for (final User user : team.getMemberList()) {
-								final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(organizationName,
-										editionName, project.getCrowdProjectId(), role);
-								CrowdAPIClient.addMembership(groupName, user.getUserName());
-							}
-						}
-					}
-				}
-			}
+                copyOfNewTeams.removeAll(oldTeams);
+            }
 
-			if (newTeams != null) {
-				copyOfOldTeams.removeAll(newTeams);
-			}
+            if (!copyOfNewTeams.isEmpty()) {
+                for (final String teamId : copyOfNewTeams) {
+                    final Team team = TeamService.getTeam(teamId, true);
+                    // ignores 400 errors, if the group already exists
+                    CrowdAPIClient.addGroup(organizationName, editionName, project.getName(), project.getDescription(), true, false);
+                    if (team != null && team.getMemberList() != null) {
+                        for (final String role : team.getRoles()) {
+                            for (final User user : team.getMemberList()) {
+                                final String groupName =
+                                    CrowdGroupNameAlgorithm.buildCrowdGroupName(organizationName, editionName, project.getCrowdProjectId(), role);
+                                CrowdAPIClient.addMembership(groupName, user.getUserName());
+                            }
+                        }
+                    }
+                }
+            }
 
-			if (!copyOfOldTeams.isEmpty()) {
-				for (final String teamId : copyOfOldTeams) {
-					final Team team = TeamService.getTeam(teamId, true);
-					if (team != null && team.getMemberList() != null) {
-						for (final String role : team.getRoles()) {
-							for (final User user : team.getMemberList()) {
-								final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(organizationName,
-										editionName, project.getCrowdProjectId(), role);
-								CrowdAPIClient.deleteMembership(groupName, user.getUserName());
-							}
-						}
-					}
-				}
-			}
-		}
-	}
+            if (newTeams != null) {
+                copyOfOldTeams.removeAll(newTeams);
+            }
+
+            if (!copyOfOldTeams.isEmpty()) {
+                for (final String teamId : copyOfOldTeams) {
+                    final Team team = TeamService.getTeam(teamId, true);
+                    if (team != null && team.getMemberList() != null) {
+                        for (final String role : team.getRoles()) {
+                            for (final User user : team.getMemberList()) {
+                                final String groupName =
+                                    CrowdGroupNameAlgorithm.buildCrowdGroupName(organizationName, editionName, project.getCrowdProjectId(), role);
+                                CrowdAPIClient.deleteMembership(groupName, user.getUserName());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

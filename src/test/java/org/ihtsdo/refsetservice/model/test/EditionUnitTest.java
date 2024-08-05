@@ -25,10 +25,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 /**
  * Unit test for {@link Edition}.
  */
+@SpringBootTest
+@ActiveProfiles("test")
 public class EditionUnitTest extends BaseTest {
 
     /** The Constant LOG. */
@@ -91,6 +95,7 @@ public class EditionUnitTest extends BaseTest {
 
         tester.include("name");
         tester.include("namespace");
+        tester.include("maintainerType");
         tester.include("shortName");
         tester.include("iconUri");
         tester.include("branch");
@@ -99,7 +104,6 @@ public class EditionUnitTest extends BaseTest {
         tester.exclude("organization");
         tester.exclude("organizationId");
         tester.exclude("organizationName");
-
         tester.exclude("defaultLanguageRefsets");
         tester.exclude("moduleNames");
 

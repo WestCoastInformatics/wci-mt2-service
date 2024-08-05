@@ -16,11 +16,15 @@ import javax.persistence.Entity;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
+import org.hibernate.search.engine.backend.types.Projectable;
+import org.hibernate.search.engine.backend.types.Searchable;
+import org.hibernate.search.engine.backend.types.Sortable;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.ihtsdo.refsetservice.util.ModelUtility;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-// TODO: Auto-generated Javadoc
 /**
  * The Class MapRelation.
  */
@@ -32,218 +36,221 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 })
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Indexed
-public class MapRelation extends AbstractHasId {
+public class MapRelation extends AbstractHasModified {
 
-  /** The terminology id. */
-  @Column(nullable = false)
-  private String terminologyId;
+    /** The terminology id. */
+    @Column(nullable = false)
+    private String terminologyId;
 
-  /** The name. */
-  @Column(nullable = false)
-  private String name;
+    /** The name. */
+    @Column(nullable = false)
+    private String name;
 
-  /** The abbreviation for display. */
-  @Column(nullable = true)
-  private String abbreviation;
+    /** The abbreviation for display. */
+    @Column(nullable = true)
+    private String abbreviation;
 
-  /** Whether this relation can be used for null targets. */
-  @Column(nullable = false)
-  private boolean isAllowableForNullTarget;
+    /** Whether this relation can be used for null targets. */
+    @Column(nullable = false)
+    private boolean isAllowableForNullTarget;
 
-  /** Whether this relation is computed. */
-  @Column(nullable = false)
-  private boolean isComputed;
+    /** Whether this relation is computed. */
+    @Column(nullable = false)
+    private boolean isComputed;
 
-  /**
-   * Instantiates a new map relation.
-   */
-  public MapRelation() {
+    /**
+     * Instantiates a new map relation.
+     */
+    public MapRelation() {
 
-    // do nothing
-  }
+        // do nothing
+    }
 
-  /**
-   * Instantiates a new map relation.
-   *
-   * @param id the id
-   * @param terminologyId the terminology id
-   * @param name the name
-   * @param abbreviation the abbreviation
-   * @param isAllowableForNullTarget the is allowable for null target
-   * @param isComputed the is computed
-   */
-  public MapRelation(final Long id, final String terminologyId, final String name,
-      final String abbreviation, final boolean isAllowableForNullTarget, final boolean isComputed) {
+    /**
+     * Instantiates a new map relation.
+     *
+     * @param mapRelation the map relation
+     */
+    public MapRelation(final MapRelation mapRelation) {
 
-    super();
-    this.terminologyId = terminologyId;
-    this.name = name;
-    this.abbreviation = abbreviation;
-    this.isAllowableForNullTarget = isAllowableForNullTarget;
-    this.isComputed = isComputed;
-  }
+        populateFrom(mapRelation);
+    }
 
-  /**
-   * Instantiates a new map relation jpa.
-   *
-   * @param mapRelation the map relation
-   */
-  public MapRelation(final MapRelation mapRelation) {
+    /**
+     * Populate from.
+     *
+     * @param mapRelation the map relation
+     */
+    public void populateFrom(final MapRelation mapRelation) {
 
-    super();
-    this.terminologyId = mapRelation.getTerminologyId();
-    this.name = mapRelation.getName();
-    this.abbreviation = mapRelation.getAbbreviation();
-    this.isAllowableForNullTarget = mapRelation.isAllowableForNullTarget();
-    this.isComputed = mapRelation.isComputed();
-  }
+        super.populateFrom(mapRelation);
+        this.terminologyId = mapRelation.getTerminologyId();
+        this.name = mapRelation.getName();
+        this.abbreviation = mapRelation.getAbbreviation();
+        this.isAllowableForNullTarget = mapRelation.isAllowableForNullTarget();
+        this.isComputed = mapRelation.isComputed();
+    }
 
-  /**
-   * Gets the terminology id.
-   *
-   * @return the terminology id
-   */
-  public String getTerminologyId() {
+    /**
+     * Gets the terminology id.
+     *
+     * @return the terminology id
+     */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+    public String getTerminologyId() {
 
-    return terminologyId;
-  }
+        return terminologyId;
+    }
 
-  /**
-   * Sets the terminology id.
-   *
-   * @param terminologyId the new terminology id
-   */
-  public void setTerminologyId(final String terminologyId) {
+    /**
+     * Sets the terminology id.
+     *
+     * @param terminologyId the new terminology id
+     */
+    public void setTerminologyId(final String terminologyId) {
 
-    this.terminologyId = terminologyId;
-  }
+        this.terminologyId = terminologyId;
+    }
 
-  /**
-   * Gets the name.
-   *
-   * @return the name
-   */
-  public String getName() {
+    /**
+     * Gets the name.
+     *
+     * @return the name
+     */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+    public String getName() {
 
-    return name;
-  }
+        return name;
+    }
 
-  /**
-   * Sets the name.
-   *
-   * @param name the new name
-   */
-  public void setName(final String name) {
+    /**
+     * Sets the name.
+     *
+     * @param name the new name
+     */
+    public void setName(final String name) {
 
-    this.name = name;
-  }
+        this.name = name;
+    }
 
-  /**
-   * Gets the abbreviation.
-   *
-   * @return the abbreviation
-   */
-  public String getAbbreviation() {
+    /**
+     * Gets the abbreviation.
+     *
+     * @return the abbreviation
+     */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+    public String getAbbreviation() {
 
-    return abbreviation;
-  }
+        return abbreviation;
+    }
 
-  /**
-   * Sets the abbreviation.
-   *
-   * @param abbreviation the new abbreviation
-   */
-  public void setAbbreviation(final String abbreviation) {
+    /**
+     * Sets the abbreviation.
+     *
+     * @param abbreviation the new abbreviation
+     */
+    public void setAbbreviation(final String abbreviation) {
 
-    this.abbreviation = abbreviation;
-  }
+        this.abbreviation = abbreviation;
+    }
 
-  /**
-   * Checks if is allowable for null target.
-   *
-   * @return true, if is allowable for null target
-   */
-  public boolean isAllowableForNullTarget() {
+    /**
+     * Checks if is allowable for null target.
+     *
+     * @return true, if is allowable for null target
+     */
+    public boolean isAllowableForNullTarget() {
 
-    return isAllowableForNullTarget;
-  }
+        return isAllowableForNullTarget;
+    }
 
-  /**
-   * Sets the allowable for null target.
-   *
-   * @param isAllowableForNullTarget the new allowable for null target
-   */
-  public void setAllowableForNullTarget(final boolean isAllowableForNullTarget) {
+    /**
+     * Sets the allowable for null target.
+     *
+     * @param isAllowableForNullTarget the new allowable for null target
+     */
+    public void setAllowableForNullTarget(final boolean isAllowableForNullTarget) {
 
-    this.isAllowableForNullTarget = isAllowableForNullTarget;
-  }
+        this.isAllowableForNullTarget = isAllowableForNullTarget;
+    }
 
-  /**
-   * Checks if is computed.
-   *
-   * @return true, if is computed
-   */
-  public boolean isComputed() {
+    /**
+     * Checks if is computed.
+     *
+     * @return true, if is computed
+     */
+    public boolean isComputed() {
 
-    return isComputed;
-  }
+        return isComputed;
+    }
 
-  /**
-   * Sets the computed.
-   *
-   * @param isComputed the new computed
-   */
-  public void setComputed(final boolean isComputed) {
+    /**
+     * Sets the computed.
+     *
+     * @param isComputed the new computed
+     */
+    public void setComputed(final boolean isComputed) {
 
-    this.isComputed = isComputed;
-  }
+        this.isComputed = isComputed;
+    }
 
-  /**
-   * Hash code.
-   *
-   * @return the int
-   */
-  @Override
-  public int hashCode() {
-    final int prime = 31;
-    int result = super.hashCode();
-    result = prime * result
-        + Objects.hash(abbreviation, isAllowableForNullTarget, isComputed, name, terminologyId);
-    return result;
-  }
+    /**
+     * Hash code.
+     *
+     * @return the int
+     */
+    @Override
+    public int hashCode() {
 
-  /**
-   * Equals.
-   *
-   * @param obj the obj
-   * @return true, if successful
-   */
-  @Override
-  public boolean equals(final Object obj) {
-    if (this == obj)
-      return true;
-    if (!super.equals(obj))
-      return false;
-    if (getClass() != obj.getClass())
-      return false;
-    final MapRelation other = (MapRelation) obj;
-    return Objects.equals(abbreviation, other.abbreviation)
-        && isAllowableForNullTarget == other.isAllowableForNullTarget
-        && isComputed == other.isComputed && Objects.equals(name, other.name)
-        && Objects.equals(terminologyId, other.terminologyId);
-  }
+        final int prime = 31;
+        int result = super.hashCode();
+        result = prime * result + Objects.hash(abbreviation, isAllowableForNullTarget, isComputed, name, terminologyId);
+        return result;
+    }
 
-  /**
-   * To string.
-   *
-   * @return the string
-   */
-  @Override
-  public String toString() {
+    /**
+     * Equals.
+     *
+     * @param obj the obj
+     * @return true, if successful
+     */
+    @Override
+    public boolean equals(Object obj) {
 
-    return "MapRelation [id=" + super.getId() + ", terminologyId=" + terminologyId + ", name="
-        + name + ", abbreviation=" + abbreviation + ", isAllowableForNullTarget="
-        + isAllowableForNullTarget + ", isComputed=" + isComputed + "]";
-  }
+        if (this == obj)
+            return true;
+        if (!super.equals(obj))
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        MapRelation other = (MapRelation) obj;
+        return Objects.equals(abbreviation, other.abbreviation) && isAllowableForNullTarget == other.isAllowableForNullTarget && isComputed == other.isComputed
+            && Objects.equals(name, other.name) && Objects.equals(terminologyId, other.terminologyId);
+    }
+
+    /**
+     * To string.
+     *
+     * @return the string
+     */
+    @Override
+    public String toString() {
+
+        try {
+            return ModelUtility.toJson(this);
+        } catch (final Exception e) {
+            return e.getMessage();
+        }
+    }
+
+    /**
+     * Lazy init.
+     */
+    @Override
+    public void lazyInit() {
+
+        // TODO Auto-generated method stub
+
+    }
 
 }

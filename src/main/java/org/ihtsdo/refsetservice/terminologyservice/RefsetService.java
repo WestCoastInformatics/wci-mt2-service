@@ -72,2771 +72,2653 @@ import org.springframework.web.server.ResponseStatusException;
  */
 public class RefsetService {
 
-	/** The Constant LOG. */
-	private static final Logger LOG = LoggerFactory.getLogger(RefsetService.class);
-
-	/** The terminology handler. */
-	private static TerminologyServerHandler terminologyHandler;
-
-	/** The refset to language map. */
-	private static final Map<String, String> REFSET_TO_LANGUAGE_MAP = new HashMap<>();
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(RefsetService.class);
+
+    /** The terminology handler. */
+    private static TerminologyServerHandler terminologyHandler;
 
-	/** The refset to language map. */
-	public static final String SIMPLE_TYPE_REFERENCE_SET = "446609009";
-
-	/** The module Id of the SIMPLE_TYPE_REFERENCE_SET. */
-	public static final String SNOMED_CORE_MODULE_ID = "900000000000012004";
-
-	// /** The project list cache. */
-	// private static final LinkedHashMap<String, Project> projectCache = new
-	// LinkedHashMap<>();
-
-	/** A cache of the sorted branch versions. */
-	public static final Map<String, List<String>> BRANCH_VERSION_CACHE = new HashMap<>();
-
-	/** A cache of the branches to use for refset searches. */
-	private static final Set<String> BRANCH_SEARCH_CACHE = new HashSet<>();
-
-	/** A list of refset actively being updated. */
-	public static final Set<String> REFSETS_TO_SHOW_UPGRADE_WARNING = new HashSet<>();
-
-	/** A cache of the unique refset IDs in the system. */
-	private static final Set<String> UNIQUE_REFSET_IDS = new HashSet<>();
-
-	/** The Constant EMAIL_SUBJECT. */
-	private static final String EMAIL_SUBJECT = "SNOMED International Reference Set Tool - ";
+    /** The refset to language map. */
+    private static final Map<String, String> REFSET_TO_LANGUAGE_MAP = new HashMap<>();
 
-	/** The Constant SHARE_ACTION. */
-	private static final String SHARE_ACTION = "Share-Reference-Set";
+    /** The refset to language map. */
+    public static final String SIMPLE_TYPE_REFERENCE_SET = "446609009";
+
+    /** The module Id of the SIMPLE_TYPE_REFERENCE_SET. */
+    public static final String SNOMED_CORE_MODULE_ID = "900000000000012004";
+
+    // /** The project list cache. */
+    // private static final LinkedHashMap<String, Project> projectCache = new
+    // LinkedHashMap<>();
+
+    /** A cache of the sorted branch versions. */
+    public static final Map<String, List<String>> BRANCH_VERSION_CACHE = new HashMap<>();
+
+    /** A cache of the branches to use for refset searches. */
+    private static final Set<String> BRANCH_SEARCH_CACHE = new HashSet<>();
 
-	/** The Constant INVITE_ACTION. */
-	private static final String INVITE_ACTION = "Invite";
+    /** A list of refset actively being updated. */
+    public static final Set<String> REFSETS_TO_SHOW_UPGRADE_WARNING = new HashSet<>();
 
-	/** The Constant INVITE_ACCEPTED. */
-	private static final String INVITE_ACCEPTED = "Invite accepted";
+    /** A cache of the unique refset IDs in the system. */
+    private static final Set<String> UNIQUE_REFSET_IDS = new HashSet<>();
 
-	/** The Constant INVITE_DECLINED. */
-	private static final String INVITE_DECLINED = "Invite declined";
+    /** The Constant EMAIL_SUBJECT. */
+    private static final String EMAIL_SUBJECT = "SNOMED International Reference Set Tool - ";
 
-	/** The Constant AND_SUFFIX. */
-	private static final String AND_SUFFIX = " AND ";
+    /** The Constant SHARE_ACTION. */
+    private static final String SHARE_ACTION = "Share-Reference-Set";
 
-	static {
+    /** The Constant INVITE_ACTION. */
+    private static final String INVITE_ACTION = "Invite";
 
-		// TODO: Remove once Edition updated
-		REFSET_TO_LANGUAGE_MAP.put("450828004", "es");
-		REFSET_TO_LANGUAGE_MAP.put("32570271000036106", "en");
-		REFSET_TO_LANGUAGE_MAP.put("900000000000509007", "en");
-		REFSET_TO_LANGUAGE_MAP.put("21000172104", "fr");
-		REFSET_TO_LANGUAGE_MAP.put("31000172101", "nl");
-		REFSET_TO_LANGUAGE_MAP.put("554461000005103", "da");
-		REFSET_TO_LANGUAGE_MAP.put("71000181105", "et");
-		REFSET_TO_LANGUAGE_MAP.put("5641000179103", "es");
-		REFSET_TO_LANGUAGE_MAP.put("21000220103", "en");
-		REFSET_TO_LANGUAGE_MAP.put("61000202103", "no");
-		REFSET_TO_LANGUAGE_MAP.put("46011000052107", "sv");
-	}
+    /** The Constant INVITE_ACCEPTED. */
+    private static final String INVITE_ACCEPTED = "Invite accepted";
 
-	// /** The config properties. */
-	// private static final Properties PROPERTIES = PropertyUtility.getProperties();
+    /** The Constant INVITE_DECLINED. */
+    private static final String INVITE_DECLINED = "Invite declined";
 
-	/** The app url root. */
-	private static String appUrlRoot;
+    /** The Constant AND_SUFFIX. */
+    private static final String AND_SUFFIX = " AND ";
 
-	static {
-		appUrlRoot = PropertyUtility.getProperties().getProperty("app.url.root");
+    static {
 
-		// Instantiate terminology handler
-		try {
-			String key = "terminology.handler";
-			String handlerName = PropertyUtility.getProperty(key);
-			if (handlerName.isEmpty()) {
-				throw new Exception("terminology.handler expected and does not exist.");
-			}
+        // TODO: Remove once Edition updated
+        REFSET_TO_LANGUAGE_MAP.put("450828004", "es");
+        REFSET_TO_LANGUAGE_MAP.put("32570271000036106", "en");
+        REFSET_TO_LANGUAGE_MAP.put("900000000000509007", "en");
+        REFSET_TO_LANGUAGE_MAP.put("21000172104", "fr");
+        REFSET_TO_LANGUAGE_MAP.put("31000172101", "nl");
+        REFSET_TO_LANGUAGE_MAP.put("554461000005103", "da");
+        REFSET_TO_LANGUAGE_MAP.put("71000181105", "et");
+        REFSET_TO_LANGUAGE_MAP.put("5641000179103", "es");
+        REFSET_TO_LANGUAGE_MAP.put("21000220103", "en");
+        REFSET_TO_LANGUAGE_MAP.put("61000202103", "no");
+        REFSET_TO_LANGUAGE_MAP.put("46011000052107", "sv");
+    }
 
-			terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName,
-					TerminologyServerHandler.class);
+    // /** The config properties. */
+    // private static final Properties PROPERTIES = PropertyUtility.getProperties();
 
-		} catch (Exception e) {
-			LOG.error("Failed to initialize terminology.handler - serious error", e);
-			terminologyHandler = null;
-		}
-	}
+    /** The app url root. */
+    private static String appUrlRoot;
 
-	/**
-	 * Create a refset with the given parameters .
-	 *
-	 * @param service              the Terminology Service
-	 * @param user                 the user
-	 * @param refsetEditParameters the parameters for creating the refset
-	 * @return the new refset or a string error
-	 * @throws Exception the exception
-	 */
-	public static Object createRefset(final TerminologyService service, final User user,
-			final Refset refsetEditParameters) throws Exception {
+    static {
+        appUrlRoot = PropertyUtility.getProperties().getProperty("app.url.root");
 
-		return terminologyHandler.createRefset(service, user, refsetEditParameters);
+        // Instantiate terminology handler
+        try {
+            String key = "terminology.handler";
+            String handlerName = PropertyUtility.getProperty(key);
+            if (handlerName.isEmpty()) {
+                throw new Exception("terminology.handler expected and does not exist.");
+            }
 
-	}
+            terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName, TerminologyServerHandler.class);
 
-	/**
-	 * Generate an ECL statement from a list of definition clauses.
-	 *
-	 * @param definitionClauses the definition clauses
-	 * @return the generated ECL statement
-	 * @throws Exception the exception
-	 */
-	public static String getEclFromDefinition(final List<DefinitionClause> definitionClauses) throws Exception {
+        } catch (Exception e) {
+            LOG.error("Failed to initialize terminology.handler - serious error", e);
+            terminologyHandler = null;
+        }
+    }
 
-		String additiveEcl = "";
-		String negatedEcl = "";
-		String ecl = "";
+    /**
+     * Create a refset with the given parameters .
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param refsetEditParameters the parameters for creating the refset
+     * @return the new refset or a string error
+     * @throws Exception the exception
+     */
+    public static Object createRefset(final TerminologyService service, final User user, final Refset refsetEditParameters) throws Exception {
 
-		// loop thru the clauses to get the combined ECL
-		for (final DefinitionClause clause : definitionClauses) {
+        return terminologyHandler.createRefset(service, user, refsetEditParameters);
 
-			if (clause.getNegated()) {
+    }
 
-				negatedEcl += "(" + clause.getValue() + ") OR ";
-			} else {
+    /**
+     * Generate an ECL statement from a list of definition clauses.
+     *
+     * @param definitionClauses the definition clauses
+     * @return the generated ECL statement
+     * @throws Exception the exception
+     */
+    public static String getEclFromDefinition(final List<DefinitionClause> definitionClauses) throws Exception {
 
-				additiveEcl += "(" + clause.getValue() + ") OR ";
-			}
+        String additiveEcl = "";
+        String negatedEcl = "";
+        String ecl = "";
 
-		}
+        // loop thru the clauses to get the combined ECL
+        for (final DefinitionClause clause : definitionClauses) {
 
-		ecl = StringUtils.removeEnd(additiveEcl, " OR ");
+            if (clause.getNegated()) {
 
-		if (!negatedEcl.equals("")) {
+                negatedEcl += "(" + clause.getValue() + ") OR ";
+            } else {
 
-			ecl = "(" + ecl + ") MINUS (" + StringUtils.removeEnd(negatedEcl, " OR ") + ")";
-		}
+                additiveEcl += "(" + clause.getValue() + ") OR ";
+            }
 
-		return ecl;
-	}
+        }
 
-	/**
-	 * Generate lists of concept ID for inclusion and exclusion clauses from a list
-	 * of definition clauses.
-	 *
-	 * @param definitionClauses the definition clauses
-	 * @param branchPath        the refset branch path
-	 * @return the generated ECL statement
-	 * @throws Exception the exception
-	 */
-	public static Map<String, List<String>> getInclusionExclusionLists(final List<DefinitionClause> definitionClauses,
-			final String branchPath) throws Exception {
+        ecl = StringUtils.removeEnd(additiveEcl, " OR ");
 
-		String additiveEcl = "";
-		String negatedEcl = "";
-		List<String> inclusionList = new ArrayList<>();
-		List<String> exclusionList = new ArrayList<>();
-		final Map<String, List<String>> returnMap = new HashMap<>();
+        if (!negatedEcl.equals("")) {
 
-		// loop thru the clauses to get the combined ECL
-		for (int i = 1; i < definitionClauses.size(); i++) {
+            ecl = "(" + ecl + ") MINUS (" + StringUtils.removeEnd(negatedEcl, " OR ") + ")";
+        }
 
-			final DefinitionClause clause = definitionClauses.get(i);
+        return ecl;
+    }
 
-			if (clause.getNegated()) {
+    /**
+     * Generate lists of concept ID for inclusion and exclusion clauses from a list of definition clauses.
+     *
+     * @param definitionClauses the definition clauses
+     * @param branchPath the refset branch path
+     * @return the generated ECL statement
+     * @throws Exception the exception
+     */
+    public static Map<String, List<String>> getInclusionExclusionLists(final List<DefinitionClause> definitionClauses, final String branchPath)
+        throws Exception {
 
-				negatedEcl += "(" + clause.getValue() + ") OR ";
-			} else {
+        String additiveEcl = "";
+        String negatedEcl = "";
+        List<String> inclusionList = new ArrayList<>();
+        List<String> exclusionList = new ArrayList<>();
+        final Map<String, List<String>> returnMap = new HashMap<>();
 
-				additiveEcl += "(" + clause.getValue() + ") OR ";
-			}
+        // loop thru the clauses to get the combined ECL
+        for (int i = 1; i < definitionClauses.size(); i++) {
 
-		}
+            final DefinitionClause clause = definitionClauses.get(i);
 
-		if (!additiveEcl.equals("")) {
+            if (clause.getNegated()) {
 
-			additiveEcl = StringUtils.removeEnd(additiveEcl, " OR ");
-			inclusionList = RefsetMemberService.getConceptIdsFromEcl(branchPath, additiveEcl);
-		}
+                negatedEcl += "(" + clause.getValue() + ") OR ";
+            } else {
 
-		if (!negatedEcl.equals("")) {
+                additiveEcl += "(" + clause.getValue() + ") OR ";
+            }
 
-			negatedEcl = StringUtils.removeEnd(negatedEcl, " OR ");
-			exclusionList = RefsetMemberService.getConceptIdsFromEcl(branchPath, negatedEcl);
-		}
+        }
 
-		returnMap.put(Refset.INCLUSION, inclusionList);
-		returnMap.put(Refset.EXCLUSION, exclusionList);
+        if (!additiveEcl.equals("")) {
 
-		return returnMap;
-	}
+            additiveEcl = StringUtils.removeEnd(additiveEcl, " OR ");
+            inclusionList = RefsetMemberService.getConceptIdsFromEcl(branchPath, additiveEcl);
+        }
 
-	/**
-	 * Modify a refset.
-	 *
-	 * @param service              the Terminology Service
-	 * @param user                 the user
-	 * @param refset               the refset to modify
-	 * @param refsetEditParameters the parameters for creating the refset
-	 * @return the status of the operation
-	 * @throws Exception the exception
-	 */
-	public static String modifyRefset(final TerminologyService service, final User user, final Refset refset,
-			final Refset refsetEditParameters) throws Exception {
+        if (!negatedEcl.equals("")) {
 
-		String statusMessage = "Success";
+            negatedEcl = StringUtils.removeEnd(negatedEcl, " OR ");
+            exclusionList = RefsetMemberService.getConceptIdsFromEcl(branchPath, negatedEcl);
+        }
 
-		if (!refset.getWorkflowStatus().equals(WorkflowService.IN_EDIT)) {
+        returnMap.put(Refset.INCLUSION, inclusionList);
+        returnMap.put(Refset.EXCLUSION, exclusionList);
 
-			throw new Exception("Reference set is not in the proper status to be modified " + refset.getId());
-		}
+        return returnMap;
+    }
 
-		// set user changed fields
-		refset.setTags(refsetEditParameters.getTags());
-		refset.setVersionNotes(refsetEditParameters.getVersionNotes());
-		refset.setNarrative(refsetEditParameters.getNarrative());
-		refset.setPrivateRefset(refsetEditParameters.isPrivateRefset());
-		refset.setExternalUrl(refsetEditParameters.getExternalUrl());
-		refset.setLocalSet(refsetEditParameters.isLocalSet());
+    /**
+     * Modify a refset.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param refset the refset to modify
+     * @param refsetEditParameters the parameters for creating the refset
+     * @return the status of the operation
+     * @throws Exception the exception
+     */
+    public static String modifyRefset(final TerminologyService service, final User user, final Refset refset, final Refset refsetEditParameters)
+        throws Exception {
 
-		if (!StringUtility.isEmpty(refsetEditParameters.getModuleId())
-				&& !refsetEditParameters.getModuleId().equals(refset.getModuleId())) {
+        String statusMessage = "Success";
 
-			updateRefsetConcept(refset, refset.isActive(), refsetEditParameters.getModuleId());
-			refset.setModuleId(refsetEditParameters.getModuleId());
-		}
+        if (!refset.getWorkflowStatus().equals(WorkflowService.IN_EDIT)) {
 
-		// If module id is changed
-		if (!refset.getModuleId().equals(refsetEditParameters.getModuleId())) {
-			refset.setModuleId(refsetEditParameters.getModuleId());
+            throw new Exception("Reference set is not in the proper status to be modified " + refset.getId());
+        }
 
-			// TODO: RT2-1513: I believe there's something that needs to change in snowstorm
-			// here also)
-		}
+        // set user changed fields
+        refset.setTags(refsetEditParameters.getTags());
+        refset.setVersionNotes(refsetEditParameters.getVersionNotes());
+        refset.setNarrative(refsetEditParameters.getNarrative());
+        refset.setPrivateRefset(refsetEditParameters.isPrivateRefset());
+        refset.setExternalUrl(refsetEditParameters.getExternalUrl());
+        refset.setLocalSet(refsetEditParameters.isLocalSet());
 
-		if (refset.getType().equals(Refset.EXTERNAL)) {
+        if (!StringUtility.isEmpty(refsetEditParameters.getModuleId()) && !refsetEditParameters.getModuleId().equals(refset.getModuleId())) {
 
-			refset.setName(refsetEditParameters.getName());
-		}
+            updateRefsetConcept(refset, refset.isActive(), refsetEditParameters.getModuleId());
+            refset.setModuleId(refsetEditParameters.getModuleId());
+        }
 
-		// update an object
-		service.update(refset);
+        // If module id is changed
+        if (!refset.getModuleId().equals(refsetEditParameters.getModuleId())) {
+            refset.setModuleId(refsetEditParameters.getModuleId());
 
-		// if this is an intensional refset update the definition
-		if (refset.getType().equals(Refset.INTENSIONAL)) {
+            // TODO: RT2-1513: I believe there's something that needs to change in snowstorm
+            // here also)
+        }
 
-			AuditEntryHelper.updateRefsetMetadataEntry(refset, true);
-			statusMessage = modifyRefsetDefinition(user, service, refset, refsetEditParameters.getDefinitionClauses());
-		} else {
+        if (refset.getType().equals(Refset.EXTERNAL)) {
 
-			AuditEntryHelper.updateRefsetMetadataEntry(refset, false);
-		}
+            refset.setName(refsetEditParameters.getName());
+        }
 
-		// we also need to clear the refset export cache on S3
-		final ExportHandler exportHandler = new ExportHandler();
-		exportHandler.deleteFilesFromBranchPath(refset.getBranchPath());
+        // update an object
+        service.update(refset);
 
-		LOG.info("Refset " + refset.getRefsetId() + " successfully modified");
-		LOG.debug("Modify Refset: Refset: " + ModelUtility.toJson(refset));
-		return statusMessage;
+        // if this is an intensional refset update the definition
+        if (refset.getType().equals(Refset.INTENSIONAL)) {
 
-	}
+            AuditEntryHelper.updateRefsetMetadataEntry(refset, true);
+            statusMessage = modifyRefsetDefinition(user, service, refset, refsetEditParameters.getDefinitionClauses());
+        } else {
 
-	/**
-	 * Save the details of a refset before editing.
-	 *
-	 * @param service the Terminology Service
-	 * @param user    the user
-	 * @param refset  the refset to modify
-	 * @throws Exception the exception
-	 */
-	public static void createRefsetEditHistory(final TerminologyService service, final User user, final Refset refset)
-			throws Exception {
+            AuditEntryHelper.updateRefsetMetadataEntry(refset, false);
+        }
 
-		final RefsetEditHistory oldHistory = service.findSingle(
-				"refsetId:" + QueryParserBase.escape(refset.getRefsetId()) + "", RefsetEditHistory.class, null);
+        // we also need to clear the refset export cache on S3
+        final ExportHandler exportHandler = new ExportHandler();
+        exportHandler.deleteFilesFromBranchPath(refset.getBranchPath());
 
-		if (oldHistory != null) {
-			return;
-		}
+        LOG.info("Refset " + refset.getRefsetId() + " successfully modified");
+        LOG.debug("Modify Refset: Refset: " + ModelUtility.toJson(refset));
+        return statusMessage;
 
-		final RefsetEditHistory history = new RefsetEditHistory();
-		history.populateFrom(refset);
-		history.setId(null);
-		history.setEditBranchId(null);
+    }
 
-		// if this is an intensional refset save the definition
-		if (refset.getType().equals(Refset.INTENSIONAL)) {
+    /**
+     * Save the details of a refset before editing.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param refset the refset to modify
+     * @throws Exception the exception
+     */
+    public static void createRefsetEditHistory(final TerminologyService service, final User user, final Refset refset) throws Exception {
 
-			final List<DefinitionClauseEditHistory> clauseHistoryList = new ArrayList<>();
+        final RefsetEditHistory oldHistory = service.findSingle("refsetId:" + QueryParserBase.escape(refset.getRefsetId()) + "", RefsetEditHistory.class, null);
 
-			for (final DefinitionClause originalClause : refset.getDefinitionClauses()) {
+        if (oldHistory != null) {
+            return;
+        }
 
-				final DefinitionClauseEditHistory clauseHistory = new DefinitionClauseEditHistory(originalClause);
-				clauseHistory.setId(null);
-				service.add(clauseHistory);
-				clauseHistoryList.add(clauseHistory);
-			}
+        final RefsetEditHistory history = new RefsetEditHistory();
+        history.populateFrom(refset);
+        history.setId(null);
+        history.setEditBranchId(null);
 
-			history.setDefinitionClauses(clauseHistoryList);
-		}
+        // if this is an intensional refset save the definition
+        if (refset.getType().equals(Refset.INTENSIONAL)) {
 
-		// update an object
-		service.add(history);
+            final List<DefinitionClauseEditHistory> clauseHistoryList = new ArrayList<>();
 
-		LOG.info("Refset " + refset.getRefsetId() + " edit history saved");
+            for (final DefinitionClause originalClause : refset.getDefinitionClauses()) {
 
-		LOG.debug("createRefsetEditHistory: Refset: " + ModelUtility.toJson(refset));
-	}
+                final DefinitionClauseEditHistory clauseHistory = new DefinitionClauseEditHistory(originalClause);
+                clauseHistory.setId(null);
+                service.add(clauseHistory);
+                clauseHistoryList.add(clauseHistory);
+            }
 
-	/**
-	 * Save the details of a refset before editing.
-	 *
-	 * @param service          the Terminology Service
-	 * @param user             the user
-	 * @param refsetInternalId the internal refset ID to modify
-	 * @throws Exception the exception
-	 */
-	public static void replaceRefsetWithEditHistory(final TerminologyService service, final User user,
-			final String refsetInternalId) throws Exception {
+            history.setDefinitionClauses(clauseHistoryList);
+        }
 
-		LOG.debug("replaceRefsetWithEditHistory: refsetInternalId: " + refsetInternalId);
+        // update an object
+        service.add(history);
 
-		final Refset refset = getRefset(service, user, refsetInternalId);
+        LOG.info("Refset " + refset.getRefsetId() + " edit history saved");
 
-		final RefsetEditHistory history = service.findSingle(
-				"refsetId:" + QueryParserBase.escape(refset.getRefsetId()) + "", RefsetEditHistory.class, null);
+        LOG.debug("createRefsetEditHistory: Refset: " + ModelUtility.toJson(refset));
+    }
 
-		if (history == null) {
+    /**
+     * Save the details of a refset before editing.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param refsetInternalId the internal refset ID to modify
+     * @throws Exception the exception
+     */
+    public static void replaceRefsetWithEditHistory(final TerminologyService service, final User user, final String refsetInternalId) throws Exception {
 
-			return;
-		}
+        LOG.debug("replaceRefsetWithEditHistory: refsetInternalId: " + refsetInternalId);
 
-		// TODO: Add unique Audit Entry Helper for this case
+        final Refset refset = getRefset(service, user, refsetInternalId);
 
-		refset.setRefsetId(history.getRefsetId());
-		refset.setName(history.getName());
-		refset.setType(history.getType());
-		refset.setNarrative(history.getNarrative());
-		refset.setVersionDate(history.getVersionDate());
-		refset.setVersionNotes(history.getVersionNotes());
-		refset.setVersionStatus(history.getVersionStatus());
-		refset.setExternalUrl(history.getExternalUrl());
-		refset.setModuleId(history.getModuleId());
-		refset.setEditBranchId(null);
-		refset.setPrivateRefset(history.isPrivateRefset());
-		refset.setTags(new HashSet<String>(history.getTags()));
-		refset.setWorkflowStatus(WorkflowService.READY_FOR_EDIT);
-		refset.setAssignedUser(null);
-		refset.setMemberCount(history.getMemberCount());
+        final RefsetEditHistory history = service.findSingle("refsetId:" + QueryParserBase.escape(refset.getRefsetId()) + "", RefsetEditHistory.class, null);
 
-		service.update(refset);
+        if (history == null) {
 
-		// if this is an intensional refset save the definition
-		if (refset.getType().equals(Refset.INTENSIONAL)) {
+            return;
+        }
 
-			// List<DefinitionClause> clauseList = new ArrayList<>();
-			//
-			// for (DefinitionClauseEditHistory historyClause :
-			// history.getDefinitionClauses()) {
-			//
-			// DefinitionClause clause = new DefinitionClause();
-			// clause.setValue(historyClause.getValue());
-			// clause.setNegated(historyClause.getNegated());
-			//
-			// service.add(clause);
-			// clauseList.add(clause);
-			// }
-			//
-			// modifyRefsetDefinition(user, service, refset, clauseList);
+        // TODO: Add unique Audit Entry Helper for this case
 
-			for (final DefinitionClause oldClause : new ArrayList<DefinitionClause>(refset.getDefinitionClauses())) {
+        refset.setRefsetId(history.getRefsetId());
+        refset.setName(history.getName());
+        refset.setType(history.getType());
+        refset.setNarrative(history.getNarrative());
+        refset.setVersionDate(history.getVersionDate());
+        refset.setVersionNotes(history.getVersionNotes());
+        refset.setVersionStatus(history.getVersionStatus());
+        refset.setExternalUrl(history.getExternalUrl());
+        refset.setModuleId(history.getModuleId());
+        refset.setEditBranchId(null);
+        refset.setPrivateRefset(history.isPrivateRefset());
+        refset.setTags(new HashSet<String>(history.getTags()));
+        refset.setWorkflowStatus(WorkflowService.READY_FOR_EDIT);
+        refset.setAssignedUser(null);
+        refset.setMemberCount(history.getMemberCount());
 
-				refset.getDefinitionClauses().remove(oldClause);
-				service.remove(oldClause);
-			}
+        service.update(refset);
 
-			service.update(refset);
+        // if this is an intensional refset save the definition
+        if (refset.getType().equals(Refset.INTENSIONAL)) {
 
-			for (final DefinitionClauseEditHistory historyClause : history.getDefinitionClauses()) {
+            // List<DefinitionClause> clauseList = new ArrayList<>();
+            //
+            // for (DefinitionClauseEditHistory historyClause :
+            // history.getDefinitionClauses()) {
+            //
+            // DefinitionClause clause = new DefinitionClause();
+            // clause.setValue(historyClause.getValue());
+            // clause.setNegated(historyClause.getNegated());
+            //
+            // service.add(clause);
+            // clauseList.add(clause);
+            // }
+            //
+            // modifyRefsetDefinition(user, service, refset, clauseList);
 
-				final DefinitionClause clause = new DefinitionClause();
-				clause.setValue(historyClause.getValue());
-				clause.setNegated(historyClause.getNegated());
+            for (final DefinitionClause oldClause : new ArrayList<DefinitionClause>(refset.getDefinitionClauses())) {
 
-				service.add(clause);
-				refset.getDefinitionClauses().add(clause);
-			}
+                refset.getDefinitionClauses().remove(oldClause);
+                service.remove(oldClause);
+            }
 
-			service.update(refset);
-		}
+            service.update(refset);
 
-		LOG.info("Refset " + refset.getRefsetId() + " replaced with edit history");
-		LOG.debug("replaceRefsetWithEditHistory: Refset: " + ModelUtility.toJson(refset));
+            for (final DefinitionClauseEditHistory historyClause : history.getDefinitionClauses()) {
 
-	}
+                final DefinitionClause clause = new DefinitionClause();
+                clause.setValue(historyClause.getValue());
+                clause.setNegated(historyClause.getNegated());
 
-	/**
-	 * Save the details of a refset before editing.
-	 *
-	 * @param service  the Terminology Service
-	 * @param user     the user
-	 * @param refsetId the refset ID to remove history for
-	 * @throws Exception the exception
-	 */
-	public static void removeRefsetEditHistory(final TerminologyService service, final User user, final String refsetId)
-			throws Exception {
+                service.add(clause);
+                refset.getDefinitionClauses().add(clause);
+            }
 
-		final RefsetEditHistory history = service.findSingle("refsetId:" + QueryParserBase.escape(refsetId) + "",
-				RefsetEditHistory.class, null);
+            service.update(refset);
+        }
 
-		if (history == null) {
+        LOG.info("Refset " + refset.getRefsetId() + " replaced with edit history");
+        LOG.debug("replaceRefsetWithEditHistory: Refset: " + ModelUtility.toJson(refset));
 
-			return;
-		}
+    }
 
-		// update an object
-		service.remove(history);
+    /**
+     * Save the details of a refset before editing.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param refsetId the refset ID to remove history for
+     * @throws Exception the exception
+     */
+    public static void removeRefsetEditHistory(final TerminologyService service, final User user, final String refsetId) throws Exception {
 
-		LOG.info("Refset " + refsetId + " edit history removed");
-	}
+        final RefsetEditHistory history = service.findSingle("refsetId:" + QueryParserBase.escape(refsetId) + "", RefsetEditHistory.class, null);
 
-	/**
-	 * Add an inclusion or exclusion clause to a refset definition.
-	 *
-	 * @param service                 the Terminology Service
-	 * @param user                    the user
-	 * @param refset                  the refset to modify
-	 * @param ecl                     the ecl to use for the clause
-	 * @param definitionExceptionType is the exception an inclusion or exclusion
-	 * @return the status of the operation
-	 * @throws Exception the exception
-	 */
-	public static String addDefinitionException(final TerminologyService service, final User user, final Refset refset,
-			final String ecl, final String definitionExceptionType) throws Exception {
+        if (history == null) {
 
-		String statusMessage = "Success";
+            return;
+        }
 
-		if (!refset.getWorkflowStatus().equals(WorkflowService.IN_EDIT)) {
+        // update an object
+        service.remove(history);
 
-			throw new Exception("Reference set is not in the proper status to be modified " + refset.getId());
-		}
+        LOG.info("Refset " + refsetId + " edit history removed");
+    }
 
-		if (!refset.getType().equals(Refset.INTENSIONAL)) {
+    /**
+     * Add an inclusion or exclusion clause to a refset definition.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param refset the refset to modify
+     * @param ecl the ecl to use for the clause
+     * @param definitionExceptionType is the exception an inclusion or exclusion
+     * @return the status of the operation
+     * @throws Exception the exception
+     */
+    public static String addDefinitionException(final TerminologyService service, final User user, final Refset refset, final String ecl,
+        final String definitionExceptionType) throws Exception {
 
-			throw new Exception("This is not an Intensional reference set " + refset.getId());
-		}
+        String statusMessage = "Success";
 
-		final List<DefinitionClause> currentClauses = refset.getDefinitionClauses();
-		final List<DefinitionClause> newClauses = new ArrayList<>();
-		boolean isNewClause = true;
+        if (!refset.getWorkflowStatus().equals(WorkflowService.IN_EDIT)) {
 
-		for (final DefinitionClause currentClause : currentClauses) {
+            throw new Exception("Reference set is not in the proper status to be modified " + refset.getId());
+        }
 
-			if (currentClause.getValue().equals(ecl)) {
+        if (!refset.getType().equals(Refset.INTENSIONAL)) {
 
-				isNewClause = false;
-				break;
+            throw new Exception("This is not an Intensional reference set " + refset.getId());
+        }
 
-			} else {
+        final List<DefinitionClause> currentClauses = refset.getDefinitionClauses();
+        final List<DefinitionClause> newClauses = new ArrayList<>();
+        boolean isNewClause = true;
 
-				newClauses.add(new DefinitionClause(currentClause));
-			}
+        for (final DefinitionClause currentClause : currentClauses) {
 
-		}
+            if (currentClause.getValue().equals(ecl)) {
 
-		if (isNewClause) {
+                isNewClause = false;
+                break;
 
-			boolean negated = false;
+            } else {
 
-			if (definitionExceptionType.equals(Refset.EXCLUSION)) {
+                newClauses.add(new DefinitionClause(currentClause));
+            }
 
-				negated = true;
-			}
+        }
 
-			newClauses.add(new DefinitionClause(ecl, negated));
-			statusMessage = modifyRefsetDefinition(user, service, refset, newClauses);
-			LOG.debug("addDefinitionException: Refset: " + ModelUtility.toJson(refset));
-		}
+        if (isNewClause) {
 
-		return statusMessage;
-	}
+            boolean negated = false;
 
-	/**
-	 * Remove an inclusion or exclusion clause from a refset definition.
-	 *
-	 * @param service               the Terminology Service
-	 * @param user                  the user
-	 * @param refset                the refset to modify
-	 * @param definitionExceptionId the exception ID
-	 * @return the status of the operation
-	 * @throws Exception the exception
-	 */
-	public static String removeDefinitionException(final TerminologyService service, final User user,
-			final Refset refset, final String definitionExceptionId) throws Exception {
+            if (definitionExceptionType.equals(Refset.EXCLUSION)) {
 
-		String statusMessage = "Success";
+                negated = true;
+            }
 
-		if (!refset.getWorkflowStatus().equals(WorkflowService.IN_EDIT)) {
+            newClauses.add(new DefinitionClause(ecl, negated));
+            statusMessage = modifyRefsetDefinition(user, service, refset, newClauses);
+            LOG.debug("addDefinitionException: Refset: " + ModelUtility.toJson(refset));
+        }
 
-			throw new Exception("Reference set is not in the proper status to be modified " + refset.getId());
-		}
+        return statusMessage;
+    }
 
-		if (!refset.getType().equals(Refset.INTENSIONAL)) {
+    /**
+     * Remove an inclusion or exclusion clause from a refset definition.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param refset the refset to modify
+     * @param definitionExceptionId the exception ID
+     * @return the status of the operation
+     * @throws Exception the exception
+     */
+    public static String removeDefinitionException(final TerminologyService service, final User user, final Refset refset, final String definitionExceptionId)
+        throws Exception {
 
-			throw new Exception("This is not an Intensional reference set " + refset.getId());
-		}
+        String statusMessage = "Success";
 
-		final List<DefinitionClause> currentClauses = refset.getDefinitionClauses();
-		final List<DefinitionClause> newClauses = new ArrayList<>();
-		boolean removeClause = false;
+        if (!refset.getWorkflowStatus().equals(WorkflowService.IN_EDIT)) {
 
-		for (final DefinitionClause currentClause : currentClauses) {
+            throw new Exception("Reference set is not in the proper status to be modified " + refset.getId());
+        }
 
-			if (currentClause.getId().equals(definitionExceptionId)) {
+        if (!refset.getType().equals(Refset.INTENSIONAL)) {
 
-				removeClause = true;
-			} else {
+            throw new Exception("This is not an Intensional reference set " + refset.getId());
+        }
 
-				newClauses.add(new DefinitionClause(currentClause));
-			}
+        final List<DefinitionClause> currentClauses = refset.getDefinitionClauses();
+        final List<DefinitionClause> newClauses = new ArrayList<>();
+        boolean removeClause = false;
 
-		}
+        for (final DefinitionClause currentClause : currentClauses) {
 
-		if (removeClause) {
+            if (currentClause.getId().equals(definitionExceptionId)) {
 
-			statusMessage = modifyRefsetDefinition(user, service, refset, newClauses);
-			LOG.debug("removeDefinitionException: Refset: " + ModelUtility.toJson(refset));
-		}
+                removeClause = true;
+            } else {
 
-		return statusMessage;
-	}
+                newClauses.add(new DefinitionClause(currentClause));
+            }
 
-	/**
-	 * Modify a refset definition.
-	 *
-	 * @param user                      the user
-	 * @param service                   the service
-	 * @param refset                    the refset
-	 * @param modifiedDefinitionClauses the modified definition clauses
-	 * @return the status of the operation
-	 * @throws Exception the exception
-	 */
-	public static String modifyRefsetDefinition(final User user, final TerminologyService service, final Refset refset,
-			final List<DefinitionClause> modifiedDefinitionClauses) throws Exception {
+        }
 
-		final List<String> unprocessedConcepts = new ArrayList<>();
-		String statusMessage = "Success";
+        if (removeClause) {
 
-		if (refset.getType().equals(Refset.INTENSIONAL)) {
+            statusMessage = modifyRefsetDefinition(user, service, refset, newClauses);
+            LOG.debug("removeDefinitionException: Refset: " + ModelUtility.toJson(refset));
+        }
 
-			final String oldDefinition = getEclFromDefinition(refset.getDefinitionClauses());
-			final String newDefinition = getEclFromDefinition(modifiedDefinitionClauses);
-			LOG.debug("modifyRefsetDefinition oldDefinition: " + oldDefinition);
-			LOG.debug("modifyRefsetDefinition newDefinition: " + newDefinition);
+        return statusMessage;
+    }
 
-			if (!oldDefinition.equals(newDefinition)) {
+    /**
+     * Modify a refset definition.
+     *
+     * @param user the user
+     * @param service the service
+     * @param refset the refset
+     * @param modifiedDefinitionClauses the modified definition clauses
+     * @return the status of the operation
+     * @throws Exception the exception
+     */
+    public static String modifyRefsetDefinition(final User user, final TerminologyService service, final Refset refset,
+        final List<DefinitionClause> modifiedDefinitionClauses) throws Exception {
 
-				final String branchPath = getBranchPath(service, refset.getId());
-				List<String> oldMembersTemp = new ArrayList<>();
-				List<String> newMembersTemp = new ArrayList<>();
+        final List<String> unprocessedConcepts = new ArrayList<>();
+        String statusMessage = "Success";
 
-				try {
+        if (refset.getType().equals(Refset.INTENSIONAL)) {
 
-					oldMembersTemp = RefsetMemberService.getConceptIdsFromEcl(branchPath, oldDefinition);
-					newMembersTemp = RefsetMemberService.getConceptIdsFromEcl(branchPath, newDefinition);
+            final String oldDefinition = getEclFromDefinition(refset.getDefinitionClauses());
+            final String newDefinition = getEclFromDefinition(modifiedDefinitionClauses);
+            LOG.debug("modifyRefsetDefinition oldDefinition: " + oldDefinition);
+            LOG.debug("modifyRefsetDefinition newDefinition: " + newDefinition);
 
-				} catch (final Exception e) {
+            if (!oldDefinition.equals(newDefinition)) {
 
-					LOG.error("modifyRefsetDefinition error: ", e);
-					return "Error - Invalid ECL Definition";
-				}
+                final String branchPath = getBranchPath(service, refset.getId());
+                List<String> oldMembersTemp = new ArrayList<>();
+                List<String> newMembersTemp = new ArrayList<>();
 
-				final List<String> oldMembers = oldMembersTemp;
-				final List<String> newMembers = newMembersTemp;
+                try {
 
-				LOG.debug("modifyRefsetDefinition oldMembers: " + oldMembers);
-				LOG.debug("modifyRefsetDefinition newMembers: " + newMembers);
+                    oldMembersTemp = RefsetMemberService.getConceptIdsFromEcl(branchPath, oldDefinition);
+                    newMembersTemp = RefsetMemberService.getConceptIdsFromEcl(branchPath, newDefinition);
 
-				final List<DefinitionClause> definitionClauses = refset.getDefinitionClauses();
-				final List<DefinitionClause> clausesToRemove = new ArrayList<>();
+                } catch (final Exception e) {
 
-				// loop thru the existing clauses see what has been removed
-				for (final DefinitionClause existingClause : definitionClauses) {
+                    LOG.error("modifyRefsetDefinition error: ", e);
+                    return "Error - Invalid ECL Definition";
+                }
 
-					int matchIndex = -1;
+                final List<String> oldMembers = oldMembersTemp;
+                final List<String> newMembers = newMembersTemp;
 
-					for (final DefinitionClause newClause : modifiedDefinitionClauses) {
+                LOG.debug("modifyRefsetDefinition oldMembers: " + oldMembers);
+                LOG.debug("modifyRefsetDefinition newMembers: " + newMembers);
 
-						if (existingClause.getId().equals(newClause.getId())) {
+                final List<DefinitionClause> definitionClauses = refset.getDefinitionClauses();
+                final List<DefinitionClause> clausesToRemove = new ArrayList<>();
 
-							// if the clause is changed then update the existing clause
-							if (!existingClause.getValue().equals(newClause.getValue())
-									|| (existingClause.getNegated() != newClause.getNegated())) {
+                // loop thru the existing clauses see what has been removed
+                for (final DefinitionClause existingClause : definitionClauses) {
 
-								existingClause.setValue(newClause.getValue());
-								existingClause.setNegated(newClause.getNegated());
-								LOG.debug("modifyRefsetDefinition updating clause: " + existingClause);
-								service.update(existingClause);
-							}
+                    int matchIndex = -1;
 
-							matchIndex = modifiedDefinitionClauses.indexOf(newClause);
-							break;
-						}
+                    for (final DefinitionClause newClause : modifiedDefinitionClauses) {
 
-					}
+                        if (existingClause.getId().equals(newClause.getId())) {
 
-					// if the clause still exists remove it from the new clauses, otherwise mark the
-					// old clause for removal
-					if (matchIndex >= 0) {
+                            // if the clause is changed then update the existing clause
+                            if (!existingClause.getValue().equals(newClause.getValue()) || (existingClause.getNegated() != newClause.getNegated())) {
 
-						LOG.debug("modifyRefsetDefinition removing clause from editParams: "
-								+ modifiedDefinitionClauses.get(matchIndex));
-						modifiedDefinitionClauses.remove(matchIndex);
-					} else {
+                                existingClause.setValue(newClause.getValue());
+                                existingClause.setNegated(newClause.getNegated());
+                                LOG.debug("modifyRefsetDefinition updating clause: " + existingClause);
+                                service.update(existingClause);
+                            }
 
-						clausesToRemove.add(existingClause);
-					}
+                            matchIndex = modifiedDefinitionClauses.indexOf(newClause);
+                            break;
+                        }
 
-				}
+                    }
 
-				// Remove any marked clauses from the DB
-				if (clausesToRemove.size() > 0) {
+                    // if the clause still exists remove it from the new clauses, otherwise mark the
+                    // old clause for removal
+                    if (matchIndex >= 0) {
 
-					for (final DefinitionClause clauseToRemove : clausesToRemove) {
+                        LOG.debug("modifyRefsetDefinition removing clause from editParams: " + modifiedDefinitionClauses.get(matchIndex));
+                        modifiedDefinitionClauses.remove(matchIndex);
+                    } else {
 
-						// remove an object
-						LOG.debug("modifyRefsetDefinition removing clause: " + clauseToRemove);
-						service.remove(clauseToRemove);
-						definitionClauses.remove(clauseToRemove);
-					}
+                        clausesToRemove.add(existingClause);
+                    }
 
-				}
+                }
 
-				// loop thru the new clauses to add to the DB
-				for (final DefinitionClause newClause : modifiedDefinitionClauses) {
+                // Remove any marked clauses from the DB
+                if (clausesToRemove.size() > 0) {
 
-					LOG.debug("modifyRefsetDefinition adding clause: " + newClause);
-					service.add(newClause);
-				}
+                    for (final DefinitionClause clauseToRemove : clausesToRemove) {
 
-				// add the new clauses to the refset and save the refset
-				definitionClauses.addAll(modifiedDefinitionClauses);
-				service.update(refset);
+                        // remove an object
+                        LOG.debug("modifyRefsetDefinition removing clause: " + clauseToRemove);
+                        service.remove(clauseToRemove);
+                        definitionClauses.remove(clauseToRemove);
+                    }
 
-				// Get the list of members to remove
-				final List<String> conceptsToRemove = oldMembers.stream()
-						.filter(oldMember -> !newMembers.contains(oldMember)).collect(Collectors.toList());
+                }
 
-				if (conceptsToRemove.size() > 0) {
+                // loop thru the new clauses to add to the DB
+                for (final DefinitionClause newClause : modifiedDefinitionClauses) {
 
-					LOG.debug("modifyRefsetDefinition intensional conceptsToRemove: " + conceptsToRemove);
-					unprocessedConcepts.addAll(RefsetMemberService.removeRefsetMembers(service, user, refset,
-							String.join(",", conceptsToRemove)));
-				}
+                    LOG.debug("modifyRefsetDefinition adding clause: " + newClause);
+                    service.add(newClause);
+                }
 
-				// Get the list of members to add
-				final List<String> conceptsToAdd = newMembers.stream()
-						.filter(newMember -> !oldMembers.contains(newMember)).collect(Collectors.toList());
+                // add the new clauses to the refset and save the refset
+                definitionClauses.addAll(modifiedDefinitionClauses);
+                service.update(refset);
 
-				if (conceptsToAdd.size() > 0) {
+                // Get the list of members to remove
+                final List<String> conceptsToRemove = oldMembers.stream().filter(oldMember -> !newMembers.contains(oldMember)).collect(Collectors.toList());
 
-					LOG.debug("modifyRefsetDefinition intensional conceptsToAdd: " + conceptsToAdd);
-					unprocessedConcepts
-							.addAll(RefsetMemberService.addRefsetMembers(service, user, refset, conceptsToAdd));
-				}
+                if (conceptsToRemove.size() > 0) {
 
-			}
+                    LOG.debug("modifyRefsetDefinition intensional conceptsToRemove: " + conceptsToRemove);
+                    unprocessedConcepts.addAll(RefsetMemberService.removeRefsetMembers(service, user, refset, String.join(",", conceptsToRemove)));
+                }
 
-		}
+                // Get the list of members to add
+                final List<String> conceptsToAdd = newMembers.stream().filter(newMember -> !oldMembers.contains(newMember)).collect(Collectors.toList());
 
-		if (unprocessedConcepts.size() > 0) {
+                if (conceptsToAdd.size() > 0) {
 
-			statusMessage = "Error - Reference set definition modified but unable to process concepts: ";
+                    LOG.debug("modifyRefsetDefinition intensional conceptsToAdd: " + conceptsToAdd);
+                    unprocessedConcepts.addAll(RefsetMemberService.addRefsetMembers(service, user, refset, conceptsToAdd));
+                }
 
-			for (final String unprocessedConcept : unprocessedConcepts) {
+            }
 
-				statusMessage += unprocessedConcept + ", ";
-			}
+        }
 
-			statusMessage = StringUtils.removeEnd(statusMessage, ", ");
-		}
+        if (unprocessedConcepts.size() > 0) {
 
-		LOG.info("Refset " + refset.getRefsetId() + " definition successfully modified");
-		return statusMessage;
-	}
+            statusMessage = "Error - Reference set definition modified but unable to process concepts: ";
 
-	/**
-	 * Update the status a refset.
-	 *
-	 * @param service the Terminology Service
-	 * @param user    the user
-	 * @param refset  the refset
-	 * @param active  the active
-	 * @return the status of the operation
-	 * @throws Exception the exception
-	 */
-	public static String updatedRefsetStatus(final TerminologyService service, final User user, final Refset refset,
-			final boolean active) throws Exception {
+            for (final String unprocessedConcept : unprocessedConcepts) {
 
-		String status = "inactivated";
+                statusMessage += unprocessedConcept + ", ";
+            }
 
-		if (active) {
-			status = "reactivated";
-		}
+            statusMessage = StringUtils.removeEnd(statusMessage, ", ");
+        }
 
-		// if the refset has never been versioned before then delete it
-		if (!active && !doesRefsetExist(refset.getRefsetId(), "AND (versionStatus: " + Refset.PUBLISHED + ")")) {
+        LOG.info("Refset " + refset.getRefsetId() + " definition successfully modified");
+        return statusMessage;
+    }
 
-			refset.setActive(active);
-			service.add(AuditEntryHelper.changeRefsetStatusEntry(refset));
-			return deleteInDevelopmentVersion(service, user, refset, true);
-		}
+    /**
+     * Update the status a refset.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param refset the refset
+     * @param active the active
+     * @return the status of the operation
+     * @throws Exception the exception
+     */
+    public static String updatedRefsetStatus(final TerminologyService service, final User user, final Refset refset, final boolean active) throws Exception {
 
-		// inactive the underlying refset concept
-		updateRefsetConcept(refset, active, refset.getModuleId());
+        String status = "inactivated";
 
-		// change the refset object in the DB
-		refset.setActive(active);
-		service.update(refset);
-		service.add(AuditEntryHelper.changeRefsetStatusEntry(refset));
+        if (active) {
+            status = "reactivated";
+        }
 
-		return status;
-	}
+        // if the refset has never been versioned before then delete it
+        if (!active && !doesRefsetExist(refset.getRefsetId(), "AND (versionStatus: " + Refset.PUBLISHED + ")")) {
 
-	/**
-	 * Inactivate an underlying refset concept.
-	 *
-	 * @param refset   the refset
-	 * @param active   the new active state
-	 * @param moduleId the new module ID
-	 * @throws Exception the exception
-	 */
-	private static void updateRefsetConcept(final Refset refset, final boolean active, final String moduleId)
-			throws Exception {
+            refset.setActive(active);
+            service.add(AuditEntryHelper.changeRefsetStatusEntry(refset));
+            return deleteInDevelopmentVersion(service, user, refset, true);
+        }
 
-		terminologyHandler.updateRefsetConcept(refset, active, moduleId);
-	}
+        // inactive the underlying refset concept
+        updateRefsetConcept(refset, active, refset.getModuleId());
 
-	/**
-	 * Delete the edit version of a refset.
-	 *
-	 * @param service       the Terminology Service
-	 * @param user          the user
-	 * @param refset        the refset
-	 * @param deleteConcept if the underlying refset concept should be deleted
-	 * @return the status of the operation
-	 * @throws Exception the exception
-	 */
-	public static String deleteInDevelopmentVersion(final TerminologyService service, final User user,
-			final Refset refset, final boolean deleteConcept) throws Exception {
+        // change the refset object in the DB
+        refset.setActive(active);
+        service.update(refset);
+        service.add(AuditEntryHelper.changeRefsetStatusEntry(refset));
 
-		if (refset == null) {
-			throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-					"Reference set is null and can not be removed.");
+        return status;
+    }
 
-		} else if (!refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
-			throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Reference set Internal Id: "
-					+ refset.getId() + " is not 'In Development' and can not be removed.");
-		}
+    /**
+     * Inactivate an underlying refset concept.
+     *
+     * @param refset the refset
+     * @param active the new active state
+     * @param moduleId the new module ID
+     * @throws Exception the exception
+     */
+    private static void updateRefsetConcept(final Refset refset, final boolean active, final String moduleId) throws Exception {
 
-		final String status = "deleted";
-		final String refsetId = refset.getRefsetId();
+        terminologyHandler.updateRefsetConcept(refset, active, moduleId);
+    }
 
-		boolean otherVersions = false;
+    /**
+     * Delete the edit version of a refset.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param refset the refset
+     * @param deleteConcept if the underlying refset concept should be deleted
+     * @return the status of the operation
+     * @throws Exception the exception
+     */
+    public static String deleteInDevelopmentVersion(final TerminologyService service, final User user, final Refset refset, final boolean deleteConcept)
+        throws Exception {
 
-		// find out if the refset has been versioned before
-		if (doesRefsetExist(refsetId,
-				"AND (versionStatus: " + Refset.PUBLISHED + " OR versionStatus: " + Refset.BETA + ")")) {
+        if (refset == null) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Reference set is null and can not be removed.");
 
-			otherVersions = true;
-		}
+        } else if (!refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                "Reference set Internal Id: " + refset.getId() + " is not 'In Development' and can not be removed.");
+        }
 
-		deleteRefset(service, user, refset);
+        final String status = "deleted";
+        final String refsetId = refset.getRefsetId();
 
-		// if there were other versions of this refset set the lastest version flag
-		// appropriately
-		if (otherVersions) {
+        boolean otherVersions = false;
 
-			final Refset mostRecentVersion = getLatestRefsetVersion(service, refsetId);
-			mostRecentVersion.setLatestPublishedVersion(true);
-			mostRecentVersion.setHasVersionInDevelopment(false);
-			service.update(mostRecentVersion);
-			LOG.info("Refset " + mostRecentVersion.getId()
-					+ " version marked as latest with no In Development version.");
-		}
+        // find out if the refset has been versioned before
+        if (doesRefsetExist(refsetId, "AND (versionStatus: " + Refset.PUBLISHED + " OR versionStatus: " + Refset.BETA + ")")) {
 
-		AuditEntryHelper.addEditingCycleEntry(refset, false);
+            otherVersions = true;
+        }
 
-		return status;
-	}
+        deleteRefset(service, user, refset);
 
-	/**
-	 * Delete the refset and all edit and refset specific branches.
-	 *
-	 * @param service the service
-	 * @param user    the user
-	 * @param refset  the refset
-	 * @throws Exception the exception
-	 */
-	public static void deleteRefset(final TerminologyService service, final User user, final Refset refset)
-			throws Exception {
+        // if there were other versions of this refset set the lastest version flag
+        // appropriately
+        if (otherVersions) {
 
-		// this won't happen without access to snowstorm delete branches
-		// WorkflowService.deleteRefsetBranch(service, user, refset.getEditionBranch(),
-		// refset.getId(), refset.getRefsetBranchId());
+            final Refset mostRecentVersion = getLatestRefsetVersion(service, refsetId);
+            mostRecentVersion.setLatestPublishedVersion(true);
+            mostRecentVersion.setHasVersionInDevelopment(false);
+            service.update(mostRecentVersion);
+            LOG.info("Refset " + mostRecentVersion.getId() + " version marked as latest with no In Development version.");
+        }
 
-		// remove any edit history that exists
-		RefsetService.removeRefsetEditHistory(service, user, refset.getRefsetId());
+        AuditEntryHelper.addEditingCycleEntry(refset, false);
 
-		// remove any workflow history that exists
-		final ResultList<WorkflowHistory> workflowResults = WorkflowService.getWorkflowHistory(service, refset,
-				new SearchParameters());
+        return status;
+    }
 
-		for (final WorkflowHistory workflow : workflowResults.getItems()) {
+    /**
+     * Delete the refset and all edit and refset specific branches.
+     *
+     * @param service the service
+     * @param user the user
+     * @param refset the refset
+     * @throws Exception the exception
+     */
+    public static void deleteRefset(final TerminologyService service, final User user, final Refset refset) throws Exception {
 
-			service.remove(workflow);
-		}
+        // this won't happen without access to snowstorm delete branches
+        // WorkflowService.deleteRefsetBranch(service, user, refset.getEditionBranch(),
+        // refset.getId(), refset.getRefsetBranchId());
 
-		// remove the refset from the database
-		service.remove(refset);
-		LOG.info("Deleted refset " + refset.getRefsetId() + " In Development version from database: " + refset.getId());
-	}
+        // remove any edit history that exists
+        RefsetService.removeRefsetEditHistory(service, user, refset.getRefsetId());
 
-	/**
-	 * Does a refset ID exist in the database.
-	 *
-	 * @param refsetId             the refset ID
-	 * @param addedQueryParameters additional query string to limit the refset
-	 *                             versions
-	 * @return does the refset exist (true/fase)
-	 * @throws Exception the exception
-	 */
-	public static boolean doesRefsetExist(final String refsetId, final String addedQueryParameters) throws Exception {
+        // remove any workflow history that exists
+        final ResultList<WorkflowHistory> workflowResults = WorkflowService.getWorkflowHistory(service, refset, new SearchParameters());
 
-		String expandedQuery = "";
+        for (final WorkflowHistory workflow : workflowResults.getItems()) {
 
-		try (final TerminologyService service = new TerminologyService()) {
+            service.remove(workflow);
+        }
 
-			if (addedQueryParameters != null) {
+        // remove the refset from the database
+        service.remove(refset);
+        LOG.info("Deleted refset " + refset.getRefsetId() + " In Development version from database: " + refset.getId());
+    }
 
-				expandedQuery = addedQueryParameters;
-			}
+    /**
+     * Does a refset ID exist in the database.
+     *
+     * @param refsetId the refset ID
+     * @param addedQueryParameters additional query string to limit the refset versions
+     * @return does the refset exist (true/fase)
+     * @throws Exception the exception
+     */
+    public static boolean doesRefsetExist(final String refsetId, final String addedQueryParameters) throws Exception {
 
-			// find out if the refset exists
-			final ResultList<Refset> results = service.find("refsetId: " + refsetId + " " + expandedQuery, null,
-					Refset.class, null);
+        String expandedQuery = "";
 
-			return !(results.getItems().isEmpty());
+        try (final TerminologyService service = new TerminologyService()) {
 
-		}
+            if (addedQueryParameters != null) {
 
-	}
+                expandedQuery = addedQueryParameters;
+            }
 
-	/**
-	 * Gets the list of Refset Concepts that can be used as parents to a refset or
-	 * as the underlying concept for a new refset.
-	 *
-	 * @param service           the Terminology Service
-	 * @param branch            the branch to retrieve the concepts from
-	 * @param areParentConcepts Do these concepts represent parent concepts for a
-	 *                          new refset, or will they be the underlying concepts
-	 *                          for a the refset itself
-	 * @return the list of refset concepts
-	 * @throws Exception the exception
-	 */
-	public static ConceptResultList getRefsetConcepts(final TerminologyService service, final String branch,
-			final boolean areParentConcepts) throws Exception {
+            // find out if the refset exists
+            final ResultList<Refset> results = service.find("refsetId: " + refsetId + " " + expandedQuery, null, Refset.class, null);
 
-		return terminologyHandler.getRefsetConcepts(service, branch, areParentConcepts);
+            return !(results.getItems().isEmpty());
 
-	}
+        }
 
-	/**
-	 * Returns a specific refset by internal ID.
-	 *
-	 * @param service the Terminology Service
-	 * @param refset  the refset
-	 * @param force   should the recount be forced
-	 * @return the if the refset needed the count set
-	 * @throws Exception the exception
-	 */
-	public static boolean setRefsetMemberCount(final TerminologyService service, final Refset refset,
-			final boolean force) throws Exception {
+    }
 
-		if (refset.getMemberCount() == -1 || force) {
+    /**
+     * Gets the list of Refset Concepts that can be used as parents to a refset or as the underlying concept for a new refset.
+     *
+     * @param service the Terminology Service
+     * @param branch the branch to retrieve the concepts from
+     * @param areParentConcepts Do these concepts represent parent concepts for a new refset, or will they be the underlying concepts for a the refset itself
+     * @return the list of refset concepts
+     * @throws Exception the exception
+     */
+    public static ConceptResultList getRefsetConcepts(final TerminologyService service, final String branch, final boolean areParentConcepts) throws Exception {
 
-			LOG.debug("setRefsetMemberCount Setting the member count for refset: " + refset.getId());
-			refset.setMemberCount(RefsetMemberService.getMemberCount(refset));
+        return terminologyHandler.getRefsetConcepts(service, branch, areParentConcepts);
 
-			// save the refset
-			service.update(refset);
-			return true;
-		}
+    }
 
-		return false;
-	}
+    /**
+     * Returns a specific refset by internal ID.
+     *
+     * @param service the Terminology Service
+     * @param refset the refset
+     * @param force should the recount be forced
+     * @return the if the refset needed the count set
+     * @throws Exception the exception
+     */
+    public static boolean setRefsetMemberCount(final TerminologyService service, final Refset refset, final boolean force) throws Exception {
 
-	/**
-	 * Returns a specific refset by internal ID.
-	 *
-	 * @param service          the Terminology Service
-	 * @param user             the user
-	 * @param refsetInternalId the internal refset ID
-	 * @return the refset
-	 * @throws Exception the exception
-	 */
-	public static Refset getRefset(final TerminologyService service, final User user, final String refsetInternalId)
-			throws Exception {
+        if (refset.getMemberCount() == -1 || force) {
 
-		service.setModifiedBy(user.getUserName());
-		service.setModifiedFlag(true);
+            LOG.debug("setRefsetMemberCount Setting the member count for refset: " + refset.getId());
+            refset.setMemberCount(RefsetMemberService.getMemberCount(refset));
 
-		final Refset refset = service.findSingle("id:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class,
-				null);
+            // save the refset
+            service.update(refset);
+            return true;
+        }
 
-		if (refset == null) {
+        return false;
+    }
 
-			throw new Exception("Unable to retrieve reference set " + refsetInternalId);
-		}
+    /**
+     * Returns a specific refset by internal ID.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param refsetInternalId the internal refset ID
+     * @return the refset
+     * @throws Exception the exception
+     */
+    public static Refset getRefset(final TerminologyService service, final User user, final String refsetInternalId) throws Exception {
 
-		setCommonRefsetProperties(service, user, refset);
+        service.setModifiedBy(user.getUserName());
+        service.setModifiedFlag(true);
 
-		LOG.debug("getRefset: refset: " + ModelUtility.toJson(refset));
-		return refset;
+        final Refset refset = service.findSingle("id:" + QueryParserBase.escape(refsetInternalId) + "", Refset.class, null);
 
-	}
+        if (refset == null) {
 
-	/**
-	 * Returns a specific refset by Refset ID and version date.
-	 *
-	 * @param service     the Terminology Service
-	 * @param user        the user
-	 * @param refsetId    the refset ID
-	 * @param versionDate the version date or IN DEVELOPMENT
-	 * @return the refset
-	 * @throws Exception the exception
-	 */
-	public static Refset getRefset(final TerminologyService service, final User user, final String refsetId,
-			final String versionDate) throws Exception {
+            throw new Exception("Unable to retrieve reference set " + refsetInternalId);
+        }
 
-		service.setModifiedBy(user.getUserName());
-		service.setModifiedFlag(true);
+        setCommonRefsetProperties(service, user, refset);
 
-		String query = "latestPublishedVersion: true";
+        LOG.debug("getRefset: refset: " + ModelUtility.toJson(refset));
+        return refset;
 
-		if (versionDate != null && !versionDate.equals("") && !versionDate.equalsIgnoreCase(Refset.IN_DEVELOPMENT)) {
+    }
 
-			query = "versionDate:" + versionDate;
+    /**
+     * Returns a specific refset by Refset ID and version date.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param refsetId the refset ID
+     * @param versionDate the version date or IN DEVELOPMENT
+     * @return the refset
+     * @throws Exception the exception
+     */
+    public static Refset getRefset(final TerminologyService service, final User user, final String refsetId, final String versionDate) throws Exception {
 
-		} else if (versionDate != null && versionDate.equalsIgnoreCase(Refset.IN_DEVELOPMENT)) {
+        service.setModifiedBy(user.getUserName());
+        service.setModifiedFlag(true);
 
-			query = "versionStatus: " + Refset.IN_DEVELOPMENT;
-		}
+        String query = "latestPublishedVersion: true";
 
-		final Refset refset = service.findSingle(query + " AND refsetId:" + refsetId, Refset.class, null);
+        if (versionDate != null && !versionDate.equals("") && !versionDate.equalsIgnoreCase(Refset.IN_DEVELOPMENT)) {
 
-		if (refset == null) {
+            query = "versionDate:" + versionDate;
 
-			throw new Exception("Unable to retrieve reference set " + refsetId + " with version date: " + versionDate);
-		}
+        } else if (versionDate != null && versionDate.equalsIgnoreCase(Refset.IN_DEVELOPMENT)) {
 
-		setCommonRefsetProperties(service, user, refset);
+            query = "versionStatus: " + Refset.IN_DEVELOPMENT;
+        }
 
-		return refset;
+        final Refset refset = service.findSingle(query + " AND refsetId:" + refsetId, Refset.class, null);
 
-	}
+        if (refset == null) {
 
-	/**
-	 * Returns a specific refset by internal ID.
-	 *
-	 * @param service the Terminology Service
-	 * @param user    the user
-	 * @param refset  the refset
-	 * @throws Exception the exception
-	 */
-	public static void setCommonRefsetProperties(final TerminologyService service, final User user, final Refset refset)
-			throws Exception {
+            throw new Exception("Unable to retrieve reference set " + refsetId + " with version date: " + versionDate);
+        }
 
-		setRefsetPermissions(user, refset);
-		refset.setVersionList(getSortedRefsetVersionList(refset, service, false));
-		refset.setBranchPath(getBranchPath(refset));
-		setRefsetMemberCount(service, refset, false);
+        setCommonRefsetProperties(service, user, refset);
 
-		final List<String> editionVersions = RefsetService.getBranchVersions(refset.getEditionBranch());
-		String versionDate = null;
+        return refset;
 
-		if (editionVersions.size() == 0) {
-			editionVersions.add("Never Published"); // DateUtility.formatDate(new Date(),
-													// DateUtility.DATE_FORMAT_REVERSE, null);
-		}
+    }
 
-		if (refset.getVersionDate() != null) {
-			versionDate = DateUtility.formatDate(refset.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null);
+    /**
+     * Returns a specific refset by internal ID.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param refset the refset
+     * @throws Exception the exception
+     */
+    public static void setCommonRefsetProperties(final TerminologyService service, final User user, final Refset refset) throws Exception {
 
-		} else if (refset.getVersionList().size() > 1) {
-			versionDate = refset.getVersionList().get(1).get("date");
-		}
+        setRefsetPermissions(user, refset);
+        refset.setVersionList(getSortedRefsetVersionList(refset, service, false));
+        refset.setBranchPath(getBranchPath(refset));
+        setRefsetMemberCount(service, refset, false);
 
-		refset.setTerminologyVersionDate(versionDate);
+        final List<String> editionVersions = RefsetService.getBranchVersions(refset.getEditionBranch());
+        String versionDate = null;
 
-		if (versionDate == null) {
+        if (editionVersions.size() == 0) {
+            editionVersions.add("Never Published"); // DateUtility.formatDate(new Date(),
+                                                    // DateUtility.DATE_FORMAT_REVERSE, null);
+        }
 
-			refset.setTerminologyVersionDate(editionVersions.get(0));
-			refset.setBasedOnLatestVersion(true);
+        if (refset.getVersionDate() != null) {
+            versionDate = DateUtility.formatDate(refset.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null);
 
-		} else if (editionVersions.indexOf(versionDate) >= 0) {
+        } else if (refset.getVersionList().size() > 1) {
+            versionDate = refset.getVersionList().get(1).get("date");
+        }
 
-			if (editionVersions.indexOf(versionDate) == 0 || editionVersions.size() == 1) {
-				refset.setBasedOnLatestVersion(true);
-			}
+        refset.setTerminologyVersionDate(versionDate);
 
-		} else {
+        if (versionDate == null) {
 
-			if (editionVersions.size() == 1) {
+            refset.setTerminologyVersionDate(editionVersions.get(0));
+            refset.setBasedOnLatestVersion(true);
 
-				refset.setTerminologyVersionDate(editionVersions.get(0));
-				refset.setBasedOnLatestVersion(true);
-			} else {
+        } else if (editionVersions.indexOf(versionDate) >= 0) {
 
-				String lastEditionDate = "";
-				long lastDifference = 0;
-				final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd:HH:mm:ss");
-				final LocalDateTime dateOfVersion = LocalDateTime.parse(versionDate + ":00:00:00", formatter);
+            if (editionVersions.indexOf(versionDate) == 0 || editionVersions.size() == 1) {
+                refset.setBasedOnLatestVersion(true);
+            }
 
-				for (final String editionVersion : editionVersions) {
+        } else {
 
-					final LocalDateTime editionDate = LocalDateTime.parse(editionVersion + ":00:00:00", formatter);
-					final long duration = Duration.between(editionDate, dateOfVersion).toDays();
+            if (editionVersions.size() == 1) {
 
-					// if the duration is positive and larger than the previous then the previous is
-					// the answer
-					if (!lastEditionDate.equals("") && duration > 0 && lastDifference > 0
-							&& lastDifference < duration) {
-						break;
-					}
+                refset.setTerminologyVersionDate(editionVersions.get(0));
+                refset.setBasedOnLatestVersion(true);
+            } else {
 
-					lastEditionDate = editionVersion;
-					lastDifference = duration;
-				}
+                String lastEditionDate = "";
+                long lastDifference = 0;
+                final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd:HH:mm:ss");
+                final LocalDateTime dateOfVersion = LocalDateTime.parse(versionDate + ":00:00:00", formatter);
 
-				if (editionVersions.indexOf(lastEditionDate) == 0) {
-					refset.setBasedOnLatestVersion(true);
-				}
+                for (final String editionVersion : editionVersions) {
 
-				refset.setTerminologyVersionDate(lastEditionDate);
-			}
-		}
-	}
+                    final LocalDateTime editionDate = LocalDateTime.parse(editionVersion + ":00:00:00", formatter);
+                    final long duration = Duration.between(editionDate, dateOfVersion).toDays();
 
-	/**
-	 * Gets a list of projects ordered by name.
-	 *
-	 * @param service the Terminology Service
-	 * @param user    the user
-	 * @return the list of found refsets
-	 * @throws Exception the exception
-	 */
-	public static LinkedHashMap<String, Project> getUserProjects(final TerminologyService service, final User user)
-			throws Exception {
+                    // if the duration is positive and larger than the previous then the previous is
+                    // the answer
+                    if (!lastEditionDate.equals("") && duration > 0 && lastDifference > 0 && lastDifference < duration) {
+                        break;
+                    }
 
-		@SuppressWarnings("unchecked")
-		LinkedHashMap<String, Project> userProjects = (LinkedHashMap<String, Project>) SecurityService
-				.getFromSession(SecurityService.SESSION_USER_PROJECTS);
+                    lastEditionDate = editionVersion;
+                    lastDifference = duration;
+                }
 
-		if (userProjects != null) {
+                if (editionVersions.indexOf(lastEditionDate) == 0) {
+                    refset.setBasedOnLatestVersion(true);
+                }
 
-			return userProjects;
-		} else {
+                refset.setTerminologyVersionDate(lastEditionDate);
+            }
+        }
+    }
 
-			userProjects = new LinkedHashMap<>();
-			final LinkedHashMap<String, Project> projects = getOrderedProjects(service);
+    /**
+     * Gets a list of projects ordered by name.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @return the list of found refsets
+     * @throws Exception the exception
+     */
+    public static LinkedHashMap<String, Project> getUserProjects(final TerminologyService service, final User user) throws Exception {
 
-			for (final Project project : projects.values()) {
+        @SuppressWarnings("unchecked")
+        LinkedHashMap<String, Project> userProjects = (LinkedHashMap<String, Project>) SecurityService.getFromSession(SecurityService.SESSION_USER_PROJECTS);
 
-				setProjectPermissions(user, project);
-				userProjects.put(project.getId(), project);
-			}
+        if (userProjects != null) {
 
-			return userProjects;
-		}
+            return userProjects;
+        } else {
 
-	}
+            userProjects = new LinkedHashMap<>();
+            final LinkedHashMap<String, Project> projects = getOrderedProjects(service);
 
-	/**
-	 * Gets a list of projects ordered by name.
-	 *
-	 * @param service the Terminology Service
-	 * @return the list of found refsets
-	 * @throws Exception the exception
-	 */
-	public static LinkedHashMap<String, Project> getOrderedProjects(final TerminologyService service) throws Exception {
+            for (final Project project : projects.values()) {
 
-		final LinkedHashMap<String, Project> projects = new LinkedHashMap<>();
-		final PfsParameter pfs = new PfsParameter();
-		pfs.setAscending(true);
-		pfs.setSortFields(Arrays.asList("name", "id"));
+                setProjectPermissions(user, project);
+                userProjects.put(project.getId(), project);
+            }
 
-		final ResultList<Project> results = service.find("", pfs, Project.class, null);
+            return userProjects;
+        }
 
-		for (final Project project : results.getItems()) {
+    }
 
-			projects.put(project.getId(), project);
-		}
+    /**
+     * Gets a list of projects ordered by name.
+     *
+     * @param service the Terminology Service
+     * @return the list of found refsets
+     * @throws Exception the exception
+     */
+    public static LinkedHashMap<String, Project> getOrderedProjects(final TerminologyService service) throws Exception {
 
-		return projects;
-	}
+        final LinkedHashMap<String, Project> projects = new LinkedHashMap<>();
+        final PfsParameter pfs = new PfsParameter();
+        pfs.setAscending(true);
+        pfs.setSortFields(Arrays.asList("name", "id"));
 
-	/**
-	 * Searches for refset with filters and member concept search.
-	 *
-	 * @param user              the user
-	 * @param service           the terminology service
-	 * @param searchParameters  the search parameters
-	 * @param searchConcepts    should refset members be searched
-	 * @param setPermissions    should permissions and roles be set on the refsets
-	 * @param setVersions       should the version list be set on the refsets
-	 * @param showInDevelopment flag on whether to include IN_DEVELOPMENT refsets
-	 * @param showOnlyPermitted flag on whether to only show refsets user has
-	 *                          specific permission to and not general public
-	 *                          refsets
-	 * @return the list of found refsets
-	 * @throws Exception the exception
-	 */
-	public static ResultList<Refset> searchRefsets(final User user, final TerminologyService service,
-			final SearchParameters searchParameters, final boolean searchConcepts, final boolean setPermissions,
-			final boolean setVersions, final boolean showInDevelopment, final boolean showOnlyPermitted)
-			throws Exception {
+        final ResultList<Project> results = service.find("", pfs, Project.class, null);
 
-		final long start = System.currentTimeMillis();
-		String query = searchParameters.getQuery();
-		final String elasticSearchReplaceRegEx = "[" + Pattern.quote("+=&|><!{}[]^\"~*?:\\/") + "]+?";
-		final Set<String> refsetIdsFromMembers = new HashSet<>();
+        for (final Project project : results.getItems()) {
 
-		final PfsParameter pfs = new PfsParameter();
+            projects.put(project.getId(), project);
+        }
 
-		if (searchParameters.getOffset() != null) {
+        return projects;
+    }
 
-			pfs.setOffset(searchParameters.getOffset());
-		}
+    /**
+     * Searches for refset with filters and member concept search.
+     *
+     * @param user the user
+     * @param service the terminology service
+     * @param searchParameters the search parameters
+     * @param searchConcepts should refset members be searched
+     * @param setPermissions should permissions and roles be set on the refsets
+     * @param setVersions should the version list be set on the refsets
+     * @param showInDevelopment flag on whether to include IN_DEVELOPMENT refsets
+     * @param showOnlyPermitted flag on whether to only show refsets user has specific permission to and not general public refsets
+     * @return the list of found refsets
+     * @throws Exception the exception
+     */
+    public static ResultList<Refset> searchRefsets(final User user, final TerminologyService service, final SearchParameters searchParameters,
+        final boolean searchConcepts, final boolean setPermissions, final boolean setVersions, final boolean showInDevelopment, final boolean showOnlyPermitted)
+        throws Exception {
 
-		if (searchParameters.getLimit() != null) {
+        final long start = System.currentTimeMillis();
+        String query = searchParameters.getQuery();
+        final String elasticSearchReplaceRegEx = "[" + Pattern.quote("+=&|><!{}[]^\"~*?:\\/") + "]+?";
+        final Set<String> refsetIdsFromMembers = new HashSet<>();
 
-			pfs.setLimit(searchParameters.getLimit());
-		}
+        final PfsParameter pfs = new PfsParameter();
 
-		if (searchParameters.getSortAscending() != null) {
+        if (searchParameters.getOffset() != null) {
 
-			pfs.setAscending(searchParameters.getSortAscending());
-		}
+            pfs.setOffset(searchParameters.getOffset());
+        }
 
-		if (searchParameters.getSort() != null) {
+        if (searchParameters.getLimit() != null) {
 
-			pfs.setSortFields(Arrays.asList(searchParameters.getSort(), "modified desc", "id"));
-		}
+            pfs.setLimit(searchParameters.getLimit());
+        }
 
-		if (query != null && !query.equals("")) {
+        if (searchParameters.getSortAscending() != null) {
 
-			query = URLDecoder.decode(query, StandardCharsets.UTF_8);
-			searchParameters.setQuery(query);
+            pfs.setAscending(searchParameters.getSortAscending());
+        }
 
-			final List<String> directoryColumns = Arrays.asList("id", "refsetId", "name", "editionName",
-					"organizationName", "versionStatus", "versionDate", "modified", "privateRefset", "editionShortName",
-					"assignedUser", "projectId", "workflowStatus");
-			final String[] queryParts = query.split(AND_SUFFIX);
-			StringBuilder termQuery = new StringBuilder();
-			StringBuilder termQueryForRt2 = new StringBuilder();
-			StringBuilder filterQuery = new StringBuilder();
+        if (searchParameters.getSort() != null) {
 
-			for (final String queryPart : queryParts) {
+            pfs.setSortFields(Arrays.asList(searchParameters.getSort(), "modified desc", "id"));
+        }
 
-				final String[] keyValue = queryPart.split(":");
+        if (query != null && !query.equals("")) {
 
-				if (keyValue.length > 1 && directoryColumns.contains(keyValue[0])) {
+            query = URLDecoder.decode(query, StandardCharsets.UTF_8);
+            searchParameters.setQuery(query);
 
-					final String value = (String.join(":", Arrays.copyOfRange(keyValue, 1, keyValue.length)))
-							.replaceAll(elasticSearchReplaceRegEx, Matcher.quoteReplacement("\\") + "$0");
-					filterQuery.append(keyValue[0]).append(":").append(value).append(" AND ");
+            final List<String> directoryColumns = Arrays.asList("id", "refsetId", "name", "editionName", "organizationName", "versionStatus", "versionDate",
+                "modified", "privateRefset", "editionShortName", "assignedUser", "projectId", "workflowStatus");
+            final String[] queryParts = query.split(AND_SUFFIX);
+            StringBuilder termQuery = new StringBuilder();
+            StringBuilder termQueryForRt2 = new StringBuilder();
+            StringBuilder filterQuery = new StringBuilder();
 
-				} else {
+            for (final String queryPart : queryParts) {
 
-					termQuery.append(queryPart).append("*").append(AND_SUFFIX);
-					termQueryForRt2.append(
-							queryPart.replaceAll(elasticSearchReplaceRegEx, Matcher.quoteReplacement("\\") + "$0"))
-							.append("*").append(AND_SUFFIX);
-				}
+                final String[] keyValue = queryPart.split(":");
 
-			}
+                if (keyValue.length > 1 && directoryColumns.contains(keyValue[0])) {
 
-			// if the term query isn't empty then search members and build the full term
-			// query string
-			if (termQuery.length() > 0) {
+                    final String value = (String.join(":", Arrays.copyOfRange(keyValue, 1, keyValue.length))).replaceAll(elasticSearchReplaceRegEx,
+                        Matcher.quoteReplacement("\\") + "$0");
+                    filterQuery.append(keyValue[0]).append(":").append(value).append(" AND ");
 
-				final Set<String> refsetIdsFromTermServer = new HashSet<>();
-				termQuery.setLength(termQuery.length() - 5);
-				termQueryForRt2.setLength(termQueryForRt2.length() - 5);
+                } else {
 
-				// if it was requested search member concepts
-				if (searchConcepts) {
+                    termQuery.append(queryPart).append("*").append(AND_SUFFIX);
+                    termQueryForRt2.append(queryPart.replaceAll(elasticSearchReplaceRegEx, Matcher.quoteReplacement("\\") + "$0")).append("*")
+                        .append(AND_SUFFIX);
+                }
 
-					refsetIdsFromMembers.addAll(RefsetMemberService.searchDirectoryMembers(searchParameters));
-					refsetIdsFromTermServer.addAll(refsetIdsFromMembers);
+            }
 
-					Set<String> nonPublishedBranchPaths = new HashSet<>();
+            // if the term query isn't empty then search members and build the full term
+            // query string
+            if (termQuery.length() > 0) {
 
-					if (showInDevelopment && !user.getName().equals(SecurityService.GUEST_USERNAME)) {
-						nonPublishedBranchPaths = getInDevelopmentBranchPaths(service);
-					}
+                final Set<String> refsetIdsFromTermServer = new HashSet<>();
+                termQuery.setLength(termQuery.length() - 5);
+                termQueryForRt2.setLength(termQueryForRt2.length() - 5);
 
-					// search descriptions of Simple type reference set (foundation metadata
-					// concept) "<446609009"
-					refsetIdsFromTermServer.addAll(RefsetMemberService.searchMultisearchDescriptions(searchParameters,
-							"<446609009", nonPublishedBranchPaths));
-				}
+                // if it was requested search member concepts
+                if (searchConcepts) {
 
-				termQueryForRt2.insert(0, "(tags: (").append(")");
+                    refsetIdsFromMembers.addAll(RefsetMemberService.searchDirectoryMembers(searchParameters));
+                    refsetIdsFromTermServer.addAll(refsetIdsFromMembers);
 
-				if (!refsetIdsFromTermServer.isEmpty()) {
+                    Set<String> nonPublishedBranchPaths = new HashSet<>();
 
-					getUniqueRefsetIds(service);
-					refsetIdsFromTermServer.retainAll(UNIQUE_REFSET_IDS);
+                    if (showInDevelopment && !user.getName().equals(SecurityService.GUEST_USERNAME)) {
+                        nonPublishedBranchPaths = getInDevelopmentBranchPaths(service);
+                    }
 
-					if (!refsetIdsFromTermServer.isEmpty()) {
-						termQueryForRt2.append(" OR refsetId:(").append(String.join(" OR ", refsetIdsFromTermServer))
-								.append(")");
-					}
-				}
+                    // search descriptions of Simple type reference set (foundation metadata
+                    // concept) "<446609009"
+                    refsetIdsFromTermServer.addAll(RefsetMemberService.searchMultisearchDescriptions(searchParameters, "<446609009", nonPublishedBranchPaths));
+                }
 
-				termQueryForRt2.append(")");
+                termQueryForRt2.insert(0, "(tags: (").append(")");
 
-			}
+                if (!refsetIdsFromTermServer.isEmpty()) {
 
-			// if the filter query isn't empty then prepare the query with wildcards
-			if (filterQuery.length() > 0) {
+                    getUniqueRefsetIds(service);
+                    refsetIdsFromTermServer.retainAll(UNIQUE_REFSET_IDS);
 
-				int index = filterQuery.lastIndexOf(AND_SUFFIX);
-				if (index != -1 && index == filterQuery.length() - AND_SUFFIX.length()) {
-					filterQuery.delete(index, filterQuery.length());
-				}
-				filterQuery = new StringBuilder(IndexUtility.addWildcardsToQuery(filterQuery.toString(), Refset.class));
-				filterQuery.insert(0, "(").append(")");
+                    if (!refsetIdsFromTermServer.isEmpty()) {
+                        termQueryForRt2.append(" OR refsetId:(").append(String.join(" OR ", refsetIdsFromTermServer)).append(")");
+                    }
+                }
 
-				// if the term query isn't empty then append an 'AND' to the filter query
-				if (termQuery.length() > 0) {
+                termQueryForRt2.append(")");
 
-					filterQuery.append(AND_SUFFIX);
-				}
+            }
 
-			}
+            // if the filter query isn't empty then prepare the query with wildcards
+            if (filterQuery.length() > 0) {
 
-			query = filterQuery.toString() + termQueryForRt2.toString();
-		}
+                int index = filterQuery.lastIndexOf(AND_SUFFIX);
+                if (index != -1 && index == filterQuery.length() - AND_SUFFIX.length()) {
+                    filterQuery.delete(index, filterQuery.length());
+                }
+                filterQuery = new StringBuilder(IndexUtility.addWildcardsToQuery(filterQuery.toString(), Refset.class));
+                filterQuery.insert(0, "(").append(")");
 
-		if (query != null && !query.equals("")) {
+                // if the term query isn't empty then append an 'AND' to the filter query
+                if (termQuery.length() > 0) {
 
-			query += AND_SUFFIX;
-		} else {
+                    filterQuery.append(AND_SUFFIX);
+                }
 
-			query = "";
-		}
+            }
 
-		String projectFilter = "(";
+            query = filterQuery.toString() + termQueryForRt2.toString();
+        }
 
-		// @SuppressWarnings("unchecked")
-		final LinkedHashMap<String, Project> userProjects = getUserProjects(service, user);
+        if (query != null && !query.equals("")) {
 
-		for (final Project project : userProjects.values()) {
+            query += AND_SUFFIX;
+        } else {
 
-			if (!project.isPrivateProject() || project.getRoles().contains(User.ROLE_VIEWER)) {
+            query = "";
+        }
 
-				// if only including refsets the user has specific access to make sure they have
-				// access to this project
-				if (showOnlyPermitted && !project.getRoles().contains(User.ROLE_VIEWER)) {
-					continue;
-				}
+        String projectFilter = "(";
 
-				projectFilter += "(projectId:" + project.getId();
+        // @SuppressWarnings("unchecked")
+        final LinkedHashMap<String, Project> userProjects = getUserProjects(service, user);
 
-				// if the user isn't allowed to view private refsets for this project restrict
-				// them, otherwise show in development or the latest published
-				// version
-				if (!project.getRoles().contains(User.ROLE_VIEWER)) {
+        for (final Project project : userProjects.values()) {
 
-					projectFilter += " AND privateRefset: false AND latestPublishedVersion: true";
-				} else {
+            if (!project.isPrivateProject() || project.getRoles().contains(User.ROLE_VIEWER)) {
 
-					// if this is the directory then only show the latest published version, if it
-					// is the projects then show in development or the latest
-					// published version
-					if (showInDevelopment) {
-						projectFilter += " AND ((latestPublishedVersion: true AND hasVersionInDevelopment: false) OR versionStatus: ("
-								+ Refset.IN_DEVELOPMENT + "))";
-					} else {
-						projectFilter += " AND latestPublishedVersion: true";
-					}
-				}
+                // if only including refsets the user has specific access to make sure they have
+                // access to this project
+                if (showOnlyPermitted && !project.getRoles().contains(User.ROLE_VIEWER)) {
+                    continue;
+                }
 
-				projectFilter += ") OR ";
-			}
+                projectFilter += "(projectId:" + project.getId();
 
-		}
+                // if the user isn't allowed to view private refsets for this project restrict
+                // them, otherwise show in development or the latest published
+                // version
+                if (!project.getRoles().contains(User.ROLE_VIEWER)) {
 
-		query += StringUtils.removeEnd(projectFilter, " OR ") + ")";
+                    projectFilter += " AND privateRefset: false AND latestPublishedVersion: true";
+                } else {
 
-		if (user.getUserName().equals(SecurityService.GUEST_USERNAME)) {
+                    // if this is the directory then only show the latest published version, if it
+                    // is the projects then show in development or the latest
+                    // published version
+                    if (showInDevelopment) {
+                        projectFilter +=
+                            " AND ((latestPublishedVersion: true AND hasVersionInDevelopment: false) OR versionStatus: (" + Refset.IN_DEVELOPMENT + "))";
+                    } else {
+                        projectFilter += " AND latestPublishedVersion: true";
+                    }
+                }
 
-			query += " AND privateRefset: false";
-		}
+                projectFilter += ") OR ";
+            }
 
-		// incase query is empty. search will fail with parentheses
-		if ("()".equals(query)) {
-			query = "";
-		}
+        }
 
-		LOG.debug("searchRefsets query: " + query);
-		final ResultList<Refset> results = service.find(query, pfs, Refset.class, null);
+        query += StringUtils.removeEnd(projectFilter, " OR ") + ")";
 
-		if (setPermissions || setVersions) {
+        if (user.getUserName().equals(SecurityService.GUEST_USERNAME)) {
 
-			for (Refset refset : results.getItems()) {
+            query += " AND privateRefset: false";
+        }
 
-				if (refsetIdsFromMembers.contains(refset.getRefsetId())) {
-					refset.setMemberSearchMatch(true);
-				}
+        // incase query is empty. search will fail with parentheses
+        if ("()".equals(query)) {
+            query = "";
+        }
 
-				if (setPermissions) {
+        LOG.debug("searchRefsets query: " + query);
+        final ResultList<Refset> results = service.find(query, pfs, Refset.class, null);
 
-					refset = setRefsetPermissions(user, refset);
-				}
+        if (setPermissions || setVersions) {
 
-				if (setVersions) {
+            for (Refset refset : results.getItems()) {
 
-					refset.setVersionList(getSortedRefsetVersionList(refset, service, false));
-				}
+                if (refsetIdsFromMembers.contains(refset.getRefsetId())) {
+                    refset.setMemberSearchMatch(true);
+                }
 
-			}
+                if (setPermissions) {
 
-		}
+                    refset = setRefsetPermissions(user, refset);
+                }
 
-		results.setTimeTaken(System.currentTimeMillis() - start);
-		results.setTotalKnown(true);
+                if (setVersions) {
 
-		// LOG.debug("searchRefsets results: " + ModelUtility.toJson(results));
+                    refset.setVersionList(getSortedRefsetVersionList(refset, service, false));
+                }
 
-		return results;
-	}
+            }
 
-	/**
-	 * Get the set of unique Refset IDs.
-	 *
-	 * @param service the Terminology Service
-	 * @return the set of unique Refset IDs
-	 * @throws Exception the exception
-	 */
-	public static Set<String> getInDevelopmentBranchPaths(final TerminologyService service) throws Exception {
+        }
 
-		if (!BRANCH_SEARCH_CACHE.isEmpty()) {
-			return BRANCH_SEARCH_CACHE;
-		}
+        results.setTimeTaken(System.currentTimeMillis() - start);
+        results.setTotalKnown(true);
 
-		final ResultList<Refset> results = service.find("versionStatus: " + Refset.IN_DEVELOPMENT, new PfsParameter(),
-				Refset.class, null);
+        // LOG.debug("searchRefsets results: " + ModelUtility.toJson(results));
 
-		for (final Refset refset : results.getItems()) {
+        return results;
+    }
 
-			final String branchPath = getBranchPath(refset);
-			BRANCH_SEARCH_CACHE.add(branchPath);
-		}
+    /**
+     * Get the set of unique Refset IDs.
+     *
+     * @param service the Terminology Service
+     * @return the set of unique Refset IDs
+     * @throws Exception the exception
+     */
+    public static Set<String> getInDevelopmentBranchPaths(final TerminologyService service) throws Exception {
 
-		return BRANCH_SEARCH_CACHE;
-	}
+        if (!BRANCH_SEARCH_CACHE.isEmpty()) {
+            return BRANCH_SEARCH_CACHE;
+        }
 
-	/**
-	 * Create a new version of a refset.
-	 *
-	 * @param service          the Terminology Service
-	 * @param user             the user
-	 * @param refsetInternalId the internal refset ID to base the new version on
-	 * @param inEdit           should the refset be set into IN_EDIT status, if
-	 *                         false it will be in READY_FOR_EDIT
-	 * @return the new internal refset ID
-	 * @throws Exception the exception
-	 */
-	public static String createNewRefsetVersion(final TerminologyService service, final User user,
-			final String refsetInternalId, final boolean inEdit) throws Exception {
+        final ResultList<Refset> results = service.find("versionStatus: " + Refset.IN_DEVELOPMENT, new PfsParameter(), Refset.class, null);
 
-		Refset oldLatestVersionRefset = null;
-		Refset newRefsetVersion = new Refset();
-		String newInternalRefsetId = "";
+        for (final Refset refset : results.getItems()) {
 
-		final Refset refset = getRefset(service, user, refsetInternalId);
+            final String branchPath = getBranchPath(refset);
+            BRANCH_SEARCH_CACHE.add(branchPath);
+        }
 
-		final ResultList<Refset> results = service.find("versionStatus: (" + Refset.IN_DEVELOPMENT + ") AND refsetId: "
-				+ QueryParserBase.escape(refset.getRefsetId()), null, Refset.class, null);
+        return BRANCH_SEARCH_CACHE;
+    }
 
-		if (results.getItems().size() > 0) {
+    /**
+     * Create a new version of a refset.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param refsetInternalId the internal refset ID to base the new version on
+     * @param inEdit should the refset be set into IN_EDIT status, if false it will be in READY_FOR_EDIT
+     * @return the new internal refset ID
+     * @throws Exception the exception
+     */
+    public static String createNewRefsetVersion(final TerminologyService service, final User user, final String refsetInternalId, final boolean inEdit)
+        throws Exception {
 
-			throw new Exception(
-					"There is already a version of this reference set that is 'In Development', and there can only be one");
-		}
+        Refset oldLatestVersionRefset = null;
+        Refset newRefsetVersion = new Refset();
+        String newInternalRefsetId = "";
 
-		newRefsetVersion.populateFrom(refset);
+        final Refset refset = getRefset(service, user, refsetInternalId);
 
-		// set automatic changed fields
-		final String editBranchId = WorkflowService.generateBranchId();
-		final String refsetBranchId = WorkflowService.generateBranchId();
-		newRefsetVersion.setVersionDate(null);
-		newRefsetVersion.setId(null);
-		newRefsetVersion.setVersionStatus(Refset.IN_DEVELOPMENT);
-		newRefsetVersion.setLatestPublishedVersion(false);
-		newRefsetVersion.setWorkflowStatus(WorkflowService.READY_FOR_EDIT);
-		newRefsetVersion.setEditBranchId(editBranchId);
-		newRefsetVersion.setRefsetBranchId(refsetBranchId);
+        final ResultList<Refset> results = service
+            .find("versionStatus: (" + Refset.IN_DEVELOPMENT + ") AND refsetId: " + QueryParserBase.escape(refset.getRefsetId()), null, Refset.class, null);
 
-		// Add an object
-		service.add(newRefsetVersion);
-		newInternalRefsetId = newRefsetVersion.getId();
+        if (results.getItems().size() > 0) {
 
-		// create a refset and edit branch for the new refset
-		WorkflowService.createRefsetBranch(refset.getEditionBranch(), refset.getRefsetId(), refsetBranchId,
-				refset.isLocalSet());
-		WorkflowService.createEditBranch(service, user, newRefsetVersion, editBranchId);
+            throw new Exception("There is already a version of this reference set that is 'In Development', and there can only be one");
+        }
 
-		// Add a workflow history entry for CREATE
-		WorkflowService.addWorkflowHistory(service, user, WorkflowService.CREATE, newRefsetVersion, "");
+        newRefsetVersion.populateFrom(refset);
 
-		// update the workflow to IN_EDIT if required
-		if (inEdit) {
-			newRefsetVersion = WorkflowService.setWorkflowStatus(service, user, WorkflowService.EDIT, newRefsetVersion,
-					"", WorkflowService.IN_EDIT, user.getUserName());
-		}
+        // set automatic changed fields
+        final String editBranchId = WorkflowService.generateBranchId();
+        final String refsetBranchId = WorkflowService.generateBranchId();
+        newRefsetVersion.setVersionDate(null);
+        newRefsetVersion.setId(null);
+        newRefsetVersion.setVersionStatus(Refset.IN_DEVELOPMENT);
+        newRefsetVersion.setLatestPublishedVersion(false);
+        newRefsetVersion.setWorkflowStatus(WorkflowService.READY_FOR_EDIT);
+        newRefsetVersion.setEditBranchId(editBranchId);
+        newRefsetVersion.setRefsetBranchId(refsetBranchId);
 
-		// find the previous latest version
-		if (refset.isLatestPublishedVersion()) {
-			oldLatestVersionRefset = refset;
-		} else {
-			oldLatestVersionRefset = service.findSingle(
-					"refsetId:" + QueryParserBase.escape(refset.getRefsetId()) + " AND latestPublishedVersion: true",
-					Refset.class, null);
-		}
+        // Add an object
+        service.add(newRefsetVersion);
+        newInternalRefsetId = newRefsetVersion.getId();
 
-		// update the previous latest version so it no longer is marked as latest
-		if (oldLatestVersionRefset != null) {
+        // create a refset and edit branch for the new refset
+        WorkflowService.createRefsetBranch(refset.getEditionBranch(), refset.getRefsetId(), refsetBranchId, refset.isLocalSet());
+        WorkflowService.createEditBranch(service, user, newRefsetVersion, editBranchId);
 
-			// update an object
-			oldLatestVersionRefset.setHasVersionInDevelopment(true);
-			service.update(oldLatestVersionRefset);
-			LOG.info("Refset " + oldLatestVersionRefset.getId() + " version marked as having in development version.");
-		}
+        // Add a workflow history entry for CREATE
+        WorkflowService.addWorkflowHistory(service, user, WorkflowService.CREATE, newRefsetVersion, "");
 
-		LOG.info("Refset " + newRefsetVersion.getRefsetId() + " version ID '" + newInternalRefsetId
-				+ "' successfully added");
-		LOG.debug("createNewRefsetVersion: Refset: " + ModelUtility.toJson(newRefsetVersion));
+        // update the workflow to IN_EDIT if required
+        if (inEdit) {
+            newRefsetVersion =
+                WorkflowService.setWorkflowStatus(service, user, WorkflowService.EDIT, newRefsetVersion, "", WorkflowService.IN_EDIT, user.getUserName());
+        }
 
-		return newInternalRefsetId;
-	}
+        // find the previous latest version
+        if (refset.isLatestPublishedVersion()) {
+            oldLatestVersionRefset = refset;
+        } else {
+            oldLatestVersionRefset =
+                service.findSingle("refsetId:" + QueryParserBase.escape(refset.getRefsetId()) + " AND latestPublishedVersion: true", Refset.class, null);
+        }
 
-	/**
-	 * Get the latest version of a refset without using the latest version flag.
-	 *
-	 * @param service  the Terminology Service
-	 * @param refsetId the refset ID
-	 * @return the refset version
-	 * @throws Exception the exception
-	 */
-	public static Refset getLatestRefsetVersion(final TerminologyService service, final String refsetId)
-			throws Exception {
+        // update the previous latest version so it no longer is marked as latest
+        if (oldLatestVersionRefset != null) {
 
-		Refset refsetLatestVersion = null;
+            // update an object
+            oldLatestVersionRefset.setHasVersionInDevelopment(true);
+            service.update(oldLatestVersionRefset);
+            LOG.info("Refset " + oldLatestVersionRefset.getId() + " version marked as having in development version.");
+        }
 
-		final PfsParameter pfs = new PfsParameter();
-		pfs.setSort("versionDate");
-		pfs.setAscending(false);
+        LOG.info("Refset " + newRefsetVersion.getRefsetId() + " version ID '" + newInternalRefsetId + "' successfully added");
+        LOG.debug("createNewRefsetVersion: Refset: " + ModelUtility.toJson(newRefsetVersion));
 
-		final ResultList<Refset> results = service.find("refsetId: " + QueryParserBase.escape(refsetId), pfs,
-				Refset.class, null);
+        return newInternalRefsetId;
+    }
 
-		// see if there is an "In Development" version as that should be the latest.
-		for (final Refset result : results.getItems()) {
+    /**
+     * Get the latest version of a refset without using the latest version flag.
+     *
+     * @param service the Terminology Service
+     * @param refsetId the refset ID
+     * @return the refset version
+     * @throws Exception the exception
+     */
+    public static Refset getLatestRefsetVersion(final TerminologyService service, final String refsetId) throws Exception {
 
-			if (result.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
+        Refset refsetLatestVersion = null;
 
-				refsetLatestVersion = result;
-				break;
-			}
+        final PfsParameter pfs = new PfsParameter();
+        pfs.setSort("versionDate");
+        pfs.setAscending(false);
 
-		}
+        final ResultList<Refset> results = service.find("refsetId: " + QueryParserBase.escape(refsetId), pfs, Refset.class, null);
 
-		if (refsetLatestVersion == null && results.getItems().size() > 0) {
+        // see if there is an "In Development" version as that should be the latest.
+        for (final Refset result : results.getItems()) {
 
-			refsetLatestVersion = results.getItems().get(0);
-		}
+            if (result.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
 
-		return refsetLatestVersion;
-	}
+                refsetLatestVersion = result;
+                break;
+            }
 
-	/**
-	 * Get the set of unique Refset IDs.
-	 *
-	 * @param service the Terminology Service
-	 * @return the set of unique Refset IDs
-	 * @throws Exception the exception
-	 */
-	public static Set<String> getUniqueRefsetIds(final TerminologyService service) throws Exception {
+        }
 
-		if (!UNIQUE_REFSET_IDS.isEmpty()) {
-			return UNIQUE_REFSET_IDS;
-		}
+        if (refsetLatestVersion == null && results.getItems().size() > 0) {
 
-		final ResultList<Refset> results = service
-				.find("(latestPublishedVersion: true AND hasVersionInDevelopment: false) OR (versionStatus: "
-						+ Refset.IN_DEVELOPMENT + ")", new PfsParameter(), Refset.class, null);
+            refsetLatestVersion = results.getItems().get(0);
+        }
 
-		for (final Refset refset : results.getItems()) {
-			UNIQUE_REFSET_IDS.add(refset.getRefsetId());
-		}
+        return refsetLatestVersion;
+    }
 
-		return UNIQUE_REFSET_IDS;
-	}
+    /**
+     * Get the set of unique Refset IDs.
+     *
+     * @param service the Terminology Service
+     * @return the set of unique Refset IDs
+     * @throws Exception the exception
+     */
+    public static Set<String> getUniqueRefsetIds(final TerminologyService service) throws Exception {
 
-	/**
-	 * Get the branch and version path for a refset from the internal refset ID.
-	 *
-	 * @param service          the Terminology Service
-	 * @param refsetInternalId the internal ID of the refset
-	 * @return the branch and version path
-	 * @throws Exception the exception
-	 */
-	public static String getBranchPath(final TerminologyService service, final String refsetInternalId)
-			throws Exception {
+        if (!UNIQUE_REFSET_IDS.isEmpty()) {
+            return UNIQUE_REFSET_IDS;
+        }
 
-		final Refset refset = getRefsetFromInternalId(service, refsetInternalId);
-		return getBranchPath(refset);
-	}
+        final ResultList<Refset> results =
+            service.find("(latestPublishedVersion: true AND hasVersionInDevelopment: false) OR (versionStatus: " + Refset.IN_DEVELOPMENT + ")",
+                new PfsParameter(), Refset.class, null);
 
-	/**
-	 * Get the branch and version path for a refset.
-	 *
-	 * @param refset the refset
-	 * @return the branch and version path
-	 * @throws Exception the exception
-	 */
-	public static String getBranchPath(final Refset refset) throws Exception {
+        for (final Refset refset : results.getItems()) {
+            UNIQUE_REFSET_IDS.add(refset.getRefsetId());
+        }
 
-		String branchPath = "";
-		String pathDate = "";
+        return UNIQUE_REFSET_IDS;
+    }
 
-		if (!refset.isLocalSet()) {
+    /**
+     * Get the branch and version path for a refset from the internal refset ID.
+     *
+     * @param service the Terminology Service
+     * @param refsetInternalId the internal ID of the refset
+     * @return the branch and version path
+     * @throws Exception the exception
+     */
+    public static String getBranchPath(final TerminologyService service, final String refsetInternalId) throws Exception {
 
-			if (refset.getVersionDate() != null) {
+        final Refset refset = getRefsetFromInternalId(service, refsetInternalId);
+        return getBranchPath(refset);
+    }
 
-				final Date tmpDate = refset.getVersionDate();
-				pathDate = "/" + DateUtility.formatDate(tmpDate, DateUtility.DATE_FORMAT_REVERSE, null);
-				branchPath = refset.getEditionBranch() + pathDate;
-			} else {
+    /**
+     * Get the branch and version path for a refset.
+     *
+     * @param refset the refset
+     * @return the branch and version path
+     * @throws Exception the exception
+     */
+    public static String getBranchPath(final Refset refset) throws Exception {
 
-				if (Arrays.asList(WorkflowService.IN_EDIT, WorkflowService.IN_UPGRADE)
-						.contains(refset.getWorkflowStatus())) {
-					branchPath = WorkflowService.getEditBranchPath(refset.getEditionBranch(), refset.getRefsetId(),
-							refset.getEditBranchId(), refset.getRefsetBranchId(), refset.isLocalSet());
-				} else {
-					branchPath = WorkflowService.getRefsetBranchPath(refset.getEditionBranch(), refset.getRefsetId(),
-							refset.getRefsetBranchId(), refset.isLocalSet());
-				}
-			}
-		} else {
+        String branchPath = "";
+        String pathDate = "";
 
-			// for localsets if it isn't being edited always pull from the refset branch
-			if (Arrays.asList(WorkflowService.IN_EDIT, WorkflowService.IN_UPGRADE)
-					.contains(refset.getWorkflowStatus())) {
-				branchPath = WorkflowService.getEditBranchPath(refset.getEditionBranch(), refset.getRefsetId(),
-						refset.getEditBranchId(), refset.getRefsetBranchId(), refset.isLocalSet());
-			} else {
-				branchPath = WorkflowService.getRefsetBranchPath(refset.getEditionBranch(), refset.getRefsetId(),
-						refset.getRefsetBranchId(), refset.isLocalSet());
-			}
-		}
+        if (!refset.isLocalSet()) {
 
-		return branchPath;
-	}
+            if (refset.getVersionDate() != null) {
 
-	/**
-	 * Get all the descriptions for a refset.
-	 *
-	 * @param refset the refset
-	 * @return the refset with descriptions
-	 * @throws Exception the exception
-	 */
-	public static Refset getRefsetDescriptions(final Refset refset) throws Exception {
+                final Date tmpDate = refset.getVersionDate();
+                pathDate = "/" + DateUtility.formatDate(tmpDate, DateUtility.DATE_FORMAT_REVERSE, null);
+                branchPath = refset.getEditionBranch() + pathDate;
+            } else {
 
-		final List<Concept> refsetConceptList = new ArrayList<>();
-		final Concept refsetConcept = new Concept();
-		refsetConcept.setCode(refset.getRefsetId());
-		refsetConcept.setName(refset.getName());
-		refsetConceptList.add(refsetConcept);
+                if (Arrays.asList(WorkflowService.IN_EDIT, WorkflowService.IN_UPGRADE).contains(refset.getWorkflowStatus())) {
+                    branchPath = WorkflowService.getEditBranchPath(refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId(),
+                        refset.getRefsetBranchId(), refset.isLocalSet());
+                } else {
+                    branchPath =
+                        WorkflowService.getRefsetBranchPath(refset.getEditionBranch(), refset.getRefsetId(), refset.getRefsetBranchId(), refset.isLocalSet());
+                }
+            }
+        } else {
 
-		RefsetMemberService.populateAllLanguageDescriptions(refset, refsetConceptList);
+            // for localsets if it isn't being edited always pull from the refset branch
+            if (Arrays.asList(WorkflowService.IN_EDIT, WorkflowService.IN_UPGRADE).contains(refset.getWorkflowStatus())) {
+                branchPath = WorkflowService.getEditBranchPath(refset.getEditionBranch(), refset.getRefsetId(), refset.getEditBranchId(),
+                    refset.getRefsetBranchId(), refset.isLocalSet());
+            } else {
+                branchPath =
+                    WorkflowService.getRefsetBranchPath(refset.getEditionBranch(), refset.getRefsetId(), refset.getRefsetBranchId(), refset.isLocalSet());
+            }
+        }
 
-		refset.setDescriptions(refsetConceptList.get(0).getDescriptions());
+        return branchPath;
+    }
 
-		return refset;
-	}
+    /**
+     * Get all the descriptions for a refset.
+     *
+     * @param refset the refset
+     * @return the refset with descriptions
+     * @throws Exception the exception
+     */
+    public static Refset getRefsetDescriptions(final Refset refset) throws Exception {
 
-	/**
-	 * Get a refset from the internal refset ID.
-	 *
-	 * @param service          the Terminology Service
-	 * @param refsetInternalId the internal ID of the refset
-	 * @return the refset
-	 * @throws Exception the exception
-	 */
-	public static Refset getRefsetFromInternalId(final TerminologyService service, final String refsetInternalId)
-			throws Exception {
+        final List<Concept> refsetConceptList = new ArrayList<>();
+        final Concept refsetConcept = new Concept();
+        refsetConcept.setCode(refset.getRefsetId());
+        refsetConcept.setName(refset.getName());
+        refsetConceptList.add(refsetConcept);
 
-		Refset refset = null;
+        RefsetMemberService.populateAllLanguageDescriptions(refset, refsetConceptList);
 
-		refset = service.get(refsetInternalId, Refset.class);
+        refset.setDescriptions(refsetConceptList.get(0).getDescriptions());
 
-		if (refset == null) {
+        return refset;
+    }
 
-			throw new Exception(
-					"Reference set Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
-		}
+    /**
+     * Get a refset from the internal refset ID.
+     *
+     * @param service the Terminology Service
+     * @param refsetInternalId the internal ID of the refset
+     * @return the refset
+     * @throws Exception the exception
+     */
+    public static Refset getRefsetFromInternalId(final TerminologyService service, final String refsetInternalId) throws Exception {
 
-		return refset;
-	}
+        Refset refset = null;
 
-	/**
-	 * Set the user permissions for a refset.
-	 *
-	 * @param user    the user
-	 * @param project the project
-	 * @return the refset with permissions
-	 * @throws Exception the exception
-	 */
-	public static Project setProjectPermissions(final User user, final Project project) throws Exception {
+        refset = service.get(refsetInternalId, Refset.class);
 
-		final List<String> roles = project.getRoles();
-		setRoles(user, project, roles);
-		project.setRoles(roles);
+        if (refset == null) {
 
-		return project;
-	}
+            throw new Exception("Reference set Internal Id: " + refsetInternalId + " does not exist in the RT2 database");
+        }
 
-	/**
-	 * Set the user permissions for a refset.
-	 *
-	 * @param user   the user
-	 * @param refset the refset
-	 * @return the refset with permissions
-	 * @throws Exception the exception
-	 */
-	public static Refset setRefsetPermissions(final User user, final Refset refset) throws Exception {
+        return refset;
+    }
 
-		refset.setDownloadable(true);
-		refset.setFeedbackVisible(true);
-		refset.setAvailableActions(WorkflowService.getAllowedActions(user, refset));
+    /**
+     * Set the user permissions for a refset.
+     *
+     * @param user the user
+     * @param project the project
+     * @return the refset with permissions
+     * @throws Exception the exception
+     */
+    public static Project setProjectPermissions(final User user, final Project project) throws Exception {
 
-		final Project project = refset.getProject();
-		final List<String> roles = refset.getRoles();
-		boolean userCanView = true;
+        final List<String> roles = project.getRoles();
+        setRoles(user, project, roles);
+        project.setRoles(roles);
 
-		setRoles(user, project, roles);
-		project.setRoles(roles);
+        return project;
+    }
 
-		// make sure the user is allowed to view this refset
-		if (project.isPrivateProject() && !project.getRoles().contains(User.ROLE_VIEWER)) {
-			userCanView = false;
+    /**
+     * Set the user permissions for a refset.
+     *
+     * @param user the user
+     * @param refset the refset
+     * @return the refset with permissions
+     * @throws Exception the exception
+     */
+    public static Refset setRefsetPermissions(final User user, final Refset refset) throws Exception {
 
-		} else if (!project.getRoles().contains(User.ROLE_VIEWER)
-				&& refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
-			userCanView = false;
-		}
+        refset.setDownloadable(true);
+        refset.setFeedbackVisible(true);
+        refset.setAvailableActions(WorkflowService.getAllowedActions(user, refset));
 
-		if (!userCanView) {
+        final Project project = refset.getProject();
+        final List<String> roles = refset.getRoles();
+        boolean userCanView = true;
 
-			final String message = "User does not have permission to view this reference set.";
-			LOG.error(message);
-			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, message);
-		}
+        setRoles(user, project, roles);
+        project.setRoles(roles);
 
-		return refset;
-	}
+        // make sure the user is allowed to view this refset
+        if (project.isPrivateProject() && !project.getRoles().contains(User.ROLE_VIEWER)) {
+            userCanView = false;
 
-	/**
-	 * set the list of roles a user has for a project.
-	 *
-	 * @param user    the user
-	 * @param project the project
-	 * @param roles   the role list to populate
-	 * @return the list of roles for the project
-	 * @throws Exception the exception
-	 */
-	public static List<String> setRoles(final User user, final Project project, final List<String> roles)
-			throws Exception {
+        } else if (!project.getRoles().contains(User.ROLE_VIEWER) && refset.getVersionStatus().equals(Refset.IN_DEVELOPMENT)) {
+            userCanView = false;
+        }
 
-		boolean giveViewerRole = false;
+        if (!userCanView) {
 
-		if (user.doesUserHavePermission(User.ROLE_AUTHOR, project)) {
+            final String message = "User does not have permission to view this reference set.";
+            LOG.error(message);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, message);
+        }
 
-			roles.add(User.ROLE_AUTHOR);
-			giveViewerRole = true;
-		}
+        return refset;
+    }
 
-		if (user.doesUserHavePermission(User.ROLE_REVIEWER, project)) {
+    /**
+     * set the list of roles a user has for a project.
+     *
+     * @param user the user
+     * @param project the project
+     * @param roles the role list to populate
+     * @return the list of roles for the project
+     * @throws Exception the exception
+     */
+    public static List<String> setRoles(final User user, final Project project, final List<String> roles) throws Exception {
 
-			roles.add(User.ROLE_REVIEWER);
-			giveViewerRole = true;
-		}
+        boolean giveViewerRole = false;
 
-		if (user.doesUserHavePermission(User.ROLE_ADMIN, project)) {
+        if (user.doesUserHavePermission(User.ROLE_AUTHOR, project)) {
 
-			roles.add(User.ROLE_ADMIN);
-			giveViewerRole = true;
-		}
+            roles.add(User.ROLE_AUTHOR);
+            giveViewerRole = true;
+        }
 
-		if (user.doesUserHavePermission(User.ROLE_VIEWER, project) || giveViewerRole) {
+        if (user.doesUserHavePermission(User.ROLE_REVIEWER, project)) {
 
-			roles.add(User.ROLE_VIEWER);
-		}
+            roles.add(User.ROLE_REVIEWER);
+            giveViewerRole = true;
+        }
 
-		return roles;
-	}
+        if (user.doesUserHavePermission(User.ROLE_ADMIN, project)) {
 
-	/**
-	 * Generate a list of version dates sorted in descending order.
-	 *
-	 * @param refset        the refset
-	 * @param service       the Terminology Service
-	 * @param sortAscending should the versions be sorted in ascending order
-	 * @return the list of version dates sorted in descending order
-	 * @throws Exception the exception
-	 */
-	public static List<Map<String, String>> getSortedRefsetVersionList(final Refset refset,
-			final TerminologyService service, final boolean sortAscending) throws Exception {
+            roles.add(User.ROLE_ADMIN);
+            giveViewerRole = true;
+        }
 
-		final List<Map<String, String>> versionList = new ArrayList<>();
-		final PfsParameter pfs = new PfsParameter();
-		pfs.setSort("versionDate");
-		pfs.setAscending(sortAscending);
-		Map<String, String> inDevelopmentVersion = null;
+        if (user.doesUserHavePermission(User.ROLE_VIEWER, project) || giveViewerRole) {
 
-		final ResultList<Refset> results = service.find("refsetId: " + QueryParserBase.escape(refset.getRefsetId()),
-				pfs, Refset.class, null);
+            roles.add(User.ROLE_VIEWER);
+        }
 
-		for (final Refset refsetVersion : results.getItems()) {
+        return roles;
+    }
 
-			final Map<String, String> version = new HashMap<>();
-			version.put("status", refsetVersion.getVersionStatus());
-			version.put("refsetInternalId", refsetVersion.getId());
+    /**
+     * Generate a list of version dates sorted in descending order.
+     *
+     * @param refset the refset
+     * @param service the Terminology Service
+     * @param sortAscending should the versions be sorted in ascending order
+     * @return the list of version dates sorted in descending order
+     * @throws Exception the exception
+     */
+    public static List<Map<String, String>> getSortedRefsetVersionList(final Refset refset, final TerminologyService service, final boolean sortAscending)
+        throws Exception {
 
-			if (refsetVersion.getVersionStatus().equals(Refset.IN_DEVELOPMENT)
-					&& refset.getRoles().contains(User.ROLE_VIEWER)) {
+        final List<Map<String, String>> versionList = new ArrayList<>();
+        final PfsParameter pfs = new PfsParameter();
+        pfs.setSort("versionDate");
+        pfs.setAscending(sortAscending);
+        Map<String, String> inDevelopmentVersion = null;
 
-				version.put("date", DateUtility.formatDate(new Date(), DateUtility.DATE_FORMAT_REVERSE, null));
-				inDevelopmentVersion = new HashMap<>(version);
+        final ResultList<Refset> results = service.find("refsetId: " + QueryParserBase.escape(refset.getRefsetId()), pfs, Refset.class, null);
 
-			} else if (Refset.PUBLISHED.equals(refsetVersion.getVersionStatus())) {
+        for (final Refset refsetVersion : results.getItems()) {
 
-				version.put("date",
-						DateUtility.formatDate(refsetVersion.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null));
-				versionList.add(version);
-			}
+            final Map<String, String> version = new HashMap<>();
+            version.put("status", refsetVersion.getVersionStatus());
+            version.put("refsetInternalId", refsetVersion.getId());
 
-			if (inDevelopmentVersion != null) {
+            if (refsetVersion.getVersionStatus().equals(Refset.IN_DEVELOPMENT) && refset.getRoles().contains(User.ROLE_VIEWER)) {
 
-				if (sortAscending) {
+                version.put("date", DateUtility.formatDate(new Date(), DateUtility.DATE_FORMAT_REVERSE, null));
+                inDevelopmentVersion = new HashMap<>(version);
 
-					versionList.add(inDevelopmentVersion);
-				} else {
+            } else if (Refset.PUBLISHED.equals(refsetVersion.getVersionStatus())) {
 
-					versionList.add(0, inDevelopmentVersion);
-				}
+                version.put("date", DateUtility.formatDate(refsetVersion.getVersionDate(), DateUtility.DATE_FORMAT_REVERSE, null));
+                versionList.add(version);
+            }
 
-			}
+            if (inDevelopmentVersion != null) {
 
-		}
+                if (sortAscending) {
 
-		return versionList;
-	}
+                    versionList.add(inDevelopmentVersion);
+                } else {
 
-	/**
-	 * Search for refsets for display in dropdown options.
-	 *
-	 * @param user             the user
-	 * @param service          the terminology service
-	 * @param searchParameters the search parameters
-	 * @param setPermissions   should permissions and roles be set on the refsets
-	 * @param setVersions      should the version list be set on the refsets
-	 * @return the upgrade replacement concept result list
-	 * @throws Exception the exception
-	 */
-	public static ResultList<Refset> refsetDropdownSearch(final User user, final TerminologyService service,
-			final SearchParameters searchParameters, final boolean setPermissions, final boolean setVersions)
-			throws Exception {
+                    versionList.add(0, inDevelopmentVersion);
+                }
 
-		if (searchParameters.getLimit() <= 0) {
+            }
 
-			searchParameters.setLimit(10);
-		}
+        }
 
-		// set the query appropriately based on what was passed in
-		if (NumberUtils.isNumber(searchParameters.getQuery())) {
+        return versionList;
+    }
 
-			searchParameters.setQuery("refsetId:" + searchParameters.getQuery());
-		} else {
+    /**
+     * Search for refsets for display in dropdown options.
+     *
+     * @param user the user
+     * @param service the terminology service
+     * @param searchParameters the search parameters
+     * @param setPermissions should permissions and roles be set on the refsets
+     * @param setVersions should the version list be set on the refsets
+     * @return the upgrade replacement concept result list
+     * @throws Exception the exception
+     */
+    public static ResultList<Refset> refsetDropdownSearch(final User user, final TerminologyService service, final SearchParameters searchParameters,
+        final boolean setPermissions, final boolean setVersions) throws Exception {
 
-			searchParameters.setQuery("name:" + searchParameters.getQuery());
-		}
+        if (searchParameters.getLimit() <= 0) {
 
-		final ResultList<Refset> refsets = searchRefsets(user, service, searchParameters, false, setPermissions,
-				setVersions, true, false);
+            searchParameters.setLimit(10);
+        }
 
-		LOG.debug("refsetDropdownSearch: results: " + ModelUtility.toJson(refsets));
+        // set the query appropriately based on what was passed in
+        if (NumberUtils.isNumber(searchParameters.getQuery())) {
 
-		return refsets;
-	}
+            searchParameters.setQuery("refsetId:" + searchParameters.getQuery());
+        } else {
 
-	/**
-	 * Generate a list of line strings from a file removing empty lines.
-	 *
-	 * @param conceptFile the input file
-	 * @param fileType    the type of file (list or rf2)
-	 * @return the line string List
-	 * @throws Exception the exception
-	 */
-	public static List<String> getConceptIdsFromFile(final MultipartFile conceptFile, final String fileType)
-			throws Exception {
+            searchParameters.setQuery("name:" + searchParameters.getQuery());
+        }
 
-		List<String> conceptIds = null;
+        final ResultList<Refset> refsets = searchRefsets(user, service, searchParameters, false, setPermissions, setVersions, true, false);
 
-		if (fileType.equals("list")) {
+        LOG.debug("refsetDropdownSearch: results: " + ModelUtility.toJson(refsets));
 
-			conceptIds = FileUtility.readFileToArray(conceptFile);
-			return conceptIds;
-		} else {
+        return refsets;
+    }
 
-			final List<String> rf2Lines = FileUtility.readFileToArray(conceptFile);
-			conceptIds = new ArrayList<>();
+    /**
+     * Generate a list of line strings from a file removing empty lines.
+     *
+     * @param conceptFile the input file
+     * @param fileType the type of file (list or rf2)
+     * @return the line string List
+     * @throws Exception the exception
+     */
+    public static List<String> getConceptIdsFromFile(final MultipartFile conceptFile, final String fileType) throws Exception {
 
-			for (final String line : rf2Lines) {
+        List<String> conceptIds = null;
 
-				try {
+        if (fileType.equals("list")) {
 
-					conceptIds.add(line.split("\t")[RefsetMemberService.REFEST_RF2_CONCEPTID_COLUMN]);
+            conceptIds = FileUtility.readFileToArray(conceptFile);
+            return conceptIds;
+        } else {
 
-				} catch (final Exception e) {
+            final List<String> rf2Lines = FileUtility.readFileToArray(conceptFile);
+            conceptIds = new ArrayList<>();
 
-					continue;
-				}
+            for (final String line : rf2Lines) {
 
-			}
+                try {
 
-		}
+                    conceptIds.add(line.split("\t")[RefsetMemberService.REFEST_RF2_CONCEPTID_COLUMN]);
 
-		return conceptIds;
-	}
+                } catch (final Exception e) {
 
-	/**
-	 * Get refset dates as properly formatted strings.
-	 *
-	 * @param date the date to format
-	 * @return the formatted date string
-	 * @throws Exception the exception
-	 */
-	public static String getFormattedRefsetDate(final Date date) throws Exception {
+                    continue;
+                }
 
-		return DateUtility.formatDate(date, DateUtility.DATE_FORMAT_REVERSE, null);
-	}
+            }
 
-	/**
-	 * Get refset dates as Date objects from properly formatted strings.
-	 *
-	 * @param date the date to format
-	 * @return the formatted date string
-	 * @throws Exception the exception
-	 */
-	public static Date getRefsetDateFromFormattedString(final String date) throws Exception {
+        }
 
-		return DateUtility.getDateWithNoTime(date, DateUtility.DATE_FORMAT_REVERSE);
-	}
+        return conceptIds;
+    }
 
-	/**
-	 * Fetch editions for given branch.
-	 *
-	 * @param branch the branch
-	 * @return List <Edition> list of editions matching branch
-	 * @throws Exception the exception
-	 */
-	public static List<Edition> getEditionForBranch(final String branch) throws Exception {
+    /**
+     * Get refset dates as properly formatted strings.
+     *
+     * @param date the date to format
+     * @return the formatted date string
+     * @throws Exception the exception
+     */
+    public static String getFormattedRefsetDate(final Date date) throws Exception {
 
-		ResultList<Edition> editions = new ResultList<>();
+        return DateUtility.formatDate(date, DateUtility.DATE_FORMAT_REVERSE, null);
+    }
 
-		try (final TerminologyService service = new TerminologyService()) {
+    /**
+     * Get refset dates as Date objects from properly formatted strings.
+     *
+     * @param date the date to format
+     * @return the formatted date string
+     * @throws Exception the exception
+     */
+    public static Date getRefsetDateFromFormattedString(final String date) throws Exception {
 
-			editions = service.find("active:true AND branch:" + QueryParserBase.escape(branch), null, Edition.class,
-					null);
-		} catch (final Exception e) {
+        return DateUtility.getDateWithNoTime(date, DateUtility.DATE_FORMAT_REVERSE);
+    }
 
-			LOG.error("Error finding edition for branch {}", branch, e);
-			throw e;
-		}
+    /**
+     * Fetch editions for given branch.
+     *
+     * @param branch the branch
+     * @return List <Edition> list of editions matching branch
+     * @throws Exception the exception
+     */
+    public static List<Edition> getEditionForBranch(final String branch) throws Exception {
 
-		return (editions != null) ? editions.getItems() : new ArrayList<Edition>();
-	}
+        ResultList<Edition> editions = new ResultList<>();
 
-	/**
-	 * Get a branch version cache collection for a branch path.
-	 *
-	 * @param branchPath the branch path of cache collection to return
-	 * @return the cache collection
-	 * @throws Exception the exception
-	 */
-	public static List<String> getCacheForBranchVersions(final String branchPath) throws Exception {
+        try (final TerminologyService service = new TerminologyService()) {
 
-		if (BRANCH_VERSION_CACHE.containsKey(branchPath)) {
+            editions = service.find("active:true AND branch:" + QueryParserBase.escape(branch), null, Edition.class, null);
+        } catch (final Exception e) {
 
-			return BRANCH_VERSION_CACHE.get(branchPath);
-		} else {
+            LOG.error("Error finding edition for branch {}", branch, e);
+            throw e;
+        }
 
-			return new ArrayList<>();
-		}
+        return (editions != null) ? editions.getItems() : new ArrayList<Edition>();
+    }
 
-	}
+    /**
+     * Get a branch version cache collection for a branch path.
+     *
+     * @param branchPath the branch path of cache collection to return
+     * @return the cache collection
+     * @throws Exception the exception
+     */
+    public static List<String> getCacheForBranchVersions(final String branchPath) throws Exception {
 
-	/**
-	 * Clear all caches related to refsets.
-	 *
-	 * @param branchPath the branch to clear the cache collections for
-	 * @throws Exception the exception
-	 */
-	public static void clearAllRefsetCaches(final String branchPath) throws Exception {
+        if (BRANCH_VERSION_CACHE.containsKey(branchPath)) {
 
-		if (branchPath != null) {
+            return BRANCH_VERSION_CACHE.get(branchPath);
+        } else {
 
-			LOG.debug("clearAllRefsetCaches: Clearing caches for branch path: " + branchPath);
-			BRANCH_VERSION_CACHE.remove(branchPath);
+            return new ArrayList<>();
+        }
 
-		} else {
+    }
 
-			LOG.debug("clearAllRefsetCaches: Clearing caches for all branches");
-			BRANCH_VERSION_CACHE.clear();
-		}
+    /**
+     * Clear all caches related to refsets.
+     *
+     * @param branchPath the branch to clear the cache collections for
+     * @throws Exception the exception
+     */
+    public static void clearAllRefsetCaches(final String branchPath) throws Exception {
 
-		BRANCH_SEARCH_CACHE.clear();
-		UNIQUE_REFSET_IDS.clear();
+        if (branchPath != null) {
 
-	}
+            LOG.debug("clearAllRefsetCaches: Clearing caches for branch path: " + branchPath);
+            BRANCH_VERSION_CACHE.remove(branchPath);
 
-	/**
-	 * Get a sorted list of versions for a branch.
-	 *
-	 * @param editionPath the branch path of the edition
-	 * @return the map
-	 * @throws Exception the exception
-	 */
-	public static List<String> getBranchVersions(final String editionPath) throws Exception {
+        } else {
 
-		return terminologyHandler.getBranchVersions(editionPath);
+            LOG.debug("clearAllRefsetCaches: Clearing caches for all branches");
+            BRANCH_VERSION_CACHE.clear();
+        }
 
-	}
+        BRANCH_SEARCH_CACHE.clear();
+        UNIQUE_REFSET_IDS.clear();
 
-	/**
-	 * Request access to the refset for the specified ID.
-	 *
-	 * @param user             the user
-	 * @param service          the service
-	 * @param refsetInternalId the refset internal id
-	 * @param comments         the comments
-	 * @throws Exception the exception
-	 */
-	public void requestRefsetAccess(final User user, final TerminologyService service, final String refsetInternalId,
-			final String comments) throws Exception {
+    }
 
-		final Refset refset = service.get(refsetInternalId, Refset.class);
-		final Project project = refset.getProject();
-		final String projectAdminEmail = project.getPrimaryContactEmail();
-		final String subject = "Reference set Request: " + refset.getName() + " (" + refset.getRefsetId() + ")";
-		final String body = "A user is requesting access to a project you administer.\n\n" + "Edition: "
-				+ refset.getEditionName() + "\n" + "Project: " + project.getName() + "\n" + "Reference set: "
-				+ refset.getName() + " (" + refset.getRefsetId() + ")" + "\n" + "User: " + user.getName() + " ("
-				+ user.getEmail() + ")" + "\n\n" + "Comments: " + comments;
+    /**
+     * Get a sorted list of versions for a branch.
+     *
+     * @param editionPath the branch path of the edition
+     * @return the map
+     * @throws Exception the exception
+     */
+    public static List<String> getBranchVersions(final String editionPath) throws Exception {
 
-		EmailUtility.sendEmail(subject, user.getEmail(), projectAdminEmail, body);
-	}
+        return terminologyHandler.getBranchVersions(editionPath);
 
-	/**
-	 * Concepts to remove.
-	 *
-	 * @param excludeCurrentSiRefsets the exclude current si refsets
-	 * @return the sets the
-	 */
-	public static Set<String> conceptsToRemove(final boolean excludeCurrentSiRefsets) {
+    }
 
-		final Set<String> conceptCodes = new HashSet<>();
-		final String[] refsetExclude = PropertyUtility.getProperty("refset-copy-concept-exclude").split("\\|");
+    /**
+     * Request access to the refset for the specified ID.
+     *
+     * @param user the user
+     * @param service the service
+     * @param refsetInternalId the refset internal id
+     * @param comments the comments
+     * @throws Exception the exception
+     */
+    public void requestRefsetAccess(final User user, final TerminologyService service, final String refsetInternalId, final String comments) throws Exception {
 
-		for (int i = 0; i < refsetExclude.length; i++) {
+        final Refset refset = service.get(refsetInternalId, Refset.class);
+        final Project project = refset.getProject();
+        final String projectAdminEmail = project.getPrimaryContactEmail();
+        final String subject = "Reference set Request: " + refset.getName() + " (" + refset.getRefsetId() + ")";
+        final String body = "A user is requesting access to a project you administer.\n\n" + "Edition: " + refset.getEditionName() + "\n" + "Project: "
+            + project.getName() + "\n" + "Reference set: " + refset.getName() + " (" + refset.getRefsetId() + ")" + "\n" + "User: " + user.getName() + " ("
+            + user.getEmail() + ")" + "\n\n" + "Comments: " + comments;
 
-			conceptCodes.add(refsetExclude[i]);
-			i++;
-		}
+        EmailUtility.sendEmail(subject, user.getEmail(), projectAdminEmail, body);
+    }
 
-		if (excludeCurrentSiRefsets) {
+    /**
+     * Concepts to remove.
+     *
+     * @param excludeCurrentSiRefsets the exclude current si refsets
+     * @return the sets the
+     */
+    public static Set<String> conceptsToRemove(final boolean excludeCurrentSiRefsets) {
 
-			final String[] currentSiRefsets = PropertyUtility.getProperty("current_si_refsets").split("\\|");
+        final Set<String> conceptCodes = new HashSet<>();
+        final String[] refsetExclude = PropertyUtility.getProperty("refset-copy-concept-exclude").split("\\|");
 
-			for (int i = 0; i < currentSiRefsets.length; i++) {
+        for (int i = 0; i < refsetExclude.length; i++) {
 
-				conceptCodes.add(currentSiRefsets[i]);
-				i++;
-			}
+            conceptCodes.add(refsetExclude[i]);
+            i++;
+        }
 
-		}
+        if (excludeCurrentSiRefsets) {
 
-		return conceptCodes;
-	}
+            final String[] currentSiRefsets = PropertyUtility.getProperty("current_si_refsets").split("\\|");
 
-	/**
-	 * Convert the intensional refset to be extensional as new version of same
-	 * refset i.e., without changing refsetId.
-	 *
-	 * @param service the Terminology Service
-	 * @param user    the user
-	 * @param refset  the refset
-	 * @return the status of the operation
-	 * @throws Exception the exception
-	 */
-	public static String convertToExtensional(final TerminologyService service, final User user, final Refset refset)
-			throws Exception {
+            for (int i = 0; i < currentSiRefsets.length; i++) {
 
-		final String status = "convert";
-		LOG.debug("refset is: " + refset);
+                conceptCodes.add(currentSiRefsets[i]);
+                i++;
+            }
 
-		if (!refset.getType().equals(Refset.INTENSIONAL)) {
-			throw new Exception(
-					"Reference set Internal Id: " + refset.getId() + " is not 'Intensional' and can not be converted.");
-		}
+        }
 
-		// Convert Metadata
-		refset.setType(Refset.EXTENSIONAL);
-		refset.getDefinitionClauses().clear();
+        return conceptCodes;
+    }
 
-		final Refset updatedRefset = service.update(refset);
+    /**
+     * Convert the intensional refset to be extensional as new version of same refset i.e., without changing refsetId.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param refset the refset
+     * @return the status of the operation
+     * @throws Exception the exception
+     */
+    public static String convertToExtensional(final TerminologyService service, final User user, final Refset refset) throws Exception {
 
-		service.add(AuditEntryHelper.convertToExtensionalRefsetEntry(updatedRefset));
-		LOG.info("Converted refset from database: " + updatedRefset);
+        final String status = "convert";
+        LOG.debug("refset is: " + refset);
 
-		return status;
-	}
+        if (!refset.getType().equals(Refset.INTENSIONAL)) {
+            throw new Exception("Reference set Internal Id: " + refset.getId() + " is not 'Intensional' and can not be converted.");
+        }
 
-	/**
-	 * Share refset.
-	 *
-	 * @param user              the user
-	 * @param refsetInternalId  the refset internal id
-	 * @param recipient         the recipient
-	 * @param additionalMessage the additional message
-	 * @throws Exception the exception
-	 */
-	public static void shareRefset(final User user, final String refsetInternalId, final String recipient,
-			final String additionalMessage) throws Exception {
+        // Convert Metadata
+        refset.setType(Refset.EXTENSIONAL);
+        refset.getDefinitionClauses().clear();
 
-		try (final TerminologyService service = new TerminologyService()) {
+        final Refset updatedRefset = service.update(refset);
 
-			if (recipient == null || recipient.isEmpty()) {
+        service.add(AuditEntryHelper.convertToExtensionalRefsetEntry(updatedRefset));
+        LOG.info("Converted refset from database: " + updatedRefset);
 
-				final String message = "There was no recipient email provided.";
-				LOG.error(message);
-				throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
-			}
+        return status;
+    }
 
-			final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+    /**
+     * Share refset.
+     *
+     * @param user the user
+     * @param refsetInternalId the refset internal id
+     * @param recipient the recipient
+     * @param additionalMessage the additional message
+     * @throws Exception the exception
+     */
+    public static void shareRefset(final User user, final String refsetInternalId, final String recipient, final String additionalMessage) throws Exception {
 
-			final StringBuffer emailBody = new StringBuffer();
-			final String version = (refset.getVersionDate() != null)
-					? refset.getVersionDate().toString().substring(0, 10)
-					: refset.getVersionStatus();
+        try (final TerminologyService service = new TerminologyService()) {
 
-			final String refsetUrl = appUrlRoot + "/details/" + refset.getRefsetId() + "/"
-					+ StringUtility.encodeValue(version).replace("+", "%20");
+            if (recipient == null || recipient.isEmpty()) {
 
-			// Title
-			emailBody.append("Hello, ").append(recipient).append(",").append(System.getProperty("line.separator"))
-					.append(System.getProperty("line.separator"));
+                final String message = "There was no recipient email provided.";
+                LOG.error(message);
+                throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
+            }
 
-			// Main announcement
-			emailBody.append("A SNOMED International Reference Set Tool user named '").append(user.getUserName())
-					.append("' (").append(user.getEmail()).append(") would like to share the reference set named: ")
-					.append(refset.getName()).append(" with you. Here is a direct link to access that reference set: ")
-					.append(refsetUrl).append(System.getProperty("line.separator"))
-					.append(System.getProperty("line.separator"));
+            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
 
-			// Additional Info from Sender
-			if (!StringUtils.isBlank(additionalMessage)) {
+            final StringBuffer emailBody = new StringBuffer();
+            final String version = (refset.getVersionDate() != null) ? refset.getVersionDate().toString().substring(0, 10) : refset.getVersionStatus();
 
-				emailBody.append("In addition, they have included the additional message:")
-						.append(System.getProperty("line.separator"));
-				emailBody.append(additionalMessage).append(System.getProperty("line.separator"))
-						.append(System.getProperty("line.separator"));
-			}
+            final String refsetUrl = appUrlRoot + "/details/" + refset.getRefsetId() + "/" + StringUtility.encodeValue(version).replace("+", "%20");
 
-			// Warning
-			emailBody.append("If this email was received in error, you can safely ignore it.")
-					.append(System.getProperty("line.separator"));
-			emailBody.append(System.getProperty("line.separator"));
+            // Title
+            emailBody.append("Hello, ").append(recipient).append(",").append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
-			// Signature
-			emailBody.append("Thank you,").append(System.getProperty("line.separator"));
-			emailBody.append("The SNOMED International Reference Set Tooling Team");
+            // Main announcement
+            emailBody.append("A SNOMED International Reference Set Tool user named '").append(user.getUserName()).append("' (").append(user.getEmail())
+                .append(") would like to share the reference set named: ").append(refset.getName())
+                .append(" with you. Here is a direct link to access that reference set: ").append(refsetUrl).append(System.getProperty("line.separator"))
+                .append(System.getProperty("line.separator"));
 
-			final String action = SHARE_ACTION;
-			EmailUtility.sendEmail(EMAIL_SUBJECT + action, null, new HashSet<>(Arrays.asList(recipient)),
-					emailBody.toString());
+            // Additional Info from Sender
+            if (!StringUtils.isBlank(additionalMessage)) {
 
-			AuditEntryHelper.sendCommunicationEmailEntry(refset, action, user.getUserName(), recipient);
-		}
+                emailBody.append("In addition, they have included the additional message:").append(System.getProperty("line.separator"));
+                emailBody.append(additionalMessage).append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
+            }
 
-	}
+            // Warning
+            emailBody.append("If this email was received in error, you can safely ignore it.").append(System.getProperty("line.separator"));
+            emailBody.append(System.getProperty("line.separator"));
 
-	/**
-	 * Request project access.
-	 *
-	 * @param user              the user
-	 * @param refsetInternalId  the refset internal id
-	 * @param recipient         the recipient
-	 * @param additionalMessage the additional message
-	 * @throws Exception the exception
-	 */
-	public static void requestProjectAccess(final User user, final String refsetInternalId, final String recipient,
-			final String additionalMessage) throws Exception {
+            // Signature
+            emailBody.append("Thank you,").append(System.getProperty("line.separator"));
+            emailBody.append("The SNOMED International Reference Set Tooling Team");
 
-		try (final TerminologyService service = new TerminologyService()) {
+            final String action = SHARE_ACTION;
+            EmailUtility.sendEmail(EMAIL_SUBJECT + action, null, new HashSet<>(Arrays.asList(recipient)), emailBody.toString());
 
-			final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
-			final Project project = refset.getProject();
-			final Organization organization = project.getEdition().getOrganization();
+            AuditEntryHelper.sendCommunicationEmailEntry(refset, action, user.getUserName(), recipient);
+        }
 
-			final Map<String, User> adminEmailRecipients = new HashMap<>();
-			final List<Team> adminTeams = new ArrayList<>();
-			final List<Team> allTeams = new ArrayList<>();
+    }
 
-			if (project.getPrimaryContactEmail() != null && !project.getPrimaryContactEmail().isEmpty()) {
+    /**
+     * Request project access.
+     *
+     * @param user the user
+     * @param refsetInternalId the refset internal id
+     * @param recipient the recipient
+     * @param additionalMessage the additional message
+     * @throws Exception the exception
+     */
+    public static void requestProjectAccess(final User user, final String refsetInternalId, final String recipient, final String additionalMessage)
+        throws Exception {
 
-				final User projectUser = new User();
-				projectUser.setEmail(project.getPrimaryContactEmail());
-				projectUser.setUserName("ProjectPrimaryEmail");
-				projectUser.setName("Project Primary Email");
-				adminEmailRecipients.put(project.getPrimaryContactEmail(), projectUser);
+        try (final TerminologyService service = new TerminologyService()) {
 
-			} else if (organization.getPrimaryContactEmail() != null
-					&& !organization.getPrimaryContactEmail().isEmpty()) {
+            final Refset refset = RefsetService.getRefset(service, user, refsetInternalId);
+            final Project project = refset.getProject();
+            final Organization organization = project.getEdition().getOrganization();
 
-				final User organizationUser = new User();
-				organizationUser.setEmail(organization.getPrimaryContactEmail());
-				organizationUser.setUserName("OrganizationPrimaryEmail");
-				organizationUser.setName("Organization Primary Email");
-				adminEmailRecipients.put(organization.getPrimaryContactEmail(), organizationUser);
-			}
+            final Map<String, User> adminEmailRecipients = new HashMap<>();
+            final List<Team> adminTeams = new ArrayList<>();
+            final List<Team> allTeams = new ArrayList<>();
 
-			for (final String teamId : project.getTeams()) {
+            if (project.getPrimaryContactEmail() != null && !project.getPrimaryContactEmail().isEmpty()) {
 
-				final Team team = TeamService.getTeam(teamId, true);
-				allTeams.add(team);
+                final User projectUser = new User();
+                projectUser.setEmail(project.getPrimaryContactEmail());
+                projectUser.setUserName("ProjectPrimaryEmail");
+                projectUser.setName("Project Primary Email");
+                adminEmailRecipients.put(project.getPrimaryContactEmail(), projectUser);
 
-				// Identify Admins who each get an email
-				if (team.getRoles().stream().anyMatch(r -> r.equals("ADMIN"))) {
+            } else if (organization.getPrimaryContactEmail() != null && !organization.getPrimaryContactEmail().isEmpty()) {
 
-					adminTeams.add(team);
-				}
+                final User organizationUser = new User();
+                organizationUser.setEmail(organization.getPrimaryContactEmail());
+                organizationUser.setUserName("OrganizationPrimaryEmail");
+                organizationUser.setName("Organization Primary Email");
+                adminEmailRecipients.put(organization.getPrimaryContactEmail(), organizationUser);
+            }
 
-			}
+            for (final String teamId : project.getTeams()) {
 
-			// if there are no teams add organization admin team
-			if (allTeams.size() == 0) {
+                final Team team = TeamService.getTeam(teamId, true);
+                allTeams.add(team);
 
-				final Team organizationAdminTeam = OrganizationService.getActiveOrganizationAdminTeam(service,
-						organization.getId());
+                // Identify Admins who each get an email
+                if (team.getRoles().stream().anyMatch(r -> r.equals("ADMIN"))) {
 
-				if (organizationAdminTeam != null) {
-					allTeams.add(organizationAdminTeam);
-				}
-			}
+                    adminTeams.add(team);
+                }
 
-			// Verify not already in project before sending emails to admins
-			for (final Team team : allTeams) {
+            }
 
-				if (team.getMemberList().stream().anyMatch(u -> u.getId().equals(user.getId()))) {
+            // if there are no teams add organization admin team
+            if (allTeams.size() == 0) {
 
-					final String message = "User: " + user.getUserName() + " is already a member of team: "
-							+ team.getName() + "in  project: " + project.getName() + " under "
-							+ project.getEdition().getName() + ".";
-					LOG.error(message);
-					throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
-				}
+                final Team organizationAdminTeam = OrganizationService.getActiveOrganizationAdminTeam(service, organization.getId());
 
-			}
+                if (organizationAdminTeam != null) {
+                    allTeams.add(organizationAdminTeam);
+                }
+            }
 
-			// Add to admin list
-			adminTeams.stream().forEach(team -> team.getMemberList().stream()
-					.forEach(teamUser -> adminEmailRecipients.put(teamUser.getEmail(), teamUser)));
+            // Verify not already in project before sending emails to admins
+            for (final Team team : allTeams) {
 
-			// make sure there is at least once recipient
-			if (adminEmailRecipients.size() == 0) {
+                if (team.getMemberList().stream().anyMatch(u -> u.getId().equals(user.getId()))) {
 
-				final String message = "There are no emails set up to request access from in project: "
-						+ project.getName() + " under " + project.getEdition().getName() + ".";
-				LOG.error(message);
-				throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
-			}
+                    final String message = "User: " + user.getUserName() + " is already a member of team: " + team.getName() + "in  project: "
+                        + project.getName() + " under " + project.getEdition().getName() + ".";
+                    LOG.error(message);
+                    throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
+                }
 
-			/** Create Email **/
-			final StringBuffer emailBody = new StringBuffer();
+            }
 
-			// Greeting
-			emailBody.append("Hello, {projectAdminName},").append(System.getProperty("line.separator"))
-					.append(System.getProperty("line.separator"));
+            // Add to admin list
+            adminTeams.stream().forEach(team -> team.getMemberList().stream().forEach(teamUser -> adminEmailRecipients.put(teamUser.getEmail(), teamUser)));
 
-			// Static Message
-			emailBody.append(user.getName()).append(" (").append(user.getEmail()).append(") has requested access to ")
-					.append(project.getName()).append(" via the " + refset.getName()).append(".")
-					.append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
+            // make sure there is at least once recipient
+            if (adminEmailRecipients.size() == 0) {
 
-			// Additional Info from Sender
-			if (additionalMessage != null) {
+                final String message =
+                    "There are no emails set up to request access from in project: " + project.getName() + " under " + project.getEdition().getName() + ".";
+                LOG.error(message);
+                throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
+            }
 
-				emailBody.append(user.getName()).append(" has included the additional message in their request:")
-						.append(System.getProperty("line.separator")).append(System.getProperty("line.separator"))
-						.append(additionalMessage).append(System.getProperty("line.separator"))
-						.append(System.getProperty("line.separator"));
-			}
+            /** Create Email **/
+            final StringBuffer emailBody = new StringBuffer();
 
-			// Warning
-			emailBody.append("Users can be added and configured through the SNOMED CT Reference Set Tool Team pages. ")
-					.append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
+            // Greeting
+            emailBody.append("Hello, {projectAdminName},").append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
-			emailBody.append("Go to the Reference Set Tool: ").append(appUrlRoot)
-					.append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
+            // Static Message
+            emailBody.append(user.getName()).append(" (").append(user.getEmail()).append(") has requested access to ").append(project.getName())
+                .append(" via the " + refset.getName()).append(".").append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
-			emailBody.append(System.getProperty("line.separator")).append(System.getProperty("line.separator"))
-					.append(System.getProperty("line.separator"));
+            // Additional Info from Sender
+            if (additionalMessage != null) {
 
-			// Signature
-			emailBody.append("Note that this email has been sent to the other ADMIN teams on this project.");
+                emailBody.append(user.getName()).append(" has included the additional message in their request:").append(System.getProperty("line.separator"))
+                    .append(System.getProperty("line.separator")).append(additionalMessage).append(System.getProperty("line.separator"))
+                    .append(System.getProperty("line.separator"));
+            }
 
-			for (final User adminRecipient : adminEmailRecipients.values()) {
+            // Warning
+            emailBody.append("Users can be added and configured through the SNOMED CT Reference Set Tool Team pages. ")
+                .append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
-				AuditEntryHelper.sendCommunicationEmailEntry(refset, "Request access (via reference set)",
-						adminRecipient.getUserName(), project.getName() + "'s admins");
-				final Set<String> adminEmail = new HashSet<>();
+            emailBody.append("Go to the Reference Set Tool: ").append(appUrlRoot).append(System.getProperty("line.separator"))
+                .append(System.getProperty("line.separator"));
 
-				adminEmail.add(adminRecipient.getEmail());
-				EmailUtility.sendEmail(EMAIL_SUBJECT + " access requested", null, adminEmail,
-						emailBody.toString().replace("{projectAdminName}", adminRecipient.getName()));
-			}
+            emailBody.append(System.getProperty("line.separator")).append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
-		}
+            // Signature
+            emailBody.append("Note that this email has been sent to the other ADMIN teams on this project.");
 
-	}
+            for (final User adminRecipient : adminEmailRecipients.values()) {
 
-	/**
-	 * Copy refset.
-	 *
-	 * @param service            the service
-	 * @param user               the user
-	 * @param refsetInternalId   the refset internal id
-	 * @param name               the name
-	 * @param projectId          the project id
-	 * @param localSet           the local set
-	 * @param privateRefset      the private refset
-	 * @param comboSet           the combo set
-	 * @param narrative          the narrative
-	 * @param tags               the tags
-	 * @param parentConceptId    the parent concept id
-	 * @param newRefsetConceptId the new refset concept id
-	 * @return the object
-	 * @throws Exception the exception
-	 */
-	public static Object copyRefset(final TerminologyService service, final User user, final String refsetInternalId,
-			final String name, final String projectId, final Boolean localSet, final Boolean privateRefset,
-			final Boolean comboSet, final String narrative, final Set<String> tags, final String parentConceptId,
-			final String newRefsetConceptId) throws Exception {
-		// TODO: Add unique Audit Entry Helper for this case
+                AuditEntryHelper.sendCommunicationEmailEntry(refset, "Request access (via reference set)", adminRecipient.getUserName(),
+                    project.getName() + "'s admins");
+                final Set<String> adminEmail = new HashSet<>();
 
-		String newRefsetInternalId = null;
-		final Refset originalRefset = getRefset(service, user, refsetInternalId);
-		String projectIdToGet = projectId;
+                adminEmail.add(adminRecipient.getEmail());
+                EmailUtility.sendEmail(EMAIL_SUBJECT + " access requested", null, adminEmail,
+                    emailBody.toString().replace("{projectAdminName}", adminRecipient.getName()));
+            }
 
-		if (projectIdToGet == null || projectIdToGet.isEmpty()) {
+        }
 
-			projectIdToGet = originalRefset.getProjectId();
-		}
+    }
 
-		Project project = service.get(projectIdToGet, Project.class);
+    /**
+     * Copy refset.
+     *
+     * @param service the service
+     * @param user the user
+     * @param refsetInternalId the refset internal id
+     * @param name the name
+     * @param projectId the project id
+     * @param localSet the local set
+     * @param privateRefset the private refset
+     * @param comboSet the combo set
+     * @param narrative the narrative
+     * @param tags the tags
+     * @param parentConceptId the parent concept id
+     * @param newRefsetConceptId the new refset concept id
+     * @return the object
+     * @throws Exception the exception
+     */
+    public static Object copyRefset(final TerminologyService service, final User user, final String refsetInternalId, final String name, final String projectId,
+        final Boolean localSet, final Boolean privateRefset, final Boolean comboSet, final String narrative, final Set<String> tags,
+        final String parentConceptId, final String newRefsetConceptId) throws Exception {
+        // TODO: Add unique Audit Entry Helper for this case
 
-		if (originalRefset.isPrivateRefset() && !originalRefset.getRoles().contains(User.ROLE_VIEWER)) {
+        String newRefsetInternalId = null;
+        final Refset originalRefset = getRefset(service, user, refsetInternalId);
+        String projectIdToGet = projectId;
 
-			throw new Exception(
-					"User does not have the permission to copy this reference set " + originalRefset.getRefsetId());
-		}
+        if (projectIdToGet == null || projectIdToGet.isEmpty()) {
 
-		if (project == null) {
+            projectIdToGet = originalRefset.getProjectId();
+        }
 
-			throw new Exception("Project Id: " + projectId + " does not exist in the RT2 database");
-		}
+        Project project = service.get(projectIdToGet, Project.class);
 
-		project = setProjectPermissions(user, project);
+        if (originalRefset.isPrivateRefset() && !originalRefset.getRoles().contains(User.ROLE_VIEWER)) {
 
-		if (!project.getRoles().contains(User.ROLE_AUTHOR) && !project.getRoles().contains(User.ROLE_ADMIN)) {
-			throw new Exception(
-					"User does not have the permission to create a reference set in this project " + project.getName());
-		}
+            throw new Exception("User does not have the permission to copy this reference set " + originalRefset.getRefsetId());
+        }
 
-		Refset newRefset = new Refset(originalRefset);
-		newRefset.setId(null);
-		newRefset.setProject(project);
-		newRefset.setActive(true);
-		newRefset.setVersionStatus(null);
-		newRefset.setWorkflowStatus(null);
-		newRefset.setVersionNotes("");
-		newRefset.setLatestPublishedVersion(false);
-		newRefset.setMemberCount(0);
+        if (project == null) {
 
-		if (newRefsetConceptId == null || newRefsetConceptId.isEmpty()) {
+            throw new Exception("Project Id: " + projectId + " does not exist in the RT2 database");
+        }
 
-			newRefset.setRefsetId(null);
+        project = setProjectPermissions(user, project);
 
-			if (name == null || name.equals("")) {
+        if (!project.getRoles().contains(User.ROLE_AUTHOR) && !project.getRoles().contains(User.ROLE_ADMIN)) {
+            throw new Exception("User does not have the permission to create a reference set in this project " + project.getName());
+        }
 
-				throw new Exception("A name for the new reference set must be supplied");
-			}
+        Refset newRefset = new Refset(originalRefset);
+        newRefset.setId(null);
+        newRefset.setProject(project);
+        newRefset.setActive(true);
+        newRefset.setVersionStatus(null);
+        newRefset.setWorkflowStatus(null);
+        newRefset.setVersionNotes("");
+        newRefset.setLatestPublishedVersion(false);
+        newRefset.setMemberCount(0);
 
-			newRefset.setName(name);
+        if (newRefsetConceptId == null || newRefsetConceptId.isEmpty()) {
 
-		} else {
+            newRefset.setRefsetId(null);
 
-			newRefset.setRefsetId(newRefsetConceptId);
-		}
+            if (name == null || name.equals("")) {
 
-		if (narrative != null) {
+                throw new Exception("A name for the new reference set must be supplied");
+            }
 
-			newRefset.setNarrative(narrative);
-		}
+            newRefset.setName(name);
 
-		if (tags != null) {
+        } else {
 
-			newRefset.setTags(tags);
-		}
+            newRefset.setRefsetId(newRefsetConceptId);
+        }
 
-		if (parentConceptId != null) {
+        if (narrative != null) {
 
-			newRefset.setParentConceptId(parentConceptId);
-		}
+            newRefset.setNarrative(narrative);
+        }
 
-		if (localSet != null) {
+        if (tags != null) {
 
-			newRefset.setLocalSet(localSet);
-		}
+            newRefset.setTags(tags);
+        }
 
-		if (comboSet != null) {
+        if (parentConceptId != null) {
 
-			newRefset.setComboRefset(comboSet);
-		}
+            newRefset.setParentConceptId(parentConceptId);
+        }
 
-		if (privateRefset != null) {
+        if (localSet != null) {
 
-			newRefset.setPrivateRefset(privateRefset);
-		}
+            newRefset.setLocalSet(localSet);
+        }
 
-		// Fix Descriptions
-		for (final Map<String, String> descriptionMap : newRefset.getDescriptions()) {
+        if (comboSet != null) {
 
-			for (final String key : descriptionMap.keySet()) {
+            newRefset.setComboRefset(comboSet);
+        }
 
-				final String description = descriptionMap.get(key);
+        if (privateRefset != null) {
 
-				if (description.toLowerCase().contains(originalRefset.getName().toLowerCase())) {
+            newRefset.setPrivateRefset(privateRefset);
+        }
 
-					// Replace the name-based aspects of the description
-					// TODO: I'm making everying to lower case for expediency. Rather than a hard
-					// replace, find index and replcae with original desc & requested
-					// name i.e.,
-					// without altering case in new description
-					descriptionMap.put(key, description.toLowerCase().replaceAll(originalRefset.getName().toLowerCase(),
-							name.toLowerCase()));
-				}
+        // Fix Descriptions
+        for (final Map<String, String> descriptionMap : newRefset.getDescriptions()) {
 
-			}
+            for (final String key : descriptionMap.keySet()) {
 
-		}
+                final String description = descriptionMap.get(key);
 
-		// fix Narrative
-		if (newRefset.getNarrative().toLowerCase().contains(originalRefset.getName().toLowerCase())) {
+                if (description.toLowerCase().contains(originalRefset.getName().toLowerCase())) {
 
-			// Replace the name-based aspects of the description
-			// TODO: I'm making everying to lower case for expediency. Rather than a hard
-			// replace, find index and replcae with original desc & requested name
-			// i.e., without
-			// altering case in new description
-			newRefset.setNarrative(newRefset.getNarrative().toLowerCase()
-					.replaceAll(originalRefset.getName().toLowerCase(), name.toLowerCase()));
-		}
+                    // Replace the name-based aspects of the description
+                    // TODO: I'm making everying to lower case for expediency. Rather than a hard
+                    // replace, find index and replcae with original desc & requested
+                    // name i.e.,
+                    // without altering case in new description
+                    descriptionMap.put(key, description.toLowerCase().replaceAll(originalRefset.getName().toLowerCase(), name.toLowerCase()));
+                }
 
-		if (newRefset.getType().equals(Refset.INTENSIONAL)) {
+            }
 
-			// clear definition clauses IDs
-			for (final DefinitionClause clause : newRefset.getDefinitionClauses()) {
+        }
 
-				clause.setId(null);
-			}
+        // fix Narrative
+        if (newRefset.getNarrative().toLowerCase().contains(originalRefset.getName().toLowerCase())) {
 
-		}
+            // Replace the name-based aspects of the description
+            // TODO: I'm making everying to lower case for expediency. Rather than a hard
+            // replace, find index and replcae with original desc & requested name
+            // i.e., without
+            // altering case in new description
+            newRefset.setNarrative(newRefset.getNarrative().toLowerCase().replaceAll(originalRefset.getName().toLowerCase(), name.toLowerCase()));
+        }
 
-		// create the new refset object
-		final Object returned = createRefset(service, user, newRefset);
+        if (newRefset.getType().equals(Refset.INTENSIONAL)) {
 
-		if (returned instanceof String) {
+            // clear definition clauses IDs
+            for (final DefinitionClause clause : newRefset.getDefinitionClauses()) {
 
-			return returned;
-		}
+                clause.setId(null);
+            }
 
-		newRefset = (Refset) returned;
-		newRefsetInternalId = newRefset.getId();
+        }
 
-		try {
+        // create the new refset object
+        final Object returned = createRefset(service, user, newRefset);
 
-			final SearchParameters searchParameters = new SearchParameters();
-			final ConceptResultList members = RefsetMemberService.getRefsetMembers(service, user,
-					originalRefset.getId(), searchParameters, "list", null);
-			final List<String> conceptIds = new ArrayList<>();
+        if (returned instanceof String) {
 
-			if (newRefset.getType().equals(Refset.EXTENSIONAL)) {
+            return returned;
+        }
 
-				members.getItems().stream().forEach(member -> conceptIds.add(member.getCode()));
-				RefsetMemberService.addRefsetMembers(service, user, newRefset, conceptIds);
-			}
+        newRefset = (Refset) returned;
+        newRefsetInternalId = newRefset.getId();
 
-			LOG.info("Copied refset from " + refsetInternalId + ": " + newRefset);
+        try {
 
-		} catch (final Exception e) {
+            final SearchParameters searchParameters = new SearchParameters();
+            final ConceptResultList members = RefsetMemberService.getRefsetMembers(service, user, originalRefset.getId(), searchParameters, "list", null);
+            final List<String> conceptIds = new ArrayList<>();
 
-			throw new Exception(e);
+            if (newRefset.getType().equals(Refset.EXTENSIONAL)) {
 
-		} finally {
+                members.getItems().stream().forEach(member -> conceptIds.add(member.getCode()));
+                RefsetMemberService.addRefsetMembers(service, user, newRefset, conceptIds);
+            }
 
-			RefsetMemberService.REFSETS_BEING_UPDATED.remove(newRefsetInternalId);
-		}
+            LOG.info("Copied refset from " + refsetInternalId + ": " + newRefset);
 
-		return newRefset;
-	}
+        } catch (final Exception e) {
 
-	/**
-	 * Reset refset.
-	 *
-	 * @param service  the service
-	 * @param user     the user
-	 * @param refsetId the refset id
-	 * @return the string
-	 * @throws Exception the exception
-	 */
-	public static String resetRefset(final TerminologyService service, final User user, final String refsetId)
-			throws Exception {
+            throw new Exception(e);
 
-		if (!RefsetService.doesRefsetExist(refsetId, null)) {
+        } finally {
 
-			service.find("refsetId: " + refsetId, null, Refset.class, null);
-			return "unnecessary as it doesn't reside in RT2";
-		}
+            RefsetMemberService.REFSETS_BEING_UPDATED.remove(newRefsetInternalId);
+        }
 
-		final Refset latestVersion = RefsetService.getLatestRefsetVersion(service, refsetId);
+        return newRefset;
+    }
 
-		// if the refset has never been versioned before then delete it
-		if (!RefsetService.doesRefsetExist(refsetId,
-				"AND (versionStatus: " + Refset.PUBLISHED + " OR versionStatus: " + Refset.BETA + ")")) {
+    /**
+     * Reset refset.
+     *
+     * @param service the service
+     * @param user the user
+     * @param refsetId the refset id
+     * @return the string
+     * @throws Exception the exception
+     */
+    public static String resetRefset(final TerminologyService service, final User user, final String refsetId) throws Exception {
 
-			RefsetService.deleteInDevelopmentVersion(service, user, latestVersion, true);
-		}
+        if (!RefsetService.doesRefsetExist(refsetId, null)) {
 
-		final ResultList<Refset> results = service.find("refsetId: " + refsetId, null, Refset.class, null);
+            service.find("refsetId: " + refsetId, null, Refset.class, null);
+            return "unnecessary as it doesn't reside in RT2";
+        }
 
-		for (final Refset refset : results.getItems()) {
+        final Refset latestVersion = RefsetService.getLatestRefsetVersion(service, refsetId);
 
-			service.add(AuditEntryHelper.resetRefsetEntry(refset));
+        // if the refset has never been versioned before then delete it
+        if (!RefsetService.doesRefsetExist(refsetId, "AND (versionStatus: " + Refset.PUBLISHED + " OR versionStatus: " + Refset.BETA + ")")) {
 
-			RefsetService.deleteRefset(service, user, refset);
+            RefsetService.deleteInDevelopmentVersion(service, user, latestVersion, true);
+        }
 
-		}
+        final ResultList<Refset> results = service.find("refsetId: " + refsetId, null, Refset.class, null);
 
-		/** Now that refset deleted, resync **/
-		final boolean testingStatus = SyncAgent.isTesting();
+        for (final Refset refset : results.getItems()) {
 
-		SyncAgent.setRefsetToSync(refsetId, latestVersion.getEditionShortName());
-		SyncAgent.sync(service);
-		SyncAgent.setTesting(testingStatus);
+            service.add(AuditEntryHelper.resetRefsetEntry(refset));
 
-		LOG.info("Successfully reset all versions in database of refsetId: " + refsetId);
+            RefsetService.deleteRefset(service, user, refset);
 
-		return "successfully";
+        }
 
-	}
+        /** Now that refset deleted, resync **/
+        final boolean testingStatus = SyncAgent.isTesting();
 
-	/**
-	 * Invite user to refset.
-	 *
-	 * @param authUser          the auth user
-	 * @param refsetInternalId  the refset id
-	 * @param recipientEmail    the recipient email
-	 * @param additionalMessage the additional message
-	 * @throws Exception the exception
-	 */
-	public static void inviteUserToOrganization(final User authUser, final String refsetInternalId,
-			final String recipientEmail, final String additionalMessage) throws Exception {
+        SyncAgent.setRefsetToSync(refsetId, latestVersion.getEditionShortName());
+        SyncAgent.sync(service);
+        SyncAgent.setTesting(testingStatus);
 
-		if (StringUtils.isBlank(recipientEmail)) {
+        LOG.info("Successfully reset all versions in database of refsetId: " + refsetId);
 
-			throw new Exception("Recipient must have an email address to invite to reference set.");
-		}
+        return "successfully";
 
-		// TODO: move this URL to properties.
-		final String accountSetupUrl = "https://confluence.ihtsdotools.org/display/ILS/Confluence+User+Accounts";
+    }
 
-		try (final TerminologyService service = new TerminologyService()) {
+    /**
+     * Invite user to refset.
+     *
+     * @param authUser the auth user
+     * @param refsetInternalId the refset id
+     * @param recipientEmail the recipient email
+     * @param additionalMessage the additional message
+     * @throws Exception the exception
+     */
+    public static void inviteUserToOrganization(final User authUser, final String refsetInternalId, final String recipientEmail, final String additionalMessage)
+        throws Exception {
 
-			final Refset refset = getRefset(service, authUser, refsetInternalId);
-			final String organizationName = refset.getOrganizationName();
-			final String editionName = refset.getEdition().getShortName();
+        if (StringUtils.isBlank(recipientEmail)) {
 
-			if (!authUser.checkPermission(User.ROLE_VIEWER, organizationName, editionName, null)) {
-				throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
-						"This user does not have permission to perform this action");
-			}
+            throw new Exception("Recipient must have an email address to invite to reference set.");
+        }
 
-			final User crowdUser = CrowdAPIClient.findUserByEmail(recipientEmail.trim());
+        // TODO: move this URL to properties.
+        final String accountSetupUrl = "https://confluence.ihtsdotools.org/display/ILS/Confluence+User+Accounts";
 
-			// TODO: Determine needs of hasMembership based on approach implemented
-			if (crowdUser != null) {
+        try (final TerminologyService service = new TerminologyService()) {
 
-				// final Set<String> memberships =
-				// CrowdAPIClient.getMembershipsForUser(crowdUser.getUserName());
+            final Refset refset = getRefset(service, authUser, refsetInternalId);
+            final String organizationName = refset.getOrganizationName();
+            final String editionName = refset.getEdition().getShortName();
 
-				// final boolean hasMemberships = (memberships != null) ?
-				// memberships.stream().anyMatch(m -> m.startsWith("rt2-")) : false;
+            if (!authUser.checkPermission(User.ROLE_VIEWER, organizationName, editionName, null)) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "This user does not have permission to perform this action");
+            }
 
-				// Ensure not already members of the organization
-				if (refset.getEdition().getOrganization().getMembers().stream()
-						.anyMatch(u -> u.getId().equals(crowdUser.getId()))) {
-					throw new Exception("User: " + crowdUser.getUserName() + " is already a member of organization: "
-							+ refset.getOrganizationName());
-				}
-			}
+            final User crowdUser = CrowdAPIClient.findUserByEmail(recipientEmail.trim());
 
-			// add in invite request
-			final InviteRequest request = new InviteRequest();
-			request.setAction(INVITE_ACTION);
-			request.setActive(true);
-			request.setRequester(authUser.getId());
-			request.setRecipientEmail(recipientEmail);
-			request.setPayload("refset:" + refsetInternalId);
+            // TODO: Determine needs of hasMembership based on approach implemented
+            if (crowdUser != null) {
 
-			service.setModifiedBy(authUser.getUserName());
-			service.add(request);
+                // final Set<String> memberships =
+                // CrowdAPIClient.getMembershipsForUser(crowdUser.getUserName());
 
-			final String acceptUrl = appUrlRoot + "/invite/response?ir=" + request.getId() + "&r=true";
-			final String declineUrl = appUrlRoot + "/invite/response?ir=" + request.getId() + "&r=false";
+                // final boolean hasMemberships = (memberships != null) ?
+                // memberships.stream().anyMatch(m -> m.startsWith("rt2-")) : false;
 
-			final String ahrefStyle = "'padding: 8px 12px; border: 1px solid #c3e7fe;border-radius: 2px;"
-					+ "font-family: Helvetica, Arial, sans-serif;font-size: 14px; color: #000000;"
-					+ "text-decoration: none;font-weight:bold;display: inline-block;'";
-			final String button = "<table style='width: 100%; padding-right: 50px; padding-left: 50px'><tr><td>"
-					+ "  <table style='padding: 0'><tr><td style='border-radius: 2px; background-color: #c3e7fe'>"
-					+ "    <a href='{{BUTTION_LINK}}' target='_blank' style=" + ahrefStyle + ">"
-					+ "      {{BUTTON_TEXT}}" + "</a></td></tr></table></td></tr></table>";
+                // Ensure not already members of the organization
+                if (refset.getEdition().getOrganization().getMembers().stream().anyMatch(u -> u.getId().equals(crowdUser.getId()))) {
+                    throw new Exception("User: " + crowdUser.getUserName() + " is already a member of organization: " + refset.getOrganizationName());
+                }
+            }
 
-			final StringBuffer emailBody = new StringBuffer();
-			emailBody.append("<html>");
-			emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
-			emailBody.append("<div>");
+            // add in invite request
+            final InviteRequest request = new InviteRequest();
+            request.setAction(INVITE_ACTION);
+            request.setActive(true);
+            request.setRequester(authUser.getId());
+            request.setRecipientEmail(recipientEmail);
+            request.setPayload("refset:" + refsetInternalId);
 
-			emailBody.append("    <span>Hello ").append((crowdUser != null) ? crowdUser.getName() : "")
-					.append(",</span><br/><br/>");
+            service.setModifiedBy(authUser.getUserName());
+            service.add(request);
 
-			// Main invite
-			emailBody.append("    <span>").append(authUser.getName())
-					.append(" would like to invite you to work with the Organization '")
-					.append(refset.getOrganizationName())
-					.append("' in order to participate in the reference set modeling project with the RT2 tool.</span><br/><br/>");
-			emailBody.append("    <span>To accept this invitation, and alert ").append(authUser.getName())
-					.append(" of your acceptance, please click the button below.</span><br/><br/>");
+            final String acceptUrl = appUrlRoot + "/invite/response?ir=" + request.getId() + "&r=true";
+            final String declineUrl = appUrlRoot + "/invite/response?ir=" + request.getId() + "&r=false";
 
-			// Additional Information
-			if (!StringUtils.isBlank(additionalMessage)) {
+            final String ahrefStyle = "'padding: 8px 12px; border: 1px solid #c3e7fe;border-radius: 2px;"
+                + "font-family: Helvetica, Arial, sans-serif;font-size: 14px; color: #000000;"
+                + "text-decoration: none;font-weight:bold;display: inline-block;'";
+            final String button = "<table style='width: 100%; padding-right: 50px; padding-left: 50px'><tr><td>"
+                + "  <table style='padding: 0'><tr><td style='border-radius: 2px; background-color: #c3e7fe'>"
+                + "    <a href='{{BUTTION_LINK}}' target='_blank' style=" + ahrefStyle + ">" + "      {{BUTTON_TEXT}}"
+                + "</a></td></tr></table></td></tr></table>";
 
-				emailBody.append("In addition, they have included the additional message:").append("<br/><br/>");
-				emailBody.append(additionalMessage).append("<br/><br/>");
-			}
+            final StringBuffer emailBody = new StringBuffer();
+            emailBody.append("<html>");
+            emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
+            emailBody.append("<div>");
 
-			// accept
-			emailBody
-					.append("    <span style='width: 300px; display: inline-block'>").append(button
-							.replace("{{BUTTION_LINK}}", acceptUrl).replace("{{BUTTON_TEXT}}", "Accept Invitation"))
-					.append("</span>");
+            emailBody.append("    <span>Hello ").append((crowdUser != null) ? crowdUser.getName() : "").append(",</span><br/><br/>");
 
-			// decline
-			emailBody
-					.append("    <span style='width: 300px; display: inline-block'>").append(button
-							.replace("{{BUTTION_LINK}}", declineUrl).replace("{{BUTTON_TEXT}}", "Decline Invitation"))
-					.append("</span>");
+            // Main invite
+            emailBody.append("    <span>").append(authUser.getName()).append(" would like to invite you to work with the Organization '")
+                .append(refset.getOrganizationName())
+                .append("' in order to participate in the reference set modeling project with the RT2 tool.</span><br/><br/>");
+            emailBody.append("    <span>To accept this invitation, and alert ").append(authUser.getName())
+                .append(" of your acceptance, please click the button below.</span><br/><br/>");
 
-			if (crowdUser == null) {
+            // Additional Information
+            if (!StringUtils.isBlank(additionalMessage)) {
 
-				emailBody.append("    <span><a href='").append(accountSetupUrl)
-						.append("' target='_blank'></a></span><br/><br/>");
-			}
+                emailBody.append("In addition, they have included the additional message:").append("<br/><br/>");
+                emailBody.append(additionalMessage).append("<br/><br/>");
+            }
 
-			emailBody.append("    <br/><br/>");
-			// Warning
-			emailBody.append(
-					"    <span>If you do not wish to accept the invitation, or this email was received in error, you can safely ignore it.</span><br/><br/>");
+            // accept
+            emailBody.append("    <span style='width: 300px; display: inline-block'>")
+                .append(button.replace("{{BUTTION_LINK}}", acceptUrl).replace("{{BUTTON_TEXT}}", "Accept Invitation")).append("</span>");
 
-			// Signature
-			emailBody.append("    <span>Thank you,</span><br/>");
-			emailBody.append("    <span>The SNOMED CT Reference Set Tool Team</span>");
-			emailBody.append("</div>");
-			emailBody.append("</body>");
-			emailBody.append("</html>");
+            // decline
+            emailBody.append("    <span style='width: 300px; display: inline-block'>")
+                .append(button.replace("{{BUTTION_LINK}}", declineUrl).replace("{{BUTTON_TEXT}}", "Decline Invitation")).append("</span>");
 
-			final String action = INVITE_ACTION;
-			final Set<String> recipients = new HashSet<>(Arrays.asList(recipientEmail.trim()));
-			EmailUtility.sendEmail(EMAIL_SUBJECT + action, authUser.getEmail(), recipients, emailBody.toString());
+            if (crowdUser == null) {
 
-			LOG.info("INVITE request - from {} to {} for refset {}", authUser.getEmail(), recipients, refsetInternalId);
+                emailBody.append("    <span><a href='").append(accountSetupUrl).append("' target='_blank'></a></span><br/><br/>");
+            }
 
-			AuditEntryHelper.sendRefsetInvite(refset, authUser, recipientEmail.trim());
+            emailBody.append("    <br/><br/>");
+            // Warning
+            emailBody.append(
+                "    <span>If you do not wish to accept the invitation, or this email was received in error, you can safely ignore it.</span><br/><br/>");
 
-		}
+            // Signature
+            emailBody.append("    <span>Thank you,</span><br/>");
+            emailBody.append("    <span>The SNOMED CT Reference Set Tool Team</span>");
+            emailBody.append("</div>");
+            emailBody.append("</body>");
+            emailBody.append("</html>");
 
-	}
+            final String action = INVITE_ACTION;
+            final Set<String> recipients = new HashSet<>(Arrays.asList(recipientEmail.trim()));
+            EmailUtility.sendEmail(EMAIL_SUBJECT + action, authUser.getEmail(), recipients, emailBody.toString());
 
-	/**
-	 * Accept invitation.
-	 *
-	 * @param service       the service
-	 * @param inviteRequest the invite request
-	 * @param acceptance    the acceptance
-	 * @throws Exception the exception
-	 */
-	public static void processRefsetInvitation(final TerminologyService service, final InviteRequest inviteRequest,
-			final boolean acceptance) throws Exception {
+            LOG.info("INVITE request - from {} to {} for refset {}", authUser.getEmail(), recipients, refsetInternalId);
 
-		final User memberUser = CrowdAPIClient.findUserByEmail(inviteRequest.getRecipientEmail());
+            AuditEntryHelper.sendRefsetInvite(refset, authUser, recipientEmail.trim());
 
-		final StringBuffer emailBody = new StringBuffer();
+        }
 
-		final String ahrefStyle = "'padding: 8px 12px; border: 1px solid #c3e7fe;border-radius: 2px;"
-				+ "font-family: Helvetica, Arial, sans-serif;font-size: 14px; color: #000000;"
-				+ "text-decoration: none;font-weight:bold;display: inline-block;'";
-		final String button = "<table style='width: 100%; padding-right: 50px; padding-left: 50px'><tr><td>"
-				+ "  <table style='padding: 0'><tr><td style='border-radius: 2px; background-color: #c3e7fe'>"
-				+ "    <a href='{{BUTTION_LINK}}' target='_blank' style=" + ahrefStyle + ">" + "      {{BUTTON_TEXT}}"
-				+ "</a></td></tr></table></td></tr></table>";
+    }
 
-		final User requesterUser = UserService.getUser(inviteRequest.getRequester(), false);
-		if (requesterUser == null) {
-			LOG.error("Requester not found: {}", inviteRequest.getRequester());
-		}
+    /**
+     * Accept invitation.
+     *
+     * @param service the service
+     * @param inviteRequest the invite request
+     * @param acceptance the acceptance
+     * @throws Exception the exception
+     */
+    public static void processRefsetInvitation(final TerminologyService service, final InviteRequest inviteRequest, final boolean acceptance) throws Exception {
 
-		// get refset from payload
-		final Map<String, String> nameValuePairs = new HashMap<>();
-		final String[] pairs = inviteRequest.getPayload().split("&");
-		for (final String pair : pairs) {
-			final String[] keyValue = pair.split(":");
-			nameValuePairs.put(keyValue[0], keyValue[1]);
-		}
+        final User memberUser = CrowdAPIClient.findUserByEmail(inviteRequest.getRecipientEmail());
 
-		final String refsetId = nameValuePairs.get("refset");
-		LOG.info("Requester is: {}", requesterUser);
-		final Refset refset = getRefset(service, requesterUser, refsetId);
-		final String organizationName = refset.getOrganizationName();
-		final String editionName = refset.getEdition().getShortName();
+        final StringBuffer emailBody = new StringBuffer();
 
-		if (requesterUser == null
-				|| !requesterUser.checkPermission(User.ROLE_VIEWER, organizationName, editionName, null)) {
-			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
-					"This user does not have permission to perform this action");
-		}
+        final String ahrefStyle = "'padding: 8px 12px; border: 1px solid #c3e7fe;border-radius: 2px;"
+            + "font-family: Helvetica, Arial, sans-serif;font-size: 14px; color: #000000;" + "text-decoration: none;font-weight:bold;display: inline-block;'";
+        final String button = "<table style='width: 100%; padding-right: 50px; padding-left: 50px'><tr><td>"
+            + "  <table style='padding: 0'><tr><td style='border-radius: 2px; background-color: #c3e7fe'>"
+            + "    <a href='{{BUTTION_LINK}}' target='_blank' style=" + ahrefStyle + ">" + "      {{BUTTON_TEXT}}" + "</a></td></tr></table></td></tr></table>";
 
-		service.setModifiedBy(requesterUser.getUserName());
-		inviteRequest.setResponse(String.valueOf(acceptance));
-		inviteRequest.setResponseDate(new Date());
-		service.update(inviteRequest);
+        final User requesterUser = UserService.getUser(inviteRequest.getRequester(), false);
+        if (requesterUser == null) {
+            LOG.error("Requester not found: {}", inviteRequest.getRequester());
+        }
 
-		// if rejected, send notification to requester
-		if (!acceptance) {
+        // get refset from payload
+        final Map<String, String> nameValuePairs = new HashMap<>();
+        final String[] pairs = inviteRequest.getPayload().split("&");
+        for (final String pair : pairs) {
+            final String[] keyValue = pair.split(":");
+            nameValuePairs.put(keyValue[0], keyValue[1]);
+        }
 
-			emailBody.append("<html>");
-			emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
-			emailBody.append("<div>");
+        final String refsetId = nameValuePairs.get("refset");
+        LOG.info("Requester is: {}", requesterUser);
+        final Refset refset = getRefset(service, requesterUser, refsetId);
+        final String organizationName = refset.getOrganizationName();
+        final String editionName = refset.getEdition().getShortName();
 
-			emailBody.append("    <span>Hello, ").append(requesterUser.getName()).append("</span><br/><br/>");
+        if (requesterUser == null || !requesterUser.checkPermission(User.ROLE_VIEWER, organizationName, editionName, null)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "This user does not have permission to perform this action");
+        }
 
-			// Main invite
-			emailBody.append("    <span>")
-					.append(memberUser != null ? memberUser.getName() : inviteRequest.getRecipientEmail())
-					.append(" has declined your invitation to join ").append(refset.getOrganizationName())
-					.append(" as a collaborator.</span><br/><br/>");
+        service.setModifiedBy(requesterUser.getUserName());
+        inviteRequest.setResponse(String.valueOf(acceptance));
+        inviteRequest.setResponseDate(new Date());
+        service.update(inviteRequest);
 
-			// Go to app
-			emailBody.append("    <span style='width: 400px; display: inline-block'>").append(button
-					.replace("{{BUTTION_LINK}}", appUrlRoot).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool"))
-					.append("</span>");
+        // if rejected, send notification to requester
+        if (!acceptance) {
 
-			emailBody.append("</div>");
-			emailBody.append("</body>");
-			emailBody.append("</html>");
+            emailBody.append("<html>");
+            emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
+            emailBody.append("<div>");
 
-			final String action = INVITE_DECLINED;
-			final Set<String> recipients = new HashSet<>(Arrays.asList(requesterUser.getEmail()));
-			LOG.info("REFSET INVITE declined - from {} to {}", requesterUser.getEmail(), recipients);
-			EmailUtility.sendEmail(EMAIL_SUBJECT + action, requesterUser.getEmail(), recipients, emailBody.toString());
+            emailBody.append("    <span>Hello, ").append(requesterUser.getName()).append("</span><br/><br/>");
 
-		}
+            // Main invite
+            emailBody.append("    <span>").append(memberUser != null ? memberUser.getName() : inviteRequest.getRecipientEmail())
+                .append(" has declined your invitation to join ").append(refset.getOrganizationName()).append(" as a collaborator.</span><br/><br/>");
 
-		// if accepted, add user to org, admin has to add to team and project since we
-		// can't determine here which of the project's team to add the user.
-		if (acceptance && memberUser != null) {
+            // Go to app
+            emailBody.append("    <span style='width: 400px; display: inline-block'>")
+                .append(button.replace("{{BUTTION_LINK}}", appUrlRoot).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
 
-			// add user to org as a viewer, will not error if already a member.
-			OrganizationService.addUserToOrganization(service, requesterUser, refset.getEdition().getOrganizationId(),
-					memberUser.getEmail());
+            emailBody.append("</div>");
+            emailBody.append("</body>");
+            emailBody.append("</html>");
 
-			emailBody.append("<html>");
-			emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
-			emailBody.append("<div>");
+            final String action = INVITE_DECLINED;
+            final Set<String> recipients = new HashSet<>(Arrays.asList(requesterUser.getEmail()));
+            LOG.info("REFSET INVITE declined - from {} to {}", requesterUser.getEmail(), recipients);
+            EmailUtility.sendEmail(EMAIL_SUBJECT + action, requesterUser.getEmail(), recipients, emailBody.toString());
 
-			emailBody.append("    <span>Hello, ").append(requesterUser.getName()).append("</span><br/><br/>");
+        }
 
-			// Main invite
-			emailBody.append("    <span>").append(memberUser.getName()).append(" has accepted your invitation to join ")
-					.append(refset.getOrganizationName()).append(" as a collaborator.</span><br/><br/>");
-			emailBody.append("    <span>").append(memberUser.getName()).append("has been added to ")
-					.append(refset.getOrganizationName()).append(" as a <b>Viewer</b>.</span><br/><br/>");
+        // if accepted, add user to org, admin has to add to team and project since we
+        // can't determine here which of the project's team to add the user.
+        if (acceptance && memberUser != null) {
 
-			// Warning
-			emailBody.append(
-					"    <span>Additional permissions can be configured through the SNOMED CT Reference Set Tool</span><br/><br/>");
+            // add user to org as a viewer, will not error if already a member.
+            OrganizationService.addUserToOrganization(service, requesterUser, refset.getEdition().getOrganizationId(), memberUser.getEmail());
 
-			// Go to app
-			emailBody.append("    <span style='width: 400px; display: inline-block'>").append(button
-					.replace("{{BUTTION_LINK}}", appUrlRoot).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool"))
-					.append("</span>");
+            emailBody.append("<html>");
+            emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
+            emailBody.append("<div>");
 
-			emailBody.append("</div>");
-			emailBody.append("</body>");
-			emailBody.append("</html>");
+            emailBody.append("    <span>Hello, ").append(requesterUser.getName()).append("</span><br/><br/>");
 
-			final String action = INVITE_ACCEPTED;
-			final Set<String> recipients = new HashSet<>(Arrays.asList(requesterUser.getEmail()));
-			LOG.info("REFSET INVITE accepted - from {} to {}", requesterUser.getEmail(), recipients);
-			EmailUtility.sendEmail(EMAIL_SUBJECT + action, requesterUser.getEmail(), recipients, emailBody.toString());
+            // Main invite
+            emailBody.append("    <span>").append(memberUser.getName()).append(" has accepted your invitation to join ").append(refset.getOrganizationName())
+                .append(" as a collaborator.</span><br/><br/>");
+            emailBody.append("    <span>").append(memberUser.getName()).append("has been added to ").append(refset.getOrganizationName())
+                .append(" as a <b>Viewer</b>.</span><br/><br/>");
 
-		}
+            // Warning
+            emailBody.append("    <span>Additional permissions can be configured through the SNOMED CT Reference Set Tool</span><br/><br/>");
 
-		AuditEntryHelper.responseForRefsetInvite(refset, requesterUser, inviteRequest.getRecipientEmail(), acceptance);
+            // Go to app
+            emailBody.append("    <span style='width: 400px; display: inline-block'>")
+                .append(button.replace("{{BUTTION_LINK}}", appUrlRoot).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
 
-	}
+            emailBody.append("</div>");
+            emailBody.append("</body>");
+            emailBody.append("</html>");
+
+            final String action = INVITE_ACCEPTED;
+            final Set<String> recipients = new HashSet<>(Arrays.asList(requesterUser.getEmail()));
+            LOG.info("REFSET INVITE accepted - from {} to {}", requesterUser.getEmail(), recipients);
+            EmailUtility.sendEmail(EMAIL_SUBJECT + action, requesterUser.getEmail(), recipients, emailBody.toString());
+
+        }
+
+        AuditEntryHelper.responseForRefsetInvite(refset, requesterUser, inviteRequest.getRecipientEmail(), acceptance);
+
+    }
 }

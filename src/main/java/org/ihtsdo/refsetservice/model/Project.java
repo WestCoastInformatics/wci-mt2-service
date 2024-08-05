@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.persistence.CollectionTable;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
@@ -84,6 +85,7 @@ public class Project extends AbstractHasModified
   /** The of teams ids for this project. */
   @ElementCollection
   @Fetch(FetchMode.JOIN)
+  @CollectionTable(name = "project_teams")
   private Set<String> teams;
 
   /** The of roles for this project. */
