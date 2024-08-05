@@ -14,7 +14,6 @@ import java.util.Objects;
 import java.util.Set;
 
 import javax.persistence.CascadeType;
-import javax.persistence.CollectionTable;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
@@ -50,7 +49,6 @@ public class MapEntry extends AbstractHasModified {
     /** The advices. */
     @ElementCollection
     @Fetch(FetchMode.JOIN)
-    @CollectionTable(name = "map_entry_advices")
     private Set<String> advices = new HashSet<>();
 
     /** The additional map entry info. */
