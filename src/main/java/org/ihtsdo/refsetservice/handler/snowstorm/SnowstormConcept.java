@@ -109,22 +109,27 @@ public class SnowstormConcept extends SnowstormAbstract {
      *
      * @param branch the branch
      * @param terminology the terminology
+     * @param version the version
      * @param code the code
      * @return the concept
      * @throws Exception the exception
      */
-    public static Concept getConcept(final String branch, final String terminology, final String code) throws Exception {
+    public static Concept getConcept(final String branch, final String terminology, final String version, final String code) throws Exception {
 
         //TEMPORARY
         if(terminology.equals("ICD10NO")) {
             Concept concept = new Concept();
             concept.setId(code);
             concept.setName(getICD10NOName(code));
+            concept.setTerminology(terminology);
+            concept.setVersion(version);
             return concept;
         } else if (terminology.equals("ICPC2NO")) {
             Concept concept = new Concept();
             concept.setId(code);
             concept.setName(getICPC2NOName(code));
+            concept.setTerminology(terminology);
+            concept.setVersion(version);
             return concept;
         }
         //TEMPORARY

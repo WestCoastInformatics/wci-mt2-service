@@ -451,9 +451,9 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     /* see superclass */
     @Override
-    public Concept getConcept(final String branch, final String terminology, final String code) throws Exception {
+    public Concept getConcept(final String branch, final String terminology, final String version, final String code) throws Exception {
 
-        return SnowstormConcept.getConcept(branch, terminology, code);
+        return SnowstormConcept.getConcept(branch, terminology, version, code);
 
     }
 

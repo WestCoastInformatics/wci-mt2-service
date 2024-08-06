@@ -15,12 +15,14 @@ import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
+import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.terminologyservice.ConceptService;
 import org.ihtsdo.refsetservice.terminologyservice.MapProjectService;
 import org.ihtsdo.refsetservice.terminologyservice.MapSetService;
 import org.ihtsdo.refsetservice.util.ResultList;
@@ -72,7 +74,7 @@ public class ConceptController extends BaseController {
      * @param terminology the concept terminology
      * @throws Exception the exception
      */
-    @RequestMapping(method = RequestMethod.GET, value = "/concept/{terminology}/{code}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @RequestMapping(method = RequestMethod.GET, value = "/concept/{terminology}/{version}/{code}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Get mapProject.  This call requires authentication with the correct role.", tags = {
         "project"
     }, responses = {
@@ -81,21 +83,22 @@ public class ConceptController extends BaseController {
         @ApiResponse(responseCode = "404", description = "Resource not found")
     })
     @Parameters({
+        @Parameter(name = "terminology", description = "Concept terminology", required = true),
+        @Parameter(name = "version", description = "Concept terminology version", required = true),
         @Parameter(name = "code", description = "Concept code, e.g. 4579201", required = true),
-        @Parameter(name = "terminology", description = "Include mapProject's members (users)", required = true),
-        @Parameter(name = "branch", description = "Include mapProject's members (users)", required = false, example = "MAIN/SNOMEDCT-NO/2024-04-15")
-
+        @Parameter(name = "branch", description = "The snowstorm branch to search in (for SNOMED concept searches)", required = false, example = "MAIN/SNOMEDCT-NO/2024-04-15")
     })
     @RecordMetric
     public @ResponseBody ResponseEntity<Concept> getConcept(@PathVariable(value = "terminology") final String terminology,
+        @PathVariable(value = "version") final String version,
         @PathVariable(value = "code") final String code,
         @RequestParam(value = "branch") final String branch) throws Exception {
 
-        LOG.info("Concept: code: " + code + ", terminology: " + terminology + ", branch: " + branch == null ? "" : branch);
+        LOG.info("Concept: code: " + code + ", terminology: " + terminology + ", version: " + version + ", branch: " + branch == null ? "" : branch);
         // final User authUser = authorizeUser(request);
 
         try {
-            final Concept concept = ConceptService.getConcept(branch, terminology, code);
+            final Concept concept = ConceptService.getConcept(branch, terminology, version, code);
             return new ResponseEntity<>(concept, HttpStatus.OK);
 
           } catch (final Exception e) {

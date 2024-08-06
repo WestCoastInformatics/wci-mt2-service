@@ -68,14 +68,15 @@ public final class ConceptService {
    *
    * @param branch the branch
    * @param terminology the terminology
+   * @param version the version
    * @param code the concept code
    * @return the concept
    * @throws Exception the exception
    */
-  public static Concept getConcept(final String branch, final String terminology, final String code)
+  public static Concept getConcept(final String branch, final String terminology, final String version, final String code)
     throws Exception {
 
-    return terminologyHandler.getConcept(branch, terminology, code);
+    return terminologyHandler.getConcept(branch, terminology, version, code);
   }
 
 }
