@@ -9,6 +9,10 @@
  */
 package org.ihtsdo.refsetservice.handler.snowstorm;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -51,6 +55,7 @@ import org.ihtsdo.refsetservice.util.ConceptLookupParameters;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.LocalException;
 import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.StringUtility;
@@ -74,6 +79,10 @@ public class SnowstormConcept extends SnowstormAbstract {
 
     /** The Constant DEFAULT_ACCEPT. */
     private static final String DEFAULT_ACCEPT = MediaType.APPLICATION_JSON;
+
+    private static final Map<String, String> icd10noCodeToName = new HashMap<>();
+
+    private static final Map<String, String> icpc2noCodeToName = new HashMap<>();
 
     /** The client. */
     private static ThreadLocal<Client> clients = new ThreadLocal<Client>() {
@@ -106,6 +115,20 @@ public class SnowstormConcept extends SnowstormAbstract {
      */
     public static Concept getConcept(final String branch, final String terminology, final String code) throws Exception {
 
+        //TEMPORARY
+        if(terminology.equals("ICD10NO")) {
+            Concept concept = new Concept();
+            concept.setId(code);
+            concept.setName(getICD10NOName(code));
+            return concept;
+        } else if (terminology.equals("ICPC2NO")) {
+            Concept concept = new Concept();
+            concept.setId(code);
+            concept.setName(getICPC2NOName(code));
+            return concept;
+        }
+        //TEMPORARY
+        
         // Connect to snowstorm
         final Client client = getClients().get();
         String searchAfter = null;
@@ -1802,4 +1825,86 @@ public class SnowstormConcept extends SnowstormAbstract {
         }
     }
 
+    // TEMPORARY//
+    private static String getICD10NOName(String code) throws Exception {
+      if (icd10noCodeToName.isEmpty()) {
+        cacheICD10NONames();
+      }
+      String ICD10NOName = icd10noCodeToName.get(code);
+      if (ICD10NOName == null || ICD10NOName.isBlank()) {
+        ICD10NOName = code + " CONCEPT NOT FOUND";
+      }
+      return ICD10NOName;
+    }
+
+    // TEMPORARY//
+    private static void cacheICD10NONames() throws Exception {
+
+      String dataDir = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.dir");
+
+      final File f = new File(dataDir + "/ICD10NO_concepts.txt");
+      if (!f.exists()) {
+        LOG.error("ICD10NO file doesn't exist: " + f.getPath());
+        return;
+      }
+
+      try (BufferedReader br = new BufferedReader(new FileReader(f.getPath()))) {
+        String line;
+        while ((line = br.readLine()) != null) {
+          String[] parts = line.split("\\|", 2); // Split the line into two parts
+                                                 // at the first occurrence of '|'
+          if (parts.length >= 2) {
+            String key = parts[0].trim();
+            String value = parts[1].trim();
+            icd10noCodeToName.put(key, value);
+          } else {
+            System.out.println("Ignoring malformed line: " + line);
+          }
+        }
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+
+    // TEMPORARY//
+    private static String getICPC2NOName(String code) throws Exception {
+      if (icpc2noCodeToName.isEmpty()) {
+        cacheICPC2NONames();
+      }
+      String ICPC2NOName = icpc2noCodeToName.get(code);
+      if (ICPC2NOName == null || ICPC2NOName.isBlank()) {
+        ICPC2NOName = code + " CONCEPT NOT FOUND";
+      }
+      return ICPC2NOName;
+    }
+
+    // TEMPORARY//
+    private static void cacheICPC2NONames() throws Exception {
+
+      String dataDir = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.dir");
+
+      final File f = new File(dataDir + "/ICPC2NO_concepts.txt");
+      if (!f.exists()) {
+        LOG.error("ICPC2NO file doesn't exist: " + f.getPath());
+        return;
+      }
+
+      try (BufferedReader br = new BufferedReader(new FileReader(f.getPath()))) {
+        String line;
+        while ((line = br.readLine()) != null) {
+          String[] parts = line.split("\\|", 2); // Split the line into two parts
+                                                 // at the first occurrence of '|'
+          if (parts.length >= 2) {
+            String key = parts[0].trim();
+            String value = parts[1].trim();
+            icpc2noCodeToName.put(key, value);
+          } else {
+            System.out.println("Ignoring malformed line: " + line);
+          }
+        }
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }    
+    
 }

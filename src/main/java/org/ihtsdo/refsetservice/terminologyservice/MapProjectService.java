@@ -10,6 +10,7 @@
 package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +21,9 @@ import javax.ws.rs.NotFoundException;
 
 import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
 import org.ihtsdo.refsetservice.model.Edition;
+import org.ihtsdo.refsetservice.model.MapAdvice;
 import org.ihtsdo.refsetservice.model.MapProject;
+import org.ihtsdo.refsetservice.model.MapRelation;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.Team;
@@ -106,6 +109,59 @@ public class MapProjectService extends BaseService {
      */
     public static MapProject getMapProject(final TerminologyService service, final String mapProjectId, final boolean includeMembers) throws Exception {
 
+        // WMT-192 - use a dummy lookup for now.
+        // Remove if(true) clause once MapProjects are stored in the database
+        if(true) {
+        
+        MapProject mapProject = new MapProject();
+
+        mapProject.setRefSetId("447562003");
+        mapProject
+            .setRefSetName("SNOMED CT to International Classification of Diseases tenth revision extended map reference set (foundation metadata concept)");
+        mapProject.setActive(true);
+        mapProject.setSourceTerminology("SNOMEDCT_NO");
+        mapProject.setSourceTerminologyVersion("2024-04-15");
+        mapProject.setDestinationTerminology("ICD-10-NO");
+        mapProject.setDestinationTerminologyVersion("2024-07-24");
+
+        Set<MapAdvice> mapAdvices = new HashSet<>();
+        List<String> adviceNames = new ArrayList<>(Arrays.asList("MAPPED FOLLOWING WHO GUIDANCE", "POSSIBLE REQUIREMENT FOR PLACE OF OCCURRENCE",
+            "POSSIBLE REQUIREMENT FOR CAUSATIVE AGENT CODE", "POSSIBLE REQUIREMENT FOR MORPHOLOGY CODE", "POSSIBLE REQUIREMENT FOR AN EXTERNAL CAUSE CODE"));
+
+        for (String adviceName : adviceNames) {
+            MapAdvice mapAdvice = new MapAdvice();
+            mapAdvice.setName(adviceName);
+            mapAdvice.setDetail(adviceName);
+            mapAdvice.setAllowableForNullTarget(false);
+            mapAdvice.setComputed(false);
+            mapAdvices.add(mapAdvice);
+        }
+
+        mapProject.setMapAdvices(mapAdvices);
+
+        Set<MapRelation> mapRelations = new HashSet<>();
+        MapRelation mapRelation = new MapRelation();
+        mapRelation.setTerminologyId("447638001");
+        mapRelation.setName("MAP SOURCE CONCEPT CANNOT BE CLASSIFIED WITH AVAILABLE DATA");
+        mapRelation.setAllowableForNullTarget(true);
+        mapRelation.setComputed(false);
+        mapRelations.add(mapRelation);
+
+        mapRelation = new MapRelation();
+        mapRelation.setTerminologyId("447637006");
+        mapRelation.setName("MAP SOURCE CONCEPT IS PROPERLY CLASSIFIED");
+        mapRelation.setAllowableForNullTarget(false);
+        mapRelation.setComputed(true);
+        mapRelations.add(mapRelation);
+
+        mapProject.setMapRelations(mapRelations);
+
+        mapProject.setRuleBased(false);
+
+        return mapProject;  
+        }
+        
+        
         final MapProject mapProject = service.findSingle("id: " + mapProjectId + " AND active:true", MapProject.class, null);
 
         if (mapProject == null) {
