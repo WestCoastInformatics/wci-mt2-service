@@ -604,7 +604,7 @@ public class SnowstormMapping extends SnowstormAbstract {
       if (mapping.getCode() == null || mapping.getCode().isEmpty()) {
         mapping.setCode(mappingNode.get("referencedComponentId").asText());
         mapping.setName(SnowstormConcept
-            .getConcept(branch, mapSet.getFromTerminology(), mapping.getCode()).getName());
+            .getConcept(branch, mapSet.getFromTerminology(), "", mapping.getCode()).getName());
         mapping.setMapSetId(mapSet.getId());
         mapping.setMapEntries(new ArrayList<>());
       }
@@ -632,7 +632,7 @@ public class SnowstormMapping extends SnowstormAbstract {
       mapEntry.setAdvices(advices);
 
       final Concept relationConcept = SnowstormConcept.getConcept(branch,
-          mapSet.getFromTerminology(), additionalFields.get("mapCategoryId").asText());
+          mapSet.getFromTerminology(), "", additionalFields.get("mapCategoryId").asText());
       if (relationConcept != null) {
         mapEntry.setRelation(relationConcept.getName());
       } else {
@@ -641,7 +641,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
       mapEntry.setToCode(additionalFields.get("mapTarget").asText());
 
-      final Concept toConcept = SnowstormConcept.getConcept(branch, mapSet.getToTerminology(),
+      final Concept toConcept = SnowstormConcept.getConcept(branch, mapSet.getToTerminology(), "", 
           additionalFields.get("mapTarget").asText());
 
       if (toConcept != null) {
