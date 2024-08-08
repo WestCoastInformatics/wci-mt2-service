@@ -51,7 +51,7 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
 /**
- * Controller for /mapproject endpoints.
+ * Controller for /concept endpoints.
  */
 @RestController
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
@@ -75,12 +75,13 @@ public class ConceptController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/concept/{terminology}/{version}/{code}", produces = MediaType.APPLICATION_JSON)
-    @Operation(summary = "Get mapProject.  This call requires authentication with the correct role.", tags = {
-        "project"
+    @Operation(summary = "Get concept.  This call requires authentication with the correct role.", tags = {
+        "concept"
     }, responses = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
         @ApiResponse(responseCode = "401", description = "Unauthorized"), @ApiResponse(responseCode = "403", description = "Forbidden"),
-        @ApiResponse(responseCode = "404", description = "Resource not found")
+        @ApiResponse(responseCode = "404", description = "Resource not found"),
+        @ApiResponse(responseCode = "417", description = "Failed Expectation")
     })
     @Parameters({
         @Parameter(name = "terminology", description = "Concept terminology", required = true),

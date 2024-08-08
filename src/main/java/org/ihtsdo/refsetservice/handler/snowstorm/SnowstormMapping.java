@@ -794,14 +794,23 @@ public class SnowstormMapping extends SnowstormAbstract {
       return new HashMap<>();
     }
 
+    final Map<String, Concept> conceptMap = new HashMap<>();
+    
+    //TODO: fix this hacky hardcoding
+    if(terminology.equals("ICD-10-NO") || terminology.equals("ICPC-2-NO")) {
+    	for(String code : codes) {
+    		final Concept concept = SnowstormConcept.getConcept(branch, terminology, "", code);
+    		conceptMap.put(code, concept);
+    	}
+    	return conceptMap;
+    }
+    
     LOG.debug("Codes to look up: {}", codes);
 
     final Integer fetchLimit = 1000;
     final SearchParameters searchParameters = new SearchParameters();
     searchParameters.setLimit(fetchLimit);
     searchParameters.setSearchAfter("");
-
-    final Map<String, Concept> conceptMap = new HashMap<>();
 
     final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/concepts/search";
     final String requestBodyTempate =
