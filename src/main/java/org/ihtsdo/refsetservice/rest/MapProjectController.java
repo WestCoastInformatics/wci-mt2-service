@@ -140,7 +140,7 @@ public class MapProjectController extends BaseController {
         @RequestParam(value = "includeMembers", defaultValue = "false") final boolean includeMembers) throws Exception {
 
         LOG.info("Project: id: " + id);
-        authorizeUser(request);
+        //authorizeUser(request);
 
         try (final TerminologyService service = new TerminologyService()) {
             final MapProject mapProject = MapProjectService.getMapProject(service, id, includeMembers);
