@@ -123,7 +123,7 @@ public class MapProjectController extends BaseController {
      * @return the mapProject
      * @throws Exception the exception
      */
-    @RequestMapping(method = RequestMethod.GET, value = "/mapproject/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @RequestMapping(method = RequestMethod.GET, value = "/mapproject/{id}", produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Get mapProject.  This call requires authentication with the correct role.", tags = {
         "project"
     }, responses = {

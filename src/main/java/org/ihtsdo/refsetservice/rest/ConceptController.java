@@ -74,7 +74,7 @@ public class ConceptController extends BaseController {
      * @param terminology the concept terminology
      * @throws Exception the exception
      */
-    @RequestMapping(method = RequestMethod.GET, value = "/concept/{terminology}/{version}/{code}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @RequestMapping(method = RequestMethod.GET, value = "/concept/{terminology}/{version}/{code}", produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Get mapProject.  This call requires authentication with the correct role.", tags = {
         "project"
     }, responses = {
