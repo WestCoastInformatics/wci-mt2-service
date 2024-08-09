@@ -93,9 +93,9 @@ public class ConceptController extends BaseController {
     public @ResponseBody ResponseEntity<Concept> getConcept(@PathVariable(value = "terminology") final String terminology,
         @PathVariable(value = "version") final String version,
         @PathVariable(value = "code") final String code,
-        @RequestParam(value = "branch") final String branch) throws Exception {
+        @RequestParam(required=false) final String branch) throws Exception {
 
-        LOG.info("Concept: code: " + code + ", terminology: " + terminology + ", version: " + version + ", branch: " + branch == null ? "" : branch);
+        LOG.info("Concept: code: " + code + ", terminology: " + terminology + ", version: " + version + ", branch: " + (branch == null ? "" : branch));
         // final User authUser = authorizeUser(request);
 
         try {
