@@ -797,7 +797,7 @@ public class SnowstormMapping extends SnowstormAbstract {
     final Map<String, Concept> conceptMap = new HashMap<>();
     
     //TODO: fix this hacky hardcoding
-    if(terminology.equals("ICD-10-NO") || terminology.equals("ICPC-2-NO")) {
+    if(!terminology.contains("SNOMED")) {
     	for(String code : codes) {
     		final Concept concept = SnowstormConcept.getConcept(branch, terminology, "", code);
     		conceptMap.put(code, concept);
