@@ -95,7 +95,7 @@ public class MappingController extends BaseController {
           (StringUtils.isBlank(filter)) ? StringUtils.EMPTY : StringUtils.trim(filter);
 
       // TODO: determine branch.
-      final String branch = "MAIN/SNOMEDCT-NO/2024-04-15";
+      final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
 
       final ResultList<Mapping> mappings =
           MappingService.getMappings(branch, mapSetCode, sp, filterString, conceptCodesList);
@@ -140,7 +140,7 @@ public class MappingController extends BaseController {
     try {
 
       // TODO: determine branch.
-      final String branch = "MAIN/SNOMEDCT-NO/2024-04-15";
+      final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
       final Mapping mapping = MappingService.getMapping(branch, mapSetCode, conceptCode);
 
       return new ResponseEntity<>(mapping, HttpStatus.OK);
@@ -179,7 +179,7 @@ public class MappingController extends BaseController {
     try {
 
       // TODO: determine branch.
-      final String branch = "MAIN/SNOMEDCT-NO/2024-04-15";
+      final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
       MappingService.createMapping(branch, mapSetCode, mapping);
 
       return new ResponseEntity<Mapping>(HttpStatus.CREATED);
@@ -218,7 +218,7 @@ public class MappingController extends BaseController {
     try {
 
       // TODO: determine branch.
-      final String branch = "MAIN/SNOMEDCT-NO/2024-04-15";
+      final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
       MappingService.updateMapping(branch, mapSetCode, mapping);
 
       return new ResponseEntity<>(HttpStatus.OK);

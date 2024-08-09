@@ -87,7 +87,7 @@ public class ConceptController extends BaseController {
         @Parameter(name = "terminology", description = "Concept terminology", required = true),
         @Parameter(name = "version", description = "Concept terminology version", required = true),
         @Parameter(name = "code", description = "Concept code, e.g. 4579201", required = true),
-        @Parameter(name = "branch", description = "The snowstorm branch to search in (for SNOMED concept searches)", required = false, example = "MAIN/SNOMEDCT-NO/2024-04-15")
+        @Parameter(name = "branch", description = "The snowstorm branch to search in (for SNOMED concept searches)", required = false, example = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST")
     })
     @RecordMetric
     public @ResponseBody ResponseEntity<Concept> getConcept(@PathVariable(value = "terminology") final String terminology,
