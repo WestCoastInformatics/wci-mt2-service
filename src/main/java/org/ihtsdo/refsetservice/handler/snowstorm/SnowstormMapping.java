@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.client.Client;
@@ -49,6 +50,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+// TODO: Auto-generated Javadoc
 /**
  * The Class SnowstormMapping.
  */
@@ -80,6 +82,7 @@ public class SnowstormMapping extends SnowstormAbstract {
   /**
    * Gets the map sets.
    *
+   * @param branch the branch
    * @return the map sets
    * @throws Exception the exception
    */
@@ -169,6 +172,7 @@ public class SnowstormMapping extends SnowstormAbstract {
   /**
    * Gets the map set.
    *
+   * @param branch the branch
    * @param code the code
    * @return the map set
    * @throws Exception the exception
@@ -245,10 +249,25 @@ public class SnowstormMapping extends SnowstormAbstract {
 
     return null;
   }
+  
+  /**
+   * Update map set.
+   *
+   * @param branch the branch
+   * @param mapSet the map set
+   * @return the map set
+   * @throws Exception the exception
+   */
+  public static MapSet updateMapSet(final String branch, final MapSet mapSet) throws Exception {
+
+      // TODO - implement
+      return null;
+  }
 
   /**
    * Gets the mappings.
    *
+   * @param branch the branch
    * @param mapSetCode the map set code
    * @param searchParameters the search parameters
    * @param filter the filter
@@ -486,9 +505,11 @@ public class SnowstormMapping extends SnowstormAbstract {
   /**
    * Search concepts.
    *
+   * @param branch the branch
    * @param mapSetCode the map set code
    * @param searchString the search string
    * @return the list
+   * @throws Exception the exception
    */
   private static List<String> searchConcepts(final String branch, final String mapSetCode,
     final String searchString) throws Exception {
@@ -554,6 +575,7 @@ public class SnowstormMapping extends SnowstormAbstract {
   /**
    * Gets the mapping.
    *
+   * @param branch the branch
    * @param mapSetCode the map set code
    * @param conceptCode the concept code
    * @return the mapping
@@ -614,6 +636,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
       mapEntry.setModified(
           new SimpleDateFormat("yyyyMMdd").parse(mappingNode.get("effectiveTime").asText()));
+      mapEntry.setId(mappingNode.get("memberId").asText());
 
       final JsonNode additionalFields = mappingNode.get("additionalFields");
 
@@ -732,9 +755,12 @@ public class SnowstormMapping extends SnowstormAbstract {
     final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/";
 
     for (final MapEntry mapEntry : mapping.getMapEntries()) {
-      final String mapEntryJson =
-          mapEntryToSnowstormMap(mapSetCode, mapping.getName(), mapping.getCode(), mapEntry);
 
+      final String mapEntryJson =
+          mapEntryToSnowstormMap(mapSetCode,mapping.getCode(), mapping.getName(), mapEntry);
+
+      LOG.info("Snowstorm: Update mapping: {} with {}", targetUri + mapEntry.getId(), mapEntryJson);
+      
       try (final Response response =
           SnowstormConnection.putResponse(targetUri + mapEntry.getId(), mapEntryJson)) {
 
@@ -752,6 +778,7 @@ public class SnowstormMapping extends SnowstormAbstract {
   /**
    * Gets the concepts by terminology.
    *
+   * @param branch the branch
    * @param conceptCodes the concept codes
    * @return the concept
    * @throws Exception the exception
@@ -782,6 +809,7 @@ public class SnowstormMapping extends SnowstormAbstract {
   /**
    * Gets the concepts from snowstorm.
    *
+   * @param branch the branch
    * @param terminology the terminology
    * @param codes the codes
    * @return the concepts from snowstorm
@@ -856,6 +884,11 @@ public class SnowstormMapping extends SnowstormAbstract {
 
   }
 
+  /**
+   * Sort map entries.
+   *
+   * @param mapping the mapping
+   */
   private static void sortMapEntries(final Mapping mapping) {
     final List<MapEntry> entries = mapping.getMapEntries();
     entries
@@ -870,6 +903,11 @@ public class SnowstormMapping extends SnowstormAbstract {
   // And also a Norwegian map entry (module=51000202101) for group 1, priority
   // 1,
   // then the Edition/Norwegian map entry should be kept, and the international
+  /**
+   * Handle edition precedence.
+   *
+   * @param mapping the mapping
+   */
   // one dropped.
   private static void handleEditionPrecedence(final Mapping mapping) {
     final Map<String, MapEntry> groupPriorityToEntryMap = new HashMap<>();
@@ -923,6 +961,12 @@ public class SnowstormMapping extends SnowstormAbstract {
     final StringBuilder mapEntryJson = new StringBuilder();
 
     mapEntryJson.append("{");
+    if (StringUtils.isNotBlank(mapEntry.getId())) {
+        mapEntryJson.append("\"memberId\": \"").append(mapEntry.getId()).append("\",");
+    }
+    else {
+        mapEntryJson.append("\"memberId\": \"").append(UUID.randomUUID().toString()).append("\",");
+    }
     mapEntryJson.append("\"active\": ").append(mapEntry.isActive()).append(",");
     mapEntryJson.append("\"moduleId\": \"").append(mapEntry.getModuleId()).append("\",");
     // mapEntryJson.append("\"released\": false,");
@@ -940,10 +984,13 @@ public class SnowstormMapping extends SnowstormAbstract {
     mapEntryJson.append("\"mapGroup\": ").append(mapEntry.getGroup()).append(",");
 
     // TODO - what is correlationId?
-    final String correlationId = mapEntry.getAdditionalMapEntryInfos().stream()
-        .filter(info -> info.getName().equals("correlationId")).findFirst().get().getValue();
-    if (StringUtils.isNotBlank(correlationId)) {
-      mapEntryJson.append("\"correlationId\": \"").append(correlationId).append("\",");
+    if (mapEntry.getAdditionalMapEntryInfos() != null && !mapEntry.getAdditionalMapEntryInfos().isEmpty()) {
+        final String correlationId =
+            mapEntry.getAdditionalMapEntryInfos().stream().filter(info -> info.getName().equals("correlationId")).findFirst().get().getValue();
+
+        if (StringUtils.isNotBlank(correlationId)) {
+            mapEntryJson.append("\"correlationId\": \"").append(correlationId).append("\",");
+        }
     }
     mapEntryJson.append("\"mapTarget\": \"").append(mapEntry.getToCode()).append("\"");
     mapEntryJson.append("},");
