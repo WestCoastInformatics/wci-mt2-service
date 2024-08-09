@@ -9,10 +9,6 @@
  */
 package org.ihtsdo.refsetservice.handler.snowstorm;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -41,7 +37,6 @@ import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.util.LocalException;
-import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
@@ -750,30 +745,32 @@ public class SnowstormMapping extends SnowstormAbstract {
    * @return the mapping
    * @throws Exception the exception
    */
-  public static void updateMapping(final String branch, final String mapSetCode,
-    final Mapping mapping) throws Exception {
+  public static void updateMapping(final String branch, final String mapSetCode, final Mapping mapping) throws Exception {
 
-    final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/";
+      final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/";
 
-    for (final MapEntry mapEntry : mapping.getMapEntries()) {
+      for (final MapEntry mapEntry : mapping.getMapEntries()) {
 
-      final String mapEntryJson =
-          mapEntryToSnowstormMap(mapSetCode,mapping.getCode(), mapping.getName(), mapEntry);
+          final String mapEntryJson = mapEntryToSnowstormMap(mapSetCode, mapping.getCode(), mapping.getName(), mapEntry);
 
-      LOG.info("Snowstorm: Update mapping: {} with {}", targetUri + mapEntry.getId(), mapEntryJson);
-      
-      try (final Response response =
-          SnowstormConnection.putResponse(targetUri + mapEntry.getId(), mapEntryJson)) {
+          if (StringUtils.isBlank(mapEntry.getId())) {
+              LOG.info("Snowstorm: Add mapping: {} with {}", targetUri, mapEntryJson);
+              try (final Response response = SnowstormConnection.postResponse(targetUri, mapEntryJson)) {
 
-        if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-          throw new LocalException("Unexpected terminology server failure. Message = "
-              + response.readEntity(String.class));
-        }
+                  if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                      throw new LocalException("Unexpected terminology server failure. Message = " + response.readEntity(String.class));
+                  }
+              }
+          } else {
+              LOG.info("Snowstorm: Update mapping: {} with {}", targetUri, mapEntryJson);
+              try (final Response response = SnowstormConnection.putResponse(targetUri + mapEntry.getId(), mapEntryJson)) {
 
+                  if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                      throw new LocalException("Unexpected terminology server failure. Message = " + response.readEntity(String.class));
+                  }
+              }
+          }
       }
-
-    }
-
   }
 
   /**
