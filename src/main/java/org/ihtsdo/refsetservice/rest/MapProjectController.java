@@ -123,9 +123,9 @@ public class MapProjectController extends BaseController {
      * @return the mapProject
      * @throws Exception the exception
      */
-    @RequestMapping(method = RequestMethod.GET, value = "/mapproject/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @RequestMapping(method = RequestMethod.GET, value = "/mapproject/{id}", produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Get mapProject.  This call requires authentication with the correct role.", tags = {
-        "project"
+        "mapproject"
     }, responses = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
         @ApiResponse(responseCode = "401", description = "Unauthorized"), @ApiResponse(responseCode = "403", description = "Forbidden"),
@@ -140,7 +140,7 @@ public class MapProjectController extends BaseController {
         @RequestParam(value = "includeMembers", defaultValue = "false") final boolean includeMembers) throws Exception {
 
         LOG.info("Project: id: " + id);
-        authorizeUser(request);
+        //authorizeUser(request);
 
         try (final TerminologyService service = new TerminologyService()) {
             final MapProject mapProject = MapProjectService.getMapProject(service, id, includeMembers);

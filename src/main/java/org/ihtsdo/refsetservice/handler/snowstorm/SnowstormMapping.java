@@ -60,10 +60,6 @@ public class SnowstormMapping extends SnowstormAbstract {
   /** The Constant DEFAULT_ACCEPT. */
   private static final String DEFAULT_ACCEPT = MediaType.APPLICATION_JSON;
 
-  private static final Map<String, String> icd10noCodeToName = new HashMap<>();
-
-  private static final Map<String, String> icpc2noCodeToName = new HashMap<>();
-
   /** The client. */
   private static ThreadLocal<Client> clients = new ThreadLocal<Client>() {
     @Override
@@ -447,14 +443,6 @@ public class SnowstormMapping extends SnowstormAbstract {
         entry.setToName(
             toConcept != null ? toConcept.getName() : entry.getToCode() + " CONCEPT NOT FOUND");
 
-        // TEMPORARY//
-        if (toTerminology.equals("ICD10NO")) {
-          entry.setToName(getICD10NOName(entry.getToCode()));
-        } else if (toTerminology.equals("ICPC2NO")) {
-          entry.setToName(getICPC2NOName(entry.getToCode()));
-        }
-        // END TEMPORARY//
-
       }
     }
 
@@ -616,7 +604,7 @@ public class SnowstormMapping extends SnowstormAbstract {
       if (mapping.getCode() == null || mapping.getCode().isEmpty()) {
         mapping.setCode(mappingNode.get("referencedComponentId").asText());
         mapping.setName(SnowstormConcept
-            .getConcept(branch, mapSet.getFromTerminology(), mapping.getCode()).getName());
+            .getConcept(branch, mapSet.getFromTerminology(), "", mapping.getCode()).getName());
         mapping.setMapSetId(mapSet.getId());
         mapping.setMapEntries(new ArrayList<>());
       }
@@ -644,26 +632,23 @@ public class SnowstormMapping extends SnowstormAbstract {
       mapEntry.setAdvices(advices);
 
       final Concept relationConcept = SnowstormConcept.getConcept(branch,
-          mapSet.getFromTerminology(), additionalFields.get("mapCategoryId").asText());
+          mapSet.getFromTerminology(), "", additionalFields.get("mapCategoryId").asText());
       if (relationConcept != null) {
         mapEntry.setRelation(relationConcept.getName());
       } else {
-        mapEntry.setRelation(mapEntry.getToCode() + " DOES NOT EXIST");
+        mapEntry.setRelation(mapEntry.getToCode() + " CONCEPT NOT FOUND");
       }
 
       mapEntry.setToCode(additionalFields.get("mapTarget").asText());
 
-      final Concept toConcept = SnowstormConcept.getConcept(branch, mapSet.getToTerminology(),
+      final Concept toConcept = SnowstormConcept.getConcept(branch, mapSet.getToTerminology(), "", 
           additionalFields.get("mapTarget").asText());
 
       if (toConcept != null) {
         mapEntry.setToName(toConcept.getName());
       } else {
-        mapEntry.setToName(mapEntry.getToCode() + " DOES NOT EXIST");
+        mapEntry.setToName(mapEntry.getToCode() + " CONCEPT NOT FOUND");
       }
-      // TEMPORARY//
-      mapEntry.setToName(getICD10NOName(mapEntry.getToCode()));
-      // TEMPORARY//
 
       final List<MapEntry> mapEntries = mapping.getMapEntries();
       mapEntries.add(mapEntry);
@@ -809,14 +794,23 @@ public class SnowstormMapping extends SnowstormAbstract {
       return new HashMap<>();
     }
 
+    final Map<String, Concept> conceptMap = new HashMap<>();
+    
+    //TODO: fix this hacky hardcoding
+    if(!terminology.contains("SNOMED")) {
+    	for(String code : codes) {
+    		final Concept concept = SnowstormConcept.getConcept(branch, terminology, "", code);
+    		conceptMap.put(code, concept);
+    	}
+    	return conceptMap;
+    }
+    
     LOG.debug("Codes to look up: {}", codes);
 
     final Integer fetchLimit = 1000;
     final SearchParameters searchParameters = new SearchParameters();
     searchParameters.setLimit(fetchLimit);
     searchParameters.setSearchAfter("");
-
-    final Map<String, Concept> conceptMap = new HashMap<>();
 
     final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/concepts/search";
     final String requestBodyTempate =
@@ -895,88 +889,6 @@ public class SnowstormMapping extends SnowstormAbstract {
     // Set the remaining map entries to the mapping
     final List<MapEntry> remainingMapEntries = new ArrayList<>(groupPriorityToEntryMap.values());
     mapping.setMapEntries(remainingMapEntries);
-  }
-
-  // TEMPORARY//
-  private static String getICD10NOName(String code) throws Exception {
-    if (icd10noCodeToName.isEmpty()) {
-      cacheICD10NONames();
-    }
-    String ICD10NOName = icd10noCodeToName.get(code);
-    if (ICD10NOName == null || ICD10NOName.isBlank()) {
-      ICD10NOName = "CONCEPT NOT FOUND FOR " + code;
-    }
-    return ICD10NOName;
-  }
-
-  // TEMPORARY//
-  private static void cacheICD10NONames() throws Exception {
-
-    String dataDir = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.dir");
-
-    final File f = new File(dataDir + "/ICD10NO_concepts.txt");
-    if (!f.exists()) {
-      LOG.error("ICD10NO file doesn't exist: " + f.getPath());
-      return;
-    }
-
-    try (BufferedReader br = new BufferedReader(new FileReader(f.getPath()))) {
-      String line;
-      while ((line = br.readLine()) != null) {
-        String[] parts = line.split("\\|", 2); // Split the line into two parts
-                                               // at the first occurrence of '|'
-        if (parts.length >= 2) {
-          String key = parts[0].trim();
-          String value = parts[1].trim();
-          icd10noCodeToName.put(key, value);
-        } else {
-          System.out.println("Ignoring malformed line: " + line);
-        }
-      }
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-  }
-
-  // TEMPORARY//
-  private static String getICPC2NOName(String code) throws Exception {
-    if (icpc2noCodeToName.isEmpty()) {
-      cacheICPC2NONames();
-    }
-    String ICPC2NOName = icpc2noCodeToName.get(code);
-    if (ICPC2NOName == null || ICPC2NOName.isBlank()) {
-      ICPC2NOName = "CONCEPT NOT FOUND FOR " + code;
-    }
-    return ICPC2NOName;
-  }
-
-  // TEMPORARY//
-  private static void cacheICPC2NONames() throws Exception {
-
-    String dataDir = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.dir");
-
-    final File f = new File(dataDir + "/ICPC2NO_concepts.txt");
-    if (!f.exists()) {
-      LOG.error("ICPC2NO file doesn't exist: " + f.getPath());
-      return;
-    }
-
-    try (BufferedReader br = new BufferedReader(new FileReader(f.getPath()))) {
-      String line;
-      while ((line = br.readLine()) != null) {
-        String[] parts = line.split("\\|", 2); // Split the line into two parts
-                                               // at the first occurrence of '|'
-        if (parts.length >= 2) {
-          String key = parts[0].trim();
-          String value = parts[1].trim();
-          icpc2noCodeToName.put(key, value);
-        } else {
-          System.out.println("Ignoring malformed line: " + line);
-        }
-      }
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
   }
 
   /**

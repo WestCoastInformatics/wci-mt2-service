@@ -553,11 +553,12 @@ public interface TerminologyServerHandler extends Configurable {
      *
      * @param branch the branch
      * @param terminology the terminology
+     * @param version the version
      * @param code the code
      * @return the concept
      * @throws Exception the exception
      */
-    public Concept getConcept(final String branch, final String terminology, final String code) throws Exception;
+    public Concept getConcept(final String branch, final String terminology, final String version, final String code) throws Exception;
 
     /**
      * Creates the mapping.
