@@ -634,8 +634,9 @@ public class SnowstormMapping extends SnowstormAbstract {
       // Add an entry to the mapping
       final MapEntry mapEntry = new MapEntry();
 
-      mapEntry.setModified(
-          new SimpleDateFormat("yyyyMMdd").parse(mappingNode.get("effectiveTime").asText()));
+      if (mappingNode.has("effectiveTime")) {
+          mapEntry.setModified(new SimpleDateFormat("yyyyMMdd").parse(mappingNode.get("effectiveTime").asText()));
+      }      
       mapEntry.setId(mappingNode.get("memberId").asText());
 
       final JsonNode additionalFields = mappingNode.get("additionalFields");
