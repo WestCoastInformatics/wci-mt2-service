@@ -245,19 +245,6 @@ public class SnowstormMapping extends SnowstormAbstract {
     return null;
   }
   
-  /**
-   * Update map set.
-   *
-   * @param branch the branch
-   * @param mapSet the map set
-   * @return the map set
-   * @throws Exception the exception
-   */
-  public static MapSet updateMapSet(final String branch, final MapSet mapSet) throws Exception {
-
-      // TODO - implement
-      return null;
-  }
 
   /**
    * Gets the mappings.
@@ -749,28 +736,52 @@ public class SnowstormMapping extends SnowstormAbstract {
 
       final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/";
 
-      for (final MapEntry mapEntry : mapping.getMapEntries()) {
+      // get all the map entries for the mapping
+      final Mapping originalMapping = getMapping(branch, mapSetCode, mapping.getCode());
 
+      // update what is present in both
+      final Set<MapEntry> mapEntryUpdateList = new HashSet<>();
+      mapEntryUpdateList.addAll(mapping.getMapEntries().stream().filter(mapEntry -> StringUtils.isNotBlank(mapEntry.getId())).collect(Collectors.toSet()));
+
+      // add what is not present in original mapping
+      final Set<MapEntry> mapEntryCreateList = new HashSet<>();
+      mapEntryCreateList.addAll(mapping.getMapEntries().stream().filter(mapEntry -> StringUtils.isBlank(mapEntry.getId())).collect(Collectors.toSet()));
+
+      // delete what is present in original but not in the new mapping
+      final Set<MapEntry> mapEntryDeleteList = new HashSet<>();
+      mapEntryDeleteList.addAll(originalMapping.getMapEntries().stream()
+          .filter(originalMapEntry -> mapping.getMapEntries().stream().noneMatch(mapEntry -> originalMapEntry.getId().equals(mapEntry.getId())))
+          .collect(Collectors.toSet()));
+
+      for (final MapEntry mapEntry : mapEntryUpdateList) {
           final String mapEntryJson = mapEntryToSnowstormMap(mapSetCode, mapping.getCode(), mapping.getName(), mapEntry);
-
-          if (StringUtils.isBlank(mapEntry.getId())) {
-              LOG.info("Snowstorm: Add mapping: {} with {}", targetUri, mapEntryJson);
-              try (final Response response = SnowstormConnection.postResponse(targetUri, mapEntryJson)) {
-
-                  if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-                      throw new LocalException("Unexpected terminology server failure. Message = " + response.readEntity(String.class));
-                  }
-              }
-          } else {
-              LOG.info("Snowstorm: Update mapping: {} with {}", targetUri, mapEntryJson);
-              try (final Response response = SnowstormConnection.putResponse(targetUri + mapEntry.getId(), mapEntryJson)) {
-
-                  if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-                      throw new LocalException("Unexpected terminology server failure. Message = " + response.readEntity(String.class));
-                  }
+          LOG.info("Update mapping: {} with {}", targetUri, mapEntryJson);
+          try (final Response response = SnowstormConnection.putResponse(targetUri + mapEntry.getId(), mapEntryJson)) {
+              if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                  throw new LocalException("Unexpected terminology server failure. Message = " + response.readEntity(String.class));
               }
           }
       }
+
+      for (final MapEntry mapEntry : mapEntryCreateList) {
+          final String mapEntryJson = mapEntryToSnowstormMap(mapSetCode, mapping.getCode(), mapping.getName(), mapEntry);
+          LOG.info("Add mapping: {} with {}", targetUri, mapEntryJson);
+          try (final Response response = SnowstormConnection.postResponse(targetUri, mapEntryJson)) {
+              if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                  throw new LocalException("Unexpected terminology server failure. Message = " + response.readEntity(String.class));
+              }
+          }
+      }
+
+      for (final MapEntry mapEntry : mapEntryDeleteList) {
+          LOG.info("Delete mapping: {}", targetUri + mapEntry.getId());
+          try (final Response response = SnowstormConnection.deleteResponse(targetUri + mapEntry.getId(), null)) {
+              if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                  throw new LocalException("Unexpected terminology server failure. Message = " + response.readEntity(String.class));
+              }
+          }
+      }
+
   }
 
   /**
