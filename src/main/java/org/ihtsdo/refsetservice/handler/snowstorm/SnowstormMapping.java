@@ -375,9 +375,11 @@ public class SnowstormMapping extends SnowstormAbstract {
           final Mapping mapping = conceptIdToMappingMap.get(mapCode);
           final MapEntry mapEntry = new MapEntry();
 
-          mapEntry.setModified(
-              new SimpleDateFormat("yyyyMMdd").parse(mappingNode.get("effectiveTime").asText()));
-
+          if(mappingNode.get("effectiveTime") != null) {
+        	  mapEntry.setModified(
+                      new SimpleDateFormat("yyyyMMdd").parse(mappingNode.get("effectiveTime").asText()));
+          }
+          
           final JsonNode additionalFields = mappingNode.get("additionalFields");
 
           mapEntry.setRule(additionalFields.get("mapRule").asText());
