@@ -1013,7 +1013,7 @@ public class SnowstormMapping extends SnowstormAbstract {
     mapEntryJson.append("\"mapGroup\": ").append(mapEntry.getGroup()).append(",");
 
     //TODO - figure out when/if correlationId will ever not be hardcoded as 447561005
-    mapEntryJson.append("\"correlationId\": \"").append("\"447561005\"").append("\"");
+    mapEntryJson.append("\"correlationId\": \"").append("447561005").append("\",");
 
     
     mapEntryJson.append("\"mapTarget\": \"").append(mapEntry.getToCode()).append("\"");
