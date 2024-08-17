@@ -8,7 +8,10 @@ import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
+import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.Mapping;
+import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.terminologyservice.MapProjectService;
 import org.ihtsdo.refsetservice.terminologyservice.MappingService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
@@ -176,11 +179,25 @@ public class MappingController extends BaseController {
 
     LOG.info("Create Mapping mapSetCode:{}, mapping:{}", mapSetCode, ModelUtility.toJson(mapping));
 
+    //TODO: Remove hard-coding of mapProject stuff
+    final String id = "1";
+    final Boolean includeMembers = Boolean.FALSE;
+    MapProject mapProject = null;
+    
+    try (final TerminologyService service = new TerminologyService()) {
+        mapProject = MapProjectService.getMapProject(service, id, includeMembers);
+
+    } catch (final Exception e) {
+
+        handleException(e);
+        return null;
+    }  
+    
     try {
 
       // TODO: determine branch.
       final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
-      MappingService.createMapping(branch, mapSetCode, mapping);
+      MappingService.createMapping(mapProject, branch, mapSetCode, mapping);
 
       return new ResponseEntity<Mapping>(HttpStatus.CREATED);
 
@@ -208,11 +225,25 @@ public class MappingController extends BaseController {
 
       LOG.info("Update Mapping mapSetCode:{}, mapping:{}", mapSetCode, ModelUtility.toJson(mapping));
 
+      //TODO: Remove hard-coding of mapProject stuff
+      final String id = "1";
+      final Boolean includeMembers = Boolean.FALSE;
+      MapProject mapProject = null;
+      
+      try (final TerminologyService service = new TerminologyService()) {
+          mapProject = MapProjectService.getMapProject(service, id, includeMembers);
+
+      } catch (final Exception e) {
+
+          handleException(e);
+          return null;
+      }      
+      
       try {
 
           // TODO: determine branch.
           final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
-          MappingService.updateMapping(branch, mapSetCode, mapping);
+          MappingService.updateMapping(mapProject, branch, mapSetCode, mapping);
 
           return new ResponseEntity<>(HttpStatus.OK);
 

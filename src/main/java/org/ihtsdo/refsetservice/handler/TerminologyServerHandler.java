@@ -16,6 +16,7 @@ import java.util.Set;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Configurable;
 import org.ihtsdo.refsetservice.model.Edition;
+import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.Refset;
@@ -563,20 +564,22 @@ public interface TerminologyServerHandler extends Configurable {
     /**
      * Creates the mapping.
      *
+     * @param mapProject the map project
      * @param branch the branch
      * @param mapSetCode the map set code
      * @param mapping the mapping
      * @throws Exception the exception
      */
-    public void createMapping(final String branch, final String mapSetCode, final Mapping mapping) throws Exception;
+    public void createMapping(final MapProject mapProject, final String branch, final String mapSetCode, final Mapping mapping) throws Exception;
 
     /**
      * Update mapping.
      *
+     * @param mapProject the map project
      * @param branch the branch
      * @param mapSetCode the map set code
      * @param mapping the mapping
      * @throws Exception the exception
      */
-    public void updateMapping(final String branch, final String mapSetCode, final Mapping mapping) throws Exception;
+    public void updateMapping(final MapProject mapProject, final String branch, final String mapSetCode, final Mapping mapping) throws Exception;
 }

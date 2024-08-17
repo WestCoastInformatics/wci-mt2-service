@@ -12,6 +12,7 @@ package org.ihtsdo.refsetservice.terminologyservice;
 import java.util.List;
 
 import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
+import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
@@ -99,29 +100,31 @@ public final class MappingService {
   /**
    * Creates the mapping.
    *
+   * @param mapProject the map project
    * @param branch the branch
    * @param mapSetCode the map set code
    * @param mapping the mapping
    * @return the mapping
    * @throws Exception the exception
    */
-  public static void createMapping(final String branch, final String mapSetCode,
+  public static void createMapping(final MapProject mapProject, final String branch, final String mapSetCode,
     final Mapping mapping) throws Exception {
 
-    terminologyHandler.createMapping(branch, mapSetCode, mapping);
+    terminologyHandler.createMapping(mapProject, branch, mapSetCode, mapping);
   }
 
   /**
    * Update mapping.
    *
+   * @param mapProject the map project
    * @param branch the branch
    * @param mapSetCode the map set code
    * @param mapping the mapping
    * @throws Exception the exception
    */
-  public static void updateMapping(final String branch, final String mapSetCode,
+  public static void updateMapping(final MapProject mapProject, final String branch, final String mapSetCode,
     final Mapping mapping) throws Exception {
 
-    terminologyHandler.updateMapping(branch, mapSetCode, mapping);
+    terminologyHandler.updateMapping(mapProject, branch, mapSetCode, mapping);
   }
 }

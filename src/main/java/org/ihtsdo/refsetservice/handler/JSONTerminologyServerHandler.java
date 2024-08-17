@@ -44,6 +44,7 @@ import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.MapEntry;
+import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.Project;
@@ -4495,14 +4496,14 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
     /* see superclass */
     @Override
-    public void createMapping(final String branch, final String mapSetCode, final Mapping mapping) throws Exception {
+    public void createMapping(final MapProject mapProject, final String branch, final String mapSetCode, final Mapping mapping) throws Exception {
 
         // TODO implement with Snowstorm
     }
 
     /* see superclass */
     @Override
-    public void updateMapping(final String branch, final String mapSetCode, final Mapping mapping) throws Exception {
+    public void updateMapping(final MapProject mapProject, final String branch, final String mapSetCode, final Mapping mapping) throws Exception {
 
         // TODO implement with Snowstorm
     }

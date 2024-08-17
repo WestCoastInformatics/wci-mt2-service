@@ -25,6 +25,7 @@ import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormRefset;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormRefsetMember;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Edition;
+import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.Refset;
@@ -473,16 +474,16 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     /* see superclass */
     @Override
-    public void createMapping(final String branch, final String mapSetCode, final Mapping mapping) throws Exception {
+    public void createMapping(final MapProject mapProject, final String branch, final String mapSetCode, final Mapping mapping) throws Exception {
 
-        SnowstormMapping.createMapping(branch, mapSetCode, mapping);
+        SnowstormMapping.createMapping(mapProject, branch, mapSetCode, mapping);
     }
 
     /* see superclass */
     @Override
-    public void updateMapping(final String branch, final String mapSetCode, final Mapping mapping) throws Exception {
+    public void updateMapping(final MapProject mapProject, final String branch, final String mapSetCode, final Mapping mapping) throws Exception {
 
-        SnowstormMapping.updateMapping(branch, mapSetCode, mapping);
+        SnowstormMapping.updateMapping(mapProject, branch, mapSetCode, mapping);
     }
 
 }

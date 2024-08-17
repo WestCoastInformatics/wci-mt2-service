@@ -33,6 +33,8 @@ import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Description;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.MapEntry;
+import org.ihtsdo.refsetservice.model.MapProject;
+import org.ihtsdo.refsetservice.model.MapRelation;
 import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
@@ -643,6 +645,7 @@ public class SnowstormMapping extends SnowstormAbstract {
           mapSet.getFromTerminology(), "", additionalFields.get("mapCategoryId").asText());
       if (relationConcept != null) {
         mapEntry.setRelation(relationConcept.getName());
+        mapEntry.setRelationCode(relationConcept.getCode());
       } else {
         mapEntry.setRelation(mapEntry.getToCode() + " CONCEPT NOT FOUND");
       }
@@ -698,14 +701,14 @@ public class SnowstormMapping extends SnowstormAbstract {
    * @return the mapping
    * @throws Exception the exception
    */
-  public static void createMapping(final String branch, final String mapSetCode,
+  public static void createMapping(final MapProject mapProject, final String branch, final String mapSetCode,
     final Mapping mapping) throws Exception {
 
     final List<String> mapEntriesJson = new ArrayList<>();
 
     for (final MapEntry mapEntry : mapping.getMapEntries()) {
       mapEntriesJson
-          .add(mapEntryToSnowstormMap(mapSetCode, mapping.getName(), mapping.getCode(), mapEntry));
+          .add(mapEntryToSnowstormMap(mapProject, mapSetCode, mapping.getName(), mapping.getCode(), mapEntry));
     }
 
     final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members";
@@ -734,7 +737,7 @@ public class SnowstormMapping extends SnowstormAbstract {
    * @return the mapping
    * @throws Exception the exception
    */
-  public static void updateMapping(final String branch, final String mapSetCode, final Mapping mapping) throws Exception {
+  public static void updateMapping(final MapProject mapProject, final String branch, final String mapSetCode, final Mapping mapping) throws Exception {
 
       final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/";
 
@@ -756,7 +759,7 @@ public class SnowstormMapping extends SnowstormAbstract {
           .collect(Collectors.toSet()));
 
       for (final MapEntry mapEntry : mapEntryUpdateList) {
-          final String mapEntryJson = mapEntryToSnowstormMap(mapSetCode, mapping.getCode(), mapping.getName(), mapEntry);
+          final String mapEntryJson = mapEntryToSnowstormMap(mapProject, mapSetCode, mapping.getCode(), mapping.getName(), mapEntry);
           LOG.info("Update mapping: {} with {}", targetUri, mapEntryJson);
           try (final Response response = SnowstormConnection.putResponse(targetUri + mapEntry.getId(), mapEntryJson)) {
               if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
@@ -766,7 +769,7 @@ public class SnowstormMapping extends SnowstormAbstract {
       }
 
       for (final MapEntry mapEntry : mapEntryCreateList) {
-          final String mapEntryJson = mapEntryToSnowstormMap(mapSetCode, mapping.getCode(), mapping.getName(), mapEntry);
+          final String mapEntryJson = mapEntryToSnowstormMap(mapProject, mapSetCode, mapping.getCode(), mapping.getName(), mapEntry);
           LOG.info("Add mapping: {} with {}", targetUri, mapEntryJson);
           try (final Response response = SnowstormConnection.postResponse(targetUri, mapEntryJson)) {
               if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
@@ -949,7 +952,7 @@ public class SnowstormMapping extends SnowstormAbstract {
    * @param mapEntry the map entry
    * @return the string
    */
-  private static String mapEntryToSnowstormMap(final String refsetId, final String fromCode,
+  private static String mapEntryToSnowstormMap(final MapProject mapProject, final String refsetId, final String fromCode,
     final String fromName, final MapEntry mapEntry) {
 
     // snowstorm map example
@@ -994,15 +997,22 @@ public class SnowstormMapping extends SnowstormAbstract {
     mapEntryJson.append("\"mapPriority\": ").append(mapEntry.getPriority()).append(",");
     mapEntryJson.append("\"mapGroup\": ").append(mapEntry.getGroup()).append(",");
 
-    // TODO - what is correlationId?
-    if (mapEntry.getAdditionalMapEntryInfos() != null && !mapEntry.getAdditionalMapEntryInfos().isEmpty()) {
-        final String correlationId =
-            mapEntry.getAdditionalMapEntryInfos().stream().filter(info -> info.getName().equals("correlationId")).findFirst().get().getValue();
-
-        if (StringUtils.isNotBlank(correlationId)) {
-            mapEntryJson.append("\"correlationId\": \"").append(correlationId).append("\",");
-        }
+    // correlation id, which is the concept code for the map relations
+    String correlationId = null;
+    if(mapEntry.getRelation() != null) {
+    	final String relationString = mapEntry.getRelation();
+    	
+    	for(MapRelation mapRelation : mapProject.getMapRelations()) {
+    		if(mapRelation.getName().equals(relationString)) {
+    			correlationId = mapRelation.getId();
+    			break;
+    		}
+    	}
     }
+    if (StringUtils.isNotBlank(correlationId)) {
+        mapEntryJson.append("\"correlationId\": \"").append(correlationId).append("\",");
+    }
+    
     mapEntryJson.append("\"mapTarget\": \"").append(mapEntry.getToCode()).append("\"");
     mapEntryJson.append("},");
 
