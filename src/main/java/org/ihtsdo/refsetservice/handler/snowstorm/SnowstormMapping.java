@@ -989,28 +989,32 @@ public class SnowstormMapping extends SnowstormAbstract {
 
     // additional fields
     mapEntryJson.append("\"additionalFields\": {");
-    mapEntryJson.append("\"mapCategoryId\": \"").append(mapEntry.getRelationCode()).append("\",");
+    
+    // map category id, which is the concept code for the map relations
+    String mapCategoryId = null;
+    if(mapEntry.getRelation() != null) {
+    	final String relationString = mapEntry.getRelation();
+    	
+    	for(MapRelation mapRelation : mapProject.getMapRelations()) {
+    		if(mapRelation.getName().equals(relationString)) {
+    			mapCategoryId = mapRelation.getId();
+    			break;
+    		}
+    	}
+    }
+    if (StringUtils.isNotBlank(mapCategoryId)) {
+        mapEntryJson.append("\"mapCategoryId\": \"").append(mapCategoryId).append("\",");
+    }
+    
     mapEntryJson.append("\"mapRule\": \"").append(mapEntry.getRule()).append("\",");
     mapEntryJson.append("\"mapAdvice\": \"").append(String.join(" | ", mapEntry.getAdvices()))
         .append("\",");
     mapEntryJson.append("\"mapPriority\": ").append(mapEntry.getPriority()).append(",");
     mapEntryJson.append("\"mapGroup\": ").append(mapEntry.getGroup()).append(",");
 
-    // correlation id, which is the concept code for the map relations
-    String correlationId = null;
-    if(mapEntry.getRelation() != null) {
-    	final String relationString = mapEntry.getRelation();
-    	
-    	for(MapRelation mapRelation : mapProject.getMapRelations()) {
-    		if(mapRelation.getName().equals(relationString)) {
-    			correlationId = mapRelation.getId();
-    			break;
-    		}
-    	}
-    }
-    if (StringUtils.isNotBlank(correlationId)) {
-        mapEntryJson.append("\"correlationId\": \"").append(correlationId).append("\",");
-    }
+    //TODO - figure out when/if correlationId will ever not be hardcoded as 447561005
+    mapEntryJson.append("\"correlationId\": \"").append("\"447561005\"").append("\"");
+
     
     mapEntryJson.append("\"mapTarget\": \"").append(mapEntry.getToCode()).append("\"");
     mapEntryJson.append("},");
