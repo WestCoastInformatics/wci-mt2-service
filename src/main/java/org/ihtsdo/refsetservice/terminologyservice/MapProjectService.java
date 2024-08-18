@@ -116,6 +116,7 @@ public class MapProjectService extends BaseService {
         MapProject mapProject = new MapProject();
 
         mapProject.setRefSetId("447562003");
+        mapProject.setModuleId("51000202101");
         mapProject
             .setRefSetName("SNOMED CT to International Classification of Diseases tenth revision extended map reference set (foundation metadata concept)");
         mapProject.setActive(true);
@@ -142,14 +143,14 @@ public class MapProjectService extends BaseService {
         Set<MapRelation> mapRelations = new HashSet<>();
         MapRelation mapRelation = new MapRelation();
         mapRelation.setTerminologyId("447638001");
-        mapRelation.setName("MAP SOURCE CONCEPT CANNOT BE CLASSIFIED WITH AVAILABLE DATA");
+        mapRelation.setName("Map source concept cannot be classified with available data");
         mapRelation.setAllowableForNullTarget(true);
         mapRelation.setComputed(false);
         mapRelations.add(mapRelation);
 
         mapRelation = new MapRelation();
         mapRelation.setTerminologyId("447637006");
-        mapRelation.setName("MAP SOURCE CONCEPT IS PROPERLY CLASSIFIED");
+        mapRelation.setName("Map source concept is properly classified");
         mapRelation.setAllowableForNullTarget(false);
         mapRelation.setComputed(true);
         mapRelations.add(mapRelation);

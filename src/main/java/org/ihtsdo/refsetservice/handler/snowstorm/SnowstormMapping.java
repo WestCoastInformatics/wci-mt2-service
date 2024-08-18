@@ -380,7 +380,9 @@ public class SnowstormMapping extends SnowstormAbstract {
         	  mapEntry.setModified(
                       new SimpleDateFormat("yyyyMMdd").parse(mappingNode.get("effectiveTime").asText()));
           }
-          
+          mapEntry.setId(mappingNode.get("memberId").asText());
+          mapEntry.setReleased(mappingNode.get("released").asBoolean());
+
           final JsonNode additionalFields = mappingNode.get("additionalFields");
 
           mapEntry.setRule(additionalFields.get("mapRule").asText());
@@ -623,6 +625,7 @@ public class SnowstormMapping extends SnowstormAbstract {
           mapEntry.setModified(new SimpleDateFormat("yyyyMMdd").parse(mappingNode.get("effectiveTime").asText()));
       }      
       mapEntry.setId(mappingNode.get("memberId").asText());
+      mapEntry.setReleased(mappingNode.get("released").asBoolean());
 
       final JsonNode additionalFields = mappingNode.get("additionalFields");
 
@@ -703,6 +706,12 @@ public class SnowstormMapping extends SnowstormAbstract {
   public static void createMapping(final MapProject mapProject, final String branch, final String mapSetCode,
     final Mapping mapping) throws Exception {
 
+	  // Pre-create cleanup
+	  for(MapEntry mapEntry : mapping.getMapEntries()) {
+		  mapEntry.setAdvices(fixMapEntryAdvices(mapEntry));
+		  mapEntry.setRelationCode(calculateMapEntryRelationCode(mapProject, mapEntry));
+	  }
+	  
     final List<String> mapEntriesJson = new ArrayList<>();
 
     for (final MapEntry mapEntry : mapping.getMapEntries()) {
@@ -738,24 +747,75 @@ public class SnowstormMapping extends SnowstormAbstract {
    */
   public static void updateMapping(final MapProject mapProject, final String branch, final String mapSetCode, final Mapping mapping) throws Exception {
 
+	  // Pre-update cleanup
+	  for(MapEntry mapEntry : mapping.getMapEntries()) {
+		  mapEntry.setAdvices(fixMapEntryAdvices(mapEntry));
+		  mapEntry.setRelationCode(calculateMapEntryRelationCode(mapProject, mapEntry));
+	  }
+	  
       final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/";
-
+      
       // get all the map entries for the mapping
       final Mapping originalMapping = getMapping(branch, mapSetCode, mapping.getCode());
 
-      // update what is present in both
+      // Update based on these conditions:
+      // 1. A UUID (entry.getId) is shared between an originalMapEntry and the mapEntry
+      // 2. Something has changed between the originalMapEntry and the mapEntry
+      // 3. The originalMapEntry moduleId matches the mapProject moduleId
+      // 4. The originalMapEntry has not yet been released
+      // Create based on these conditions:
+      // 1. A UUID is not present in the mapEntry, OR
+      // 2. A UUID is shared between an originalMapEntry and the mapEntry and something has changed, but either of other Update conditions are not met.
       final Set<MapEntry> mapEntryUpdateList = new HashSet<>();
-      mapEntryUpdateList.addAll(mapping.getMapEntries().stream().filter(mapEntry -> StringUtils.isNotBlank(mapEntry.getId())).collect(Collectors.toSet()));
-
-      // add what is not present in original mapping
       final Set<MapEntry> mapEntryCreateList = new HashSet<>();
-      mapEntryCreateList.addAll(mapping.getMapEntries().stream().filter(mapEntry -> StringUtils.isBlank(mapEntry.getId())).collect(Collectors.toSet()));
-
-      // delete what is present in original but not in the new mapping
+      
+      for (MapEntry mapEntry : mapping.getMapEntries()) {
+    	    if (StringUtils.isNotBlank(mapEntry.getId())) {
+    	        // Find the corresponding originalMapEntry by matching IDs
+    	        originalMapping.getMapEntries().stream()
+    	            .filter(originalMapEntry -> originalMapEntry.getId().equals(mapEntry.getId()) && !originalMapEntry.equals(mapEntry))
+    	            .findFirst()
+    	            .ifPresent(originalMapEntry -> {
+    	                if (originalMapEntry.getModuleId().equals(mapProject.getModuleId())
+    	                	&& !originalMapEntry.isReleased()) {
+    	                    // Add to update list if conditions are met
+    	                    mapEntryUpdateList.add(mapEntry);
+    	                } else {
+    	                    // Add to create list if conditions are not met
+    	                	// Clear out UUID, since it's creating a new entry
+    	                	mapEntry.setId("");
+    	                    mapEntryCreateList.add(mapEntry);
+    	                }
+    	            });
+    	    } else {
+    	        // If the mapEntry ID is blank, it should be added to the create list
+    	        mapEntryCreateList.add(mapEntry);
+    	    }
+    	}
+      
+      // Map Entry UUIDs that are present in original but not in the new mapping need to be handled,
+      // but only if the original map entry moduleId matches the mapProject module Id
+      // (Extensions are not allowed to modify International content)
+      // If it has never been released, it can be fully deleted.
+      // If it has been released, it must be inactivated instead.
       final Set<MapEntry> mapEntryDeleteList = new HashSet<>();
-      mapEntryDeleteList.addAll(originalMapping.getMapEntries().stream()
-          .filter(originalMapEntry -> mapping.getMapEntries().stream().noneMatch(mapEntry -> originalMapEntry.getId().equals(mapEntry.getId())))
-          .collect(Collectors.toSet()));
+      final Set<MapEntry> mapEntryInactivateList = new HashSet<>();
+      
+      originalMapping.getMapEntries().stream()
+      .filter(originalMapEntry -> mapping.getMapEntries().stream()
+          .noneMatch(mapEntry -> originalMapEntry.getId().equals(mapEntry.getId())))
+      .forEach(originalMapEntry -> {
+          // Check if the moduleIds match
+          if (originalMapEntry.getModuleId().equals(mapProject.getModuleId())) {
+              // Check the released status and add to the appropriate list
+              if (!originalMapEntry.isReleased()) {
+                  mapEntryDeleteList.add(originalMapEntry);
+              } else {
+                  mapEntryInactivateList.add(originalMapEntry);
+              }
+          }
+          // If moduleId doesn't match, do nothing (i.e., skip the entry)
+      });
 
       for (final MapEntry mapEntry : mapEntryUpdateList) {
           final String mapEntryJson = mapEntryToSnowstormMap(mapProject, mapSetCode, mapping.getCode(), mapping.getName(), mapEntry);
@@ -786,6 +846,16 @@ public class SnowstormMapping extends SnowstormAbstract {
           }
       }
 
+      for (final MapEntry mapEntry : mapEntryInactivateList) {
+    	  mapEntry.setActive(false);
+          final String mapEntryJson = mapEntryToSnowstormMap(mapProject, mapSetCode, mapping.getCode(), mapping.getName(), mapEntry);
+          LOG.info("Inactivate mapping: {} with {}", targetUri, mapEntryJson);
+          try (final Response response = SnowstormConnection.putResponse(targetUri + mapEntry.getId(), mapEntryJson)) {
+              if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                  throw new LocalException("Unexpected terminology server failure. Message = " + response.readEntity(String.class));
+              }
+          }
+      }
   }
 
   /**
@@ -953,28 +1023,6 @@ public class SnowstormMapping extends SnowstormAbstract {
    */
   private static String mapEntryToSnowstormMap(final MapProject mapProject, final String refsetId, final String fromCode,
     final String fromName, final MapEntry mapEntry) {
-
-	  //Handle "ALWAYS {target}" advices
-	  //TODO - this will be different for RULE-based projects
-	  Set<String> mapEntryAdvices = new HashSet<>();
-	  mapEntryAdvices.addAll(mapEntry.getAdvices());
-	  Boolean alwaysAdviceFound = false;
-	  for(String advice : mapEntry.getAdvices()) {
-		  if(advice.startsWith("ALWAYS ")) {
-			  alwaysAdviceFound = true;
-			  //If ALWAYS advice doesn't end with the current target code, remove and replace it.
-			  if(!advice.endsWith(mapEntry.getToCode())) {
-				  mapEntryAdvices.remove(advice);
-				  mapEntryAdvices.add("ALWAYS " + mapEntry.getToCode());
-			  }
-		  }
-	  }
-	  //If no ALWAYS advice found, add it
-	  if(!alwaysAdviceFound) {
-		  mapEntryAdvices.add("ALWAYS " + mapEntry.getToCode());
-	  }
-	  //Reset the advices
-	  mapEntry.setAdvices(mapEntryAdvices);
 	  
     // snowstorm map example
     /*
@@ -1003,8 +1051,10 @@ public class SnowstormMapping extends SnowstormAbstract {
         mapEntryJson.append("\"memberId\": \"").append(UUID.randomUUID().toString()).append("\",");
     }
     mapEntryJson.append("\"active\": ").append(mapEntry.isActive()).append(",");
-    mapEntryJson.append("\"moduleId\": \"").append(mapEntry.getModuleId()).append("\",");
-    // mapEntryJson.append("\"released\": false,");
+    // Module id for created or updated map entries will always match the map project
+    mapEntryJson.append("\"moduleId\": \"").append(mapProject.getModuleId()).append("\",");
+    // Any map entry getting created or updated will be released=false
+    mapEntryJson.append("\"released\": false,");
     // mapEntryJson.append("\"releasedEffectiveTime\": 20240415,");
     mapEntryJson.append("\"refsetId\": \"").append(refsetId).append("\",");
     mapEntryJson.append("\"referencedComponentId\": \"").append(fromCode).append("\",");
@@ -1012,20 +1062,8 @@ public class SnowstormMapping extends SnowstormAbstract {
     // additional fields
     mapEntryJson.append("\"additionalFields\": {");
     
-    // map category id, which is the concept code for the map relations
-    String mapCategoryId = null;
-    if(mapEntry.getRelation() != null) {
-    	final String relationString = mapEntry.getRelation();
-    	
-    	for(MapRelation mapRelation : mapProject.getMapRelations()) {
-    		if(mapRelation.getName().equals(relationString)) {
-    			mapCategoryId = mapRelation.getTerminologyId();
-    			break;
-    		}
-    	}
-    }
-    if (StringUtils.isNotBlank(mapCategoryId)) {
-        mapEntryJson.append("\"mapCategoryId\": \"").append(mapCategoryId).append("\",");
+    if (StringUtils.isNotBlank(mapEntry.getRelationCode())) {
+        mapEntryJson.append("\"mapCategoryId\": \"").append(mapEntry.getRelationCode()).append("\",");
     }
     else {
     	mapEntryJson.append("\"mapCategoryId\": \"").append("").append("\",");
@@ -1061,12 +1099,52 @@ public class SnowstormMapping extends SnowstormAbstract {
     // mapEntryJson.append("\"id\": \"").append(fromCode).append("\"");
     // mapEntryJson.append("},");
 
-    // TODO: replace hard coded effective
-    mapEntryJson.append("\"effectiveTime\": \"20240415\"");
+    // Any map entry getting created or updated will have a blank effectiveTime
+    mapEntryJson.append("\"effectiveTime\": \"\"");
     mapEntryJson.append("}");
 
     return mapEntryJson.toString();
 
   }
+  
+  private static Set<String> fixMapEntryAdvices(final MapEntry mapEntry) {
+	  //Handle "ALWAYS {target}" advices
+	  //TODO - this will be different for RULE-based projects
+	  Set<String> mapEntryAdvices = new HashSet<>();
+	  mapEntryAdvices.addAll(mapEntry.getAdvices());
+	  Boolean alwaysAdviceFound = false;
+	  for(String advice : mapEntry.getAdvices()) {
+		  if(advice.startsWith("ALWAYS ")) {
+			  alwaysAdviceFound = true;
+			  //If ALWAYS advice doesn't end with the current target code, remove and replace it.
+			  if(!advice.endsWith(mapEntry.getToCode())) {
+				  mapEntryAdvices.remove(advice);
+				  mapEntryAdvices.add("ALWAYS " + mapEntry.getToCode());
+			  }
+		  }
+	  }
+	  //If no ALWAYS advice found, add it
+	  if(!alwaysAdviceFound) {
+		  mapEntryAdvices.add("ALWAYS " + mapEntry.getToCode());
+	  }
+
+	  return mapEntryAdvices;
+  }
+  
+  private static String calculateMapEntryRelationCode(final MapProject mapProject, final MapEntry mapEntry) {
+	    // Calculate a map's relation code
+	    String relationCode = "";
+	    if(mapEntry.getRelation() != null) {
+	    	final String relationString = mapEntry.getRelation();
+	    	
+	    	for(MapRelation mapRelation : mapProject.getMapRelations()) {
+	    		if(mapRelation.getName().equals(relationString)) {
+	    			relationCode = mapRelation.getTerminologyId();
+	    			break;
+	    		}
+	    	}
+	    }
+	    return relationCode;
+  }  
 
 }

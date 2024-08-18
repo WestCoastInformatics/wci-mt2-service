@@ -90,6 +90,10 @@ public class MapEntry extends AbstractHasModified {
     /** The module id. */
     @Column(nullable = false)
     private String moduleId;
+    
+    /** The released. */
+    @Column(nullable = false)
+    private boolean released = false;
 
     /**
      * default constructor.
@@ -354,6 +358,24 @@ public class MapEntry extends AbstractHasModified {
     }
 
     /**
+     * Returns the released 
+     * 
+     * @return
+     */
+    public boolean isReleased() {
+		return released;
+	}
+
+	/**
+	 * Sets the released
+	 * 
+	 * @param released
+	 */
+	public void setReleased(boolean released) {
+		this.released = released;
+	}
+
+	/**
      * Lazy init.
      */
     @Override
