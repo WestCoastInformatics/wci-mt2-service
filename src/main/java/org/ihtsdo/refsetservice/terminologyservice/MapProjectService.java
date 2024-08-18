@@ -143,14 +143,14 @@ public class MapProjectService extends BaseService {
         Set<MapRelation> mapRelations = new HashSet<>();
         MapRelation mapRelation = new MapRelation();
         mapRelation.setTerminologyId("447638001");
-        mapRelation.setName("Map source concept cannot be classified with available data");
+        mapRelation.setName("MAP SOURCE CONCEPT CANNOT BE CLASSIFIED WITH AVAILABLE DATA");
         mapRelation.setAllowableForNullTarget(true);
         mapRelation.setComputed(false);
         mapRelations.add(mapRelation);
 
         mapRelation = new MapRelation();
         mapRelation.setTerminologyId("447637006");
-        mapRelation.setName("Map source concept is properly classified");
+        mapRelation.setName("MAP SOURCE CONCEPT IS PROPERLY CLASSIFIED");
         mapRelation.setAllowableForNullTarget(false);
         mapRelation.setComputed(true);
         mapRelations.add(mapRelation);
