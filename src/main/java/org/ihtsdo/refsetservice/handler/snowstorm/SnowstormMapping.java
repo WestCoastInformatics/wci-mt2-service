@@ -954,6 +954,28 @@ public class SnowstormMapping extends SnowstormAbstract {
   private static String mapEntryToSnowstormMap(final MapProject mapProject, final String refsetId, final String fromCode,
     final String fromName, final MapEntry mapEntry) {
 
+	  //Handle "ALWAYS {target}" advices
+	  //TODO - this will be different for RULE-based projects
+	  Set<String> mapEntryAdvices = new HashSet<>();
+	  mapEntryAdvices.addAll(mapEntry.getAdvices());
+	  Boolean alwaysAdviceFound = false;
+	  for(String advice : mapEntry.getAdvices()) {
+		  if(advice.startsWith("ALWAYS ")) {
+			  alwaysAdviceFound = true;
+			  //If ALWAYS advice doesn't end with the current target code, remove and replace it.
+			  if(!advice.endsWith(mapEntry.getToCode())) {
+				  mapEntryAdvices.remove(advice);
+				  mapEntryAdvices.add("ALWAYS " + mapEntry.getToCode());
+			  }
+		  }
+	  }
+	  //If no ALWAYS advice found, add it
+	  if(!alwaysAdviceFound) {
+		  mapEntryAdvices.add("ALWAYS " + mapEntry.getToCode());
+	  }
+	  //Reset the advices
+	  mapEntry.setAdvices(mapEntryAdvices);
+	  
     // snowstorm map example
     /*
      * { "active": true, "moduleId": "449080006", "released": true,
