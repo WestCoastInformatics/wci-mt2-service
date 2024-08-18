@@ -1138,7 +1138,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 	    	final String relationString = mapEntry.getRelation();
 	    	
 	    	for(MapRelation mapRelation : mapProject.getMapRelations()) {
-	    		if(mapRelation.getName().equals(relationString)) {
+	    		if(mapRelation.getName().toUpperCase().equals(relationString.toUpperCase())) {
 	    			relationCode = mapRelation.getTerminologyId();
 	    			break;
 	    		}
