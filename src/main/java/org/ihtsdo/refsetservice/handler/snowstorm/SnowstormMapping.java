@@ -997,13 +997,16 @@ public class SnowstormMapping extends SnowstormAbstract {
     	
     	for(MapRelation mapRelation : mapProject.getMapRelations()) {
     		if(mapRelation.getName().equals(relationString)) {
-    			mapCategoryId = mapRelation.getId();
+    			mapCategoryId = mapRelation.getTerminologyId();
     			break;
     		}
     	}
     }
     if (StringUtils.isNotBlank(mapCategoryId)) {
         mapEntryJson.append("\"mapCategoryId\": \"").append(mapCategoryId).append("\",");
+    }
+    else {
+    	mapEntryJson.append("\"mapCategoryId\": \"").append("").append("\",");
     }
     
     mapEntryJson.append("\"mapRule\": \"").append(mapEntry.getRule()).append("\",");
