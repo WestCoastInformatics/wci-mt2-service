@@ -1116,15 +1116,19 @@ public class SnowstormMapping extends SnowstormAbstract {
 	  for(String advice : mapEntry.getAdvices()) {
 		  if(advice.startsWith("ALWAYS ")) {
 			  alwaysAdviceFound = true;
+			  //If no current target code, remove ALWAYS advice
+			  if(StringUtils.isBlank(mapEntry.getToCode())) {
+				  mapEntryAdvices.remove(advice);
+			  }
 			  //If ALWAYS advice doesn't end with the current target code, remove and replace it.
-			  if(!advice.endsWith(mapEntry.getToCode())) {
+			  else if(!advice.endsWith(mapEntry.getToCode())) {
 				  mapEntryAdvices.remove(advice);
 				  mapEntryAdvices.add("ALWAYS " + mapEntry.getToCode());
 			  }
 		  }
 	  }
-	  //If no ALWAYS advice found, add it
-	  if(!alwaysAdviceFound) {
+	  //If there is a specified target and no ALWAYS advice found, add it
+	  if(!alwaysAdviceFound && !StringUtils.isBlank(mapEntry.getToCode())) {
 		  mapEntryAdvices.add("ALWAYS " + mapEntry.getToCode());
 	  }
 
