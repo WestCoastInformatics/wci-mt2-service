@@ -270,6 +270,10 @@ public class SnowstormMapping extends SnowstormAbstract {
     if (StringUtils.isNotBlank(filter)) {
       filteredConceptList.addAll(searchConcepts(branch, mapSetCode, filter));
     }
+    
+    if(conceptCodes != null && !conceptCodes.isEmpty()) {
+      filteredConceptList.addAll(conceptCodes);
+    }
 
     final StringBuilder requestBody = new StringBuilder();
     requestBody.append("{");
