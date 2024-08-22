@@ -49,11 +49,7 @@ public class MapProjectService extends BaseService {
     /** The terminology handler. */
     private static TerminologyServerHandler terminologyHandler;
 
-    /** The crowd unit test skip. */
-    private static String crowdUnitTestSkip;
-
     static {
-        crowdUnitTestSkip = PropertyUtility.getProperty("crowd.unit.test.skip");
 
         // Instantiate terminology handler
         try {
@@ -113,7 +109,7 @@ public class MapProjectService extends BaseService {
         // Remove if(true) clause once MapProjects are stored in the database
         if(true) {
         
-        MapProject mapProject = new MapProject();
+        final MapProject mapProject = new MapProject();
 
         mapProject.setRefSetId("447562003");
         mapProject.setModuleId("51000202101");
@@ -124,13 +120,25 @@ public class MapProjectService extends BaseService {
         mapProject.setSourceTerminologyVersion("2024-04-15");
         mapProject.setDestinationTerminology("ICD-10-NO");
         mapProject.setDestinationTerminologyVersion("2024-07-24");
+        
+        
+        // TODO: get from find mapProject
+        final Edition edition = new Edition();
+        edition.setActive(true);
+        edition.setAbbreviation("NO");
+        edition.setDefaultLanguageCode("no");
+        edition.getDefaultLanguageRefsets().add("61000202103");
+        edition.getDefaultLanguageRefsets().add("900000000000509007");
+        edition.setShortName("SNOMEDCT-NO");
+        edition.setBranch("MAIN/SNOMEDCT-NO/2024-04-15/WCITEST");
+        mapProject.setEdition(edition);
 
-        Set<MapAdvice> mapAdvices = new HashSet<>();
-        List<String> adviceNames = new ArrayList<>(Arrays.asList("MAPPED FOLLOWING WHO GUIDANCE", "POSSIBLE REQUIREMENT FOR PLACE OF OCCURRENCE",
+        final Set<MapAdvice> mapAdvices = new HashSet<>();
+        final List<String> adviceNames = new ArrayList<>(Arrays.asList("MAPPED FOLLOWING WHO GUIDANCE", "POSSIBLE REQUIREMENT FOR PLACE OF OCCURRENCE",
             "POSSIBLE REQUIREMENT FOR CAUSATIVE AGENT CODE", "POSSIBLE REQUIREMENT FOR MORPHOLOGY CODE", "POSSIBLE REQUIREMENT FOR AN EXTERNAL CAUSE CODE"));
 
-        for (String adviceName : adviceNames) {
-            MapAdvice mapAdvice = new MapAdvice();
+        for (final String adviceName : adviceNames) {
+            final MapAdvice mapAdvice = new MapAdvice();
             mapAdvice.setName(adviceName);
             mapAdvice.setDetail(adviceName);
             mapAdvice.setAllowableForNullTarget(false);
@@ -140,7 +148,7 @@ public class MapProjectService extends BaseService {
 
         mapProject.setMapAdvices(mapAdvices);
 
-        Set<MapRelation> mapRelations = new HashSet<>();
+        final Set<MapRelation> mapRelations = new HashSet<>();
         MapRelation mapRelation = new MapRelation();
         mapRelation.setTerminologyId("447638001");
         mapRelation.setName("MAP SOURCE CONCEPT CANNOT BE CLASSIFIED WITH AVAILABLE DATA");

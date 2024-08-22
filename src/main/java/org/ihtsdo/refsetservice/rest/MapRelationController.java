@@ -85,10 +85,13 @@ public class MapRelationController extends BaseController {
 
             service.commit();
 
-            return new ResponseEntity<>(newMapRelation, HttpStatus.OK);
+            return new ResponseEntity<>(newMapRelation, HttpStatus.CREATED);
 
         } catch (final Exception e) {
             handleException(e);
+            
+            LOG.error("Failed to create map relation", e);
+            
             return null;
         }
     }

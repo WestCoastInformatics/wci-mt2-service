@@ -120,8 +120,8 @@ public class Mapping extends AbstractHasModified {
      * @return the map entries
      */
     public List<MapEntry> getMapEntries() {
-
-        return mapEntries;
+        
+        return mapEntries == null ? (mapEntries = new ArrayList<>()) : mapEntries;
     }
 
     /**
@@ -142,13 +142,8 @@ public class Mapping extends AbstractHasModified {
     @JsonGetter()
     public List<Description> getDescriptions() {
 
-        if (descriptions == null) {
-
-            descriptions = new ArrayList<>();
-
-        }
-
-        return descriptions;
+        return (descriptions == null) ? new ArrayList<>() : descriptions;
+        
     }
 
     /**

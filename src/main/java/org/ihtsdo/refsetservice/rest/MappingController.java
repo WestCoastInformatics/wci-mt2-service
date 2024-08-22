@@ -43,215 +43,280 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
 public class MappingController extends BaseController {
 
-  /** The Constant LOG. */
-  private static final Logger LOG = LoggerFactory.getLogger(MappingController.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(MappingController.class);
 
-  /** The request. */
-  @SuppressWarnings("unused")
-  @Autowired
-  private HttpServletRequest request;
+    /** The request. */
+    @SuppressWarnings("unused")
+    @Autowired
+    private HttpServletRequest request;
 
-  /** Search teams API notes. */
-  private static final String API_NOTES =
-      "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
+    /** Search teams API notes. */
+    private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
 
-  @RequestMapping(method = RequestMethod.GET, value = "/mapset/{mapSetCode}/mappings",
-      produces = MediaType.APPLICATION_JSON)
-  @Operation(summary = "Get map set. This call requires authentication with the correct role.",
-      tags = {
-          "mapset"
-      }, responses = {
-          @ApiResponse(responseCode = "200",
-              description = "Successfully retrieved the requested information"),
-          @ApiResponse(responseCode = "401", description = "Unauthorized"),
-          @ApiResponse(responseCode = "403", description = "Forbidden"),
-          @ApiResponse(responseCode = "404", description = "Resource not found"),
-          @ApiResponse(responseCode = "417", description = "Failed Expectation")
-      })
-  @Parameters({
-      @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. 447562003",
-          required = true),
-      @Parameter(name = "filter", description = "Text to search, e.g. Brain", required = false),
-      @Parameter(name = "conceptCodes",
-          description = "Comma delimited list of concept codes, e.g. 880057004,880057005",
-          required = false)
-  })
-  @RecordMetric
-  public @ResponseBody ResponseEntity<ResultList<Mapping>> getMappings(
-    @PathVariable(value = "mapSetCode") final String mapSetCode,
-    @RequestParam(required = false) final String filter,
-    @RequestParam(required = false) final String conceptCodes,
-    @ModelAttribute final SearchParameters searchParameters) throws Exception {
+    @RequestMapping(method = RequestMethod.GET, value = "/mapset/{mapSetCode}/mappings", produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Get map set. This call requires authentication with the correct role.", tags = {
+        "mapset"
+    }, responses = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"), @ApiResponse(responseCode = "403", description = "Forbidden"),
+        @ApiResponse(responseCode = "404", description = "Resource not found"), @ApiResponse(responseCode = "417", description = "Failed Expectation")
+    })
+    @Parameters({
+        @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. 447562003", required = true),
+        @Parameter(name = "filter", description = "Text to search, e.g. Brain", required = false),
+        @Parameter(name = "conceptCodes", description = "Comma delimited list of concept codes, e.g. 880057004,880057005", required = false)
+    })
+    @RecordMetric
+    public @ResponseBody ResponseEntity<ResultList<Mapping>> getMappings(@PathVariable(value = "mapSetCode") final String mapSetCode,
+        @RequestParam(required = false) final String filter, @RequestParam(required = false) final String conceptCodes,
+        @ModelAttribute final SearchParameters searchParameters) throws Exception {
 
-    LOG.info("Mappings for a Mapset " + mapSetCode, ModelUtility.toJson(searchParameters));
-    // final User authUser = authorizeUser(request);
+        LOG.info("Mappings for a Mapset " + mapSetCode, ModelUtility.toJson(searchParameters));
+        // final User authUser = authorizeUser(request);
 
-    try {
-      final SearchParameters sp =
-          (searchParameters != null) ? searchParameters : new SearchParameters();
-      if (sp.getLimit() == null || sp.getLimit() == 0) {
-        sp.setLimit(100);
-      }
-      final List<String> conceptCodesList = (StringUtils.isBlank(conceptCodes)) ? new ArrayList<>()
-          : List.of(conceptCodes.split(","));
-      final String filterString =
-          (StringUtils.isBlank(filter)) ? StringUtils.EMPTY : StringUtils.trim(filter);
+        try {
+            final SearchParameters sp = (searchParameters != null) ? searchParameters : new SearchParameters();
+            if (sp.getLimit() == null || sp.getLimit() == 0) {
+                sp.setLimit(100);
+            }
+            final List<String> conceptCodesList = (StringUtils.isBlank(conceptCodes)) ? new ArrayList<>() : List.of(conceptCodes.split(","));
+            final String filterString = (StringUtils.isBlank(filter)) ? StringUtils.EMPTY : StringUtils.trim(filter);
 
-      // TODO: determine branch.
-      final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
+            // TODO: determine branch.
+            final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
 
-      final ResultList<Mapping> mappings =
-          MappingService.getMappings(branch, mapSetCode, sp, filterString, conceptCodesList);
+            final ResultList<Mapping> mappings = MappingService.getMappings(branch, mapSetCode, sp, filterString, conceptCodesList);
 
-      return new ResponseEntity<>(mappings, HttpStatus.OK);
+            return new ResponseEntity<>(mappings, HttpStatus.OK);
 
-    } catch (final Exception e) {
+        } catch (final Exception e) {
 
-      handleException(e);
-      return null;
+            handleException(e);
+            return null;
+        }
     }
-  }
 
-  @RequestMapping(method = RequestMethod.GET, value = "/mapset/{mapSetCode}/mappings/{conceptCode}",
-      produces = MediaType.APPLICATION_JSON)
-  @Operation(summary = "Get mapping. This call requires authentication with the correct role.",
-      tags = {
-          "mapset"
-      }, responses = {
-          @ApiResponse(responseCode = "200",
-              description = "Successfully retrieved the requested information"),
-          @ApiResponse(responseCode = "401", description = "Unauthorized"),
-          @ApiResponse(responseCode = "403", description = "Forbidden"),
-          @ApiResponse(responseCode = "404", description = "Resource not found"),
-          @ApiResponse(responseCode = "417", description = "Failed Expectation")
-      })
-  @Parameters({
-      @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. 447562003",
-          required = true),
-      @Parameter(name = "conceptCode",
-          description = "Source concept code identifier, e.g. 880057004", required = true)
-  })
-  @RecordMetric
-  public @ResponseBody ResponseEntity<Mapping> getMapping(@PathVariable final String mapSetCode,
-    @PathVariable final String conceptCode, @ModelAttribute final SearchParameters searchParameters)
-    throws Exception {
+    @RequestMapping(method = RequestMethod.GET, value = "/mapset/{mapSetCode}/mappings/{conceptCode}", produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Get mapping. This call requires authentication with the correct role.", tags = {
+        "mapset"
+    }, responses = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"), @ApiResponse(responseCode = "403", description = "Forbidden"),
+        @ApiResponse(responseCode = "404", description = "Resource not found"), @ApiResponse(responseCode = "417", description = "Failed Expectation")
+    })
+    @Parameters({
+        @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. 447562003", required = true),
+        @Parameter(name = "conceptCode", description = "Source concept code identifier, e.g. 880057004", required = true)
+    })
+    @RecordMetric
+    public @ResponseBody ResponseEntity<Mapping> getMapping(@PathVariable final String mapSetCode, @PathVariable final String conceptCode,
+        @ModelAttribute final SearchParameters searchParameters) throws Exception {
 
-    LOG.info("Mapping for Mapset " + mapSetCode + ", Source Concept " + conceptCode,
-        ModelUtility.toJson(searchParameters));
-    // final User authUser = authorizeUser(request);
+        LOG.info("Mapping for Mapset " + mapSetCode + ", Source Concept " + conceptCode, ModelUtility.toJson(searchParameters));
+        // final User authUser = authorizeUser(request);
 
-    try {
+        try {
 
-      // TODO: determine branch.
-      final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
-      final Mapping mapping = MappingService.getMapping(branch, mapSetCode, conceptCode);
+            // TODO: determine branch.
+            final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
+            final Mapping mapping = MappingService.getMapping(branch, mapSetCode, conceptCode);
 
-      return new ResponseEntity<>(mapping, HttpStatus.OK);
+            return new ResponseEntity<>(mapping, HttpStatus.OK);
 
-    } catch (final Exception e) {
+        } catch (final Exception e) {
 
-      handleException(e);
-      return null;
+            handleException(e);
+            return null;
+        }
     }
-  }
 
-  @PostMapping(value = "/mapset/{mapSetCode}", consumes = MediaType.APPLICATION_JSON)
-  @Operation(
-      summary = "Create mapping for the mapSetCode. This call requires authentication with the correct role.",
-      tags = {
-          "mapset"
-      }, responses = {
-          @ApiResponse(responseCode = "201", description = "Successfully created the mapping"),
-          @ApiResponse(responseCode = "401", description = "Unauthorized"),
-          @ApiResponse(responseCode = "403", description = "Forbidden"),
-          @ApiResponse(responseCode = "404", description = "Resource not found"),
-          @ApiResponse(responseCode = "417", description = "Failed Expectation")
-      })
-  @Parameters({
-      @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. &lt;uuid&gt;",
-          required = true),
-      @Parameter(name = "conceptCode",
-          description = "Source concept code identifier, e.g. &lt;uuid&gt;", required = true)
-  })
-  @RecordMetric
-  public @ResponseBody ResponseEntity<Mapping> createMapping(@PathVariable final String mapSetCode,
-    final Mapping mapping) throws Exception {
+    @PostMapping(value = "/mapset/{mapSetCode}", consumes = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Create mapping for the mapSetCode. This call requires authentication with the correct role.", tags = {
+        "mapset"
+    }, responses = {
+        @ApiResponse(responseCode = "201", description = "Successfully created the mapping"), @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "403", description = "Forbidden"), @ApiResponse(responseCode = "404", description = "Resource not found"),
+        @ApiResponse(responseCode = "417", description = "Failed Expectation")
+    })
+    @Parameters({
+        @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. &lt;uuid&gt;", required = true),
+        @Parameter(name = "conceptCode", description = "Source concept code identifier, e.g. &lt;uuid&gt;", required = true)
+    })
+    @RecordMetric
+    public @ResponseBody ResponseEntity<Mapping> createMapping(@PathVariable final String mapSetCode, final Mapping mapping) throws Exception {
 
-    LOG.info("Create Mapping mapSetCode:{}, mapping:{}", mapSetCode, ModelUtility.toJson(mapping));
+        LOG.info("Create Mapping mapSetCode:{}, mapping:{}", mapSetCode, ModelUtility.toJson(mapping));
 
-    //TODO: Remove hard-coding of mapProject stuff
-    final String id = "1";
-    final Boolean includeMembers = Boolean.FALSE;
-    MapProject mapProject = null;
-    
-    try (final TerminologyService service = new TerminologyService()) {
-        mapProject = MapProjectService.getMapProject(service, id, includeMembers);
+        // TODO: Remove hard-coding of mapProject stuff
+        final String id = "1";
+        final Boolean includeMembers = Boolean.FALSE;
+        MapProject mapProject = null;
 
-    } catch (final Exception e) {
+        try (final TerminologyService service = new TerminologyService()) {
+            mapProject = MapProjectService.getMapProject(service, id, includeMembers);
 
-        handleException(e);
-        return null;
-    }  
-    
-    try {
+        } catch (final Exception e) {
 
-      // TODO: determine branch.
-      final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
-      MappingService.createMapping(mapProject, branch, mapSetCode, mapping);
+            handleException(e);
+            return null;
+        }
 
-      return new ResponseEntity<Mapping>(HttpStatus.CREATED);
+        try {
 
-    } catch (final Exception e) {
+            // TODO: determine branch.
+            final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
+            final List<Mapping> mappings = new ArrayList<>();
+            mappings.add(mapping);
+            MappingService.createMappings(mapProject, branch, mapSetCode, mappings);
+            return new ResponseEntity<Mapping>(HttpStatus.CREATED);
 
-      handleException(e);
-      return null;
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
     }
-  }
 
-  @RequestMapping(method = RequestMethod.PUT, value = "/mapset/{mapSetCode}", consumes = MediaType.APPLICATION_JSON)
-  @Operation(summary = "Update mapping for the mapSetCode. This call requires authentication with the correct role.", tags = {
-      "mapset"
-  }, responses = {
-      @ApiResponse(responseCode = "200", description = "Successfully updated the mapping"), @ApiResponse(responseCode = "401", description = "Unauthorized"),
-      @ApiResponse(responseCode = "403", description = "Forbidden"), @ApiResponse(responseCode = "404", description = "Resource not found"),
-      @ApiResponse(responseCode = "417", description = "Failed Expectation")
-  })
-  @Parameters({
-      @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. &lt;uuid&gt;", required = true),
-      @Parameter(description = "Mapping object to update", required = true)
-  })
-  @RecordMetric
-  public @ResponseBody ResponseEntity<Mapping> updateMapping(@PathVariable final String mapSetCode, @RequestBody final Mapping mapping) throws Exception {
+    @PostMapping(value = "/mapset/{mapSetCode}/bulk", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Create mapping for the mapSetCode. This call requires authentication with the correct role.", tags = {
+        "mapset"
+    }, responses = {
+        @ApiResponse(responseCode = "201", description = "Successfully created the mapping"), @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "403", description = "Forbidden"), @ApiResponse(responseCode = "404", description = "Resource not found"),
+        @ApiResponse(responseCode = "417", description = "Failed Expectation")
+    })
+    @Parameters({
+        @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. &lt;uuid&gt;", required = true),
+        @Parameter(name = "conceptCode", description = "Source concept code identifier, e.g. &lt;uuid&gt;", required = true)
+    })
+    @RecordMetric
+    public @ResponseBody ResponseEntity<List<Mapping>> createMappings(@PathVariable final String mapSetCode, final List<Mapping> mappings) throws Exception {
 
-      LOG.info("Update Mapping mapSetCode:{}, mapping:{}", mapSetCode, ModelUtility.toJson(mapping));
+        LOG.info("Create Mapping mapSetCode:{}, mapping:{}", mapSetCode, ModelUtility.toJson(mappings));
 
-      //TODO: Remove hard-coding of mapProject stuff
-      final String id = "1";
-      final Boolean includeMembers = Boolean.FALSE;
-      MapProject mapProject = null;
-      
-      try (final TerminologyService service = new TerminologyService()) {
-          mapProject = MapProjectService.getMapProject(service, id, includeMembers);
+        // TODO: Remove hard-coding of mapProject stuff
+        final String id = "1";
+        final Boolean includeMembers = Boolean.FALSE;
+        MapProject mapProject = null;
 
-      } catch (final Exception e) {
+        try (final TerminologyService service = new TerminologyService()) {
+            mapProject = MapProjectService.getMapProject(service, id, includeMembers);
 
-          handleException(e);
-          return null;
-      }      
-      
-      try {
+        } catch (final Exception e) {
 
-          // TODO: determine branch.
-          final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
-          MappingService.updateMapping(mapProject, branch, mapSetCode, mapping);
+            handleException(e);
+            return null;
+        }
 
-          return new ResponseEntity<>(HttpStatus.OK);
+        try {
 
-      } catch (final Exception e) {
+            // TODO: determine branch.
+            final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
+            final List<Mapping> createdMappings = MappingService.createMappings(mapProject, branch, mapSetCode, mappings);
+            return new ResponseEntity<>(createdMappings, HttpStatus.CREATED);
 
-          handleException(e);
-          return null;
-      }
-  }
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+
+    @RequestMapping(method = RequestMethod.PUT, value = "/mapset/{mapSetCode}", consumes = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Update mapping for the mapSetCode. This call requires authentication with the correct role.", tags = {
+        "mapset"
+    }, responses = {
+        @ApiResponse(responseCode = "200", description = "Successfully updated the mapping"), @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "403", description = "Forbidden"), @ApiResponse(responseCode = "404", description = "Resource not found"),
+        @ApiResponse(responseCode = "417", description = "Failed Expectation")
+    })
+    @Parameters({
+        @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. &lt;uuid&gt;", required = true),
+        @Parameter(description = "Mapping object to update", required = true)
+    })
+    @RecordMetric
+    public @ResponseBody ResponseEntity<Mapping> updateMapping(@PathVariable final String mapSetCode, @RequestBody final Mapping mapping) throws Exception {
+
+        LOG.info("Update Mapping mapSetCode:{}, mapping:{}", mapSetCode, ModelUtility.toJson(mapping));
+
+        // TODO: Remove hard-coding of mapProject stuff
+        final String id = "1";
+        final Boolean includeMembers = Boolean.FALSE;
+        MapProject mapProject = null;
+
+        try (final TerminologyService service = new TerminologyService()) {
+            mapProject = MapProjectService.getMapProject(service, id, includeMembers);
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+
+        try {
+
+            // TODO: determine branch.
+            final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
+            final List<Mapping> mappings = new ArrayList<>();
+            mappings.add(mapping);
+            MappingService.updateMappings(mapProject, branch, mapSetCode, mappings);
+
+            return new ResponseEntity<>(HttpStatus.OK);
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
+
+    @RequestMapping(method = RequestMethod.PUT, value = "/mapset/{mapSetCode}/bulk", consumes = MediaType.APPLICATION_JSON,
+        produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Update mapping for the mapSetCode. This call requires authentication with the correct role.", tags = {
+        "mapset"
+    }, responses = {
+        @ApiResponse(responseCode = "200", description = "Successfully updated the mapping"), @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "403", description = "Forbidden"), @ApiResponse(responseCode = "404", description = "Resource not found"),
+        @ApiResponse(responseCode = "417", description = "Failed Expectation")
+    })
+    @Parameters({
+        @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. &lt;uuid&gt;", required = true),
+        @Parameter(description = "Mapping object to update", required = true)
+    })
+    @RecordMetric
+    public @ResponseBody ResponseEntity<List<Mapping>> updateMappings(@PathVariable final String mapSetCode, @RequestBody final List<Mapping> mappings)
+        throws Exception {
+
+        LOG.info("Update Mapping mapSetCode:{}, mapping:{}", mapSetCode, ModelUtility.toJson(mappings));
+
+        // TODO: Remove hard-coding of mapProject stuff
+        final String id = "1";
+        final Boolean includeMembers = Boolean.FALSE;
+        MapProject mapProject = null;
+
+        try (final TerminologyService service = new TerminologyService()) {
+            mapProject = MapProjectService.getMapProject(service, id, includeMembers);
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+
+        try {
+
+            // TODO: determine branch.
+            final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
+            final List<Mapping> updatedMappings = MappingService.updateMappings(mapProject, branch, mapSetCode, mappings);
+
+            return new ResponseEntity<>(updatedMappings, HttpStatus.OK);
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }
 
 }

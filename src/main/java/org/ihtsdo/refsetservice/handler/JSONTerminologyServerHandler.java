@@ -4496,16 +4496,18 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
     /* see superclass */
     @Override
-    public void createMapping(final MapProject mapProject, final String branch, final String mapSetCode, final Mapping mapping) throws Exception {
+    public List<Mapping> createMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mappings) throws Exception {
 
         // TODO implement with Snowstorm
+        throw new UnsupportedOperationException("Method not implemented");
     }
 
     /* see superclass */
     @Override
-    public void updateMapping(final MapProject mapProject, final String branch, final String mapSetCode, final Mapping mapping) throws Exception {
+    public List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mappings) throws Exception {
 
         // TODO implement with Snowstorm
+        throw new UnsupportedOperationException("Method not implemented");
     }
 
 }

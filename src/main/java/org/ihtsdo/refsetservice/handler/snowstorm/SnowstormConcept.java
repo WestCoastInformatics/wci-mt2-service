@@ -139,7 +139,7 @@ public class SnowstormConcept extends SnowstormAbstract {
         String searchAfter = null;
         final ObjectMapper mapper = new ObjectMapper();
 
-        int limit = 50;
+        int limit = 1000;
 
         final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/concepts?activeFilter=true&includeLeafFlag=false&form=inferred&conceptIds="
             + code + "&offset=0&limit=" + limit + (searchAfter != null ? "&searchAfter=" + searchAfter : "");

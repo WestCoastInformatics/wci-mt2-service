@@ -107,10 +107,10 @@ public final class MappingService {
    * @return the mapping
    * @throws Exception the exception
    */
-  public static void createMapping(final MapProject mapProject, final String branch, final String mapSetCode,
-    final Mapping mapping) throws Exception {
+  public static List<Mapping> createMappings(final MapProject mapProject, final String branch, final String mapSetCode,
+    final List<Mapping> mappings) throws Exception {
 
-    terminologyHandler.createMapping(mapProject, branch, mapSetCode, mapping);
+    return terminologyHandler.createMappings(mapProject, branch, mapSetCode, mappings);
   }
 
   /**
@@ -122,9 +122,9 @@ public final class MappingService {
    * @param mapping the mapping
    * @throws Exception the exception
    */
-  public static void updateMapping(final MapProject mapProject, final String branch, final String mapSetCode,
-    final Mapping mapping) throws Exception {
+  public static List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode,
+    final List<Mapping> mapping) throws Exception {
 
-    terminologyHandler.updateMapping(mapProject, branch, mapSetCode, mapping);
+    return terminologyHandler.updateMappings(mapProject, branch, mapSetCode, mapping);
   }
 }

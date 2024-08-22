@@ -31,9 +31,9 @@ public class MapRelationContollerUnitTest extends BaseTest {
         final MapRelationController controller = new MapRelationController();
 
         final MapRelation mapRelation = new MapRelation();
-        mapRelation.setTerminologyId("term");
-        mapRelation.setName("name");
-        mapRelation.setAbbreviation("abbreviation");
+        mapRelation.setTerminologyId("MR term");
+        mapRelation.setName("MR name");
+        mapRelation.setAbbreviation("MR abbreviation");
         mapRelation.setAllowableForNullTarget(false);
         mapRelation.setComputed(false);
 
@@ -41,27 +41,31 @@ public class MapRelationContollerUnitTest extends BaseTest {
         assertNotNull(mapRelation);
 
         final ResponseEntity<MapRelation> newMapRelation = controller.createMapRelation(mapRelation);
+        assertNotNull(newMapRelation);
+        assertEquals(newMapRelation.getStatusCode(), org.springframework.http.HttpStatus.CREATED);
         LOG.info("Map Relation after create: {}", newMapRelation.getBody());
-        assertNotNull(mapRelation);
 
         // test get
         final ResponseEntity<MapRelation> mapRelation2 = controller.getMapRelation(newMapRelation.getBody().getId());
-        LOG.info("Map Relation get : {}", mapRelation2.toString());
+        assertNotNull(mapRelation2);
+        assertEquals(mapRelation2.getStatusCode(), org.springframework.http.HttpStatus.OK);
+        LOG.info("Map Relation get : {}", mapRelation2.getBody());
 
         // is the same?
-        assertEquals(newMapRelation, mapRelation2);
+        assertEquals(newMapRelation.getBody(), mapRelation2.getBody());
 
         final MapRelation mapRelationForUpdate = mapRelation2.getBody();
 
         // update
-        mapRelationForUpdate.setTerminologyId("new term");
-        mapRelationForUpdate.setName("new name");
-        mapRelationForUpdate.setAbbreviation("new abbreviation");
+        mapRelationForUpdate.setTerminologyId("MR new term");
+        mapRelationForUpdate.setName("MR new name");
+        mapRelationForUpdate.setAbbreviation("MR new abbreviation");
         mapRelationForUpdate.setAllowableForNullTarget(true);
         mapRelationForUpdate.setComputed(true);
 
         final ResponseEntity<MapRelation> updatedMapRelation = controller.updateMapRelation(mapRelationForUpdate.getId(), mapRelationForUpdate);
-
+        assertNotNull(updatedMapRelation);
+        assertEquals(updatedMapRelation.getStatusCode(), org.springframework.http.HttpStatus.OK);
         assertEquals(mapRelationForUpdate, updatedMapRelation.getBody());
         LOG.info("mapRelation after update: {}", updatedMapRelation.getBody());
 
@@ -90,8 +94,7 @@ public class MapRelationContollerUnitTest extends BaseTest {
         mapRelation.setName("name 1");
 
         final ResponseEntity<MapRelation> newMapRelation = controller.createMapRelation(mapRelation);
-
-        assertNotNull(newMapRelation);
+        assertNotNull(newMapRelation.getBody());
 
         final MapRelation mapRelationForUpdate = newMapRelation.getBody();
 
@@ -122,7 +125,7 @@ public class MapRelationContollerUnitTest extends BaseTest {
 
         final ResponseEntity<MapRelation> newMapRelation = controller.createMapRelation(mapRelation);
 
-        assertNotNull(newMapRelation);
+        assertNotNull(newMapRelation.getBody());
 
         final MapRelation mapRelation2 = new MapRelation();
         mapRelation2.setTerminologyId("term");
@@ -149,7 +152,7 @@ public class MapRelationContollerUnitTest extends BaseTest {
         final MapRelationController controller = new MapRelationController();
 
         final MapRelation mapRelation = new MapRelation();
-        mapRelation.setTerminologyId("term");
+        mapRelation.setTerminologyId("search term 1");
         mapRelation.setName("search name 1");
         mapRelation.setAbbreviation("abbreviation 1");
         mapRelation.setAllowableForNullTarget(false);
@@ -159,7 +162,7 @@ public class MapRelationContollerUnitTest extends BaseTest {
         assertNotNull(newMapRelation);
 
         final MapRelation mapRelation2 = new MapRelation();
-        mapRelation2.setTerminologyId("term");
+        mapRelation2.setTerminologyId("search term 2");
         mapRelation2.setName("search name 2");
         mapRelation2.setAbbreviation("abbreviation 2");
         mapRelation2.setAllowableForNullTarget(false);

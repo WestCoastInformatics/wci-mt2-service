@@ -9,6 +9,8 @@
  */
 package org.ihtsdo.refsetservice.model;
 
+import java.util.List;
+
 import org.ihtsdo.refsetservice.util.ResultList;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -16,26 +18,34 @@ import io.swagger.v3.oas.annotations.media.Schema;
 /**
  * Represents a list of mappings.
  */
-@Schema(description = "Represents a list of mapping returned from a find call")
+@Schema(description = "Represents a list of mappings returned from a find call")
 public class ResultListMapping extends ResultList<Mapping> {
 
-  /**
-   * Instantiates an empty {@link ResultListMapping}.
-   */
-  public ResultListMapping() {
+    /**
+     * Instantiates an empty {@link ResultListMapping}.
+     */
+    public ResultListMapping() {
 
-    // n/a
-  }
+        // n/a
+    }
 
-  /**
-   * Instantiates a {@link ResultListMapping} from the specified parameters.
-   *
-   * @param list the list
-   */
-  public ResultListMapping(final ResultList<Mapping> list) {
+    /**
+     * Instantiates a new mapping result list.
+     *
+     * @param mappings the mappings
+     */
+    public ResultListMapping(final List<Mapping> mappings) {
 
-    this.setItems(list.getItems());
-    this.setParameters(list.getParameters());
-    this.setTotal(list.getTotal());
-  }
+        super(mappings);
+    }
+
+    /**
+     * Instantiates a new mapping result list.
+     *
+     * @param other the other
+     */
+    public ResultListMapping(final ResultListMapping other) {
+
+        super.populateFrom(other);
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 SNOMED International - All Rights Reserved.
+ * Copyright 2024 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -446,7 +446,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
     @Override
     public Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode) throws Exception {
 
-        return SnowstormMapping.getMapping(branch, mapSetCode, conceptCode);
+        return SnowstormMapping.getMapping(branch, mapSetCode, conceptCode, true);
 
     }
 
@@ -474,16 +474,18 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     /* see superclass */
     @Override
-    public void createMapping(final MapProject mapProject, final String branch, final String mapSetCode, final Mapping mapping) throws Exception {
+    public List<Mapping> createMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mappings)
+        throws Exception {
 
-        SnowstormMapping.createMapping(mapProject, branch, mapSetCode, mapping);
+        return SnowstormMapping.createMappings(mapProject, branch, mapSetCode, mappings);
     }
 
     /* see superclass */
     @Override
-    public void updateMapping(final MapProject mapProject, final String branch, final String mapSetCode, final Mapping mapping) throws Exception {
+    public List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mappings)
+        throws Exception {
 
-        SnowstormMapping.updateMapping(mapProject, branch, mapSetCode, mapping);
+        return SnowstormMapping.updateMappings(mapProject, branch, mapSetCode, mappings);
     }
 
 }
