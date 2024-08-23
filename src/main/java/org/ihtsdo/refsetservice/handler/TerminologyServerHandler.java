@@ -532,12 +532,13 @@ public interface TerminologyServerHandler extends Configurable {
      * @param mapSetCode the map set code
      * @param searchParameters the search parameters
      * @param filter the filter
+   * @param show overridden entries the show overridden entries
      * @param conceptCodes the concept codes
      * @return the mappings
      * @throws Exception the exception
      */
-    public ResultList<Mapping> getMappings(final String branch, final String mapSetCode, final SearchParameters searchParameters, final String filter,
-        final List<String> conceptCodes) throws Exception;
+    public ResultList<Mapping> getMappings(final String branch, final String mapSetCode, final SearchParameters searchParameters, final String filter, final boolean showOverriddenEntries,
+    	final List<String> conceptCodes) throws Exception;
 
     /**
      * Returns the mapping.
@@ -545,10 +546,11 @@ public interface TerminologyServerHandler extends Configurable {
      * @param branch the branch
      * @param mapSetCode the map set code
      * @param conceptCode the concept code
+   * @param show overridden entries the show overridden entries
      * @return the mapping
      * @throws Exception the exception
      */
-    public Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode) throws Exception;
+    public Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode, final boolean showOverriddenEntries) throws Exception;
 
     /**
      * Returns the concept.

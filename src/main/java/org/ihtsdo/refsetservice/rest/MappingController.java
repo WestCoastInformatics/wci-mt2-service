@@ -65,11 +65,14 @@ public class MappingController extends BaseController {
     @Parameters({
         @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. 447562003", required = true),
         @Parameter(name = "filter", description = "Text to search, e.g. Brain", required = false),
+        @Parameter(name = "showOverriddenEntries", description = "Show underlying entries that have been overridden by this extension", required = false),
         @Parameter(name = "conceptCodes", description = "Comma delimited list of concept codes, e.g. 880057004,880057005", required = false)
     })
     @RecordMetric
     public @ResponseBody ResponseEntity<ResultList<Mapping>> getMappings(@PathVariable(value = "mapSetCode") final String mapSetCode,
-        @RequestParam(required = false) final String filter, @RequestParam(required = false) final String conceptCodes,
+        @RequestParam(required = false) final String filter, 
+        @RequestParam(required = false, defaultValue = "true") boolean showOverriddenEntries,
+        @RequestParam(required = false) final String conceptCodes,
         @ModelAttribute final SearchParameters searchParameters) throws Exception {
 
         LOG.info("Mappings for a Mapset " + mapSetCode, ModelUtility.toJson(searchParameters));
@@ -86,7 +89,7 @@ public class MappingController extends BaseController {
             // TODO: determine branch.
             final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
 
-            final ResultList<Mapping> mappings = MappingService.getMappings(branch, mapSetCode, sp, filterString, conceptCodesList);
+            final ResultList<Mapping> mappings = MappingService.getMappings(branch, mapSetCode, sp, filterString, showOverriddenEntries, conceptCodesList);
 
             return new ResponseEntity<>(mappings, HttpStatus.OK);
 
@@ -107,11 +110,12 @@ public class MappingController extends BaseController {
     })
     @Parameters({
         @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. 447562003", required = true),
-        @Parameter(name = "conceptCode", description = "Source concept code identifier, e.g. 880057004", required = true)
+        @Parameter(name = "conceptCode", description = "Source concept code identifier, e.g. 880057004", required = true),
+        @Parameter(name = "showOverriddenEntries", description = "Show underlying entries that have been overridden by this extension", required = false)
     })
     @RecordMetric
     public @ResponseBody ResponseEntity<Mapping> getMapping(@PathVariable final String mapSetCode, @PathVariable final String conceptCode,
-        @ModelAttribute final SearchParameters searchParameters) throws Exception {
+    		@RequestParam(required = false, defaultValue = "true") boolean showOverriddenEntries, @ModelAttribute final SearchParameters searchParameters) throws Exception {
 
         LOG.info("Mapping for Mapset " + mapSetCode + ", Source Concept " + conceptCode, ModelUtility.toJson(searchParameters));
         // final User authUser = authorizeUser(request);
@@ -120,7 +124,7 @@ public class MappingController extends BaseController {
 
             // TODO: determine branch.
             final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
-            final Mapping mapping = MappingService.getMapping(branch, mapSetCode, conceptCode);
+            final Mapping mapping = MappingService.getMapping(branch, mapSetCode, conceptCode, showOverriddenEntries);
 
             return new ResponseEntity<>(mapping, HttpStatus.OK);
 

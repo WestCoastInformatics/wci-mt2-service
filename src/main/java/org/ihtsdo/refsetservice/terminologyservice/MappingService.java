@@ -71,15 +71,16 @@ public final class MappingService {
    * @param mapSetCode the map set code
    * @param searchParameters the search parameters
    * @param filter the filter
+   * @param show overridden entries the show overridden entries
    * @param conceptCodes the concept codes
    * @return the mappings
    * @throws Exception the exception
    */
   public static ResultList<Mapping> getMappings(final String branch, final String mapSetCode,
-    final SearchParameters searchParameters, final String filter, final List<String> conceptCodes)
+    final SearchParameters searchParameters, final String filter, final boolean showOverriddenEntries, final List<String> conceptCodes)
     throws Exception {
 
-    return terminologyHandler.getMappings(branch, mapSetCode, searchParameters, filter, conceptCodes);
+    return terminologyHandler.getMappings(branch, mapSetCode, searchParameters, filter, showOverriddenEntries, conceptCodes);
   }
 
   /**
@@ -88,13 +89,14 @@ public final class MappingService {
    * @param branch the branch
    * @param mapSetCode the map set code
    * @param conceptCode the concept code
+   * @param show overridden entries the show overridden entries
    * @return the mapping
    * @throws Exception the exception
    */
-  public static Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode)
+  public static Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode, final boolean showOverriddenEntries)
     throws Exception {
 
-    return terminologyHandler.getMapping(branch, mapSetCode, conceptCode);
+    return terminologyHandler.getMapping(branch, mapSetCode, conceptCode, showOverriddenEntries);
   }
 
   /**

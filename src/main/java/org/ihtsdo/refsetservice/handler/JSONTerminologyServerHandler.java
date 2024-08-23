@@ -4236,7 +4236,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
     /* see superclass */
     @Override
     public ResultList<Mapping> getMappings(final String branch, final String mapSetCode, final SearchParameters searchParameters, final String filter,
-        final List<String> conceptCodes) throws Exception {
+    		final boolean showOverriddenEntries, final List<String> conceptCodes) throws Exception {
 
         final File f = new File(handlerProperties.getProperty("dir") + "/Mappings.json");
         if (!f.exists()) {
@@ -4333,7 +4333,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
     /* see superclass */
     @Override
-    public Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode) throws Exception {
+    public Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode, final boolean showOverriddenEntries) throws Exception {
 
         final File f = new File(handlerProperties.getProperty("dir") + "/Mappings.json");
         if (!f.exists()) {

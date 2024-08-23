@@ -258,12 +258,13 @@ public class SnowstormMapping extends SnowstormAbstract {
    * @param mapSetCode the map set code
    * @param searchParameters the search parameters
    * @param filter the filter
+   * @param showOverriddenEntries the show overridden entries
    * @param conceptCodes the concept codes
    * @return the mappings
    * @throws Exception the exception
    */
     public static ResultList<Mapping> getMappings(final String branch, final String mapSetCode, final SearchParameters searchParameters, final String filter,
-        final List<String> conceptCodes) throws Exception {
+    		final boolean showOverriddenEntries, final List<String> conceptCodes) throws Exception {
 
     if (StringUtils.isBlank(mapSetCode)) {
       throw new LocalException("Map set code is required.");
@@ -423,11 +424,13 @@ public class SnowstormMapping extends SnowstormAbstract {
       }
     }
 
-    // Commenting this out for now, based on Norway request to see all records.
-//    // Handle edition-precedence in the map entries
-//    for (final Mapping mapping : conceptIdToMappingMap.values()) {
-//      handleEditionPrecedence(mapping);
-//    }
+
+    // Handle edition-precedence in the map entries
+    if(!showOverriddenEntries) {
+	    for (final Mapping mapping : conceptIdToMappingMap.values()) {
+	      handleEditionPrecedence(mapping);
+	    }
+    }
 
     // TODO - do this elsewhere
     final Edition edition = new Edition();
@@ -589,11 +592,12 @@ public class SnowstormMapping extends SnowstormAbstract {
    * @param branch the branch
    * @param mapSetCode the map set code
    * @param conceptCode the concept code
-     * @param includeDescriptions the include descriptions
+   * @param showOverriddenEntries the show overridden entries
+   * @param includeDescriptions the include descriptions
    * @return the mapping
    * @throws Exception the exception
    */
-    public static Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode, final boolean includeDescriptions)
+    public static Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode, final boolean showOverriddenEntries, final boolean includeDescriptions)
         throws Exception {
 
     // Connect to snowstorm
@@ -648,9 +652,10 @@ public class SnowstormMapping extends SnowstormAbstract {
 
     }
 
-    // Commenting this out for now, based on Norway request to see all records.
-//    // Handle edition-precedence in the map entries
-//    handleEditionPrecedence(mapping);
+    // Handle edition-precedence in the map entries
+    if(!showOverriddenEntries) {
+        handleEditionPrecedence(mapping);
+    }
 
     // Sort all of the map entries in Group/Priority order
     sortMapEntries(mapping);
@@ -812,7 +817,7 @@ public class SnowstormMapping extends SnowstormAbstract {
       final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/";
 
       // get all the map entries for the mapping
-        final Mapping originalMapping = getMapping(branch, mapSetCode, mapping.getCode(), false);
+        final Mapping originalMapping = getMapping(branch, mapSetCode, mapping.getCode(), false, false);
 
       // Update based on these conditions:
       // 1. A UUID (entry.getId) is shared between an originalMapEntry and the mapEntry
