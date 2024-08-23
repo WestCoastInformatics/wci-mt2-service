@@ -456,10 +456,11 @@ public class SnowstormMapping extends SnowstormAbstract {
       }
     }
 
-    // Handle edition-precedence in the map entries
-    for (final Mapping mapping : conceptIdToMappingMap.values()) {
-      handleEditionPrecedence(mapping);
-    }
+    // Commenting this out for now, based on Norway request to see all records.
+//    // Handle edition-precedence in the map entries
+//    for (final Mapping mapping : conceptIdToMappingMap.values()) {
+//      handleEditionPrecedence(mapping);
+//    }
 
     // TODO - do this elsewhere
     final Edition edition = new Edition();
@@ -673,8 +674,9 @@ public class SnowstormMapping extends SnowstormAbstract {
 
     }
 
-    // Handle edition-precedence in the map entries
-    handleEditionPrecedence(mapping);
+    // Commenting this out for now, based on Norway request to see all records.
+//    // Handle edition-precedence in the map entries
+//    handleEditionPrecedence(mapping);
 
     // Sort all of the map entries in Group/Priority order
     sortMapEntries(mapping);
