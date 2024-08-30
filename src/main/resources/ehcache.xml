@@ -1,24 +1,29 @@
-<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns="http://www.ehcache.org/v3"
-    xmlns:jsr107="http://www.ehcache.org/v3/jsr107"
-    xsi:schemaLocation="
-            http://www.ehcache.org/v3 http://www.ehcache.org/schema/ehcache-core-3.0.xsd
-            http://www.ehcache.org/v3/jsr107 http://www.ehcache.org/schema/ehcache-107-ext-3.0.xsd">
+<ehcache xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:noNamespaceSchemaLocation="http://www.ehcache.org/ehcache.xsd"
+	updateCheck="true" monitoring="autodetect" dynamicConfig="true">
 
-    <service>
-	    <jsr107:defaults enable-statistics="true" />
-    </service>
- 
-    <cache alias="metadata">
-		<resources>
-			<heap unit="entries">1000</heap>
-		</resources>
-    </cache>
- 
-    <cache alias="terminology">
-		<resources>
-			<heap unit="entries">1000</heap>
-		</resources>
-    </cache>
- 
-</config>
+ 	<diskStore path="./cache" />
+
+	<defaultCache 
+		maxElementsInMemory="10000" 
+		eternal="false"
+		timeToIdleSeconds="120" 
+		timeToLiveSeconds="120" 
+		overflowToDisk="true"
+		diskSpoolBufferSizeMB="30" 
+		maxElementsOnDisk="10000000"
+		diskPersistent="false" 
+		diskExpiryThreadIntervalSeconds="120"
+		memoryStoreEvictionPolicy="LRU" 
+		clearOnFlush="true" />
+
+	<!-- Add your cache configurations here -->
+	<cache name="snowstorm_concepts" 
+		maxElementsInMemory="1000" 
+		eternal="false"
+		overflowToDisk="true" 
+		diskPersistent="true"
+		diskExpiryThreadIntervalSeconds="900" 
+		memoryStoreEvictionPolicy="LRU" />
+
+</ehcache>

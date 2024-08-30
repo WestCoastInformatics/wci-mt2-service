@@ -13,6 +13,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -23,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -30,10 +33,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
 
@@ -43,6 +42,7 @@ import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RestException;
+import org.ihtsdo.refsetservice.model.SnowstormFhirCodeSystem;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
 import org.ihtsdo.refsetservice.model.User;
@@ -51,9 +51,9 @@ import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
+import org.ihtsdo.refsetservice.util.CachingUtility;
 import org.ihtsdo.refsetservice.util.ConceptLookupParameters;
 import org.ihtsdo.refsetservice.util.ConceptResultList;
-import org.ihtsdo.refsetservice.util.LocalException;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
@@ -68,7 +68,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-// TODO: Auto-generated Javadoc
 /**
  * The Class SnowstormConcept.
  */
@@ -77,32 +76,18 @@ public class SnowstormConcept extends SnowstormAbstract {
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(SnowstormConcept.class);
 
-    /** The Constant DEFAULT_ACCEPT. */
-    private static final String DEFAULT_ACCEPT = MediaType.APPLICATION_JSON;
-
-    private static final Map<String, String> icd10noCodeToName = new HashMap<>();
-
+    /** The Constant icpc2noCodeToName. */
     private static final Map<String, String> icpc2noCodeToName = new HashMap<>();
 
-    /** The client. */
-    private static ThreadLocal<Client> clients = new ThreadLocal<Client>() {
+    // TODO: Get source and target information from MapProject?
+    /** The Constant ICD10NO_NULL_20240723. */
+    private static final String ICD10NO_NULL_20240723 = "icd10no_null_20240723";
 
-        @Override
-        public Client initialValue() {
+    /** The code systems. */
+    private static Map<String, SnowstormFhirCodeSystem> codeSystems = new HashMap<>();
 
-            return ClientBuilder.newClient();
-        }
-    };
-
-    /**
-     * Returns the clients.
-     *
-     * @return the clients
-     */
-    private static ThreadLocal<Client> getClients() {
-
-        return clients;
-    }
+    /** The Constant SNOWSTORM_CONCEPTS_CACHE. */
+    private static final String SNOWSTORM_CONCEPTS_CACHE = "snowstorm_concepts";
 
     /**
      * Gets the concept.
@@ -116,57 +101,87 @@ public class SnowstormConcept extends SnowstormAbstract {
      */
     public static Concept getConcept(final String branch, final String terminology, final String version, final String code) throws Exception {
 
-        //TEMPORARY
-        if(terminology.equals("ICD10NO")) {
-            Concept concept = new Concept();
-            concept.setId(code);
-            concept.setName(getICD10NOName(code));
-            concept.setTerminology(terminology);
-            concept.setVersion(version);
+        if (StringUtils.isEmpty(code)) {
+            LOG.error("getConcept: code is empty for branch:{}, terminology:{}, version:{}", branch, terminology, version);
+            return null;
+        }
+
+        final String cacheKey = branch.concat("-").concat(terminology).concat("-").concat(version).concat("-").concat(code);
+        final Optional<Concept> cachedConcept = CachingUtility.getObject(SNOWSTORM_CONCEPTS_CACHE, cacheKey, Concept.class);
+        if (cachedConcept.isPresent()) {
+            return cachedConcept.get();
+        }
+
+        final Concept concept = getConceptFromSnowstorm(branch, terminology, version, code);
+        if (concept != null) {
+            CachingUtility.cacheObject(SNOWSTORM_CONCEPTS_CACHE, cacheKey, Concept.class, concept);
+        }
+
+        return concept;
+
+    }
+
+    /**
+     * Gets the concept.
+     *
+     * @param branch the branch
+     * @param terminology the terminology
+     * @param version the version
+     * @param code the code
+     * @return the concept
+     * @throws Exception the exception
+     */
+    private static Concept getConceptFromSnowstorm(final String branch, final String terminology, final String version, final String code) throws Exception {
+
+        if ("ICD10NO".equals(terminology)) {
+            final Concept concept = getConceptByCodeFhirApi(ICD10NO_NULL_20240723, code);
             return concept;
-        } else if (terminology.equals("ICPC2NO")) {
-            Concept concept = new Concept();
+
+        } else if ("ICPC2NO".equals(terminology)) {
+
+            // TEMPORARY
+            final Concept concept = new Concept();
             concept.setId(code);
             concept.setName(getICPC2NOName(code));
             concept.setTerminology(terminology);
             concept.setVersion(version);
             return concept;
+            // TEMPORARY
         }
-        //TEMPORARY
-        
+
         // Connect to snowstorm
-        final Client client = getClients().get();
-        String searchAfter = null;
-        final ObjectMapper mapper = new ObjectMapper();
 
-        int limit = 1000;
-
-        final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/concepts?activeFilter=true&includeLeafFlag=false&form=inferred&conceptIds="
-            + code + "&offset=0&limit=" + limit + (searchAfter != null ? "&searchAfter=" + searchAfter : "");
+        final String targetUri =
+            SnowstormConnection.getBaseUrl() + branch + "/concepts?activeFilter=true&includeLeafFlag=false&form=inferred&conceptIds=" + code;
         LOG.info("getSnowstormConcept url: " + targetUri);
 
-        final WebTarget target = client.target(targetUri);
-        final Response response = target.request(DEFAULT_ACCEPT)
-            // .header("Cookie", ConfigUtility.getGenericUserCookie())
-            .get();
-        final String resultString = response.readEntity(String.class);
-        if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-            throw new LocalException("Unexpected terminology server failure. Message = " + resultString);
-        }
+        try (final Response response = SnowstormConnection.getResponse(targetUri)) {
 
-        final JsonNode doc = mapper.readTree(resultString);
-        final JsonNode conceptNodeBatch = doc.get("items");
-        final Iterator<JsonNode> itemIterator = conceptNodeBatch.iterator();
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
-        // parse items to retrieve matching concept
-        while (itemIterator.hasNext()) {
+                throw new Exception(
+                    "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
+            }
 
-            final JsonNode conceptNode = itemIterator.next();
-            final Concept concept = buildConcept(conceptNode);
-            return concept;
+            final ObjectMapper mapper = new ObjectMapper();
+            final String resultString = response.readEntity(String.class);
+            response.close();
+
+            final JsonNode doc = mapper.readTree(resultString);
+            final JsonNode conceptNodeBatch = doc.get("items");
+            final Iterator<JsonNode> itemIterator = conceptNodeBatch.iterator();
+
+            // parse items to retrieve matching concept
+            while (itemIterator.hasNext()) {
+
+                final JsonNode conceptNode = itemIterator.next();
+                final Concept concept = buildConcept(conceptNode);
+                return concept;
+            }
         }
 
         // If no concept with the specified terminology and code found, return null
+        LOG.warn("No concept found for branch:{}, terminology: {}, version:{}, code: {}", branch, terminology, version, code);
         return null;
     }
 
@@ -198,8 +213,6 @@ public class SnowstormConcept extends SnowstormAbstract {
 
         try (final Response response = SnowstormConnection.postResponse(conceptSearchUrl, searchBody)) {
 
-            final String resultString = response.readEntity(String.class);
-
             // Only process payload if Rest call is successful
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
@@ -208,6 +221,9 @@ public class SnowstormConcept extends SnowstormAbstract {
             }
 
             final ObjectMapper mapper = new ObjectMapper();
+            final String resultString = response.readEntity(String.class);
+            response.close();
+
             final JsonNode root = mapper.readTree(resultString.toString());
             final Iterator<JsonNode> iterator = root.get("items").iterator();
 
@@ -1830,86 +1846,335 @@ public class SnowstormConcept extends SnowstormAbstract {
         }
     }
 
-    // TEMPORARY//
-    private static String getICD10NOName(String code) throws Exception {
-      if (icd10noCodeToName.isEmpty()) {
-        cacheICD10NONames();
-      }
-      String ICD10NOName = icd10noCodeToName.get(code);
-      if (ICD10NOName == null || ICD10NOName.isBlank()) {
-        ICD10NOName = code + " CONCEPT NOT FOUND";
-      }
-      return ICD10NOName;
-    }
+    // // TEMPORARY//
+    // private static String getICD10NOName(String code) throws Exception {
+    // if (icd10noCodeToName.isEmpty()) {
+    // cacheICD10NONames();
+    // }
+    // String ICD10NOName = icd10noCodeToName.get(code);
+    // if (ICD10NOName == null || ICD10NOName.isBlank()) {
+    // ICD10NOName = code + " CONCEPT NOT FOUND";
+    // }
+    // return ICD10NOName;
+    // }
+    //
+    // // TEMPORARY//
+    // private static void cacheICD10NONames() throws Exception {
+    //
+    // String dataDir = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.dir");
+    //
+    // final File f = new File(dataDir + "/ICD10NO_concepts.txt");
+    // if (!f.exists()) {
+    // LOG.error("ICD10NO file doesn't exist: " + f.getPath());
+    // return;
+    // }
+    //
+    // try (BufferedReader br = new BufferedReader(new FileReader(f.getPath()))) {
+    // String line;
+    // while ((line = br.readLine()) != null) {
+    // String[] parts = line.split("\\|", 2); // Split the line into two parts
+    // // at the first occurrence of '|'
+    // if (parts.length >= 2) {
+    // String key = parts[0].trim();
+    // String value = parts[1].trim();
+    // icd10noCodeToName.put(key, value);
+    // } else {
+    // System.out.println("Ignoring malformed line: " + line);
+    // }
+    // }
+    // } catch (IOException e) {
+    // e.printStackTrace();
+    // }
+    // }
 
-    // TEMPORARY//
-    private static void cacheICD10NONames() throws Exception {
-
-      String dataDir = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.dir");
-
-      final File f = new File(dataDir + "/ICD10NO_concepts.txt");
-      if (!f.exists()) {
-        LOG.error("ICD10NO file doesn't exist: " + f.getPath());
-        return;
-      }
-
-      try (BufferedReader br = new BufferedReader(new FileReader(f.getPath()))) {
-        String line;
-        while ((line = br.readLine()) != null) {
-          String[] parts = line.split("\\|", 2); // Split the line into two parts
-                                                 // at the first occurrence of '|'
-          if (parts.length >= 2) {
-            String key = parts[0].trim();
-            String value = parts[1].trim();
-            icd10noCodeToName.put(key, value);
-          } else {
-            System.out.println("Ignoring malformed line: " + line);
-          }
-        }
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
-
+    /**
+     * Gets the ICPC 2 NO name.
+     *
+     * @param code the code
+     * @return the ICPC 2 NO name
+     * @throws Exception the exception
+     */
     // TEMPORARY//
     private static String getICPC2NOName(String code) throws Exception {
-      if (icpc2noCodeToName.isEmpty()) {
-        cacheICPC2NONames();
-      }
-      String ICPC2NOName = icpc2noCodeToName.get(code);
-      if (ICPC2NOName == null || ICPC2NOName.isBlank()) {
-        ICPC2NOName = code + " CONCEPT NOT FOUND";
-      }
-      return ICPC2NOName;
+
+        if (icpc2noCodeToName.isEmpty()) {
+            cacheICPC2NONames();
+        }
+        String ICPC2NOName = icpc2noCodeToName.get(code);
+        if (ICPC2NOName == null || ICPC2NOName.isBlank()) {
+            ICPC2NOName = code + " CONCEPT NOT FOUND";
+        }
+        return ICPC2NOName;
     }
 
+    /**
+     * Cache ICPC 2 NO names.
+     *
+     * @throws Exception the exception
+     */
     // TEMPORARY//
     private static void cacheICPC2NONames() throws Exception {
 
-      String dataDir = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.dir");
+        String dataDir = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.dir");
 
-      final File f = new File(dataDir + "/ICPC2NO_concepts.txt");
-      if (!f.exists()) {
-        LOG.error("ICPC2NO file doesn't exist: " + f.getPath());
-        return;
-      }
-
-      try (BufferedReader br = new BufferedReader(new FileReader(f.getPath()))) {
-        String line;
-        while ((line = br.readLine()) != null) {
-          String[] parts = line.split("\\|", 2); // Split the line into two parts
-                                                 // at the first occurrence of '|'
-          if (parts.length >= 2) {
-            String key = parts[0].trim();
-            String value = parts[1].trim();
-            icpc2noCodeToName.put(key, value);
-          } else {
-            System.out.println("Ignoring malformed line: " + line);
-          }
+        final File f = new File(dataDir + "/ICPC2NO_concepts.txt");
+        if (!f.exists()) {
+            LOG.error("ICPC2NO file doesn't exist: " + f.getPath());
+            return;
         }
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }    
-    
+
+        try (BufferedReader br = new BufferedReader(new FileReader(f.getPath()))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split("\\|", 2); // Split the line into two parts
+                                                       // at the first occurrence of '|'
+                if (parts.length >= 2) {
+                    String key = parts[0].trim();
+                    String value = parts[1].trim();
+                    icpc2noCodeToName.put(key, value);
+                } else {
+                    System.out.println("Ignoring malformed line: " + line);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Gets the concept by code fhir api.
+     *
+     * @param fhirCodeSystem the fhir code system
+     * @param code the code
+     * @return the concept by code fhir api
+     * @throws Exception the exception
+     */
+    private static Concept getConceptByCodeFhirApi(final String fhirCodeSystem, final String code) throws Exception {
+
+        if (StringUtils.isAnyBlank(fhirCodeSystem, code)) {
+            throw new Exception("fhirCodesytem and code are required parmater. Received fhirCodesytem:" + fhirCodeSystem + ", code: " + code);
+        }
+
+        getCodeSystemsFromFhir();
+        final SnowstormFhirCodeSystem codeSystem = codeSystems.get(fhirCodeSystem);
+        final String terminology = codeSystem.getName();
+        final String version = codeSystem.getVersion();
+
+        // example: https://host:port/fhir/CodeSystem/icd10no_null_20240723/$lookup?code=A00
+        final String targetUri = SnowstormConnection.getBaseUrl() + "fhir/CodeSystem/" + fhirCodeSystem + "/$lookup?code=" + code.trim() + "&_format=json";
+
+        LOG.info("getFhirConceptByCode url: " + targetUri);
+        try (final Response response = SnowstormConnection.getResponse(targetUri)) {
+
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+
+                if (response.getStatus() != 404) {
+                    throw new Exception(
+                        "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
+                }
+
+                LOG.info("Concept not found.  fhirCodesytem:{}, terminology:{}, version:{}, code:{} ", fhirCodeSystem, terminology, version, code);
+                final Concept concept = new Concept();
+                concept.setId(code);
+                concept.setCode(code);
+                concept.setTerminology(terminology);
+                concept.setVersion(version);
+                concept.setName("NOT FOUND");
+
+                return concept;
+            }
+
+            final String resultString = response.readEntity(String.class);
+            response.close();
+
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode root = mapper.readTree(resultString);
+            final JsonNode parameterNode = root.get("parameter");
+            final Concept concept = new Concept();
+            concept.setId(code);
+            concept.setCode(code);
+            for (final JsonNode node : parameterNode) {
+                if ("display".equals(node.get("name").asText())) {
+                    concept.setName(node.get("valueString").asText());
+                }
+                if ("system".equals(node.get("name").asText())) {
+                    concept.setTerminology(node.get("valueString").asText());
+                }
+                if ("version".equals(node.get("name").asText())) {
+                    concept.setVersion(node.get("valueString").asText());
+                }
+            }
+
+            return concept;
+        }
+    }
+
+    /**
+     * Gets the concept by name.
+     *
+     * @param fhirCodeSystem the fhir code system
+     * @param name the name
+     * @return the concept by name
+     * @throws Exception the exception
+     */
+    public static List<Concept> getConceptsByNameFhirApi(final String fhirCodeSystem, final String name) throws Exception {
+
+        if (StringUtils.isBlank(name)) {
+            throw new Exception("Name is required parameter.");
+        }
+
+        getCodeSystemsFromFhir();
+        final SnowstormFhirCodeSystem codeSystem = codeSystems.get(fhirCodeSystem);
+        final String terminology = codeSystem.getName();
+        final String version = codeSystem.getVersion();
+
+        final List<Concept> concepts = new ArrayList<>();
+        final int fetchSize = 1000;
+        int offset = 0;
+        boolean moreToFetch = true;
+
+        // example: https://host:port/fhir/ValueSet/$expand?filter=Annen&offset=0&count=10
+        // &url=https%3A%2F%2Ffat.terminologi.ehelse.no%2Findex.html%23%2Ficd10no%3Ffhir_vs&_format=json
+        final String encodedUrl = URLEncoder.encode(codeSystem.getUrl() + "?fhir_vs", StandardCharsets.UTF_8);
+
+        while (moreToFetch) {
+
+            final String targetUri = SnowstormConnection.getBaseUrl() + "fhir/ValueSet/$expand?filter=" + URLEncoder.encode(name, StandardCharsets.UTF_8)
+                + "&offset=" + offset + "&count=" + fetchSize + "&url=" + encodedUrl + "&_format=json";
+
+            LOG.info("getFhirConceptByName url: " + targetUri);
+            try (final Response response = SnowstormConnection.getResponse(targetUri)) {
+
+                if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+
+                    throw new Exception(
+                        "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
+                }
+
+                final String resultString = response.readEntity(String.class);
+                response.close();
+
+                final ObjectMapper mapper = new ObjectMapper();
+                final JsonNode root = mapper.readTree(resultString);
+                final JsonNode expansionNode = root.get("expansion");
+
+                final int totalConcepts = expansionNode.get("total").asInt();
+
+                if (totalConcepts == 0) {
+                    moreToFetch = false;
+                    return concepts;
+                }
+
+                final JsonNode containsNode = expansionNode.get("contains");
+
+                for (final JsonNode conceptNode : containsNode) {
+
+                    final Concept concept = new Concept();
+                    concept.setId(conceptNode.get("code").asText());
+                    concept.setCode(conceptNode.get("code").asText());
+                    concept.setName(conceptNode.get("display").asText());
+                    concept.setTerminology(terminology);
+                    concept.setVersion(version);
+                    concepts.add(concept);
+                }
+
+                offset += fetchSize;
+                moreToFetch = containsNode.size() == fetchSize;
+            }
+        }
+        return concepts;
+    }
+
+    /**
+     * Gets the code systems. Should be called before any other methods.
+     *
+     * @return the code systems
+     * @throws Exception the exception
+     */
+    private static void getCodeSystemsFromFhir() throws Exception {
+
+        if (codeSystems != null && !codeSystems.isEmpty()) {
+            return;
+        }
+        final String resultString = getCodeSystemsFromFhirApi();
+        final ObjectMapper mapper = new ObjectMapper();
+        final JsonNode root = mapper.readTree(resultString);
+        final JsonNode entryNode = root.get("entry");
+
+        if (entryNode.isArray()) {
+
+            codeSystems.clear();
+
+            for (final JsonNode node : entryNode) {
+
+                final SnowstormFhirCodeSystem codeSystem = new SnowstormFhirCodeSystem();
+                codeSystem.setFullUrl(node.get("fullUrl").asText());
+
+                final JsonNode resourceNode = node.get("resource");
+                if (resourceNode.has("resourceType"))
+                    codeSystem.setResourceType(resourceNode.get("resourceType").asText());
+
+                if (resourceNode.has("id"))
+                    codeSystem.setId(resourceNode.get("id").asText());
+
+                if (resourceNode.has("url"))
+                    codeSystem.setUrl(resourceNode.get("url").asText());
+
+                if (resourceNode.has("version"))
+                    codeSystem.setVersion(resourceNode.get("version").asText());
+
+                if (resourceNode.has("name"))
+                    codeSystem.setName(resourceNode.get("name").asText());
+
+                if (resourceNode.has("status"))
+                    codeSystem.setStatus(resourceNode.get("status").asText());
+
+                if (resourceNode.has("publisher"))
+                    codeSystem.setPublisher(resourceNode.get("publisher").asText());
+
+                if (resourceNode.has("hierarchyMeaning"))
+                    codeSystem.setHierarchyMeaning(resourceNode.get("hierarchyMeaning").asText());
+
+                if (resourceNode.has("compositional"))
+                    codeSystem.setCompositional(resourceNode.get("compositional").asBoolean());
+
+                if (resourceNode.has("content"))
+                    codeSystem.setContent(resourceNode.get("content").asText());
+
+                codeSystems.put(codeSystem.getId(), codeSystem);
+
+            }
+        }
+    }
+
+    /**
+     * Gets the code systems.
+     *
+     * @return the code systems
+     * @throws Exception the exception
+     */
+    private static String getCodeSystemsFromFhirApi() throws Exception {
+
+        // https://snowstorm.terminology.tools/fhir/CodeSystem
+        final String targetUri = SnowstormConnection.getBaseUrl() + "fhir/CodeSystem?_format=json";
+        String resultString = "";
+
+        LOG.info("getCodeSystemsFromApi url: " + targetUri);
+        try (final Response response = SnowstormConnection.getResponse(targetUri)) {
+
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+
+                throw new Exception(
+                    "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
+            }
+
+            resultString = response.readEntity(String.class);
+            response.close();
+
+        }
+
+        return resultString;
+
+    }
+
 }

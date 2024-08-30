@@ -230,7 +230,7 @@ public final class SnowstormConnection {
     public static String getGenericUserCookie(final boolean forceReload) throws Exception {
 
         // if there is no auth configured then skip this
-        if (authUrl.equals("none")) {
+        if ("none".equals(authUrl)) {
             return "";
         }
 
@@ -259,7 +259,7 @@ public final class SnowstormConnection {
         final WebTarget target = client.target(authUrl + "authenticate");
         final Builder builder = target.request(MediaType.APPLICATION_JSON);
 
-        try (Response response = builder.post(Entity.json("{ \"login\": \"" + userName + "\", \"password\": \"" + password + "\" }"))) {
+        try (final Response response = builder.post(Entity.json("{ \"login\": \"" + userName + "\", \"password\": \"" + password + "\" }"))) {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
                 throw new LocalException("Authentication of generic user failed. " + " Status: " + Integer.toString(response.getStatus()) + ". Error: "
