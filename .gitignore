@@ -24,4 +24,6 @@ WEB-INF/*
 /b
 /s
 /sd
-output.log
+*.log
+/cache/
+

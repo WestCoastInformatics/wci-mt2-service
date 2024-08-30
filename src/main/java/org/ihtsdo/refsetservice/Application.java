@@ -20,7 +20,6 @@ import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestCli
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
-import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
@@ -33,21 +32,19 @@ import io.swagger.v3.oas.annotations.tags.Tag;
  * Entry point for webapp.
  */
 @SpringBootApplication(exclude = {
-    FlywayAutoConfiguration.class,
-    ElasticsearchRestClientAutoConfiguration.class
+    FlywayAutoConfiguration.class, ElasticsearchRestClientAutoConfiguration.class
 })
-@EnableCaching
 @EnableScheduling
 @EnableAsync
 @OpenAPIDefinition(
     info = @Info(title = "SNOMED Mapping Service API", version = "1.0.0", description = "Endponts for accessing and interacting with the refset service."),
     tags = {
         @Tag(name = "artifact", description = "Artifact service endpoints"), @Tag(name = "audit", description = "Audit service endpoints"),
-        @Tag(name = "discussion", description = "Discussion service endpoints"), @Tag(name = "edition", description = "Edition service endpoints"),
-        @Tag(name = "invite", description = "Invite/Request service endpoints"), @Tag(name = "organization", description = "Organization service endpoints"),
+        @Tag(name = "concept", description = "Concept service endpoints"), @Tag(name = "discussion", description = "Discussion service endpoints"),
+        @Tag(name = "edition", description = "Edition service endpoints"), @Tag(name = "invite", description = "Invite/Request service endpoints"),
+        @Tag(name = "mapset", description = "Mapping service endpoints"), @Tag(name = "organization", description = "Organization service endpoints"),
         @Tag(name = "project", description = "Project service endpoints"), @Tag(name = "refset", description = "Refset service endpoints"),
         @Tag(name = "security", description = "Security/auth service endpoints"), @Tag(name = "team", description = "Team service endpoints"),
-        @Tag(name = "user", description = "User service endpoints")
     }, servers = {
         @Server(description = "Current Instance", url = "/")
     })
