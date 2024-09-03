@@ -106,7 +106,7 @@ public class SnowstormConcept extends SnowstormAbstract {
             return null;
         }
 
-        final String cacheKey = branch.concat("-").concat(terminology).concat("-").concat(version).concat("-").concat(code);
+        final String cacheKey = (branch == null ? "" : branch).concat("-").concat(terminology == null ? "" : terminology).concat("-").concat(version == null ? "" : version).concat("-").concat(code == null ? "" : code);
         final Optional<Concept> cachedConcept = CachingUtility.getObject(SNOWSTORM_CONCEPTS_CACHE, cacheKey, Concept.class);
         if (cachedConcept.isPresent()) {
             return cachedConcept.get();
