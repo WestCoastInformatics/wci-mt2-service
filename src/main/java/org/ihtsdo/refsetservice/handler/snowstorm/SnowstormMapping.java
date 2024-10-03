@@ -657,7 +657,10 @@ public class SnowstormMapping extends SnowstormAbstract {
         }
 
         // Sort all of the map entries in Group/Priority order
+        
+        LOG.info("Before sort Mapping: {}", mapping);
         sortMapEntries(mapping);
+        LOG.info("After sort Mapping: {}", mapping);
 
         // Get descriptions for mapping
         final Edition edition = new Edition();
@@ -1009,7 +1012,7 @@ public class SnowstormMapping extends SnowstormAbstract {
             return conceptMap;
         }
 
-        LOG.debug("Codes to look up: {}", codes);
+        LOG.debug("Get concepts for codes: {}", codes);
 
         final Integer fetchLimit = 1000;
         final SearchParameters searchParameters = new SearchParameters();
