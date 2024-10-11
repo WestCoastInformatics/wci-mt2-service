@@ -19,13 +19,13 @@ import java.util.Map;
 
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.model.Concept;
+import org.ihtsdo.refsetservice.model.ResultListConcept;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.TypeKeyValue;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -445,7 +445,7 @@ public class GetUnitTestUtilities {
 	 * @param refsetConceptType the refset concept type
 	 * @return the refset concepts
 	 */
-	public ConceptResultList getRefsetConcepts(final String branch, final RefsetConceptsType refsetConceptType) {
+	public ResultListConcept getRefsetConcepts(final String branch, final RefsetConceptsType refsetConceptType) {
 
 		// For REST call, areParentConcepts variable true if returning for new
 		// refset concepts, false for existing
@@ -464,7 +464,7 @@ public class GetUnitTestUtilities {
 			final String content = result.getResponse().getContentAsString();
 			LOG.info(" content = " + content);
 
-			final ConceptResultList refsetConcepts = new ObjectMapper().readValue(content, ConceptResultList.class);
+			final ResultListConcept refsetConcepts = new ObjectMapper().readValue(content, ResultListConcept.class);
 			assertThat(refsetConcepts.getItems()).isNotEmpty();
 			return refsetConcepts;
 
@@ -483,7 +483,7 @@ public class GetUnitTestUtilities {
 	 * @param internalRefsetId the internal refset id
 	 * @return the members
 	 */
-	public ConceptResultList getMembers(final String internalRefsetId) {
+	public ResultListConcept getMembers(final String internalRefsetId) {
 
 		try {
 
@@ -495,7 +495,7 @@ public class GetUnitTestUtilities {
 					.andExpect(status().isOk()).andReturn();
 			final String content = result.getResponse().getContentAsString();
 			LOG.info(" content = " + content);
-			final ConceptResultList members = new ObjectMapper().readValue(content, (ConceptResultList.class));
+			final ResultListConcept members = new ObjectMapper().readValue(content, (ResultListConcept.class));
 
 			// Testing Results
 			assertThat(members).isNotNull();
@@ -517,7 +517,7 @@ public class GetUnitTestUtilities {
 	 * @param searchTerm       the search term
 	 * @return the concept result list
 	 */
-	public ConceptResultList searchMembers(final String internalRefsetId, final String searchTerm) {
+	public ResultListConcept searchMembers(final String internalRefsetId, final String searchTerm) {
 
 		try {
 
@@ -531,7 +531,7 @@ public class GetUnitTestUtilities {
 			final String content = result.getResponse().getContentAsString();
 
 			LOG.info(" content = " + content);
-			final ConceptResultList members = new ObjectMapper().readValue(content, (ConceptResultList.class));
+			final ResultListConcept members = new ObjectMapper().readValue(content, (ResultListConcept.class));
 
 			// Testing Results
 			assertThat(members).isNotNull();
@@ -553,7 +553,7 @@ public class GetUnitTestUtilities {
 	 * @param searchTerm       the search term
 	 * @return the concept result list
 	 */
-	public ConceptResultList searchTaxonomy(final String internalRefsetId, final String searchTerm) {
+	public ResultListConcept searchTaxonomy(final String internalRefsetId, final String searchTerm) {
 
 		try {
 
@@ -567,7 +567,7 @@ public class GetUnitTestUtilities {
 			final String content = result.getResponse().getContentAsString();
 
 			LOG.info(" content = " + content);
-			final ConceptResultList members = new ObjectMapper().readValue(content, (ConceptResultList.class));
+			final ResultListConcept members = new ObjectMapper().readValue(content, (ResultListConcept.class));
 
 			// Testing Results
 			assertThat(members).isNotNull();
@@ -589,7 +589,7 @@ public class GetUnitTestUtilities {
 	 * @param parentId         the parent id
 	 * @return the children
 	 */
-	public ConceptResultList getChildren(final String internalRefsetId, final String parentId) {
+	public ResultListConcept getChildren(final String internalRefsetId, final String parentId) {
 
 		try {
 
@@ -604,7 +604,7 @@ public class GetUnitTestUtilities {
 			final String content = result.getResponse().getContentAsString();
 			LOG.info(" content = " + content);
 
-			final ConceptResultList children = new ObjectMapper().readValue(content, (ConceptResultList.class));
+			final ResultListConcept children = new ObjectMapper().readValue(content, (ResultListConcept.class));
 
 			assertThat(children).isNotNull();
 			assertThat(children.getItems()).isNotEmpty();

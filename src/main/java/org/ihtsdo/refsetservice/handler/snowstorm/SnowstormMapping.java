@@ -155,13 +155,16 @@ public class SnowstormMapping extends SnowstormAbstract {
             mapSet.setVersion("2024-04-15");
             mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse("2024-04-15"));
             mapSet.setFromTerminology("SNOMEDCT-NO");
+            mapSet.setFromVersion("2024-04-15");
             mapSet.setToTerminology("TBD");
 
             // TEMPORARY//
             if (mapSet.getRefSetCode().equals("447562003")) {
-                mapSet.setToTerminology("ICD10NO");
+                mapSet.setToTerminology("ICD-10-NO");
+                mapSet.setToVersion("20240723");
             } else if (mapSet.getRefSetCode().equals("68101000202102")) {
                 mapSet.setToTerminology("ICPC2NO");
+                mapSet.setToVersion("");
             }
             // TEMPORARY//
 
@@ -235,13 +238,16 @@ public class SnowstormMapping extends SnowstormAbstract {
             mapSet.setVersion("2024-04-15");
             mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse("2024-04-15"));
             mapSet.setFromTerminology("SNOMEDCT-NO");
+            mapSet.setFromVersion("2024-04-15");
             mapSet.setToTerminology("TBD");
 
             // TEMPORARY//
             if (mapSet.getRefSetCode().equals("447562003")) {
-                mapSet.setToTerminology("ICD10NO");
+                mapSet.setToTerminology("ICD-10-NO");
+                mapSet.setFromVersion("");
             } else if (mapSet.getRefSetCode().equals("68101000202102")) {
                 mapSet.setToTerminology("ICPC2NO");
+                mapSet.setFromVersion("");
             }
             // TEMPORARY//
 
@@ -263,7 +269,7 @@ public class SnowstormMapping extends SnowstormAbstract {
      * @return the mappings
      * @throws Exception the exception
      */
-    public static ResultList<Mapping> getMappings(final String branch, final String mapSetCode, final SearchParameters searchParameters, final String filter,
+    public static ResultListMapping getMappings(final String branch, final String mapSetCode, final SearchParameters searchParameters, final String filter,
         final boolean showOverriddenEntries, final List<String> conceptCodes) throws Exception {
 
         if (StringUtils.isBlank(mapSetCode)) {
@@ -497,7 +503,8 @@ public class SnowstormMapping extends SnowstormAbstract {
         }
         mapEntry.setAdvices(advices);
 
-        final Concept relationConcept = SnowstormConcept.getConcept(branch, mapSet.getFromTerminology(), "", additionalFields.get("mapCategoryId").asText());
+        final Concept relationConcept =
+            SnowstormConcept.getConcept(mapSet.getFromTerminology(), mapSet.getFromVersion(), additionalFields.get("mapCategoryId").asText());
         if (relationConcept != null) {
             mapEntry.setRelation(relationConcept.getName());
             mapEntry.setRelationCode(relationConcept.getCode());
@@ -507,7 +514,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         mapEntry.setToCode(additionalFields.get("mapTarget").asText());
 
-        final Concept toConcept = SnowstormConcept.getConcept(branch, mapSet.getToTerminology(), "", additionalFields.get("mapTarget").asText());
+        final Concept toConcept = SnowstormConcept.getConcept(mapSet.getToTerminology(), mapSet.getToVersion(), additionalFields.get("mapTarget").asText());
 
         if (toConcept != null) {
             mapEntry.setToName(toConcept.getName());
@@ -638,7 +645,7 @@ public class SnowstormMapping extends SnowstormAbstract {
             // mapping
             if (mapping.getCode() == null || mapping.getCode().isEmpty()) {
                 mapping.setCode(mappingNode.get("referencedComponentId").asText());
-                mapping.setName(SnowstormConcept.getConcept(branch, mapSet.getFromTerminology(), "", mapping.getCode()).getName());
+                mapping.setName(SnowstormConcept.getConcept(mapSet.getFromTerminology(), mapSet.getFromVersion(), mapping.getCode()).getName());
                 mapping.setMapSetId(mapSet.getId());
                 mapping.setMapEntries(new ArrayList<>());
             }
@@ -657,7 +664,10 @@ public class SnowstormMapping extends SnowstormAbstract {
         }
 
         // Sort all of the map entries in Group/Priority order
+
+        LOG.info("Before sort Mapping: {}", mapping);
         sortMapEntries(mapping);
+        LOG.info("After sort Mapping: {}", mapping);
 
         // Get descriptions for mapping
         final Edition edition = new Edition();
@@ -1001,15 +1011,16 @@ public class SnowstormMapping extends SnowstormAbstract {
         final Map<String, Concept> conceptMap = new HashMap<>();
 
         // TODO: fix this hacky hardcoding
-        if (!terminology.contains("SNOMED")) {
+        if (!terminology.contains("SNOMEDCT")) {
             for (final String code : codes) {
-                final Concept concept = SnowstormConcept.getConcept(branch, terminology, "", code);
+                // TODO: get version for non-SNOMEDCT terminologies
+                final Concept concept = SnowstormConcept.getConcept(terminology, "20240723", code);
                 conceptMap.put(code, concept);
             }
             return conceptMap;
         }
 
-        LOG.debug("Codes to look up: {}", codes);
+        LOG.debug("Get concepts for codes: {}", codes);
 
         final Integer fetchLimit = 1000;
         final SearchParameters searchParameters = new SearchParameters();

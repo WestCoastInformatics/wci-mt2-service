@@ -54,6 +54,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.handler.ExportHandler;
 import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
 import org.ihtsdo.refsetservice.model.Concept;
+import org.ihtsdo.refsetservice.model.ResultListConcept;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.PfsParameter;
@@ -65,7 +66,6 @@ import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ConceptLookupParameters;
-import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
@@ -155,7 +155,7 @@ public final class RefsetMemberService {
 	public static final Map<String, Map<String, Map<String, String>>> REFSETS_UPDATED_MEMBERS = new HashMap<>();
 
 	/** A cache of the members returned for a specific URL. */
-	public static final Map<String, Map<String, ConceptResultList>> CONCEPTS_CALL_CACHE = new HashMap<>();
+	public static final Map<String, Map<String, ResultListConcept>> CONCEPTS_CALL_CACHE = new HashMap<>();
 
 	/** A cache of the details for any concept. */
 	public static final Map<String, Map<String, Concept>> CONCEPT_DETAILS_CACHE = new HashMap<>();
@@ -164,7 +164,7 @@ public final class RefsetMemberService {
 	public static final Map<String, Map<String, Concept>> TAXONOMY_SEARCH_ANCESTORS_CACHE = new HashMap<>();
 
 	/** A cache of the children for each tree node. */
-	private static final Map<String, Map<String, ConceptResultList>> TREE_CACHE = new HashMap<>();
+	private static final Map<String, Map<String, ResultListConcept>> TREE_CACHE = new HashMap<>();
 
 	/** A cache of the children for each tree node. */
 	public static final Map<String, Map<String, Set<String>>> ANCESTORS_CACHE = new HashMap<>();
@@ -247,11 +247,11 @@ public final class RefsetMemberService {
 	 * @return the refset member concepts
 	 * @throws Exception the exception
 	 */
-	public static ConceptResultList getRefsetMembers(final TerminologyService service, final User user,
+	public static ResultListConcept getRefsetMembers(final TerminologyService service, final User user,
 			final String refsetInternalId, final SearchParameters searchParameters, final String displayType,
 			final TaxonomyParameters taxonomyParameters) throws Exception {
 
-		ConceptResultList concepts = new ConceptResultList();
+		ResultListConcept concepts = new ResultListConcept();
 
 		final Refset refset = getRefset(user, service, refsetInternalId);
 		final List<String> nonDefaultPreferredTerms = identifyNonDefaultPreferredTerms(refset.getEdition());
@@ -1587,7 +1587,7 @@ public final class RefsetMemberService {
 			LOG.debug("exportFreeset: refsetInternalId: " + refsetInternalId);
 
 			final long start = System.currentTimeMillis();
-			final ConceptResultList results = new ConceptResultList();
+			final ResultListConcept results = new ResultListConcept();
 
 			final List<Concept> concepts = getAllRefsetMembers(service, refsetInternalId, "", new ArrayList<Concept>());
 			Collections.sort(concepts,
@@ -1960,16 +1960,16 @@ public final class RefsetMemberService {
 	 * @return the concept result list
 	 * @throws Exception the exception
 	 */
-	public static ConceptResultList prepareConceptSearch(final TerminologyService service, final User user,
+	public static ResultListConcept prepareConceptSearch(final TerminologyService service, final User user,
 			final String refsetInternalId, final SearchParameters searchParameters, final boolean searchRefsetMembers)
 			throws Exception {
 
-		ConceptResultList concepts = new ConceptResultList();
+		ResultListConcept concepts = new ResultListConcept();
 
 		final Refset refset = getRefset(user, service, refsetInternalId);
 		final String branchPath = getBranchPath(refset);
 		final String cacheString = refset.getRefsetId() + searchParameters.toString() + searchRefsetMembers;
-		final Map<String, ConceptResultList> branchCache = getCacheForConceptsCall(branchPath);
+		final Map<String, ResultListConcept> branchCache = getCacheForConceptsCall(branchPath);
 		String searchMembersMode = "all";
 
 		// check if the concept call has been cached
@@ -2041,7 +2041,7 @@ public final class RefsetMemberService {
 	 * @return the concept result list
 	 * @throws Exception the exception
 	 */
-	public static ConceptResultList searchConcepts(final Refset refset, final SearchParameters searchParameters,
+	public static ResultListConcept searchConcepts(final Refset refset, final SearchParameters searchParameters,
 			final String searchMembersMode, final int limitReturnNumber) throws Exception {
 
 		return terminologyHandler.searchConcepts(refset, searchParameters, searchMembersMode, limitReturnNumber);
@@ -2124,7 +2124,7 @@ public final class RefsetMemberService {
 	 * @return the cache collection
 	 * @throws Exception the exception
 	 */
-	public static Map<String, ConceptResultList> getCacheForTree(final String branchPath) throws Exception {
+	public static Map<String, ResultListConcept> getCacheForTree(final String branchPath) throws Exception {
 
 		if (TREE_CACHE.containsKey(branchPath)) {
 
@@ -2200,7 +2200,7 @@ public final class RefsetMemberService {
 	 * @return the cache collection
 	 * @throws Exception the exception
 	 */
-	public static Map<String, ConceptResultList> getCacheForConceptsCall(final String branchPath) throws Exception {
+	public static Map<String, ResultListConcept> getCacheForConceptsCall(final String branchPath) throws Exception {
 
 		if (CONCEPTS_CALL_CACHE.containsKey(branchPath)) {
 
@@ -2284,14 +2284,14 @@ public final class RefsetMemberService {
 
 		if (CONCEPTS_CALL_CACHE.containsKey(fromBranchPath)) {
 
-			Map<String, ConceptResultList> tempCache = CONCEPTS_CALL_CACHE.get(fromBranchPath);
+			Map<String, ResultListConcept> tempCache = CONCEPTS_CALL_CACHE.get(fromBranchPath);
 
 			if (changeEditProperty) {
 
 				String cacheString = ModelUtility.toJson(tempCache);
 				cacheString = cacheString.replace("\\\"editing\\\":" + changeEditPropertyFrom,
 						"\\\"editing\\\":" + changeEditPropertyTo);
-				tempCache = ModelUtility.fromJson(cacheString, new TypeReference<Map<String, ConceptResultList>>() {
+				tempCache = ModelUtility.fromJson(cacheString, new TypeReference<Map<String, ResultListConcept>>() {
 					/**/
 				});
 			}
@@ -2358,7 +2358,7 @@ public final class RefsetMemberService {
 	 * @return the refset member concepts
 	 * @throws Exception the exception
 	 */
-	public static ConceptResultList getMemberList(final Refset refset, final List<String> nonDefaultPreferredTerms,
+	public static ResultListConcept getMemberList(final Refset refset, final List<String> nonDefaultPreferredTerms,
 			final SearchParameters searchParameters) throws Exception {
 
 		return terminologyHandler.getMemberList(refset, nonDefaultPreferredTerms, searchParameters);
@@ -2373,17 +2373,17 @@ public final class RefsetMemberService {
 	 * @return the refset member concepts
 	 * @throws Exception the exception
 	 */
-	public static ConceptResultList getMemberTaxonomy(final Refset refset, final List<String> nonDefaultPreferredTerms,
+	public static ResultListConcept getMemberTaxonomy(final Refset refset, final List<String> nonDefaultPreferredTerms,
 			final TaxonomyParameters taxonomyParameters) throws Exception {
 
 		final String startingConceptId = taxonomyParameters.getStartingConceptId();
 		final String language = taxonomyParameters.getLanguage();
 		List<Concept> relationsList = new ArrayList<>();
 		final List<Concept> processedTreeNodes = new ArrayList<>();
-		ConceptResultList conceptResultList = new ConceptResultList();
+		ResultListConcept conceptResultList = new ResultListConcept();
 		final String branchPath = getBranchPath(refset);
 		final String cacheString = refset.getRefsetId() + taxonomyParameters.toString();
-		final Map<String, ConceptResultList> branchCache = getCacheForTree(branchPath);
+		final Map<String, ResultListConcept> branchCache = getCacheForTree(branchPath);
 
 		// check if the members call has been cached
 		if (branchCache.containsKey(cacheString)) {
@@ -2511,7 +2511,7 @@ public final class RefsetMemberService {
 	 * @return the parents
 	 * @throws Exception the exception
 	 */
-	protected static ConceptResultList getParents(final String conceptId, final Refset refset, final String language)
+	protected static ResultListConcept getParents(final String conceptId, final Refset refset, final String language)
 			throws Exception {
 
 		return terminologyHandler.getParents(conceptId, refset, language);
@@ -2527,7 +2527,7 @@ public final class RefsetMemberService {
 	 * @return the children
 	 * @throws Exception the exception
 	 */
-	protected static ConceptResultList getChildren(final String conceptId, final Refset refset, final String language)
+	protected static ResultListConcept getChildren(final String conceptId, final Refset refset, final String language)
 			throws Exception {
 
 		return terminologyHandler.getChildren(conceptId, refset, language);
@@ -2546,7 +2546,7 @@ public final class RefsetMemberService {
 	 * @return the concepts
 	 * @throws Exception the exception
 	 */
-	protected static ConceptResultList getConceptsFromSnowstorm(final String url, final Refset refset,
+	protected static ResultListConcept getConceptsFromSnowstorm(final String url, final Refset refset,
 			final ConceptLookupParameters lookupParameters, final String language) throws Exception {
 
 		return terminologyHandler.getConceptsFromSnowstorm(url, refset, lookupParameters, language);
@@ -2562,10 +2562,10 @@ public final class RefsetMemberService {
 	 * @return the concept result list
 	 * @throws Exception the exception
 	 */
-	public static ConceptResultList populateConcepts(final JsonNode root, final Refset refset,
+	public static ResultListConcept populateConcepts(final JsonNode root, final Refset refset,
 			final ConceptLookupParameters lookupParameters) throws Exception {
 
-		final ConceptResultList conceptList = new ConceptResultList();
+		final ResultListConcept conceptList = new ResultListConcept();
 		final String branchPath = getBranchPath(refset);
 		final String cacheString = refset.getRefsetId();
 		final Map<String, Set<String>> branchCache = getCacheForMemberAncestors(branchPath);
@@ -3497,7 +3497,7 @@ public final class RefsetMemberService {
 		final ResultList<UpgradeReplacementConcept> replacementConcepts = new ResultList<>();
 		searchParameters.setActiveOnly(true);
 
-		final ConceptResultList concepts = conceptDropdownSearch(user, service, refset, searchParameters, "non members",
+		final ResultListConcept concepts = conceptDropdownSearch(user, service, refset, searchParameters, "non members",
 				true);
 
 		for (final Concept concept : concepts.getItems()) {
@@ -3536,7 +3536,7 @@ public final class RefsetMemberService {
 	 * @return the upgrade replacement concept result list
 	 * @throws Exception the exception
 	 */
-	public static ConceptResultList conceptDropdownSearch(final User user, final TerminologyService service,
+	public static ResultListConcept conceptDropdownSearch(final User user, final TerminologyService service,
 			final Refset refset, final SearchParameters searchParameters, final String searchMembersMode,
 			final boolean getDescriptions) throws Exception {
 
@@ -3547,7 +3547,7 @@ public final class RefsetMemberService {
 			searchParameters.setLimit(10);
 		}
 
-		final ConceptResultList concepts = searchConcepts(refset, searchParameters, searchMembersMode,
+		final ResultListConcept concepts = searchConcepts(refset, searchParameters, searchMembersMode,
 				searchParameters.getLimit() * 6);
 
 		if (concepts.getItems().size() == 0) {

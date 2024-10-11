@@ -20,18 +20,17 @@ import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.model.ResultListConcept;
+import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ConceptLookupParameters;
-import org.ihtsdo.refsetservice.util.ConceptResultList;
-import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
-// TODO: Auto-generated Javadoc
 /**
  * Generically represents a handler for accessing terminology objects.
  */
@@ -138,7 +137,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @return the refset concepts
      * @throws Exception the exception
      */
-    public ConceptResultList getRefsetConcepts(final TerminologyService service, final String branch, final boolean areParentConcepts) throws Exception;
+    public ResultListConcept getRefsetConcepts(final TerminologyService service, final String branch, final boolean areParentConcepts) throws Exception;
 
     /**
      * Update refset concept.
@@ -277,8 +276,21 @@ public interface TerminologyServerHandler extends Configurable {
      * @return the concept result list
      * @throws Exception the exception
      */
-    public ConceptResultList searchConcepts(final Refset refset, final SearchParameters searchParameters, final String searchMembersMode,
+    public ResultListConcept searchConcepts(final Refset refset, final SearchParameters searchParameters, final String searchMembersMode,
         final int limitReturnNumber) throws Exception;
+
+    /**
+     * Returns the concepts.
+     *
+     * @param branch the branch
+     * @param terminology the terminology
+     * @param version the version
+     * @param searchParameters the search parameters
+     * @return the concept
+     * @throws Exception the exception
+     */
+    public ResultListConcept findConcepts(/*final String branch, */ final String terminology, final String version, final SearchParameters searchParameters)
+        throws Exception;
 
     /**
      * Returns the member count.
@@ -298,7 +310,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @return the member list
      * @throws Exception the exception
      */
-    public ConceptResultList getMemberList(final Refset refset, final List<String> nonDefaultPreferredTerms, final SearchParameters searchParameters)
+    public ResultListConcept getMemberList(final Refset refset, final List<String> nonDefaultPreferredTerms, final SearchParameters searchParameters)
         throws Exception;
 
     /**
@@ -320,7 +332,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @return the parents
      * @throws Exception the exception
      */
-    public ConceptResultList getParents(final String conceptId, final Refset refset, final String language) throws Exception;
+    public ResultListConcept getParents(final String conceptId, final Refset refset, final String language) throws Exception;
 
     /**
      * Returns the children.
@@ -331,7 +343,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @return the children
      * @throws Exception the exception
      */
-    public ConceptResultList getChildren(final String conceptId, final Refset refset, final String language) throws Exception;
+    public ResultListConcept getChildren(final String conceptId, final Refset refset, final String language) throws Exception;
 
     /**
      * Returns the concepts from snowstorm.
@@ -343,7 +355,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @return the concepts from snowstorm
      * @throws Exception the exception
      */
-    public ConceptResultList getConceptsFromSnowstorm(final String url, final Refset refset, final ConceptLookupParameters lookupParameters,
+    public ResultListConcept getConceptsFromSnowstorm(final String url, final Refset refset, final ConceptLookupParameters lookupParameters,
         final String language) throws Exception;
 
     /**
@@ -532,13 +544,13 @@ public interface TerminologyServerHandler extends Configurable {
      * @param mapSetCode the map set code
      * @param searchParameters the search parameters
      * @param filter the filter
-   * @param show overridden entries the show overridden entries
+     * @param showOverriddenEntries the show overridden entries
      * @param conceptCodes the concept codes
      * @return the mappings
      * @throws Exception the exception
      */
-    public ResultList<Mapping> getMappings(final String branch, final String mapSetCode, final SearchParameters searchParameters, final String filter, final boolean showOverriddenEntries,
-    	final List<String> conceptCodes) throws Exception;
+    public ResultListMapping getMappings(final String branch, final String mapSetCode, final SearchParameters searchParameters, final String filter,
+        final boolean showOverriddenEntries, final List<String> conceptCodes) throws Exception;
 
     /**
      * Returns the mapping.
@@ -546,7 +558,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @param branch the branch
      * @param mapSetCode the map set code
      * @param conceptCode the concept code
-   * @param show overridden entries the show overridden entries
+     * @param showOverriddenEntries the show overridden entries
      * @return the mapping
      * @throws Exception the exception
      */
@@ -562,7 +574,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @return the concept
      * @throws Exception the exception
      */
-    public Concept getConcept(final String branch, final String terminology, final String version, final String code) throws Exception;
+    public Concept getConcept(/*final String branch,*/ final String terminology, final String version, final String code) throws Exception;
 
     /**
      * Creates the mappings.
@@ -571,9 +583,11 @@ public interface TerminologyServerHandler extends Configurable {
      * @param branch the branch
      * @param mapSetCode the map set code
      * @param mappings the mappings
+     * @return the list
      * @throws Exception the exception
      */
-    public List<Mapping> createMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mappings) throws Exception;
+    public List<Mapping> createMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mappings)
+        throws Exception;
 
     /**
      * Update mappings.
@@ -582,7 +596,9 @@ public interface TerminologyServerHandler extends Configurable {
      * @param branch the branch
      * @param mapSetCode the map set code
      * @param mapping the mapping
+     * @return the list
      * @throws Exception the exception
      */
-    public List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mapping) throws Exception;
+    public List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mapping)
+        throws Exception;
 }

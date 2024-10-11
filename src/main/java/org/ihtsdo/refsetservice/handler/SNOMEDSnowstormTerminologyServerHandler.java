@@ -1,9 +1,9 @@
 /*
- * Copyright 2024 SNOMED International - All Rights Reserved.
+ * Copyright 2024 West Coast Informatics - All Rights Reserved.
  *
- * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * NOTICE:  All information contained herein is, and remains the property of West Coast Informatics
  * The intellectual and technical concepts contained herein are proprietary to
- * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * West Coast Informatics and may be covered by U.S. and Foreign Patents, patents in process,
  * and are protected by trade secret or copyright law.  Dissemination of this information
  * or reproduction of this material is strictly forbidden.
  */
@@ -29,14 +29,14 @@ import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.model.ResultListConcept;
+import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.util.ConceptLookupParameters;
-import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.ModelUtility;
-import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,14 +56,6 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
     /** The handler properties. */
     private Properties handlerProperties = new Properties();
 
-    /**
-     * Creates the branch.
-     *
-     * @param parentBranchPath the parent branch path
-     * @param branchName the branch name
-     * @return the string
-     * @throws Exception the exception
-     */
     /* see superclass */
     @Override
     public String createBranch(final String parentBranchPath, final String branchName) throws Exception {
@@ -164,7 +156,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     /* see superclass */
     @Override
-    public ConceptResultList getRefsetConcepts(final TerminologyService service, final String branch, final boolean areParentConcepts) throws Exception {
+    public ResultListConcept getRefsetConcepts(final TerminologyService service, final String branch, final boolean areParentConcepts) throws Exception {
 
         return SnowstormConcept.getRefsetConcepts(service, branch, areParentConcepts);
 
@@ -240,7 +232,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     /* see superclass */
     @Override
-    public ConceptResultList searchConcepts(final Refset refset, final SearchParameters searchParameters, final String searchMembersMode,
+    public ResultListConcept searchConcepts(final Refset refset, final SearchParameters searchParameters, final String searchMembersMode,
         final int limitReturnNumber) throws Exception {
 
         return SnowstormConcept.searchConcepts(refset, searchParameters, searchMembersMode, limitReturnNumber);
@@ -257,7 +249,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     /* see superclass */
     @Override
-    public ConceptResultList getMemberList(final Refset refset, final List<String> nonDefaultPreferredTerms, final SearchParameters searchParameters)
+    public ResultListConcept getMemberList(final Refset refset, final List<String> nonDefaultPreferredTerms, final SearchParameters searchParameters)
         throws Exception {
 
         return SnowstormRefsetMember.getMemberList(refset, nonDefaultPreferredTerms, searchParameters);
@@ -274,7 +266,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     /* see superclass */
     @Override
-    public ConceptResultList getParents(final String conceptId, final Refset refset, final String language) throws Exception {
+    public ResultListConcept getParents(final String conceptId, final Refset refset, final String language) throws Exception {
 
         return SnowstormConcept.getParents(conceptId, refset, language);
 
@@ -282,7 +274,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     /* see superclass */
     @Override
-    public ConceptResultList getChildren(final String conceptId, final Refset refset, final String language) throws Exception {
+    public ResultListConcept getChildren(final String conceptId, final Refset refset, final String language) throws Exception {
 
         return SnowstormConcept.getChildren(conceptId, refset, language);
 
@@ -290,7 +282,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     /* see superclass */
     @Override
-    public ConceptResultList getConceptsFromSnowstorm(final String url, final Refset refset, final ConceptLookupParameters lookupParameters,
+    public ResultListConcept getConceptsFromSnowstorm(final String url, final Refset refset, final ConceptLookupParameters lookupParameters,
         final String language) throws Exception {
 
         return SnowstormConcept.getConceptsFromSnowstorm(url, refset, lookupParameters, language);
@@ -435,8 +427,8 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     /* see superclass */
     @Override
-    public ResultList<Mapping> getMappings(final String branch, final String mapSetCode, final SearchParameters searchParameters, final String filter,
-    		final boolean showOverriddenEntries, final List<String> conceptCodes) throws Exception {
+    public ResultListMapping getMappings(final String branch, final String mapSetCode, final SearchParameters searchParameters, final String filter,
+        final boolean showOverriddenEntries, final List<String> conceptCodes) throws Exception {
 
         return SnowstormMapping.getMappings(branch, mapSetCode, searchParameters, filter, showOverriddenEntries, conceptCodes);
 
@@ -452,10 +444,18 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     /* see superclass */
     @Override
-    public Concept getConcept(final String branch, final String terminology, final String version, final String code) throws Exception {
+    public Concept getConcept(final String terminology, final String version, final String code) throws Exception {
 
-        return SnowstormConcept.getConcept(branch, terminology, version, code);
+        return SnowstormConcept.getConcept(terminology, version, code);
 
+    }
+    
+    /* see superclass */
+    @Override
+    public ResultListConcept findConcepts(final String terminology, final String version, final SearchParameters searchParameters)
+        throws Exception {
+
+        return SnowstormConcept.findConcepts(terminology, version, searchParameters);
     }
 
     /* see superclass */
@@ -487,5 +487,4 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
         return SnowstormMapping.updateMappings(mapProject, branch, mapSetCode, mappings);
     }
-
 }

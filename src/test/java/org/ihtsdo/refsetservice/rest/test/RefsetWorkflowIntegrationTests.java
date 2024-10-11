@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.ihtsdo.refsetservice.model.ResultListConcept;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.rest.test.util.EditUnitTestUtilities;
@@ -27,7 +28,6 @@ import org.ihtsdo.refsetservice.rest.test.util.WorkflowUnitTestUtilities;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
-import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -392,7 +392,7 @@ public class RefsetWorkflowIntegrationTests extends AbstractRefsetTests {
 
             /* Mimic Start Editing */
             // Verify number of members at start
-            ConceptResultList members = getGetUtil().getMembers(refsetInternalId);
+            ResultListConcept members = getGetUtil().getMembers(refsetInternalId);
             assertThat(members.size()).isEqualTo(5);
 
             // Create Edit branch

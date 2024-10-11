@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.ihtsdo.refsetservice.model.Concept;
+import org.ihtsdo.refsetservice.model.ResultListConcept;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.TypeKeyValue;
@@ -29,7 +30,6 @@ import org.ihtsdo.refsetservice.rest.test.util.ExportUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.GetUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.RefsetConceptsType;
 import org.ihtsdo.refsetservice.rest.test.util.WorkflowUnitTestUtilities;
-import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.junit.jupiter.api.BeforeEach;
@@ -553,7 +553,7 @@ public class RefsetControllerIntegrationTests extends AbstractRefsetTests {
         final String branch = "MAIN/2022-01-31";
 
         // call the api to get the refset concept list for refset parents
-        final ConceptResultList existingRefsetConcepts = getGetUtil().getRefsetConcepts(branch, RefsetConceptsType.ALL_SIMPLE_TYPE_CONCEPTS);
+        final ResultListConcept existingRefsetConcepts = getGetUtil().getRefsetConcepts(branch, RefsetConceptsType.ALL_SIMPLE_TYPE_CONCEPTS);
 
         assertThat(existingRefsetConcepts.getItems().size()).isEqualTo(19);
 
@@ -562,7 +562,7 @@ public class RefsetControllerIntegrationTests extends AbstractRefsetTests {
 
         // call the api to get the refset concept list for using as the
         // underlying concept for a new refset
-        final ConceptResultList newRefsetConcepts = getGetUtil().getRefsetConcepts(branch, RefsetConceptsType.NEW_REFSET_CONCEPTS);
+        final ResultListConcept newRefsetConcepts = getGetUtil().getRefsetConcepts(branch, RefsetConceptsType.NEW_REFSET_CONCEPTS);
         assertThat(newRefsetConcepts.getItems().size()).isEqualTo(9);
 
         final Concept newRefsetConcept = identifyMemberFromList(newRefsetConcepts, GPS_REFSET_ID);
@@ -577,7 +577,7 @@ public class RefsetControllerIntegrationTests extends AbstractRefsetTests {
     @Test
     public void testMemberList() throws Exception {
 
-        ConceptResultList members = getGetUtil().getMembers(getMainNrcTestingRefsetInternalId());
+        ResultListConcept members = getGetUtil().getMembers(getMainNrcTestingRefsetInternalId());
 
         // At time last update, 114 members were found in the refsets
         assertThat(members.size()).isEqualTo(114);
@@ -610,7 +610,7 @@ public class RefsetControllerIntegrationTests extends AbstractRefsetTests {
 
             LOG.debug("Testing term MEMBERS_SEARCH_QUERY_LIST - : " + MEMBERS_SEARCH_QUERY_LIST[i]);
 
-            final ConceptResultList members = getGetUtil().searchMembers(getMainNrcTestingRefsetInternalId(), MEMBERS_SEARCH_QUERY_LIST[i]);
+            final ResultListConcept members = getGetUtil().searchMembers(getMainNrcTestingRefsetInternalId(), MEMBERS_SEARCH_QUERY_LIST[i]);
             final Concept concept = identifyMemberFromList(members, SECOND_MAIN_NRC_REFSET_CONCEPT_ID);
 
             // Doesn't include relationships
@@ -635,7 +635,7 @@ public class RefsetControllerIntegrationTests extends AbstractRefsetTests {
 
             LOG.info("Testing term INVALID_SEARCH_TERMS - " + INVALID_SEARCH_TERMS[i]);
 
-            final ConceptResultList members = getGetUtil().searchMembers(getMainNrcTestingRefsetInternalId(), INVALID_SEARCH_TERMS[i]);
+            final ResultListConcept members = getGetUtil().searchMembers(getMainNrcTestingRefsetInternalId(), INVALID_SEARCH_TERMS[i]);
             final Concept concept = identifyMemberFromList(members, SECOND_MAIN_NRC_REFSET_CONCEPT_ID);
 
             // Doesn't include relationships
@@ -657,7 +657,7 @@ public class RefsetControllerIntegrationTests extends AbstractRefsetTests {
 
             LOG.debug("Testing term MEMBERS_SEARCH_QUERY_LIST - : " + MEMBERS_SEARCH_QUERY_LIST[i]);
 
-            final ConceptResultList members = getGetUtil().searchTaxonomy(getMainNrcTestingRefsetInternalId(), MEMBERS_SEARCH_QUERY_LIST[i]);
+            final ResultListConcept members = getGetUtil().searchTaxonomy(getMainNrcTestingRefsetInternalId(), MEMBERS_SEARCH_QUERY_LIST[i]);
             final Concept concept = identifyMemberFromList(members, SECOND_MAIN_NRC_REFSET_CONCEPT_ID);
 
             // Doesn't include membership status nor memberEffectiveTime
@@ -681,7 +681,7 @@ public class RefsetControllerIntegrationTests extends AbstractRefsetTests {
 
             LOG.info("Testing term INVALID_SEARCH_TERMS - " + INVALID_SEARCH_TERMS[i]);
 
-            final ConceptResultList members = getGetUtil().searchTaxonomy(getMainNrcTestingRefsetInternalId(), INVALID_SEARCH_TERMS[i]);
+            final ResultListConcept members = getGetUtil().searchTaxonomy(getMainNrcTestingRefsetInternalId(), INVALID_SEARCH_TERMS[i]);
             final Concept concept = identifyMemberFromList(members, SECOND_MAIN_NRC_REFSET_CONCEPT_ID);
 
             assertThat(concept).isNull();
@@ -716,7 +716,7 @@ public class RefsetControllerIntegrationTests extends AbstractRefsetTests {
             final String parentId = hierarchy.get(i);
             LOG.info("Testing parentID: " + parentId);
 
-            final ConceptResultList children = getGetUtil().getChildren(getMainNrcTestingRefsetInternalId(), parentId);
+            final ResultListConcept children = getGetUtil().getChildren(getMainNrcTestingRefsetInternalId(), parentId);
             final Concept childConcept = identifyMemberFromList(children, hierarchy.get(i + 1));
 
             assertThat(childConcept.getHasDescendantRefsetMembers()).isTrue();
@@ -735,7 +735,7 @@ public class RefsetControllerIntegrationTests extends AbstractRefsetTests {
         final Concept concept = getGetUtil().getAncestorPath(FIRST_MAIN_CORE_REFSET_CONCEPT_ID, getMainCoreTestingRefsetInternalId());
 
         // Verify that nodes in ancestor path is as expected
-        final ConceptResultList ancestorList = new ConceptResultList(concept.getParents());
+        final ResultListConcept ancestorList = new ResultListConcept(concept.getParents());
         assertThat(ancestorList.size()).isEqualTo(5);
 
         // Verify that the main concept isn't added as an ancestor of itself
@@ -842,12 +842,12 @@ public class RefsetControllerIntegrationTests extends AbstractRefsetTests {
          */
         if (!skipEarlierInactiveVersionTests) {
 
-            final ConceptResultList members = getGetUtil().searchMembers(earlierInactiveRefsetInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
+            final ResultListConcept members = getGetUtil().searchMembers(earlierInactiveRefsetInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
             final Concept member = identifyMemberFromList(members, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
             assertThat(member.isActive()).isTrue();
         }
 
-        ConceptResultList members = getGetUtil().searchMembers(inactiveRefsetVersionInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
+        ResultListConcept members = getGetUtil().searchMembers(inactiveRefsetVersionInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
         Concept member = identifyMemberFromList(members, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
         // assertThat(member).isNull();
 
@@ -857,12 +857,12 @@ public class RefsetControllerIntegrationTests extends AbstractRefsetTests {
         // Orig version was a child of INACTIVE_CONCEPT_PARENT_ID
         if (!skipEarlierInactiveVersionTests) {
 
-            final ConceptResultList children = getGetUtil().getChildren(earlierInactiveRefsetInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_PARENT_CONCEPT_ID);
+            final ResultListConcept children = getGetUtil().getChildren(earlierInactiveRefsetInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_PARENT_CONCEPT_ID);
             member = identifyMemberFromList(children, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
             assertThat(member.isActive()).isTrue();
         }
 
-        ConceptResultList children = null;
+        ResultListConcept children = null;
 
         // This should throw an exception to detect if we get here somehow
         try {
@@ -929,7 +929,7 @@ public class RefsetControllerIntegrationTests extends AbstractRefsetTests {
      * @param conceptId the concept id
      * @return the concept
      */
-    private Concept identifyMemberFromList(final ConceptResultList concepts, final String conceptId) {
+    private Concept identifyMemberFromList(final ResultListConcept concepts, final String conceptId) {
         /*
          * Supporting Methods - return the concept from the list that matches with the conceptId specified
          */

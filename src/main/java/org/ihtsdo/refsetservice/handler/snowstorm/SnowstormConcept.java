@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -42,6 +43,7 @@ import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RestException;
+import org.ihtsdo.refsetservice.model.ResultListConcept;
 import org.ihtsdo.refsetservice.model.SnowstormFhirCodeSystem;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
@@ -53,7 +55,6 @@ import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
 import org.ihtsdo.refsetservice.util.CachingUtility;
 import org.ihtsdo.refsetservice.util.ConceptLookupParameters;
-import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
@@ -89,52 +90,179 @@ public class SnowstormConcept extends SnowstormAbstract {
     /** The Constant SNOWSTORM_CONCEPTS_CACHE. */
     private static final String SNOWSTORM_CONCEPTS_CACHE = "snowstorm_concepts";
 
+    /** The Constant SNOWSTORM_TERMINOLOGY_CACHE. */
+    private static final String SNOWSTORM_TERMINOLOGY_CACHE = "snowstorm_terminology";
+
     /**
      * Gets the concept.
      *
-     * @param branch the branch
      * @param terminology the terminology
      * @param version the version
      * @param code the code
      * @return the concept
      * @throws Exception the exception
      */
-    public static Concept getConcept(final String branch, final String terminology, final String version, final String code) throws Exception {
+    public static Concept getConcept(final String terminology, final String version, final String code) throws Exception {
 
-        if (StringUtils.isEmpty(code)) {
-            LOG.error("getConcept: code is empty for branch:{}, terminology:{}, version:{}", branch, terminology, version);
+        if (StringUtils.isBlank(code)) {
             return null;
         }
 
-        final String cacheKey = (branch == null ? "" : branch).concat("-").concat(terminology == null ? "" : terminology).concat("-").concat(version == null ? "" : version).concat("-").concat(code == null ? "" : code);
-        final Optional<Concept> cachedConcept = CachingUtility.getObject(SNOWSTORM_CONCEPTS_CACHE, cacheKey, Concept.class);
-        if (cachedConcept.isPresent()) {
-            return cachedConcept.get();
+        if (StringUtils.isBlank(terminology)) {
+            throw new Exception("terminology are required parameters. Must not be null or empty");
         }
 
-        final Concept concept = getConceptFromSnowstorm(branch, terminology, version, code);
-        if (concept != null) {
-            CachingUtility.cacheObject(SNOWSTORM_CONCEPTS_CACHE, cacheKey, Concept.class, concept);
+        String newVersion = version;
+        if (StringUtils.isAnyBlank(version)) {
+            if (terminology.trim().toUpperCase().startsWith("SNOMEDCT")) {
+                newVersion = "2024-04-15";
+            } else if (terminology.trim().toUpperCase().startsWith("ICD-10-NO")) {
+                newVersion = "20240723";
+            }
         }
 
-        return concept;
+        final String conceptCacheKey = getConceptCacheKey(terminology, newVersion, code);
 
+        final boolean exists = CachingUtility.containsObjects(SNOWSTORM_CONCEPTS_CACHE, conceptCacheKey);
+        if (exists) {
+            return CachingUtility.getObject(SNOWSTORM_CONCEPTS_CACHE, conceptCacheKey, Concept.class).get();
+        }
+
+        if (terminology.trim().toUpperCase().startsWith("SNOMEDCT")) {
+
+            final Concept concept = getConceptFromSnowstorm(terminology, newVersion, code);
+            if (concept != null) {
+                CachingUtility.cacheObject(SNOWSTORM_CONCEPTS_CACHE, conceptCacheKey, Concept.class, concept);
+            }
+            return concept;
+
+        } else {
+
+            final Concept concept = getConceptByCodeFhirApi(terminology, newVersion, code);
+            if (concept != null) {
+                CachingUtility.cacheObject(SNOWSTORM_CONCEPTS_CACHE, conceptCacheKey, Concept.class, concept);
+            }
+            return concept;
+        }
+
+    }
+
+    /**
+     * Find concepts.
+     *
+     * @param terminology the terminology
+     * @param version the version
+     * @param searchParameters the search parameters
+     * @return the result list concept
+     * @throws Exception the exception
+     */
+    public static ResultListConcept findConcepts(final String terminology, final String version, final SearchParameters searchParameters) throws Exception {
+
+        if (StringUtils.isAnyBlank(terminology, version)) {
+            throw new Exception("terminology and version are required parameters. Must not be null or empty.");
+        }
+
+        if (searchParameters == null) {
+            throw new Exception("searchParameters is required parameter. Must not be null.");
+        }
+
+        final String terminologyCacheKey = getTerminologyCacheKey(terminology, version);
+
+        if (terminology.trim().toUpperCase().startsWith("SNOMEDCT")) {
+            final boolean exists = CachingUtility.containsObjects(SNOWSTORM_TERMINOLOGY_CACHE, terminologyCacheKey);
+
+            if (!exists) {
+                cacheSnowstormConcepts(terminology, version);
+            }
+        } else {
+            final boolean exists = CachingUtility.containsObjects(SNOWSTORM_TERMINOLOGY_CACHE, terminologyCacheKey);
+
+            if (!exists) {
+                getCodeSystemsFromFhir();
+                final SnowstormFhirCodeSystem snowstormFhirCodeSystem = codeSystems.get(terminology + "_" + version);
+                cacheSnowstormConceptsFhirApi(snowstormFhirCodeSystem);
+            }
+        }
+
+        return findConceptsFromCache(terminologyCacheKey, searchParameters);
+    }
+
+    /**
+     * Cache concepts.
+     *
+     * @param terminology the terminology
+     * @param version the version
+     * @throws Exception the exception
+     */
+    private static void cacheSnowstormConcepts(final String terminology, final String version) throws Exception {
+
+        final long start = System.currentTimeMillis();
+
+        boolean done = false;
+        final int batchSizeLimit = 10000;
+        String searchAfter = "";
+
+        final String branch = "MAIN/" + terminology + "/" + version;
+        final String terminologyCacheKey = getTerminologyCacheKey(terminology, version);
+        final List<Concept> terminologyConcepts = new ArrayList<>();
+
+        while (!done) {
+
+            final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/concepts?activeFilter=true&termActive=true&limit=" + batchSizeLimit
+                + (StringUtils.isNotEmpty(searchAfter) ? "&searchAfter=" + searchAfter : "");
+
+            LOG.info("cacheConcepts url: " + targetUri);
+
+            try (final Response response = SnowstormConnection.getResponse(targetUri)) {
+
+                if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                    throw new Exception(
+                        "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
+                }
+
+                final ObjectMapper mapper = new ObjectMapper();
+                final String resultString = response.readEntity(String.class);
+                response.close();
+
+                final JsonNode doc = mapper.readTree(resultString);
+                final JsonNode conceptNodeBatch = doc.get("items");
+                final Iterator<JsonNode> conceptIterator = conceptNodeBatch.iterator();
+
+                // parse items to retrieve matching concept
+                while (conceptIterator.hasNext()) {
+
+                    final JsonNode conceptNode = conceptIterator.next();
+                    final Concept concept = buildConcept(conceptNode);
+                    final String cacheKey = getConceptCacheKey(terminology, version, concept.getCode());
+                    CachingUtility.cacheObject(SNOWSTORM_CONCEPTS_CACHE, cacheKey, Concept.class, concept);
+                    terminologyConcepts.add(concept);
+                }
+
+                if (conceptNodeBatch.size() < batchSizeLimit) {
+                    done = true;
+                } else {
+                    searchAfter = (doc.has("searchAfter") ? doc.get("searchAfter").asText() : "");
+                }
+            }
+        }
+        CachingUtility.cacheObject(SNOWSTORM_TERMINOLOGY_CACHE, terminologyCacheKey, List.class, terminologyConcepts);
+        LOG.info("cacheConcepts took: " + (System.currentTimeMillis() - start) + " ms for branch: " + branch + ", terminology: " + terminology + ", version: "
+            + version);
     }
 
     /**
      * Gets the concept.
      *
-     * @param branch the branch
      * @param terminology the terminology
      * @param version the version
      * @param code the code
      * @return the concept
      * @throws Exception the exception
      */
-    private static Concept getConceptFromSnowstorm(final String branch, final String terminology, final String version, final String code) throws Exception {
+    private static Concept getConceptFromSnowstorm(final String terminology, final String version, final String code) throws Exception {
 
-        if ("ICD10NO".equals(terminology)) {
-            final Concept concept = getConceptByCodeFhirApi(ICD10NO_NULL_20240723, code);
+        if ("ICD-10-NO".equals(terminology)) {
+            final Concept concept = getConceptByCodeFhirApi(terminology, version, code);
             return concept;
 
         } else if ("ICPC2NO".equals(terminology)) {
@@ -151,8 +279,9 @@ public class SnowstormConcept extends SnowstormAbstract {
 
         // Connect to snowstorm
 
+        final String branch = "MAIN/" + terminology + "/" + version;
         final String targetUri =
-            SnowstormConnection.getBaseUrl() + branch + "/concepts?activeFilter=true&includeLeafFlag=false&form=inferred&conceptIds=" + code;
+            SnowstormConnection.getBaseUrl().concat(branch).concat("/concepts?activeFilter=true&includeLeafFlag=false&form=inferred&conceptIds=").concat(code);
         LOG.info("getSnowstormConcept url: " + targetUri);
 
         try (final Response response = SnowstormConnection.getResponse(targetUri)) {
@@ -244,66 +373,6 @@ public class SnowstormConcept extends SnowstormAbstract {
         return moduleNames;
     }
 
-    // /**
-    // * Gets the module names.
-    // *
-    // * @param project the project
-    // * @return the module names
-    // * @throws Exception the exception
-    // */
-    // public static Map<String, String> getModuleNames(final Project project) throws Exception {
-    //
-    // // Create Snowstorm URL
-    // final String conceptSearchUrl =
-    // SnowstormConnection.getBaseUrl() + project.getEdition().getBranch() + "/concepts/search";
-    // final String bodyBase = "{\"limit\": 1000, ";
-    // String bodyConceptIds = "\"conceptIds\":[";
-    //
-    // final Map<String, String> moduleNames = new HashMap<>();
-    //
-    // for (final String moduleId : project.getEdition().getModules()) {
-    // bodyConceptIds += "\"" + moduleId + "\",";
-    // }
-    //
-    // bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",") + "]";
-    //
-    // final String searchBody = bodyBase + bodyConceptIds + "}";
-    // LOG.debug("getModuleNames URL: " + conceptSearchUrl);
-    // LOG.debug("getModuleNames BODY: " + searchBody);
-    //
-    // try (final Response response = SnowstormConnection.postResponse(conceptSearchUrl, searchBody)) {
-    //
-    // final String resultString = response.readEntity(String.class);
-    //
-    // // Only process payload if Rest call is successful
-    // if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-    //
-    // throw new Exception("call to url '" + conceptSearchUrl
-    // + "' for module name lookup wasn't successful. Status: " + response.getStatus()
-    // + " Message: " + response.getStatusInfo().getReasonPhrase());
-    // }
-    //
-    // final ObjectMapper mapper = new ObjectMapper();
-    // final JsonNode root = mapper.readTree(resultString.toString());
-    // final Iterator<JsonNode> iterator = root.get("items").iterator();
-    //
-    // while (iterator != null && iterator.hasNext()) {
-    //
-    // final JsonNode conceptNode = iterator.next();
-    // final String conceptId = conceptNode.get("conceptId").asText();
-    // String name = "";
-    //
-    // if (conceptNode.get("fsn") != null && conceptNode.get("fsn").get("term") != null) {
-    // name = conceptNode.get("fsn").get("term").asText();
-    // }
-    //
-    // moduleNames.put(conceptId, name);
-    // }
-    // }
-    //
-    // return moduleNames;
-    // }
-
     /**
      * Builds the concept.
      *
@@ -318,7 +387,7 @@ public class SnowstormConcept extends SnowstormAbstract {
         concept.setCode(conceptNode.get("id").asText());
         concept.setDefined(!"PRIMITIVE".equals(conceptNode.get("definitionStatus").asText()));
 
-        if (conceptNode.has("pt")) {
+        if (conceptNode.has("pt") && conceptNode.get("pt").has("term")) {
             concept.setName(conceptNode.get("pt").get("term").asText());
         }
 
@@ -338,9 +407,9 @@ public class SnowstormConcept extends SnowstormAbstract {
      * @return the refset concepts
      * @throws Exception the exception
      */
-    public static ConceptResultList getRefsetConcepts(final TerminologyService service, final String branch, final boolean areParentConcepts) throws Exception {
+    public static ResultListConcept getRefsetConcepts(final TerminologyService service, final String branch, final boolean areParentConcepts) throws Exception {
 
-        final ConceptResultList results = new ConceptResultList();
+        final ResultListConcept results = new ResultListConcept();
         final Set<String> existingRefsetIds = new HashSet<>();
         final String ecl = StringUtility.encodeValue(QueryParserBase.escape(areParentConcepts ? "<<" : "<" + RefsetService.SIMPLE_TYPE_REFERENCE_SET));
         final List<Edition> editions = RefsetService.getEditionForBranch(branch);
@@ -359,8 +428,7 @@ public class SnowstormConcept extends SnowstormAbstract {
         LOG.debug("getRefsetConcepts URL: " + url);
 
         // If we are looking for concepts to represent a refset, then we are
-        // filtering
-        // out those concept that are currently refsets
+        // filtering out those concept that are currently refsets
         if (!areParentConcepts) {
 
             // get all the existing refsets for latest branch version
@@ -368,12 +436,9 @@ public class SnowstormConcept extends SnowstormAbstract {
             final ResultList<Refset> refsets = service.find(query, null, Refset.class, null);
 
             for (final Refset refset : refsets.getItems()) {
-
                 if (!existingRefsetIds.contains(refset.getRefsetId())) {
-
                     existingRefsetIds.add(refset.getRefsetId());
                 }
-
             }
 
             LOG.debug("getRefsetConcepts existingRefsetIds: " + existingRefsetIds);
@@ -392,6 +457,7 @@ public class SnowstormConcept extends SnowstormAbstract {
 
             final ObjectMapper mapper = new ObjectMapper();
             final String resultString = response.readEntity(String.class);
+            response.close();
             final JsonNode root = mapper.readTree(resultString.toString());
             final Iterator<JsonNode> iterator = root.get("items").iterator();
 
@@ -560,10 +626,8 @@ public class SnowstormConcept extends SnowstormAbstract {
         for (final Concept concept : conceptsToProcess) {
 
             if (firstTime) {
-
                 firstTime = false;
             } else {
-
                 conceptIds.append(",");
             }
 
@@ -679,7 +743,7 @@ public class SnowstormConcept extends SnowstormAbstract {
 
                 // get the ancestor list and reverse the order so the taxonomy
                 // root is first
-                final ConceptResultList ancestorList = RefsetMemberService.populateConcepts(ancestorPathNode, refset, lookupParameters);
+                final ResultListConcept ancestorList = RefsetMemberService.populateConcepts(ancestorPathNode, refset, lookupParameters);
                 final List<Concept> parents = ancestorList.getItems();
                 Collections.reverse(parents);
 
@@ -703,10 +767,10 @@ public class SnowstormConcept extends SnowstormAbstract {
      * @return the concept result list
      * @throws Exception the exception
      */
-    public static ConceptResultList searchConcepts(final Refset refset, final SearchParameters searchParameters, final String searchMembersMode,
+    public static ResultListConcept searchConcepts(final Refset refset, final SearchParameters searchParameters, final String searchMembersMode,
         final int limitReturnNumber) throws Exception {
 
-        final ConceptResultList returnConcepts = new ConceptResultList();
+        final ResultListConcept returnConcepts = new ResultListConcept();
         final ObjectMapper mapper = new ObjectMapper();
         final String encodedCaret = "%5E";
         final String encodedSpace = "%20";
@@ -966,7 +1030,7 @@ public class SnowstormConcept extends SnowstormAbstract {
             lookupParameters.setGetRoleGroups(true);
             lookupParameters.setSingleConceptRequest(true);
 
-            final ConceptResultList conceptResultList = getConceptsFromSnowstorm(url, refset, lookupParameters, null);
+            final ResultListConcept conceptResultList = getConceptsFromSnowstorm(url, refset, lookupParameters, null);
 
             if (conceptResultList.size() != 1) {
 
@@ -1001,7 +1065,7 @@ public class SnowstormConcept extends SnowstormAbstract {
      * @return the parents
      * @throws Exception the exception
      */
-    public static ConceptResultList getParents(final String conceptId, final Refset refset, final String language) throws Exception {
+    public static ResultListConcept getParents(final String conceptId, final Refset refset, final String language) throws Exception {
 
         try {
 
@@ -1012,7 +1076,7 @@ public class SnowstormConcept extends SnowstormAbstract {
             final ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
             lookupParameters.setGetFsn(true);
 
-            final ConceptResultList results = getConceptsFromSnowstorm(url, refset, lookupParameters, language);
+            final ResultListConcept results = getConceptsFromSnowstorm(url, refset, lookupParameters, language);
 
             // sort the results
             Collections.sort(results.getItems(), (object1, object2) -> (object1.compareTo(object2)));
@@ -1039,7 +1103,7 @@ public class SnowstormConcept extends SnowstormAbstract {
      * @return the children
      * @throws Exception the exception
      */
-    public static ConceptResultList getChildren(final String conceptId, final Refset refset, final String language) throws Exception {
+    public static ResultListConcept getChildren(final String conceptId, final Refset refset, final String language) throws Exception {
 
         try {
 
@@ -1073,16 +1137,10 @@ public class SnowstormConcept extends SnowstormAbstract {
      * @return the concepts from snowstorm
      * @throws Exception the exception
      */
-    public static ConceptResultList getConceptsFromSnowstorm(final String url, final Refset refset, final ConceptLookupParameters lookupParameters,
+    public static ResultListConcept getConceptsFromSnowstorm(final String url, final Refset refset, final ConceptLookupParameters lookupParameters,
         final String language) throws Exception {
 
-        String acceptLanguage = language;
-
-        if (acceptLanguage == null) {
-
-            acceptLanguage = SnowstormConnection.DEFAULT_ACCECPT_LANGUAGES;
-        }
-
+        final String acceptLanguage = (language != null) ? language : SnowstormConnection.DEFAULT_ACCECPT_LANGUAGES;
         try (final Response response = SnowstormConnection.getResponse(url, acceptLanguage)) {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
@@ -1289,7 +1347,7 @@ public class SnowstormConcept extends SnowstormAbstract {
                     hasMorePages = false;
                 }
 
-                final ConceptResultList currentMemberBatch = RefsetMemberService.populateConcepts(root, upgradeRefset, lookupParameters);
+                final ResultListConcept currentMemberBatch = RefsetMemberService.populateConcepts(root, upgradeRefset, lookupParameters);
 
                 // filter for inactive concepts
                 for (final Concept concept : currentMemberBatch.getItems()) {
@@ -1944,69 +2002,208 @@ public class SnowstormConcept extends SnowstormAbstract {
     /**
      * Gets the concept by code fhir api.
      *
-     * @param fhirCodeSystem the fhir code system
+     * @param terminology the terminology
+     * @param version the version
      * @param code the code
      * @return the concept by code fhir api
      * @throws Exception the exception
      */
-    private static Concept getConceptByCodeFhirApi(final String fhirCodeSystem, final String code) throws Exception {
+    public static Concept getConceptByCodeFhirApi(final String terminology, final String version, final String code) throws Exception {
 
-        if (StringUtils.isAnyBlank(fhirCodeSystem, code)) {
-            throw new Exception("fhirCodesytem and code are required parmater. Received fhirCodesytem:" + fhirCodeSystem + ", code: " + code);
+        if (StringUtils.isAnyBlank(terminology, version, code)) {
+            throw new Exception("Terminology, version and code are required parameters. Must not be null or empty.");
         }
 
         getCodeSystemsFromFhir();
-        final SnowstormFhirCodeSystem codeSystem = codeSystems.get(fhirCodeSystem);
+
+        final String terminologyCacheKey = getTerminologyCacheKey(terminology, version);
+
+        final boolean exists = CachingUtility.containsObjects(SNOWSTORM_TERMINOLOGY_CACHE, terminologyCacheKey);
+
+        if (exists) {
+
+            @SuppressWarnings("rawtypes")
+            final Optional<List> list = CachingUtility.getObject(SNOWSTORM_TERMINOLOGY_CACHE, terminologyCacheKey, List.class);
+            @SuppressWarnings("unchecked")
+            final List<Concept> terminologyConcepts = list.get();
+
+            return terminologyConcepts.stream().filter(concept -> concept.getCode().equals(code)).findFirst().orElse(null);
+
+        }
+
+        return null;
+    }
+
+    /**
+     * Find concepts fhir api.
+     *
+     * @param terminology the terminology
+     * @param version the version
+     * @param searchParameters the search parameters
+     * @return the result list concept
+     * @throws Exception the exception
+     */
+    private static ResultListConcept findConceptsFhirApi(final String terminology, final String version, final SearchParameters searchParameters)
+        throws Exception {
+
+        if (StringUtils.isAnyBlank(terminology, version)) {
+            throw new Exception("Terminology and version are required parameters. Must not be null or empty.");
+        }
+
+        if (searchParameters == null) {
+            throw new Exception("searchParameters is required parameter. Must not be null.");
+        }
+
+        // get concept list from cache, used fhircodesystem as key
+        getCodeSystemsFromFhir();
+        final SnowstormFhirCodeSystem snowstormFhirCodeSystem = codeSystems.get(terminology + "_" + version);
+        final String terminologyCacheKey = getTerminologyCacheKey(terminology, version);
+
+        final boolean exists = CachingUtility.containsObjects(SNOWSTORM_TERMINOLOGY_CACHE, terminologyCacheKey);
+
+        if (!exists) {
+            cacheSnowstormConceptsFhirApi(snowstormFhirCodeSystem);
+        }
+
+        return findConceptsFromCache(terminologyCacheKey, searchParameters);
+
+    }
+
+    /**
+     * Find concepts.
+     *
+     * @param cacheKey the cache key
+     * @param searchParameters the search parameters
+     * @return the result list concept
+     */
+    private static ResultListConcept findConceptsFromCache(final String cacheKey, final SearchParameters searchParameters) {
+
+        final long start = System.currentTimeMillis();
+        final String query = searchParameters.getQuery();
+
+        @SuppressWarnings("rawtypes")
+        final Optional<List> list = CachingUtility.getObject(SNOWSTORM_TERMINOLOGY_CACHE, cacheKey, List.class);
+        @SuppressWarnings("unchecked")
+        final List<Concept> terminologyConcepts = list.get();
+        LOG.debug("findConcepts: terminologyCacheKey: {}, list size:", cacheKey, terminologyConcepts.size());
+
+        List<Concept> matchingConcepts = null;
+        if (query.toLowerCase().contains("code:")) {
+            final String code = query.replace("code:", "").trim();
+            matchingConcepts = terminologyConcepts.stream().filter(concept -> concept.getCode().startsWith(code)).collect(Collectors.toList());
+            matchingConcepts.sort(Comparator.comparing(Concept::getCode));
+
+        } else if (query.toLowerCase().contains("name:")) {
+            final String name = query.replace("name:", "").trim();
+            matchingConcepts = terminologyConcepts.stream()
+                .filter(concept -> (concept.getName() != null && concept.getName().toLowerCase().contains(name.toLowerCase()))).collect(Collectors.toList());
+            matchingConcepts.sort(Comparator.comparing(Concept::getName));
+        } else {
+            matchingConcepts = terminologyConcepts.stream().filter(
+                concept -> (concept.getName() != null && concept.getName().toLowerCase().contains(query.toLowerCase())) || concept.getCode().startsWith(query))
+                .collect(Collectors.toList());
+            matchingConcepts.sort(Comparator.comparing(Concept::getName));
+        }
+
+        // apply offset and limit from search parameters
+        final List<Concept> matchingConceptsPage = new ArrayList<>();
+        if (searchParameters.getOffset() != null) {
+            for (; searchParameters.getOffset() < matchingConcepts.size() && matchingConceptsPage.size() < searchParameters.getLimit(); searchParameters
+                .setOffset(searchParameters.getOffset() + 1)) {
+                matchingConceptsPage.add(matchingConcepts.get(searchParameters.getOffset()));
+            }
+        }
+
+        final ResultListConcept results = new ResultListConcept();
+        results.setItems(matchingConceptsPage);
+        results.setParameters(searchParameters);
+        results.setTotal(matchingConcepts.size());
+        results.setOffset(searchParameters.getOffset());
+
+        LOG.info("findConcepts took: " + (System.currentTimeMillis() - start) + " ms for cacheKey: " + cacheKey + ", query: " + query);
+        return results;
+
+    }
+
+    /**
+     * Gets the all concepts by code system fhir api.
+     *
+     * @param codeSystem the code system
+     * @return the all concepts by code system fhir api
+     * @throws Exception the exception
+     */
+    private static void cacheSnowstormConceptsFhirApi(final SnowstormFhirCodeSystem codeSystem) throws Exception {
+
+        if (codeSystem == null) {
+            throw new Exception("SnowstormFhirCodeSystem is required parameter. Must not be null or empty.");
+        }
+
+        final long start = System.currentTimeMillis();
+
         final String terminology = codeSystem.getName();
         final String version = codeSystem.getVersion();
 
-        // example: https://host:port/fhir/CodeSystem/icd10no_null_20240723/$lookup?code=A00
-        final String targetUri = SnowstormConnection.getBaseUrl() + "fhir/CodeSystem/" + fhirCodeSystem + "/$lookup?code=" + code.trim() + "&_format=json";
+        final List<Concept> concepts = new ArrayList<>();
+        final int fetchSize = 10000;
+        int offset = 0;
+        boolean moreToFetch = true;
 
-        LOG.info("getFhirConceptByCode url: " + targetUri);
-        try (final Response response = SnowstormConnection.getResponse(targetUri)) {
+        final String terminologyCacheKey = getTerminologyCacheKey(terminology, version);
 
-            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+        // example: https://host:port/fhir/ValueSet/$expand?filter=Annen&offset=0&count=10
+        // &url=https%3A%2F%2Ffat.terminologi.ehelse.no%2Findex.html%23%2Ficd10no%3Ffhir_vs&_format=json
+        final String encodedUrl = URLEncoder.encode(codeSystem.getUrl().concat("?fhir_vs"), StandardCharsets.UTF_8);
 
-                if (response.getStatus() != 404) {
+        while (moreToFetch) {
+
+            final String targetUri = SnowstormConnection.getBaseUrl().concat("fhir/ValueSet/$expand?").concat("offset=").concat(String.valueOf(offset))
+                .concat("&count=").concat(String.valueOf(fetchSize)).concat("&url=").concat(encodedUrl).concat("&_format=json");
+
+            LOG.info("getFhirConceptByName url: " + targetUri);
+            try (final Response response = SnowstormConnection.getResponse(targetUri)) {
+
+                if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+
                     throw new Exception(
                         "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
                 }
 
-                LOG.info("Concept not found.  fhirCodesytem:{}, terminology:{}, version:{}, code:{} ", fhirCodeSystem, terminology, version, code);
-                final Concept concept = new Concept();
-                concept.setId(code);
-                concept.setCode(code);
-                concept.setTerminology(terminology);
-                concept.setVersion(version);
-                concept.setName("NOT FOUND");
+                final String resultString = response.readEntity(String.class);
+                response.close();
 
-                return concept;
+                final ObjectMapper mapper = new ObjectMapper();
+                final JsonNode root = mapper.readTree(resultString);
+                final JsonNode expansionNode = root.get("expansion");
+
+                final int totalConcepts = expansionNode.get("total").asInt();
+
+                if (totalConcepts == 0) {
+                    moreToFetch = false;
+                }
+
+                final JsonNode containsNode = expansionNode.get("contains");
+
+                for (final JsonNode conceptNode : containsNode) {
+
+                    final Concept concept = new Concept();
+                    concept.setId(conceptNode.get("code").asText());
+                    concept.setCode(conceptNode.get("code").asText());
+                    concept.setName(conceptNode.get("display").asText());
+                    concept.setTerminology(terminology);
+                    concept.setVersion(version);
+                    concepts.add(concept);
+                    final String cacheKey = getConceptCacheKey(terminology, version, concept.getCode());
+                    CachingUtility.cacheObject(SNOWSTORM_CONCEPTS_CACHE, cacheKey, Concept.class, concept);
+                }
+
+                offset += fetchSize;
+                moreToFetch = containsNode.size() == fetchSize;
             }
-
-            final String resultString = response.readEntity(String.class);
-            response.close();
-
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString);
-            final JsonNode parameterNode = root.get("parameter");
-            final Concept concept = new Concept();
-            concept.setId(code);
-            concept.setCode(code);
-            for (final JsonNode node : parameterNode) {
-                if ("display".equals(node.get("name").asText())) {
-                    concept.setName(node.get("valueString").asText());
-                }
-                if ("system".equals(node.get("name").asText())) {
-                    concept.setTerminology(node.get("valueString").asText());
-                }
-                if ("version".equals(node.get("name").asText())) {
-                    concept.setVersion(node.get("valueString").asText());
-                }
-            }
-
-            return concept;
         }
+
+        CachingUtility.cacheObject(SNOWSTORM_TERMINOLOGY_CACHE, terminologyCacheKey, List.class, concepts);
+        LOG.info("cacheConcepts took: " + (System.currentTimeMillis() - start) + " ms for terminology: " + terminology + ", version: " + version);
+
     }
 
     /**
@@ -2020,7 +2217,7 @@ public class SnowstormConcept extends SnowstormAbstract {
     public static List<Concept> getConceptsByNameFhirApi(final String fhirCodeSystem, final String name) throws Exception {
 
         if (StringUtils.isBlank(name)) {
-            throw new Exception("Name is required parameter.");
+            throw new Exception("Name is required parameter. Must not be null or empty.");
         }
 
         getCodeSystemsFromFhir();
@@ -2141,21 +2338,20 @@ public class SnowstormConcept extends SnowstormAbstract {
                 if (resourceNode.has("content"))
                     codeSystem.setContent(resourceNode.get("content").asText());
 
-                codeSystems.put(codeSystem.getId(), codeSystem);
-
+                codeSystems.put(codeSystem.getName() + "_" + codeSystem.getVersion(), codeSystem);
             }
         }
     }
 
     /**
-     * Gets the code systems.
+     * Gets the code systems from FHIR API.
      *
      * @return the code systems
      * @throws Exception the exception
      */
     private static String getCodeSystemsFromFhirApi() throws Exception {
 
-        // https://snowstorm.terminology.tools/fhir/CodeSystem
+        // https://host:port/fhir/CodeSystem
         final String targetUri = SnowstormConnection.getBaseUrl() + "fhir/CodeSystem?_format=json";
         String resultString = "";
 
@@ -2163,7 +2359,6 @@ public class SnowstormConcept extends SnowstormAbstract {
         try (final Response response = SnowstormConnection.getResponse(targetUri)) {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-
                 throw new Exception(
                     "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
             }
@@ -2174,7 +2369,31 @@ public class SnowstormConcept extends SnowstormAbstract {
         }
 
         return resultString;
+    }
 
+    /**
+     * Gets the concept cache key.
+     *
+     * @param terminology the terminology
+     * @param version the version
+     * @param code the code
+     * @return the concept cache key
+     */
+    private static String getConceptCacheKey(final String terminology, final String version, final String code) {
+
+        return getTerminologyCacheKey(terminology, version) + "_" + code.trim();
+    }
+
+    /**
+     * Gets the terminology cache key.
+     *
+     * @param terminology the terminology
+     * @param version the version
+     * @return the terminology cache key
+     */
+    private static String getTerminologyCacheKey(final String terminology, final String version) {
+
+        return terminology.trim() + "_" + version.trim();
     }
 
 }
