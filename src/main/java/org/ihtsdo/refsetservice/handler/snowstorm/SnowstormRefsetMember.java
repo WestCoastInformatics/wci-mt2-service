@@ -29,6 +29,7 @@ import javax.ws.rs.core.Response.Status.Family;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.Concept;
+import org.ihtsdo.refsetservice.model.ResultListConcept;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
@@ -36,7 +37,6 @@ import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.util.ConceptLookupParameters;
-import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,7 +99,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
       final ObjectMapper mapper = new ObjectMapper();
       final JsonNode root = mapper.readTree(resultString.toString());
 
-      final ConceptResultList conceptList =
+      final ResultListConcept conceptList =
           RefsetMemberService.populateConcepts(root, refset, lookupParameters);
       concepts.addAll(conceptList.getItems());
 
@@ -126,15 +126,15 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
    * @return the refset members
    * @throws Exception the exception
    */
-  public static ConceptResultList getMemberList(final Refset refset,
+  public static ResultListConcept getMemberList(final Refset refset,
     final List<String> nonDefaultPreferredTerms, final SearchParameters searchParameters)
     throws Exception {
 
     // 2 Snowstorm calls: 1) Memberlist and 2) Descriptions
-    final ConceptResultList members = new ConceptResultList();
+    final ResultListConcept members = new ResultListConcept();
     final String branchPath = RefsetMemberService.getBranchPath(refset);
     final String cacheString = refset.getRefsetId() + searchParameters.toString() + "true";
-    final Map<String, ConceptResultList> branchCache =
+    final Map<String, ResultListConcept> branchCache =
         RefsetMemberService.getCacheForConceptsCall(branchPath);
     final String refsetId = refset.getRefsetId();
 
@@ -158,7 +158,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
         searchParameters.setQuery("");
       }
 
-      ConceptResultList currentList = new ConceptResultList();
+      ResultListConcept currentList = new ResultListConcept();
 
       // if search term is indicated, find members that match search term
       if (searchParameters.getQuery() != null && !searchParameters.getQuery().isEmpty()) {
@@ -231,7 +231,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
               hasMorePages = false;
             }
 
-            final ConceptResultList currentMemberBatch =
+            final ResultListConcept currentMemberBatch =
                 RefsetMemberService.populateConcepts(root, refset, lookupParameters);
             currentList.getItems().addAll(currentMemberBatch.getItems());
           }
@@ -366,7 +366,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
 
               final ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
               lookupParameters.setGetMembershipInformation(true);
-              final ConceptResultList resultList = SnowstormConcept
+              final ResultListConcept resultList = SnowstormConcept
                   .getConceptsFromSnowstorm(memberUrl, refset, lookupParameters, null);
 
               for (final Concept resultConcept : resultList.getItems()) {

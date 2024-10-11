@@ -16,13 +16,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.ihtsdo.refsetservice.model.Concept;
+import org.ihtsdo.refsetservice.model.ResultListConcept;
 import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.test.CopyConstructorTester;
 import org.ihtsdo.refsetservice.test.EqualsHashcodeTester;
 import org.ihtsdo.refsetservice.test.GetterSetterTester;
 import org.ihtsdo.refsetservice.test.ProxyTester;
 import org.ihtsdo.refsetservice.test.SerializationTester;
-import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,7 +32,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 /**
- * Unit test for {@link ConceptResultList}.
+ * Unit test for {@link ResultListConcept}.
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -43,7 +43,7 @@ public class ConceptResultListUnitTest extends BaseTest {
     private static final Logger LOG = LoggerFactory.getLogger(ConceptResultListUnitTest.class);
 
     /** The model object to test. */
-    private ConceptResultList object;
+    private ResultListConcept object;
 
     /** The c 1. */
     private List<Concept> c1;
@@ -65,7 +65,7 @@ public class ConceptResultListUnitTest extends BaseTest {
     @BeforeEach
     public void setup() throws Exception {
 
-        object = new ConceptResultList();
+        object = new ResultListConcept();
 
         final ProxyTester tester = new ProxyTester(new SearchParameters());
         sp1 = (SearchParameters) tester.createObject(1);
@@ -142,7 +142,7 @@ public class ConceptResultListUnitTest extends BaseTest {
         tester.proxy("concepts", 1, c1);
         tester.proxy(SearchParameters.class, 1, sp1);
 
-        assertTrue(tester.testCopyConstructor(ConceptResultList.class));
+        assertTrue(tester.testCopyConstructor(ResultListConcept.class));
     }
 
     /**

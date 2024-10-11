@@ -53,6 +53,19 @@ public class SearchParameters {
 
 		// n/a
 	}
+	
+    /**
+     * Instantiates a new search parameters.
+     *
+     * @param query the query
+     * @param limit the limit
+     * @param offset the offset
+     */
+    public SearchParameters(final String query, final Integer limit, final Integer offset) {
+        this.query = query;
+        this.limit = limit;
+        this.offset = offset;
+    }
 
 	/**
 	 * Instantiates a {@link SearchParameters} from the specified parameters.

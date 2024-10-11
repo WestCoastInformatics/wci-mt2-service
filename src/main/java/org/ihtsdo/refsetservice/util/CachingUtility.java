@@ -12,6 +12,8 @@ package org.ihtsdo.refsetservice.util;
 import java.util.Optional;
 
 import org.ihtsdo.refsetservice.configuration.AppContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 
@@ -20,6 +22,9 @@ import org.springframework.cache.CacheManager;
  */
 public class CachingUtility {
 
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(CachingUtility.class);
+    
     /** The Constant cacheManager. */
     final static CacheManager cacheManager = AppContext.getBean(CacheManager.class);
 
@@ -69,6 +74,45 @@ public class CachingUtility {
 
         return Optional.empty();
 
+    }
+
+    /**
+     * Contains object.
+     *
+     * @param cacheName the cache name
+     * @param cacheKey the cache key
+     * @return true, if successful
+     */
+    public static boolean containsObjects(final String cacheName, final String cacheKey) {
+        
+        try {
+            final Cache conceptsCache = cacheManager.getCache(cacheName);
+            return conceptsCache.get(cacheKey) != null;
+        } catch (Exception e) {
+            LOG.debug("Failed to find for key: " + cacheKey + " in cache: " + cacheName);
+            return false;
+        }
+    }
+
+    /**
+     * Load cache.
+     */
+    public static void loadCache() {
+
+        for (final String cacheName : cacheManager.getCacheNames()) {
+            cacheManager.getCache(cacheName);
+        }
+    }
+
+    /**
+     * Shutdown.
+     */
+    public static void shutdown() {
+
+        if (cacheManager == null) {
+            return;
+        }
+        cacheManager.getCacheNames().forEach(cacheName -> cacheManager.getCache(cacheName).clear());
     }
 
 }

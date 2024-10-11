@@ -1,3 +1,12 @@
+/*
+ * Copyright 2024 West Coast Informatics - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of West Coast Informatics
+ * The intellectual and technical concepts contained herein are proprietary to
+ * West Coast Informatics and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 package org.ihtsdo.refsetservice.rest;
 
 import java.util.ArrayList;
@@ -10,11 +19,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.Mapping;
+import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.MapProjectService;
 import org.ihtsdo.refsetservice.terminologyservice.MappingService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
-import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +63,17 @@ public class MappingController extends BaseController {
     /** Search teams API notes. */
     private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
 
+    /**
+     * Gets the mappings.
+     *
+     * @param mapSetCode the map set code
+     * @param filter the filter
+     * @param showOverriddenEntries the show overridden entries
+     * @param conceptCodes the concept codes
+     * @param searchParameters the search parameters
+     * @return the mappings
+     * @throws Exception the exception
+     */
     @RequestMapping(method = RequestMethod.GET, value = "/mapset/{mapSetCode}/mappings", produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Get map set. This call requires authentication with the correct role.", tags = {
         "mapset"
@@ -69,11 +89,9 @@ public class MappingController extends BaseController {
         @Parameter(name = "conceptCodes", description = "Comma delimited list of concept codes, e.g. 880057004,880057005", required = false)
     })
     @RecordMetric
-    public @ResponseBody ResponseEntity<ResultList<Mapping>> getMappings(@PathVariable(value = "mapSetCode") final String mapSetCode,
-        @RequestParam(required = false) final String filter, 
-        @RequestParam(required = false, defaultValue = "true") boolean showOverriddenEntries,
-        @RequestParam(required = false) final String conceptCodes,
-        @ModelAttribute final SearchParameters searchParameters) throws Exception {
+    public @ResponseBody ResponseEntity<ResultListMapping> getMappings(@PathVariable(value = "mapSetCode") final String mapSetCode,
+        @RequestParam(required = false) final String filter, @RequestParam(required = false, defaultValue = "true") boolean showOverriddenEntries,
+        @RequestParam(required = false) final String conceptCodes, @ModelAttribute final SearchParameters searchParameters) throws Exception {
 
         LOG.info("Mappings for a Mapset " + mapSetCode, ModelUtility.toJson(searchParameters));
         // final User authUser = authorizeUser(request);
@@ -89,7 +107,7 @@ public class MappingController extends BaseController {
             // TODO: determine branch.
             final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
 
-            final ResultList<Mapping> mappings = MappingService.getMappings(branch, mapSetCode, sp, filterString, showOverriddenEntries, conceptCodesList);
+            final ResultListMapping mappings = MappingService.getMappings(branch, mapSetCode, sp, filterString, showOverriddenEntries, conceptCodesList);
 
             return new ResponseEntity<>(mappings, HttpStatus.OK);
 
@@ -100,6 +118,16 @@ public class MappingController extends BaseController {
         }
     }
 
+    /**
+     * Gets the mapping.
+     *
+     * @param mapSetCode the map set code
+     * @param conceptCode the concept code
+     * @param showOverriddenEntries the show overridden entries
+     * @param searchParameters the search parameters
+     * @return the mapping
+     * @throws Exception the exception
+     */
     @RequestMapping(method = RequestMethod.GET, value = "/mapset/{mapSetCode}/mappings/{conceptCode}", produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Get mapping. This call requires authentication with the correct role.", tags = {
         "mapset"
@@ -115,7 +143,8 @@ public class MappingController extends BaseController {
     })
     @RecordMetric
     public @ResponseBody ResponseEntity<Mapping> getMapping(@PathVariable final String mapSetCode, @PathVariable final String conceptCode,
-    		@RequestParam(required = false, defaultValue = "true") boolean showOverriddenEntries, @ModelAttribute final SearchParameters searchParameters) throws Exception {
+        @RequestParam(required = false, defaultValue = "true") boolean showOverriddenEntries, @ModelAttribute final SearchParameters searchParameters)
+        throws Exception {
 
         LOG.info("Mapping for Mapset " + mapSetCode + ", Source Concept " + conceptCode, ModelUtility.toJson(searchParameters));
         // final User authUser = authorizeUser(request);
@@ -135,6 +164,14 @@ public class MappingController extends BaseController {
         }
     }
 
+    /**
+     * Creates the mapping.
+     *
+     * @param mapSetCode the map set code
+     * @param mapping the mapping
+     * @return the response entity
+     * @throws Exception the exception
+     */
     @PostMapping(value = "/mapset/{mapSetCode}", consumes = MediaType.APPLICATION_JSON)
     @Operation(summary = "Create mapping for the mapSetCode. This call requires authentication with the correct role.", tags = {
         "mapset"
@@ -182,6 +219,14 @@ public class MappingController extends BaseController {
         }
     }
 
+    /**
+     * Creates the mappings.
+     *
+     * @param mapSetCode the map set code
+     * @param mappings the mappings
+     * @return the response entity
+     * @throws Exception the exception
+     */
     @PostMapping(value = "/mapset/{mapSetCode}/bulk", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Create mapping for the mapSetCode. This call requires authentication with the correct role.", tags = {
         "mapset"
@@ -227,6 +272,14 @@ public class MappingController extends BaseController {
         }
     }
 
+    /**
+     * Update mapping.
+     *
+     * @param mapSetCode the map set code
+     * @param mapping the mapping
+     * @return the response entity
+     * @throws Exception the exception
+     */
     @RequestMapping(method = RequestMethod.PUT, value = "/mapset/{mapSetCode}", consumes = MediaType.APPLICATION_JSON)
     @Operation(summary = "Update mapping for the mapSetCode. This call requires authentication with the correct role.", tags = {
         "mapset"
@@ -275,6 +328,14 @@ public class MappingController extends BaseController {
         }
     }
 
+    /**
+     * Update mappings.
+     *
+     * @param mapSetCode the map set code
+     * @param mappings the mappings
+     * @return the response entity
+     * @throws Exception the exception
+     */
     @RequestMapping(method = RequestMethod.PUT, value = "/mapset/{mapSetCode}/bulk", consumes = MediaType.APPLICATION_JSON,
         produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Update mapping for the mapSetCode. This call requires authentication with the correct role.", tags = {
