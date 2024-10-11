@@ -119,7 +119,7 @@ public class MapProjectService extends BaseService {
         mapProject.setSourceTerminology("SNOMEDCT_NO");
         mapProject.setSourceTerminologyVersion("2024-04-15");
         mapProject.setDestinationTerminology("ICD-10-NO");
-        mapProject.setDestinationTerminologyVersion("2024-07-24");
+        mapProject.setDestinationTerminologyVersion("2024-07-23");
         
         
         // TODO: get from find mapProject
