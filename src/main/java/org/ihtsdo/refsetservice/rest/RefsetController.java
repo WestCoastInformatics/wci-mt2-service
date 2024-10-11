@@ -28,6 +28,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Concept;
+import org.ihtsdo.refsetservice.model.ResultListConcept;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
@@ -53,7 +54,6 @@ import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
-import org.ihtsdo.refsetservice.util.ConceptResultList;
 import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
@@ -1668,7 +1668,7 @@ public class RefsetController extends BaseController {
         @Parameter(name = "refsetInternalId", description = "the internal refset ID", required = true)
     })
     @RecordMetric
-    public @ResponseBody ResponseEntity<ConceptResultList> searchConcepts(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
+    public @ResponseBody ResponseEntity<ResultListConcept> searchConcepts(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
         final SearchParameters searchParameters, final BindingResult bindingResult, final HttpServletRequest request) throws Exception {
 
         // Check to make sure parameters were properly bound to variables.
@@ -1685,7 +1685,7 @@ public class RefsetController extends BaseController {
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            ConceptResultList results = new ConceptResultList();
+            ResultListConcept results = new ResultListConcept();
             final String query = searchParameters.getQuery();
 
             LOG.debug("taxonomySearch: searchConcepts: " + refsetInternalId + " ; searchParameters: " + ModelUtility.toJson(searchParameters)
@@ -1738,7 +1738,7 @@ public class RefsetController extends BaseController {
             required = false, example = "true")
     })
     @RecordMetric
-    public @ResponseBody ResponseEntity<ConceptResultList> getMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
+    public @ResponseBody ResponseEntity<ResultListConcept> getMembers(@PathVariable(value = "refsetInternalId") final String refsetInternalId,
         final SearchParameters searchParameters, final String displayType, final TaxonomyParameters taxonomyParameters,
         @RequestParam(required = false) final Boolean countComments, final BindingResult bindingResult) throws Exception {
 
@@ -1749,7 +1749,7 @@ public class RefsetController extends BaseController {
 
             // no auth required
             final long start = System.currentTimeMillis();
-            ConceptResultList results = new ConceptResultList();
+            ResultListConcept results = new ResultListConcept();
 
             LOG.debug("getMembers: refsetInternalId: " + refsetInternalId + " ; searchParameters: + " + searchParameters + " ; taxonomyParameters: "
                 + taxonomyParameters + " ; displayType: " + displayType + " ; countComments: " + countComments);
@@ -2493,7 +2493,7 @@ public class RefsetController extends BaseController {
             required = true),
     })
     @RecordMetric
-    public @ResponseBody ResponseEntity<ConceptResultList> getRefsetConcepts(final String branch, final boolean areParentConcepts) throws Exception {
+    public @ResponseBody ResponseEntity<ResultListConcept> getRefsetConcepts(final String branch, final boolean areParentConcepts) throws Exception {
 
         authorizeUser(request);
         try (final TerminologyService service = new TerminologyService()) {
@@ -2502,7 +2502,7 @@ public class RefsetController extends BaseController {
             // areParentConcepts: "
             // + areParentConcepts);
 
-            final ConceptResultList results = RefsetService.getRefsetConcepts(service, branch, areParentConcepts);
+            final ResultListConcept results = RefsetService.getRefsetConcepts(service, branch, areParentConcepts);
 
             // LOG.debug("getRefsetConcepts: results: " +
             // ModelUtility.toJson(results));
