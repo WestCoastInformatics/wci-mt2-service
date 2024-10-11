@@ -25,5 +25,13 @@
 		diskPersistent="true"
 		diskExpiryThreadIntervalSeconds="900" 
 		memoryStoreEvictionPolicy="LRU" />
+		
+	<cache name="snowstorm_terminology" 
+		maxElementsInMemory="1000" 
+		eternal="false"
+		overflowToDisk="true" 
+		diskPersistent="true"
+		diskExpiryThreadIntervalSeconds="0" 
+		memoryStoreEvictionPolicy="LRU" />
 
 </ehcache>

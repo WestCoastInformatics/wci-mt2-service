@@ -43,6 +43,16 @@ public class SnowstormApiPaging {
     } else {
       pagingQueryString.append("&active=true");
     }
+    
+    if (searchParameters.getSortAscending() != null) {
+        pagingQueryString.append("&sortOrder=").append((searchParameters.getSortAscending()) ? "asc" : "desc");
+    } else {
+        pagingQueryString.append("&sortOrder=asc");
+    }
+    
+    if (pagingQueryString.toString().startsWith("&")) {
+        pagingQueryString.deleteCharAt(0);
+    }
 
     return pagingQueryString.toString();
   }
