@@ -815,19 +815,58 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/";
 
-        // get all the map entries for the mapping
-        final Mapping originalMapping = getMapping(branch, mapSetCode, mapping.getCode(), false, false);
-
-        // Update based on these conditions:
-        // 1. A UUID (entry.getId) is shared between an originalMapEntry and the mapEntry
-        // 2. Something has changed between the originalMapEntry and the mapEntry
+        // get all the map entries for the current active mapping already in snowstorm
+        final Mapping existingActiveMapping = getMapping(branch, mapSetCode, mapping.getCode(), false, false);
+        
+        // If map content is identical to the existing map, do nothing.
+        if(areMapsEquivalent(mapping, existingActiveMapping)) {
+        	LOG.info("No update required for mapping for {} - content unchanged", mapping.getCode());
+        	return mapping;
+        }     
+        
+        // Create mapEntry based on these conditions:
+        // 1. The mapEntry Group and Priority does not exist in originalMapEntry
+        // 2. No equivalent active=false 
+        // OR
+        // 1. Group and Priority match between originalMapEntry and mapEntry 
+        // 2. The originalMapEntry moduleId does Not match the mapProject moduleId
+        // OR
+        // 1. Group and Priority match between originalMapEntry and mapEntry 
+        // 2. The originalMapEntry moduleId matches the mapProject moduleId
+        // 3. The originalMapEntry and mapEntry are Not equivalent
+        // 4. The originalMapEntry is released=true
+        //
+        // Update originalMapEntry based on these conditions:
+        // 1. Group and Priority match between originalMapEntry and mapEntry 
+        // 2. The originalMapEntry and mapEntry are Not equivalent
         // 3. The originalMapEntry moduleId matches the mapProject moduleId
-        // 4. The originalMapEntry has not yet been released
-        // Create based on these conditions:
-        // 1. A UUID is not present in the mapEntry, OR
-        // 2. A UUID is shared between an originalMapEntry and the mapEntry and something has changed, but either of other Update conditions are not met.
-        final Set<MapEntry> mapEntryUpdateList = new HashSet<>();
+        // 4. The originalMapEntry is released=false, active=true
+        //
+        // Reactivate originalMapEntry based on these conditions
+        // 1. Group and Priority match between originalMapEntry and mapEntry 
+        // 2. The originalMapEntry and mapEntry are equivalent
+        // 3. originalMapEntry moduleId matches the mapProject moduleId
+        // 4. originalMapEntry is released=true, active=false
+        //
+        // Delete originalMapEntry based on these conditions:
+        // 1. The originalMapEntry Group and Priority does not exist in mapEntry
+        // 2. The originalMapEntry is released=false, active=true
+        // 3. The originalMapEntry moduleId matches the mapProject moduleId
+        //
+        // Inactivate originalMapEntry based on these conditions:
+        // 1. The originalMapEntry is released=true, active=true
+        // 2. The originalMapEntry moduleId matches the mapProject moduleId
+        // 3. The originalMapEntry Group and Priority does not exist in mapEntry
+        // OR
+        // 1. Group and Priority match between originalMapEntry and mapEntry
+        // 2. The originalMapEntry and mapEntry are Not equivalent
+        // 3. The originalMapEntry is released=true, active=true
+        // 4. The originalMapEntry moduleId matches the mapProject moduleId
         final Set<MapEntry> mapEntryCreateList = new HashSet<>();
+        final Set<MapEntry> mapEntryUpdateList = new HashSet<>();
+        final Set<MapEntry> mapEntryInactivateList = new HashSet<>();        
+        final Set<MapEntry> mapEntryReactivateList = new HashSet<>();
+        final Set<MapEntry> mapEntryDeleteList = new HashSet<>();
 
         for (final MapEntry mapEntry : mapping.getMapEntries()) {
 
@@ -837,7 +876,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
             if (StringUtils.isNotBlank(mapEntry.getId())) {
                 // Find the corresponding originalMapEntry by matching IDs
-                originalMapping.getMapEntries().stream()
+            	existingActiveMapping.getMapEntries().stream()
                     .filter(originalMapEntry -> originalMapEntry.getId().equals(mapEntry.getId()) && !originalMapEntry.equals(mapEntry)).findFirst()
                     .ifPresent(originalMapEntry -> {
                         if (originalMapEntry.getModuleId().equals(mapProject.getModuleId()) && !originalMapEntry.isReleased()) {
@@ -861,11 +900,9 @@ public class SnowstormMapping extends SnowstormAbstract {
         // (Extensions are not allowed to modify International content)
         // If it has never been released, it can be fully deleted.
         // If it has been released, it must be inactivated instead.
-        final Set<MapEntry> mapEntryDeleteList = new HashSet<>();
-        final Set<MapEntry> mapEntryInactivateList = new HashSet<>();
         final MapSet mapSet = getMapSet(branch, mapSetCode);
 
-        originalMapping.getMapEntries().stream()
+        existingActiveMapping.getMapEntries().stream()
             .filter(originalMapEntry -> mapping.getMapEntries().stream().noneMatch(mapEntry -> originalMapEntry.getId().equals(mapEntry.getId())))
             .forEach(originalMapEntry -> {
                 // Check if the moduleIds match
@@ -1069,35 +1106,36 @@ public class SnowstormMapping extends SnowstormAbstract {
     }
 
     // Handle edition-precedence in the map entries
-    // For example: if there is an International map entry (module=449080006) for
-    // group 1, priority 1,
-    // And also a Norwegian map entry (module=51000202101) for group 1, priority
-    // 1,
-    // then the Edition/Norwegian map entry should be kept, and the international
+    // If there are any active edition map entries (module!=449080006),
+    // the edition takes priority and only its entries should be used.
+    // If there are only International map entries (module=449080006),
+    // then use them instead.
     /**
      * Handle edition precedence.
      *
      * @param mapping the mapping
      */
-    // one dropped.
     private static void handleEditionPrecedence(final Mapping mapping) {
 
-        final Map<String, MapEntry> groupPriorityToEntryMap = new HashMap<>();
+    	//Separate map entries into international and edition
+        final List<MapEntry> internationalEntries = new ArrayList<>();
+        final List<MapEntry> editionEntries = new ArrayList<>();
         for (final MapEntry mapEntry : mapping.getMapEntries()) {
-            final String key = mapEntry.getGroup() + "-" + mapEntry.getPriority();
-            if (groupPriorityToEntryMap.containsKey(key)) {
-                final MapEntry existingMapEntry = groupPriorityToEntryMap.get(key);
-                if (!existingMapEntry.getModuleId().equals("449080006") && mapEntry.getModuleId().equals("449080006")) {
-                    // Keep existing map entry if it does not have moduleId 449080006
-                    continue;
-                }
-            }
-            groupPriorityToEntryMap.put(key, mapEntry);
+        	if(mapEntry.getModuleId().equals("449080006")) {
+        		internationalEntries.add(mapEntry);
+        	}
+        	else {
+        		editionEntries.add(mapEntry);
+        	}
         }
 
-        // Set the remaining map entries to the mapping
-        final List<MapEntry> remainingMapEntries = new ArrayList<>(groupPriorityToEntryMap.values());
-        mapping.setMapEntries(remainingMapEntries);
+        // If any active edition map entries exist, use those.  Otherwise, use international
+        if(editionEntries.size()>0) {
+        	mapping.setMapEntries(editionEntries);
+        }
+        else {
+        	mapping.setMapEntries(internationalEntries);
+        }
     }
 
     /**
@@ -1243,5 +1281,73 @@ public class SnowstormMapping extends SnowstormAbstract {
         }
         return relationCode;
     }
+    
+    /**
+     * Return true if maps have equivalent content.
+     * This only considers the map information: target, advice, relations, etc.
+     * This does not compare other information: release date, last modified, etc.
+     * Note: this intentionally ignores moduleId, 
+     * so we can check edition maps against international maps
+     *
+     * @param mapping1 the mapping 1
+     * @param mapping2 the mapping 2
+     * @return the boolean
+     */
+    private static Boolean areMapsEquivalent(Mapping mapping1, Mapping mapping2) {
+    	
+    	//Check top-level mapping information
+     	if(!(mapping1.getCode().equals(mapping2.getCode()) && mapping1.getMapSetId().equals(mapping2.getMapSetId()))) {
+    		return false;
+    	}
+    	
+    	//Check for map-entry count
+    	if(!(mapping1.getMapEntries().size() == mapping2.getMapEntries().size())) {
+    		return false;
+    	}		
+
+    	//Sort the map entries for both mappings in Group/Priority order
+        sortMapEntries(mapping1);
+        sortMapEntries(mapping2);
+    	
+    	//Check individual map entry information
+        //Since the map entries were sorted, we can compare entries by index location.
+        for(int i = 0; i<mapping1.getMapEntries().size(); i++) {
+			if(!areMapEntriesEquivalent(mapping1.getMapEntries().get(i), mapping2.getMapEntries().get(i))) {
+				return false;
+			}        	
+        }
+        
+    	return true;
+    }
+
+    /**
+     * Return true if map entries have equivalent content.
+     * This only considers the map information: target, advice, relations, etc.
+     * This does not compare other information: release date, last modified, etc.
+     * Note: this intentionally ignores moduleId, 
+     * so we can check edition maps against international maps
+     *
+     * @param mapEntry1 the map entry 1
+     * @param mapEntry2 the map entry 2
+     * @return the boolean
+     */    
+    private static Boolean areMapEntriesEquivalent(MapEntry mapEntry1, MapEntry mapEntry2) {
+    	Boolean mapEntriesEquivalent = true;
+    	   	
+    	//Check individual map entry information
+		mapEntriesEquivalent = mapEntry1.getGroup()==mapEntry2.getGroup() 
+				&& mapEntry1.getPriority()==mapEntry2.getPriority()
+				&& Objects.equals(mapEntry1.getAdditionalMapEntryInfos(), mapEntry2.getAdditionalMapEntryInfos()) 
+				&& Objects.equals(mapEntry1.getAdvices(), mapEntry2.getAdvices()) 
+				&& mapEntry1.getBlock() == mapEntry2.getBlock()
+                && Objects.equals(mapEntry1.getRelationCode(), mapEntry2.getRelationCode())
+                && Objects.equals(mapEntry1.getRule(), mapEntry2.getRule())
+                && Objects.equals(mapEntry1.getToCode(), mapEntry2.getToCode());
+		if(!mapEntriesEquivalent) {
+			return mapEntriesEquivalent;
+    	}
+        
+    	return mapEntriesEquivalent;
+    }    
 
 }
