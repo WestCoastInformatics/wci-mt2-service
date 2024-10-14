@@ -603,8 +603,8 @@ public class SnowstormMapping extends SnowstormAbstract {
      * @return the mapping
      * @throws Exception the exception
      */
-    public static Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode, final boolean showOverriddenEntries,
-        final boolean includeDescriptions) throws Exception {
+    public static Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode, final String moduleId, 
+    		final boolean activeOnly, final boolean showOverriddenEntries, final boolean includeDescriptions) throws Exception {
 
         // Connect to snowstorm
         final Client client = getClients().get();
@@ -612,7 +612,9 @@ public class SnowstormMapping extends SnowstormAbstract {
         int limit = 50;
 
         final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members?referenceSet=" + mapSetCode + "&referencedComponentId=" + conceptCode
-            + "&active=true&limit=" + limit + (searchAfter != null ? "&searchAfter=" + searchAfter : "");
+            + (moduleId != null ? "&moduleId=" + moduleId : "") 
+            + (activeOnly == false ? "" : "&active=true") 
+            + "&limit=" + limit + (searchAfter != null ? "&searchAfter=" + searchAfter : "");
         LOG.info("getSnowstormMapping url: " + targetUri);
 
         final WebTarget target = client.target(targetUri);
@@ -817,138 +819,174 @@ public class SnowstormMapping extends SnowstormAbstract {
      * @param mapProject the map project
      * @param branch the branch
      * @param mapSetCode the map set code
-     * @param mapping the mapping
+     * @param submittedMapping the submitted mapping
      * @return the mapping
      * @throws Exception the exception
      */
-    public static Mapping updateMapping(final MapProject mapProject, final String branch, final String mapSetCode, final Mapping mapping) throws Exception {
+    public static Mapping updateMapping(final MapProject mapProject, final String branch, final String mapSetCode, final Mapping submittedMapping) throws Exception {
 
         final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/";
 
-        // get all the map entries for the current active mapping already in snowstorm
-        final Mapping existingActiveMapping = getMapping(branch, mapSetCode, mapping.getCode(), false, false);
+        // Pre-update cleanup
+        for (final MapEntry mapEntry : submittedMapping.getMapEntries()) {
+	        mapEntry.setAdvices(fixMapEntryAdvices(mapEntry));
+	        mapEntry.setRelationCode(calculateMapEntryRelationCode(mapProject, mapEntry));
+        }
         
-        // If map content is identical to the existing map, do nothing.
-        if(areMapsEquivalent(mapping, existingActiveMapping)) {
-        	LOG.info("No update required for mapping for {} - content unchanged", mapping.getCode());
-        	return mapping;
-        }     
+        final Set<MapEntry> mapEntryAddList = new HashSet<>();
+        final Set<MapEntry> mapEntryRemoveList = new HashSet<>();
+        // Map of modified entries: 
+        // Key = existing Map Entry
+        // Value = submitted Map Entry
+        final Map<MapEntry, MapEntry> mapEntryModifyMap = new HashMap<>();        
         
-        // Create mapEntry based on these conditions:
-        // 1. The mapEntry Group and Priority does not exist in originalMapEntry
-        // 2. No equivalent active=false 
-        // OR
-        // 1. Group and Priority match between originalMapEntry and mapEntry 
-        // 2. The originalMapEntry moduleId does Not match the mapProject moduleId
-        // OR
-        // 1. Group and Priority match between originalMapEntry and mapEntry 
-        // 2. The originalMapEntry moduleId matches the mapProject moduleId
-        // 3. The originalMapEntry and mapEntry are Not equivalent
-        // 4. The originalMapEntry is released=true
-        //
-        // Update originalMapEntry based on these conditions:
-        // 1. Group and Priority match between originalMapEntry and mapEntry 
-        // 2. The originalMapEntry and mapEntry are Not equivalent
-        // 3. The originalMapEntry moduleId matches the mapProject moduleId
-        // 4. The originalMapEntry is released=false, active=true
-        //
-        // Reactivate originalMapEntry based on these conditions
-        // 1. Group and Priority match between originalMapEntry and mapEntry 
-        // 2. The originalMapEntry and mapEntry are equivalent
-        // 3. originalMapEntry moduleId matches the mapProject moduleId
-        // 4. originalMapEntry is released=true, active=false
-        //
-        // Delete originalMapEntry based on these conditions:
-        // 1. The originalMapEntry Group and Priority does not exist in mapEntry
-        // 2. The originalMapEntry is released=false, active=true
-        // 3. The originalMapEntry moduleId matches the mapProject moduleId
-        //
-        // Inactivate originalMapEntry based on these conditions:
-        // 1. The originalMapEntry is released=true, active=true
-        // 2. The originalMapEntry moduleId matches the mapProject moduleId
-        // 3. The originalMapEntry Group and Priority does not exist in mapEntry
-        // OR
-        // 1. Group and Priority match between originalMapEntry and mapEntry
-        // 2. The originalMapEntry and mapEntry are Not equivalent
-        // 3. The originalMapEntry is released=true, active=true
-        // 4. The originalMapEntry moduleId matches the mapProject moduleId
+        // get all the map entries for the existing active mapping already in snowstorm
+        // This is the current mapping that has precedence, so may be International or Norwegian
+        final Mapping existingActiveMapping = getMapping(branch, mapSetCode, submittedMapping.getCode(), null, true, false, false);
+        
+        // also get the map entries for the active International mapping in snowstorm 
+        // (this may the same or different than the above).
+        final Mapping existingActiveInternationalMapping = getMapping(branch, mapSetCode, submittedMapping.getCode(), "449080006", true, false, false);
+  
+        // If map content is identical to the existing active map, do nothing.
+        if(areMapsEquivalent(submittedMapping, existingActiveMapping)) {
+        	LOG.info("No update required for mapping for {} - content unchanged", submittedMapping.getCode());
+        	return submittedMapping;
+        }
+        
+        // If we get here, then there is a difference between the existing active map in snowstorm and the 
+        // mapping being saved.
+        
+        // First check the module ids.  If the existing active mapping is International, then all entries 
+        // of the submitted map will be added (this is a Norwegian map overriding the International)
+        if(existingActiveMapping.getMapEntries().size()>0 && existingActiveMapping.getMapEntries().get(0).getModuleId().equals("449080006")) {
+        	for(MapEntry submittedMapEntry : submittedMapping.getMapEntries()) {
+        		mapEntryAddList.add(submittedMapEntry);
+        	}
+        }
+        // Next check if the submitted map is identical to the active International map.
+        // This identifies where the Norwegian map had previously diverged from the international, but now matches again.
+        // In this case, remove all existing Norwegian map entries, and revert back to the International.
+        else if (areMapsEquivalent(submittedMapping, existingActiveInternationalMapping)) {
+        	for(MapEntry existingMapEntry : existingActiveMapping.getMapEntries()) {
+        		mapEntryRemoveList.add(existingMapEntry);
+        	}        	
+        }
+        // Now that all mapping-wide cases have been handled,
+        // check entry-by-entry to determine which need to be added, removed, or modified
+        else {
+        	// First loop through all existing map entries, and comparing against 
+        	// the submitted map entries where Group and Priority match. 
+        	// If the entries are equivalent, then no action is required.
+        	// If the entries are different, then the map entry needs to be modified
+        	// Finally, if an existing map entry has no corresponding group/priority submitted map entry, 
+        	// then that existing map entry needs to be removed. 
+            for (MapEntry existingMapEntry : existingActiveMapping.getMapEntries()) {
+            	boolean matchFound = false;
+            	for (MapEntry submittedMapEntry : submittedMapping.getMapEntries()) {
+                	if(existingMapEntry.getGroup()==submittedMapEntry.getGroup() && existingMapEntry.getPriority()==submittedMapEntry.getPriority()) {
+                		matchFound=true;
+                		if(!areMapEntriesEquivalent(existingMapEntry,submittedMapEntry)) {
+                			mapEntryModifyMap.put(existingMapEntry, submittedMapEntry);
+                		}
+                		else {
+                			//Equivalent map - no action required.
+                		}
+                		continue;
+                	}
+            	}
+            	if(matchFound == false) {
+            		mapEntryRemoveList.add(existingMapEntry);
+            	}
+            }
+            
+            // Now loop through all submitted map entries, to find any cases with no 
+            // corresponding group/priority existing entry.
+            // These entries need to be added.
+            for(MapEntry submittedMapEntry : submittedMapping.getMapEntries()) {
+            	boolean matchFound = false;
+            	for(MapEntry existingMapEntry : existingActiveMapping.getMapEntries()) {
+            		if(existingMapEntry.getGroup()==submittedMapEntry.getGroup() && existingMapEntry.getPriority()==submittedMapEntry.getPriority()) {
+                		matchFound=true;
+                		// No further comparison needed - all modified entries were identified above.
+                		continue;
+                	}    		
+            	}
+            	if(matchFound == false) {
+            		mapEntryAddList.add(submittedMapEntry);
+            	}
+            }
+        }
+        
+        // Adding, removing, and modifying is handled differently depending on the existing
+        // map entries in snowstorm.
+        
         final Set<MapEntry> mapEntryCreateList = new HashSet<>();
-        final Set<MapEntry> mapEntryUpdateList = new HashSet<>();
         final Set<MapEntry> mapEntryInactivateList = new HashSet<>();        
         final Set<MapEntry> mapEntryReactivateList = new HashSet<>();
         final Set<MapEntry> mapEntryDeleteList = new HashSet<>();
-
-        for (final MapEntry mapEntry : mapping.getMapEntries()) {
-
-            // Pre-update cleanup
-            mapEntry.setAdvices(fixMapEntryAdvices(mapEntry));
-            mapEntry.setRelationCode(calculateMapEntryRelationCode(mapProject, mapEntry));
-
-            if (StringUtils.isNotBlank(mapEntry.getId())) {
-                // Find the corresponding originalMapEntry by matching IDs
-            	existingActiveMapping.getMapEntries().stream()
-                    .filter(originalMapEntry -> originalMapEntry.getId().equals(mapEntry.getId()) && !originalMapEntry.equals(mapEntry)).findFirst()
-                    .ifPresent(originalMapEntry -> {
-                        if (originalMapEntry.getModuleId().equals(mapProject.getModuleId()) && !originalMapEntry.isReleased()) {
-                            // Add to update list if conditions are met
-                            mapEntryUpdateList.add(mapEntry);
-                        } else {
-                            // Add to create list if conditions are not met
-                            // Clear out UUID, since it's creating a new entry
-                            mapEntry.setId("");
-                            mapEntryCreateList.add(mapEntry);
-                        }
-                    });
-            } else {
-                // If the mapEntry ID is blank, it should be added to the create list
-                mapEntryCreateList.add(mapEntry);
-            }
+        
+        // For all map entries to be added, check if there are equivalent, inactive, Norwegian entries in snowstorm.
+        // If so, re-activate those existing entries.
+        // If not, create a new entry.
+        final Mapping existingInactiveNorwegianMapping = getMapping(branch, mapSetCode, submittedMapping.getCode(), mapProject.getModuleId(), false, false, false);
+        
+        for(MapEntry mapEntry : mapEntryAddList) {
+        	boolean matchFound = false;
+        	for(MapEntry existingInactiveMapEntry : existingInactiveNorwegianMapping.getMapEntries()) {
+        		if(existingInactiveMapEntry.getGroup()==mapEntry.getGroup() 
+        				&& existingInactiveMapEntry.getPriority()==mapEntry.getPriority()
+        				&& areMapEntriesEquivalent(existingInactiveMapEntry, mapEntry)) {
+            		matchFound=true;
+            		mapEntryReactivateList.add(existingInactiveMapEntry);
+            		continue;
+            	}    		
+        	}
+        	if(matchFound == false) {
+        		mapEntryCreateList.add(mapEntry);
+        	}
         }
-
-        // Map Entry UUIDs that are present in original but not in the new mapping need to be handled,
-        // but only if the original map entry moduleId matches the mapProject module Id
-        // (Extensions are not allowed to modify International content)
-        // If it has never been released, it can be fully deleted.
-        // If it has been released, it must be inactivated instead.
+        
+        
+        // For all map entries to be removed, check if they have been previously released of not.
+        // If so, then inactivate the entry
+        // If not, then the entry can be fully deleted.
+        for(MapEntry mapEntry : mapEntryRemoveList) {
+        	if(mapEntry.isReleased()) {
+        		mapEntryInactivateList.add(mapEntry);
+        	}
+        	else {
+        		mapEntryDeleteList.add(mapEntry);
+        	}
+        }
+        
+     
+        // For all modified map entries, check if the corresponding existing map entry has been previously released or not.
+        // If so, then inactivate the existing map entry, and create a new entry using the submitted map entry
+        // If not, then delete the existing map entry, and create a new entry using the submitted map entry
+        for(MapEntry existingMapEntry : mapEntryModifyMap.keySet()) {
+        	MapEntry submittedMapEntry = mapEntryModifyMap.get(existingMapEntry);
+        	if(existingMapEntry.isReleased()) {
+        		mapEntryInactivateList.add(existingMapEntry);
+        		mapEntryCreateList.add(submittedMapEntry);
+        	}
+        	else {
+        		mapEntryDeleteList.add(existingMapEntry);
+        		mapEntryCreateList.add(submittedMapEntry);
+        	}
+        }
+          
         final MapSet mapSet = getMapSet(branch, mapSetCode);
-
-        existingActiveMapping.getMapEntries().stream()
-            .filter(originalMapEntry -> mapping.getMapEntries().stream().noneMatch(mapEntry -> originalMapEntry.getId().equals(mapEntry.getId())))
-            .forEach(originalMapEntry -> {
-                // Check if the moduleIds match
-                if (originalMapEntry.getModuleId().equals(mapProject.getModuleId())) {
-                    // Check the released status and add to the appropriate list
-                    if (!originalMapEntry.isReleased()) {
-                        mapEntryDeleteList.add(originalMapEntry);
-                    } else {
-                        mapEntryInactivateList.add(originalMapEntry);
-                    }
-                }
-                // If moduleId doesn't match, do nothing (i.e., skip the entry)
-            });
 
         final ObjectMapper mapper = new ObjectMapper();
         final List<MapEntry> updatedMapEntries = new ArrayList<>();
 
-        // Update Map Entry (Refset member)
-        for (final MapEntry mapEntry : mapEntryUpdateList) {
-            final String mapEntryJson = mapEntryToSnowstormMap(mapProject, mapSetCode, mapping.getCode(), mapping.getName(), mapEntry);
-            LOG.info("Update mapping: {} with {}", targetUri, mapEntryJson);
-            try (final Response response = SnowstormConnection.putResponse(targetUri + mapEntry.getId(), mapEntryJson)) {
-                if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-                    throw new Exception(
-                        "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
-                }
-                final JsonNode updatedMapEntryJson = mapper.readTree(response.readEntity(String.class));
-                final MapEntry updatedMapEntry = convertSnowstormMemberToMapEntry(updatedMapEntryJson, mapSet, branch);
-                updatedMapEntries.add(updatedMapEntry);
-            }
-
-        }
-
         // Create Map Entry (Refset member)
         for (final MapEntry mapEntry : mapEntryCreateList) {
-            final String mapEntryJson = mapEntryToSnowstormMap(mapProject, mapSetCode, mapping.getCode(), mapping.getName(), mapEntry);
+        	// Clear out any existing UUID, since it's creating a new entry
+            mapEntry.setId("");
+            
+            final String mapEntryJson = mapEntryToSnowstormMap(mapProject, mapSetCode, submittedMapping.getCode(), submittedMapping.getName(), mapEntry);
             LOG.info("Add mapping: {} with {}", targetUri, mapEntryJson);
             try (final Response response = SnowstormConnection.postResponse(targetUri, mapEntryJson)) {
                 if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
@@ -976,7 +1014,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         // Inactivate Map Entry (Refset member)
         for (final MapEntry mapEntry : mapEntryInactivateList) {
             mapEntry.setActive(false);
-            final String mapEntryJson = mapEntryToSnowstormMap(mapProject, mapSetCode, mapping.getCode(), mapping.getName(), mapEntry);
+            final String mapEntryJson = mapEntryToSnowstormMap(mapProject, mapSetCode, submittedMapping.getCode(), submittedMapping.getName(), mapEntry);
             LOG.info("Inactivate mapping: {} with {}", targetUri, mapEntryJson);
             try (final Response response = SnowstormConnection.putResponse(targetUri + mapEntry.getId(), mapEntryJson)) {
                 if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
@@ -988,17 +1026,33 @@ public class SnowstormMapping extends SnowstormAbstract {
                 updatedMapEntries.add(updatedMapEntry);
             }
         }
+        
+        // Reactivate Map Entry (Refset member)
+        for (final MapEntry mapEntry : mapEntryReactivateList) {
+            mapEntry.setActive(true);
+            final String mapEntryJson = mapEntryToSnowstormMap(mapProject, mapSetCode, submittedMapping.getCode(), submittedMapping.getName(), mapEntry);
+            LOG.info("Inactivate mapping: {} with {}", targetUri, mapEntryJson);
+            try (final Response response = SnowstormConnection.putResponse(targetUri + mapEntry.getId(), mapEntryJson)) {
+                if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                    throw new Exception(
+                        "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
+                }
+                final JsonNode updatedMapEntryJson = mapper.readTree(response.readEntity(String.class));
+                final MapEntry updatedMapEntry = convertSnowstormMemberToMapEntry(updatedMapEntryJson, mapSet, branch);
+                updatedMapEntries.add(updatedMapEntry);
+            }
+        }        
 
-        mapping.getMapEntries().clear();
-        mapping.getMapEntries().addAll(updatedMapEntries);
+        submittedMapping.getMapEntries().clear();
+        submittedMapping.getMapEntries().addAll(updatedMapEntries);
 
-        // Handle edition-precedence in the map entries
-        handleEditionPrecedence(mapping);
+//        // Handle edition-precedence in the map entries
+//        handleEditionPrecedence(submittedMapping);
 
         // Sort all of the map entries in Group/Priority order
-        sortMapEntries(mapping);
+        sortMapEntries(submittedMapping);
 
-        return mapping;
+        return submittedMapping;
     }
 
     /**
