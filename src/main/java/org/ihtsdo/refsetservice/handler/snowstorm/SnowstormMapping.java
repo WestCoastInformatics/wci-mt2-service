@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -310,9 +311,9 @@ public class SnowstormMapping extends SnowstormAbstract {
         final MapSet mapSet = getMapSet(branch, mapSetCode);
         final String fromTerminology = mapSet.getFromTerminology();
         final String toTerminology = mapSet.getToTerminology();
-        final Map<String, Mapping> conceptIdToMappingMap = new HashMap<>();
+        final Map<String, Mapping> conceptIdToMappingMap = new TreeMap<>();
 
-        final Map<String, Set<String>> conceptsToLookup = new HashMap<>();
+        final Map<String, Set<String>> conceptsToLookup = new TreeMap<>();
         conceptsToLookup.put(mapSet.getToTerminology(), new HashSet<>());
         conceptsToLookup.put(mapSet.getFromTerminology(), new HashSet<>());
         final ObjectMapper mapper = new ObjectMapper();
