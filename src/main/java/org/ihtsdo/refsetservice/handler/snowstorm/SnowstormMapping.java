@@ -613,7 +613,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         int limit = 50;
 
         final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members?referenceSet=" + mapSetCode + "&referencedComponentId=" + conceptCode
-            + (moduleId != null ? "&moduleId=" + moduleId : "") 
+            + (moduleId != null ? "&module=" + moduleId : "") 
             + (activeOnly == false ? "" : "&active=true") 
             + "&limit=" + limit + (searchAfter != null ? "&searchAfter=" + searchAfter : "");
         LOG.info("getSnowstormMapping url: " + targetUri);

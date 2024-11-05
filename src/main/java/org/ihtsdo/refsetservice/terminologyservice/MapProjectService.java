@@ -135,7 +135,8 @@ public class MapProjectService extends BaseService {
 
         final Set<MapAdvice> mapAdvices = new HashSet<>();
         final List<String> adviceNames = new ArrayList<>(Arrays.asList("MAPPED FOLLOWING WHO GUIDANCE", "POSSIBLE REQUIREMENT FOR PLACE OF OCCURRENCE",
-            "POSSIBLE REQUIREMENT FOR CAUSATIVE AGENT CODE", "POSSIBLE REQUIREMENT FOR MORPHOLOGY CODE", "POSSIBLE REQUIREMENT FOR AN EXTERNAL CAUSE CODE"));
+            "POSSIBLE REQUIREMENT FOR CAUSATIVE AGENT CODE", "POSSIBLE REQUIREMENT FOR MORPHOLOGY CODE", "POSSIBLE REQUIREMENT FOR AN EXTERNAL CAUSE CODE",
+            "POSSIBLE REQUIREMENT FOR ADDITIONAL CODE TO FULLY DESCRIBE DISEASE OR CONDITION"));
 
         for (final String adviceName : adviceNames) {
             final MapAdvice mapAdvice = new MapAdvice();
