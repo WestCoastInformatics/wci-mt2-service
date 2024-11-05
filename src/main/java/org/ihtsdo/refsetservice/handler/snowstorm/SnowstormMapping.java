@@ -1403,7 +1403,7 @@ public class SnowstormMapping extends SnowstormAbstract {
     	}
     	
     	//Check top-level mapping information
-     	if(!(mapping1.getCode().equals(mapping2.getCode()) && mapping1.getMapSetId().equals(mapping2.getMapSetId()))) {
+     	if(!(mapping1.getCode().equals(mapping2.getCode()))) {
     		return false;
     	}
     	
