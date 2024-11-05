@@ -831,7 +831,8 @@ public class SnowstormMapping extends SnowstormAbstract {
         for (final MapEntry mapEntry : submittedMapping.getMapEntries()) {
 	        mapEntry.setAdvices(fixMapEntryAdvices(mapEntry));
 	        mapEntry.setRelationCode(calculateMapEntryRelationCode(mapProject, mapEntry));
-        }
+	        mapEntry.setModuleId(mapProject.getModuleId()); // Only create entries in the Edition module, never in the International
+	    }
         
         final Set<MapEntry> mapEntryAddList = new HashSet<>();
         final Set<MapEntry> mapEntryRemoveList = new HashSet<>();
@@ -857,15 +858,23 @@ public class SnowstormMapping extends SnowstormAbstract {
         // If we get here, then there is a difference between the existing active map in snowstorm and the 
         // mapping being saved.
         
-        // First check the module ids.  If the existing active mapping is International, then all entries 
-        // of the submitted map will be added (this is a Norwegian map overriding the International)
-        if(existingActiveMapping.getMapEntries().size()>0 && existingActiveMapping.getMapEntries().get(0).getModuleId().equals("449080006")) {
+        // If there is no existing active mapping, then all entries of the submitted map
+        // will be added (brand new map)
+        if(existingActiveMapping == null || existingActiveMapping.getMapEntries() == null || existingActiveMapping.getMapEntries().size() == 0) {
+        	for(MapEntry submittedMapEntry : submittedMapping.getMapEntries()) {
+        		mapEntryAddList.add(submittedMapEntry);
+        	}        	
+        }
+        
+        // If the existing active mapping is International, then all entries 
+        // of the submitted map will be added (this is a new Norwegian map overriding the International)
+        else if(existingActiveMapping.getMapEntries().size()>0 && existingActiveMapping.getMapEntries().get(0).getModuleId().equals("449080006")) {
         	for(MapEntry submittedMapEntry : submittedMapping.getMapEntries()) {
         		mapEntryAddList.add(submittedMapEntry);
         	}
         }
         // Next check if the submitted map is identical to the active International map.
-        // This identifies where the Norwegian map had previously diverged from the international, but now matches again.
+        // This identifies where the Norwegian map had diverged from the international, but now matches again.
         // In this case, remove all existing Norwegian map entries, and revert back to the International.
         else if (areMapsEquivalent(submittedMapping, existingActiveInternationalMapping)) {
         	for(MapEntry existingMapEntry : existingActiveMapping.getMapEntries()) {
@@ -878,7 +887,9 @@ public class SnowstormMapping extends SnowstormAbstract {
         	// First loop through all existing map entries, and comparing against 
         	// the submitted map entries where Group and Priority match. 
         	// If the entries are equivalent, then no action is required.
-        	// If the entries are different, then the map entry needs to be modified
+        	// If the entries are not equivalent, check if they are close enough to share a UUID in snowstorm.
+        	// If they do share a UUID, modify the existing map entry with the submitted map's information.
+        	// If the don't share a UUID, remove the existing map and add the submitted map.
         	// Finally, if an existing map entry has no corresponding group/priority submitted map entry, 
         	// then that existing map entry needs to be removed. 
             for (MapEntry existingMapEntry : existingActiveMapping.getMapEntries()) {
@@ -886,13 +897,18 @@ public class SnowstormMapping extends SnowstormAbstract {
             	for (MapEntry submittedMapEntry : submittedMapping.getMapEntries()) {
                 	if(existingMapEntry.getGroup()==submittedMapEntry.getGroup() && existingMapEntry.getPriority()==submittedMapEntry.getPriority()) {
                 		matchFound=true;
-                		if(!areMapEntriesEquivalent(existingMapEntry,submittedMapEntry)) {
-                			mapEntryModifyMap.put(existingMapEntry, submittedMapEntry);
-                		}
-                		else {
+                		if(areMapEntriesEquivalent(existingMapEntry,submittedMapEntry)) {
                 			//Equivalent map - no action required.
                 		}
-                		continue;
+                		else {
+                			if(doMapEntriesShareUUID(existingMapEntry,submittedMapEntry)) {
+                				mapEntryModifyMap.put(existingMapEntry, submittedMapEntry);
+                			}
+                			else {
+                				mapEntryRemoveList.add(existingMapEntry);
+                				mapEntryAddList.add(submittedMapEntry);
+                			}
+                		}
                 	}
             	}
             	if(matchFound == false) {
@@ -909,7 +925,7 @@ public class SnowstormMapping extends SnowstormAbstract {
             		if(existingMapEntry.getGroup()==submittedMapEntry.getGroup() && existingMapEntry.getPriority()==submittedMapEntry.getPriority()) {
                 		matchFound=true;
                 		// No further comparison needed - all modified entries were identified above.
-                		continue;
+                		break;
                 	}    		
             	}
             	if(matchFound == false) {
@@ -925,25 +941,27 @@ public class SnowstormMapping extends SnowstormAbstract {
         final Set<MapEntry> mapEntryInactivateList = new HashSet<>();        
         final Set<MapEntry> mapEntryReactivateList = new HashSet<>();
         final Set<MapEntry> mapEntryDeleteList = new HashSet<>();
+        final Set<MapEntry> mapEntryUpdateList = new HashSet<>();
         
-        // For all map entries to be added, check if there are equivalent, inactive, Norwegian entries in snowstorm.
-        // If so, re-activate those existing entries.
+        // For all map entries to be added, check if there are any UUI-matching, inactive, Norwegian entries in snowstorm.
+        // If so, re-activate those existing entries, updating to match the submitted entry if needed.
         // If not, create a new entry.
         final Mapping existingInactiveNorwegianMapping = getMapping(branch, mapSetCode, submittedMapping.getCode(), mapProject.getModuleId(), false, false, false);
         
-        for(MapEntry mapEntry : mapEntryAddList) {
+        for(MapEntry submittedMapEntry : mapEntryAddList) {
         	boolean matchFound = false;
         	for(MapEntry existingInactiveMapEntry : existingInactiveNorwegianMapping.getMapEntries()) {
-        		if(existingInactiveMapEntry.getGroup()==mapEntry.getGroup() 
-        				&& existingInactiveMapEntry.getPriority()==mapEntry.getPriority()
-        				&& areMapEntriesEquivalent(existingInactiveMapEntry, mapEntry)) {
+        		if(doMapEntriesShareUUID(existingInactiveMapEntry, submittedMapEntry)) {
             		matchFound=true;
+            		if(!areMapEntriesEquivalent(existingInactiveMapEntry, submittedMapEntry)) {
+            			existingInactiveMapEntry = updateExistingMapEntry(existingInactiveMapEntry, submittedMapEntry);
+            		}
             		mapEntryReactivateList.add(existingInactiveMapEntry);
-            		continue;
+            		break;
             	}    		
         	}
         	if(matchFound == false) {
-        		mapEntryCreateList.add(mapEntry);
+        		mapEntryCreateList.add(submittedMapEntry);
         	}
         }
         
@@ -962,17 +980,17 @@ public class SnowstormMapping extends SnowstormAbstract {
         
      
         // For all modified map entries, check if the corresponding existing map entry has been previously released or not.
-        // If so, then inactivate the existing map entry, and create a new entry using the submitted map entry
         // If not, then delete the existing map entry, and create a new entry using the submitted map entry
+        // If so, then update the existing map entry with the submitted map entry's content
         for(MapEntry existingMapEntry : mapEntryModifyMap.keySet()) {
         	MapEntry submittedMapEntry = mapEntryModifyMap.get(existingMapEntry);
-        	if(existingMapEntry.isReleased()) {
-        		mapEntryInactivateList.add(existingMapEntry);
+        	if(!existingMapEntry.isReleased()) {
+        		mapEntryDeleteList.add(existingMapEntry);
         		mapEntryCreateList.add(submittedMapEntry);
         	}
         	else {
-        		mapEntryDeleteList.add(existingMapEntry);
-        		mapEntryCreateList.add(submittedMapEntry);
+        		existingMapEntry = updateExistingMapEntry(existingMapEntry, submittedMapEntry);
+        		mapEntryUpdateList.add(existingMapEntry);
         	}
         }
           
@@ -1031,7 +1049,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         for (final MapEntry mapEntry : mapEntryReactivateList) {
             mapEntry.setActive(true);
             final String mapEntryJson = mapEntryToSnowstormMap(mapProject, mapSetCode, submittedMapping.getCode(), submittedMapping.getName(), mapEntry);
-            LOG.info("Inactivate mapping: {} with {}", targetUri, mapEntryJson);
+            LOG.info("Reactivate mapping: {} with {}", targetUri, mapEntryJson);
             try (final Response response = SnowstormConnection.putResponse(targetUri + mapEntry.getId(), mapEntryJson)) {
                 if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
                     throw new Exception(
@@ -1043,6 +1061,21 @@ public class SnowstormMapping extends SnowstormAbstract {
             }
         }        
 
+        // Update Map Entry (Refset member)
+        for (final MapEntry mapEntry : mapEntryUpdateList) {
+            final String mapEntryJson = mapEntryToSnowstormMap(mapProject, mapSetCode, submittedMapping.getCode(), submittedMapping.getName(), mapEntry);
+            LOG.info("Update mapping: {} with {}", targetUri, mapEntryJson);
+            try (final Response response = SnowstormConnection.putResponse(targetUri + mapEntry.getId(), mapEntryJson)) {
+                if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                    throw new Exception(
+                        "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
+                }
+                final JsonNode updatedMapEntryJson = mapper.readTree(response.readEntity(String.class));
+                final MapEntry updatedMapEntry = convertSnowstormMemberToMapEntry(updatedMapEntryJson, mapSet, branch);
+                updatedMapEntries.add(updatedMapEntry);
+            }
+        }           
+        
         submittedMapping.getMapEntries().clear();
         submittedMapping.getMapEntries().addAll(updatedMapEntries);
 
@@ -1360,8 +1393,24 @@ public class SnowstormMapping extends SnowstormAbstract {
      */
     private static Boolean areMapsEquivalent(Mapping mapping1, Mapping mapping2) {
     	
+    	//Check for null mappings
+    	if((mapping1 == null && mapping2 == null)) {
+    		return true;
+    	}
+    	if((mapping1 == null || mapping2 == null)) {
+    		return false;
+    	}
+    	
     	//Check top-level mapping information
      	if(!(mapping1.getCode().equals(mapping2.getCode()) && mapping1.getMapSetId().equals(mapping2.getMapSetId()))) {
+    		return false;
+    	}
+    	
+    	//Check for null map entries
+    	if(mapping1.getMapEntries() == null && mapping2.getMapEntries() == null) {
+    		return true;
+    	}
+    	if(mapping1.getMapEntries() == null || mapping2.getMapEntries() == null) {
     		return false;
     	}
     	
@@ -1399,6 +1448,14 @@ public class SnowstormMapping extends SnowstormAbstract {
     private static Boolean areMapEntriesEquivalent(MapEntry mapEntry1, MapEntry mapEntry2) {
     	Boolean mapEntriesEquivalent = true;
     	   	
+    	//Check for null map entries
+    	if(mapEntry1 == null && mapEntry2 == null) {
+    		return true;
+    	}    	
+    	if(mapEntry1 == null || mapEntry2 == null) {
+    		return false;
+    	}
+    	
     	//Check individual map entry information
 		mapEntriesEquivalent = mapEntry1.getGroup()==mapEntry2.getGroup() 
 				&& mapEntry1.getPriority()==mapEntry2.getPriority()
@@ -1408,11 +1465,63 @@ public class SnowstormMapping extends SnowstormAbstract {
                 && Objects.equals(mapEntry1.getRelationCode(), mapEntry2.getRelationCode())
                 && Objects.equals(mapEntry1.getRule(), mapEntry2.getRule())
                 && Objects.equals(mapEntry1.getToCode(), mapEntry2.getToCode());
-		if(!mapEntriesEquivalent) {
-			return mapEntriesEquivalent;
-    	}
-        
+
     	return mapEntriesEquivalent;
-    }    
+    }
+    
+    /**
+     * If two map entries have the same group, priority, target, and rule, 
+     * then they represent the same object (i.e. will have the same UUID in snowstorm).
+     * This determines whether changes should update an existing map entry, or create a new one.
+     * 
+     *
+     * @param mapEntry1 the map entry 1
+     * @param mapEntry2 the map entry 2
+     * @return the boolean
+     */    
+    private static Boolean doMapEntriesShareUUID(MapEntry mapEntry1, MapEntry mapEntry2) {
+    	Boolean mapEntriesShareUUID = true;
+    	   	
+    	//Check for null map entries
+    	if(mapEntry1 == null && mapEntry2 == null) {
+    		return true;
+    	}    	
+    	if(mapEntry1 == null || mapEntry2 == null) {
+    		return false;
+    	}
+    	
+    	//Check individual map entry information
+    	mapEntriesShareUUID = mapEntry1.getGroup()==mapEntry2.getGroup() 
+				&& mapEntry1.getPriority()==mapEntry2.getPriority()
+				&& mapEntry1.getBlock() == mapEntry2.getBlock()
+                && Objects.equals(mapEntry1.getRule(), mapEntry2.getRule())
+                && Objects.equals(mapEntry1.getToCode(), mapEntry2.getToCode());
+
+    	return mapEntriesShareUUID;
+    }
+    
+    
+    /**
+     * Update an existing map entry with the non-defining content of the submitted map entry
+     * This can only be done on map entries that share a UUID
+     * 
+     *
+     * @param existingMapEntry the existing map entry
+     * @param submittedMapEntry the submitted map entry
+     * @return the map entry
+     */       
+    private static MapEntry updateExistingMapEntry(MapEntry existingMapEntry, MapEntry submittedMapEntry) throws Exception {
+    	
+    	if(!doMapEntriesShareUUID(existingMapEntry,submittedMapEntry)) {
+    		throw new Exception("You cannot update an existing map entry with a non UUID-sharing new entry");
+    	}
+    	
+    	existingMapEntry.setAdditionalMapEntryInfos(submittedMapEntry.getAdditionalMapEntryInfos());
+    	existingMapEntry.setAdvices(submittedMapEntry.getAdvices());
+    	existingMapEntry.setRelation(submittedMapEntry.getRelation());
+    	existingMapEntry.setRelationCode(submittedMapEntry.getRelationCode());
+    	
+    	return existingMapEntry;
+    }
 
 }
