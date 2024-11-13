@@ -136,11 +136,14 @@ public class ConceptController extends BaseController {
             if (searchParameters == null) {
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
-
-            if (StringUtils.isBlank(searchParameters.getQuery()) || searchParameters.getQuery().length() < 3) {
-                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            
+            ResultListConcept resultListConcept = new ResultListConcept();
+            
+            if (StringUtils.isBlank(searchParameters.getQuery()) || searchParameters.getQuery().length() < 2) {
+                return new ResponseEntity<>(resultListConcept, HttpStatus.OK);
             }
-
+            
+            
             if (searchParameters.getOffset() == null) {
                 searchParameters.setOffset(0);
             }
@@ -149,7 +152,7 @@ public class ConceptController extends BaseController {
                 searchParameters.setLimit(20);
             }
 
-            final ResultListConcept resultListConcept = ConceptService.findConcepts(terminology, version, searchParameters);
+            resultListConcept = ConceptService.findConcepts(terminology, version, searchParameters);
             return new ResponseEntity<>(resultListConcept, HttpStatus.OK);
 
         } catch (final Exception e) {
