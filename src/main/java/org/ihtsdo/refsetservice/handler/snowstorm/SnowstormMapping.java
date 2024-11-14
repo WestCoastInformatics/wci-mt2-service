@@ -544,10 +544,11 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         final StringBuilder requestBodyTemplate = new StringBuilder();
         requestBodyTemplate.append("{");
-        requestBodyTemplate.append("\"termFilter\": \"").append(searchString).append("\",");
-        requestBodyTemplate.append("\"eclFilter\": \"^").append(mapSetCode).append("\",");
+        requestBodyTemplate.append("\"termFilter\": \"").append(searchString).append("\", ");
+        requestBodyTemplate.append("\"eclFilter\": \"^").append(mapSetCode).append("\", ");
         requestBodyTemplate.append("\"limit\": ").append(5000).append(",");
-        requestBodyTemplate.append("\"returnIdOnly\": true,");
+        requestBodyTemplate.append("\"termActive\": true, ");
+        requestBodyTemplate.append("\"returnIdOnly\": true, ");
         // Is replaced with actual searchAfter value
         requestBodyTemplate.append("\"searchAfter\": \"SEARCH_AFTER\"");
         requestBodyTemplate.append("}");
