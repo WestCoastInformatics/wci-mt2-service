@@ -10,14 +10,20 @@
 package org.ihtsdo.refsetservice.util;
 
 import java.util.Date;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
+import org.ihtsdo.refsetservice.model.AdditionalMapEntryInfo;
 import org.ihtsdo.refsetservice.model.AuditEntry;
 import org.ihtsdo.refsetservice.model.DiscussionThread;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.HasModified;
 import org.ihtsdo.refsetservice.model.MapAdvice;
+import org.ihtsdo.refsetservice.model.MapEntry;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapRelation;
+import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
@@ -26,6 +32,10 @@ import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * The Class AuditEntryHelper.
@@ -60,11 +70,16 @@ public final class AuditEntryHelper {
         /** The map rule. */
         MAP_RULE,
         /** The map relation. */
-        MAP_RELATION
+        MAP_RELATION,
+        /** The map entry. */
+        MAP_ENTRY
     }
 
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(AuditEntryHelper.class);
+
+    /** The object mapper. */
+    private static ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * Log.
@@ -90,7 +105,6 @@ public final class AuditEntryHelper {
      * @param edition the edition
      * @return the audit entry
      */
-    // Edition
     public static AuditEntry addEditionEntry(final Edition edition) {
 
         final AuditEntry entry = new AuditEntry();
@@ -1008,7 +1022,7 @@ public final class AuditEntryHelper {
     /**
      * Change map project status entry.
      *
-     * @param map project the project
+     * @param mapProject the map project
      * @return the audit entry
      */
     public static AuditEntry changeMapProjectStatusEntry(final MapProject mapProject) {
@@ -1045,7 +1059,193 @@ public final class AuditEntryHelper {
         return entry;
     }
 
+    // ############ Mappings
+    // Map Entry
+    /**
+     * Adds the mapping entry.
+     *
+     * @param refsetId the refset id
+     * @param mapping the mapping
+     * @param mapEntry the map entry
+     * @return the audit entry
+     */
+
+    public static AuditEntry addMappingEntry(final String refsetId, final Mapping mapping, final MapEntry mapEntry) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(EntityType.REFSET.toString());
+        entry.setEntityId(refsetId);
+        entry.setMessage("ADD MapEntry");
+        entry.setDetails("Add map entry from concept " + mapping.getCode() + " to "
+            + (StringUtils.isNotBlank(mapEntry.getToCode()) ? mapEntry.getToCode() : "NO TARGET") + " ");
+        log(entry);
+        return entry;
+    }
+
+    /**
+     * Update mapping entry.
+     *
+     * @param refsetId the refset id
+     * @param mapping the mapping
+     * @param updatedMapEntry the updated map entry
+     * @param oldMapEntry the old map entry
+     * @return the audit entry
+     */
+    public static AuditEntry updateMappingEntry(final String refsetId, final Mapping mapping, final MapEntry updatedMapEntry, final MapEntry oldMapEntry) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(EntityType.REFSET.toString());
+        entry.setEntityId(refsetId);
+        entry.setMessage("UPDATE MapEntry");
+
+        try {
+            final ArrayNode differences = computeDetailsMapEntry(updatedMapEntry, oldMapEntry);
+
+            if (differences.size() > 0) {
+                final ObjectNode detailsObject = objectMapper.createObjectNode();
+                detailsObject.put("concept", mapping.getCode());
+                detailsObject.set("changes", differences);
+                entry.setDetails(detailsObject.toString());
+                log(entry);
+            }
+
+        } catch (Exception e) {
+            LOG.error("Error computing differences for map entry: " + e.getMessage());
+        }
+
+        return entry;
+
+    }
+
+    /**
+     * Removes the mapping entry.
+     *
+     * @param refsetId the refset id
+     * @param mapping the mapping
+     * @param mapEntry the map entry
+     * @return the audit entry
+     */
+    public static AuditEntry statusChangeMappingEntry(final String refsetId, final Mapping mapping, final MapEntry mapEntry) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(EntityType.REFSET.toString());
+        entry.setEntityId(refsetId);
+        entry.setMessage("UPDATE MapEntry");
+        entry.setDetails("Map entry for concept " + mapping.getCode() + ((mapEntry.isActive()) ? " activated." : " inactivated."));
+        log(entry);
+        return entry;
+    }
+
+    /**
+     * Removes the mapping entry.
+     *
+     * @param refsetId the refset id
+     * @param mapping the mapping
+     * @param mapEntry the map entry
+     * @return the audit entry
+     */
+    public static AuditEntry deleteMappingEntry(final String refsetId, final Mapping mapping, final MapEntry mapEntry) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(EntityType.REFSET.toString());
+        entry.setEntityId(refsetId);
+        entry.setMessage("DELETE MapEntry");
+        entry.setDetails("Delete map entry for concept " + mapping.getCode() + " mapped to "
+            + (StringUtils.isNotBlank(mapEntry.getToCode()) ? mapEntry.getToCode() : "NO TARGET") + ".");
+        log(entry);
+        return entry;
+    }
+
+    /**
+     * Compute log string map entries.
+     *
+     * @param newEntry the new entry
+     * @param oldEntry the old entry
+     * @return the string
+     * @throws Exception the exception
+     */
+    private static ArrayNode computeDetailsMapEntry(final MapEntry newEntry, final MapEntry oldEntry) throws Exception {
+
+        final ArrayNode changesArray = objectMapper.createArrayNode();
+
+        if (!Objects.equals(oldEntry.getToCode(), newEntry.getToCode())) {
+            changesArray.add(createChangeObject("ToCode", oldEntry.getToCode(), newEntry.getToCode()));
+        }
+        if (!Objects.equals(oldEntry.getToName(), newEntry.getToName())) {
+            changesArray.add(createChangeObject("ToName", oldEntry.getToName(), newEntry.getToName()));
+        }
+        if (!Objects.equals(oldEntry.getRelation(), newEntry.getRelation())) {
+            changesArray.add(createChangeObject("Relation", oldEntry.getRelation(), newEntry.getRelation()));
+        }
+        if (!Objects.equals(oldEntry.getRelationCode(), newEntry.getRelationCode())) {
+            changesArray.add(createChangeObject("RelationCode", oldEntry.getRelationCode(), newEntry.getRelationCode()));
+        }
+        if (!Objects.equals(oldEntry.getRule(), newEntry.getRule())) {
+            changesArray.add(createChangeObject("Rule", oldEntry.getRule(), newEntry.getRule()));
+        }
+        if (oldEntry.getPriority() != newEntry.getPriority()) {
+            changesArray.add(createChangeObject("Priority", String.valueOf(oldEntry.getPriority()), String.valueOf(newEntry.getPriority())));
+        }
+        if (oldEntry.getBlock() != newEntry.getBlock()) {
+            changesArray.add(createChangeObject("Block", String.valueOf(oldEntry.getBlock()), String.valueOf(newEntry.getBlock())));
+        }
+        if (oldEntry.getGroup() != newEntry.getGroup()) {
+            changesArray.add(createChangeObject("Group", String.valueOf(oldEntry.getGroup()), String.valueOf(newEntry.getGroup())));
+        }
+        if (!Objects.equals(oldEntry.getModuleId(), newEntry.getModuleId())) {
+            changesArray.add(createChangeObject("ModuleId", oldEntry.getModuleId(), newEntry.getModuleId()));
+        }
+        if (oldEntry.isReleased() != newEntry.isReleased()) {
+            changesArray.add(createChangeObject("Released", String.valueOf(oldEntry.isReleased()), String.valueOf(newEntry.isReleased())));
+        }
+        if (!Objects.equals(oldEntry.getAdvices(), newEntry.getAdvices())) {
+            changesArray.add(createChangeObject("Advices", oldEntry.getAdvices().toString(), newEntry.getAdvices().toString()));
+        }
+        if (!Objects.equals(oldEntry.getAdditionalMapEntryInfos(), newEntry.getAdditionalMapEntryInfos())) {
+            ArrayNode oldInfos = objectMapper.valueToTree(oldEntry.getAdditionalMapEntryInfos());
+            ArrayNode newInfos = objectMapper.valueToTree(newEntry.getAdditionalMapEntryInfos());
+            changesArray.add(createChangeObject("AdditionalMapEntryInfos", oldInfos, newInfos));
+        }
+
+        return changesArray;
+    }
+
+    /**
+     * Creates the change object.
+     *
+     * @param fieldName the field name
+     * @param oldValue the old value
+     * @param newValue the new value
+     * @return the JSON object
+     * @throws Exception the exception
+     */
+    private static ObjectNode createChangeObject(final String fieldName, final String oldValue, final String newValue) throws Exception {
+
+        final ObjectNode changeObject = objectMapper.createObjectNode();
+        changeObject.put("fieldName", fieldName);
+        changeObject.put("oldValue", oldValue);
+        changeObject.put("newValue", newValue);
+        return changeObject;
+    }
     
+    /**
+     * Creates the change object.
+     *
+     * @param fieldName the field name
+     * @param oldValue the old value
+     * @param newValue the new value
+     * @return the object node
+     * @throws Exception the exception
+     */
+    private static ObjectNode createChangeObject(final String fieldName, final ArrayNode oldValue, final ArrayNode newValue) throws Exception {
+
+        final ObjectNode changeObject = objectMapper.createObjectNode();
+        changeObject.put("fieldName", fieldName);
+        changeObject.set("oldValue", oldValue);
+        changeObject.set("newValue", newValue);
+        return changeObject;
+    }
+
     // Map Relation
     /**
      * Adds the map relation entry.
@@ -1064,6 +1264,12 @@ public final class AuditEntryHelper {
         return entry;
     }
 
+    /**
+     * Update map relation entry.
+     *
+     * @param mapRelation the map relation
+     * @return the audit entry
+     */
     public static AuditEntry updateMapRelationEntry(final MapRelation mapRelation) {
 
         final AuditEntry entry = new AuditEntry();
