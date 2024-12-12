@@ -605,11 +605,14 @@ public class SnowstormMapping extends SnowstormAbstract {
      * @param conceptCode the concept code
      * @param moduleId the module id
      * @param activeOnly the active only
+     * @param moduleId the module id
+     * @param activeOnly the active only
      * @param showOverriddenEntries the show overridden entries
      * @param includeDescriptions the include descriptions
      * @return the mapping
      * @throws Exception the exception
      */
+
     public static Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode, final String moduleId, final boolean activeOnly,
         final boolean showOverriddenEntries, final boolean includeDescriptions) throws Exception {
 
@@ -621,6 +624,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members?referenceSet=" + mapSetCode + "&referencedComponentId=" + conceptCode
             + (moduleId != null ? "&module=" + moduleId : "") + (activeOnly == false ? "" : "&active=true") + "&limit=" + limit
             + (searchAfter != null ? "&searchAfter=" + searchAfter : "");
+
         LOG.info("getSnowstormMapping url: " + targetUri);
 
         final WebTarget target = client.target(targetUri);
@@ -836,9 +840,11 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         // Pre-update cleanup
         for (final MapEntry mapEntry : submittedMapping.getMapEntries()) {
+
             mapEntry.setAdvices(MapEntryUtility.fixMapEntryAdvices(mapEntry));
             mapEntry.setRelationCode(MapEntryUtility.calculateMapEntryRelationCode(mapProject, mapEntry));
-            mapEntry.setModuleId(mapProject.getModuleId()); // Only create entries in the Edition module, never in the International
+            mapEntry.setModuleId(mapProject.getModuleId()); // Only create entries in the Edition module, never in the
+                                                            // International
         }
 
         final Set<MapEntry> mapEntryAddList = new HashSet<>();
@@ -968,7 +974,16 @@ public class SnowstormMapping extends SnowstormAbstract {
                 }
             }
             if (matchFound == false) {
-                mapEntryCreateList.put(submittedMapEntry, null);
+                if (existingActiveInternationalMapping != null && existingActiveInternationalMapping.getMapEntries() != null) {
+                    // Find matching International entry to track what we're replacing
+                    final MapEntry originalMapEntry = existingActiveInternationalMapping.getMapEntries().stream()
+                        .filter(e -> e.getGroup() == submittedMapEntry.getGroup() && e.getPriority() == submittedMapEntry.getPriority()).findFirst()
+                        .orElse(null);
+                    mapEntryCreateList.put(submittedMapEntry, originalMapEntry);
+                } else {
+                    // No International entry exists, just create new entry
+                    mapEntryCreateList.put(submittedMapEntry, null);
+                }
             }
         }
 
@@ -993,6 +1008,7 @@ public class SnowstormMapping extends SnowstormAbstract {
                 mapEntryCreateList.put(submittedMapEntry, existingMapEntry);
             } else {
                 existingMapEntry = MapEntryUtility.updateExistingMapEntry(existingMapEntry, submittedMapEntry);
+                // mapEntryUpdateList.put(existingMapEntry, submittedMapEntry);
                 mapEntryUpdateList.put(submittedMapEntry, existingMapEntry);
             }
         }

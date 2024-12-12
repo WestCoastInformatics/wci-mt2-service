@@ -9,14 +9,9 @@
  */
 package org.ihtsdo.refsetservice;
 
-import java.util.Set;
-
 import javax.persistence.PersistenceException;
 
-import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormConcept;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.util.CachingUtility;
-import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
