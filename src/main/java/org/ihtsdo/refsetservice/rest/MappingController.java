@@ -11,6 +11,7 @@ package org.ihtsdo.refsetservice.rest;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.io.File;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
@@ -23,6 +24,7 @@ import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.MapProjectService;
 import org.ihtsdo.refsetservice.terminologyservice.MappingService;
+import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
@@ -117,6 +119,60 @@ public class MappingController extends BaseController {
             return null;
         }
     }
+    
+        
+    /**
+     * @author vparekh
+     * export the mappings.  
+     * @param mapSetCode the map set code 
+     * @param conceptCodes the concept codes
+     * @param includedColumns (array of column headers to include, e.g. [“Source“,”Source PT”,”Group”,etc.]) 
+     * @return zip file
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/mapset/{mapSetCode}/export", produces = MediaType.APPLICATION_JSON)  
+    //@PostMapping(value = "/mapset/{mapSetCode}/export", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Export Mapset Rows", tags = {
+        "mapset"
+    }, responses = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"), @ApiResponse(responseCode = "403", description = "Forbidden"),
+        @ApiResponse(responseCode = "404", description = "Resource not found"), @ApiResponse(responseCode = "417", description = "Failed Expectation")
+    })
+    @Parameters({
+        @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. 447562003", required = true),
+        @Parameter(name = "conceptCodes", description = "Comma delimited list of concept codes, e.g. 880057004,880057005", required = false),
+        @Parameter(name = "includedColumns", description = "Included column headers, e.g. [“Source“,”Source PT”,”Group”,etc.]", required = false)    
+    })        		
+    @RecordMetric
+    public @ResponseBody ResponseEntity<File> exportMappings(@PathVariable(value = "mapSetCode") final String mapSetCode,
+        @RequestParam(required = false) final String conceptCodes, 
+        @RequestParam(required = false) final String includedColumns,
+        @RequestParam(required = false) final String filter, @RequestParam(required = false, defaultValue = "true") boolean showOverriddenEntries,
+        @ModelAttribute final SearchParameters searchParameters) throws Exception {
+        
+        // final User authUser = authorizeUser(request);
+        try {
+	            final SearchParameters sp = (searchParameters != null) ? searchParameters : new SearchParameters();
+	            if (sp.getLimit() == null || sp.getLimit() == 0) {
+	                sp.setLimit(10000); //Snowstorm limitation 
+	            }
+            
+            final List<String> conceptCodesList = (StringUtils.isBlank(conceptCodes)) ? new ArrayList<>() : List.of(conceptCodes.split(","));
+            final String filterString = (StringUtils.isBlank(filter)) ? StringUtils.EMPTY : StringUtils.trim(filter);
+            final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";  
+            final List<String> includedColumnsList = (StringUtils.isBlank(includedColumns)) ? new ArrayList<>() : List.of(includedColumns.split(","));  
+            
+            final ResultListMapping mappings = MappingService.getMappings(branch, mapSetCode, sp, filterString, showOverriddenEntries, conceptCodesList);
+            final File  exportMapPkg  = RefsetMemberService.exportMappingFilesToDownload(mappings, includedColumnsList);
+                   
+            return new ResponseEntity<>(exportMapPkg,  HttpStatus.OK);            
+        } catch (final Exception e) {	
+            handleException(e);
+            return null;
+        }   
+    }
+ 
 
     /**
      * Gets the mapping.
