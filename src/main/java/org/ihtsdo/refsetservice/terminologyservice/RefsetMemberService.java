@@ -1602,8 +1602,18 @@ public final class RefsetMemberService {
 	        headerMappings.put("Advices", "getAdvices");
 	        headerMappings.put("Last Modified", "getModified");
 	        
+	        // Create a mutable copy of the includedColumnsList to avoid UnsupportedOperationException
+	        List<String> columnsToInclude = new ArrayList<>(includedColumnsList);
+
+	        // Check if "Target" is in the included columns
+	        if (columnsToInclude.contains("Target")) {
+	         	    columnsToInclude.add("Group");
+	                columnsToInclude.add("Priority");	            
+	        }
+	        
 	        // Determine columns to include
-	        List<String> columnsToInclude = includedColumnsList.isEmpty() ? new ArrayList<>(headerMappings.keySet()) : includedColumnsList;
+	        //columnsToInclude = includedColumnsList.isEmpty() ? new ArrayList<>(headerMappings.keySet()) : includedColumnsList;
+	     
 	        // Write the header
 	        writer.println(String.join("\t", columnsToInclude));
 	        
@@ -1617,8 +1627,13 @@ public final class RefsetMemberService {
 	                dataRow.put("Source PT", sourceName);
 	                dataRow.put("Target", entry.getToCode());
 	                dataRow.put("Target PT", entry.getToName());
-	                dataRow.put("Group", String.valueOf(entry.getGroup())); 		//UI Handling ?
-	                dataRow.put("Priority", String.valueOf(entry.getPriority()));	//UI Handling ?                
+	                
+	                // Only add "Group" and "Priority" if "Target" is present
+	                if (entry.getToCode() != null && !entry.getToCode().isEmpty()) {
+	                    dataRow.put("Group", String.valueOf(entry.getGroup()));
+	                    dataRow.put("Priority", String.valueOf(entry.getPriority()));
+	                }
+	                            
 	                dataRow.put("Relationship", entry.getRelation());
 	                dataRow.put("Rule", entry.getRule());
 	                dataRow.put("Advices", entry.getAdvices() != null ? String.join("|", entry.getAdvices()) : "");
