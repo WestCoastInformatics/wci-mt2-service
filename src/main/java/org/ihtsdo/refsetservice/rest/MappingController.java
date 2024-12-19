@@ -9,9 +9,10 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
+import java.io.File;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
-import java.io.File;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
@@ -20,16 +21,19 @@ import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.Mapping;
+import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.MapProjectService;
 import org.ihtsdo.refsetservice.terminologyservice.MappingService;
-import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -122,16 +126,14 @@ public class MappingController extends BaseController {
     
         
     /**
-     * @author vparekh
-     * export the mappings.  
+     * @author vparekh export the mappings.
      * @param mapSetCode the map set code 
      * @param conceptCodes the concept codes
-     * @param includedColumns (array of column headers to include, e.g. [“Source“,”Source PT”,”Group”,etc.]) 
+     * @param includedColumns (array of column headers to include, e.g. ["Source","Source PT","Group", ...])
      * @return zip file
      * @throws Exception the exception
      */
-    @RequestMapping(method = RequestMethod.GET, value = "/mapset/{mapSetCode}/export", produces = MediaType.APPLICATION_JSON)  
-    //@PostMapping(value = "/mapset/{mapSetCode}/export", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @PostMapping(value = "/mapset/{mapSetCode}/export", consumes = MediaType.APPLICATION_JSON)
     @Operation(summary = "Export Mapset Rows", tags = {
         "mapset"
     }, responses = {
@@ -141,32 +143,39 @@ public class MappingController extends BaseController {
     })
     @Parameters({
         @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. 447562003", required = true),
-        @Parameter(name = "conceptCodes", description = "Comma delimited list of concept codes, e.g. 880057004,880057005", required = false),
-        @Parameter(name = "includedColumns", description = "Included column headers, e.g. [“Source“,”Source PT”,”Group”,etc.]", required = false)    
+        
     })        		
     @RecordMetric
-    public @ResponseBody ResponseEntity<File> exportMappings(@PathVariable(value = "mapSetCode") final String mapSetCode,
-        @RequestParam(required = false) final String conceptCodes, 
-        @RequestParam(required = false) final String includedColumns,
-        @RequestParam(required = false) final String filter, @RequestParam(required = false, defaultValue = "true") boolean showOverriddenEntries,
-        @ModelAttribute final SearchParameters searchParameters) throws Exception {
+    public @ResponseBody ResponseEntity<Resource> exportMappings(@PathVariable(value = "mapSetCode") final String mapSetCode,
+        @RequestBody final MappingExportRequest mappingExportRequest) throws Exception {
         
         // final User authUser = authorizeUser(request);
-        try {
-	            final SearchParameters sp = (searchParameters != null) ? searchParameters : new SearchParameters();
-	            if (sp.getLimit() == null || sp.getLimit() == 0) {
-	                sp.setLimit(10000); //Snowstorm limitation 
+        
+        if (mappingExportRequest == null) {
+            throw new RuntimeException("MappingExportRequest is required.");
+        }
+        if (mappingExportRequest.getConceptCodes() == null || mappingExportRequest.getConceptCodes().isEmpty()) {
+            throw new RuntimeException("One or more concept codes are required.");
+        }
+        if (mappingExportRequest.getColumnNames() == null || mappingExportRequest.getColumnNames().isEmpty()) {
+            throw new RuntimeException("One or more column names are required.");
 	            }
             
-            final List<String> conceptCodesList = (StringUtils.isBlank(conceptCodes)) ? new ArrayList<>() : List.of(conceptCodes.split(","));
-            final String filterString = (StringUtils.isBlank(filter)) ? StringUtils.EMPTY : StringUtils.trim(filter);
+        
+        try {
+
             final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";  
-            final List<String> includedColumnsList = (StringUtils.isBlank(includedColumns)) ? new ArrayList<>() : List.of(includedColumns.split(","));  
+            final File exportMapPkg = MappingService.exportMappings(branch, mapSetCode, mappingExportRequest);
             
-            final ResultListMapping mappings = MappingService.getMappings(branch, mapSetCode, sp, filterString, showOverriddenEntries, conceptCodesList);
-            final File  exportMapPkg  = RefsetMemberService.exportMappingFilesToDownload(mappings, includedColumnsList);
+            final Resource file = new UrlResource(exportMapPkg.toURI());
+            if (!file.exists() || !file.isReadable()) {
+                throw new RuntimeException("Could not read the file!");
+            }
+
+            return ResponseEntity.ok().header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION)
+                .header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(exportMapPkg.toPath()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"").contentLength(file.contentLength()).body(file);
                    
-            return new ResponseEntity<>(exportMapPkg,  HttpStatus.OK);            
         } catch (final Exception e) {	
             handleException(e);
             return null;

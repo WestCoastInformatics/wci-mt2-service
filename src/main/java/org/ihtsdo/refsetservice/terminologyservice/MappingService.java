@@ -9,11 +9,14 @@
  */
 package org.ihtsdo.refsetservice.terminologyservice;
 
+import java.io.File;
+import java.nio.file.Paths;
 import java.util.List;
 
 import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.Mapping;
+import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
@@ -127,5 +130,21 @@ public final class MappingService {
         throws Exception {
 
         return terminologyHandler.updateMappings(mapProject, branch, mapSetCode, mapping);
+    }
+
+    /**
+     * Export mappings.
+     *
+     * @param mapProject the map project
+     * @param branch the branch
+     * @param mapSetCode the map set code
+     * @param conceptCodes the concept codes
+     * @param includedColumnsList the included columns list
+     * @return the file
+     * @throws Exception the exception
+     */
+    public static File exportMappings(final String branch, final String mapSetCode, final MappingExportRequest mappingExportRequest) throws Exception {
+
+        return terminologyHandler.exportMappings(branch, mapSetCode, mappingExportRequest);
     }
 }
