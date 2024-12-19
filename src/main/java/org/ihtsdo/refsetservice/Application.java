@@ -9,13 +9,10 @@
  */
 package org.ihtsdo.refsetservice;
 
-import java.util.Set;
-
 import javax.persistence.PersistenceException;
 
 import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormConcept;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.util.CachingUtility;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +48,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
         @Tag(name = "project", description = "Project service endpoints"), @Tag(name = "refset", description = "Refset service endpoints"),
         @Tag(name = "security", description = "Security/auth service endpoints"), @Tag(name = "team", description = "Team service endpoints"),
     }, servers = {
-        @Server(description = "Current Instance", url = "/")
+        @Server(description = "Current Instance", url = "/refsetservice")
     })
 public class Application extends SpringBootServletInitializer {
 
