@@ -9,12 +9,19 @@
  */
 package org.ihtsdo.refsetservice.handler.snowstorm;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -39,10 +46,14 @@ import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapRelation;
 import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.Mapping;
+import org.ihtsdo.refsetservice.model.MappingExportRequest;
+import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
+import org.ihtsdo.refsetservice.util.DateUtility;
+import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.LocalException;
-import org.ihtsdo.refsetservice.util.ResultList;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -605,8 +616,8 @@ public class SnowstormMapping extends SnowstormAbstract {
      * @return the mapping
      * @throws Exception the exception
      */
-    public static Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode, final String moduleId, 
-    		final boolean activeOnly, final boolean showOverriddenEntries, final boolean includeDescriptions) throws Exception {
+    public static Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode, final String moduleId, final boolean activeOnly,
+        final boolean showOverriddenEntries, final boolean includeDescriptions) throws Exception {
 
         // Connect to snowstorm
         final Client client = getClients().get();
@@ -614,9 +625,8 @@ public class SnowstormMapping extends SnowstormAbstract {
         int limit = 50;
 
         final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members?referenceSet=" + mapSetCode + "&referencedComponentId=" + conceptCode
-            + (moduleId != null ? "&module=" + moduleId : "") 
-            + (activeOnly == false ? "" : "&active=true") 
-            + "&limit=" + limit + (searchAfter != null ? "&searchAfter=" + searchAfter : "");
+            + (moduleId != null ? "&module=" + moduleId : "") + (activeOnly == false ? "" : "&active=true") + "&limit=" + limit
+            + (searchAfter != null ? "&searchAfter=" + searchAfter : "");
         LOG.info("getSnowstormMapping url: " + targetUri);
 
         final WebTarget target = client.target(targetUri);
@@ -825,177 +835,173 @@ public class SnowstormMapping extends SnowstormAbstract {
      * @return the mapping
      * @throws Exception the exception
      */
-    public static Mapping updateMapping(final MapProject mapProject, final String branch, final String mapSetCode, final Mapping submittedMapping) throws Exception {
+    public static Mapping updateMapping(final MapProject mapProject, final String branch, final String mapSetCode, final Mapping submittedMapping)
+        throws Exception {
 
         final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/";
 
         // Pre-update cleanup
         for (final MapEntry mapEntry : submittedMapping.getMapEntries()) {
-	        mapEntry.setAdvices(fixMapEntryAdvices(mapEntry));
-	        mapEntry.setRelationCode(calculateMapEntryRelationCode(mapProject, mapEntry));
-	        mapEntry.setModuleId(mapProject.getModuleId()); // Only create entries in the Edition module, never in the International
-	    }
-        
+            mapEntry.setAdvices(fixMapEntryAdvices(mapEntry));
+            mapEntry.setRelationCode(calculateMapEntryRelationCode(mapProject, mapEntry));
+            mapEntry.setModuleId(mapProject.getModuleId()); // Only create entries in the Edition module, never in the International
+        }
+
         final Set<MapEntry> mapEntryAddList = new HashSet<>();
         final Set<MapEntry> mapEntryRemoveList = new HashSet<>();
-        // Map of modified entries: 
+        // Map of modified entries:
         // Key = existing Map Entry
         // Value = submitted Map Entry
-        final Map<MapEntry, MapEntry> mapEntryModifyMap = new HashMap<>();        
-        
+        final Map<MapEntry, MapEntry> mapEntryModifyMap = new HashMap<>();
+
         // get all the map entries for the existing active mapping already in snowstorm
         // This is the current mapping that has precedence, so may be International or Norwegian
         final Mapping existingActiveMapping = getMapping(branch, mapSetCode, submittedMapping.getCode(), null, true, false, false);
-        
-        // also get the map entries for the active International mapping in snowstorm 
+
+        // also get the map entries for the active International mapping in snowstorm
         // (this may the same or different than the above).
         final Mapping existingActiveInternationalMapping = getMapping(branch, mapSetCode, submittedMapping.getCode(), "449080006", true, false, false);
-  
+
         // If map content is identical to the existing active map, do nothing.
-        if(areMapsEquivalent(submittedMapping, existingActiveMapping)) {
-        	LOG.info("No update required for mapping for {} - content unchanged", submittedMapping.getCode());
-        	return submittedMapping;
+        if (areMapsEquivalent(submittedMapping, existingActiveMapping)) {
+            LOG.info("No update required for mapping for {} - content unchanged", submittedMapping.getCode());
+            return submittedMapping;
         }
-        
-        // If we get here, then there is a difference between the existing active map in snowstorm and the 
+
+        // If we get here, then there is a difference between the existing active map in snowstorm and the
         // mapping being saved.
-        
+
         // If there is no existing active mapping, then all entries of the submitted map
         // will be added (brand new map)
-        if(existingActiveMapping == null || existingActiveMapping.getMapEntries() == null || existingActiveMapping.getMapEntries().size() == 0) {
-        	for(MapEntry submittedMapEntry : submittedMapping.getMapEntries()) {
-        		mapEntryAddList.add(submittedMapEntry);
-        	}        	
+        if (existingActiveMapping == null || existingActiveMapping.getMapEntries() == null || existingActiveMapping.getMapEntries().size() == 0) {
+            for (MapEntry submittedMapEntry : submittedMapping.getMapEntries()) {
+                mapEntryAddList.add(submittedMapEntry);
+            }
         }
-        
-        // If the existing active mapping is International, then all entries 
+
+        // If the existing active mapping is International, then all entries
         // of the submitted map will be added (this is a new Norwegian map overriding the International)
-        else if(existingActiveMapping.getMapEntries().size()>0 && existingActiveMapping.getMapEntries().get(0).getModuleId().equals("449080006")) {
-        	for(MapEntry submittedMapEntry : submittedMapping.getMapEntries()) {
-        		mapEntryAddList.add(submittedMapEntry);
-        	}
+        else if (existingActiveMapping.getMapEntries().size() > 0 && existingActiveMapping.getMapEntries().get(0).getModuleId().equals("449080006")) {
+            for (MapEntry submittedMapEntry : submittedMapping.getMapEntries()) {
+                mapEntryAddList.add(submittedMapEntry);
+            }
         }
         // Next check if the submitted map is identical to the active International map.
         // This identifies where the Norwegian map had diverged from the international, but now matches again.
         // In this case, remove all existing Norwegian map entries, and revert back to the International.
         else if (areMapsEquivalent(submittedMapping, existingActiveInternationalMapping)) {
-        	for(MapEntry existingMapEntry : existingActiveMapping.getMapEntries()) {
-        		mapEntryRemoveList.add(existingMapEntry);
-        	}        	
+            for (MapEntry existingMapEntry : existingActiveMapping.getMapEntries()) {
+                mapEntryRemoveList.add(existingMapEntry);
+            }
         }
         // Now that all mapping-wide cases have been handled,
         // check entry-by-entry to determine which need to be added, removed, or modified
         else {
-        	// First loop through all existing map entries, and comparing against 
-        	// the submitted map entries where Group and Priority match. 
-        	// If the entries are equivalent, then no action is required.
-        	// If the entries are not equivalent, check if they are close enough to share a UUID in snowstorm.
-        	// If they do share a UUID, modify the existing map entry with the submitted map's information.
-        	// If the don't share a UUID, remove the existing map and add the submitted map.
-        	// Finally, if an existing map entry has no corresponding group/priority submitted map entry, 
-        	// then that existing map entry needs to be removed. 
+            // First loop through all existing map entries, and comparing against
+            // the submitted map entries where Group and Priority match.
+            // If the entries are equivalent, then no action is required.
+            // If the entries are not equivalent, check if they are close enough to share a UUID in snowstorm.
+            // If they do share a UUID, modify the existing map entry with the submitted map's information.
+            // If the don't share a UUID, remove the existing map and add the submitted map.
+            // Finally, if an existing map entry has no corresponding group/priority submitted map entry,
+            // then that existing map entry needs to be removed.
             for (MapEntry existingMapEntry : existingActiveMapping.getMapEntries()) {
-            	boolean matchFound = false;
-            	for (MapEntry submittedMapEntry : submittedMapping.getMapEntries()) {
-                	if(existingMapEntry.getGroup()==submittedMapEntry.getGroup() && existingMapEntry.getPriority()==submittedMapEntry.getPriority()) {
-                		matchFound=true;
-                		if(areMapEntriesEquivalent(existingMapEntry,submittedMapEntry)) {
-                			//Equivalent map - no action required.
-                		}
-                		else {
-                			if(doMapEntriesShareUUID(existingMapEntry,submittedMapEntry)) {
-                				mapEntryModifyMap.put(existingMapEntry, submittedMapEntry);
-                			}
-                			else {
-                				mapEntryRemoveList.add(existingMapEntry);
-                				mapEntryAddList.add(submittedMapEntry);
-                			}
-                		}
-                	}
-            	}
-            	if(matchFound == false) {
-            		mapEntryRemoveList.add(existingMapEntry);
-            	}
+                boolean matchFound = false;
+                for (MapEntry submittedMapEntry : submittedMapping.getMapEntries()) {
+                    if (existingMapEntry.getGroup() == submittedMapEntry.getGroup() && existingMapEntry.getPriority() == submittedMapEntry.getPriority()) {
+                        matchFound = true;
+                        if (areMapEntriesEquivalent(existingMapEntry, submittedMapEntry)) {
+                            // Equivalent map - no action required.
+                        } else {
+                            if (doMapEntriesShareUUID(existingMapEntry, submittedMapEntry)) {
+                                mapEntryModifyMap.put(existingMapEntry, submittedMapEntry);
+                            } else {
+                                mapEntryRemoveList.add(existingMapEntry);
+                                mapEntryAddList.add(submittedMapEntry);
+                            }
+                        }
+                    }
+                }
+                if (matchFound == false) {
+                    mapEntryRemoveList.add(existingMapEntry);
+                }
             }
-            
-            // Now loop through all submitted map entries, to find any cases with no 
+
+            // Now loop through all submitted map entries, to find any cases with no
             // corresponding group/priority existing entry.
             // These entries need to be added.
-            for(MapEntry submittedMapEntry : submittedMapping.getMapEntries()) {
-            	boolean matchFound = false;
-            	for(MapEntry existingMapEntry : existingActiveMapping.getMapEntries()) {
-            		if(existingMapEntry.getGroup()==submittedMapEntry.getGroup() && existingMapEntry.getPriority()==submittedMapEntry.getPriority()) {
-                		matchFound=true;
-                		// No further comparison needed - all modified entries were identified above.
-                		break;
-                	}    		
-            	}
-            	if(matchFound == false) {
-            		mapEntryAddList.add(submittedMapEntry);
-            	}
+            for (MapEntry submittedMapEntry : submittedMapping.getMapEntries()) {
+                boolean matchFound = false;
+                for (MapEntry existingMapEntry : existingActiveMapping.getMapEntries()) {
+                    if (existingMapEntry.getGroup() == submittedMapEntry.getGroup() && existingMapEntry.getPriority() == submittedMapEntry.getPriority()) {
+                        matchFound = true;
+                        // No further comparison needed - all modified entries were identified above.
+                        break;
+                    }
+                }
+                if (matchFound == false) {
+                    mapEntryAddList.add(submittedMapEntry);
+                }
             }
         }
-        
+
         // Adding, removing, and modifying is handled differently depending on the existing
         // map entries in snowstorm.
-        
+
         final Set<MapEntry> mapEntryCreateList = new HashSet<>();
-        final Set<MapEntry> mapEntryInactivateList = new HashSet<>();        
+        final Set<MapEntry> mapEntryInactivateList = new HashSet<>();
         final Set<MapEntry> mapEntryReactivateList = new HashSet<>();
         final Set<MapEntry> mapEntryDeleteList = new HashSet<>();
         final Set<MapEntry> mapEntryUpdateList = new HashSet<>();
-        
+
         // For all map entries to be added, check if there are any UUI-matching, inactive, Norwegian entries in snowstorm.
         // If so, re-activate those existing entries, updating to match the submitted entry if needed.
         // If not, create a new entry.
-        final Mapping existingInactiveNorwegianMapping = getMapping(branch, mapSetCode, submittedMapping.getCode(), mapProject.getModuleId(), false, false, false);
-        
-        for(MapEntry submittedMapEntry : mapEntryAddList) {
-        	boolean matchFound = false;
-        	for(MapEntry existingInactiveMapEntry : existingInactiveNorwegianMapping.getMapEntries()) {
-        		if(doMapEntriesShareUUID(existingInactiveMapEntry, submittedMapEntry)) {
-            		matchFound=true;
-            		if(!areMapEntriesEquivalent(existingInactiveMapEntry, submittedMapEntry)) {
-            			existingInactiveMapEntry = updateExistingMapEntry(existingInactiveMapEntry, submittedMapEntry);
-            		}
-            		mapEntryReactivateList.add(existingInactiveMapEntry);
-            		break;
-            	}    		
-        	}
-        	if(matchFound == false) {
-        		mapEntryCreateList.add(submittedMapEntry);
-        	}
+        final Mapping existingInactiveNorwegianMapping =
+            getMapping(branch, mapSetCode, submittedMapping.getCode(), mapProject.getModuleId(), false, false, false);
+
+        for (MapEntry submittedMapEntry : mapEntryAddList) {
+            boolean matchFound = false;
+            for (MapEntry existingInactiveMapEntry : existingInactiveNorwegianMapping.getMapEntries()) {
+                if (doMapEntriesShareUUID(existingInactiveMapEntry, submittedMapEntry)) {
+                    matchFound = true;
+                    if (!areMapEntriesEquivalent(existingInactiveMapEntry, submittedMapEntry)) {
+                        existingInactiveMapEntry = updateExistingMapEntry(existingInactiveMapEntry, submittedMapEntry);
+                    }
+                    mapEntryReactivateList.add(existingInactiveMapEntry);
+                    break;
+                }
+            }
+            if (matchFound == false) {
+                mapEntryCreateList.add(submittedMapEntry);
+            }
         }
-        
-        
+
         // For all map entries to be removed, check if they have been previously released of not.
         // If so, then inactivate the entry
         // If not, then the entry can be fully deleted.
-        for(MapEntry mapEntry : mapEntryRemoveList) {
-        	if(mapEntry.isReleased()) {
-        		mapEntryInactivateList.add(mapEntry);
-        	}
-        	else {
-        		mapEntryDeleteList.add(mapEntry);
-        	}
+        for (MapEntry mapEntry : mapEntryRemoveList) {
+            if (mapEntry.isReleased()) {
+                mapEntryInactivateList.add(mapEntry);
+            } else {
+                mapEntryDeleteList.add(mapEntry);
+            }
         }
-        
-     
+
         // For all modified map entries, check if the corresponding existing map entry has been previously released or not.
         // If not, then delete the existing map entry, and create a new entry using the submitted map entry
         // If so, then update the existing map entry with the submitted map entry's content
-        for(MapEntry existingMapEntry : mapEntryModifyMap.keySet()) {
-        	MapEntry submittedMapEntry = mapEntryModifyMap.get(existingMapEntry);
-        	if(!existingMapEntry.isReleased()) {
-        		mapEntryDeleteList.add(existingMapEntry);
-        		mapEntryCreateList.add(submittedMapEntry);
-        	}
-        	else {
-        		existingMapEntry = updateExistingMapEntry(existingMapEntry, submittedMapEntry);
-        		mapEntryUpdateList.add(existingMapEntry);
-        	}
+        for (MapEntry existingMapEntry : mapEntryModifyMap.keySet()) {
+            MapEntry submittedMapEntry = mapEntryModifyMap.get(existingMapEntry);
+            if (!existingMapEntry.isReleased()) {
+                mapEntryDeleteList.add(existingMapEntry);
+                mapEntryCreateList.add(submittedMapEntry);
+            } else {
+                existingMapEntry = updateExistingMapEntry(existingMapEntry, submittedMapEntry);
+                mapEntryUpdateList.add(existingMapEntry);
+            }
         }
-          
+
         final MapSet mapSet = getMapSet(branch, mapSetCode);
 
         final ObjectMapper mapper = new ObjectMapper();
@@ -1003,9 +1009,9 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         // Create Map Entry (Refset member)
         for (final MapEntry mapEntry : mapEntryCreateList) {
-        	// Clear out any existing UUID, since it's creating a new entry
+            // Clear out any existing UUID, since it's creating a new entry
             mapEntry.setId("");
-            
+
             final String mapEntryJson = mapEntryToSnowstormMap(mapProject, mapSetCode, submittedMapping.getCode(), submittedMapping.getName(), mapEntry);
             LOG.info("Add mapping: {} with {}", targetUri, mapEntryJson);
             try (final Response response = SnowstormConnection.postResponse(targetUri, mapEntryJson)) {
@@ -1046,7 +1052,7 @@ public class SnowstormMapping extends SnowstormAbstract {
                 updatedMapEntries.add(updatedMapEntry);
             }
         }
-        
+
         // Reactivate Map Entry (Refset member)
         for (final MapEntry mapEntry : mapEntryReactivateList) {
             mapEntry.setActive(true);
@@ -1061,7 +1067,7 @@ public class SnowstormMapping extends SnowstormAbstract {
                 final MapEntry updatedMapEntry = convertSnowstormMemberToMapEntry(updatedMapEntryJson, mapSet, branch);
                 updatedMapEntries.add(updatedMapEntry);
             }
-        }        
+        }
 
         // Update Map Entry (Refset member)
         for (final MapEntry mapEntry : mapEntryUpdateList) {
@@ -1076,13 +1082,13 @@ public class SnowstormMapping extends SnowstormAbstract {
                 final MapEntry updatedMapEntry = convertSnowstormMemberToMapEntry(updatedMapEntryJson, mapSet, branch);
                 updatedMapEntries.add(updatedMapEntry);
             }
-        }           
-        
+        }
+
         submittedMapping.getMapEntries().clear();
         submittedMapping.getMapEntries().addAll(updatedMapEntries);
 
-//        // Handle edition-precedence in the map entries
-//        handleEditionPrecedence(submittedMapping);
+        // // Handle edition-precedence in the map entries
+        // handleEditionPrecedence(submittedMapping);
 
         // Sort all of the map entries in Group/Priority order
         sortMapEntries(submittedMapping);
@@ -1217,24 +1223,22 @@ public class SnowstormMapping extends SnowstormAbstract {
      */
     private static void handleEditionPrecedence(final Mapping mapping) {
 
-    	//Separate map entries into international and edition
+        // Separate map entries into international and edition
         final List<MapEntry> internationalEntries = new ArrayList<>();
         final List<MapEntry> editionEntries = new ArrayList<>();
         for (final MapEntry mapEntry : mapping.getMapEntries()) {
-        	if(mapEntry.getModuleId().equals("449080006")) {
-        		internationalEntries.add(mapEntry);
-        	}
-        	else {
-        		editionEntries.add(mapEntry);
-        	}
+            if (mapEntry.getModuleId().equals("449080006")) {
+                internationalEntries.add(mapEntry);
+            } else {
+                editionEntries.add(mapEntry);
+            }
         }
 
-        // If any active edition map entries exist, use those.  Otherwise, use international
-        if(editionEntries.size()>0) {
-        	mapping.setMapEntries(editionEntries);
-        }
-        else {
-        	mapping.setMapEntries(internationalEntries);
+        // If any active edition map entries exist, use those. Otherwise, use international
+        if (editionEntries.size() > 0) {
+            mapping.setMapEntries(editionEntries);
+        } else {
+            mapping.setMapEntries(internationalEntries);
         }
     }
 
@@ -1381,149 +1385,256 @@ public class SnowstormMapping extends SnowstormAbstract {
         }
         return relationCode;
     }
-    
+
     /**
-     * Return true if maps have equivalent content.
-     * This only considers the map information: target, advice, relations, etc.
-     * This does not compare other information: release date, last modified, etc.
-     * Note: this intentionally ignores moduleId, 
-     * so we can check edition maps against international maps
+     * Return true if maps have equivalent content. This only considers the map information: target, advice, relations, etc. This does not compare other
+     * information: release date, last modified, etc. Note: this intentionally ignores moduleId, so we can check edition maps against international maps
      *
      * @param mapping1 the mapping 1
      * @param mapping2 the mapping 2
      * @return the boolean
      */
     private static Boolean areMapsEquivalent(Mapping mapping1, Mapping mapping2) {
-    	
-    	//Check for null mappings
-    	if((mapping1 == null && mapping2 == null)) {
-    		return true;
-    	}
-    	if((mapping1 == null || mapping2 == null)) {
-    		return false;
-    	}
-    	
-    	//Check top-level mapping information
-     	if(!(mapping1.getCode().equals(mapping2.getCode()))) {
-    		return false;
-    	}
-    	
-    	//Check for null map entries
-    	if(mapping1.getMapEntries() == null && mapping2.getMapEntries() == null) {
-    		return true;
-    	}
-    	if(mapping1.getMapEntries() == null || mapping2.getMapEntries() == null) {
-    		return false;
-    	}
-    	
-    	//Check for map-entry count
-    	if(!(mapping1.getMapEntries().size() == mapping2.getMapEntries().size())) {
-    		return false;
-    	}		
 
-    	//Sort the map entries for both mappings in Group/Priority order
+        // Check for null mappings
+        if ((mapping1 == null && mapping2 == null)) {
+            return true;
+        }
+        if ((mapping1 == null || mapping2 == null)) {
+            return false;
+        }
+
+        // Check top-level mapping information
+        if (!(mapping1.getCode().equals(mapping2.getCode()))) {
+            return false;
+        }
+
+        // Check for null map entries
+        if (mapping1.getMapEntries() == null && mapping2.getMapEntries() == null) {
+            return true;
+        }
+        if (mapping1.getMapEntries() == null || mapping2.getMapEntries() == null) {
+            return false;
+        }
+
+        // Check for map-entry count
+        if (!(mapping1.getMapEntries().size() == mapping2.getMapEntries().size())) {
+            return false;
+        }
+
+        // Sort the map entries for both mappings in Group/Priority order
         sortMapEntries(mapping1);
         sortMapEntries(mapping2);
-    	
-    	//Check individual map entry information
-        //Since the map entries were sorted, we can compare entries by index location.
-        for(int i = 0; i<mapping1.getMapEntries().size(); i++) {
-			if(!areMapEntriesEquivalent(mapping1.getMapEntries().get(i), mapping2.getMapEntries().get(i))) {
-				return false;
-			}        	
+
+        // Check individual map entry information
+        // Since the map entries were sorted, we can compare entries by index location.
+        for (int i = 0; i < mapping1.getMapEntries().size(); i++) {
+            if (!areMapEntriesEquivalent(mapping1.getMapEntries().get(i), mapping2.getMapEntries().get(i))) {
+                return false;
+            }
         }
-        
-    	return true;
+
+        return true;
     }
 
     /**
-     * Return true if map entries have equivalent content.
-     * This only considers the map information: target, advice, relations, etc.
-     * This does not compare other information: release date, last modified, etc.
-     * Note: this intentionally ignores moduleId, 
-     * so we can check edition maps against international maps
+     * Return true if map entries have equivalent content. This only considers the map information: target, advice, relations, etc. This does not compare other
+     * information: release date, last modified, etc. Note: this intentionally ignores moduleId, so we can check edition maps against international maps
      *
      * @param mapEntry1 the map entry 1
      * @param mapEntry2 the map entry 2
      * @return the boolean
-     */    
+     */
     private static Boolean areMapEntriesEquivalent(MapEntry mapEntry1, MapEntry mapEntry2) {
-    	Boolean mapEntriesEquivalent = true;
-    	   	
-    	//Check for null map entries
-    	if(mapEntry1 == null && mapEntry2 == null) {
-    		return true;
-    	}    	
-    	if(mapEntry1 == null || mapEntry2 == null) {
-    		return false;
-    	}
-    	
-    	//Check individual map entry information
-		mapEntriesEquivalent = mapEntry1.getGroup()==mapEntry2.getGroup() 
-				&& mapEntry1.getPriority()==mapEntry2.getPriority()
-				&& Objects.equals(mapEntry1.getAdditionalMapEntryInfos(), mapEntry2.getAdditionalMapEntryInfos()) 
-				&& Objects.equals(mapEntry1.getAdvices(), mapEntry2.getAdvices()) 
-				&& mapEntry1.getBlock() == mapEntry2.getBlock()
-                && Objects.equals(mapEntry1.getRelationCode(), mapEntry2.getRelationCode())
-                && Objects.equals(mapEntry1.getRule(), mapEntry2.getRule())
-                && Objects.equals(mapEntry1.getToCode(), mapEntry2.getToCode());
 
-    	return mapEntriesEquivalent;
+        Boolean mapEntriesEquivalent = true;
+
+        // Check for null map entries
+        if (mapEntry1 == null && mapEntry2 == null) {
+            return true;
+        }
+        if (mapEntry1 == null || mapEntry2 == null) {
+            return false;
+        }
+
+        // Check individual map entry information
+        mapEntriesEquivalent = mapEntry1.getGroup() == mapEntry2.getGroup() && mapEntry1.getPriority() == mapEntry2.getPriority()
+            && Objects.equals(mapEntry1.getAdditionalMapEntryInfos(), mapEntry2.getAdditionalMapEntryInfos())
+            && Objects.equals(mapEntry1.getAdvices(), mapEntry2.getAdvices()) && mapEntry1.getBlock() == mapEntry2.getBlock()
+            && Objects.equals(mapEntry1.getRelationCode(), mapEntry2.getRelationCode()) && Objects.equals(mapEntry1.getRule(), mapEntry2.getRule())
+            && Objects.equals(mapEntry1.getToCode(), mapEntry2.getToCode());
+
+        return mapEntriesEquivalent;
     }
-    
+
     /**
-     * If two map entries have the same group, priority, target, and rule, 
-     * then they represent the same object (i.e. will have the same UUID in snowstorm).
-     * This determines whether changes should update an existing map entry, or create a new one.
+     * If two map entries have the same group, priority, target, and rule, then they represent the same object (i.e. will have the same UUID in snowstorm). This
+     * determines whether changes should update an existing map entry, or create a new one.
      * 
      *
      * @param mapEntry1 the map entry 1
      * @param mapEntry2 the map entry 2
      * @return the boolean
-     */    
+     */
     private static Boolean doMapEntriesShareUUID(MapEntry mapEntry1, MapEntry mapEntry2) {
-    	Boolean mapEntriesShareUUID = true;
-    	   	
-    	//Check for null map entries
-    	if(mapEntry1 == null && mapEntry2 == null) {
-    		return true;
-    	}    	
-    	if(mapEntry1 == null || mapEntry2 == null) {
-    		return false;
-    	}
-    	
-    	//Check individual map entry information
-    	mapEntriesShareUUID = mapEntry1.getGroup()==mapEntry2.getGroup() 
-				&& mapEntry1.getPriority()==mapEntry2.getPriority()
-				&& mapEntry1.getBlock() == mapEntry2.getBlock()
-                && Objects.equals(mapEntry1.getRule(), mapEntry2.getRule())
-                && Objects.equals(mapEntry1.getToCode(), mapEntry2.getToCode());
 
-    	return mapEntriesShareUUID;
+        Boolean mapEntriesShareUUID = true;
+
+        // Check for null map entries
+        if (mapEntry1 == null && mapEntry2 == null) {
+            return true;
+        }
+        if (mapEntry1 == null || mapEntry2 == null) {
+            return false;
+        }
+
+        // Check individual map entry information
+        mapEntriesShareUUID =
+            mapEntry1.getGroup() == mapEntry2.getGroup() && mapEntry1.getPriority() == mapEntry2.getPriority() && mapEntry1.getBlock() == mapEntry2.getBlock()
+                && Objects.equals(mapEntry1.getRule(), mapEntry2.getRule()) && Objects.equals(mapEntry1.getToCode(), mapEntry2.getToCode());
+
+        return mapEntriesShareUUID;
     }
-    
-    
+
     /**
-     * Update an existing map entry with the non-defining content of the submitted map entry
-     * This can only be done on map entries that share a UUID
+     * Update an existing map entry with the non-defining content of the submitted map entry This can only be done on map entries that share a UUID
      * 
      *
      * @param existingMapEntry the existing map entry
      * @param submittedMapEntry the submitted map entry
      * @return the map entry
-     */       
+     */
     private static MapEntry updateExistingMapEntry(MapEntry existingMapEntry, MapEntry submittedMapEntry) throws Exception {
-    	
-    	if(!doMapEntriesShareUUID(existingMapEntry,submittedMapEntry)) {
-    		throw new Exception("You cannot update an existing map entry with a non UUID-sharing new entry");
-    	}
-    	
-    	existingMapEntry.setAdditionalMapEntryInfos(submittedMapEntry.getAdditionalMapEntryInfos());
-    	existingMapEntry.setAdvices(submittedMapEntry.getAdvices());
-    	existingMapEntry.setRelation(submittedMapEntry.getRelation());
-    	existingMapEntry.setRelationCode(submittedMapEntry.getRelationCode());
-    	
-    	return existingMapEntry;
+
+        if (!doMapEntriesShareUUID(existingMapEntry, submittedMapEntry)) {
+            throw new Exception("You cannot update an existing map entry with a non UUID-sharing new entry");
+        }
+
+        existingMapEntry.setAdditionalMapEntryInfos(submittedMapEntry.getAdditionalMapEntryInfos());
+        existingMapEntry.setAdvices(submittedMapEntry.getAdvices());
+        existingMapEntry.setRelation(submittedMapEntry.getRelation());
+        existingMapEntry.setRelationCode(submittedMapEntry.getRelationCode());
+
+        return existingMapEntry;
+    }
+
+    /**
+     * Export mappings.
+     *
+     * @param branch the branch
+     * @param mapSetCode the map set code
+     * @param mappingExportRequest the mapping export request
+     * @return the file
+     * @throws Exception the exception
+     */
+    public static File exportMappings(final String branch, final String mapSetCode, final MappingExportRequest mappingExportRequest) throws Exception {
+
+        final SearchParameters sp = new SearchParameters();
+        sp.setLimit(10000); // Snowstorm limitation
+
+        final ResultListMapping mappings = getMappings(branch, mapSetCode, sp, "", false, mappingExportRequest.getConceptCodes());
+        final File zipFile = exportMappingFilesToDownload(mappings, mappingExportRequest.getColumnNames());
+
+        return zipFile;
+    }
+
+    /**
+     * Export the members based on user selection in a zipped pkg containing tab delimited format.
+     * @author vparekh
+     * @param mappings the mappings
+     * @param includedColumnsList the column list
+     * @return the zip pkg containing the txt file with the member list export
+     * @throws Exception the exception
+     */
+    private static File exportMappingFilesToDownload(final ResultListMapping mappings, final List<String> includedColumnsList) throws Exception {
+
+        // Validate and create download directory if it doesn't exist
+        final String outputDirPath = PropertyUtility.getProperty("mapexport.fileDir");
+        final String outputFileName = PropertyUtility.getProperty("mapexport.file");
+        final String DILIMITER = "\t";
+
+        final File downloadDir = new File(outputDirPath);
+        if (!downloadDir.exists()) {
+            if (!downloadDir.mkdirs()) {
+                throw new IOException("Failed to create download directory for mapping export.  Directory: " + downloadDir);
+            }
+        }
+
+        // Create the output file
+        final File outputFile = new File(downloadDir, outputFileName);
+        final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd-hhmmss");
+
+        // TODO: What is the proper file name for the zip file?
+        final String zipFileName = String.format("MT2-Downloaded-mapsets-%s.zip", dateFormat.format(new Date()));
+        final List<String> allowedColumns =
+            Arrays.asList("Source", "Source PT", "Target", "Target PT", "Group", "Priority", "Relationship", "Rule", "Advices", "Last Modified");
+
+        // Based on the includedColumns values create the customized text file creation - map column with values
+        try (final PrintWriter writer = new PrintWriter(new FileOutputStream(outputFile))) {
+
+            // Create a mutable copy of the includedColumnsList to avoid UnsupportedOperationException
+            final List<String> columnsToInclude = new ArrayList<>(includedColumnsList);
+            // Check if "Target" is in the included columns
+            if (columnsToInclude.contains("Target")) {
+                columnsToInclude.add("Group");
+                columnsToInclude.add("Priority");
+            }
+            
+            // if column from includedColumnsList is not in allowedColumns, remove it
+            columnsToInclude.removeIf(column -> !allowedColumns.contains(column));
+
+            // use allowedColumns as the order of the columns
+            final StringBuilder header = new StringBuilder();
+            for (final String column : allowedColumns) {
+                if (columnsToInclude.contains(column)) {
+                    header.append(column).append(DILIMITER);
+                }
+            }
+            
+            // Write the header
+            writer.println(header.toString().trim());
+
+            // Iterate over each Mapping and write data
+            for (final Mapping mapping : mappings.getItems()) {
+                final String sourceCode = mapping.getCode();
+                final String sourceName = mapping.getName();
+                
+                for (final MapEntry entry : mapping.getMapEntries()) {
+                    final Map<String, String> dataRow = new LinkedHashMap<>();
+                    dataRow.put("Source", sourceCode);
+                    dataRow.put("Source PT", sourceName);
+                    dataRow.put("Target", entry.getToCode());
+                    dataRow.put("Group", String.valueOf(entry.getGroup()));
+                    dataRow.put("Priority", String.valueOf(entry.getPriority()));
+                    dataRow.put("Target PT", entry.getToName());
+                    dataRow.put("Relationship", entry.getRelation());
+                    dataRow.put("Rule", entry.getRule());
+                    dataRow.put("Advices", entry.getAdvices() != null ? String.join("|", entry.getAdvices()) : "");
+                    dataRow.put("Last Modified",
+                        entry.getModified() != null ? DateUtility.formatDate(entry.getModified(), DateUtility.DATE_FORMAT_REVERSE, null) : "N/A");
+
+                    // Build the row based on included columns
+                    final List<String> rowValues = new ArrayList<>();
+                    for (final String column : allowedColumns) {
+                        if (columnsToInclude.contains(column)) {
+                            rowValues.add(dataRow.getOrDefault(column, ""));
+                        }
+                    }
+                    writer.println(String.join(DILIMITER, rowValues));
+                }
+            }
+            writer.flush();
+        } catch (Exception e) {
+            e.printStackTrace();
+            LOG.error("Error during ZIP file creation or download", e);
+            throw e;
+        }
+
+        final List<String> sourceFiles = new ArrayList<>();
+        sourceFiles.add(outputFile.getAbsolutePath());
+        final File zipMapFile = FileUtility.zipFiles(sourceFiles, zipFileName);
+
+        return zipMapFile;
     }
 
 }

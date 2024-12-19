@@ -9,6 +9,7 @@
  */
 package org.ihtsdo.refsetservice.handler;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -28,6 +29,7 @@ import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.Mapping;
+import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.ResultListConcept;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
@@ -449,11 +451,10 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
         return SnowstormConcept.getConcept(terminology, version, code);
 
     }
-    
+
     /* see superclass */
     @Override
-    public ResultListConcept findConcepts(final String terminology, final String version, final SearchParameters searchParameters)
-        throws Exception {
+    public ResultListConcept findConcepts(final String terminology, final String version, final SearchParameters searchParameters) throws Exception {
 
         return SnowstormConcept.findConcepts(terminology, version, searchParameters);
     }
@@ -486,5 +487,12 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
         throws Exception {
 
         return SnowstormMapping.updateMappings(mapProject, branch, mapSetCode, mappings);
+    }
+
+    /* see superclass */
+    @Override
+    public File exportMappings(final String branch, final String mapSetCode, final MappingExportRequest mappingExportRequest) throws Exception {
+
+        return SnowstormMapping.exportMappings(branch, mapSetCode, mappingExportRequest);
     }
 }
