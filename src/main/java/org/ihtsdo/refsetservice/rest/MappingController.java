@@ -191,32 +191,27 @@ public class MappingController extends BaseController {
      * @throws Exception the exception
      */
 
-        @PostMapping(value = "/mapset/{branch}/mappingsRF2Import" , consumes = MediaType.MULTIPART_FORM_DATA)
+        @PostMapping(value = "/mapset/{branch}/mappingsRF2Import" , consumes = "multipart/form-data")
         @Operation(summary = "Import mappings from RF2 file.", tags = {"mapset"},
         responses = {
-                @ApiResponse(responseCode = "200", description = "Successfully imported the mappings"),
-                @ApiResponse(responseCode = "417", description = "Failed to import the mappings")
+                @ApiResponse(responseCode = "200", description = "Successfully imported RF2 mappings"),
+                @ApiResponse(responseCode = "417", description = "Failed to import the mappings"),
+                @ApiResponse(responseCode = "400", description = "Invalid request parameters")
         })
         @Parameters({
-        @Parameter(name = "branch", description = "Branch where the mappings will be saved, e.g. /MAIN/SNOMEDCT-NO/2024-04-15/WCITEST", required = true),
-        @Parameter(name = "mappingFile", description = "The RF2 file containing the map information", required = true)
-		})
-                
+        @Parameter(name = "branch", description = "Branch where the mappings will be saved, e.g. MAIN/SNOMEDCT-NO/2024-04-15/WCITEST", required = false)
+       //@Parameter(name = "mappingFile", description = "RF2 file containing the map information", required = false)
+        })
         @RecordMetric
-        public ResponseEntity<?> importMappings(
-                @PathVariable("branch") final String branch, //"MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";  
-                @RequestParam(required = true) final MultipartFile mappingFile) throws Exception {
-        	
-        	LOG.info("Importing RF2 mappings for the branch: {}", branch);
-        	
-            try {
-            	 
-            	  // Validate the branch parameter
-                if (branch == null || branch.isBlank()) {
-                    LOG.error("Branch parameter is missing or empty.");
-                    return new ResponseEntity<>(HttpStatus.EXPECTATION_FAILED);
-                }
-
+        public ResponseEntity<String> importMappings(
+              //@PathVariable("branch") final String branch, //"MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";  
+                @RequestParam("mappingFile")  MultipartFile mappingFile) throws Exception {
+        
+        	LOG.info("Importing RF2 mappings file: {}", mappingFile);
+            try {            	 
+            	// TODO: determine branch.
+                final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
+           
                 // Validate the mapping file
                 if (mappingFile == null || mappingFile.isEmpty()) {
                     LOG.error("Mapping file is missing or empty.");
@@ -237,17 +232,19 @@ public class MappingController extends BaseController {
                     return null;
                 }
                 
-                // Service call to process the file and get mappings
-                //List<Mapping> mappings = MappingService.getMappingsFromFile(mappingFile);
                 
-                
+               
                 // Import mappings using the file 
-                MappingService.importMappings(mapProject, branch, mappingFile);
-                                
+                List<Mapping> updatedRF2Mappings = MappingService.importMappings(mapProject, branch, mappingFile);
+                if (updatedRF2Mappings == null || updatedRF2Mappings.isEmpty())
+                	  LOG.info("Mapping import wasn't successful for branch: {}", branch);  
+                
+                else                
+                		LOG.info("Successfully imported mappings for branch: {}", branch);                                
+                
                 return new ResponseEntity<>(HttpStatus.OK);
             } catch (Exception e) {
                 e.printStackTrace();
-                LOG.error("Failed to import mappings for branch: {}. Error: {}", branch, e.getMessage(), e);
                 return new ResponseEntity<>(HttpStatus.EXPECTATION_FAILED);
             }
         }
