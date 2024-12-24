@@ -49,6 +49,7 @@ import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
+import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.FileUtility;
@@ -58,6 +59,7 @@ import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -1604,14 +1606,13 @@ public class SnowstormMapping extends SnowstormAbstract {
                     dataRow.put("Source", sourceCode);
                     dataRow.put("Source PT", sourceName);
                     dataRow.put("Target", entry.getToCode());
-                    dataRow.put("Group", String.valueOf(entry.getGroup()));
-                    dataRow.put("Priority", String.valueOf(entry.getPriority()));
                     dataRow.put("Target PT", entry.getToName());
+                    dataRow.put("Group", String.valueOf(entry.getGroup()));
+                    dataRow.put("Priority", String.valueOf(entry.getPriority()));                  
                     dataRow.put("Relationship", entry.getRelation());
                     dataRow.put("Rule", entry.getRule());
                     dataRow.put("Advices", entry.getAdvices() != null ? String.join("|", entry.getAdvices()) : "");
-                    dataRow.put("Last Modified",
-                        entry.getModified() != null ? DateUtility.formatDate(entry.getModified(), DateUtility.DATE_FORMAT_REVERSE, null) : "N/A");
+                    dataRow.put("Last Modified", entry.getModified() != null ? DateUtility.formatDate(entry.getModified(), DateUtility.DATE_FORMAT_REVERSE, null) : "N/A");
 
                     // Build the row based on included columns
                     final List<String> rowValues = new ArrayList<>();
@@ -1636,5 +1637,122 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         return zipMapFile;
     }
+
+	
+    
+    /**
+     * Import RF2 mappings.
+     * @param mapProject the mapProject
+     * @param branch the branch
+     * @param mappingFile the RF2 mappingFile
+     * @return the mappings updates
+     * @throws Exception the exception
+     */
+    public static List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile) throws Exception {
+
+        final List<Mapping> mappings = getMappingsFromFile(mappingFile); // return mapsetCode 
+        final List<Mapping> updatedRF2Mappings = new ArrayList<>();
+        final List<String> conceptIds = new ArrayList<>();
+        
+        for (final Mapping mapping : mappings) {
+            final Mapping updatedRF2Mapping = updateMapping(mapProject, branch, mapping.getMapSetId(), mapping);
+            updatedRF2Mappings.add(updatedRF2Mapping);
+            conceptIds.add(updatedRF2Mapping.getCode());
+        }
+
+        // add descriptions to mappings to be returned
+        final Map<String, List<Description>> descriptions = SnowstormDescription.getDescriptions(mapProject.getEdition(), conceptIds);
+
+        // Sort all of the map entries in Group/Priority order
+        for (final Mapping mapping : updatedRF2Mappings) {
+            mapping.setDescriptions(descriptions.get(mapping.getCode()));
+        }
+
+        return updatedRF2Mappings;
+    }
+    
+        
+    
+
+    /**
+     * Gets the mappings from file.
+     *
+     * @param mappingFile the mapping file
+     * @return the mappings from file
+     * @throws Exception the exception
+     */
+    private static List<Mapping> getMappingsFromFile(MultipartFile mappingFile) throws Exception {
+		 	Map<String, Mapping> mappingMap = new HashMap<>(); // Keyed by "Source"
+	        List<Mapping> mappings = new ArrayList<>();
+
+	            final List<String> rf2Lines = FileUtility.readFileToArray(mappingFile);
+	            if (rf2Lines.isEmpty()) {
+	                throw new Exception("The file is empty.");
+	            }
+	            
+	            // Extract header and determine column indices
+	            String headerLine = rf2Lines.remove(0);
+	            String[] headers = headerLine.split("\t");
+	            Map<String, Integer> columnIndices = new HashMap<>();
+	            for (int i = 0; i < headers.length; i++) {
+	                columnIndices.put(headers[i], i);
+	            }	           
+
+	            for (final String line : rf2Lines) {
+	            	if (line.trim().isEmpty()) {
+	                    continue; // Skip empty lines
+	                }
+	            	
+	                try {
+	                	String[] columns = line.split("\t");
+	                	Boolean active = Boolean.parseBoolean(columns[columnIndices.get("active")]); 
+	                	String moduleId = columns[columnIndices.get("moduleId")]; 
+	                	String referencedComponentId = columns[columnIndices.get("referencedComponentId")]; //source
+	                	String refsetId = columns[columnIndices.get("refsetId")]; // mapSetCode	                   
+	                    int mapGroup = Integer.parseInt(columns[columnIndices.get("mapGroup")]); 
+	                    int mapPriority = Integer.parseInt(columns[columnIndices.get("mapPriority")]); 
+	                    String correlationId = columns[columnIndices.get("correlationId")]; 
+	                    String mapRule = columns[columnIndices.get("mapRule")]; 
+	                    String mapAdvice = columns[columnIndices.get("mapAdvice")]; 
+	                    String mapTarget = columns[columnIndices.get("mapTarget")]; 	                    
+	                    //mapCategoryId is not handled since mapEntry is missing that field
+	                    
+	                    // Create a new MapEntry object
+	                    MapEntry mapEntry = new MapEntry();
+	                    mapEntry.setActive(active); //active
+	                    mapEntry.setModuleId(moduleId); //moduleId
+	                    mapEntry.setToCode(referencedComponentId);
+	                    mapEntry.setGroup(mapGroup); //mapGroup
+	                    mapEntry.setPriority(mapPriority); //mapPriority	                 
+	                    mapEntry.setRule(mapRule); //mapRule
+	                    mapEntry.setToCode(mapTarget); //mapTarget
+	                    mapEntry.setRelation(correlationId); //correlationId
+	                    mapEntry.addAdvice(mapAdvice); //mapAdvice
+	               
+	                    // Check if a Mapping object already exists for this source
+	                    Mapping mapping = mappingMap.get(referencedComponentId);
+	              
+	                    if (mapping == null) {
+	                        mapping = new Mapping();
+	                        mapping.setMapSetId(refsetId);
+	                        mapping.setCode(referencedComponentId);
+	                        // TODO  review
+	                        mapping.setName("Mapping for " + referencedComponentId);
+	                        mapping.setMapEntries(new ArrayList<>());
+	                        mappingMap.put(referencedComponentId, mapping);
+	                        mappings.add(mapping);
+	                    }
+
+	                    // Add the MapEntry to the Mapping
+	                    mapping.getMapEntries().add(mapEntry);
+	                
+	                } catch (final Exception e) {
+	                    continue;
+	                }
+	            }	        
+
+	        return mappings;
+		}
+	
 
 }

@@ -45,6 +45,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -159,7 +160,7 @@ public class MappingController extends BaseController {
         }
         if (mappingExportRequest.getColumnNames() == null || mappingExportRequest.getColumnNames().isEmpty()) {
             throw new RuntimeException("One or more column names are required.");
-	            }
+	    }
             
         
         try {
@@ -182,6 +183,75 @@ public class MappingController extends BaseController {
         }   
     }
  
+    
+    /**
+     * @author vparekh import mappings from external sources.
+     * @param branch  
+     * @param mappingFile the mappingFile
+     * @throws Exception the exception
+     */
+
+        @PostMapping(value = "/mapset/{branch}/mappingsRF2Import" , consumes = MediaType.MULTIPART_FORM_DATA)
+        @Operation(summary = "Import mappings from RF2 file.", tags = {"mapset"},
+        responses = {
+                @ApiResponse(responseCode = "200", description = "Successfully imported the mappings"),
+                @ApiResponse(responseCode = "417", description = "Failed to import the mappings")
+        })
+        @Parameters({
+        @Parameter(name = "branch", description = "Branch where the mappings will be saved, e.g. /MAIN/SNOMEDCT-NO/2024-04-15/WCITEST", required = true),
+        @Parameter(name = "mappingFile", description = "The RF2 file containing the map information", required = true)
+		})
+                
+        @RecordMetric
+        public ResponseEntity<?> importMappings(
+                @PathVariable("branch") final String branch, //"MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";  
+                @RequestParam(required = true) final MultipartFile mappingFile) throws Exception {
+        	
+        	LOG.info("Importing RF2 mappings for the branch: {}", branch);
+        	
+            try {
+            	 
+            	  // Validate the branch parameter
+                if (branch == null || branch.isBlank()) {
+                    LOG.error("Branch parameter is missing or empty.");
+                    return new ResponseEntity<>(HttpStatus.EXPECTATION_FAILED);
+                }
+
+                // Validate the mapping file
+                if (mappingFile == null || mappingFile.isEmpty()) {
+                    LOG.error("Mapping file is missing or empty.");
+                    return new ResponseEntity<>(HttpStatus.EXPECTATION_FAILED);
+                }                
+                
+                // TODO: Remove hard-coding of mapProject stuff
+                final String id = "1";
+                final Boolean includeMembers = Boolean.FALSE;
+                MapProject mapProject = null;
+
+                try (final TerminologyService service = new TerminologyService()) {
+                    mapProject = MapProjectService.getMapProject(service, id, includeMembers);
+
+                } catch (final Exception e) {
+
+                    handleException(e);
+                    return null;
+                }
+                
+                // Service call to process the file and get mappings
+                //List<Mapping> mappings = MappingService.getMappingsFromFile(mappingFile);
+                
+                
+                // Import mappings using the file 
+                MappingService.importMappings(mapProject, branch, mappingFile);
+                                
+                return new ResponseEntity<>(HttpStatus.OK);
+            } catch (Exception e) {
+                e.printStackTrace();
+                LOG.error("Failed to import mappings for branch: {}. Error: {}", branch, e.getMessage(), e);
+                return new ResponseEntity<>(HttpStatus.EXPECTATION_FAILED);
+            }
+        }
+        
 
     /**
      * Gets the mapping.

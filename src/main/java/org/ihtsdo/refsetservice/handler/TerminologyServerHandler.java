@@ -29,6 +29,7 @@ import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ConceptLookupParameters;
 import org.ihtsdo.refsetservice.util.SearchParameters;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -612,4 +613,16 @@ public interface TerminologyServerHandler extends Configurable {
      * @throws Exception the exception
      */
     public File exportMappings(final String branch, final String mapSetCode, final MappingExportRequest mappingExportRequest) throws Exception;
+	
+    /**
+     * Import mappings.
+     *
+     * @param mapProject the map project
+     * @param branch the branch
+     * @param mappingFile the mappingFile
+     * @throws Exception the exception
+     */
+	public List<Mapping> importMappings(MapProject mapProject, String branch,  MultipartFile mappingFile) throws Exception;
+
+	    
 }

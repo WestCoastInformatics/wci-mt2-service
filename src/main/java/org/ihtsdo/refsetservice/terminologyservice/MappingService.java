@@ -23,6 +23,7 @@ import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Service class to get refset member concept information from a terminology
@@ -147,4 +148,20 @@ public final class MappingService {
 
         return terminologyHandler.exportMappings(branch, mapSetCode, mappingExportRequest);
     }
+
+    
+    /**
+     * Import mappings.
+     *
+     * @param mapProject the map project
+     * @param branch the branch
+     * @param mappingFile the RF2 file
+     * @return the imported mappings
+     * @throws Exception the exception
+     */
+	public static List<Mapping> importMappings(MapProject mapProject, String branch,  MultipartFile mappingFile) throws Exception {
+	
+		return terminologyHandler.importMappings(mapProject, branch, mappingFile);
+	}
+    
 }
