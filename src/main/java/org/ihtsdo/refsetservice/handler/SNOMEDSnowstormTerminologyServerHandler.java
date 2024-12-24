@@ -42,6 +42,7 @@ import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -495,4 +496,13 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
         return SnowstormMapping.exportMappings(branch, mapSetCode, mappingExportRequest);
     }
+
+    /* see superclass */
+	@Override
+	public List<Mapping> importMappings(MapProject mapProject, String branch, MultipartFile mappingFile) throws Exception {
+		
+		 return SnowstormMapping.importMappings(mapProject, branch,  mappingFile);
+	}
+	
+    
 }
