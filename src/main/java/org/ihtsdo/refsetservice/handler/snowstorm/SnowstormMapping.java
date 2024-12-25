@@ -1655,6 +1655,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         final List<String> conceptIds = new ArrayList<>();
         
         for (final Mapping mapping : mappings) {
+        	  LOG.info("importMappings -RF2 Mapping obj  : {}", mapping);
             final Mapping updatedRF2Mapping = updateMapping(mapProject, branch, mapping.getMapSetId(), mapping);
             updatedRF2Mappings.add(updatedRF2Mapping);
             conceptIds.add(updatedRF2Mapping.getCode());
@@ -1705,38 +1706,39 @@ public class SnowstormMapping extends SnowstormAbstract {
 	            	
 	                try {
 	                	String[] columns = line.split("\t");
-	                	Boolean active = Boolean.parseBoolean(columns[columnIndices.get("active")]); 
+	                	String active = columns[columnIndices.get("active")]; 
 	                	String moduleId = columns[columnIndices.get("moduleId")]; 
 	                	String referencedComponentId = columns[columnIndices.get("referencedComponentId")]; //source
 	                	String refsetId = columns[columnIndices.get("refsetId")]; // mapSetCode	                   
 	                    int mapGroup = Integer.parseInt(columns[columnIndices.get("mapGroup")]); 
 	                    int mapPriority = Integer.parseInt(columns[columnIndices.get("mapPriority")]); 
-	                    String correlationId = columns[columnIndices.get("correlationId")]; 
+	                    //String correlationId = columns[columnIndices.get("correlationId")]; //Hardcoded value used - 447562003
 	                    String mapRule = columns[columnIndices.get("mapRule")]; 
 	                    String mapAdvice = columns[columnIndices.get("mapAdvice")]; 
-	                    String mapTarget = columns[columnIndices.get("mapTarget")]; 	                    
-	                    //mapCategoryId is not handled since mapEntry is missing that field
-	                    
+	                    String mapTarget = columns[columnIndices.get("mapTarget")]; 	   
+	                    String relationCode = columns[columnIndices.get("mapCategoryId")]; 	                     
 	                    // Create a new MapEntry object
-	                    MapEntry mapEntry = new MapEntry();
-	                    mapEntry.setActive(active); //active
+	                    MapEntry mapEntry = new MapEntry();	                   
+	                    if ("1".equals(active)) {
+	                        mapEntry.setActive(true);
+	                    } else if ("0".equals(active)) {
+	                        mapEntry.setActive(false);
+	                    }
 	                    mapEntry.setModuleId(moduleId); //moduleId
-	                    mapEntry.setToCode(referencedComponentId);
 	                    mapEntry.setGroup(mapGroup); //mapGroup
 	                    mapEntry.setPriority(mapPriority); //mapPriority	                 
 	                    mapEntry.setRule(mapRule); //mapRule
 	                    mapEntry.setToCode(mapTarget); //mapTarget
-	                    mapEntry.setRelation(correlationId); //correlationId
+	                    //mapEntry.setRelation(correlationId); //correlationId
 	                    mapEntry.addAdvice(mapAdvice); //mapAdvice
+	                    mapEntry.setRelationCode(relationCode); //mapCategoryId
 	               
 	                    // Check if a Mapping object already exists for this source
-	                    Mapping mapping = mappingMap.get(referencedComponentId);
-	              
+	                    Mapping mapping = mappingMap.get(referencedComponentId);	              
 	                    if (mapping == null) {
 	                        mapping = new Mapping();
 	                        mapping.setMapSetId(refsetId);
 	                        mapping.setCode(referencedComponentId);
-	                        // TODO  review
 	                        mapping.setName("Mapping for " + referencedComponentId);
 	                        mapping.setMapEntries(new ArrayList<>());
 	                        mappingMap.put(referencedComponentId, mapping);
@@ -1744,12 +1746,12 @@ public class SnowstormMapping extends SnowstormAbstract {
 	                    }
 
 	                    // Add the MapEntry to the Mapping
-	                    mapping.getMapEntries().add(mapEntry);
-	                
+	                    mapping.getMapEntries().add(mapEntry);	                
 	                } catch (final Exception e) {
 	                    continue;
 	                }
-	            }	        
+	            }	
+	            LOG.info("getMappingsFromFile RF2 Mappings : {}", mappings);
 
 	        return mappings;
 		}
