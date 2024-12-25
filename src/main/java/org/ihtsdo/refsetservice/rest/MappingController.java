@@ -191,21 +191,21 @@ public class MappingController extends BaseController {
      * @throws Exception the exception
      */
 
-        @PostMapping(value = "/mapset/{branch}/mappingsRF2Import" , consumes = "multipart/form-data")
+        @PostMapping(value = "/mapset/mappingsRF2Import" , consumes = "multipart/form-data")
         @Operation(summary = "Import mappings from RF2 file.", tags = {"mapset"},
         responses = {
                 @ApiResponse(responseCode = "200", description = "Successfully imported RF2 mappings"),
                 @ApiResponse(responseCode = "417", description = "Failed to import the mappings"),
                 @ApiResponse(responseCode = "400", description = "Invalid request parameters")
         })
-        @Parameters({
-        @Parameter(name = "branch", description = "Branch where the mappings will be saved, e.g. MAIN/SNOMEDCT-NO/2024-04-15/WCITEST", required = false)
+        //@Parameters({
+       // @Parameter(name = "branch", description = "Branch where the mappings will be saved, e.g. MAIN/SNOMEDCT-NO/2024-04-15/WCITEST", required = false)
        //@Parameter(name = "mappingFile", description = "RF2 file containing the map information", required = false)
-        })
+       // })
         @RecordMetric
         public ResponseEntity<String> importMappings(
               //@PathVariable("branch") final String branch, //"MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";  
-                @RequestParam("mappingFile")  MultipartFile mappingFile) throws Exception {
+                @RequestParam("mappingFile")  MultipartFile mappingFile)  {
         
         	LOG.info("Importing RF2 mappings file: {}", mappingFile);
             try {            	 
@@ -223,25 +223,29 @@ public class MappingController extends BaseController {
                 final Boolean includeMembers = Boolean.FALSE;
                 MapProject mapProject = null;
 
+				/*
+				 * try (final TerminologyService service = new TerminologyService()) {
+				 * mapProject = MapProjectService.getMapProject(service, id, includeMembers);
+				 * 
+				 * } catch (final Exception e) {
+				 * 
+				 * handleException(e); return null; }
+				 */
+                
                 try (final TerminologyService service = new TerminologyService()) {
                     mapProject = MapProjectService.getMapProject(service, id, includeMembers);
-
-                } catch (final Exception e) {
-
-                    handleException(e);
-                    return null;
+                    LOG.info("Fetched MapProject with ID: {}", id);
+                } catch (Exception e) {
+                    LOG.error("Error fetching map project: {}", e.getMessage());
+                    return new ResponseEntity<>("Failed to fetch map project.", HttpStatus.EXPECTATION_FAILED);
                 }
                 
-                
-               
                 // Import mappings using the file 
                 List<Mapping> updatedRF2Mappings = MappingService.importMappings(mapProject, branch, mappingFile);
                 if (updatedRF2Mappings == null || updatedRF2Mappings.isEmpty())
                 	  LOG.info("Mapping import wasn't successful for branch: {}", branch);  
-                
                 else                
-                		LOG.info("Successfully imported mappings for branch: {}", branch);                                
-                
+                	  LOG.info("Mapping import was successful for branch: {}", branch);    
                 return new ResponseEntity<>(HttpStatus.OK);
             } catch (Exception e) {
                 e.printStackTrace();
