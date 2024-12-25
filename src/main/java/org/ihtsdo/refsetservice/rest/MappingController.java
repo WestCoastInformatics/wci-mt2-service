@@ -204,14 +204,12 @@ public class MappingController extends BaseController {
        // })
         @RecordMetric
         public ResponseEntity<String> importMappings(
-              //@PathVariable("branch") final String branch, //"MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";  
-                @RequestParam("mappingFile")  MultipartFile mappingFile)  {
+        		@RequestParam(name = "branch", required = true) String branch, //"MAIN/SNOMEDCT-NO/2024-04-15/WCITEST"
+                @RequestParam(name = "mappingFile", required = true)  MultipartFile mappingFile)  {
         
-        	LOG.info("Importing RF2 mappings file: {}", mappingFile);
-            try {            	 
-            	// TODO: determine branch.
-                final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
-           
+        	LOG.info("RF2 Map Import file: {}", mappingFile);
+        	LOG.info("RF2 Map Import branch : {}", branch);
+            try {
                 // Validate the mapping file
                 if (mappingFile == null || mappingFile.isEmpty()) {
                     LOG.error("Mapping file is missing or empty.");
@@ -222,16 +220,7 @@ public class MappingController extends BaseController {
                 final String id = "1";
                 final Boolean includeMembers = Boolean.FALSE;
                 MapProject mapProject = null;
-
-				/*
-				 * try (final TerminologyService service = new TerminologyService()) {
-				 * mapProject = MapProjectService.getMapProject(service, id, includeMembers);
-				 * 
-				 * } catch (final Exception e) {
-				 * 
-				 * handleException(e); return null; }
-				 */
-                
+			
                 try (final TerminologyService service = new TerminologyService()) {
                     mapProject = MapProjectService.getMapProject(service, id, includeMembers);
                     LOG.info("Fetched MapProject with ID: {}", id);
@@ -240,12 +229,13 @@ public class MappingController extends BaseController {
                     return new ResponseEntity<>("Failed to fetch map project.", HttpStatus.EXPECTATION_FAILED);
                 }
                 
-                // Import mappings using the file 
+                // Import RF2 mappings 
                 List<Mapping> updatedRF2Mappings = MappingService.importMappings(mapProject, branch, mappingFile);
                 if (updatedRF2Mappings == null || updatedRF2Mappings.isEmpty())
                 	  LOG.info("Mapping import wasn't successful for branch: {}", branch);  
                 else                
                 	  LOG.info("Mapping import was successful for branch: {}", branch);    
+                
                 return new ResponseEntity<>(HttpStatus.OK);
             } catch (Exception e) {
                 e.printStackTrace();

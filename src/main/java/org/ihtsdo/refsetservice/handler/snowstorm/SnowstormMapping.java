@@ -1653,9 +1653,9 @@ public class SnowstormMapping extends SnowstormAbstract {
         final List<Mapping> mappings = getMappingsFromFile(mappingFile); // return mapsetCode 
         final List<Mapping> updatedRF2Mappings = new ArrayList<>();
         final List<String> conceptIds = new ArrayList<>();
-        
+        LOG.info("importMappings -RF2 Mapping obj  : {}", mappings);
         for (final Mapping mapping : mappings) {
-        	  LOG.info("importMappings -RF2 Mapping obj  : {}", mapping);
+        	
             final Mapping updatedRF2Mapping = updateMapping(mapProject, branch, mapping.getMapSetId(), mapping);
             updatedRF2Mappings.add(updatedRF2Mapping);
             conceptIds.add(updatedRF2Mapping.getCode());
