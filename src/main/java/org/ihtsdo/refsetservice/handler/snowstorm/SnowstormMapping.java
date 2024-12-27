@@ -47,9 +47,7 @@ import org.ihtsdo.refsetservice.model.MapRelation;
 import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingExportRequest;
-import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
-import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.FileUtility;
@@ -613,6 +611,8 @@ public class SnowstormMapping extends SnowstormAbstract {
      * @param branch the branch
      * @param mapSetCode the map set code
      * @param conceptCode the concept code
+     * @param moduleId the module id
+     * @param activeOnly the active only
      * @param showOverriddenEntries the show overridden entries
      * @param includeDescriptions the include descriptions
      * @return the mapping
@@ -1499,12 +1499,12 @@ public class SnowstormMapping extends SnowstormAbstract {
     }
 
     /**
-     * Update an existing map entry with the non-defining content of the submitted map entry This can only be done on map entries that share a UUID
-     * 
+     * Update an existing map entry with the non-defining content of the submitted map entry This can only be done on map entries that share a UUID.
      *
      * @param existingMapEntry the existing map entry
      * @param submittedMapEntry the submitted map entry
      * @return the map entry
+     * @throws Exception the exception
      */
     private static MapEntry updateExistingMapEntry(MapEntry existingMapEntry, MapEntry submittedMapEntry) throws Exception {
 
@@ -1581,7 +1581,7 @@ public class SnowstormMapping extends SnowstormAbstract {
                 columnsToInclude.add("Group");
                 columnsToInclude.add("Priority");
             }
-            
+
             // if column from includedColumnsList is not in allowedColumns, remove it
             columnsToInclude.removeIf(column -> !allowedColumns.contains(column));
 
@@ -1592,7 +1592,7 @@ public class SnowstormMapping extends SnowstormAbstract {
                     header.append(column).append(DILIMITER);
                 }
             }
-            
+
             // Write the header
             writer.println(header.toString().trim());
 
@@ -1600,7 +1600,7 @@ public class SnowstormMapping extends SnowstormAbstract {
             for (final Mapping mapping : mappings.getItems()) {
                 final String sourceCode = mapping.getCode();
                 final String sourceName = mapping.getName();
-                
+
                 for (final MapEntry entry : mapping.getMapEntries()) {
                     final Map<String, String> dataRow = new LinkedHashMap<>();
                     dataRow.put("Source", sourceCode);
@@ -1608,11 +1608,12 @@ public class SnowstormMapping extends SnowstormAbstract {
                     dataRow.put("Target", entry.getToCode());
                     dataRow.put("Target PT", entry.getToName());
                     dataRow.put("Group", String.valueOf(entry.getGroup()));
-                    dataRow.put("Priority", String.valueOf(entry.getPriority()));                  
+                    dataRow.put("Priority", String.valueOf(entry.getPriority()));
                     dataRow.put("Relationship", entry.getRelation());
                     dataRow.put("Rule", entry.getRule());
                     dataRow.put("Advices", entry.getAdvices() != null ? String.join("|", entry.getAdvices()) : "");
-                    dataRow.put("Last Modified", entry.getModified() != null ? DateUtility.formatDate(entry.getModified(), DateUtility.DATE_FORMAT_REVERSE, null) : "N/A");
+                    dataRow.put("Last Modified",
+                        entry.getModified() != null ? DateUtility.formatDate(entry.getModified(), DateUtility.DATE_FORMAT_REVERSE, null) : "N/A");
 
                     // Build the row based on included columns
                     final List<String> rowValues = new ArrayList<>();
@@ -1638,8 +1639,6 @@ public class SnowstormMapping extends SnowstormAbstract {
         return zipMapFile;
     }
 
-	
-    
     /**
      * Import RF2 mappings.
      * @param mapProject the mapProject
@@ -1650,12 +1649,12 @@ public class SnowstormMapping extends SnowstormAbstract {
      */
     public static List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile) throws Exception {
 
-        final List<Mapping> mappings = getMappingsFromFile(mappingFile); // return mapsetCode 
+        final List<Mapping> mappings = getMappingsFromFile(mappingFile, mapProject); // return mapsetCode
         final List<Mapping> updatedRF2Mappings = new ArrayList<>();
         final List<String> conceptIds = new ArrayList<>();
         LOG.info("importMappings -RF2 Mapping obj  : {}", mappings);
         for (final Mapping mapping : mappings) {
-        	
+
             final Mapping updatedRF2Mapping = updateMapping(mapProject, branch, mapping.getMapSetId(), mapping);
             updatedRF2Mappings.add(updatedRF2Mapping);
             conceptIds.add(updatedRF2Mapping.getCode());
@@ -1671,90 +1670,98 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         return updatedRF2Mappings;
     }
-    
-        
-    
 
     /**
      * Gets the mappings from file.
      *
      * @param mappingFile the mapping file
+     * @param mapProject the map project
      * @return the mappings from file
      * @throws Exception the exception
      */
-    private static List<Mapping> getMappingsFromFile(MultipartFile mappingFile) throws Exception {
-		 	Map<String, Mapping> mappingMap = new HashMap<>(); // Keyed by "Source"
-	        List<Mapping> mappings = new ArrayList<>();
+    private static List<Mapping> getMappingsFromFile(final MultipartFile mappingFile, final MapProject mapProject) throws Exception {
 
-	            final List<String> rf2Lines = FileUtility.readFileToArray(mappingFile);
-	            if (rf2Lines.isEmpty()) {
-	                throw new Exception("The file is empty.");
-	            }
-	            
-	            // Extract header and determine column indices
-	            String headerLine = rf2Lines.remove(0);
-	            String[] headers = headerLine.split("\t");
-	            Map<String, Integer> columnIndices = new HashMap<>();
-	            for (int i = 0; i < headers.length; i++) {
-	                columnIndices.put(headers[i], i);
-	            }	           
+        final Map<String, Mapping> mappingMap = new HashMap<>(); // Keyed by "Source"
+        final List<Mapping> mappings = new ArrayList<>();
 
-	            for (final String line : rf2Lines) {
-	            	if (line.trim().isEmpty()) {
-	                    continue; // Skip empty lines
-	                }
-	            	
-	                try {
-	                	String[] columns = line.split("\t");
-	                	String active = columns[columnIndices.get("active")]; 
-	                	String moduleId = columns[columnIndices.get("moduleId")]; 
-	                	String referencedComponentId = columns[columnIndices.get("referencedComponentId")]; //source
-	                	String refsetId = columns[columnIndices.get("refsetId")]; // mapSetCode	                   
-	                    int mapGroup = Integer.parseInt(columns[columnIndices.get("mapGroup")]); 
-	                    int mapPriority = Integer.parseInt(columns[columnIndices.get("mapPriority")]); 
-	                    //String correlationId = columns[columnIndices.get("correlationId")]; //Hardcoded value used - 447562003
-	                    String mapRule = columns[columnIndices.get("mapRule")]; 
-	                    String mapAdvice = columns[columnIndices.get("mapAdvice")]; 
-	                    String mapTarget = columns[columnIndices.get("mapTarget")]; 	   
-	                    String relationCode = columns[columnIndices.get("mapCategoryId")]; 	                     
-	                    // Create a new MapEntry object
-	                    MapEntry mapEntry = new MapEntry();	                   
-	                    if ("1".equals(active)) {
-	                        mapEntry.setActive(true);
-	                    } else if ("0".equals(active)) {
-	                        mapEntry.setActive(false);
-	                    }
-	                    mapEntry.setModuleId(moduleId); //moduleId
-	                    mapEntry.setGroup(mapGroup); //mapGroup
-	                    mapEntry.setPriority(mapPriority); //mapPriority	                 
-	                    mapEntry.setRule(mapRule); //mapRule
-	                    mapEntry.setToCode(mapTarget); //mapTarget
-	                    //mapEntry.setRelation(correlationId); //correlationId
-	                    mapEntry.addAdvice(mapAdvice); //mapAdvice
-	                    mapEntry.setRelationCode(relationCode); //mapCategoryId
-	               
-	                    // Check if a Mapping object already exists for this source
-	                    Mapping mapping = mappingMap.get(referencedComponentId);	              
-	                    if (mapping == null) {
-	                        mapping = new Mapping();
-	                        mapping.setMapSetId(refsetId);
-	                        mapping.setCode(referencedComponentId);
-	                        mapping.setName("Mapping for " + referencedComponentId);
-	                        mapping.setMapEntries(new ArrayList<>());
-	                        mappingMap.put(referencedComponentId, mapping);
-	                        mappings.add(mapping);
-	                    }
+        final List<String> rf2Lines = FileUtility.readFileToArray(mappingFile);
+        if (rf2Lines.isEmpty()) {
+            throw new RuntimeException("The file is empty.");
+        }
 
-	                    // Add the MapEntry to the Mapping
-	                    mapping.getMapEntries().add(mapEntry);	                
-	                } catch (final Exception e) {
-	                    continue;
-	                }
-	            }	
-	            LOG.info("getMappingsFromFile RF2 Mappings : {}", mappings);
+        // Extract header and determine column indices
+        final String headerLine = rf2Lines.remove(0);
+        final String[] headers = headerLine.split("\t");
+        final Map<String, Integer> columnIndices = new HashMap<>();
+        for (int i = 0; i < headers.length; i++) {
+            columnIndices.put(headers[i], i);
+        }
 
-	        return mappings;
-		}
-	
+        for (final String line : rf2Lines) {
+            if (line.trim().isEmpty()) {
+                continue; // Skip empty lines
+            }
+
+            try {
+                final String[] columns = line.split("\t");
+                final String active = columns[columnIndices.get("active")];
+                final String moduleId = columns[columnIndices.get("moduleId")];
+                // mapSetCode
+                final String refsetId = columns[columnIndices.get("refsetId")];
+                // source code
+                final String referencedComponentId = columns[columnIndices.get("referencedComponentId")];
+                final int mapGroup = Integer.parseInt(columns[columnIndices.get("mapGroup")]);
+                final int mapPriority = Integer.parseInt(columns[columnIndices.get("mapPriority")]);
+                final String mapRule = columns[columnIndices.get("mapRule")];
+                final String mapAdvice = columns[columnIndices.get("mapAdvice")];
+                final String mapTarget = columns[columnIndices.get("mapTarget")];
+                final String correlationId = columns[columnIndices.get("correlationId")];
+                final String relationCode = columns[columnIndices.get("mapCategoryId")];
+
+                final MapEntry mapEntry = new MapEntry();
+                mapEntry.setActive("1".equals(active));
+                // Is reset in updateMappings method mapEntry.setModuleId(moduleId);
+                mapEntry.setGroup(mapGroup);
+                mapEntry.setPriority(mapPriority);
+                mapEntry.setRule(mapRule);
+                mapEntry.setToCode(mapTarget);
+                // TODO: Web uses text such as "MAP SOURCE CONCEPT IS PROPERLY CLASSIFIED"
+                mapEntry.setRelation(correlationId); // correlationId
+                // fixed in updateMappings method
+                mapEntry.addAdvice(mapAdvice);
+                // calculated in updateMappings method
+                mapEntry.setRelationCode(relationCode); // mapCategoryId
+                final Concept toConcept =
+                    SnowstormConcept.getConcept(mapProject.getDestinationTerminology(), mapProject.getDestinationTerminologyVersion(), mapTarget);
+                mapEntry.setToName((toConcept != null) ? toConcept.getName() : "Mapping for " + referencedComponentId);
+
+                // Check if a Mapping object already exists for this source
+                Mapping mapping = mappingMap.get(referencedComponentId);
+                if (mapping == null) {
+                    mapping = new Mapping();
+                    mapping.setMapSetId(refsetId);
+                    mapping.setCode(referencedComponentId);
+                    final Concept concept =
+                        SnowstormConcept.getConcept(mapProject.getSourceTerminology(), mapProject.getSourceTerminologyVersion(), referencedComponentId);
+                    mapping.setName((concept != null) ? concept.getName() : "Mapping for " + referencedComponentId);
+                    mapping.setMapEntries(new ArrayList<>());
+                    mappingMap.put(referencedComponentId, mapping);
+                    mappings.add(mapping);
+                }
+
+                // Add the MapEntry to the Mapping
+                mapping.getMapEntries().add(mapEntry);
+
+            } catch (final Exception e) {
+
+                LOG.error("Error while processing RF2 Mapping file", e);
+                throw new RuntimeException("Error while processing RF2 Mapping file." + e.getMessage());
+
+            }
+        }
+        LOG.info("getMappingsFromFile RF2 Mappings : {}", mappings);
+
+        return mappings;
+    }
 
 }
