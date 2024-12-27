@@ -1,9 +1,9 @@
 /*
- * Copyright 2023 SNOMED International - All Rights Reserved.
+ * Copyright 2024 West Coast Informatics - All Rights Reserved.
  *
- * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * NOTICE:  All information contained herein is, and remains the property of West Coast Informatics
  * The intellectual and technical concepts contained herein are proprietary to
- * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * West Coast Informatics and may be covered by U.S. and Foreign Patents, patents in process,
  * and are protected by trade secret or copyright law.  Dissemination of this information
  * or reproduction of this material is strictly forbidden.
  */
@@ -24,6 +24,8 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
+import org.springframework.web.util.UrlPathHelper;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
@@ -64,6 +66,8 @@ public class Application extends SpringBootServletInitializer {
     @Override
     protected SpringApplicationBuilder configure(final SpringApplicationBuilder application) {
 
+        setSystemProperties();
+
         // TODO: I don't think this ever gets called..
         LOG.debug("************ Configure method called");
         return application.sources(Application.class);
@@ -79,6 +83,7 @@ public class Application extends SpringBootServletInitializer {
     public static void main(final String[] args) throws Exception {
 
         try {
+            setSystemProperties();
 
             SpringApplication.run(Application.class, args);
 
@@ -105,6 +110,15 @@ public class Application extends SpringBootServletInitializer {
         // Removed. Method did nothing but log.
         // RefsetMemberService.cacheAllMemberAncestors() was commented out.
         // init();
+    }
+
+    /**
+     * Sets the system properties.
+     */
+    private static void setSystemProperties() {
+
+        System.setProperty("org.apache.tomcat.util.buf.UDecoder.ALLOW_ENCODED_SLASH", "true");
+        System.setProperty("org.apache.catalina.connector.CoyoteAdapter.ALLOW_ENCODED_SLASH", "true");
     }
 
     // /**
