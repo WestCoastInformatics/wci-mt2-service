@@ -640,6 +640,8 @@ public class SnowstormMapping extends SnowstormAbstract {
      * @param activeOnly            the active only
      * @param moduleId the module id
      * @param activeOnly the active only
+     * @param moduleId the module id
+     * @param activeOnly the active only
      * @param showOverriddenEntries the show overridden entries
      * @param includeDescriptions   the include descriptions
      * @return the mapping
