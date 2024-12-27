@@ -638,6 +638,8 @@ public class SnowstormMapping extends SnowstormAbstract {
      * @param conceptCode           the concept code
      * @param moduleId              the module id
      * @param activeOnly            the active only
+     * @param moduleId the module id
+     * @param activeOnly the active only
      * @param showOverriddenEntries the show overridden entries
      * @param includeDescriptions   the include descriptions
      * @return the mapping
@@ -1796,12 +1798,11 @@ public class SnowstormMapping extends SnowstormAbstract {
      * Gets the mappings from file.
      *
      * @param mappingFile the mapping file
-     * @param mapProject  the map project
+     * @param mapProject the map project
      * @return the mappings from file
      * @throws Exception the exception
      */
-    private static List<Mapping> getMappingsFromFile(final MultipartFile mappingFile, final MapProject mapProject)
-            throws Exception {
+    private static List<Mapping> getMappingsFromFile(final MultipartFile mappingFile, final MapProject mapProject) throws Exception {
 
         final Map<String, Mapping> mappingMap = new HashMap<>(); // Keyed by "Source"
         final List<Mapping> mappings = new ArrayList<>();
@@ -1853,8 +1854,8 @@ public class SnowstormMapping extends SnowstormAbstract {
                 mapEntry.addAdvice(mapAdvice);
                 // calculated in updateMappings method
                 mapEntry.setRelationCode(relationCode); // mapCategoryId
-                final Concept toConcept = SnowstormConcept.getConcept(mapProject.getDestinationTerminology(),
-                        mapProject.getDestinationTerminologyVersion(), mapTarget);
+                final Concept toConcept =
+                    SnowstormConcept.getConcept(mapProject.getDestinationTerminology(), mapProject.getDestinationTerminologyVersion(), mapTarget);
                 mapEntry.setToName((toConcept != null) ? toConcept.getName() : "Mapping for " + referencedComponentId);
 
                 // Check if a Mapping object already exists for this source
@@ -1863,8 +1864,8 @@ public class SnowstormMapping extends SnowstormAbstract {
                     mapping = new Mapping();
                     mapping.setMapSetId(refsetId);
                     mapping.setCode(referencedComponentId);
-                    final Concept concept = SnowstormConcept.getConcept(mapProject.getSourceTerminology(),
-                            mapProject.getSourceTerminologyVersion(), referencedComponentId);
+                    final Concept concept =
+                        SnowstormConcept.getConcept(mapProject.getSourceTerminology(), mapProject.getSourceTerminologyVersion(), referencedComponentId);
                     mapping.setName((concept != null) ? concept.getName() : "Mapping for " + referencedComponentId);
                     mapping.setMapEntries(new ArrayList<>());
                     mappingMap.put(referencedComponentId, mapping);
