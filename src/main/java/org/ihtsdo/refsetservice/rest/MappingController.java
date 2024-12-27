@@ -10,6 +10,8 @@
 package org.ihtsdo.refsetservice.rest;
 
 import java.io.File;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
@@ -124,13 +126,13 @@ public class MappingController extends BaseController {
             return null;
         }
     }
-    
-        
+
     /**
+     * Export mappings.
+     *
      * @author vparekh export the mappings.
-     * @param mapSetCode the map set code 
-     * @param conceptCodes the concept codes
-     * @param includedColumns (array of column headers to include, e.g. ["Source","Source PT","Group", ...])
+     * @param mapSetCode the map set code
+     * @param mappingExportRequest the mapping export request
      * @return zip file
      * @throws Exception the exception
      */
@@ -144,14 +146,14 @@ public class MappingController extends BaseController {
     })
     @Parameters({
         @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. 447562003", required = true),
-        
-    })        		
+
+    })
     @RecordMetric
     public @ResponseBody ResponseEntity<Resource> exportMappings(@PathVariable(value = "mapSetCode") final String mapSetCode,
         @RequestBody final MappingExportRequest mappingExportRequest) throws Exception {
-        
+
         // final User authUser = authorizeUser(request);
-        
+
         if (mappingExportRequest == null) {
             throw new RuntimeException("MappingExportRequest is required.");
         }
@@ -160,14 +162,13 @@ public class MappingController extends BaseController {
         }
         if (mappingExportRequest.getColumnNames() == null || mappingExportRequest.getColumnNames().isEmpty()) {
             throw new RuntimeException("One or more column names are required.");
-	    }
-            
-        
+        }
+
         try {
 
-            final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";  
+            final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
             final File exportMapPkg = MappingService.exportMappings(branch, mapSetCode, mappingExportRequest);
-            
+
             final Resource file = new UrlResource(exportMapPkg.toURI());
             if (!file.exists() || !file.isReadable()) {
                 throw new RuntimeException("Could not read the file!");
@@ -176,73 +177,72 @@ public class MappingController extends BaseController {
             return ResponseEntity.ok().header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION)
                 .header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(exportMapPkg.toPath()))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"").contentLength(file.contentLength()).body(file);
-                   
-        } catch (final Exception e) {	
+
+        } catch (final Exception e) {
             handleException(e);
             return null;
-        }   
+        }
     }
- 
-    
-    /**
-     * @author vparekh import mappings from external sources.
-     * @param branch  
-     * @param mappingFile the mappingFile
-     * @throws Exception the exception
-     */
 
-        @PostMapping(value = "/mapset/mappingsRF2Import" , consumes = "multipart/form-data")
-        @Operation(summary = "Import mappings from RF2 file.", tags = {"mapset"},
-        responses = {
-                @ApiResponse(responseCode = "200", description = "Successfully imported RF2 mappings"),
-                @ApiResponse(responseCode = "417", description = "Failed to import the mappings"),
-                @ApiResponse(responseCode = "400", description = "Invalid request parameters")
-        })
-        //@Parameters({
-       // @Parameter(name = "branch", description = "Branch where the mappings will be saved, e.g. MAIN/SNOMEDCT-NO/2024-04-15/WCITEST", required = false)
-       //@Parameter(name = "mappingFile", description = "RF2 file containing the map information", required = false)
-       // })
-        @RecordMetric
-        public ResponseEntity<String> importMappings(
-        		@RequestParam(name = "branch", required = true) String branch, //"MAIN/SNOMEDCT-NO/2024-04-15/WCITEST"
-                @RequestParam(name = "mappingFile", required = true)  MultipartFile mappingFile)  {
-        
-        	LOG.info("RF2 Map Import file: {}", mappingFile);
-        	LOG.info("RF2 Map Import branch : {}", branch);
-            try {
-                // Validate the mapping file
-                if (mappingFile == null || mappingFile.isEmpty()) {
-                    LOG.error("Mapping file is missing or empty.");
-                    return new ResponseEntity<>(HttpStatus.EXPECTATION_FAILED);
-                }                
-                
-                // TODO: Remove hard-coding of mapProject stuff
-                final String id = "1";
-                final Boolean includeMembers = Boolean.FALSE;
-                MapProject mapProject = null;
-			
-                try (final TerminologyService service = new TerminologyService()) {
-                    mapProject = MapProjectService.getMapProject(service, id, includeMembers);
-                    LOG.info("Fetched MapProject with ID: {}", id);
-                } catch (Exception e) {
-                    LOG.error("Error fetching map project: {}", e.getMessage());
-                    return new ResponseEntity<>("Failed to fetch map project.", HttpStatus.EXPECTATION_FAILED);
-                }
-                
-                // Import RF2 mappings 
-                List<Mapping> updatedRF2Mappings = MappingService.importMappings(mapProject, branch, mappingFile);
-                if (updatedRF2Mappings == null || updatedRF2Mappings.isEmpty())
-                	  LOG.info("Mapping import wasn't successful for branch: {}", branch);  
-                else                
-                	  LOG.info("Mapping import was successful for branch: {}", branch);    
-                
-                return new ResponseEntity<>(HttpStatus.OK);
-            } catch (Exception e) {
-                e.printStackTrace();
+
+    /**
+     * Import mappings.
+     *
+     * @author vparekh import mappings from external sources.
+     * @param branch the branch
+     * @param mappingFile the mappingFile
+     * @return the response entity
+     */
+    @PostMapping(value = "/mapset/{branch:.+}/mappings/import", consumes = MediaType.MULTIPART_FORM_DATA)
+    @Operation(summary = "Import mappings from RF2 file.", tags = {
+        "mapset"
+    }, responses = {
+        @ApiResponse(responseCode = "200", description = "Successfully imported RF2 mappings"),
+        @ApiResponse(responseCode = "417", description = "Failed to import the mappings"),
+        @ApiResponse(responseCode = "400", description = "Invalid request parameters")
+    })
+    @RecordMetric
+    public ResponseEntity<String> importMappings(@PathVariable(name = "branch", required = true) String branch,
+        @RequestParam(name = "mappingFile", required = true) MultipartFile mappingFile) {
+
+        LOG.info("RF2 Map Import file: {}", mappingFile);
+        LOG.info("RF2 Map Import branch : {}", branch);
+        final String decodedBranch = URLDecoder.decode(branch, StandardCharsets.UTF_8);
+
+        try {
+            // Validate the mapping file
+            if (mappingFile == null || mappingFile.isEmpty()) {
+                LOG.error("Mapping file is missing or empty.");
                 return new ResponseEntity<>(HttpStatus.EXPECTATION_FAILED);
             }
+
+            // TODO: Remove hard-coding of mapProject stuff
+            final String id = "1";
+            MapProject mapProject = null;
+
+            try (final TerminologyService service = new TerminologyService()) {
+                mapProject = MapProjectService.getMapProject(service, id, false);
+                LOG.info("Fetched MapProject with ID: {}", id);
+
+                // Import RF2 mappings
+                final List<Mapping> updatedRF2Mappings = MappingService.importMappings(mapProject, decodedBranch, mappingFile);
+                if (updatedRF2Mappings == null || updatedRF2Mappings.isEmpty())
+                    LOG.info("Mapping import wasn't successful for branch: {}", decodedBranch);
+                else
+                    LOG.info("Mapping import was successful for branch: {}", decodedBranch);
+
+                return new ResponseEntity<>(HttpStatus.OK);
+
+            } catch (Exception e) {
+                LOG.error("Error fetching map project: {}", e.getMessage());
+                return new ResponseEntity<>("Failed to fetch map project.", HttpStatus.EXPECTATION_FAILED);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(HttpStatus.EXPECTATION_FAILED);
         }
-        
+    }
 
     /**
      * Gets the mapping.
