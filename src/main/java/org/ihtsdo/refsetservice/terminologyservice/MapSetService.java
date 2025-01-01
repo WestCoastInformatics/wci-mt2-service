@@ -55,7 +55,14 @@ public class MapSetService {
 
 	/** The Constant LOG. */
 	private static final Logger LOG = LoggerFactory.getLogger(MapSetService.class);
-
+  
+  /** The config properties. */
+  protected static final Properties PROPERTIES = PropertyUtility.getProperties();  
+  final static String EXPORT_DOWNLOAD_URL = PROPERTIES.getProperty("REFSET_EXPORT_DIR");  
+  
+  /** The max number of record elasticsearch will return without erroring. */
+  private static final int ELASTICSEARCH_MAX_RECORD_LENGTH = 9990; //
+ 
 	/** The config properties. */
 	protected static final Properties PROPERTIES = PropertyUtility.getProperties();
 
