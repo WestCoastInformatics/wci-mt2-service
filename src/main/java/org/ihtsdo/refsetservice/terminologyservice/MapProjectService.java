@@ -24,6 +24,7 @@ import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.MapAdvice;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapRelation;
+import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.Team;
@@ -105,7 +106,14 @@ public class MapProjectService extends BaseService {
      */
     public static MapProject getMapProject(final TerminologyService service, final String mapProjectId, final boolean includeMembers) throws Exception {
 
-        // WMT-192 - use a dummy lookup for now.
+        
+    	final Organization organization = new Organization();
+        organization.setActive(true);
+        organization.setAffiliate(false);
+        organization.setName("Norwegian Directorate of Health");
+        organization.setDescription("Norwegian Directorate of Health"); //Norwegian NRC
+        
+    	// WMT-192 - use a dummy lookup for now.
         // Remove if(true) clause once MapProjects are stored in the database
         if(true) {
         
@@ -113,13 +121,13 @@ public class MapProjectService extends BaseService {
 
         mapProject.setRefSetId("447562003");
         mapProject.setModuleId("51000202101");
-        mapProject
-            .setRefSetName("SNOMED CT to International Classification of Diseases tenth revision extended map reference set (foundation metadata concept)");
+        mapProject.setRefSetName("SNOMED CT to International Classification of Diseases tenth revision extended map reference set (foundation metadata concept)");
         mapProject.setActive(true);
         mapProject.setSourceTerminology("SNOMEDCT_NO");
         mapProject.setSourceTerminologyVersion("2024-04-15");
         mapProject.setDestinationTerminology("ICD-10-NO");
         mapProject.setDestinationTerminologyVersion("20240723");
+        mapProject.setName("SNOMEDCT-NO TO ICD-10-NO");
         
         
         // TODO: get from find mapProject
@@ -131,6 +139,7 @@ public class MapProjectService extends BaseService {
         edition.getDefaultLanguageRefsets().add("900000000000509007");
         edition.setShortName("SNOMEDCT-NO");
         edition.setBranch("MAIN/SNOMEDCT-NO/2024-04-15/WCITEST");
+        edition.setOrganization(organization);
         mapProject.setEdition(edition);
 
         final Set<MapAdvice> mapAdvices = new HashSet<>();
