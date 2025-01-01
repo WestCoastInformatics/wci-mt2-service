@@ -13,10 +13,12 @@ package org.ihtsdo.refsetservice.util;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -30,8 +32,11 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.List;
+import java.util.Optional;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
@@ -149,6 +154,76 @@ public final class FileUtility {
             }
         }
     }
+    
+    /**
+     * Extract files from a zip archive.
+     *
+     * @param zipFilePath the path and filename of the zip file to unzip
+     * @param extractionPath the path of the directory to extract files to
+     * @return a list of file paths of the extracted files
+     * @throws Exception the exception
+     */
+    public static List<String> unzipFiles(final String zipFilePath, final String extractionPath) throws Exception {
+
+        final List<String> sourceFiles = new ArrayList<>();
+
+        try (final ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFilePath));) {
+
+            final File extractionDirectory = new File(extractionPath);
+            final byte[] buffer = new byte[1024];
+            ZipEntry zipEntry;
+
+            while ((zipEntry = zis.getNextEntry()) != null) {
+
+                final File newFile = new File(extractionDirectory, zipEntry.getName());
+                final String extractionCanonicalPath = extractionDirectory.getCanonicalPath();
+                final String fileCanonicalPath = newFile.getCanonicalPath();
+
+                if (!fileCanonicalPath.startsWith(extractionCanonicalPath + File.separator)) {
+
+                    throw new IOException("Entry is outside of the target directory: " + zipEntry.getName());
+                }
+
+                if (zipEntry.isDirectory()) {
+
+                    if (!newFile.isDirectory() && !newFile.mkdirs()) {
+
+                        throw new IOException("Failed to create directory " + newFile);
+                    }
+
+                } else {
+
+                    // fix for Windows-created archives
+                    final File parent = newFile.getParentFile();
+
+                    if (!parent.isDirectory() && !parent.mkdirs()) {
+
+                        throw new IOException("Failed to create directory " + parent);
+                    }
+
+                    // write file content
+                    try (final FileOutputStream fileOutputStream = new FileOutputStream(newFile)) {
+
+                        int length;
+
+                        while ((length = zis.read(buffer)) > 0) {
+
+                            fileOutputStream.write(buffer, 0, length);
+                        }
+
+                    }
+                    sourceFiles.add(fileCanonicalPath);
+                }
+            }
+
+            return sourceFiles;
+
+        } catch (final Exception ex) {
+
+            throw new Exception("Could not unzip the file: " + ex.getMessage(), ex);
+        }
+
+    }
 
     /**
      * Zip files.
@@ -218,7 +293,7 @@ public final class FileUtility {
      * @param filePath the file path
      * @throws IOException Signals that an I/O exception has occurred.
      */
-    private static void extractFile(final ZipInputStream zipIn, final String filePath) throws IOException {
+    public static void extractFile(final ZipInputStream zipIn, final String filePath) throws IOException {
 
         try (final BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(filePath))) {
             final byte[] bytesIn = new byte[BUFFER_SIZE];
@@ -228,6 +303,103 @@ public final class FileUtility {
             }
         }
     }
+    
+    
+    /**
+     * Removes the effective time.
+     *
+     * @param origFilePath the orig file path
+     * @throws Exception the exception
+     */
+    public static void removeEffectiveTime(final String origFilePath) throws Exception {
+
+        LOG.info("Removing effectiveTime for non-PUBLISHED refsets.");
+
+        try {
+            final Path tempFilePath = Files.createTempFile("temp", ".txt");
+            try (final BufferedReader br = new BufferedReader(new FileReader(new File(origFilePath)));
+                final BufferedWriter writer = new BufferedWriter(new FileWriter(tempFilePath.toFile()))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    if (StringUtils.isEmpty(line)) {
+
+                        continue;
+                    }
+
+                    if (line.startsWith("id")) {
+                        writer.write(line);
+                        writer.newLine();
+                        continue;
+                    }
+
+                    final String[] tokens = line.split("\t");
+                    tokens[1] = "";
+                    final String updatedLine = String.join("\t", tokens);
+                    writer.write(updatedLine);
+                    writer.newLine();
+                }
+            }
+            // Replace the original file with the modified temporary file
+            Files.move(tempFilePath, Path.of(origFilePath), StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            LOG.error("ERROR removing effectiveTime from file {}", origFilePath);
+            throw e;
+        }
+    }
+    
+    /**
+     * Removes the Terminology folders/files .
+     *
+     * @param folderPath the folder path
+     * @throws Exception the IOException
+     */
+    public static void processFolder(String folderPath) throws IOException {
+        Path sourceFolder = Paths.get(folderPath);
+
+        // Find the file to preserve based on the prefix "der2_iisssccRefset_"
+        Optional<Path> targetFileOptional = Files.walk(sourceFolder)
+            .filter(path -> Files.isRegularFile(path) && path.getFileName().toString().startsWith("der2_iisssccRefset_"))
+            .findFirst();
+
+        if (targetFileOptional.isEmpty()) {
+            throw new IOException("No file starting with 'der2_iisssccRefset_' found in the folder: " + folderPath);
+        }
+
+        Path targetFile = targetFileOptional.get();
+        
+        // Move the mapSet file to a temporary location outside the source folder
+        final Path builderDirectoryTempDir = Files.createTempDirectory("mt2MapSetPreserved-");
+        Path tempTargetFile = builderDirectoryTempDir.resolve(targetFile.getFileName());
+        Files.move(targetFile, tempTargetFile, StandardCopyOption.REPLACE_EXISTING);
+     
+        
+        // Delete all other files and folders but not the folderPath
+        Files.walk(sourceFolder)
+            .filter(path -> !path.equals(sourceFolder))
+            .sorted((a, b) -> b.compareTo(a)) // Delete children before parents
+            .forEach(path -> {
+                try {
+                    if (Files.isDirectory(path)) {
+                        Files.deleteIfExists(path);
+                    } else {
+                        Files.delete(path);
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException("Error deleting file: " + path, e);
+                }
+            });
+
+        // Move the preserved file from builderDirectoryTempDir folder to the root of the source folder
+        Path restoredFile = sourceFolder.resolve(tempTargetFile.getFileName());
+        Files.move(tempTargetFile, restoredFile, StandardCopyOption.REPLACE_EXISTING);
+
+        // Delete the temporary directory
+        Files.delete(builderDirectoryTempDir);
+        
+    }
+    
+    
+    
 
     /**
      * Resolve uri.
