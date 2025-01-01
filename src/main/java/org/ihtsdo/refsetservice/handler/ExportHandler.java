@@ -10,10 +10,13 @@
 
 package org.ihtsdo.refsetservice.handler;
 
+import java.util.Properties;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.Edition;
+import org.ihtsdo.refsetservice.model.MapProject;
+import org.ihtsdo.refsetservice.model.MapSet;
 //import org.flywaydb.core.internal.license.Edition;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.service.TerminologyService;
@@ -41,6 +44,9 @@ public class ExportHandler {
 
 	/** The Constant LOG. */
 	private static final Logger LOG = LoggerFactory.getLogger(ExportHandler.class);
+	
+	 /** The config properties. */
+    protected static final Properties PROPERTIES = PropertyUtility.getProperties();
 
 	/** The terminology handler. */
 	private static TerminologyServerHandler terminologyHandler;
@@ -104,15 +110,6 @@ public class ExportHandler {
 				|| ("delta".equals(type.toLowerCase()) && dates.size() != 2)) {
 			throw new Exception("Have a " + type + " rf2 request with " + dates.size() + " number of dates provided");
 		}
-
-		// if (type.toLowerCase().contains("snapshot")) {
-		// name = "refset_" + refset.getRefsetId() + "_" + dates.toArray()[0] + "_" +
-		// type;
-		// } else {
-		// name = "refset_" + refset.getRefsetId() + "_" + dates.toArray()[0] + "_" +
-		// type + "_"
-		// + dates.toArray()[1];
-		// }
 
 		String namespace = "";
 		try (final TerminologyService service = new TerminologyService()) {
@@ -255,4 +252,101 @@ public class ExportHandler {
 
 		terminologyHandler.downloadGeneratedFile(snowVersionFileUrl, localSnowVersionPath);
 	}
+	
+	
+	/**
+	 * Generate MT2 version file name.
+	 *
+	 * @param refset         the refset
+	 * @param type           the type
+	 * @param languageId     the language id
+	 * @param dates          the dates
+	 * @param exportMetadata the export metadata
+	 * @param withNames      the with names
+	 * @return the string
+	 * @throws Exception the exception
+	 */
+	public String generateMt2VersionFileName(final MapProject mapProject, MapSet mapset,  final String type, final String languageId,
+			final Set<String> dates, final boolean exportMetadata, final boolean withNames) throws Exception {
+
+		if ((type.toLowerCase().contains("snapshot") && dates.size() != 1)
+				// if (("snapshot".equals(type.toLowerCase()) &&
+				// transientEffectiveTime != null)
+				|| ("delta".equals(type.toLowerCase()) && dates.size() != 2)) {
+			throw new Exception("Have a " + type + " rf2 request with " + dates.size() + " number of dates provided");
+		}
+	
+		String name;
+		//String date = new SimpleDateFormat("MMddyyyy").format(new Date()) + System.currentTimeMillis();
+
+		if ("snapshot".equals(type.toLowerCase())) {
+			name = "der2_iisssccRefset" + mapProject.getDestinationTerminology() + "ExtendedMap" + mapset.getRefSetCode() 
+					+ "Snapshot" + "_" +  StringUtility.capitalizeEachWord(mapProject.getEdition().getAbbreviation()) + "_" + dates.toArray()[0];
+		} else {
+			name = "der2_iisssccRefset" + mapProject.getDestinationTerminology()  +"ExtendedMap" + mapset.getRefSetCode() 
+					+ "Delta" + "_" + StringUtility.capitalizeEachWord(mapProject.getEdition().getAbbreviation()) + "_" + dates.toArray()[0] + "_" + (dates.toArray().length > 1 ? dates.toArray()[1] : dates.toArray()[0]);
+		}
+
+		if (withNames) {
+			name = name + "_" + languageId; // TODO: Add Language here too
+		}
+
+		if (exportMetadata) {
+			name = name + "_With-Metadata"; // TODO: Add Language here too
+		}
+
+		name = name + ".zip";
+		
+		LOG.info("ExportHandler generateMt2VersionFileName - " + name);
+		return name;
+	}
+	
+	/**
+	 * Generate aws base version path.
+	 * 
+	 * @param branch the branch
+	 * @param mapset the mapset
+	 * @param type   the type
+	 * @param dates  the dates
+	 * @return the string
+	 * @throws Exception the exception
+	 */
+	public String generateAwsMt2BaseVersionPath(final String branch , final MapSet mapset, final String type, final Set<String> dates)
+			throws Exception {
+		
+		 final String awsProjectBaseDir = PROPERTIES.getProperty("AWS_PROJECT_BASE_DIR");
+		
+		//AWS path check - TODO
+		String path = awsProjectBaseDir + "/" + branch + "/" + mapset.getRefSetCode() + "/" + dates.toArray()[0] + "/" + type;		
+		if (!"snapshot".equals(type.toLowerCase())) {
+			path += "/" + (dates.toArray().length > 1 ? dates.toArray()[1] : dates.toArray()[0]);
+		}
+		
+		LOG.info("ExportHandler generateAwsMt2BaseVersionPath - " + path);
+		return path;
+	}
+	
+	
+	/**
+	 * Generate snow version file name.
+	 * 
+	 * @param mapProject the mapProject
+	 * @param mapset the mapset
+	 * @param type   the type
+	 * @param dates  the dates
+	 * @return the string
+	 */
+	public String generateMt2SnowVersionFileName(final MapProject mapProject, final MapSet mapset, final String type, final Set<String> dates) {
+	
+		if ("snapshot".equals(type.toLowerCase())) {
+			return "der2_iisssccRefset" + mapProject.getDestinationTerminology() + "ExtendedMap" + mapset.getRefSetCode() + type + "_" +  StringUtility.capitalizeEachWord(mapProject.getEdition().getAbbreviation()) + "_"
+					+ dates.toArray()[0] + ".zip";
+		} else {
+			return "der2_iisssccRefset" + mapProject.getDestinationTerminology() + "ExtendedMap" + mapset.getRefSetCode() + type + "_" +  StringUtility.capitalizeEachWord(mapProject.getEdition().getAbbreviation()) + "_"
+					+ dates.toArray()[0] + "_" + (dates.toArray().length > 1 ? dates.toArray()[1] : dates.toArray()[0])
+					+ ".txt";
+		}
+	}
+
+	
 }
