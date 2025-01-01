@@ -44,6 +44,9 @@ public class ExportHandler {
 
 	/** The Constant LOG. */
 	private static final Logger LOG = LoggerFactory.getLogger(ExportHandler.class);
+	
+	 /** The config properties. */
+    protected static final Properties PROPERTIES = PropertyUtility.getProperties();
 
 	/** The config properties. */
 	protected static final Properties PROPERTIES = PropertyUtility.getProperties();
