@@ -165,24 +165,24 @@ public class MapSetController extends BaseController {
   )
   @Parameters({
       @Parameter(name = "branch", description = "Branch, e.g., MAIN/SNOMEDCT-NO/2024-04-15/WCITEST", required = true),
-      @Parameter(name = "MapsetId", description = "RF2 MapsetId, e.g., '447562003' for the ICD10NO map", required = true),
+      @Parameter(name = "mapsetId", description = "RF2 MapsetId, e.g., '447562003' for the ICD10NO map", required = true),
       @Parameter(name = "format", description = "Format, e.g., rf2, rf2_with_names, sctids", required = true),
       @Parameter(name = "exportType", description = "Export type, e.g., SNAPSHOT, DELTA", required = false),
       @Parameter(name = "fileNameDate", description = "File name date, e.g., 20241226", required = true),
       @Parameter(name = "languageId", description = "Language ID, e.g., EN", required = false),
       @Parameter(name = "startEffectiveTime", description = "Start effective time", required = false),
-      @Parameter(name = "transientEffectiveTime", description = "Transient effective time", required = false),
+      @Parameter(name = "transientEffectiveTime", description = "Transient effective time", required = true),
       @Parameter(name = "exportMetadata", description = "Whether to export metadata", required = false)
   })
   public @ResponseBody ResponseEntity<String> exportMapset(
       @RequestParam(name = "branch", required = true) String branch,
-      @RequestParam(name = "MapsetId", required = true) String mapsetId, 
+      @RequestParam(name = "mapsetId", required = true) String mapsetId, 
       @RequestParam(name = "format", required = true) String format,
       @RequestParam(name = "exportType", required = true) String exportType,
       @RequestParam(name = "fileNameDate", required = true) String fileNameDate,
       @RequestParam(name = "languageId", required = false) String languageId,
       @RequestParam(name = "startEffectiveTime", required = false) String startEffectiveTime,
-      @RequestParam(name = "transientEffectiveTime", required = false) String transientEffectiveTime,
+      @RequestParam(name = "transientEffectiveTime", required = true) String transientEffectiveTime,
       @RequestParam(name = "exportMetadata", required = false, defaultValue = "false") boolean exportMetadata
   ) throws Exception {
       LOG.info("Exporting RF2 Mapset: MapsetId={}, Branch={}, Format={}, ExportType={}, FileNameDate={}, StartEffectiveTime={}, TransientEffectiveTime={}, ExportMetadata={}",
@@ -205,7 +205,7 @@ public class MapSetController extends BaseController {
               if ("SNAPSHOT".equalsIgnoreCase(exportType)) {
                   downloadUri = MapSetService.exportMapsetRf2(
                       service, mapProject , branch, mapsetId, exportType, languageId, fileNameDate,
-                      startEffectiveTime, transientEffectiveTime, exportMetadata, withNames
+                      null, transientEffectiveTime, exportMetadata, withNames
                   );
                   responseMessage = "{\"url\": \"" + downloadUri + "\"}";
                   LOG.info("Export completed successfully. Download URI: {}", downloadUri);
