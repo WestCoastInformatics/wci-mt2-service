@@ -39,305 +39,321 @@ import com.amazonaws.services.s3.AmazonS3;
  */
 public class ExportHandler {
 
-    /** The Constant TOP_LEVEL_AWS_FOLDER. */
-    private static final String TOP_LEVEL_AWS_FOLDER = S3ConnectionWrapper.getProjectDirectory() + "/";
+	/** The Constant TOP_LEVEL_AWS_FOLDER. */
+	private static final String TOP_LEVEL_AWS_FOLDER = S3ConnectionWrapper.getProjectDirectory() + "/";
 
-    /** The Constant LOG. */
-    private static final Logger LOG = LoggerFactory.getLogger(ExportHandler.class);
+	/** The Constant LOG. */
+	private static final Logger LOG = LoggerFactory.getLogger(ExportHandler.class);
 
-    /** The config properties. */
-    protected static final Properties PROPERTIES = PropertyUtility.getProperties();
+	/** The config properties. */
+	protected static final Properties PROPERTIES = PropertyUtility.getProperties();
 
-    /** The terminology handler. */
-    private static TerminologyServerHandler terminologyHandler;
+	/** The terminology handler. */
+	private static TerminologyServerHandler terminologyHandler;
 
-    static {
-        // Instantiate terminology handler
-        try {
-            String key = "terminology.handler";
-            String handlerName = PropertyUtility.getProperty(key);
-            if (handlerName.isEmpty()) {
-                throw new Exception("terminology.handler expected and does not exist.");
-            }
+	static {
+		// Instantiate terminology handler
+		try {
+			String key = "terminology.handler";
+			String handlerName = PropertyUtility.getProperty(key);
+			if (handlerName.isEmpty()) {
+				throw new Exception("terminology.handler expected and does not exist.");
+			}
 
-            terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName, TerminologyServerHandler.class);
+			terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName,
+					TerminologyServerHandler.class);
 
-        } catch (Exception e) {
-            LOG.error("Failed to initialize terminology.handler - serious error", e);
-            terminologyHandler = null;
-        }
-    }
+		} catch (Exception e) {
+			LOG.error("Failed to initialize terminology.handler - serious error", e);
+			terminologyHandler = null;
+		}
+	}
 
-    /**
-     * Indicates whether or not requested file on S 3 is the case.
-     *
-     * @param refset the refset
-     * @param s3Client the s 3 client
-     * @param type the type
-     * @param dates the dates
-     * @return <code>true</code> if so, <code>false</code> otherwise
-     * @throws Exception the exception
-     */
-    public boolean isRequestedFileOnS3(final Refset refset, final AmazonS3 s3Client, final String type, final Set<String> dates) throws Exception {
+	/**
+	 * Indicates whether or not requested file on S 3 is the case.
+	 *
+	 * @param refset   the refset
+	 * @param s3Client the s 3 client
+	 * @param type     the type
+	 * @param dates    the dates
+	 * @return <code>true</code> if so, <code>false</code> otherwise
+	 * @throws Exception the exception
+	 */
+	public boolean isRequestedFileOnS3(final Refset refset, final AmazonS3 s3Client, final String type,
+			final Set<String> dates) throws Exception {
 
-        // Check if date lives on s3
-        return false;
-    }
+		// Check if date lives on s3
+		return false;
+	}
 
-    /**
-     * Generate RT2 version file name.
-     *
-     * @param refset the refset
-     * @param type the type
-     * @param languageId the language id
-     * @param dates the dates
-     * @param exportMetadata the export metadata
-     * @param withNames the with names
-     * @return the string
-     * @throws Exception the exception
-     */
-    public String generateRt2VersionFileName(final Refset refset, final String type, final String languageId, final Set<String> dates,
-        final boolean exportMetadata, final boolean withNames) throws Exception {
+	/**
+	 * Generate RT2 version file name.
+	 *
+	 * @param refset         the refset
+	 * @param type           the type
+	 * @param languageId     the language id
+	 * @param dates          the dates
+	 * @param exportMetadata the export metadata
+	 * @param withNames      the with names
+	 * @return the string
+	 * @throws Exception the exception
+	 */
+	public String generateRt2VersionFileName(final Refset refset, final String type, final String languageId,
+			final Set<String> dates, final boolean exportMetadata, final boolean withNames) throws Exception {
 
-        // RT2-1037
-        // der2_Refset_<refset_name_in_camelcase><Snapshot|Delta><CountryCode><Namespace>_<PublicationDate>.txt
+		// RT2-1037
+		// der2_Refset_<refset_name_in_camelcase><Snapshot|Delta><CountryCode><Namespace>_<PublicationDate>.txt
 
-        if ((type.toLowerCase().contains("snapshot") && dates.size() != 1)
-            // if (("snapshot".equals(type.toLowerCase()) &&
-            // transientEffectiveTime != null)
-            || ("delta".equals(type.toLowerCase()) && dates.size() != 2)) {
-            throw new Exception("Have a " + type + " rf2 request with " + dates.size() + " number of dates provided");
-        }
+		if ((type.toLowerCase().contains("snapshot") && dates.size() != 1)
+				// if (("snapshot".equals(type.toLowerCase()) &&
+				// transientEffectiveTime != null)
+				|| ("delta".equals(type.toLowerCase()) && dates.size() != 2)) {
+			throw new Exception("Have a " + type + " rf2 request with " + dates.size() + " number of dates provided");
+		}
 
-        String namespace = "";
-        try (final TerminologyService service = new TerminologyService()) {
+		String namespace = "";
+		try (final TerminologyService service = new TerminologyService()) {
 
-            final String editionId = refset.getEditionId();
-            final Edition edition = service.get(editionId, Edition.class);
-            namespace = edition.getNamespace() != null ? edition.getNamespace() : "";
-        }
+			final String editionId = refset.getEditionId();
+			final Edition edition = service.get(editionId, Edition.class);
+			namespace = edition.getNamespace() != null ? edition.getNamespace() : "";
+		}
 
-        String countryCode = refset.getEditionShortName().replace("SNOMEDCT", "").replace("-", "");
-        if (StringUtils.isBlank(countryCode)) {
-            countryCode = "INT";
-        }
+		String countryCode = refset.getEditionShortName().replace("SNOMEDCT", "").replace("-", "");
+		if (StringUtils.isBlank(countryCode)) {
+			countryCode = "INT";
+		}
 
-        String name;
+		String name;
 
-        if ("snapshot".equals(type.toLowerCase())) {
+		if ("snapshot".equals(type.toLowerCase())) {
 
-            name = "der2_Refset_" + StringUtility.camelCase(refset.getName().replaceAll("[\\\\/:*?\"<>|]", "-")) + "Snapshot" + "_" + countryCode + namespace
-                + refset.getRefsetId() + "_" + dates.toArray()[0];
+			name = "der2_Refset_" + StringUtility.camelCase(refset.getName().replaceAll("[\\\\/:*?\"<>|]", "-"))
+					+ type.toUpperCase() + "_" + countryCode + namespace + refset.getRefsetId() + "_"
+					+ dates.toArray()[0];
 
-        } else {
+		} else {
 
-            name = "der2_Refset_" + StringUtility.camelCase(refset.getName().replaceAll("[\\\\/:*?\"<>|]", "-")) + "Delta" + "_" + countryCode + namespace
-                + refset.getRefsetId() + "_" + dates.toArray()[0] + "_" + (dates.toArray().length > 1 ? dates.toArray()[1] : dates.toArray()[0]);
-        }
+			name = "der2_Refset_" + StringUtility.camelCase(refset.getName().replaceAll("[\\\\/:*?\"<>|]", "-"))
+					+ type.toUpperCase() + "_" + countryCode + namespace + refset.getRefsetId() + "_"
+					+ dates.toArray()[0] + "_" + (dates.toArray().length > 1 ? dates.toArray()[1] : dates.toArray()[0]);
+		}
 
-        if (withNames) {
-            name = name + "_" + languageId; // TODO: Add Language here too
-        }
+		if (withNames) {
+			name = name + "_" + languageId; // TODO: Add Language here too
+		}
 
-        if (exportMetadata) {
-            name = name + "_With-Metadata"; // TODO: Add Language here too
-        }
+		if (exportMetadata) {
+			name = name + "_With-Metadata"; // TODO: Add Language here too
+		}
 
-        name = name + ".zip";
+		name = name + ".zip";
 
-        return name;
-    }
+		return name;
+	}
 
-    /**
-     * Generate aws base version path.
-     *
-     * @param refset the refset
-     * @param type the type
-     * @param dates the dates
-     * @return the string
-     * @throws Exception the exception
-     */
-    public String generateAwsBaseVersionPath(final Refset refset, final String type, final Set<String> dates) throws Exception {
+	/**
+	 * Generate aws base version path.
+	 *
+	 * @param refset the refset
+	 * @param type   the type
+	 * @param dates  the dates
+	 * @return the string
+	 * @throws Exception the exception
+	 */
+	public String generateAwsBaseVersionPath(final Refset refset, final String type, final Set<String> dates)
+			throws Exception {
 
-        String path = getAwsBranchPath(refset) + "/" + refset.getRefsetId() + "/" + dates.toArray()[0] + "/" + type;
+		String path = getAwsBranchPath(refset) + "/" + refset.getRefsetId() + "/" + dates.toArray()[0] + "/" + type;
 
-        if (!"snapshot".equals(type.toLowerCase())) {
-            path += "/" + (dates.toArray().length > 1 ? dates.toArray()[1] : dates.toArray()[0]);
-        }
+		if (!"snapshot".equals(type.toLowerCase())) {
+			path += "/" + (dates.toArray().length > 1 ? dates.toArray()[1] : dates.toArray()[0]);
+		}
 
-        return path;
-    }
+		return path;
+	}
 
-    /**
-     * Returns the aws branch path.
-     *
-     * @param refset the refset
-     * @return the aws branch path
-     * @throws Exception the exception
-     */
-    public String getAwsBranchPath(final Refset refset) throws Exception {
+	/**
+	 * Returns the aws branch path.
+	 *
+	 * @param refset the refset
+	 * @return the aws branch path
+	 * @throws Exception the exception
+	 */
+	public String getAwsBranchPath(final Refset refset) throws Exception {
 
-        return TOP_LEVEL_AWS_FOLDER + RefsetService.getBranchPath(refset);
-    }
+		return TOP_LEVEL_AWS_FOLDER + RefsetService.getBranchPath(refset);
+	}
 
-    /**
-     * Generate snow version file name.
-     *
-     * @param refset the refset
-     * @param type the type
-     * @param dates the dates
-     * @return the string
-     */
-    public String generateSnowVersionFileName(final Refset refset, final String type, final Set<String> dates) {
+	/**
+	 * Generate snow version file name.
+	 *
+	 * @param refset the refset
+	 * @param type   the type
+	 * @param dates  the dates
+	 * @return the string
+	 */
+	public String generateSnowVersionFileName(final Refset refset, final String type, final Set<String> dates) {
 
-        // der2_Refset_Simple551000172106Snapshot_BE_20200315
-        if ("snapshot".equals(type.toLowerCase())) {
-            return "der2_Refset_Simple" + refset.getRefsetId() + type + "_" + refset.getEditionShortName() + "_" + dates.toArray()[0] + ".zip";
-        } else {
-            return "der2_Refset_Simple" + refset.getRefsetId() + type + "_" + refset.getEditionShortName() + "_" + dates.toArray()[0] + "_"
-                + (dates.toArray().length > 1 ? dates.toArray()[1] : dates.toArray()[0]) + ".txt";
-        }
-    }
+		// der2_Refset_Simple551000172106Snapshot_BE_20200315
+		if ("snapshot".equals(type.toLowerCase())) {
+			return "der2_Refset_Simple" + refset.getRefsetId() + type.toUpperCase() + "_" + refset.getEditionShortName()
+					+ "_" + dates.toArray()[0] + ".zip";
+		} else {
+			return "der2_Refset_Simple" + refset.getRefsetId() + type.toUpperCase() + "_" + refset.getEditionShortName()
+					+ "_" + dates.toArray()[0] + "_"
+					+ (dates.toArray().length > 1 ? dates.toArray()[1] : dates.toArray()[0]) + ".txt";
+		}
+	}
 
-    /**
-     * Returns the top level aws path.
-     *
-     * @return the top level aws path
-     */
-    public String getTopLevelAwsPath() {
+	/**
+	 * Returns the top level aws path.
+	 *
+	 * @return the top level aws path
+	 */
+	public String getTopLevelAwsPath() {
 
-        return TOP_LEVEL_AWS_FOLDER;
-    }
+		return TOP_LEVEL_AWS_FOLDER;
+	}
 
-    /**
-     * Delete files from branch path.
-     *
-     * @param branchPath the branch path
-     * @return true, if successful
-     * @throws Exception the exception
-     */
-    public boolean deleteFilesFromBranchPath(final String branchPath) throws Exception {
+	/**
+	 * Delete files from branch path.
+	 *
+	 * @param branchPath the branch path
+	 * @return true, if successful
+	 * @throws Exception the exception
+	 */
+	public boolean deleteFilesFromBranchPath(final String branchPath) throws Exception {
 
-        return S3ConnectionWrapper.deleteObjectFromAws(getTopLevelAwsPath() + branchPath);
-    }
+		return S3ConnectionWrapper.deleteObjectFromAws(getTopLevelAwsPath() + branchPath);
+	}
 
-    /**
-     * Generate snow version file.
-     *
-     * @param entityString the entity string
-     * @return the string
-     * @throws Exception the exception
-     */
-    public String generateSnowVersionFile(final String entityString) throws Exception {
+	/**
+	 * Generate snow version file.
+	 *
+	 * @param entityString the entity string
+	 * @return the string
+	 * @throws Exception the exception
+	 */
+	public String generateSnowVersionFile(final String entityString) throws Exception {
 
-        return terminologyHandler.generateVersionFile(entityString);
+		return terminologyHandler.generateVersionFile(entityString);
 
-    }
+	}
 
-    /**
-     * Download snow generated file.
-     *
-     * @param snowVersionFileUrl the snow version file url
-     * @param localSnowVersionPath the local snow version path
-     * @throws Exception the exception
-     */
-    public void downloadSnowGeneratedFile(final String snowVersionFileUrl, final String localSnowVersionPath) throws Exception {
+	/**
+	 * Download snow generated file.
+	 *
+	 * @param snowVersionFileUrl   the snow version file url
+	 * @param localSnowVersionPath the local snow version path
+	 * @throws Exception the exception
+	 */
+	public void downloadSnowGeneratedFile(final String snowVersionFileUrl, final String localSnowVersionPath)
+			throws Exception {
 
-        terminologyHandler.downloadGeneratedFile(snowVersionFileUrl, localSnowVersionPath);
-    }
+		terminologyHandler.downloadGeneratedFile(snowVersionFileUrl, localSnowVersionPath);
+	}
 
-    /**
-     * Generate MT2 version file name.
-     *
-     * @param refset the refset
-     * @param type the type
-     * @param languageId the language id
-     * @param dates the dates
-     * @param exportMetadata the export metadata
-     * @param withNames the with names
-     * @return the string
-     * @throws Exception the exception
-     */
-    public String generateMt2VersionFileName(final MapProject mapProject, MapSet mapset, final String type, final String languageId,
-        final String transientEffectiveTime, final String startEffectiveTime, final boolean exportMetadata, final boolean withNames) throws Exception {
+	/**
+	 * Generate MT2 version file name.
+	 *
+	 * @param refset         the refset
+	 * @param type           the type
+	 * @param languageId     the language id
+	 * @param dates          the dates
+	 * @param exportMetadata the export metadata
+	 * @param withNames      the with names
+	 * @return the string
+	 * @throws Exception the exception
+	 */
+	public String generateMt2VersionFileName(final MapProject mapProject, MapSet mapset, final String type,
+			final String languageId, final String transientEffectiveTime, final String startEffectiveTime,
+			final boolean exportMetadata, final boolean withNames) throws Exception {
 
-        if (StringUtils.isBlank(transientEffectiveTime)) {
-            throw new Exception("Transient Effective Time is required for MT2 export");
-        }
-        if ("delta".equals(type.toLowerCase()) && StringUtils.isAnyBlank(transientEffectiveTime, startEffectiveTime)) {
-            throw new Exception("Have a " + type + " rf2 request with startEffectiveTime number of dates provided");
-        }
+		if (StringUtils.isBlank(transientEffectiveTime)) {
+			throw new Exception("Transient Effective Time is required for MT2 export");
+		}
 
-        String name;
+		if ("delta".equals(type.toLowerCase()) && StringUtils.isAnyBlank(transientEffectiveTime, startEffectiveTime)) {
+			throw new Exception("Have a " + type + " rf2 request with startEffectiveTime number of dates provided");
+		}
 
-        if ("snapshot".equals(type.toLowerCase())) {
-            name = "der2_iisssccRefset" + mapProject.getDestinationTerminology() + "ExtendedMap" + mapset.getRefSetCode() + "Snapshot" + "_"
-                + StringUtility.capitalizeEachWord(mapProject.getEdition().getAbbreviation()) + "_" + transientEffectiveTime;
-        } else {
-            name = "der2_iisssccRefset" + mapProject.getDestinationTerminology() + "ExtendedMap" + mapset.getRefSetCode() + "Delta" + "_"
-                + StringUtility.capitalizeEachWord(mapProject.getEdition().getAbbreviation()) + "_" + transientEffectiveTime + "_"
-                + (StringUtils.isNotBlank(startEffectiveTime) ? startEffectiveTime : transientEffectiveTime);
-        }
+		String name;
 
-        if (withNames) {
-            name = name + "_" + languageId; // TODO: Add Language here too
-        }
+		if ("snapshot".equals(type.toLowerCase())) {
+			name = "der2_iisssccRefset" + mapProject.getDestinationTerminology() + "ExtendedMap"
+					+ mapset.getRefSetCode() + type.toUpperCase() + "_"
+					+ mapProject.getEdition().getAbbreviation().toUpperCase() + "_" + transientEffectiveTime;
+		} else {
+			name = "der2_iisssccRefset" + mapProject.getDestinationTerminology() + "ExtendedMap"
+					+ mapset.getRefSetCode() + type.toUpperCase() + "_"
+					+ mapProject.getEdition().getAbbreviation().toUpperCase() + "_" + transientEffectiveTime + "_"
+					+ (StringUtils.isNotBlank(startEffectiveTime) ? startEffectiveTime : transientEffectiveTime);
+		}
 
-        if (exportMetadata) {
-            name = name + "_With-Metadata"; // TODO: Add Language here too
-        }
+		if (withNames) {
+			name = name + "_" + languageId; // TODO: Add Language here too
+		}
 
-        name = name + ".zip";
+		if (exportMetadata) {
+			name = name + "_With-Metadata"; // TODO: Add Language here too
+		}
 
-        LOG.info("ExportHandler generateMt2VersionFileName - " + name);
-        return name;
-    }
+		name = name + ".zip";
 
-    /**
-     * Generate aws base version path.
-     * 
-     * @param branch the branch
-     * @param mapset the mapset
-     * @param type the type
-     * @param dates the dates
-     * @return the string
-     * @throws Exception the exception
-     */
-    public String generateAwsMt2BaseVersionPath(final String branch, final MapSet mapset, final String type, final String transientEffectiveTime,
-        final String startEffectiveTime) throws Exception {
+		LOG.info("ExportHandler generateMt2VersionFileName - " + name);
+		return name;
+	}
 
-        final String awsProjectBaseDir = PROPERTIES.getProperty("AWS_PROJECT_BASE_DIR");
+	/**
+	 * Generate aws base version path.
+	 * 
+	 * @param branch the branch
+	 * @param mapset the mapset
+	 * @param type   the type
+	 * @param dates  the dates
+	 * @return the string
+	 * @throws Exception the exception
+	 */
+	public String generateAwsMt2BaseVersionPath(final String branch, final MapSet mapset, final String type,
+			final String transientEffectiveTime, final String startEffectiveTime) throws Exception {
 
-        // AWS path check - TODO
-        String path = awsProjectBaseDir + "/" + branch + "/" + mapset.getRefSetCode() + "/" + transientEffectiveTime + "/" + type;
-        if (!"snapshot".equals(type.toLowerCase())) {
-            path += "/" + (StringUtils.isNotBlank(startEffectiveTime) ? startEffectiveTime : transientEffectiveTime);
-        }
+		final String awsProjectBaseDir = PROPERTIES.getProperty("AWS_PROJECT_BASE_DIR");
 
-        LOG.info("ExportHandler generateAwsMt2BaseVersionPath - " + path);
-        return path;
-    }
+		// AWS path check - TODO
+		String path = awsProjectBaseDir + "/" + branch + "/" + mapset.getRefSetCode() + "/" + transientEffectiveTime
+				+ "/" + type.toUpperCase();
+		if (!"snapshot".equals(type.toLowerCase())) {
+			path += "/" + (StringUtils.isNotBlank(startEffectiveTime) ? startEffectiveTime : transientEffectiveTime);
+		}
 
-    /**
-     * Generate snow version file name.
-     * 
-     * @param mapProject the mapProject
-     * @param mapset the mapset
-     * @param type the type
-     * @param dates the dates
-     * @return the string
-     */
-    public String generateMt2SnowVersionFileName(final MapProject mapProject, final MapSet mapset, final String type, final String transientEffectiveTime,
-        final String startEffectiveTime) {
+		LOG.info("ExportHandler generateAwsMt2BaseVersionPath - " + path);
+		return path;
+	}
 
-        if ("snapshot".equals(type.toLowerCase())) {
-            return "der2_iisssccRefset" + mapProject.getDestinationTerminology() + "ExtendedMap" + mapset.getRefSetCode() + type + "_"
-                + StringUtility.capitalizeEachWord(mapProject.getEdition().getAbbreviation()) + "_" + transientEffectiveTime + ".zip";
-        } else {
-            return "der2_iisssccRefset" + mapProject.getDestinationTerminology() + "ExtendedMap" + mapset.getRefSetCode() + type + "_"
-                + StringUtility.capitalizeEachWord(mapProject.getEdition().getAbbreviation()) + "_" + transientEffectiveTime + "_"
-                + (StringUtils.isNotBlank(startEffectiveTime) ? startEffectiveTime : transientEffectiveTime) + ".txt";
-        }
-    }
+	/**
+	 * Generate snow version file name.
+	 * 
+	 * @param mapProject the mapProject
+	 * @param mapset     the mapset
+	 * @param type       the type
+	 * @param dates      the dates
+	 * @return the string
+	 */
+	public String generateMt2SnowVersionFileName(final MapProject mapProject, final MapSet mapset, final String type,
+			final String transientEffectiveTime, final String startEffectiveTime) {
+
+		if ("snapshot".equals(type.toLowerCase())) {
+			return "der2_iisssccRefset" + mapProject.getDestinationTerminology() + "ExtendedMap"
+					+ mapset.getRefSetCode() + type.toUpperCase() + "_"
+					+ mapProject.getEdition().getAbbreviation().toUpperCase() + "_" + transientEffectiveTime + ".zip";
+		} else {
+			return "der2_iisssccRefset" + mapProject.getDestinationTerminology() + "ExtendedMap"
+					+ mapset.getRefSetCode() + type.toUpperCase() + "_"
+					+ mapProject.getEdition().getAbbreviation().toUpperCase() + "_" + transientEffectiveTime + "_"
+					+ (StringUtils.isNotBlank(startEffectiveTime) ? startEffectiveTime : transientEffectiveTime)
+					+ ".zip";
+		}
+	}
 
 }
