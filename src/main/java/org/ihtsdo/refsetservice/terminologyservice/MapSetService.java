@@ -137,8 +137,6 @@ public class MapSetService {
 			final String fileNameDate, final String startEffectiveTime, final String transientEffectiveTime,
 			final boolean exportMetadata, final boolean withNames) throws Exception {
 
-		// SnowstormConnection.checkConnection(); //TODO
-
 		return exportMapsetRf2File(mapProject, branch, mapsetId, type, languageId, fileNameDate, startEffectiveTime,
 				transientEffectiveTime, exportMetadata, withNames);
 	}
@@ -164,13 +162,6 @@ public class MapSetService {
 			final String type, final String languageId, final String fileNameDate, final String startEffectiveTime,
 			final String transientEffectiveTime, final boolean exportMetadata, final boolean withNames)
 			throws Exception {
-
-		// final Set<String> dates = new HashSet<>();
-		// dates.add(transientEffectiveTime);
-		//
-		// if (startEffectiveTime != null) {
-		// dates.add(startEffectiveTime);
-		// }
 
 		try {
 			final ExportHandler exporter = new ExportHandler();
@@ -265,12 +256,7 @@ public class MapSetService {
 			}
 
 			LOG.info("Final Export File Path: " + EXPORT_DOWNLOAD_URL + mt2VersionFileName);
-
-			// if download is from RT2 server
-			// ServletUriComponentsBuilder builder =
-			// ServletUriComponentsBuilder.fromCurrentContextPath();
 			return mt2VersionFileName;
-
 		} catch (final Exception ex) {
 			throw new Exception("Failed to export zip file name " + ex.getMessage(), ex);
 		}
@@ -300,19 +286,12 @@ public class MapSetService {
 
 		// Generate the Mt2 version of mapset RF2 Zip file
 		final Path builderDirectoryTempDir = Files.createTempDirectory("mt2Builder-");
-		boolean noFiles = false;
 
 		LOG.info("creating builder temp dir: " + builderDirectoryTempDir.toString());
 
 		// Unzip the download if snapshot
 		List<String> sourceFiles = new ArrayList<>();
-
-		if (!localSnowGeneratedFilePath.contains("DELTA")) {
-			sourceFiles = FileUtility.unzipFiles(localSnowGeneratedFilePath, builderDirectoryTempDir.toString());
-		} else {
-			// sourceFiles.add(localSnowGeneratedFilePath);
-			sourceFiles = FileUtility.unzipFiles(localSnowGeneratedFilePath, builderDirectoryTempDir.toString());
-		}
+		sourceFiles = FileUtility.unzipFiles(localSnowGeneratedFilePath, builderDirectoryTempDir.toString());
 
 		LOG.info("unzipped source files: " + ModelUtility.toJson(sourceFiles));
 		if (sourceFiles.size() >= 1) {
@@ -343,27 +322,10 @@ public class MapSetService {
 			Files.write(path,
 					("No results for Reference Set " + mapset.getRefSetCode()).getBytes(StandardCharsets.UTF_8));
 			sourceFiles.add(path.toString());
-			noFiles = true;
 		}
-
-		// If Rf2WithNames selected, append the names to the mapset file , if there were
-		// no files from Snowstorm, there is no need to append names - NUNO?
-		// if (appendNames && !noFiles) {
-		// final String snowGeneratedRf2FilePath = sourceFiles.iterator().next();
-		// final String rf2FileName =
-		// snowGeneratedRf2FilePath.substring(snowGeneratedRf2FilePath.lastIndexOf(File.separator)
-		// + 1);
-		// final String builderRf2FilePath = builderDirectoryTempDir.toString() +
-		// File.separator + rf2FileName;
-		// appendNamesToRf2(mapset, snowGeneratedRf2FilePath, builderRf2FilePath,
-		// languageId);
-		// sourceFiles.clear();
-		// sourceFiles.add(builderRf2FilePath);
-		// }
 
 		// remove effectiveTime
 		if (!"PUBLISHED".equalsIgnoreCase(mapset.getVersionStatus())) {
-			// final String snowGeneratedRf2FilePath = sourceFiles.iterator().next();
 			FileUtility.removeEffectiveTime(builderDirectoryTempDir.toString()); // snowGeneratedRf2FilePath
 		}
 
@@ -509,7 +471,6 @@ public class MapSetService {
 		final int limit = ELASTICSEARCH_MAX_RECORD_LENGTH;
 		boolean hasMorePages = true;
 		final Set<String> uniqueConceptIds = new HashSet<>(); // Use a Set to ensure uniqueness
-		final StringBuilder fileLines = new StringBuilder();
 		String zipOutputPath = EXPORT_DOWNLOAD_URL;
 		String mapsetFileName = "";
 		String sctidsFilePath = "";
@@ -517,12 +478,6 @@ public class MapSetService {
 		Path tempDirectoryPath = null;
 
 		try {
-
-			/*
-			 * final Set<String> dates = new HashSet<>(); dates.add(transientEffectiveTime);
-			 * 
-			 * if (startEffectiveTime != null) { dates.add(startEffectiveTime); }
-			 */
 
 			final MapSet mapset = terminologyHandler.getMapSet(branch, mapsetId);
 
@@ -546,9 +501,7 @@ public class MapSetService {
 			}
 
 			String searchAfter = "";
-
 			while (hasMorePages) {
-
 				final String resultString = getMemberSctids(mapset.getRefSetCode(), limit, searchAfter, branch);
 				// LOG.info("exportRefsetSctidList: resultString" + resultString);
 				final ObjectMapper mapper = new ObjectMapper();
@@ -575,24 +528,11 @@ public class MapSetService {
 					final JsonNode item = iterator.next();
 					final String conceptId = (item.get("referencedComponentId").asText());
 					uniqueConceptIds.add(conceptId); // Add to the Set
-					// fileLines.append(conceptId + "\n");
 				}
 			}
 		} catch (final Exception ex) {
 			throw new Exception("Could not get Reference Set member data from snowstorm: " + ex.getMessage(), ex);
 		}
-
-//        // print the sctids file
-//        try (final FileOutputStream sctidsFileOutputStream = new FileOutputStream(sctidsFilePath);
-//            final OutputStreamWriter sctidsOutputStreamWriter = new OutputStreamWriter(sctidsFileOutputStream, StandardCharsets.UTF_8);
-//            final PrintWriter sctidsWriter = new PrintWriter(sctidsOutputStreamWriter);) {
-//
-//            sctidsWriter.print(fileLines);
-//
-//        } catch (final Exception ex) {
-//
-//            throw new Exception("Could not create export txt file: " + ex.getMessage(), ex);
-//        }
 
 		// Write the unique SCTIDs to the output file
 		try (final PrintWriter writer = new PrintWriter(
@@ -612,8 +552,6 @@ public class MapSetService {
 		FileUtility.deleteDirectory(tempDirectoryPath.toFile());
 
 		// if download is from RT2 server
-		// final ServletUriComponentsBuilder builder =
-		// ServletUriComponentsBuilder.fromCurrentContextPath();
 		final String zippedFileUrl = EXPORT_DOWNLOAD_URL + mapsetFileName.replace(".txt", ".zip");
 
 		return zippedFileUrl;
