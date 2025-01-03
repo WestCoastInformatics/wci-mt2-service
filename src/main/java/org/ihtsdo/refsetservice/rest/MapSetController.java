@@ -197,8 +197,9 @@ public class MapSetController extends BaseController {
 					downloadUri = MapSetService.exportMapsetRf2(service, mapProject, branch, mapsetId, exportType,
 							languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata,
 							withNames); // DELTA
+					LOG.info("DELTA Export completed successfully. Download URI: {}", downloadUri);
 				}
-				LOG.info("DELTA Export completed successfully. Download URI: {}", downloadUri);
+				
 			} else if ("sctids".equalsIgnoreCase(format)) {
 				downloadUri = MapSetService.exportMapsetSctidList(service, mapProject, branch, mapsetId, exportType,
 						languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata);
