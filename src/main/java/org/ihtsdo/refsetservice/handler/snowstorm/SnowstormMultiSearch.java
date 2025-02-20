@@ -126,7 +126,7 @@ public class SnowstormMultiSearch extends SnowstormAbstract {
     body.set("branches", bodyPaths);
 
     final String url = SnowstormConnection.getBaseUrl()
-        + "multisearch/descriptions?active=true&offset=0&limit=10000" + "&ecl="
+        + "multisearch/descriptions?active=true&offset=0&limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH + "&ecl="
         + StringUtility.encodeValue(ecl) + "&term=" + StringUtility.encodeValue(snowstormQuery);
 
     LOG.debug("searchMultisearchDescriptions: Search Refset Concepts descriptions URL: " + url);

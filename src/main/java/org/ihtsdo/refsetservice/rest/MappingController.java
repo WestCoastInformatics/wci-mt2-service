@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 West Coast Informatics - All Rights Reserved.
+ * Copyright 2025 West Coast Informatics - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of West Coast Informatics
  * The intellectual and technical concepts contained herein are proprietary to
@@ -16,7 +16,6 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
@@ -32,7 +31,6 @@ import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -63,14 +61,6 @@ public class MappingController extends BaseController {
 
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(MappingController.class);
-
-    /** The request. */
-    @SuppressWarnings("unused")
-    @Autowired
-    private HttpServletRequest request;
-
-    /** Search teams API notes. */
-    private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
 
     /**
      * Gets the mappings.
@@ -128,7 +118,7 @@ public class MappingController extends BaseController {
     }
 
     /**
-     * Export mappings.
+     * Export mappings for a map set.
      *
      * @author vparekh export the mappings.
      * @param mapSetCode the map set code
@@ -145,8 +135,7 @@ public class MappingController extends BaseController {
         @ApiResponse(responseCode = "404", description = "Resource not found"), @ApiResponse(responseCode = "417", description = "Failed Expectation")
     })
     @Parameters({
-        @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. 447562003", required = true),
-
+        @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. 447562003", required = true)
     })
     @RecordMetric
     public @ResponseBody ResponseEntity<Resource> exportMappings(@PathVariable(value = "mapSetCode") final String mapSetCode,
@@ -157,9 +146,9 @@ public class MappingController extends BaseController {
         if (mappingExportRequest == null) {
             throw new RuntimeException("MappingExportRequest is required.");
         }
-        if (mappingExportRequest.getConceptCodes() == null || mappingExportRequest.getConceptCodes().isEmpty()) {
-            throw new RuntimeException("One or more concept codes are required.");
-        }
+//        if (mappingExportRequest.getConceptCodes() == null || mappingExportRequest.getConceptCodes().isEmpty()) {
+//            throw new RuntimeException("One or more concept codes are required.");
+//        }
         if (mappingExportRequest.getColumnNames() == null || mappingExportRequest.getColumnNames().isEmpty()) {
             throw new RuntimeException("One or more column names are required.");
         }
@@ -183,7 +172,6 @@ public class MappingController extends BaseController {
             return null;
         }
     }
-
 
     /**
      * Import mappings.

@@ -40,13 +40,13 @@ import javax.ws.rs.core.Response.Status.Family;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
-import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormMapping;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.MapEntry;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
+import org.ihtsdo.refsetservice.model.MapSetExportRequest;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.Project;
@@ -1426,7 +1426,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     RefsetMemberService.processDescriptionNodes(descriptionNodes, refset.getEdition().getDefaultLanguageRefsets(), nonDefaultPreferredTerms);
 
                 final List<Map<String, String>> sortedDescriptions =
-                    RefsetMemberService.sortConceptDescriptions(conceptId, descriptions, refset, nonDefaultPreferredTerms);
+                    RefsetMemberService.sortConceptDescriptions(conceptId, descriptions, refset.getEdition(), nonDefaultPreferredTerms);
                 conceptDescriptionMap.put(conceptId, sortedDescriptions);
             }
 
@@ -4532,12 +4532,19 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
     }
 
     /* see superclass */
-	@Override
-	public List<Mapping> importMappings(MapProject mapProject, String branch, MultipartFile mappingFile) throws Exception {
-		
-	    // TODO implement with Snowstorm
-		throw new UnsupportedOperationException("Method not implemented");
-	}
+    @Override
+    public List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile) throws Exception {
 
+        // TODO implement with Snowstorm
+        throw new UnsupportedOperationException("Method not implemented");
+    }
+
+    /* see superclass */
+    @Override
+    public String exportMapSet(final MapProject mapProject, final MapSetExportRequest mapSetExportRequest) throws Exception {
+
+        // TODO implement with Snowstorm
+        throw new UnsupportedOperationException("Method not implemented");
+    }
 
 }

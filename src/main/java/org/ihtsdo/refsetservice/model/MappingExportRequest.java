@@ -12,6 +12,8 @@ package org.ihtsdo.refsetservice.model;
 import java.util.List;
 import java.util.Objects;
 
+import org.ihtsdo.refsetservice.util.ModelUtility;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
@@ -21,7 +23,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
  * The Class MappingExportRequest.
  */
 @JsonInclude(Include.NON_EMPTY)
-@Schema(description = "Represents a set of search parameters for finding data.")
+@Schema(description = "Represents a set of parameters for exporting mapping data.")
 public class MappingExportRequest {
 
     /** The concept codes. */
@@ -109,15 +111,15 @@ public class MappingExportRequest {
         return Objects.equals(conceptCodes, other.conceptCodes) && Objects.equals(columnNames, other.columnNames);
     }
 
-    /**
-     * To string.
-     *
-     * @return the string
-     */
+    /* see superclass */
     @Override
     public String toString() {
 
-        return "MappingExportRequest [conceptCodes=" + conceptCodes + ", columnNames=" + columnNames + "]";
+      try {
+        return ModelUtility.toJson(this);
+      } catch (final Exception e) {
+        return e.getMessage();
+      }
     }
 
 }
