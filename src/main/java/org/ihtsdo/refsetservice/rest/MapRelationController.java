@@ -105,7 +105,7 @@ public class MapRelationController extends BaseController {
      */
     @RequestMapping(method = RequestMethod.GET, value = "/mapRelation/{id}", produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Get mapRelation", tags = {
-        "mapRelation"
+        "map relation"
     }, responses = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information")
     })
@@ -134,7 +134,7 @@ public class MapRelationController extends BaseController {
      */
     @RequestMapping(method = RequestMethod.GET, value = "/mapRelation/", produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Get all map Relations", tags = {
-        "mapRelation"
+        "map relation"
     }, responses = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information")
     })
@@ -220,7 +220,7 @@ public class MapRelationController extends BaseController {
      */
     @RequestMapping(method = RequestMethod.GET, value = "/mapRelation/search", produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Find map relations.", tags = {
-        "mapRelation"
+        "map relation"
     }, responses = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
         @ApiResponse(responseCode = "417", description = "Failed Expectation")

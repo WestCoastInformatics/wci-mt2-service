@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 West Coast Informatics - All Rights Reserved.
+ * Copyright 2025 West Coast Informatics - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of West Coast Informatics
  * The intellectual and technical concepts contained herein are proprietary to
@@ -19,6 +19,7 @@ import org.ihtsdo.refsetservice.model.Configurable;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
+import org.ihtsdo.refsetservice.model.MapSetExportRequest;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.Refset;
@@ -613,16 +614,25 @@ public interface TerminologyServerHandler extends Configurable {
      * @throws Exception the exception
      */
     public File exportMappings(final String branch, final String mapSetCode, final MappingExportRequest mappingExportRequest) throws Exception;
-	
+
     /**
      * Import mappings.
      *
      * @param mapProject the map project
      * @param branch the branch
      * @param mappingFile the mappingFile
+     * @return the list
      * @throws Exception the exception
      */
-	public List<Mapping> importMappings(MapProject mapProject, String branch,  MultipartFile mappingFile) throws Exception;
+    public List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile) throws Exception;
 
-	    
+    /**
+     * Export map set as an RF2 file.
+     *
+     * @param mapProject the map project
+     * @param mappingExportRequest the mapping export request
+     * @return the file
+     * @throws Exception the exception
+     */
+    public String exportMapSet(final MapProject mapProject, final MapSetExportRequest mapSetExportRequest) throws Exception;
 }

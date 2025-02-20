@@ -125,7 +125,7 @@ public class MapProjectController extends BaseController {
      */
     @RequestMapping(method = RequestMethod.GET, value = "/mapproject/{id}", produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Get mapProject.  This call requires authentication with the correct role.", tags = {
-        "mapproject"
+        "project"
     }, responses = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
         @ApiResponse(responseCode = "401", description = "Unauthorized"), @ApiResponse(responseCode = "403", description = "Forbidden"),
