@@ -48,8 +48,8 @@ public class JsonLoggingFilter implements Filter {
     public void doFilter(final ServletRequest req, final ServletResponse res,
         final FilterChain chain) throws ServletException, IOException {
 
-        HttpServletRequest hreq = (HttpServletRequest) req;
-        HttpServletResponse hres = (HttpServletResponse) res;
+        final HttpServletRequest hreq = (HttpServletRequest) req;
+        final HttpServletResponse hres = (HttpServletResponse) res;
         chain.doFilter(req, res);
 
         // Post-requets logging
@@ -72,7 +72,7 @@ public class JsonLoggingFilter implements Filter {
         // NO good way to get the content length here
 
         // remote-address - handled by RootServiceRestImpl
-        LoggerFactory.getLogger("HttpLogger").info(hreq.getMethod() + " " + hreq.getRequestURI());
+        LoggerFactory.getLogger(JsonLoggingFilter.class).info(hreq.getMethod() + " " + hreq.getRequestURI());
         ThreadContext.clearAll();
 
     }

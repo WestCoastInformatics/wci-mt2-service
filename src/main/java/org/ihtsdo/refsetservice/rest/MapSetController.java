@@ -1,26 +1,46 @@
+/*
+ * Copyright 2025 West Coast Informatics - All Rights Reserved.
+ *
+ * NOTICE:  All information contained herein is, and remains the property of West Coast Informatics
+ * The intellectual and technical concepts contained herein are proprietary to
+ * West Coast Informatics and may be covered by U.S. and Foreign Patents, patents in process,
+ * and are protected by trade secret or copyright law.  Dissemination of this information
+ * or reproduction of this material is strictly forbidden.
+ */
 package org.ihtsdo.refsetservice.rest;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
+import org.ihtsdo.refsetservice.model.MapSetExportRequest;
+import org.ihtsdo.refsetservice.model.enums.FileExportType;
+import org.ihtsdo.refsetservice.model.enums.FileFormatType;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.MapProjectService;
 import org.ihtsdo.refsetservice.terminologyservice.MapSetService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -39,186 +59,235 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
 public class MapSetController extends BaseController {
 
-	/** The Constant LOG. */
-	private static final Logger LOG = LoggerFactory.getLogger(MapSetController.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(MapSetController.class);
 
-	/** The request. */
-	@SuppressWarnings("unused")
-	@Autowired
-	private HttpServletRequest request;
+    /** The local directory to store exported refset files. */
+    private static String exportFileDir;
 
-	/** Search teams API notes. */
-	private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
+    /** The local server url to download exported refset files. */
+    private static final String EXPORT_DOWNLOAD_URL = "/mapset/export/download";
 
-	@RequestMapping(method = RequestMethod.GET, value = "/mapset/{code}", produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Get map set. This call requires authentication with the correct role.", tags = {
-			"mapset" }, responses = {
-					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-					@ApiResponse(responseCode = "401", description = "Unauthorized"),
-					@ApiResponse(responseCode = "403", description = "Forbidden"),
-					@ApiResponse(responseCode = "404", description = "Resource not found"),
-					@ApiResponse(responseCode = "417", description = "Failed Expectation") })
-	@Parameters({ @Parameter(name = "code", description = "MapSet identifier, e.g. &lt;uuid&gt;", required = true) })
-	@RecordMetric
-	public ResponseEntity<MapSet> getMapSet(@PathVariable(value = "code") final String code) throws Exception {
+    /** Search teams API notes. */
+    private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
 
-		LOG.info("Get mapset {}", code);
-		// final User authUser = authorizeUser(request);
+    /** Static initialization. */
+    static {
+        exportFileDir = PropertyUtility.getProperty("mapexport.fileDir");
+        new File(exportFileDir).mkdirs();
+    }
 
-		try {
+    /**
+     * Gets the map set.
+     *
+     * @param code the code
+     * @return the map set
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/mapset/{code}", produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Get map set. This call requires authentication with the correct role.", tags = {
+        "mapset"
+    }, responses = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"), @ApiResponse(responseCode = "403", description = "Forbidden"),
+        @ApiResponse(responseCode = "404", description = "Resource not found"), @ApiResponse(responseCode = "417", description = "Failed Expectation")
+    })
+    @Parameters({
+        @Parameter(name = "code", description = "MapSet identifier, e.g. &lt;uuid&gt;", required = true)
+    })
+    @RecordMetric
+    public ResponseEntity<MapSet> getMapSet(@PathVariable(value = "code") final String code) throws Exception {
 
-			// TODO: determine branch.
-			final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
-			final MapSet mapset = MapSetService.getMapSet(branch, code);
-			return new ResponseEntity<>(mapset, HttpStatus.OK);
+        LOG.info("Get mapset {}", code);
+        // final User authUser = authorizeUser(request);
 
-		} catch (final Exception e) {
+        try {
 
-			handleException(e);
-			return null;
-		}
+            // TODO: determine branch.
+            final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
+            final MapSet mapset = MapSetService.getMapSet(branch, code);
+            return new ResponseEntity<>(mapset, HttpStatus.OK);
 
-	}
+        } catch (final Exception e) {
 
-	/**
-	 * Search mapsets.
-	 *
-	 * @param includeMembers   the include members
-	 * @param searchParameters the search parameters
-	 * @param bindingResult    the binding result
-	 * @return the string
-	 * @throws Exception the exception
-	 */
-	@RequestMapping(method = RequestMethod.GET, value = "/mapset", produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Find mapset. This call requires authentication with the correct role.", description = API_NOTES, tags = {
-			"mapset" }, responses = {
-					@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-					@ApiResponse(responseCode = "401", description = "Unauthorized"),
-					@ApiResponse(responseCode = "403", description = "Forbidden"),
-					@ApiResponse(responseCode = "404", description = "Resource not found"),
-					@ApiResponse(responseCode = "417", description = "Failed Expectation") })
-	@RecordMetric
-	public @ResponseBody ResponseEntity<List<MapSet>> getMapSets(
-			@ModelAttribute final SearchParameters searchParameters) throws Exception {
+            handleException(e);
+            return null;
+        }
 
-		LOG.info("Search mapsets: {}", ModelUtility.toJson(searchParameters));
-		// final User authUser = authorizeUser(request);
+    }
 
-		try {
+    /**
+     * Search mapsets.
+     *
+     * @param searchParameters the search parameters
+     * @return the string
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/mapset", produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Find mapset. This call requires authentication with the correct role.", description = API_NOTES, tags = {
+        "mapset"
+    }, responses = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"), @ApiResponse(responseCode = "403", description = "Forbidden"),
+        @ApiResponse(responseCode = "404", description = "Resource not found"), @ApiResponse(responseCode = "417", description = "Failed Expectation")
+    })
+    @RecordMetric
+    public @ResponseBody ResponseEntity<List<MapSet>> getMapSets(@ModelAttribute final SearchParameters searchParameters) throws Exception {
 
-			// TODO: determine branch.
-			final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
-			final List<MapSet> mapSets = MapSetService.getMapSets(branch);
+        LOG.info("Search mapsets: {}", ModelUtility.toJson(searchParameters));
+        // final User authUser = authorizeUser(request);
 
-			return new ResponseEntity<>(mapSets, HttpStatus.OK);
+        try {
 
-		} catch (final Exception e) {
+            // TODO: determine branch.
+            final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
+            final List<MapSet> mapSets = MapSetService.getMapSets(branch);
 
-			handleException(e);
-			return null;
-		}
-	}
+            return new ResponseEntity<>(mapSets, HttpStatus.OK);
 
-	/**
-	 * RF2 Mapping Export mappings from external sources.
-	 * 
-	 * @author vparekh RF2 Mapping Export mappings from external sources.
-	 * @param branch                 The branch (e.g.,
-	 *                               MAIN/SNOMEDCT-NO/2024-04-15/WCITEST).
-	 * @param MapsetId               The RF2 MapsetId (e.g., "447562003" for the
-	 *                               ICD10NO map).
-	 * @param refsetInternalId       The internal refset ID.
-	 * @param format                 The export format (e.g., rf2, rf2_with_names,
-	 *                               sctids).
-	 * @param exportType             The export type (e.g., SNAPSHOT, DELTA).
-	 * @param fileNameDate           The file name date (e.g., 20241226).
-	 * @param languageId             The language ID (optional, e.g., EN).
-	 * @param startEffectiveTime     The start effective time (optional).
-	 * @param transientEffectiveTime The transient effective time (optional).
-	 * @param exportMetadata         Whether to export metadata (optional).
-	 * @return A ResponseEntity containing the response message.
-	 * @throws Exception if an error occurs during export.
-	 */
-	@RecordMetric
-	@PostMapping(value = "/export/", produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Export RF2 Mapsets.", tags = { "mapset" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully exported RF2 mappings"),
-			@ApiResponse(responseCode = "417", description = "Failed to export the mappings"),
-			@ApiResponse(responseCode = "400", description = "Invalid request parameters") })
-	@Parameters({
-			@Parameter(name = "branch", description = "Branch, e.g., MAIN/SNOMEDCT-NO/2024-04-15/WCITEST", required = true),
-			@Parameter(name = "mapsetId", description = "RF2 MapsetId, e.g., '447562003' for the ICD10NO map", required = true),
-			@Parameter(name = "format", description = "Format, e.g., rf2, rf2_with_names, sctids", required = true),
-			@Parameter(name = "exportType", description = "Export type, e.g., SNAPSHOT, DELTA", required = false),
-			@Parameter(name = "fileNameDate", description = "File name date, e.g., 20250102", required = true),
-			@Parameter(name = "languageId", description = "Language ID, e.g., EN", required = false),
-			@Parameter(name = "startEffectiveTime", description = "Start effective time", required = false),
-			@Parameter(name = "transientEffectiveTime", description = "Transient effective time", required = true),
-			@Parameter(name = "exportMetadata", description = "Whether to export metadata", required = false) })
-	public @ResponseBody ResponseEntity<String> exportMapset(
-			@RequestParam(name = "branch", required = true) String branch,
-			@RequestParam(name = "mapsetId", required = true) String mapsetId,
-			@RequestParam(name = "format", required = true) String format,
-			@RequestParam(name = "exportType", required = true) String exportType,
-			@RequestParam(name = "fileNameDate", required = true) String fileNameDate,
-			@RequestParam(name = "languageId", required = false) String languageId,
-			@RequestParam(name = "startEffectiveTime", required = false) String startEffectiveTime,
-			@RequestParam(name = "transientEffectiveTime", required = true) String transientEffectiveTime,
-			@RequestParam(name = "exportMetadata", required = false, defaultValue = "false") boolean exportMetadata)
-			throws Exception {
-		LOG.info(
-				"Exporting RF2 Mapset: MapsetId={}, Branch={}, Format={}, ExportType={}, FileNameDate={}, StartEffectiveTime={}, TransientEffectiveTime={}, ExportMetadata={}",
-				mapsetId, branch, format, exportType, fileNameDate, startEffectiveTime, transientEffectiveTime,
-				exportMetadata);
+        } catch (final Exception e) {
 
-		// TODO: Remove hard-coding of mapProject stuff
-		final String id = "1";
-		final Boolean includeMembers = Boolean.FALSE;
-		MapProject mapProject = null;
+            handleException(e);
+            return null;
+        }
+    }
 
-		try (final TerminologyService service = new TerminologyService()) {
-			mapProject = MapProjectService.getMapProject(service, id, includeMembers);
-			// User user = SecurityService.getUserFromSession(); //No auth
+    /**
+     * RF2 Mapping Export mappings from external sources.
+     *
+     * @author vparekh RF2 Mapping Export mappings from external sources.
+     * @param mappingExportRequest the mapping export request
+     * @return A ResponseEntity containing the response message.
+     * @throws Exception if an error occurs during export.
+     */
+    @PostMapping(value = "/mapset/export/", produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Generate export RF2 Map Sets files.", tags = {
+        "mapset"
+    }, requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "MapSetExportRequest schema", required = true,
+        content = @io.swagger.v3.oas.annotations.media.Content(
+            schema = @io.swagger.v3.oas.annotations.media.Schema(implementation = MapSetExportRequest.class))),
+        responses = {
+            @ApiResponse(responseCode = "200", description = "Successfully exported RF2 mappings"),
+            @ApiResponse(responseCode = "417", description = "Failed to export the mappings"),
+            @ApiResponse(responseCode = "400", description = "Invalid request parameters")
+        })
+    @RecordMetric
+    public @ResponseBody ResponseEntity<String> exportMapset(@RequestBody final MapSetExportRequest mapSetExportRequest
 
-			String responseMessage = null;
-			String downloadUri;
+    ) throws Exception {
 
-			if ("rf2".equalsIgnoreCase(format) || "rf2_with_names".equalsIgnoreCase(format)) {
-				boolean withNames = "rf2_with_names".equalsIgnoreCase(format);
-				if ("SNAPSHOT".equalsIgnoreCase(exportType)) {
-					downloadUri = MapSetService.exportMapsetRf2(service, mapProject, branch, mapsetId, exportType,
-							languageId, fileNameDate, null, transientEffectiveTime, exportMetadata, withNames); // SNAPSHOT																											
-																												// startEffectiveTime
-																												// not needed
-																											
-					responseMessage = "{\"url\": \"" + downloadUri + "\"}";
-					LOG.info("SNAPSHOT Export completed successfully. Download URI: {}", downloadUri);
-				} else {
-					downloadUri = MapSetService.exportMapsetRf2(service, mapProject, branch, mapsetId, exportType,
-							languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata,
-							withNames); // DELTA
-					LOG.info("DELTA Export completed successfully. Download URI: {}", downloadUri);
-				}
-				
-			} else if ("sctids".equalsIgnoreCase(format)) {
-				downloadUri = MapSetService.exportMapsetSctidList(service, mapProject, branch, mapsetId, exportType,
-						languageId, fileNameDate, startEffectiveTime, transientEffectiveTime, exportMetadata);
-				responseMessage = "{\"url\": \"" + downloadUri + "\"}";
-				LOG.info("SCTIDs Export completed successfully. Download URI: {}", downloadUri);
-			} else {
+        LOG.info("Exporting RF2 Mapset: {}", mapSetExportRequest);
 
-				throw new IllegalArgumentException("Invalid format specified: " + format);
-			}
+        if (mapSetExportRequest == null) {
+            LOG.error("Invalid request parameters: missing all parameters.");
+            return new ResponseEntity<>("Invalid request parameters: missing all parameters.", HttpStatus.BAD_REQUEST);
+        }
 
-			return new ResponseEntity<>(responseMessage, HttpStatus.OK);
+        if (StringUtils.isBlank(mapSetExportRequest.getBranch())) {
+            LOG.error("Invalid request parameters: missing branch.");
+            return new ResponseEntity<>("Invalid request parameters: missing branch.", HttpStatus.BAD_REQUEST);
+        }
 
-		} catch (IllegalArgumentException e) {
-			LOG.error("Invalid request parameters: {}", e.getMessage(), e);
-			return new ResponseEntity<>("Invalid request parameters: " + e.getMessage(), HttpStatus.BAD_REQUEST);
-		} catch (Exception e) {
-			LOG.error("Failed to export mapset: {}", e.getMessage(), e);
-			throw e;
-		}
-	}
+        if (StringUtils.isBlank(mapSetExportRequest.getMapSetCode())) {
+            LOG.error("Invalid request parameters: missing mapSetCode.");
+            return new ResponseEntity<>("Invalid request parameters: missing mapSetCode.", HttpStatus.BAD_REQUEST);
+        }
+
+        if (mapSetExportRequest.getFileFormatType() == null) {
+            LOG.error("Invalid request parameters: missing format.");
+            return new ResponseEntity<>("Invalid request parameters: missing format.", HttpStatus.BAD_REQUEST);
+        }
+
+        if (FileFormatType.getValues().stream().noneMatch(e -> e.equals(mapSetExportRequest.getFileFormatType()))) {
+            LOG.error("Invalid request parameters: invalid format.");
+            return new ResponseEntity<>("Invalid request parameters: invalid format.", HttpStatus.BAD_REQUEST);
+        }
+
+        if (mapSetExportRequest.getFileExportType() == null) {
+            LOG.error("Invalid request parameters: missing exportType.");
+            return new ResponseEntity<>("Invalid request parameters: missing exportType.", HttpStatus.BAD_REQUEST);
+        }
+
+        if (FileExportType.getValues().stream().noneMatch(e -> e.equals(mapSetExportRequest.getFileExportType()))) {
+            LOG.error("Invalid request parameters: invalid exportType.");
+            return new ResponseEntity<>("Invalid request parameters: invalid exportType.", HttpStatus.BAD_REQUEST);
+        }
+
+        if (StringUtils.isBlank(mapSetExportRequest.getTransientEffectiveTime())) {
+            LOG.error("Invalid request parameters: missing transientEffectiveTime.");
+            return new ResponseEntity<>("Invalid request parameters: missing transientEffectiveTime.", HttpStatus.BAD_REQUEST);
+        }
+
+        if (mapSetExportRequest.getFileFormatType() == FileFormatType.SNAPSHOT && StringUtils.isBlank(mapSetExportRequest.getStartEffectiveTime())) {
+            LOG.error("Invalid request parameters: Only SNAPSHOT can use startEffectiveTime.");
+            return new ResponseEntity<>("Invalid request parameters: Only DELTA can use startEffectiveTime.", HttpStatus.BAD_REQUEST);
+        }
+
+        // TODO: Remove hard-coding of mapProject stuff
+        final String id = "1";
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            final MapProject mapProject = MapProjectService.getMapProject(service, id, Boolean.FALSE);
+            // User user = SecurityService.getUserFromSession(); //No auth
+
+            final String downloadUri = MapSetService.exportMapSet(mapProject, mapSetExportRequest);
+            final String responseMessage = "{\"url\": \"" + EXPORT_DOWNLOAD_URL + "/" + downloadUri + "\"}";
+            return new ResponseEntity<>(responseMessage, HttpStatus.OK);
+
+        } catch (final IllegalArgumentException e) {
+
+            LOG.error("Invalid request parameters: {}", e.getMessage(), e);
+            return new ResponseEntity<>("Invalid request parameters: " + e.getMessage(), HttpStatus.BAD_REQUEST);
+
+        } catch (final Exception e) {
+
+            LOG.error("Failed to export mapset: {}", e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    /**
+     * Download mapset export.
+     *
+     * @param fileName the file name
+     * @return the response entity
+     * @throws Exception the exception
+     */
+    @Operation(summary = "Download export RF2 Map Sets files", tags = {
+        "mapset"
+    }, responses = {
+        @ApiResponse(responseCode = "200", description = "Successfully downloaded the file"),
+        @ApiResponse(responseCode = "404", description = "File not found"), @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @Parameter(name = "fileName", description = "Name of the file to download", required = true)
+    @RequestMapping(method = RequestMethod.GET, value = "/mapset/export/download/{fileName}")
+    public @ResponseBody ResponseEntity<Resource> downloadMapSetExport(@PathVariable(value = "fileName") final String fileName) throws Exception {
+
+        try {
+
+            LOG.info("downloadMapSetExport: fileName: " + fileName);
+
+            // no auth required
+
+            final Path filePath = Paths.get(exportFileDir, fileName);
+            final Resource file = new UrlResource(filePath.toUri());
+
+            if (!file.exists() || !file.isReadable()) {
+
+                throw new RuntimeException("Could not read the file!");
+            }
+
+            return ResponseEntity.ok().header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION)
+                .header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(filePath))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"").contentLength(file.contentLength()).body(file);
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+
+    }
 
 }

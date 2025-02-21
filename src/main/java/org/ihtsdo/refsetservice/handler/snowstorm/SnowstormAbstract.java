@@ -15,6 +15,9 @@ public class SnowstormAbstract {
   /** The Constant LOG. */
   private static final Logger LOG = LoggerFactory.getLogger(SnowstormAbstract.class);
 
+  /** The max number of record elasticsearch will return without erroring. */
+  protected static final int ELASTICSEARCH_MAX_RECORD_LENGTH = 10000;
+  
   /**
    * Format error message.
    *

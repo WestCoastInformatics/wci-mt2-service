@@ -27,7 +27,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public class ApplicationMetadata {
 
     /** The module. */
-    public List<ModuleInfo> module;
+    private List<ModuleInfo> module;
 
     /**
      * Instantiates an empty {@link ApplicationMetadata}.

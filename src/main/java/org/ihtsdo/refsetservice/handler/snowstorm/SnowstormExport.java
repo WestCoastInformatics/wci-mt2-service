@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 West Coast Informatics - All Rights Reserved.
+ * Copyright 2025 West Coast Informatics - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of West Coast Informatics
  * The intellectual and technical concepts contained herein are proprietary to
@@ -16,6 +16,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status.Family;
 
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.slf4j.Logger;
@@ -26,45 +27,59 @@ public class SnowstormExport extends SnowstormAbstract {
   /** The Constant LOG. */
   private static final Logger LOG = LoggerFactory.getLogger(SnowstormExport.class);
 
+  /**
+   * Generate version file.
+   *
+   * @param entityString the entity string
+   * @return the string
+   * @throws Exception the exception
+   */
   public static String generateVersionFile(final String entityString) throws Exception {
 
-    /*-
-     * Example of entity
-     {
-        "branchPath": "MAIN/SNOMEDCT-BE/2020-03-15",
-        "conceptsAndRelationshipsOnly": false,
-        "filenameEffectiveDate": "20210315",
-        "legacyZipNaming": false,
-        "refsetIds": [
+      /*-
+       * Example of entity
+       {
+         "branchPath": "MAIN/SNOMEDCT-BE/2020-03-15",
+         "conceptsAndRelationshipsOnly": false,
+         "filenameEffectiveDate": "20210315",
+         "legacyZipNaming": false,
+         "refsetIds": [
             "741000172102"
-        ],
-        "startEffectiveTime": "20210315",
-        "transientEffectiveTime": "20210315",
-        "type": "SNAPSHOT",
-        "unpromotedChangesOnly": false
-    } */
+         ],
+         "startEffectiveTime": "20210315",
+         "transientEffectiveTime": "20210315",
+         "type": "SNAPSHOT",
+         "unpromotedChangesOnly": false
+      } */
 
-    LOG.debug(entityString);
+      LOG.debug("generateVersionFile {}", entityString);
 
-    // Call Snowstorm to create RF2 file
-    final String snowstormExportApiUrl = SnowstormConnection.getBaseUrl() + "exports";
-    LOG.debug("Snowstorm Export API URL: " + snowstormExportApiUrl + entityString);
+      // Call Snowstorm to create RF2 file
+      final String snowstormExportApiUrl = SnowstormConnection.getBaseUrl() + "exports";
+      LOG.debug("Snowstorm Export API URL: " + snowstormExportApiUrl + entityString);
 
-    String snowVersionFileUrl = "";
+      String snowVersionFileUrl = "";
 
-    try (final Response response =
-        SnowstormConnection.postResponse(snowstormExportApiUrl, entityString);) {
+      try (final Response response = SnowstormConnection.postResponse(snowstormExportApiUrl, entityString);) {
 
-      snowVersionFileUrl = response.getLocation().toString() + "/archive";
-      LOG.debug("Snowstorm File URL: " + snowVersionFileUrl);
+          // Only process payload if Rest call is successful
+          if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+              
+              final String errorMessage = formatErrorMessage(response);
+              LOG.error("Call to URL '{}' wasn't successful. Status: {} Message: {}", snowstormExportApiUrl, response.getStatus(), errorMessage);
+              throw new Exception(
+                  "Call to URL '" + snowstormExportApiUrl + "' wasn't successful. Status: " + response.getStatus() + " Message: " + errorMessage);
+          }
 
-    } catch (final Exception ex) {
-      throw new Exception("Could not generate the Rf2 file by snowstorm with : " + entityString,
-          ex);
+          snowVersionFileUrl = response.getLocation().toString() + "/archive";
+          LOG.debug("Snowstorm File URL: " + snowVersionFileUrl);
 
-    }
+      } catch (final Exception ex) {
+          throw new Exception("Could not generate the Rf2 file by snowstorm with : " + entityString, ex);
 
-    return snowVersionFileUrl;
+      }
+
+      return snowVersionFileUrl;
   }
 
   /**
