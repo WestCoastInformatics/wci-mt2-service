@@ -20,6 +20,7 @@ import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormCodeSystem;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormConcept;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormDescription;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormExport;
+import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormMapSet;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormMapping;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormMultiSearch;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormRefset;
@@ -28,6 +29,7 @@ import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
+import org.ihtsdo.refsetservice.model.MapSetExportRequest;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.Refset;
@@ -498,11 +500,17 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
     }
 
     /* see superclass */
-	@Override
-	public List<Mapping> importMappings(MapProject mapProject, String branch, MultipartFile mappingFile) throws Exception {
-		
-		 return SnowstormMapping.importMappings(mapProject, branch,  mappingFile);
-	}
-	
-    
+    @Override
+    public List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile) throws Exception {
+
+        return SnowstormMapping.importMappings(mapProject, branch, mappingFile);
+    }
+
+    /* see superclass */
+    @Override
+    public String exportMapSet(final MapProject mapProject, final MapSetExportRequest mapSetExportRequest) throws Exception {
+
+        return SnowstormMapSet.exportMapSet(mapProject, mapSetExportRequest);
+    }
+
 }
