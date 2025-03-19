@@ -11,7 +11,6 @@ package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -33,7 +32,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -56,15 +54,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.handler.ExportHandler;
 import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
 import org.ihtsdo.refsetservice.model.Concept;
-import org.ihtsdo.refsetservice.model.ResultListConcept;
-import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
-import org.ihtsdo.refsetservice.model.MapEntry;
-import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RefsetMemberComparison;
+import org.ihtsdo.refsetservice.model.ResultListConcept;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
 import org.ihtsdo.refsetservice.model.User;
@@ -1543,143 +1538,7 @@ public final class RefsetMemberService {
 		return zippedFileUrl;
 	}
 
-	/**
-	 * Export the members based on user selection in a zipped pkg containing tab delimited format.
-	 * @author vparekh
-	 * @param mappings          the mappings
-	 * @param includedColumnsList the column list
-	 * @return the zip pkg containing the txt file with the member list export
-	 * @throws Exception the exception
-	 */
-	public static File exportMappingFilesToDownload(final ResultListMapping mappings, final List<String> includedColumnsList) throws Exception {
 
-	    // Validate and create download directory if it doesn't exist	   
-        final String mapexportFileDir = PropertyUtility.getProperty("mapexport.fileDir");
-        final String mapexportFile = PropertyUtility.getProperty("mapexport.file");        
-
-	    // Set default values if properties are "none" or empty
-	    final String defaultDir = "/tmp";
-	    final String defaultFileName = "Exportmaps.txt";
-
-	    String outputDirPath = (mapexportFileDir == null || mapexportFileDir.equalsIgnoreCase("none")) 
-                ? defaultDir : mapexportFileDir;
-
-	    String outputFileName = (mapexportFile == null || mapexportFile.equalsIgnoreCase("none")) 
-                ? defaultFileName : mapexportFile;
-	    
-	    File downloadDir = new File(outputDirPath);
-	    if (!downloadDir.exists()) {
-	        if (!downloadDir.mkdirs()) {
-	            throw new IOException("Failed to create download directory: " + downloadDir);
-	        }
-	    }
-	    
-	    // Create the output file
-	    File outputFile = new File(downloadDir, outputFileName);
-	 	final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd-hhmmss");
-	 	final String zipFileName = String.format("MT2-Downloaded-mapsets-%s.zip", dateFormat.format(new Date()));
-	 	File zipMapFile = null;
-	 	
-	 	//Based on the includedColumns values create the customized text file creation - map column with values 
-	    try (PrintWriter writer = new PrintWriter(new FileOutputStream(outputFile))) {
-	        Map<String, String> headerMappings = new LinkedHashMap<>();
-	        headerMappings.put("Source", "getCode");
-	        headerMappings.put("Source PT", "getName");
-	        headerMappings.put("Target", "getToCode");
-	        headerMappings.put("Target PT", "getToName");
-	        headerMappings.put("Group", "getGroup");
-	        headerMappings.put("Priority", "getPriority");
-	        headerMappings.put("Relationship", "getRelation");
-	        headerMappings.put("Rule", "getRule");
-	        headerMappings.put("Advices", "getAdvices");
-	        headerMappings.put("Last Modified", "getModified");
-	        
-	        // Create a mutable copy of the includedColumnsList to avoid UnsupportedOperationException
-	        List<String> columnsToInclude = new ArrayList<>(includedColumnsList);
-
-	        // Check if "Target" is in the included columns
-	        if (columnsToInclude.contains("Target")) {
-	         	    columnsToInclude.add("Group");
-	                columnsToInclude.add("Priority");	            
-	        }
-	        
-	        // Determine columns to include
-	        //columnsToInclude = includedColumnsList.isEmpty() ? new ArrayList<>(headerMappings.keySet()) : includedColumnsList;
-	     
-	        // Write the header
-	        writer.println(String.join("\t", columnsToInclude));
-	        
-	        // Iterate over each Mapping and write data
-	        for (Mapping mapping : mappings.getItems()) {	        	
-	            String sourceCode = mapping.getCode();
-	            String sourceName = mapping.getName();	            
-	            for (MapEntry entry : mapping.getMapEntries()) {
-	                Map<String, String> dataRow = new LinkedHashMap<>();
-	                dataRow.put("Source", sourceCode);
-	                dataRow.put("Source PT", sourceName);
-	                dataRow.put("Target", entry.getToCode());
-	                dataRow.put("Target PT", entry.getToName());
-	                
-	                // Only add "Group" and "Priority" if "Target" is present
-	                if (entry.getToCode() != null && !entry.getToCode().isEmpty()) {
-	                    dataRow.put("Group", String.valueOf(entry.getGroup()));
-	                    dataRow.put("Priority", String.valueOf(entry.getPriority()));
-	                }
-	                            
-	                dataRow.put("Relationship", entry.getRelation());
-	                dataRow.put("Rule", entry.getRule());
-	                dataRow.put("Advices", entry.getAdvices() != null ? String.join("|", entry.getAdvices()) : "");
-	                dataRow.put("Last Modified", entry.getModified() != null
-	                        ? DateUtility.formatDate(entry.getModified(), DateUtility.DATE_FORMAT_REVERSE, null)
-	                        : "N/A");
-
-	                // Build the row based on included columns
-	                List<String> rowValues = new ArrayList<>();
-	                for (String column : columnsToInclude) {
-	                    rowValues.add(dataRow.getOrDefault(column, ""));
-	                }
-	                writer.println(String.join("\t", rowValues));
-	            }
-	        } 
-	        writer.flush();
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	        LOG.error("Error during ZIP file creation or download", e);
-	        throw e;
-	    } 
-	    
-	    final List<String> sourceFiles = new ArrayList<>();
-	    sourceFiles.add(outputFile.getAbsolutePath());
-	    zipMapFile = zipMapFiles(sourceFiles,  zipFileName);
-	    
-	    // Delete temp directory , cleanup    
-	    if (downloadDir.exists()) 
-	 		FileUtility.deleteDirectory(downloadDir);
-	    
-	    return zipMapFile;	  
-	}
-	
-	
-	public static File zipMapFiles(List<String> sourceFiles, String zipFileName) throws IOException {
-        File zipFile = new File(zipFileName);
-        try (FileOutputStream fos = new FileOutputStream(zipFile);
-             ZipOutputStream zos = new ZipOutputStream(fos)) {
-
-            for (String filePath : sourceFiles) {
-                File fileToZip = new File(filePath);
-                try (FileInputStream fis = new FileInputStream(fileToZip)) {
-                    ZipEntry zipEntry = new ZipEntry(fileToZip.getName());
-                    zos.putNextEntry(zipEntry);
-                    byte[] buffer = new byte[1024];
-                    int length;
-                    while ((length = fis.read(buffer)) >= 0) {
-                        zos.write(buffer, 0, length);
-                    }
-                }
-            }
-        }
-        return zipFile;
-    }	
 	
 	/**
 	 * Export a freeset.
