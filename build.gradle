@@ -142,7 +142,7 @@ ospackage {
 
 // overrides for spring boot dependency versions
 ext['log4j2.version'] = '2.20.0'
-ext['tomcat.version'] = '9.0.96'
+ext['tomcat.version'] = '9.0.102'
 ext['snakeyaml.version'] = '2.2'
 ext['com.h2database']= 'h2:2.1.210'
 
