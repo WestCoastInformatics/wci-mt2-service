@@ -126,7 +126,7 @@ public class MappingController extends BaseController {
      * @return zip file
      * @throws Exception the exception
      */
-    @PostMapping(value = "/mapset/{mapSetCode}/export", consumes = MediaType.APPLICATION_JSON)
+    @PostMapping(value = "/mapset/{mapSetCode}/export", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_OCTET_STREAM)
     @Operation(summary = "Export Mapset Rows", tags = {
         "mapset"
     }, responses = {
@@ -146,9 +146,7 @@ public class MappingController extends BaseController {
         if (mappingExportRequest == null) {
             throw new RuntimeException("MappingExportRequest is required.");
         }
-//        if (mappingExportRequest.getConceptCodes() == null || mappingExportRequest.getConceptCodes().isEmpty()) {
-//            throw new RuntimeException("One or more concept codes are required.");
-//        }
+
         if (mappingExportRequest.getColumnNames() == null || mappingExportRequest.getColumnNames().isEmpty()) {
             throw new RuntimeException("One or more column names are required.");
         }

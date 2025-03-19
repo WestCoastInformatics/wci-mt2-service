@@ -126,9 +126,9 @@ public class SnowstormDescription extends SnowstormAbstract {
 
                 final List<Map<String, String>> descriptions = conceptDescriptionMap.get(concept.getCode());
 
-                if (descriptions == null || descriptions.size() == 0) {
+                if (descriptions == null || descriptions.isEmpty()) {
 
-                    LOG.debug("Description not retrieved for concept " + concept.getCode());
+                    LOG.debug("Description not retrieved for concept {}", concept.getCode());
                     continue;
                 }
 
@@ -183,6 +183,7 @@ public class SnowstormDescription extends SnowstormAbstract {
             + "&conceptIds=" + conceptsToProcess.stream().map(Concept::getCode).collect(Collectors.joining(","));
 
         // Call Snowstorm
+        LOG.info("populateAllLanguageDescriptions with URL: {}", fullSnowstormUrl);
         try (final Response response = SnowstormConnection.getResponse(fullSnowstormUrl)) {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
@@ -194,7 +195,7 @@ public class SnowstormDescription extends SnowstormAbstract {
 
             final String resultString = response.readEntity(String.class);
             final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString.toString());
+            final JsonNode root = mapper.readTree(resultString);
 
             final JsonNode allDescriptionNodes = root.get("items");
             final Iterator<JsonNode> descriptionIterator = allDescriptionNodes.iterator();
@@ -207,7 +208,7 @@ public class SnowstormDescription extends SnowstormAbstract {
                 if (descriptionNode.get("active").asBoolean()) {
                     final String conceptId = descriptionNode.get("conceptId").asText();
                     if (!conceptDescriptionNodes.containsKey(conceptId)) {
-                        conceptDescriptionNodes.put(conceptId, new HashSet<JsonNode>());
+                        conceptDescriptionNodes.put(conceptId, new HashSet<>());
                     }
                     conceptDescriptionNodes.get(conceptId).add(descriptionNode);
                 }
@@ -232,8 +233,8 @@ public class SnowstormDescription extends SnowstormAbstract {
             for (final Concept concept : conceptsToProcess) {
 
                 final List<Map<String, String>> descriptions = conceptDescriptionMap.get(concept.getCode());
-                if (descriptions == null || descriptions.size() == 0) {
-                    LOG.debug("Description not retrieved for concept " + concept.getCode());
+                if (descriptions == null || descriptions.isEmpty()) {
+                    LOG.debug("Description not retrieved for concept {}", concept.getCode());
                     continue;
                 }
 

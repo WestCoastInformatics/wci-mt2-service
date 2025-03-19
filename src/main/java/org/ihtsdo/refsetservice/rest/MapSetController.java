@@ -43,7 +43,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -156,7 +155,7 @@ public class MapSetController extends BaseController {
      * RF2 Mapping Export mappings from external sources.
      *
      * @author vparekh RF2 Mapping Export mappings from external sources.
-     * @param mappingExportRequest the mapping export request
+     * @param mapSetExportRequest the map set export request
      * @return A ResponseEntity containing the response message.
      * @throws Exception if an error occurs during export.
      */
@@ -218,7 +217,7 @@ public class MapSetController extends BaseController {
             return new ResponseEntity<>("Invalid request parameters: missing transientEffectiveTime.", HttpStatus.BAD_REQUEST);
         }
 
-        if (mapSetExportRequest.getFileFormatType() == FileFormatType.SNAPSHOT && StringUtils.isBlank(mapSetExportRequest.getStartEffectiveTime())) {
+        if (mapSetExportRequest.getFileFormatType() == FileFormatType.DELTA && StringUtils.isBlank(mapSetExportRequest.getStartEffectiveTime())) {
             LOG.error("Invalid request parameters: Only SNAPSHOT can use startEffectiveTime.");
             return new ResponseEntity<>("Invalid request parameters: Only DELTA can use startEffectiveTime.", HttpStatus.BAD_REQUEST);
         }
