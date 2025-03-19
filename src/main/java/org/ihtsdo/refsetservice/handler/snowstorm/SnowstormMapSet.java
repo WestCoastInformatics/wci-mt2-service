@@ -31,6 +31,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
@@ -178,13 +182,16 @@ public class SnowstormMapSet extends SnowstormAbstract {
 
                     final StringBuilder exportRequestParameters = new StringBuilder();
                     exportRequestParameters.append("{ ");
-                    exportRequestParameters.append("\"refsetIds\": [\"").append(mapset.getRefSetCode()).append("\"], ");
-                    exportRequestParameters.append("\"branchPath\": \"").append(mapSetExportRequest.getBranch()).append("\", ");
-                    exportRequestParameters.append("\"conceptsAndRelationshipsOnly\": false, ");
-                    exportRequestParameters.append("\"filenameEffectiveDate\": \"").append(mapSetExportRequest.getFileNameDate()).append("\", ");
-                    exportRequestParameters.append("\"legacyZipNaming\": false, ");
-                    exportRequestParameters.append("\"type\": \"").append(mapSetExportRequest.getFileFormatType()).append("\", ");
-                    exportRequestParameters.append("\"unpromotedChangesOnly\": false");
+                    exportRequestParameters.append("\"refsetIds\": [\"").append(mapset.getRefSetCode()).append("\"] ");
+                    exportRequestParameters.append(", \"branchPath\": \"").append(mapSetExportRequest.getBranch()).append("\" ");
+                    exportRequestParameters.append(", \"conceptsAndRelationshipsOnly\": false ");
+                    exportRequestParameters.append(", \"filenameEffectiveDate\": \"").append(mapSetExportRequest.getFileNameDate()).append("\" ");
+                    exportRequestParameters.append(", \"legacyZipNaming\": false ");
+                    exportRequestParameters.append(", \"type\": \"").append(mapSetExportRequest.getFileFormatType()).append("\" ");
+                    exportRequestParameters.append(", \"unpromotedChangesOnly\": false");
+
+                    exportRequestParameters.append(", \"moduleIds\": [\"").append(mapProject.getModuleId()).append("\", \"")
+                        .append(SNOMEDCT_TO_ICD10_MAPPING_MODULE).append("\"] ");
 
                     if (StringUtils.isNotBlank(mapSetExportRequest.getTransientEffectiveTime())) {
                         exportRequestParameters.append(", \"transientEffectiveTime\": \"").append(mapSetExportRequest.getTransientEffectiveTime())
@@ -197,12 +204,12 @@ public class SnowstormMapSet extends SnowstormAbstract {
 
                     exportRequestParameters.append("}");
 
-                    LOG.info("Snowstorm export request: {}", exportRequestParameters.toString());
+                    LOG.info("Snowstorm export request: {}", exportRequestParameters);
 
                     // Generate on Snowstorm
                     final String snowGeneratedFileUrl = exporter.generateSnowVersionFile(exportRequestParameters.toString());
 
-                    LOG.info("Downloading file from snowstorm : " + snowGeneratedFileUrl);
+                    LOG.info("Downloading file from snowstorm : {}", snowGeneratedFileUrl);
 
                     // Download file from Snowstorm
                     exporter.downloadSnowGeneratedFile(snowGeneratedFileUrl, localSnowGeneratedFilePath);
@@ -520,11 +527,11 @@ public class SnowstormMapSet extends SnowstormAbstract {
         }
 
         // remove effectiveTime
-//        if ("PUBLISHED".equalsIgnoreCase(mapSet.getVersionStatus())) {
-//
-//            final String snowGeneratedRf2FilePath = sourceFiles.iterator().next();
-//            removeEffectiveTime(snowGeneratedRf2FilePath);
-//        }
+        // if ("PUBLISHED".equalsIgnoreCase(mapSet.getVersionStatus())) {
+        //
+        // final String snowGeneratedRf2FilePath = sourceFiles.iterator().next();
+        // removeEffectiveTime(snowGeneratedRf2FilePath);
+        // }
 
         // if exportMetadata requested, add it
         if (mapSetExportRequest.isExportMetadata()) {
@@ -762,122 +769,143 @@ public class SnowstormMapSet extends SnowstormAbstract {
     private static void appendNamesToRf2(final Edition edition, final String branchPath, final String origFilePath, final String newFileWithNamesPath,
         final String languageId) throws Exception {
 
-        // Move rf2 file to a tmp (as we create new one below). Update sourceFiles accordingly
         LOG.info("Appending descriptions to RF2 file");
 
-        // Get member cache
-        final List<Concept> conceptsNotInCache = new ArrayList<>();
-        final Map<String, Concept> members = new HashMap<>();
-
-        // Read through file and identify those concepts not in cache or don't have all requisite languages populated
+        // First pass: collect all unique concept IDs
+        final Set<String> uniqueConceptIds = new HashSet<>();
         try (final BufferedReader br = new BufferedReader(new FileReader(new File(origFilePath)))) {
+            // Skip header
+            br.readLine();
 
-            String extractedLine = br.readLine();
-            extractedLine = br.readLine();
-
-            while (extractedLine != null && !extractedLine.trim().isEmpty()) {
-
-                final String conceptId = extractedLine.split("\t")[REFEST_RF2_CONCEPTID_COLUMN];
-
-                // TODO: Also check doesn't have all needed languages
-                if (!members.containsKey(conceptId) || members.get(conceptId).getDescriptions().isEmpty()) {
-
-                    final Concept concept = new Concept();
-                    concept.setCode(conceptId);
-                    conceptsNotInCache.add(concept);
-                }
-
-                extractedLine = br.readLine();
-
-                if (conceptsNotInCache.size() == CONCEPT_DESCRIPTIONS_PER_CALL || extractedLine == null) {
-
-                    SnowstormDescription.populateAllLanguageDescriptions(edition, branchPath, conceptsNotInCache);
-
-                    // Populate Members cache with data
-                    for (final Concept concept : conceptsNotInCache) {
-
-                        if (!members.containsKey(concept.getCode())) {
-                            members.put(concept.getCode(), concept);
-
-                        } else {
-                            members.get(concept.getCode()).setDescriptions(concept.getDescriptions());
-                        }
-                    }
-
-                    conceptsNotInCache.clear();
-                }
+            String line;
+            while ((line = br.readLine()) != null && !line.trim().isEmpty()) {
+                final String conceptId = line.split("\t")[REFEST_RF2_CONCEPTID_COLUMN];
+                uniqueConceptIds.add(conceptId);
             }
         }
 
-        // Get descriptions for those not cached or not cached with all languages. Read through file 2nd time and write each line to new file while appending
-        // selected name
+        // Split concept IDs into batches of 230
+        final List<Set<String>> conceptBatches = new ArrayList<>();
+        final Set<String> currentBatch = new HashSet<>();
+        for (String conceptId : uniqueConceptIds) {
+            currentBatch.add(conceptId);
+            if (currentBatch.size() >= CONCEPT_DESCRIPTIONS_PER_CALL) {
+                conceptBatches.add(new HashSet<>(currentBatch));
+                currentBatch.clear();
+            }
+        }
+        if (!currentBatch.isEmpty()) {
+            conceptBatches.add(currentBatch);
+        }
+
+        // Create a thread-safe map to store results
+        final Map<String, Concept> members = Collections.synchronizedMap(new HashMap<>());
+
+        // Use a bounded thread pool with a reasonable size
+        final int executorSize = 6;
+        LOG.info("Using executor size: {}", executorSize);
+        final ExecutorService executor = Executors.newFixedThreadPool(executorSize);
+        final List<Future<?>> futures = new ArrayList<>();
+
+        final long startTime = System.currentTimeMillis();
+        int batchCount = 0;
+
+        // Submit tasks for each batch
+        for (final Set<String> batch : conceptBatches) {
+            if (batch.isEmpty()) {
+                continue;
+            }
+            batchCount++;
+            final int currentBatchNumber = batchCount;
+            futures.add(executor.submit(() -> {
+                try {
+                    LOG.debug("Processing batch {} of {} with {} concepts", currentBatchNumber, conceptBatches.size(), batch.size());
+                    final List<Concept> concepts = new ArrayList<>();
+                    for (final String conceptId : batch) {
+                        final Concept concept = new Concept();
+                        concept.setCode(conceptId);
+                        concepts.add(concept);
+                    }
+
+                    SnowstormDescription.populateAllLanguageDescriptions(edition, branchPath, concepts);
+
+                    // Store results in thread-safe map
+                    for (final Concept concept : concepts) {
+                        members.put(concept.getCode(), concept);
+                    }
+                    LOG.debug("Completed batch {} of {}", currentBatchNumber, conceptBatches.size());
+                } catch (Exception e) {
+                    LOG.error("Error processing batch {} of {}: {}", currentBatchNumber, conceptBatches.size(), e.getMessage(), e);
+                    throw new RuntimeException("Failed to process batch " + currentBatchNumber, e);
+                }
+            }));
+        }
+
+        // Wait for all tasks to complete
+        for (final Future<?> future : futures) {
+            try {
+                future.get(5, TimeUnit.MINUTES); // Add timeout to prevent hanging
+            } catch (Exception e) {
+                LOG.error("Error waiting for task completion: {}", e.getMessage(), e);
+                executor.shutdownNow(); // Force shutdown on error
+                throw new RuntimeException("Failed to complete all batches", e);
+            }
+        }
+
+        executor.shutdown();
+        if (!executor.awaitTermination(1, TimeUnit.MINUTES)) {
+            LOG.warn("Executor did not terminate within timeout");
+            executor.shutdownNow();
+        }
+
+        final long endTime = System.currentTimeMillis();
+        LOG.info("Processing completed in {} ms for {} batches", (endTime - startTime), batchCount);
+
+        // Write the output file with the collected results
         try (final FileWriter fw = new FileWriter(new File(newFileWithNamesPath));
             final BufferedReader br = new BufferedReader(new FileReader(new File(origFilePath)))) {
 
-            // get the header line so we can add the new description header
-            String extractedLine = br.readLine();
-
+            // Write header
+            String headerLine = br.readLine();
             for (final Map<String, String> defaultLanguages : edition.getFullyQualifiedLanguageRefsets()) {
-
                 if (languageId.equals(defaultLanguages.get("qualifiedLanguageRefset"))) {
-
-                    fw.write(extractedLine + "\t" + defaultLanguages.get("qualifiedLanguageCode") + "\n");
+                    fw.write(headerLine + "\t" + defaultLanguages.get("qualifiedLanguageCode") + "\n");
                 }
-
             }
 
-            // get the first line of concepts
-            extractedLine = br.readLine();
+            // Write data rows
+            String line;
+            while ((line = br.readLine()) != null) {
+                final String conceptId = line.split("\t")[REFEST_RF2_CONCEPTID_COLUMN];
+                Concept concept = members.get(conceptId);
 
-            while (extractedLine != null) {
-
-                final String conceptId = extractedLine.split("\t")[REFEST_RF2_CONCEPTID_COLUMN];
-
-                // TODO: How to determine which language
-                if (!members.containsKey(conceptId)) {
-
+                if (concept == null) {
                     throw new Exception("Didn't have concept populated with descriptions yet");
                 }
 
                 boolean matchingDescriptionFound = false;
-                int i = 0;
                 String fallbackDescription = null;
 
-                while (i < members.get(conceptId).getDescriptions().size()) {
-
-                    final Map<String, String> description = members.get(conceptId).getDescriptions().get(i);
-
-                    // if this isn't the description we want
+                for (Map<String, String> description : concept.getDescriptions()) {
                     if (description == null || !languageId.equals(description.get(LANGUAGE_ID))) {
-
-                        // If this is the English PT add it as a fallback to use if the language we want isn't on this concept
                         if (description != null && description.get(LANGUAGE_ID).equals(DEFAULT_LANGUAGE_REFSET_US)) {
-
-                            fallbackDescription = extractedLine + "\t" + description.get(DESCRIPTION_TERM);
+                            fallbackDescription = line + "\t" + description.get(DESCRIPTION_TERM);
                         }
-
-                        i++;
                         continue;
                     }
 
-                    fw.write(extractedLine + "\t" + description.get(DESCRIPTION_TERM));
+                    fw.write(line + "\t" + description.get(DESCRIPTION_TERM));
                     matchingDescriptionFound = true;
                     break;
                 }
 
-                // If the language we want isn't on this concept try to use the English fallback
                 if (!matchingDescriptionFound && fallbackDescription != null) {
-
                     fw.write(fallbackDescription);
-                    matchingDescriptionFound = true;
-
                 } else if (!matchingDescriptionFound) {
-                    // Just write the line without a name if no desired language nor a default language (US_EN) is found
-                    fw.write(extractedLine);
+                    fw.write(line);
                 }
 
                 fw.write("\n");
-                extractedLine = br.readLine();
             }
         }
     }
