@@ -11,7 +11,9 @@ package org.ihtsdo.refsetservice.configuration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -27,12 +29,22 @@ public class WebConfiguration implements WebMvcConfigurer {
     @SuppressWarnings("unused")
     private static final Logger LOG = LoggerFactory.getLogger(WebConfiguration.class);
 
+    @Value("${cors.allowed-origins:*}")
+    private String[] allowedOrigins;
 
     /* see superclass */
     @Override
     public void addCorsMappings(final CorsRegistry registry) {
 
-        registry.addMapping("/**");
+        LOG.info("allowedOrigins: {}", (Object[]) allowedOrigins);
+
+        registry.addMapping("/**")
+                .allowedOrigins(allowedOrigins)
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedHeaders("*")
+                .exposedHeaders(HttpHeaders.CONTENT_DISPOSITION, HttpHeaders.CONTENT_TYPE, HttpHeaders.CONTENT_LENGTH)
+                .allowCredentials(true)
+                .maxAge(3600);
     }
 
     /* see superclass */
