@@ -25,10 +25,10 @@ import org.slf4j.LoggerFactory;
 /**
  * Service class to handle getting and modifying internal mapset information.
  */
-public class MapsetService {
+public class MapSetService {
 
     /** The Constant LOG. */
-    private static final Logger LOG = LoggerFactory.getLogger(MapsetService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MapSetService.class);
 
     /** The config properties. */
     protected static final Properties PROPERTIES = PropertyUtility.getProperties();

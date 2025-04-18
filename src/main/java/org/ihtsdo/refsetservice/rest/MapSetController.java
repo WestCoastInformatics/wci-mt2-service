@@ -27,7 +27,7 @@ import org.ihtsdo.refsetservice.model.enums.FileExportType;
 import org.ihtsdo.refsetservice.model.enums.FileFormatType;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.MapProjectService;
-import org.ihtsdo.refsetservice.terminologyservice.MapsetService;
+import org.ihtsdo.refsetservice.terminologyservice.MapSetService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.SearchParameters;
@@ -57,16 +57,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
  */
 @RestController
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
-public class MapsetController extends BaseController {
+public class MapSetController extends BaseController {
 
     /** The Constant LOG. */
-    private static final Logger LOG = LoggerFactory.getLogger(MapsetController.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MapSetController.class);
 
     /** The local directory to store exported refset files. */
     private static String exportFileDir;
-
-//    /** The local server url to download exported refset files. */
-//    private static final String EXPORT_JOB_URL = "/job/export/download";
 
     /** Search teams API notes. */
     private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
@@ -105,7 +102,7 @@ public class MapsetController extends BaseController {
 
             // TODO: determine branch.
             final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
-            final MapSet mapset = MapsetService.getMapSet(branch, code);
+            final MapSet mapset = MapSetService.getMapSet(branch, code);
             return new ResponseEntity<>(mapset, HttpStatus.OK);
 
         } catch (final Exception e) {
@@ -141,7 +138,7 @@ public class MapsetController extends BaseController {
 
             // TODO: determine branch.
             final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
-            final List<MapSet> mapSets = MapsetService.getMapSets(branch);
+            final List<MapSet> mapSets = MapSetService.getMapSets(branch);
 
             return new ResponseEntity<>(mapSets, HttpStatus.OK);
 
@@ -232,7 +229,7 @@ public class MapsetController extends BaseController {
             final MapProject mapProject = MapProjectService.getMapProject(service, id, Boolean.FALSE);
             // User user = SecurityService.getUserFromSession(); //No auth
 
-            final String jobId = MapsetService.exportMapSet(user, mapProject, mapSetExportRequest);
+            final String jobId = MapSetService.exportMapSet(user, mapProject, mapSetExportRequest);
             final String responseMessage = "{\"url\": \"job/" + jobId + "\"}";
             return new ResponseEntity<>(responseMessage, HttpStatus.OK);
 
