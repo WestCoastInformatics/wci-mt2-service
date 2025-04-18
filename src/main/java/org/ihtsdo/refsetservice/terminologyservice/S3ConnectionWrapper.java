@@ -11,6 +11,7 @@ package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -95,7 +96,7 @@ public final class S3ConnectionWrapper {
      * Connect to amazon S 3.
      */
     @SuppressWarnings("resource")
-	private static void connectToAmazonS3() {
+    private static void connectToAmazonS3() {
 
         if (s3Client != null) {
             return;
@@ -201,6 +202,29 @@ public final class S3ConnectionWrapper {
     }
 
     /**
+     * Checks if the file exists in S3 cache and downloads it if it does.
+     *
+     * @param awsVersionedPath the AWS versioned path
+     * @param fileName the file name
+     * @param localFilePath the local file path
+     * @return true if file was downloaded from S3, false otherwise
+     * @throws IOException if there is an error downloading the file
+     */
+    public static boolean checkAndDownloadFromS3(final String awsVersionedPath, final String fileName, final String localFilePath) throws IOException {
+
+        try {
+            if (isInS3Cache(awsVersionedPath, fileName)) {
+                LOG.info("Downloading file from S3: {}", fileName);
+                downloadFileFromS3(awsVersionedPath, fileName, localFilePath);
+                return true;
+            }
+            return false;
+        } catch (final Exception e) {
+            throw new IOException("Failed to check and download from S3", e);
+        }
+    }
+
+    /**
      * Returns the S3 url.
      *
      * @param awsFilePath the AWS file path
@@ -233,7 +257,9 @@ public final class S3ConnectionWrapper {
         connectToAmazonS3();
         final String filePath = getCorrectAwsFilePath(awsPath);
 
-        try (S3Object s3Object = s3Client.getObject(awsBucket, filePath + awsFileName)) {
+        LOG.info("downloadFileFromS3: awsPath: {}, fileName: {}, downloadLocation: {}, filePath: {}", awsPath, awsFileName, downloadLocation, filePath);
+
+        try (final S3Object s3Object = s3Client.getObject(awsBucket, filePath + awsFileName)) {
 
             try (final S3ObjectInputStream s3InputStream = s3Object.getObjectContent()) {
 
@@ -259,17 +285,17 @@ public final class S3ConnectionWrapper {
     public static boolean deleteObjectFromAws(final String awsPath) {
 
         connectToAmazonS3();
-        LOG.debug("deleteObjectFromAws: awsPath: " + awsPath);
+        LOG.debug("deleteObjectFromAws: awsPath: {}", awsPath);
 
         final ListObjectsV2Request listRequest = new ListObjectsV2Request().withBucketName(awsBucket).withPrefix(awsPath);
         final ListObjectsV2Result listing = s3Client.listObjectsV2(listRequest);
 
-        final ArrayList<KeyVersion> keys = new ArrayList<KeyVersion>();
+        final ArrayList<KeyVersion> keys = new ArrayList<>();
 
         for (final S3ObjectSummary obj : listing.getObjectSummaries()) {
 
             keys.add(new KeyVersion(obj.getKey()));
-            LOG.debug("deleteObjectFromAws: object to delete: " + obj.getKey());
+            LOG.debug("deleteObjectFromAws: object to delete: {}", obj.getKey());
         }
 
         if (keys.isEmpty()) {
@@ -281,7 +307,7 @@ public final class S3ConnectionWrapper {
         final DeleteObjectsResult delObjRes = s3Client.deleteObjects(deleteRequest);
 
         final int successfulDeletes = delObjRes.getDeletedObjects().size();
-        LOG.debug("deleteObjectFromAws: " + successfulDeletes + " objects successfully deleted.");
+        LOG.debug("deleteObjectFromAws: {} objects successfully deleted.", successfulDeletes);
 
         return successfulDeletes > 0;
     }

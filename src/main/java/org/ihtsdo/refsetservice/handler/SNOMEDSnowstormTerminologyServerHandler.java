@@ -508,9 +508,10 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     /* see superclass */
     @Override
-    public String exportMapSet(final MapProject mapProject, final MapSetExportRequest mapSetExportRequest) throws Exception {
+    public String exportMapSet(final User user, final MapProject mapProject, final MapSetExportRequest mapSetExportRequest) throws Exception {
 
-        return SnowstormMapSet.exportMapSet(mapProject, mapSetExportRequest);
+        return SnowstormMapSet.exportMapSet(user, mapProject, mapSetExportRequest);
+
     }
 
 }

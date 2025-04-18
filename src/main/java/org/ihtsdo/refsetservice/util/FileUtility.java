@@ -33,24 +33,22 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.terminologyservice.S3ConnectionWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -485,7 +483,7 @@ public final class FileUtility {
             fileExtension = filename.replaceAll(".*\\.([A-Za-z0-9]+)$", "$1");
         }
 
-        return (StringUtils.hasText(fileExtension)) ? fileExtension : "";
+        return (StringUtils.isNotBlank(fileExtension)) ? fileExtension : "";
     }
 
     /**
@@ -499,7 +497,7 @@ public final class FileUtility {
 
         final List<String> lineArray = new ArrayList<>();
 
-        try (BufferedReader reader = new BufferedReader(new FileReader(inputFile))) {
+        try (final BufferedReader reader = new BufferedReader(new FileReader(inputFile))) {
 
             String line;
 
@@ -522,7 +520,7 @@ public final class FileUtility {
 
         final List<String> lineArray = new ArrayList<>();
 
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputFile.getInputStream()))) {
+        try (final BufferedReader reader = new BufferedReader(new InputStreamReader(inputFile.getInputStream()))) {
 
             String line;
 
@@ -593,9 +591,9 @@ public final class FileUtility {
 
         final String originalFilename = inputFile.getOriginalFilename();
 
-        if (StringUtils.hasText(originalFilename)) {
+        if (StringUtils.isNotBlank(originalFilename)) {
 
-            final String extension = getFileExtension(StringUtils.cleanPath(originalFilename)).toLowerCase();
+            final String extension = getFileExtension(org.springframework.util.StringUtils.cleanPath(originalFilename)).toLowerCase();
             final String fileName = fileNamePrefix + "-" + (System.currentTimeMillis() / 1000L) + "." + extension;
             final int maxFileSize = Integer.valueOf(PropertyUtility.getProperty("refset.service.icon.file.maxsize"));
             final List<String> fileTypes = Arrays.asList(PropertyUtility.getProperty("refset.service.icon.file.types").split(";"));
@@ -618,9 +616,8 @@ public final class FileUtility {
      */
     public static Resource getArtifactFile(final String fileName) throws Exception {
 
-        final Resource file = getCachedFile(fileName, serverArtifactDir, S3ConnectionWrapper.getAwsArtifactPath());
+        return getCachedFile(fileName, serverArtifactDir, S3ConnectionWrapper.getAwsArtifactPath());
 
-        return file;
     }
 
     /**
@@ -641,16 +638,15 @@ public final class FileUtility {
 
         final String originalFilename = inputFile.getOriginalFilename();
 
-        if (StringUtils.hasText(originalFilename)) {
+        if (StringUtils.isNotBlank(originalFilename)) {
             final String extension = getFileExtension(originalFilename).toLowerCase();
             final String fileName = fileNamePrefix + "-" + (System.currentTimeMillis() / 1000L) + "." + extension;
             final int maxFileSize = -1;
             final List<String> fileTypes = new ArrayList<>();
 
-            final File file =
+            return 
                 saveCachedFile(inputFile, fileName, serverArtifactDir, S3ConnectionWrapper.getAwsArtifactPath(), maxFileSize, fileTypes, fileNameToDelete);
 
-            return file;
         }
         return null;
     }
@@ -720,10 +716,10 @@ public final class FileUtility {
         }
 
         final String originalFilename = inputFile.getOriginalFilename();
-        final String extension = (StringUtils.hasText(originalFilename)) ? getFileExtension(originalFilename).toLowerCase() : "";
+        final String extension = (StringUtils.isNotBlank(originalFilename)) ? getFileExtension(originalFilename).toLowerCase() : "";
 
         // check file type if required
-        if (allowedFileTypes.size() > 0 && !allowedFileTypes.contains("." + extension)) {
+        if (!allowedFileTypes.isEmpty() && !allowedFileTypes.contains("." + extension)) {
             throw new RestException(false, 417, "Failed expectation",
                 "Format must be one of " + org.apache.commons.lang3.StringUtils.join(allowedFileTypes, " ") + ".");
         }
@@ -732,7 +728,7 @@ public final class FileUtility {
         final String awsUploadPath = awsDirectoryPath;
         final File file = new File(localDirectoryPath + File.separator + fileName);
 
-        LOG.debug("saveCachedFile localFilePath: " + file.getPath());
+        LOG.debug("saveCachedFile localFilePath: {}", file.getPath());
 
         // write to local directory
         try (final InputStream inputStream = inputFile.getInputStream()) {
@@ -740,17 +736,43 @@ public final class FileUtility {
         }
 
         // if required delete the previous version of the file
-        if (fileNameToDelete != null && !fileNameToDelete.equals("")) {
+        if (StringUtils.isNotBlank(fileNameToDelete)) {
 
             Files.deleteIfExists(Paths.get(localDirectoryPath + File.separator + fileNameToDelete));
             S3ConnectionWrapper.deleteObjectFromAws(awsUploadPath + fileNameToDelete);
         }
 
         S3ConnectionWrapper.uploadToS3(awsUploadPath, localFilePath, fileName);
-        LOG.debug("saveCachedFile awsUploadPath: " + awsUploadPath + S3ConnectionWrapper.getSeparator() + fileName);
-        // LOG.debug("saveCachedFile getS3DirectoryListing: " +
-        // S3ConnectionWrapper.getDirectoryListing(awsUploadPath));
+        LOG.debug("saveCachedFile awsUploadPath: {}{}{}", awsUploadPath, S3ConnectionWrapper.getSeparator(), fileName);
 
         return file;
+    }
+    
+    
+    /**
+     * Creates a temporary directory for file operations.
+     *
+     * @param prefix the prefix for the directory name
+     * @return the path to the temporary directory
+     * @throws IOException if there is an error creating the directory
+     */
+    public static Path createTempDirectory(final String prefix) throws IOException {
+        return Files.createTempDirectory(prefix);
+    }
+
+    /**
+     * Cleans up temporary files and directories.
+     *
+     * @param tempDir the temporary directory to clean up
+     * @throws IOException if there is an error during cleanup
+     */
+    public static void cleanupTempFiles(final Path tempDir) throws IOException {
+        if (tempDir != null) {
+            try {
+                FileUtility.deleteDirectory(tempDir.toFile());
+            } catch (final Exception e) {
+                throw new IOException("Failed to cleanup temporary files", e);
+            }
+        }
     }
 }

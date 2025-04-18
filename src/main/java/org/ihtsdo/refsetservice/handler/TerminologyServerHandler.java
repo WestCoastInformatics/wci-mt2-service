@@ -629,10 +629,11 @@ public interface TerminologyServerHandler extends Configurable {
     /**
      * Export map set as an RF2 file.
      *
+     * @param user the user
      * @param mapProject the map project
-     * @param mappingExportRequest the mapping export request
+     * @param mapSetExportRequest the map set export request
      * @return the file
      * @throws Exception the exception
      */
-    public String exportMapSet(final MapProject mapProject, final MapSetExportRequest mapSetExportRequest) throws Exception;
+    public String exportMapSet(final User user, final MapProject mapProject, final MapSetExportRequest mapSetExportRequest) throws Exception;
 }
