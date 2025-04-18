@@ -23,6 +23,7 @@ DROP TABLE ${pre_if_exists} map_sets ${post_if_exists};
 DROP TABLE ${pre_if_exists} map_users ${post_if_exists};
 DROP TABLE ${pre_if_exists} mapentry_advices ${post_if_exists};
 DROP TABLE ${pre_if_exists} mappings ${post_if_exists};
+DROP TABLE ${pre_if_exists} jobs ${post_if_exists};
 
 CREATE TABLE `map_users` (
   `id` varchar(64) NOT NULL,
@@ -319,4 +320,20 @@ CREATE TABLE `mappings` (
   PRIMARY KEY (`id`),
   KEY `FKoqackhvvnir5m8jblyv6ibyqm` (`mapEntries_id`),
   CONSTRAINT `FKoqackhvvnir5m8jblyv6ibyqm` FOREIGN KEY (`mapEntries_id`) REFERENCES `map_entries` (`id`)
+);
+
+CREATE TABLE `jobs` (
+  `id` varchar(64) NOT NULL,
+  `active` bit(1) NOT NULL,
+  `created` datetime(6) NOT NULL,
+  `modified` datetime(6) NOT NULL,
+  `modifiedBy` varchar(256) NOT NULL,
+  `jobType` varchar(255) NOT NULL,
+  `status` varchar(255) NOT NULL,
+  `resourceId` varchar(255) DEFAULT NULL,
+  `parameters` varchar(4000) DEFAULT NULL,
+  `completedDate` datetime(6) DEFAULT NULL,
+  `errorMessage` varchar(4000) DEFAULT NULL,
+  `result` varchar(4000) DEFAULT NULL,
+  PRIMARY KEY (`id`)
 );

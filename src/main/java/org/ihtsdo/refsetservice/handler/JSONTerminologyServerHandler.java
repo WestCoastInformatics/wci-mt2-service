@@ -4541,7 +4541,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
     /* see superclass */
     @Override
-    public String exportMapSet(final MapProject mapProject, final MapSetExportRequest mapSetExportRequest) throws Exception {
+    public String exportMapSet(final User user, final MapProject mapProject, final MapSetExportRequest mapSetExportRequest) throws Exception {
 
         // TODO implement with Snowstorm
         throw new UnsupportedOperationException("Method not implemented");

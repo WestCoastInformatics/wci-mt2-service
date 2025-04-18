@@ -30,9 +30,6 @@ public class SnowstormAbstract {
     /** The max number of record elasticsearch will return without erroring. */
     protected static final int ELASTICSEARCH_MAX_RECORD_LENGTH = 10000;
 
-    /** The Constant SNOMED_SNOMEDCT_ICD10_MAPPING_MODULE. */
-    protected static final String SNOMEDCT_TO_ICD10_MAPPING_MODULE = "449080006";
-
     /**
      * Format error message.
      *

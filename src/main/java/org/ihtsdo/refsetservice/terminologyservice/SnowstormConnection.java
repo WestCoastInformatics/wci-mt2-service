@@ -1,17 +1,19 @@
 /*
- * Copyright 2023 SNOMED International - All Rights Reserved.
+ * Copyright 2025 West Coast Informatics - All Rights Reserved.
  *
- * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * NOTICE:  All information contained herein is, and remains the property of West Coast Informatics
  * The intellectual and technical concepts contained herein are proprietary to
- * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * West Coast Informatics and may be covered by U.S. and Foreign Patents, patents in process,
  * and are protected by trade secret or copyright law.  Dissemination of this information
  * or reproduction of this material is strictly forbidden.
  */
 package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.ws.rs.client.Client;
@@ -26,11 +28,23 @@ import javax.ws.rs.core.Response.Status.Family;
 
 import org.ihtsdo.refsetservice.util.LocalException;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
+import org.jboss.resteasy.plugins.providers.RegisterBuiltin;
+import org.jboss.resteasy.spi.ResteasyProviderFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 
 /**
  * Class to handle making calls to Snowstorm.
  */
 public final class SnowstormConnection {
+
+    /** The Constant LOG. */
+    @SuppressWarnings("unused")
+    private static final Logger LOG = LoggerFactory.getLogger(SnowstormConnection.class);
 
     /** The authentication url. */
     private static String authUrl;
@@ -58,11 +72,18 @@ public final class SnowstormConnection {
 
     /** Static initialization. */
     static {
-
         baseUrl = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.baseUrl");
         authUrl = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.authUrl");
         userName = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.username");
         password = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.password");
+
+        // Initialize RESTEasy providers
+        try {
+            ResteasyProviderFactory factory = ResteasyProviderFactory.getInstance();
+            RegisterBuiltin.register(factory);
+        } catch (Exception e) {
+            LOG.warn("Failed to register RESTEasy built-in providers", e);
+        }
     }
 
     /**
@@ -93,7 +114,7 @@ public final class SnowstormConnection {
      */
     public static Response getResponse(final String url, final String language) throws Exception {
 
-        final Client client = ClientBuilder.newClient();
+        final Client client = getClient(ClientBuilder.newClient());
         final WebTarget target = client.target(url);
         String cookie = getGenericUserCookie(false);
         Response response = null;
@@ -101,13 +122,16 @@ public final class SnowstormConnection {
         boolean run = true;
 
         while (run) {
-
             run = false;
 
-            response = target.request(ACCEPT).header("Accept-Language", language).header("Cookie", cookie).get();
+            final Builder builder = target.request(ACCEPT).header(HttpHeaders.ACCEPT_LANGUAGE, language);
+            if (cookie != null && !cookie.isEmpty()) {
+                builder.header("Cookie", cookie);
+            }
+
+            response = builder.get();
 
             if (firstRun && response.getStatus() == Response.Status.FORBIDDEN.getStatusCode()) {
-
                 run = true;
                 firstRun = false;
                 cookie = getGenericUserCookie(true);
@@ -139,14 +163,31 @@ public final class SnowstormConnection {
      * @throws Exception the exception
      */
     @SuppressWarnings("resource")
-	public static InputStream getFileDownload(final String url) throws Exception {
+    public static InputStream getFileDownload(final String url) throws Exception {
 
-        final Client client = ClientBuilder.newClient();
+        final Client client = getClient(ClientBuilder.newClient());
         final WebTarget target = client.target(url);
-        final Response response =
-            target.request("application/zip").header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES).header("Cookie", getGenericUserCookie(false)).get();
 
-        final InputStream inputStream = response.readEntity(InputStream.class);
+        final String cookie = getGenericUserCookie(false);
+        final Builder builder = target.request("application/zip").header(HttpHeaders.ACCEPT_LANGUAGE, DEFAULT_ACCECPT_LANGUAGES);
+
+        if (cookie != null && !cookie.isEmpty()) {
+            builder.header("Cookie", cookie);
+        }
+
+        // Get the response
+        final Response response = builder.get();
+
+        // Check if the response was successful
+        if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+            String errorMsg = "Failed to download file. Status: " + response.getStatus();
+            LOG.error(errorMsg);
+            throw new LocalException(errorMsg);
+        }
+
+        // Read the entity as a byte array and convert to InputStream
+        byte[] byteArray = response.readEntity(byte[].class);
+        final InputStream inputStream = new java.io.ByteArrayInputStream(byteArray);
 
         return inputStream;
     }
@@ -161,12 +202,18 @@ public final class SnowstormConnection {
      */
     public static Response postResponse(final String url, final String entity) throws Exception {
 
-        final Client client = ClientBuilder.newClient();
+        final Client client = getClient(ClientBuilder.newClient());
         final WebTarget target = client.target(url);
-        final Builder builder =
-            target.request(MediaType.APPLICATION_JSON).header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES).header("Cookie", getGenericUserCookie(false));
+        final Builder builder = target.request(MediaType.APPLICATION_JSON).header(HttpHeaders.ACCEPT_LANGUAGE, DEFAULT_ACCECPT_LANGUAGES);
 
-        final Response response = builder.post(Entity.json(entity));
+        final String cookie = getGenericUserCookie(false);
+        if (cookie != null && !cookie.isEmpty()) {
+            builder.header("Cookie", cookie);
+        }
+
+        // Convert the JSON string to a Map
+        final Map<String, Object> entityMap = jsonToMap(entity);
+        final Response response = builder.post(Entity.entity(entityMap, MediaType.APPLICATION_JSON));
 
         return response;
     }
@@ -181,12 +228,16 @@ public final class SnowstormConnection {
      */
     public static Response putResponse(final String url, final String entity) throws Exception {
 
-        final Client client = ClientBuilder.newClient();
+        final Client client = getClient(ClientBuilder.newClient());
         final WebTarget target = client.target(url);
-        final Builder builder =
-            target.request(MediaType.APPLICATION_JSON).header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES).header("Cookie", getGenericUserCookie(false));
+        final Builder builder = target.request(MediaType.APPLICATION_JSON).header(HttpHeaders.ACCEPT_LANGUAGE, DEFAULT_ACCECPT_LANGUAGES);
 
-        final Response response = builder.put(Entity.json(entity));
+        final String cookie = getGenericUserCookie(false);
+        if (cookie != null && !cookie.isEmpty()) {
+            builder.header("Cookie", cookie);
+        }
+
+        final Response response = builder.put(Entity.entity(entity, MediaType.APPLICATION_JSON));
 
         return response;
     }
@@ -199,22 +250,25 @@ public final class SnowstormConnection {
      * @return The Snowstorm response
      * @throws Exception the exception
      */
-    @SuppressWarnings("resource")
-	public static Response deleteResponse(final String url, final String entity) throws Exception {
+    public static Response deleteResponse(final String url, final String entity) throws Exception {
 
-        final Client client = ClientBuilder.newClient();
+        final Client client = getClient(ClientBuilder.newClient());
         final WebTarget target = client.target(url);
+        final Builder builder = target.request(ACCEPT).header(HttpHeaders.ACCEPT_LANGUAGE, DEFAULT_ACCECPT_LANGUAGES);
+
+        final String cookie = getGenericUserCookie(false);
+        if (cookie != null && !cookie.isEmpty()) {
+            builder.header("Cookie", cookie);
+        }
+
         Response response;
 
         // TODO: we shouldn't return a response here and leave it open
         // we should get its payload and return that and then make sure the response is closed.
         if (entity == null) {
-
-            response = target.request(ACCEPT).header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES).header("Cookie", getGenericUserCookie(false)).delete();
+            response = builder.delete();
         } else {
-
-            response = target.request(ACCEPT).header("Accept-Language", DEFAULT_ACCECPT_LANGUAGES).header("Cookie", getGenericUserCookie(false))
-                .build("DELETE", Entity.entity(entity, MediaType.APPLICATION_JSON_TYPE)).invoke(Response.class);
+            response = builder.build("DELETE", Entity.entity(entity, MediaType.APPLICATION_JSON)).invoke(Response.class);
         }
 
         return response;
@@ -255,11 +309,16 @@ public final class SnowstormConnection {
         }
 
         // Login the generic user, then save and return the cookie
-        final Client client = ClientBuilder.newClient();
+        final Client client = getClient(ClientBuilder.newClient());
         final WebTarget target = client.target(authUrl + "authenticate");
         final Builder builder = target.request(MediaType.APPLICATION_JSON);
 
-        try (final Response response = builder.post(Entity.json("{ \"login\": \"" + userName + "\", \"password\": \"" + password + "\" }"))) {
+        // Create a map for the login credentials
+        final Map<String, String> loginData = new HashMap<>();
+        loginData.put("login", userName);
+        loginData.put("password", password);
+
+        try (final Response response = builder.post(Entity.entity(loginData, MediaType.APPLICATION_JSON))) {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
                 throw new LocalException("Authentication of generic user failed. " + " Status: " + Integer.toString(response.getStatus()) + ". Error: "
@@ -276,8 +335,87 @@ public final class SnowstormConnection {
             }
 
             genericUserCookie = sb.toString();
+
+        } catch (final Exception e) {
+            LOG.error("Authentication of generic user failed. {}", e.getMessage(), e);
+            throw new LocalException("Authentication of generic user failed. " + e.getMessage());
         }
 
         return genericUserCookie;
+    }
+
+    /**
+     * Configures a client with all necessary providers for JSON processing.
+     *
+     * @param client the client to configure
+     * @return the configured client
+     */
+    private static Client getClient(final Client client) {
+
+        // Register JSON providers
+        client.register(JacksonJsonProvider.class);
+
+        // Register providers for binary content
+        client.register(org.jboss.resteasy.plugins.providers.ByteArrayProvider.class);
+        client.register(org.jboss.resteasy.plugins.providers.InputStreamProvider.class);
+
+        // Register text/plain providers
+        client.register(org.jboss.resteasy.plugins.providers.StringTextStar.class);
+
+        // Register additional JSON providers
+        client.register(org.jboss.resteasy.plugins.providers.jackson.ResteasyJackson2Provider.class);
+        client.register(org.jboss.resteasy.plugins.providers.jackson.Jackson2JsonpInterceptor.class);
+        client.register(org.jboss.resteasy.plugins.providers.DefaultTextPlain.class);
+
+        // Register the built-in providers
+        try {
+            client.register(Class.forName("org.jboss.resteasy.plugins.providers.RegisterBuiltin"));
+        } catch (Exception e) {
+            LOG.warn("Could not register ResteasyProviderFactory.registerBuiltin", e);
+        }
+
+        return client;
+    }
+
+    /**
+     * Converts a JSON string to a Map that can be passed to Entity.entity().
+     *
+     * @param jsonString the JSON string to convert
+     * @return the Map representation of the JSON
+     * @throws Exception if there is an error parsing the JSON
+     */
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> jsonToMap(String jsonString) throws Exception {
+
+        final ObjectMapper mapper = new ObjectMapper();
+        return mapper.readValue(jsonString, Map.class);
+    }
+
+    /**
+     * Helper method to safely read a response entity as a String.
+     *
+     * @param response the response to read
+     * @return the response body as a string
+     * @throws Exception if there is an error reading the response
+     */
+    public static String readEntityAsString(Response response) throws Exception {
+
+        try {
+            // First try the direct approach
+            return response.readEntity(String.class);
+            
+        } catch (Exception e) {
+            LOG.warn("Could not read entity as String directly: {}", e.getMessage());
+
+            try {
+                // Try reading as byte array and convert to string
+                byte[] bytes = response.readEntity(byte[].class);
+                return new String(bytes, StandardCharsets.UTF_8);
+                
+            } catch (Exception e2) {
+                LOG.error("Could not read entity as byte array: {}", e2.getMessage());
+                throw new LocalException("Could not read response entity: " + e2.getMessage());
+            }
+        }
     }
 }

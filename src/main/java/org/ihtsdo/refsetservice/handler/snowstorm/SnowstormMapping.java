@@ -17,7 +17,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -73,7 +72,7 @@ public class SnowstormMapping extends SnowstormAbstract {
     private static final String DEFAULT_ACCEPT = MediaType.APPLICATION_JSON;
 
     /** The client. */
-    private static ThreadLocal<Client> clients = new ThreadLocal<Client>() {
+    private static ThreadLocal<Client> clients = new ThreadLocal<>() {
 
         @Override
         public Client initialValue() {
@@ -867,7 +866,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         // also get the map entries for the active International mapping in snowstorm
         // (this may the same or different than the above).
-        final Mapping existingActiveInternationalMapping = getMapping(branch, mapSetCode, submittedMapping.getCode(), SNOMEDCT_TO_ICD10_MAPPING_MODULE, true, false, false);
+        final Mapping existingActiveInternationalMapping = getMapping(branch, mapSetCode, submittedMapping.getCode(), SnomedConstants.SNOMEDCT_TO_ICD10_MAPPING_MODULE, true, false, false);
 
         // If map content is identical to the existing active map, do nothing.
         if (areMapsEquivalent(submittedMapping, existingActiveMapping)) {
@@ -890,7 +889,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         // If the existing active mapping is International, then all entries
         // of the submitted map will be added (this is a new Norwegian map overriding
         // the International)
-        else if (!existingActiveMapping.getMapEntries().isEmpty() && SNOMEDCT_TO_ICD10_MAPPING_MODULE.equals(existingActiveMapping.getMapEntries().get(0).getModuleId())) {
+        else if (!existingActiveMapping.getMapEntries().isEmpty() && SnomedConstants.SNOMEDCT_TO_ICD10_MAPPING_MODULE.equals(existingActiveMapping.getMapEntries().get(0).getModuleId())) {
             for (MapEntry submittedMapEntry : submittedMapping.getMapEntries()) {
                 mapEntryAddList.add(submittedMapEntry);
             }
@@ -1249,7 +1248,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         final List<MapEntry> internationalEntries = new ArrayList<>();
         final List<MapEntry> editionEntries = new ArrayList<>();
         for (final MapEntry mapEntry : mapping.getMapEntries()) {
-            if (SNOMEDCT_TO_ICD10_MAPPING_MODULE.equals(mapEntry.getModuleId())) {
+            if (SnomedConstants.SNOMEDCT_TO_ICD10_MAPPING_MODULE.equals(mapEntry.getModuleId())) {
                 internationalEntries.add(mapEntry);
             } else {
                 editionEntries.add(mapEntry);
@@ -1530,7 +1529,7 @@ public class SnowstormMapping extends SnowstormAbstract {
      * @return the map entry
      * @throws Exception the exception
      */
-    private static MapEntry updateExistingMapEntry(MapEntry existingMapEntry, MapEntry submittedMapEntry) throws Exception {
+    private static MapEntry updateExistingMapEntry(final MapEntry existingMapEntry, final MapEntry submittedMapEntry) throws Exception {
 
         if (!doMapEntriesShareUUID(existingMapEntry, submittedMapEntry)) {
             throw new Exception("You cannot update an existing map entry with a non UUID-sharing new entry");

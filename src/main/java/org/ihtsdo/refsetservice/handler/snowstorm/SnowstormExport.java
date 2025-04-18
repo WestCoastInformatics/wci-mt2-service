@@ -21,6 +21,7 @@ import javax.ws.rs.core.Response.Status.Family;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class SnowstormExport extends SnowstormAbstract {
 
@@ -54,9 +55,18 @@ public class SnowstormExport extends SnowstormAbstract {
 
       LOG.debug("generateVersionFile {}", entityString);
 
+      // Validate that entityString is valid JSON
+      try {
+          new ObjectMapper().readTree(entityString);
+      } catch (Exception e) {
+          LOG.error("Invalid JSON in entityString: {}", entityString);
+          throw new Exception("Invalid JSON in entityString: " + e.getMessage());
+      }
+
       // Call Snowstorm to create RF2 file
       final String snowstormExportApiUrl = SnowstormConnection.getBaseUrl() + "exports";
-      LOG.debug("Snowstorm Export API URL: " + snowstormExportApiUrl + entityString);
+      LOG.debug("Snowstorm Export API URL: {}", snowstormExportApiUrl);
+      LOG.debug("Request body: {}", entityString);
 
       String snowVersionFileUrl = "";
 
@@ -64,7 +74,7 @@ public class SnowstormExport extends SnowstormAbstract {
 
           // Only process payload if Rest call is successful
           if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-              
+
               final String errorMessage = formatErrorMessage(response);
               LOG.error("Call to URL '{}' wasn't successful. Status: {} Message: {}", snowstormExportApiUrl, response.getStatus(), errorMessage);
               throw new Exception(
@@ -72,7 +82,7 @@ public class SnowstormExport extends SnowstormAbstract {
           }
 
           snowVersionFileUrl = response.getLocation().toString() + "/archive";
-          LOG.debug("Snowstorm File URL: " + snowVersionFileUrl);
+          LOG.debug("Snowstorm File URL: {}", snowVersionFileUrl);
 
       } catch (final Exception ex) {
           throw new Exception("Could not generate the Rf2 file by snowstorm with : " + entityString, ex);

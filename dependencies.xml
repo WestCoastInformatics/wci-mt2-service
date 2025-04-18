@@ -184,6 +184,7 @@
 		<packageUrl regex="true">^pkg:maven/org\.springframework\.security/spring\-security\-crypto@.*$
 		</packageUrl>
 		<vulnerabilityName>CVE-2020-5408</vulnerabilityName>
+		<vulnerabilityName>CVE-2025-22228</vulnerabilityName>
 	</suppress>
 
 	<suppress>
@@ -221,6 +222,7 @@
 		</packageUrl>
 		<vulnerabilityName>CVE-2024-45801</vulnerabilityName>
 		<vulnerabilityName>CVE-2024-47875</vulnerabilityName>
+		<vulnerabilityName>CVE-2025-26791</vulnerabilityName>
 	</suppress>
 
 	<suppress>
@@ -231,6 +233,7 @@
 		</packageUrl>
 		<vulnerabilityName>CVE-2024-45801</vulnerabilityName>
 		<vulnerabilityName>CVE-2024-47875</vulnerabilityName>
+		<vulnerabilityName>CVE-2025-26791</vulnerabilityName>
 	</suppress>
 
 	<suppress>

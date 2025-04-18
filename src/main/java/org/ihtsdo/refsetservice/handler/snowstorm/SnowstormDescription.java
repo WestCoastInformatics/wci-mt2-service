@@ -76,9 +76,9 @@ public class SnowstormDescription extends SnowstormAbstract {
                     + response.getStatusInfo().getReasonPhrase());
             }
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString.toString());
+            final JsonNode root = mapper.readTree(resultString);
 
             final JsonNode allDescriptionNodes = root.get("items");
             final Iterator<JsonNode> descriptionIterator = allDescriptionNodes.iterator();
@@ -193,7 +193,7 @@ public class SnowstormDescription extends SnowstormAbstract {
                     + response.getStatusInfo().getReasonPhrase());
             }
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode root = mapper.readTree(resultString);
 
@@ -302,9 +302,9 @@ public class SnowstormDescription extends SnowstormAbstract {
                         + response.getStatusInfo().getReasonPhrase());
                 }
 
-                final String resultString = response.readEntity(String.class);
+                final String resultString = SnowstormConnection.readEntityAsString(response);
                 final ObjectMapper mapper = new ObjectMapper();
-                final JsonNode root = mapper.readTree(resultString.toString());
+                final JsonNode root = mapper.readTree(resultString);
 
                 final JsonNode allDescriptionNodes = root.get("items");
                 final Iterator<JsonNode> descriptionIterator = allDescriptionNodes.iterator();

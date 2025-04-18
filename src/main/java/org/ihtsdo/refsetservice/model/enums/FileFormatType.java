@@ -18,9 +18,32 @@ import java.util.List;
 public enum FileFormatType {
 
     /** The snapshot. */
-    SNAPSHOT,
+    SNAPSHOT("Snapshot"),
     /** The delta. */
-    DELTA;
+    DELTA("Delta"),;
+
+    /** The name. */
+    private final String name;
+
+    /**
+     * Instantiates a new file format type.
+     *
+     * @param name the name
+     */
+    FileFormatType(String name) {
+
+        this.name = name;
+    }
+
+    /**
+     * Gets the name.
+     *
+     * @return the name
+     */
+    public String getName() {
+
+        return name;
+    }
 
     /**
      * Returns the values.

@@ -22,11 +22,12 @@ import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.MapSetExportRequest;
+import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.enums.FileExportType;
 import org.ihtsdo.refsetservice.model.enums.FileFormatType;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.MapProjectService;
-import org.ihtsdo.refsetservice.terminologyservice.MapSetService;
+import org.ihtsdo.refsetservice.terminologyservice.MapsetService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.SearchParameters;
@@ -56,16 +57,16 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
  */
 @RestController
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
-public class MapSetController extends BaseController {
+public class MapsetController extends BaseController {
 
     /** The Constant LOG. */
-    private static final Logger LOG = LoggerFactory.getLogger(MapSetController.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MapsetController.class);
 
     /** The local directory to store exported refset files. */
     private static String exportFileDir;
 
-    /** The local server url to download exported refset files. */
-    private static final String EXPORT_DOWNLOAD_URL = "/mapset/export/download";
+//    /** The local server url to download exported refset files. */
+//    private static final String EXPORT_JOB_URL = "/job/export/download";
 
     /** Search teams API notes. */
     private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
@@ -104,7 +105,7 @@ public class MapSetController extends BaseController {
 
             // TODO: determine branch.
             final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
-            final MapSet mapset = MapSetService.getMapSet(branch, code);
+            final MapSet mapset = MapsetService.getMapSet(branch, code);
             return new ResponseEntity<>(mapset, HttpStatus.OK);
 
         } catch (final Exception e) {
@@ -140,7 +141,7 @@ public class MapSetController extends BaseController {
 
             // TODO: determine branch.
             final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
-            final List<MapSet> mapSets = MapSetService.getMapSets(branch);
+            final List<MapSet> mapSets = MapsetService.getMapSets(branch);
 
             return new ResponseEntity<>(mapSets, HttpStatus.OK);
 
@@ -223,6 +224,7 @@ public class MapSetController extends BaseController {
         }
 
         // TODO: Remove hard-coding of mapProject stuff
+        final User user = getUser();
         final String id = "1";
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -230,8 +232,8 @@ public class MapSetController extends BaseController {
             final MapProject mapProject = MapProjectService.getMapProject(service, id, Boolean.FALSE);
             // User user = SecurityService.getUserFromSession(); //No auth
 
-            final String downloadUri = MapSetService.exportMapSet(mapProject, mapSetExportRequest);
-            final String responseMessage = "{\"url\": \"" + EXPORT_DOWNLOAD_URL + "/" + downloadUri + "\"}";
+            final String jobId = MapsetService.exportMapSet(user, mapProject, mapSetExportRequest);
+            final String responseMessage = "{\"url\": \"job/" + jobId + "\"}";
             return new ResponseEntity<>(responseMessage, HttpStatus.OK);
 
         } catch (final IllegalArgumentException e) {
@@ -265,7 +267,7 @@ public class MapSetController extends BaseController {
 
         try {
 
-            LOG.info("downloadMapSetExport: fileName: " + fileName);
+            LOG.info("downloadMapSetExport: fileName: {}", fileName);
 
             // no auth required
 
@@ -287,6 +289,14 @@ public class MapSetController extends BaseController {
             return null;
         }
 
+    }
+    
+    // temporary method to get user
+    private User getUser() {
+        final User user = new User();
+        user.setName("WCITEST");
+        user.setUserName("WCITEST");
+        return user;
     }
 
 }
