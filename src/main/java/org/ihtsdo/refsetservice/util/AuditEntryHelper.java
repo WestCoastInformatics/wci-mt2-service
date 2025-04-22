@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 West Coast Informatics - All Rights Reserved.
+ * Copyright 2025 West Coast Informatics - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of West Coast Informatics
  * The intellectual and technical concepts contained herein are proprietary to
@@ -18,12 +18,15 @@ import org.ihtsdo.refsetservice.model.HasModified;
 import org.ihtsdo.refsetservice.model.MapAdvice;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapRelation;
+import org.ihtsdo.refsetservice.model.MapSet;
+import org.ihtsdo.refsetservice.model.MapSetWorkflowHistory;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
-import org.ihtsdo.refsetservice.model.WorkflowHistory;
+import org.ihtsdo.refsetservice.model.RefsetWorkflowHistory;
+import org.ihtsdo.refsetservice.model.enums.WorkflowStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +38,7 @@ public final class AuditEntryHelper {
     /**
      * The Enum EntityType.
      */
-    public static enum EntityType {
+    public enum EntityType {
 
         /** The edition. */
         EDITION,
@@ -60,7 +63,9 @@ public final class AuditEntryHelper {
         /** The map rule. */
         MAP_RULE,
         /** The map relation. */
-        MAP_RELATION
+        MAP_RELATION,
+        /** The mapset. */
+        MAPSET
     }
 
     /** The Constant LOG. */
@@ -799,13 +804,13 @@ public final class AuditEntryHelper {
      * @param newState the new state
      * @return the audit entry
      */
-    public static AuditEntry addWorkflowHistoryEntry(final WorkflowHistory workflowHistory, final Refset refset, final String newState) {
+    public static AuditEntry addWorkflowHistoryEntry(final RefsetWorkflowHistory workflowHistory, final Refset refset, final WorkflowStatus newState) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(refset.getId());
         entry.setMessage("NEW Workflow History");
-        entry.setDetails("Refset " + refset.getRefsetId() + " has advanced workflow to " + newState);
+        entry.setDetails("Refset " + refset.getRefsetId() + " has advanced workflow to " + newState.toString());
         log(entry);
         return entry;
     }
@@ -817,7 +822,7 @@ public final class AuditEntryHelper {
      * @param refset the refset
      * @return the audit entry
      */
-    public static AuditEntry updateWorkflowNoteEntry(final WorkflowHistory workflowHistory, final Refset refset) {
+    public static AuditEntry updateWorkflowNoteEntry(final RefsetWorkflowHistory workflowHistory, final Refset refset) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.REFSET.toString());
@@ -1071,6 +1076,61 @@ public final class AuditEntryHelper {
         entry.setEntityId(mapRelation.getId());
         entry.setMessage("UPDATE MapRelation");
         entry.setDetails(mapRelation.toString());
+        log(entry);
+        return entry;
+    }
+    
+    /**
+     * Complete refset publication entry.
+     *
+     * @param refset the refset
+     * @return the audit entry
+     */
+    // Workflow
+    public static AuditEntry completeMapSetPublicationEntry(final MapSet mapSet) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(EntityType.MAPSET.toString());
+        entry.setEntityId(mapSet.getId());
+        entry.setMessage("UPDATE MapSet");
+        entry.setDetails("Complete Publication on map set " + mapSet.getRefSetCode());
+        log(entry);
+        return entry;
+    }
+    
+    /**
+     * Adds the workflow history entry.
+     *
+     * @param workflowHistory the workflow history
+     * @param refset the refset
+     * @param newState the new state
+     * @return the audit entry
+     */
+    public static AuditEntry addWorkflowHistoryEntry(final MapSetWorkflowHistory workflowHistory, final MapSet mapSet, final WorkflowStatus newState) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(EntityType.MAPSET.toString());
+        entry.setEntityId(mapSet.getId());
+        entry.setMessage("NEW Workflow History");
+        entry.setDetails("Mapset " + mapSet.getRefSetCode() + " has advanced workflow to " + newState.toString());
+        log(entry);
+        return entry;
+    }
+    
+    /**
+     * Update workflow note entry.
+     *
+     * @param workflowHistory the workflow history
+     * @param refset the refset
+     * @return the audit entry
+     */
+    public static AuditEntry updateWorkflowNoteEntry(final MapSetWorkflowHistory workflowHistory, final MapSet mapSet) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(EntityType.MAPSET.toString());
+        entry.setEntityId(mapSet.getId());
+        entry.setMessage("NEW Workflow History");
+        entry.setDetails("Note for workflow history entry with status " + mapSet.getWorkflowStatus() + " updated for refset " + mapSet.getRefSetCode() + ".");
         log(entry);
         return entry;
     }

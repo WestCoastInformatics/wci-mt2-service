@@ -27,14 +27,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
 /**
  * Unit test for {@link Organization}.
  */
-@SpringBootTest
-@ActiveProfiles("test")
 public class OrganizationUnitTest extends BaseTest {
 
     /** The Constant LOG. */
@@ -98,6 +94,8 @@ public class OrganizationUnitTest extends BaseTest {
         tester.exclude("members");
         tester.include("iconUri");
         tester.include("affiliate");
+        tester.include("countryCode");
+        tester.include("crowdId");
         tester.exclude("roles");
 
         assertTrue(tester.testIdentityFieldEquals());

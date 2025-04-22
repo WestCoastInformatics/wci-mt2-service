@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 SNOMED International - All Rights Reserved.
+ * Copyright 2024 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -97,6 +97,10 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
     @Transient
     private Set<IdName> teamDetails;
 
+    /** The lock status. */
+    @Column(nullable = false)
+    private boolean lockStatus;
+
     /**
      * Instantiates an empty {@link Project}.
      */
@@ -140,6 +144,7 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
         edition = other.getEdition();
         description = other.getDescription();
         privateProject = other.isPrivateProject();
+        lockStatus = other.getLockStatus();
         roles = other.getRoles();
         crowdProjectId = other.getCrowdProjectId();
         primaryContactEmail = other.getPrimaryContactEmail();
@@ -154,6 +159,7 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
         name = other.getName();
         description = other.getDescription();
         privateProject = other.isPrivateProject();
+        lockStatus = other.getLockStatus();
         roles = other.getRoles();
         crowdProjectId = other.getCrowdProjectId();
         primaryContactEmail = other.getPrimaryContactEmail();
@@ -451,6 +457,26 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
         this.teamDetails = teamDetails;
     }
 
+    /**
+     * Returns the lock status.
+     *
+     * @return the lock status
+     */
+    public Boolean getLockStatus() {
+
+        return lockStatus;
+    }
+
+    /**
+     * Sets the lock status.
+     *
+     * @param lockStatus the lock status
+     */
+    public void setLockStatus(final Boolean lockStatus) {
+
+        this.lockStatus = lockStatus;
+    }
+
     /* see superclass */
     @Override
     public int hashCode() {
@@ -459,10 +485,11 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
         int result = 1;
         result = prime * result + ((crowdProjectId == null) ? 0 : crowdProjectId.hashCode());
         result = prime * result + ((description == null) ? 0 : description.hashCode());
-        result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((edition == null) ? 0 : edition.hashCode());
+        result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((primaryContactEmail == null) ? 0 : primaryContactEmail.hashCode());
         result = prime * result + (privateProject ? 1231 : 1237);
+        result = prime * result + (lockStatus ? 1231 : 1237);
         result = prime * result + ((roles == null) ? 0 : roles.hashCode());
         result = prime * result + ((teams == null) ? 0 : teams.hashCode());
         return result;
@@ -470,114 +497,73 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
 
     /* see superclass */
     @Override
-    public boolean equals(final Object obj) {
+    public boolean equals(Object obj) {
 
         if (this == obj) {
-
             return true;
         }
-
         if (!super.equals(obj)) {
-
             return false;
         }
-
-        if (getClass() != obj.getClass()) {
-
+        if (!(obj instanceof Project)) {
             return false;
         }
-
-        final Project other = (Project) obj;
-
+        Project other = (Project) obj;
         if (crowdProjectId == null) {
-
             if (other.crowdProjectId != null) {
-
                 return false;
             }
-
         } else if (!crowdProjectId.equals(other.crowdProjectId)) {
-
             return false;
         }
-
         if (description == null) {
-
             if (other.description != null) {
-
                 return false;
             }
-
         } else if (!description.equals(other.description)) {
-
             return false;
         }
-
-        if (name == null) {
-
-            if (other.name != null) {
-
-                return false;
-            }
-
-        } else if (!name.equals(other.name)) {
-
-            return false;
-        }
-
         if (edition == null) {
-
             if (other.edition != null) {
-
                 return false;
             }
-
         } else if (!edition.equals(other.edition)) {
-
             return false;
         }
-
+        if (name == null) {
+            if (other.name != null) {
+                return false;
+            }
+        } else if (!name.equals(other.name)) {
+            return false;
+        }
         if (primaryContactEmail == null) {
-
             if (other.primaryContactEmail != null) {
-
                 return false;
             }
-
         } else if (!primaryContactEmail.equals(other.primaryContactEmail)) {
-
             return false;
         }
-
         if (privateProject != other.privateProject) {
-
             return false;
         }
-
+        if (lockStatus != other.lockStatus) {
+            return false;
+        }
         if (roles == null) {
-
             if (other.roles != null) {
-
                 return false;
             }
-
         } else if (!roles.equals(other.roles)) {
-
             return false;
         }
-
         if (teams == null) {
-
             if (other.teams != null) {
-
                 return false;
             }
-
         } else if (!teams.equals(other.teams)) {
-
             return false;
         }
-
         return true;
     }
 

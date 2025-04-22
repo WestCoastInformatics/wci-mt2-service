@@ -68,7 +68,7 @@ public final class SnowstormBranch extends SnowstormAbstract {
 
       final String resultString = response.readEntity(String.class);
 
-      final JsonNode root = mapper.readTree(resultString.toString());
+      final JsonNode root = mapper.readTree(resultString);
       final JsonNode rootNode = root;
 
       if (rootNode.has("path")) {
@@ -174,7 +174,7 @@ public final class SnowstormBranch extends SnowstormAbstract {
       }
 
       final ObjectMapper mapper = new ObjectMapper();
-      final JsonNode root = mapper.readTree(resultString.toString());
+      final JsonNode root = mapper.readTree(resultString);
       final Iterator<JsonNode> iterator = root.iterator();
 
       if (iterator.hasNext()) {
@@ -243,7 +243,7 @@ public final class SnowstormBranch extends SnowstormAbstract {
         try (final Response mergeInfoResponse = SnowstormConnection.getResponse(jobStatusUrl)) {
 
           final String resultString = mergeInfoResponse.readEntity(String.class);
-          final JsonNode root = mapper.readTree(resultString.toString());
+          final JsonNode root = mapper.readTree(resultString);
           final String status = root.get("status").asText();
 
           LOG.info("Merge status is: " + status);
@@ -390,7 +390,7 @@ public final class SnowstormBranch extends SnowstormAbstract {
         }
 
         final String resultString = response.readEntity(String.class);
-        final JsonNode root = mapper.readTree(resultString.toString());
+        final JsonNode root = mapper.readTree(resultString);
         final String status = root.get("status").asText();
         LOG.debug("merge review status: " + status);
 
@@ -438,7 +438,7 @@ public final class SnowstormBranch extends SnowstormAbstract {
     final List<String> branchCache = RefsetService.getCacheForBranchVersions(editionPath);
 
     // check if the concept call has been cached
-    if (branchCache.size() > 0) {
+    if (!branchCache.isEmpty()) {
       LOG.debug("getBranchVersions USING CACHE");
       return branchCache;
     }
@@ -454,7 +454,7 @@ public final class SnowstormBranch extends SnowstormAbstract {
 
       final String resultString = response.readEntity(String.class);
       final ObjectMapper mapper = new ObjectMapper();
-      final JsonNode root = mapper.readTree(resultString.toString());
+      final JsonNode root = mapper.readTree(resultString);
       final Iterator<JsonNode> branchIterator = root.iterator();
 
       // get versions from edition as long as active & within edition's module

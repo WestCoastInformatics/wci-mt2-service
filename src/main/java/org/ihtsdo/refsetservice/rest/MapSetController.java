@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
@@ -22,17 +23,22 @@ import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.MapSetExportRequest;
+import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.enums.FileExportType;
 import org.ihtsdo.refsetservice.model.enums.FileFormatType;
+import org.ihtsdo.refsetservice.model.enums.WorkflowAction;
+import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.MapProjectService;
 import org.ihtsdo.refsetservice.terminologyservice.MapSetService;
+import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -44,6 +50,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -62,6 +69,10 @@ public class MapSetController extends BaseController {
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(MapSetController.class);
 
+    /** The request. */
+    @Autowired
+    private HttpServletRequest request;
+    
     /** The local directory to store exported refset files. */
     private static String exportFileDir;
 
@@ -287,6 +298,68 @@ public class MapSetController extends BaseController {
         }
 
     }
+    
+    /**
+     * Change the workflow status of a refset.
+     *
+     * @param refsetInternalId the internal refset ID
+     * @param action           the action triggering the status change
+     * @param notes            Notes about the status change
+     * @return the refset internal ID or errors
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.POST, value = "/mapset/{mapsetInternalId}/workflowStatus")
+    @Operation(summary = "Change the workflow status of a refset. This call requires authentication with the correct role.", tags = {
+            "refset"
+    }, responses = {
+            @ApiResponse(responseCode = "200", description = "Successfully changed the refset status. The payload contains the updated refset"),
+            @ApiResponse(responseCode = "400", description = "Bad request"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Forbidden"),
+            @ApiResponse(responseCode = "404", description = "Resource not found")
+    })
+    @Parameters({
+            @Parameter(name = "refsetInternalId", description = "The internal ID of the refset.", required = true),
+            @Parameter(name = "action", description = "The action triggering the status change", required = true),
+            @Parameter(name = "notes", description = "Notes about the status change", required = false),
+    })
+    public @ResponseBody ResponseEntity<MapSet> setWorkflowStatus(
+            @PathVariable(value = "refsetInternalId") final String mapsetInternalId,
+            @RequestParam final WorkflowAction action, @RequestParam(required = false) final String notes)
+            throws Exception {
+
+        authorizeUser(request);
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            LOG.info("setWorkflowStatus: refsetInternalId: {}; action: {}; notes: {}", mapsetInternalId, action, notes);
+
+            final User user = SecurityService.getUserFromSession();
+
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
+
+            final MapSet mapSet = MapSetService.setWorkflowStatus(service, user, mapsetInternalId, action, notes);
+
+            if (mapSet != null) {
+                service.commit();
+
+                LOG.info("setWorkflowStatus: updated refset: {}", ModelUtility.toJson(mapSet));
+                return new ResponseEntity<>(mapSet, HttpStatus.OK);
+            }
+
+            // Refset wasn't changed successfully.
+            return null;
+
+        } catch (final Exception e) {
+            handleException(e);
+            return null;
+        }
+
+    }
+    
     
     // temporary method to get user
     private User getUser() {

@@ -4,7 +4,7 @@ drop table ${pre_if_exists} refset_history ${post_if_exists};
 drop table ${pre_if_exists} definition_clauses_history ${post_if_exists};
 drop table ${pre_if_exists} user_roles ${post_if_exists};
 drop table ${pre_if_exists} users ${post_if_exists};
-drop table ${pre_if_exists} workflow_history ${post_if_exists};
+drop table ${pre_if_exists} refset_workflow_history ${post_if_exists};
 drop table ${pre_if_exists} refsets_definition_clauses ${post_if_exists};
 drop table ${pre_if_exists} definition_clauses ${post_if_exists};
 drop table ${pre_if_exists} refset_tags ${post_if_exists};
@@ -146,7 +146,7 @@ ALTER TABLE `refsets_definition_clauses` ADD INDEX `FKdowc61fwiejkojh1wj7wk0mn0`
 ALTER TABLE `refsets_definition_clauses` ADD CONSTRAINT `FKbxe21a6g8xufs1yh5537pya8p` FOREIGN KEY (`definitionClauses_id`) REFERENCES `definition_clauses` (`id`);
 ALTER TABLE `refsets_definition_clauses` ADD CONSTRAINT `FKdowc61fwiejkojh1wj7wk0mn0` FOREIGN KEY (`Refset_id`) REFERENCES `refsets` (`id`);
 
-CREATE TABLE `workflow_history` (
+CREATE TABLE `refset_workflow_history` (
   `id` varchar(64) NOT NULL,
   `active` bit(1) NOT NULL,
   `created` datetime(6) NOT NULL,
@@ -159,8 +159,8 @@ CREATE TABLE `workflow_history` (
   `refset_id` varchar(64) NOT NULL,
   PRIMARY KEY (`id`)
 );
--- ALTER  TABLE `workflow_history` ADD INDEX `FK7c0nnfqf1yumohfk60ysf68y7` (`refset_id`);
-ALTER  TABLE `workflow_history` ADD CONSTRAINT `FK7c0nnfqf1yumohfk60ysf68y7` FOREIGN KEY (`refset_id`) REFERENCES `refsets` (`id`);
+-- ALTER  TABLE `refset_workflow_history` ADD INDEX `FK7c0nnfqf1yumohfk60ysf68y7` (`refset_id`);
+ALTER  TABLE `refset_workflow_history` ADD CONSTRAINT `FK7c0nnfqf1yumohfk60ysf68y7` FOREIGN KEY (`refset_id`) REFERENCES `refsets` (`id`);
 
 CREATE TABLE `users` (
   `id` varchar(64) NOT NULL,
