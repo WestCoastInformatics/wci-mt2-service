@@ -82,7 +82,8 @@ public class MapSetController extends BaseController {
     /** Static initialization. */
     static {
         exportFileDir = PropertyUtility.getProperty("mapexport.fileDir");
-        new File(exportFileDir).mkdirs();
+        //TODO - undo once property issue is figured out. 
+        new File("/tmp/mapsetExport").mkdirs();
     }
 
     /**
