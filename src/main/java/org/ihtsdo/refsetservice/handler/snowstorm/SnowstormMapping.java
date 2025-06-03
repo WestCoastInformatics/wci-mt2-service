@@ -497,41 +497,44 @@ public class SnowstormMapping extends SnowstormAbstract {
         }
         mapEntry.setId(mappingNode.get("memberId").asText());
         mapEntry.setReleased(mappingNode.get("released").asBoolean());
+        mapEntry.setModuleId(mappingNode.get("moduleId").asText());
 
         final JsonNode additionalFields = mappingNode.get("additionalFields");
 
-        mapEntry.setRule(additionalFields.get("mapRule").asText());
-        mapEntry.setPriority(additionalFields.get("mapPriority").asInt());
-        mapEntry.setGroup(additionalFields.get("mapGroup").asInt());
-        mapEntry.setModuleId(mappingNode.get("moduleId").asText());
+        if(!additionalFields.isNull() && !additionalFields.isEmpty()) {
+            mapEntry.setRule(additionalFields.get("mapRule").asText());
+            mapEntry.setPriority(additionalFields.get("mapPriority").asInt());
+            mapEntry.setGroup(additionalFields.get("mapGroup").asInt());   
+            
+            final Set<String> advices = new HashSet<>();
+            final String mapAdviceString = additionalFields.get("mapAdvice").asText();
+            // Store each pipe-delimited section of the map advice string as a
+            // separate map advice
+            for (final String mapAdvice : mapAdviceString.split("\\|")) {
+                advices.add(mapAdvice.trim());
+            }
+            mapEntry.setAdvices(advices);
 
-        final Set<String> advices = new HashSet<>();
-        final String mapAdviceString = additionalFields.get("mapAdvice").asText();
-        // Store each pipe-delimited section of the map advice string as a
-        // separate map advice
-        for (final String mapAdvice : mapAdviceString.split("\\|")) {
-            advices.add(mapAdvice.trim());
+            final Concept relationConcept =
+                SnowstormConcept.getConcept(mapSet.getFromTerminology(), mapSet.getFromVersion(), additionalFields.get("mapCategoryId").asText());
+            if (relationConcept != null) {
+                mapEntry.setRelation(relationConcept.getName());
+                mapEntry.setRelationCode(relationConcept.getCode());
+            } else {
+                mapEntry.setRelation(mapEntry.getToCode() + " CONCEPT NOT FOUND");
+            }
+
+            mapEntry.setToCode(additionalFields.get("mapTarget").asText());
+
+            final Concept toConcept = SnowstormConcept.getConcept(mapSet.getToTerminology(), mapSet.getToVersion(), additionalFields.get("mapTarget").asText());
+
+            if (toConcept != null) {
+                mapEntry.setToName(toConcept.getName());
+            } else {
+                mapEntry.setToName(mapEntry.getToCode() + " CONCEPT NOT FOUND");
+            }
         }
-        mapEntry.setAdvices(advices);
-
-        final Concept relationConcept =
-            SnowstormConcept.getConcept(mapSet.getFromTerminology(), mapSet.getFromVersion(), additionalFields.get("mapCategoryId").asText());
-        if (relationConcept != null) {
-            mapEntry.setRelation(relationConcept.getName());
-            mapEntry.setRelationCode(relationConcept.getCode());
-        } else {
-            mapEntry.setRelation(mapEntry.getToCode() + " CONCEPT NOT FOUND");
-        }
-
-        mapEntry.setToCode(additionalFields.get("mapTarget").asText());
-
-        final Concept toConcept = SnowstormConcept.getConcept(mapSet.getToTerminology(), mapSet.getToVersion(), additionalFields.get("mapTarget").asText());
-
-        if (toConcept != null) {
-            mapEntry.setToName(toConcept.getName());
-        } else {
-            mapEntry.setToName(mapEntry.getToCode() + " CONCEPT NOT FOUND");
-        }
+        
 
         return mapEntry;
     }
