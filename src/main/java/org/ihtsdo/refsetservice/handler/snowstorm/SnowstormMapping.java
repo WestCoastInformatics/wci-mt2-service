@@ -46,6 +46,7 @@ import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
+import org.ihtsdo.refsetservice.model.enums.VersionStatus;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.FileUtility;
@@ -161,7 +162,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
             final JsonNode additionalFields = mapSetNode.get("additionalFields");
 
-            mapSet.setVersionStatus("Published");
+            mapSet.setVersionStatus(VersionStatus.PUBLISHED);
             mapSet.setVersion("2024-04-15");
             mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse("2024-04-15"));
             mapSet.setFromTerminology("SNOMEDCT-NO");
@@ -244,7 +245,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
             final JsonNode additionalFields = mapSetNode.get("additionalFields");
 
-            mapSet.setVersionStatus("Published");
+            mapSet.setVersionStatus(VersionStatus.PUBLISHED);
             mapSet.setVersion("2024-04-15");
             mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse("2024-04-15"));
             mapSet.setFromTerminology("SNOMEDCT-NO");

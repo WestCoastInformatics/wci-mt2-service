@@ -13,7 +13,9 @@ import javax.ws.rs.core.MediaType;
 
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Edition;
+import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.EditionService;
+import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
@@ -40,90 +42,106 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
 public class EditionController extends BaseController {
 
-	/** The Constant LOG. */
-	@SuppressWarnings("unused")
-	private static final Logger LOG = LoggerFactory.getLogger(EditionController.class);
+    /** The Constant LOG. */
+    @SuppressWarnings("unused")
+    private static final Logger LOG = LoggerFactory.getLogger(EditionController.class);
 
-	/**
-	 * Return the edition.
-	 *
-	 * @param id the id
-	 * @return the edition
-	 * @throws Exception the exception
-	 */
-	@RequestMapping(method = RequestMethod.GET, value = "/edition/{id}", produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Get edition", tags = { "edition" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information") })
-	@Parameters({ @Parameter(name = "id", description = "Edition id, e.g. &lt;uuid&gt;", required = true) })
-	@RecordMetric
-	public ResponseEntity<Edition> getEdition(@PathVariable(value = "id") final String id) throws Exception {
+    /**
+     * Return the edition.
+     *
+     * @param id the id
+     * @return the edition
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/edition/{id}", produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Get edition", tags = {
+        "edition"
+    }, responses = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information")
+    })
+    @Parameters({
+        @Parameter(name = "id", description = "Edition id, e.g. &lt;uuid&gt;", required = true)
+    })
+    @RecordMetric
+    public ResponseEntity<Edition> getEdition(@PathVariable(value = "id") final String id) throws Exception {
 
-		// no auth required
-		try {
-			final Edition edition = EditionService.getEdition(id);
-			return new ResponseEntity<>(edition, HttpStatus.OK);
+        LOG.info("Get edition for id: {}", id);
 
-		} catch (final Exception e) {
-			handleException(e);
-			return null;
-		}
-	}
+        try (final TerminologyService service = new TerminologyService()) {
 
-	/**
-	 * Return the editions.
-	 *
-	 * @return the editions
-	 * @throws Exception the exception
-	 */
-	@RequestMapping(method = RequestMethod.GET, value = "/edition/", produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Get all editions", tags = { "edition" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information") })
-	@RecordMetric
-	public ResponseEntity<ResultList<Edition>> getEditions() throws Exception {
-		// no auth required
+            final Edition edition = EditionService.getEdition(service, id);
+            return new ResponseEntity<>(edition, HttpStatus.OK);
 
-		try {
+        } catch (final Exception e) {
+            handleException(e);
+            return null;
+        }
+    }
 
-			final ResultList<Edition> results = EditionService.getEditions();
-			return new ResponseEntity<>(results, HttpStatus.OK);
+    /**
+     * Return the editions.
+     *
+     * @return the editions
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/edition/", produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Get all editions", tags = {
+        "edition"
+    }, responses = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information")
+    })
+    @RecordMetric
+    public ResponseEntity<ResultList<Edition>> getEditions() throws Exception {
+        // no auth required
 
-		} catch (final Exception e) {
-			handleException(e);
-			return null;
-		}
-	}
+        LOG.info("Get all editions");
 
-	/**
-	 * Search Editions.
-	 *
-	 * @param searchParameters the search parameters
-	 * @param bindingResult    the binding result
-	 * @return the string
-	 * @throws Exception the exception
-	 */
-	@RequestMapping(method = RequestMethod.GET, value = "/edition/search", produces = MediaType.APPLICATION_JSON)
-	@Operation(summary = "Find editions.", tags = { "edition" }, responses = {
-			@ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-			@ApiResponse(responseCode = "417", description = "Failed Expectation") })
-	// @ModelAttribute API params documented in SearchParameter
-	@RecordMetric
-	public @ResponseBody ResponseEntity<ResultList<Edition>> getEditions(
-			@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult)
-			throws Exception {
-		// no auth required
+        try (final TerminologyService service = new TerminologyService()) {
 
-		// Check to make sure parameters were properly bound to variables.
-		checkBinding(bindingResult);
+            final ResultList<Edition> results = EditionService.getEditions(service);
+            return new ResponseEntity<>(results, HttpStatus.OK);
 
-		try {
+        } catch (final Exception e) {
+            handleException(e);
+            return null;
+        }
+    }
 
-			final ResultList<Edition> results = EditionService.searchEditions(searchParameters);
-			return new ResponseEntity<>(results, HttpStatus.OK);
+    /**
+     * Search Editions.
+     *
+     * @param searchParameters the search parameters
+     * @param bindingResult the binding result
+     * @return the string
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/edition/search", produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Find editions.", tags = {
+        "edition"
+    }, responses = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+        @ApiResponse(responseCode = "417", description = "Failed Expectation")
+    })
+    // @ModelAttribute API params documented in SearchParameter
+    @RecordMetric
+    public @ResponseBody ResponseEntity<ResultList<Edition>> getEditions(@ModelAttribute final SearchParameters searchParameters,
+        final BindingResult bindingResult) throws Exception {
+        // no auth required
 
-		} catch (final Exception e) {
-			handleException(e);
-			return null;
-		}
-	}
+        LOG.info("getEditions searchParameters: {}", ModelUtility.toJson(searchParameters));
+
+        // Check to make sure parameters were properly bound to variables.
+        checkBinding(bindingResult);
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            final ResultList<Edition> results = EditionService.searchEditions(service, searchParameters);
+            return new ResponseEntity<>(results, HttpStatus.OK);
+
+        } catch (final Exception e) {
+            handleException(e);
+            return null;
+        }
+    }
 
 }

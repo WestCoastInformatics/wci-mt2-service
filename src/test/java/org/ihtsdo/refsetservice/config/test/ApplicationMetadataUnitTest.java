@@ -105,7 +105,7 @@ public class ApplicationMetadataUnitTest {
         final ApplicationMetadata am = ModelUtility
             .fromJson(IOUtils.toString(getClass().getClassLoader().getResourceAsStream("ApplicationMetadata.json"), "UTF-8"), ApplicationMetadata.class);
 
-        assertTrue(am.getModule().size() > 0);
+        assertTrue(!am.getModule().isEmpty());
 
     }
 

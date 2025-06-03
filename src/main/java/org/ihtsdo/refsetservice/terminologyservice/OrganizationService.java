@@ -30,9 +30,9 @@ import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.ResultListUser;
 import org.ihtsdo.refsetservice.model.Team;
-import org.ihtsdo.refsetservice.model.TeamType;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.UserRole;
+import org.ihtsdo.refsetservice.model.enums.TeamType;
 import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
@@ -45,1308 +45,1286 @@ import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * The Class OrganizationService.
  */
 public class OrganizationService extends BaseService {
 
-	/** The Constant LOG. */
-	private static final Logger LOG = LoggerFactory.getLogger(OrganizationService.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(OrganizationService.class);
 
-	/** The Constant EMAIL_SUBJECT. */
-	private static final String EMAIL_SUBJECT = "SNOMED International Refset Tool - ";
+    /** The Constant EMAIL_SUBJECT. */
+    private static final String EMAIL_SUBJECT = "SNOMED International Refset Tool - ";
 
-	/** The Constant INVITE_ACTION. */
-	private static final String INVITE_ACTION = "Invite";
+    /** The Constant INVITE_ACTION. */
+    private static final String INVITE_ACTION = "Invite";
 
-	/** The Constant INVITE_ACCEPTED. */
-	private static final String INVITE_ACCEPTED = "Invite accepted";
+    /** The Constant INVITE_ACCEPTED. */
+    private static final String INVITE_ACCEPTED = "Invite accepted";
 
-	/** The Constant INVITE_DECLINED. */
-	private static final String INVITE_DECLINED = "Invite declined";
+    /** The Constant INVITE_DECLINED. */
+    private static final String INVITE_DECLINED = "Invite declined";
 
-	/** The app url root. */
-	private static String appUrlRoot;
+    /** The app url root. */
+    private static String appUrlRoot;
 
-	/** The crowd unit test skip. */
-	private static String crowdUnitTestSkip;
+    /** The crowd unit test skip. */
+    private static String crowdUnitTestSkip;
 
-	static {
+    static {
 
-		appUrlRoot = PropertyUtility.getProperties().getProperty("app.url.root");
-		crowdUnitTestSkip = PropertyUtility.getProperty("crowd.unit.test.skip");
-	}
+        appUrlRoot = PropertyUtility.getProperties().getProperty("app.url.root");
+        crowdUnitTestSkip = PropertyUtility.getProperty("crowd.unit.test.skip");
+    }
 
-	/**
-	 * Creates the organization.
-	 *
-	 * @param service      the Terminology Service
-	 * @param user         the user
-	 * @param organization the organization
-	 * @return the organization
-	 * @throws Exception the exception
-	 */
-	public static Organization createOrganization(final TerminologyService service, final User user,
-			final Organization organization) throws Exception {
+    /**
+     * Creates the organization.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param organization the organization
+     * @return the organization
+     * @throws Exception the exception
+     */
+    public static Organization createAffiliateOrganization(final TerminologyService service, final User user, final Organization organization)
+        throws Exception {
 
-		// if this is an affiliate org being created any logged in user can create it
-		if (organization.isAffiliate()) {
+        // if this is an affiliate org being created any logged in user can create it
+        if (organization.isAffiliate()) {
 
-			if (user.getUserName().equals(SecurityService.GUEST_USERNAME)) {
+            if (user.getUserName().equals(SecurityService.GUEST_USERNAME)) {
 
-				final String message = "User does not have permission to perform this Organization action.";
-				LOG.error(message);
-				throw new RestException(false, 403, "Forbidden", message);
-			}
+                final String message = "User does not have permission to perform this Organization action.";
+                LOG.error(message);
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, message);
+            }
 
-		}
+        }
 
-		// otherwise the user must have "all_all_admin" permission
-		else {
+        // otherwise the user must have "all_all_admin" permission
+        else {
 
-			checkEditPermissions(user, null);
+            checkEditPermissions(user, null);
 
-			final String message = "These types of organizations can not be created through this tool.";
-			LOG.error(message);
-			throw new RestException(false, 403, "Forbidden", message);
-		}
+            final String message = "These types of organizations can not be created through this tool.";
+            LOG.error(message);
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, message);
+        }
 
-		final SearchParameters organizationsParameters = new SearchParameters();
-		List<Organization> organizationList = null;
+        final SearchParameters organizationsParameters = new SearchParameters();
+        List<Organization> organizationList = null;
 
-		organizationsParameters.setQuery("name:" + organization.getName());
-		organizationList = OrganizationService.searchOrganizations(service, user, organizationsParameters, false)
-				.getItems();
+        organizationsParameters.setQuery("name:" + organization.getName());
+        organizationList = OrganizationService.searchOrganizations(service, user, organizationsParameters, false).getItems();
 
-		if (organizationList.size() > 0) {
+        if (organizationList.isEmpty()) {
 
-			final String errorMessage = "There is already an organization with that name.";
-			LOG.error(errorMessage);
-			throw new RestException(false, 417, "Expectation failed", errorMessage);
-		}
+            final String errorMessage = "There is already an organization with that name.";
+            LOG.error(errorMessage);
+            throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, errorMessage);
+        }
 
-		final User userToAdd = service.findSingle("id:" + user.getId(), User.class, null);
+        // User creating organization
+        final User userToAdd = service.findSingle("id:" + user.getId(), User.class, null);
 
-		final Organization newOrganization = new Organization();
-		newOrganization.populateFrom(organization);
-		newOrganization.getMembers().add(userToAdd);
+        // application.properties admin users
+        final Set<User> systemAdminUsersToAdd = new HashSet<>();
+        for (final String systemAdminUsername : SecurityService.getSystemAdminUserNames()) {
 
-		service.add(newOrganization);
-		service.add(AuditEntryHelper.addOrganizationEntry(newOrganization));
+            systemAdminUsersToAdd.add(SecurityService.getUserFromUserName(service, systemAdminUsername));
+        }
 
-		// create admin team when creating an organization
-		Team adminTeam = new Team();
-		adminTeam.setDescription(TeamService.getOrganizationTeamDescription(organization));
-		adminTeam.setName(TeamService.generateOrganizationTeamName(organization));
-		adminTeam.setPrimaryContactEmail(organization.getPrimaryContactEmail());
-		adminTeam.setOrganization(newOrganization);
-		adminTeam.setType(TeamType.ORGANIZATION.getText());
+        // Create organization
+        Organization newOrganization = new Organization();
+        newOrganization.populateFrom(organization);
+        newOrganization.setCrowdId(CrowdGroupNameAlgorithm.getCrowdIdFromOrganizationName(newOrganization.getName()));
+        newOrganization.getMembers().add(userToAdd);
 
-		adminTeam = service.add(adminTeam);
-		service.add(AuditEntryHelper.addTeamEntry(adminTeam));
-
-		// create the groups for the admin team
-		if (crowdUnitTestSkip == null || !"true".equalsIgnoreCase(crowdUnitTestSkip)) {
+        newOrganization = service.add(newOrganization);
+        service.add(AuditEntryHelper.addOrganizationEntry(newOrganization));
 
-			CrowdAPIClient.addGroup(newOrganization.getName(), "all", "all", "Organization Administrators", false,
-					false);
-		}
-
-		// set all the roles on the admin team
-		for (final UserRole role : UserRole.getAllRoles()) {
-
-			adminTeam = TeamService.addRoleToTeam(user, adminTeam.getId(), UserRole.getRoleString(role).toUpperCase(),
-					true);
-		}
+        // create admin team when creating an organization
+        Team adminTeam = new Team();
+        adminTeam.setDescription(TeamService.getOrganizationTeamDescription(organization));
+        adminTeam.setName(TeamService.generateOrganizationTeamName(organization));
+        adminTeam.setPrimaryContactEmail(organization.getPrimaryContactEmail());
+        adminTeam.setOrganization(newOrganization);
+        adminTeam.setType(TeamType.ORGANIZATION.getText());
 
-		// add the user to the admin team
-		adminTeam = TeamService.addUserToTeam(service, user, adminTeam, user);
+        adminTeam = service.add(adminTeam);
+        service.add(AuditEntryHelper.addTeamEntry(adminTeam));
 
-		// load the user roles onto the organization
-		setRoles(user, newOrganization, newOrganization.getRoles());
+        // set all the roles on the admin team
+        for (final UserRole role : UserRole.getAllRoles()) {
 
-		// create the affiliated editions for the organization
-		final List<Edition> editionList = EditionService.getAffiliateEditionList();
+            adminTeam = TeamService.addRoleToTeam(service, user, adminTeam.getId(), UserRole.getRoleString(role).toUpperCase());
+        }
 
-		for (final Edition edition : editionList) {
+        // add the user to the admin team
+        TeamService.addUserToTeam(service, user, adminTeam, user.getEmail());
 
-			edition.setOrganization(newOrganization);
-			service.add(edition);
-			service.add(AuditEntryHelper.addEditionEntry(edition));
-		}
-
-		return newOrganization;
-	}
-
-	/**
-	 * Returns the organization.
-	 *
-	 * @param service        the Terminology Service
-	 * @param user           the user
-	 * @param id             the id
-	 * @param includeMembers the include members
-	 * @return the organization
-	 * @throws Exception the exception
-	 */
-	public static Organization getOrganization(final TerminologyService service, final User user, final String id,
-			final boolean includeMembers) throws Exception {
+        // load the user roles onto the organization
+        setRoles(user, newOrganization, newOrganization.getRoles());
 
-		final Organization organization = service.findSingle("id: " + id, Organization.class, null);
+        // create the affiliated editions for the organization
+        final List<Edition> editionList = EditionService.getAffiliateEditionList();
 
-		if (organization == null) {
+        for (final Edition edition : editionList) {
 
-			final String message = "Unable to get the organization for id " + id + ".";
-			LOG.error(message);
-			throw new RestException(false, 404, "Not found", message);
-		}
+            edition.setOrganization(newOrganization);
 
-		Organization updatedOrganization = handleMembers(organization, user, includeMembers);
+            edition.setShortName(CrowdGroupNameAlgorithm.generateAffiliateShortName(edition.getShortName(), newOrganization.getId()));
+            service.add(edition);
+            service.add(AuditEntryHelper.addEditionEntry(edition));
+        }
 
-		return updatedOrganization;
-	}
-
-	/**
-	 * Returns the organization.
-	 *
-	 * @param service        the Terminology Service
-	 * @param user           the user
-	 * @param id             the id
-	 * @param includeMembers the include members
-	 * @return the organization
-	 * @throws Exception the exception
-	 */
-	private static Organization getActiveOrganization(final TerminologyService service, final User user,
-			final String id, final boolean includeMembers) throws Exception {
-
-		final Organization organization = service.findSingle("id: " + id + " AND active:true", Organization.class,
-				null);
-
-		if (organization == null) {
-
-			final String message = "Unable to get the organization for id " + id + ".";
-			LOG.error(message);
-			throw new RestException(false, 404, "Not found", message);
-		}
-
-		Organization updatedOrganization = handleMembers(organization, user, includeMembers);
-
-		return updatedOrganization;
-	}
-
-	/**
-	 * Handle members.
-	 *
-	 * @param organization   the organization
-	 * @param user           the user
-	 * @param includeMembers the include members
-	 * @return the organization
-	 * @throws Exception the exception
-	 */
-	private static Organization handleMembers(final Organization organization, final User user,
-			final boolean includeMembers) throws Exception {
+        // Only if all went successfully at this point should the crowd group be created (for the admin team)
+        if (crowdUnitTestSkip == null || !"true".equalsIgnoreCase(crowdUnitTestSkip)) {
 
-		if (includeMembers) {
+            final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(organization.getCrowdId(), "all", "all", "admin");
 
-			organization.getMembers();
-		} else {
+            user.getRoles().add(groupName);
 
-			if (organization.getMembers() != null && !organization.getMembers().isEmpty()) {
+            SecurityService.setUserInSession(service.update(user));
 
-				organization.getMembers().clear();
-			}
+        }
 
-		}
+        return newOrganization;
+    }
+    
+    /**
+     * Returns the organization.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param id the id
+     * @param includeMembers the include members
+     * @return the organization
+     * @throws Exception the exception
+     */
+    public static Organization getOrganization(final TerminologyService service, final User user, final String id, final boolean includeMembers)
+        throws Exception {
 
-		if (user != null) {
+        final Organization organization = service.findSingle("id: " + id, Organization.class, null);
 
-			setRoles(user, organization, organization.getRoles());
-		}
+        if (organization == null) {
 
-		return organization;
-	}
+            final String message = "Unable to get the organization for id " + id + ".";
+            LOG.error(message);
+            throw new RestException(false, 404, "Not found", message);
+        }
 
-	/**
-	 * Update organization.
-	 *
-	 * @param service      the Terminology Service
-	 * @param user         the user
-	 * @param organization the organization
-	 * @return the organization
-	 * @throws Exception the exception
-	 */
-	public static Organization updateOrganization(final TerminologyService service, final User user,
-			final Organization organization) throws Exception {
+        final Organization updatedOrganization = handleMembers(organization, user, includeMembers);
 
-		final Organization originalOrganization = getOrganization(service, user, organization.getId(), false);
+        return updatedOrganization;
+    }
 
-		if (originalOrganization == null) {
+    /**
+     * Returns the organization.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param id the id
+     * @param includeMembers the include members
+     * @return the organization
+     * @throws Exception the exception
+     */
+    private static Organization getActiveOrganization(final TerminologyService service, final User user, final String id, final boolean includeMembers)
+        throws Exception {
 
-			final String message = "Unable to find organization for id " + organization.getId()
-					+ " in order to updateOrganization.";
-			LOG.error(message);
-			throw new RestException(false, 404, "Not found", message);
-		}
+        final Organization organization = service.findSingle("id: " + id + " AND active:true", Organization.class, null);
 
-		checkEditPermissions(user, originalOrganization);
+        if (organization == null) {
 
-		originalOrganization.patchFrom(organization);
+            final String message = "Unable to get the organization for id " + id + ".";
+            LOG.error(message);
+            throw new RestException(false, 404, "Not found", message);
+        }
 
-		service.update(originalOrganization);
-		service.add(AuditEntryHelper.updateOrganizationEntry(originalOrganization));
+        final Organization updatedOrganization = handleMembers(organization, user, includeMembers);
 
-		return originalOrganization;
-	}
+        return updatedOrganization;
+    }
 
-	/**
-	 * Migrate (inactivate or reactivate) organization including organization,
-	 * projects, teams, and refsets.
-	 *
-	 * @param service            the service
-	 * @param user               the user
-	 * @param organizationId     the organization id
-	 * @param organizationStatus the organization status
-	 * @return the organization
-	 * @throws Exception the exception
-	 */
-	public static Organization updateOrganizationStatus(final TerminologyService service, final User user,
-			final String organizationId, final boolean organizationStatus) throws Exception {
+    /**
+     * Handle members.
+     *
+     * @param organization the organization
+     * @param user the user
+     * @param includeMembers the include members
+     * @return the organization
+     * @throws Exception the exception
+     */
+    private static Organization handleMembers(final Organization organization, final User user, final boolean includeMembers) throws Exception {
 
-		// Find the object
-		final Organization organization = getOrganization(service, user, organizationId, false);
+        if (includeMembers) {
 
-		if (organization == null) {
+            organization.getMembers();
+        } else {
 
-			final String message = "Unable to find organization for id " + organizationId
-					+ " in order to inactivateOrganization.";
-			LOG.error(message);
-			throw new RestException(false, 404, "Not found", message);
-		}
+            if (organization.getMembers() != null && !organization.getMembers().isEmpty()) {
 
-		if (organization.isActive() == organizationStatus) {
+                organization.getMembers().clear();
+            }
 
-			throw new Exception("Attempting to modify status of organization " + organization.getName() + " ("
-					+ organizationId + ") " + organizationStatus
-					+ " but it is already that, so an unexecpted state has arisen .");
-		}
+        }
 
-		checkEditPermissions(user, organization);
+        if (user != null) {
 
-		final ResultList<Edition> editions = service.find("*", null, Edition.class, null);
+            setRoles(user, organization, organization.getRoles());
+        }
 
-		if (editions.getItems() != null && !editions.getItems().isEmpty()) {
+        return organization;
+    }
 
-			for (final Edition edition : editions.getItems()) {
+    /**
+     * Update organization.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param organization the organization
+     * @return the organization
+     * @throws Exception the exception
+     */
+    public static Organization updateOrganization(final TerminologyService service, final User user, final Organization organization) throws Exception {
 
-				if (!organizationId.equals(edition.getOrganizationId())) {
+        final Organization originalOrganization = getOrganization(service, user, organization.getId(), false);
 
-					continue;
-				}
+        if (originalOrganization == null) {
 
-				final ResultList<Project> editionProjects = service.find("editionId:" + edition.getId(), null,
-						Project.class, null);
+            final String message = "Unable to find organization for id " + organization.getId() + " in order to updateOrganization.";
+            LOG.error(message);
+            throw new RestException(false, 404, "Not found", message);
+        }
 
-				if (editionProjects.getItems() != null && !editionProjects.getItems().isEmpty()) {
+        checkEditPermissions(user, originalOrganization);
 
-					for (final Project project : editionProjects.getItems()) {
+        originalOrganization.patchFrom(organization);
 
-						project.setActive(organizationStatus);
+        service.update(originalOrganization);
+        service.add(AuditEntryHelper.updateOrganizationEntry(originalOrganization));
 
-						if (project.getTeams() != null) {
+        return originalOrganization;
+    }
 
-							for (final String teamId : project.getTeams()) {
+    /**
+     * Migrate (inactivate or reactivate) organization including organization, projects, teams, and refsets.
+     *
+     * @param service the service
+     * @param user the user
+     * @param organizationId the organization id
+     * @param organizationStatus the organization status
+     * @return the organization
+     * @throws Exception the exception
+     */
+    public static Organization updateOrganizationStatus(final TerminologyService service, final User user, final String organizationId,
+        final boolean organizationStatus) throws Exception {
 
-								final Team team = service.get(teamId, Team.class);
+        // Find the object
+        final Organization organization = getOrganization(service, user, organizationId, false);
 
-								if (team != null && !team.getMembers().isEmpty()) {
+        if (organization == null) {
 
-									team.setActive(organizationStatus);
-									service.update(team);
-								}
+            final String message = "Unable to find organization for id " + organizationId + " in order to inactivateOrganization.";
+            LOG.error(message);
+            throw new RestException(false, 404, "Not found", message);
+        }
 
-							}
+        if (organization.isActive() == organizationStatus) {
 
-						}
+            throw new Exception("Attempting to modify status of organization " + organization.getName() + " (" + organizationId + ") " + organizationStatus
+                + " but it is already that, so an unexecpted state has arisen .");
+        }
 
-						service.update(project);
+        checkEditPermissions(user, organization);
 
-						final ResultList<Refset> projRefsets = service.find(
-								"projectId:" + project.getId() + " AND active:" + organizationStatus, null,
-								Refset.class, null);
+        final ResultList<Edition> editions = service.find("*", null, Edition.class, null);
 
-						if (projRefsets.getItems() != null && !projRefsets.getItems().isEmpty()) {
+        if (editions.getItems() != null && !editions.getItems().isEmpty()) {
 
-							for (final Refset refset : projRefsets.getItems()) {
+            for (final Edition edition : editions.getItems()) {
 
-								if (refset != null && !projRefsets.getItems().isEmpty()) {
+                if (!organizationId.equals(edition.getOrganizationId())) {
 
-									refset.setActive(organizationStatus);
-									service.update(refset);
-								}
+                    continue;
+                }
 
-							}
+                final ResultList<Project> editionProjects = service.find("editionId:" + edition.getId(), null, Project.class, null);
 
-						}
+                if (editionProjects.getItems() != null && !editionProjects.getItems().isEmpty()) {
 
-					}
+                    for (final Project project : editionProjects.getItems()) {
 
-				}
+                        project.setActive(organizationStatus);
 
-				edition.setActive(organizationStatus);
-				service.update(edition);
-			}
+                        if (project.getTeams() != null) {
 
-		}
+                            for (final String teamId : project.getTeams()) {
 
-		final ResultList<Team> orgTeams = service.find(
-				"organizationId: + " + organizationId + " AND active:" + !organizationStatus, null, Team.class, null);
+                                final Team team = service.get(teamId, Team.class);
 
-		if (orgTeams.getItems() != null && !orgTeams.getItems().isEmpty()) {
+                                if (team != null && !team.getMembers().isEmpty()) {
 
-			for (final Team team : orgTeams.getItems()) {
+                                    team.setActive(organizationStatus);
+                                    service.update(team);
+                                }
 
-				if (team != null && !team.getMembers().isEmpty()) {
+                            }
 
-					team.setActive(organizationStatus);
-					service.update(team);
-				}
+                        }
 
-			}
+                        service.update(project);
 
-		}
+                        final ResultList<Refset> projRefsets =
+                            service.find("projectId:" + project.getId() + " AND active:" + organizationStatus, null, Refset.class, null);
 
-		organization.setActive(organizationStatus);
+                        if (projRefsets.getItems() != null && !projRefsets.getItems().isEmpty()) {
 
-		final Organization updatedOrganization = service.update(organization);
-		AuditEntryHelper.changeOrganizationStatusEntry(updatedOrganization);
+                            for (final Refset refset : projRefsets.getItems()) {
 
-		return updatedOrganization;
-	}
+                                if (refset != null && !projRefsets.getItems().isEmpty()) {
 
-	/**
-	 * Search Organizations.
-	 *
-	 * @param service          the Terminology Service
-	 * @param user             the user
-	 * @param searchParameters the search parameters
-	 * @param includeMembers   the include members
-	 * @return the list of projects
-	 * @throws Exception the exception
-	 */
-	public static ResultList<Organization> searchOrganizations(final TerminologyService service, final User user,
-			final SearchParameters searchParameters, final boolean includeMembers) throws Exception {
+                                    refset.setActive(organizationStatus);
+                                    service.update(refset);
+                                }
 
-		final long start = System.currentTimeMillis();
+                            }
 
-		String query = getQueryForActiveOnly(searchParameters);
+                        }
 
-		if (SecurityService.GUEST_USERNAME.equals(user.getUserName())) {
-			query += " AND affiliate:false ";
-		}
+                    }
 
-		final PfsParameter pfs = new PfsParameter();
+                }
 
-		if (searchParameters.getOffset() != null) {
+                edition.setActive(organizationStatus);
+                service.update(edition);
+            }
 
-			pfs.setOffset(searchParameters.getOffset());
-		}
+        }
 
-		if (searchParameters.getLimit() != null) {
+        final ResultList<Team> orgTeams = service.find("organizationId: + " + organizationId + " AND active:" + !organizationStatus, null, Team.class, null);
 
-			pfs.setLimit(searchParameters.getLimit());
-		}
+        if (orgTeams.getItems() != null && !orgTeams.getItems().isEmpty()) {
 
-		if (searchParameters.getSortAscending() != null) {
+            for (final Team team : orgTeams.getItems()) {
 
-			pfs.setAscending(searchParameters.getSortAscending());
-		}
+                if (team != null && !team.getMembers().isEmpty()) {
 
-		if (searchParameters.getSort() != null) {
+                    team.setActive(organizationStatus);
+                    service.update(team);
+                }
 
-			pfs.setSort(searchParameters.getSort());
-		} else {
+            }
 
-			pfs.setSort("name");
-		}
+        }
 
-		if (query != null && !query.equals("")) {
+        organization.setActive(organizationStatus);
 
-			query = IndexUtility.addWildcardsToQuery(query, Organization.class);
-		}
+        final Organization updatedOrganization = service.update(organization);
+        AuditEntryHelper.changeOrganizationStatusEntry(updatedOrganization);
 
-		final ResultList<Organization> results = service.find(query, pfs, Organization.class, null);
+        return updatedOrganization;
+    }
 
-		final ResultList<Organization> resultsWithPermissions = new ResultList<>();
+    /**
+     * Search Organizations.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param searchParameters the search parameters
+     * @param includeMembers the include members
+     * @return the list of projects
+     * @throws Exception the exception
+     */
+    public static ResultList<Organization> searchOrganizations(final TerminologyService service, final User user, final SearchParameters searchParameters,
+        final boolean includeMembers) throws Exception {
 
-		for (final Organization organization : results.getItems()) {
+        final long start = System.currentTimeMillis();
 
-			// if user is not a member of an affiliate they cannot view.
-			if (organization.isAffiliate()
-					&& !organization.getMembers().stream().anyMatch(m -> m.getId().equals(user.getId()))) {
-				continue;
-			}
+        String query = getQueryForActiveOnly(searchParameters);
 
-			setRoles(user, organization, organization.getRoles());
+        if (SecurityService.GUEST_USERNAME.equals(user.getUserName())) {
+            query += " AND affiliate:false ";
+        }
 
-			if (includeMembers) {
+        final PfsParameter pfs = new PfsParameter();
 
-				organization.getMembers();
-			} else {
+        if (searchParameters.getOffset() != null) {
 
-				if (organization.getMembers() != null && !organization.getMembers().isEmpty()) {
+            pfs.setOffset(searchParameters.getOffset());
+        }
 
-					organization.getMembers().clear();
-				}
+        if (searchParameters.getLimit() != null) {
 
-			}
+            pfs.setLimit(searchParameters.getLimit());
+        }
 
-			if (canUserViewOrganization(user, organization)) {
+        if (searchParameters.getSortAscending() != null) {
 
-				resultsWithPermissions.getItems().add(organization);
-			}
+            pfs.setAscending(searchParameters.getSortAscending());
+        }
 
-		}
+        if (searchParameters.getSort() != null) {
 
-		resultsWithPermissions.setTimeTaken(System.currentTimeMillis() - start);
-		resultsWithPermissions.setTotalKnown(true);
-		resultsWithPermissions.setTotal(resultsWithPermissions.getItems().size());
+            pfs.setSort(searchParameters.getSort());
+        } else {
 
-		return resultsWithPermissions;
-	}
+            pfs.setSort("name");
+        }
 
-	/**
-	 * Returns the organization users.
-	 *
-	 * @param service      the Terminology Service
-	 * @param organization the organization
-	 * @param includeTeams the include teams
-	 * @return the organization users
-	 * @throws Exception the exception
-	 */
-	public static ResultListUser getOrganizationUsers(final TerminologyService service, final Organization organization,
-			final boolean includeTeams) throws Exception {
+        if (query != null && !query.equals("")) {
 
-		final ResultListUser usersResultList = new ResultListUser();
-		usersResultList.getItems().addAll(organization.getMembers());
+            query = IndexUtility.addWildcardsToQuery(query, Organization.class);
+        }
 
-		// remove system users if configured.
-		final String systemUserList = PropertyUtility.getProperty("refset.service.system.accounts");
+        final ResultList<Organization> results = service.find(query, pfs, Organization.class, null);
 
-		if (StringUtils.isNotBlank(systemUserList)) {
+        final ResultList<Organization> resultsWithPermissions = new ResultList<>();
 
-			final Set<String> systemUserSet = new HashSet<>(Arrays.asList(systemUserList.split(",")));
+        for (final Organization organization : results.getItems()) {
 
-			if (!usersResultList.getItems().isEmpty() && !systemUserSet.isEmpty()) {
+            // if user is not a member of an affiliate they cannot view.
+            if (organization.isAffiliate() && !organization.getMembers().stream().anyMatch(m -> m.getId().equals(user.getId()))) {
+                continue;
+            }
 
-				usersResultList.getItems().removeIf(u -> systemUserSet.contains(u.getUserName()));
-			}
+            setRoles(user, organization, organization.getRoles());
 
-		}
+            if (includeMembers) {
 
-		if (includeTeams && !usersResultList.getItems().isEmpty()) {
+                organization.getMembers();
+            } else {
 
-			for (final User user : usersResultList.getItems()) {
+                if (organization.getMembers() != null && !organization.getMembers().isEmpty()) {
 
-				final SearchParameters sp = new SearchParameters();
-				sp.setQuery("members:" + user.getId());
-				final ResultList<Team> teamsResultList = TeamService.searchTeams(user, sp);
+                    organization.getMembers().clear();
+                }
 
-				if (teamsResultList != null && teamsResultList.getItems() != null) {
+            }
 
-					user.getTeams().addAll(teamsResultList.getItems());
-				}
+            if (canUserViewOrganization(user, organization)) {
 
-			}
+                resultsWithPermissions.getItems().add(organization);
+            }
 
-		}
+        }
 
-		usersResultList.setTotal(usersResultList.getItems().size());
+        resultsWithPermissions.setTimeTaken(System.currentTimeMillis() - start);
+        resultsWithPermissions.setTotalKnown(true);
+        resultsWithPermissions.setTotal(resultsWithPermissions.getItems().size());
 
-		return usersResultList;
-	}
+        return resultsWithPermissions;
+    }
 
-	/**
-	 * Returns the organization teams.
-	 *
-	 * @param service        the Terminology Service
-	 * @param organizationId the organization id
-	 * @return the organization teams
-	 * @throws Exception the exception
-	 */
-	public static ResultList<Team> getActiveOrganizationTeams(final TerminologyService service,
-			final String organizationId) throws Exception {
+    /**
+     * Returns the organization users.
+     *
+     * @param service the Terminology Service
+     * @param organization the organization
+     * @param includeTeams the include teams
+     * @return the organization users
+     * @throws Exception the exception
+     */
+    public static ResultListUser getOrganizationUsers(final TerminologyService service, final Organization organization, final boolean includeTeams)
+        throws Exception {
 
-		final PfsParameter pfs = new PfsParameter();
-		final QueryParameter query = new QueryParameter();
-		query.setQuery("organizationId:" + organizationId + " AND active:true");
+        final ResultListUser usersResultList = new ResultListUser();
+        usersResultList.getItems().addAll(organization.getMembers());
 
-		return service.find(query, pfs, Team.class, null);
-	}
+        // remove system users if configured.
+        final String systemUserList = PropertyUtility.getProperty("refset.service.system.accounts");
 
-	/**
-	 * Returns the organization admin team.
-	 *
-	 * @param service        the Terminology Service
-	 * @param organizationId the organization id
-	 * @return the organization admin team
-	 * @throws Exception the exception
-	 */
-	public static Team getActiveOrganizationAdminTeam(final TerminologyService service, final String organizationId)
-			throws Exception {
+        if (StringUtils.isNotBlank(systemUserList)) {
 
-		final ResultList<Team> teams = getActiveOrganizationTeams(service, organizationId);
+            final Set<String> systemUserSet = new HashSet<>(Arrays.asList(systemUserList.split(",")));
 
-		for (final Team team : new ArrayList<Team>(teams.getItems())) {
+            if (!usersResultList.getItems().isEmpty() && !systemUserSet.isEmpty()) {
 
-			if (TeamService.isOrganizationTeam(team)) {
+                usersResultList.getItems().removeIf(u -> systemUserSet.contains(u.getUserName()));
+            }
 
-				return team;
-			}
+        }
 
-		}
+        if (includeTeams && !usersResultList.getItems().isEmpty()) {
 
-		return null;
-	}
+            for (final User user : usersResultList.getItems()) {
 
-	/**
-	 * Returns the organization admin team.
-	 *
-	 * @param service        the Terminology Service
-	 * @param organizationId the organization id
-	 * @return the organization admin team
-	 * @throws Exception the exception
-	 */
-	public static Team getOrganizationAdminTeam(final TerminologyService service, final String organizationId)
-			throws Exception {
+                final SearchParameters sp = new SearchParameters();
+                sp.setQuery("members:" + user.getId());
+                final ResultList<Team> teamsResultList = TeamService.searchTeams(user, sp);
 
-		Organization organization = getOrganization(service, SecurityService.getUserFromSession(), organizationId,
-				false);
+                if (teamsResultList != null && teamsResultList.getItems() != null) {
 
-		final ResultList<Team> teams = getOrganizationTeams(service, organization);
+                    user.getTeams().addAll(teamsResultList.getItems());
+                }
 
-		for (final Team team : new ArrayList<Team>(teams.getItems())) {
+            }
 
-			if (TeamService.isOrganizationTeam(team)) {
+        }
 
-				return team;
-			}
+        usersResultList.setTotal(usersResultList.getItems().size());
 
-		}
+        return usersResultList;
+    }
 
-		return null;
-	}
+    /**
+     * Returns the organization teams.
+     *
+     * @param service the Terminology Service
+     * @param organizationId the organization id
+     * @return the organization teams
+     * @throws Exception the exception
+     */
+    public static ResultList<Team> getActiveOrganizationTeams(final TerminologyService service, final String organizationId) throws Exception {
 
-	/**
-	 * Returns the organization projects.
-	 *
-	 * @param service        the Terminology Service
-	 * @param organizationId the organization id
-	 * @return the organization projects
-	 * @throws Exception the exception
-	 */
-	public static ResultList<Project> getOrganizationProjects(final TerminologyService service,
-			final String organizationId) throws Exception {
+        final PfsParameter pfs = new PfsParameter();
+        final QueryParameter query = new QueryParameter();
+        query.setQuery("organizationId:" + organizationId + " AND active:true");
 
-		final PfsParameter pfs = new PfsParameter();
-		final QueryParameter query = new QueryParameter();
-		query.setQuery("organizationId:" + organizationId + " AND active:true");
+        return service.find(query, pfs, Team.class, null);
+    }
 
-		return service.find(query, pfs, Project.class, null);
-	}
+    /**
+     * Returns the organization admin team.
+     *
+     * @param service the Terminology Service
+     * @param organizationId the organization id
+     * @return the organization admin team
+     * @throws Exception the exception
+     */
+    public static Team getActiveOrganizationAdminTeam(final TerminologyService service, final String organizationId) throws Exception {
 
-	/**
-	 * Adds the user to organization.
-	 *
-	 * @param service        the Terminology Service
-	 * @param authUser       the auth user
-	 * @param organizationId the organization id
-	 * @param email          the email
-	 * @return the organization
-	 * @throws Exception the exception
-	 */
-	public static Organization addUserToOrganization(final TerminologyService service, final User authUser,
-			final String organizationId, final String email) throws Exception {
+        final ResultList<Team> teams = getActiveOrganizationTeams(service, organizationId);
 
-		User userToAdd = service.findSingle("email:" + email, User.class, null);
+        for (final Team team : new ArrayList<Team>(teams.getItems())) {
 
-		if (userToAdd == null) {
+            if (TeamService.isOrganizationTeam(team)) {
 
-			// find user in crowd
-			final User user = CrowdAPIClient.findUserByEmail(email);
+                return team;
+            }
 
-			if (user == null) {
+        }
 
-				LOG.error("Unable to find user via Crowd for email " + email + " in order to addUserToOrganization.");
-				throw new RestException(false, 404, "Not found",
-						"User not found in IMS. Please make sure you entered their email correctly. If the email address entered is correct,"
-								+ " the user being added has never been added to IMS before. Instead of \"Add User\", click the \"Invite to Join\"");
-			}
+        return null;
+    }
 
-			service.add(user);
-			service.update(user);
+    /**
+     * Returns the organization admin team.
+     *
+     * @param service the Terminology Service
+     * @param organizationId the organization id
+     * @return the organization admin team
+     * @throws Exception the exception
+     */
+    public static Team getOrganizationAdminTeam(final TerminologyService service, final String organizationId) throws Exception {
 
-			userToAdd = service.findSingle("email:" + email, User.class, null);
+        final Organization organization = getOrganization(service, SecurityService.getUserFromSession(), organizationId, false);
 
-			if (userToAdd == null) {
+        final ResultList<Team> teams = getOrganizationTeams(service, organization.getId());
 
-				final String message = "Unable to find user via RT2 database for email " + email
-						+ " in order to addUserToOrganization via email address.";
-				LOG.error(message);
-				throw new RestException(false, 404, "Not found", message);
-			}
+        for (final Team team : new ArrayList<Team>(teams.getItems())) {
 
-		}
+            if (TeamService.isOrganizationTeam(team)) {
 
-		// must return members in order to add another member.
-		final Organization organization = OrganizationService.getOrganization(service, authUser, organizationId, true);
+                return team;
+            }
 
-		if (organization == null) {
+        }
 
-			final String message = "Unable to find organization for " + organizationId
-					+ " in order to addUserToOrganization via email address.";
-			LOG.error(message);
-			throw new RestException(false, 404, "Not found", message);
-		} else if (!organization.isActive()) {
+        return null;
+    }
 
-			final String message = "Unable to add users to inactive organization for " + organizationId;
-			LOG.error(message);
-			throw new RestException(false, 404, "Not found", message);
+    /**
+     * Returns the organization projects.
+     *
+     * @param service the Terminology Service
+     * @param organizationId the organization id
+     * @return the organization projects
+     * @throws Exception the exception
+     */
+    public static ResultList<Project> getOrganizationProjects(final TerminologyService service, final String organizationId) throws Exception {
 
-		}
+        final PfsParameter pfs = new PfsParameter();
+        final QueryParameter query = new QueryParameter();
+        query.setQuery("organizationId:" + organizationId + " AND active:true");
 
-		checkEditPermissions(authUser, organization);
+        return service.find(query, pfs, Project.class, null);
+    }
 
-		organization.getMembers().add(userToAdd);
-		service.add(AuditEntryHelper.addUserToOrganizationEntry(organization, userToAdd));
+    /**
+     * Adds the user to organization.
+     *
+     * @param service the Terminology Service
+     * @param authUser the auth user
+     * @param organizationId the organization id
+     * @param email the email
+     * @return the organization
+     * @throws Exception the exception
+     */
+    public static Organization addUserToOrganization(final TerminologyService service, final User authUser, final String organizationId, final String email)
+        throws Exception {
 
-		return service.update(organization);
-	}
+        User userToAdd = service.findSingle("email:" + email, User.class, null);
 
-	/**
-	 * Adds the user to organization.
-	 *
-	 * @param service        the Terminology Service
-	 * @param authUser       the auth user
-	 * @param organizationId the organization id
-	 * @param userToAdd      the user to add
-	 * @return the organization
-	 * @throws Exception the exception
-	 */
-	public static Organization addUserToOrganization(final TerminologyService service, final User authUser,
-			final String organizationId, final User userToAdd) throws Exception {
+        if (userToAdd == null) {
 
-		// must return members in order to add another member.
-		final Organization organization = OrganizationService.getOrganization(service, authUser, organizationId, true);
+            // find user in crowd
+            final User user = CrowdAPIClient.findUserByEmail(email);
 
-		if (organization == null) {
+            if (user == null) {
 
-			final String message = "Unable to find organization for " + organizationId + "."
-					+ " in order to addUserToOrganization.";
-			LOG.error(message);
-			throw new RestException(false, 404, "Not found", message);
-		} else if (!organization.isActive()) {
+                LOG.error("Unable to find user via Crowd for email " + email + " in order to addUserToOrganization.");
+                throw new RestException(false, 404, "Not found",
+                    "User not found in IMS. Please make sure you entered their email correctly. If the email address entered is correct,"
+                        + " the user being added has never been added to IMS before. Instead of \"Add User\", click the \"Invite to Join\"");
+            }
 
-			final String message = "Unable to add users to inactive organization for " + organizationId;
-			LOG.error(message);
-			throw new RestException(false, 404, "Not found", message);
-		}
+            service.add(user);
+            service.update(user);
 
-		if (!organization.getMembers().contains(userToAdd)) {
+            userToAdd = service.findSingle("email:" + email, User.class, null);
 
-			checkEditPermissions(authUser, organization);
+            if (userToAdd == null) {
 
-			organization.getMembers().add(userToAdd);
-			AuditEntryHelper.addUserToOrganizationEntry(organization, userToAdd);
+                final String message = "Unable to find user via RT2 database for email " + email + " in order to addUserToOrganization via email address.";
+                LOG.error(message);
+                throw new RestException(false, 404, "Not found", message);
+            }
 
-			return service.update(organization);
+        }
 
-		}
+        // must return members in order to add another member.
+        final Organization organization = OrganizationService.getOrganization(service, authUser, organizationId, true);
 
-		return organization;
-	}
+        if (organization == null) {
 
-	/**
-	 * Removes the user from organization.
-	 *
-	 * @param service        the Terminology Service
-	 * @param authUser       the auth user
-	 * @param userId         the user id
-	 * @param organizationId the organization id
-	 * @return the organization
-	 * @throws Exception the exception
-	 */
-	public static Organization removeUserFromOrganization(final TerminologyService service, final User authUser,
-			final String userId, final String organizationId) throws Exception {
+            final String message = "Unable to find organization for " + organizationId + " in order to addUserToOrganization via email address.";
+            LOG.error(message);
+            throw new RestException(false, 404, "Not found", message);
+        } else if (!organization.isActive()) {
 
-		// Find the user
-		final User userToRemove = service.get(userId, User.class);
+            final String message = "Unable to add users to inactive organization for " + organizationId;
+            LOG.error(message);
+            throw new RestException(false, 404, "Not found", message);
 
-		if (userToRemove == null) {
+        }
 
-			final String message = "Unable to find user in RT2 database for id " + userId
-					+ " in order to removeUserFromOrganization.";
-			LOG.error(message);
-			throw new RestException(false, 404, "Not found", message);
-		}
+        checkEditPermissions(authUser, organization);
 
-		final Organization organization = service.get(organizationId, Organization.class);
+        organization.getMembers().add(userToAdd);
+        service.add(AuditEntryHelper.addUserToOrganizationEntry(organization, userToAdd));
 
-		if (organization == null) {
+        return service.update(organization);
+    }
 
-			final String message = "Unable to find organization in RT2 database for id " + organizationId
-					+ " in order to removeUserFromOrganization.";
-			LOG.error(message);
-			throw new RestException(false, 404, "Not found", message);
-		}
+    /**
+     * Adds the user to organization.
+     *
+     * @param service the Terminology Service
+     * @param authUser the auth user
+     * @param organizationId the organization id
+     * @param userToAdd the user to add
+     * @return the organization
+     * @throws Exception the exception
+     */
+    public static Organization addUserToOrganization(final TerminologyService service, final User authUser, final String organizationId, final User userToAdd)
+        throws Exception {
 
-		// "The user being removed has at least one reference set â€œIn Editâ€� or â€œIn
-		// Reviewâ€� assigned to them.
-		// As the admin, you are able to un-assign the reference set(s) first before
-		// inactivating user.
-		final ResultList<Project> projectsForOrganization = getOrganizationProjects(service, organizationId);
+        // must return members in order to add another member.
+        final Organization organization = OrganizationService.getOrganization(service, authUser, organizationId, true);
 
-		if (projectsForOrganization != null && projectsForOrganization.getItems() != null
-				&& !projectsForOrganization.getItems().isEmpty()) {
+        if (organization == null) {
 
-			final SearchParameters sp = new SearchParameters();
-			final String projectIds = "(" + projectsForOrganization.getItems().stream().map(Project::getId)
-					.collect(Collectors.joining(" OR ", "projectId: ", "")) + ")";
-			sp.setQuery("assignedUser: " + userToRemove.getUserName()
-					+ " AND versionStatus:IN DEVELOPMENT AND (workflowStatus: IN_EDIT OR workflowStatus: IN_REVIEW) AND "
-					+ projectIds);
-			final ResultList<Refset> refsets = service.find(sp.getQuery(), null, Refset.class, null);
+            final String message = "Unable to find organization for " + organizationId + "." + " in order to addUserToOrganization.";
+            LOG.error(message);
+            throw new RestException(false, 404, "Not found", message);
+        } else if (!organization.isActive()) {
 
-			if (!refsets.getItems().isEmpty()) {
+            final String message = "Unable to add users to inactive organization for " + organizationId;
+            LOG.error(message);
+            throw new RestException(false, 404, "Not found", message);
+        }
 
-				final String message = "User " + userToRemove.getName()
-						+ " has a reference set \"In Edit\" or \"In Review\" assigned to them. As the admin, you are able to un-assign the reference set(s)"
-						+ " first before inactivating user.";
-				LOG.error(message);
-				throw new RestException(false, 417, "Expectation failed", message);
-			}
+        if (!organization.getMembers().contains(userToAdd)) {
 
-		}
+            checkEditPermissions(authUser, organization);
 
-		checkEditPermissions(authUser, organization);
+            organization.getMembers().add(userToAdd);
+            AuditEntryHelper.addUserToOrganizationEntry(organization, userToAdd);
 
-		final String crowdOrgName = CrowdGroupNameAlgorithm.getOrganizationString(organization.getName());
-		userToRemove.getRoles().removeIf(u -> u.startsWith(crowdOrgName + "-"));
+            return service.update(organization);
 
-		service.update(userToRemove);
-		organization.getMembers().removeIf(orgUser -> orgUser.getId().equals(userToRemove.getId()));
-		service.update(organization);
-		service.add(AuditEntryHelper.removeUserFromOrganizationEntry(organization, userToRemove));
+        }
 
-		removeUserFromTeams(service, organizationId, userToRemove, authUser);
-		final String crowdGroupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(organization.getName(), "all", "all",
-				User.ROLE_VIEWER);
-		CrowdAPIClient.deleteMembership(crowdGroupName, userToRemove.getUserName().replace(" ", "%20"));
+        return organization;
+    }
 
-		return organization;
-	}
+    /**
+     * Removes the user from organization.
+     *
+     * @param service the Terminology Service
+     * @param authUser the auth user
+     * @param userId the user id
+     * @param organizationId the organization id
+     * @return the organization
+     * @throws Exception the exception
+     */
+    public static Organization removeUserFromOrganization(final TerminologyService service, final User authUser, final String userId,
+        final String organizationId) throws Exception {
 
-	/**
-	 * Update organization icon.
-	 *
-	 * @param service        the Terminology Service
-	 * @param user           the user
-	 * @param organizationId the organization id
-	 * @param iconUrlPrefix  the icon url prefix
-	 * @param fileName       the file name
-	 * @throws Exception the exception
-	 */
-	public static void updateOrganizationIcon(final TerminologyService service, final User user,
-			final String organizationId, final String iconUrlPrefix, final String fileName) throws Exception {
+        // Find the user
+        final User userToRemove = service.get(userId, User.class);
 
-		// find user record, return 404 if not found
-		final Organization organization = service.get(organizationId, Organization.class);
+        if (userToRemove == null) {
 
-		if (organization == null) {
+            final String message = "Unable to find user in RT2 database for id " + userId + " in order to removeUserFromOrganization.";
+            LOG.error(message);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
+        }
 
-			final String message = "Unable to find organization for id " + organizationId + " to update the icon.";
-			LOG.error(message);
-			throw new RestException(false, 404, "Not found", message);
-		}
+        final Organization organization = service.get(organizationId, Organization.class);
 
-		checkEditPermissions(user, organization);
+        if (organization == null) {
 
-		organization.setIconUri(iconUrlPrefix + fileName);
-		service.add(AuditEntryHelper.updateIconForOrganizationEntry(organization, fileName));
-		service.update(organization);
-	}
+            final String message = "Unable to find organization in RT2 database for id " + organizationId + " in order to removeUserFromOrganization.";
+            LOG.error(message);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, message);
+        }
 
-	/**
-	 * set the list of roles a user has for a organization.
-	 *
-	 * @param user         the user
-	 * @param organization the organization
-	 * @param roles        the role list to populate
-	 * @return the list of roles for the organization
-	 * @throws Exception the exception
-	 */
-	public static List<String> setRoles(final User user, final Organization organization, final List<String> roles)
-			throws Exception {
+        // "The user being removed has at least one reference set "In Edit" or "In Review" assigned to them.
+        // As the admin, you are able to un-assign the reference set(s) first before inactivating user.
+        final ResultList<Project> projectsForOrganization = getOrganizationProjects(service, organizationId);
 
-		boolean giveViewerRole = false;
+        if (projectsForOrganization != null && projectsForOrganization.getItems() != null && !projectsForOrganization.getItems().isEmpty()) {
 
-		if (user.checkPermission(User.ROLE_AUTHOR, organization.getName(), null, null)) {
+            final SearchParameters sp = new SearchParameters();
+            final String projectIds =
+                "(" + projectsForOrganization.getItems().stream().map(Project::getId).collect(Collectors.joining(" OR ", "projectId: ", "")) + ")";
+            sp.setQuery("assignedUser: " + userToRemove.getUserName()
+                + " AND versionStatus:IN DEVELOPMENT AND (workflowStatus: IN_EDIT OR workflowStatus: IN_REVIEW) AND " + projectIds);
+            final ResultList<Refset> refsets = service.find(sp.getQuery(), null, Refset.class, null);
 
-			roles.add(User.ROLE_AUTHOR);
-			giveViewerRole = true;
-		}
+            if (!refsets.getItems().isEmpty()) {
 
-		if (user.checkPermission(User.ROLE_REVIEWER, organization.getName(), null, null)) {
+                final String message = "User " + userToRemove.getName()
+                    + " has a reference set \"In Edit\" or \"In Review\" assigned to them. As the admin, you are able to un-assign the reference set(s)"
+                    + " first before inactivating user.";
+                LOG.error(message);
+                throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
+            }
 
-			roles.add(User.ROLE_REVIEWER);
-			giveViewerRole = true;
-		}
+        }
 
-		if (user.checkPermission(User.ROLE_ADMIN, organization.getName(), null, null)) {
+        checkEditPermissions(authUser, organization);
 
-			roles.add(User.ROLE_ADMIN);
-			giveViewerRole = true;
-		}
+        userToRemove.getRoles().removeIf(u -> u.startsWith(organization.getCrowdId() + "-"));
 
-		if (user.checkPermission(User.ROLE_VIEWER, organization.getName(), null, null) || giveViewerRole) {
+        service.update(userToRemove);
+        organization.getMembers().removeIf(orgUser -> orgUser.getId().equals(userToRemove.getId()));
+        service.update(organization);
+        service.add(AuditEntryHelper.removeUserFromOrganizationEntry(organization, userToRemove));
 
-			roles.add(User.ROLE_VIEWER);
-		}
+        removeUserFromTeams(service, organization, userToRemove, authUser);
 
-		return roles;
-	}
+        final String crowdGroupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(organization.getCrowdId(), "all", "all", User.ROLE_VIEWER);
+        if (CrowdAPIClient.isRt2GroupName(crowdGroupName)) {
+            CrowdAPIClient.deleteMembership(crowdGroupName, userToRemove.getUserName().replace(" ", "%20"));
+        }
 
-	/**
-	 * Throw a exception if a user can't edit an organization.
-	 *
-	 * @param user         the user
-	 * @param organization the organization
-	 * @throws Exception the exception
-	 */
-	public static void checkEditPermissions(final User user, final Organization organization) throws Exception {
+        return organization;
+    }
 
-		boolean canUserEdit = false;
+    /**
+     * Update organization icon.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param organizationId the organization id
+     * @param iconUrlPrefix the icon url prefix
+     * @param fileName the file name
+     * @throws Exception the exception
+     */
+    public static void updateOrganizationIcon(final TerminologyService service, final User user, final String organizationId, final String iconUrlPrefix,
+        final String fileName) throws Exception {
 
-		if (organization == null) {
+        // find user record, return 404 if not found
+        final Organization organization = service.get(organizationId, Organization.class);
 
-			canUserEdit = canUserCreateOrganizations(user);
-		} else {
+        if (organization == null) {
 
-			canUserEdit = canUserEditOrganization(user, organization);
-		}
+            final String message = "Unable to find organization for id " + organizationId + " to update the icon.";
+            LOG.error(message);
+            throw new RestException(false, 404, "Not found", message);
+        }
 
-		if (!canUserEdit) {
+        checkEditPermissions(user, organization);
 
-			final String message = "User " + user.getId()
-					+ " does not have permission to perform this Organization action on "
-					+ (organization == null ? "null" : organization.getId());
-			throw new RestException(false, 403, "Forbidden", message);
-		}
+        organization.setIconUri(iconUrlPrefix + fileName);
+        service.add(AuditEntryHelper.updateIconForOrganizationEntry(organization, fileName));
+        service.update(organization);
+    }
 
-	}
+    /**
+     * set the list of roles a user has for a organization.
+     *
+     * @param user the user
+     * @param organization the organization
+     * @param roles the role list to populate
+     * @return the list of roles for the organization
+     * @throws Exception the exception
+     */
+    public static List<String> setRoles(final User user, final Organization organization, final List<String> roles) throws Exception {
 
-	/**
-	 * Check if a user can create an organization (must have "all_all_admin").
-	 *
-	 * @param user the user
-	 * @return can the user create an organization
-	 * @throws Exception the exception
-	 */
-	public static boolean canUserCreateOrganizations(final User user) throws Exception {
+        boolean giveViewerRole = false;
 
-		return user.checkPermission(User.ROLE_ADMIN, "all", "all", null);
-	}
+        if (user.checkPermission(User.ROLE_AUTHOR, organization.getName(), null, null)) {
 
-	/**
-	 * Check if a user can edit an organization.
-	 *
-	 * @param user         the user
-	 * @param organization the organization
-	 * @return can the user edit the organization
-	 * @throws Exception the exception
-	 */
-	public static boolean canUserEditOrganization(final User user, final Organization organization) throws Exception {
+            roles.add(User.ROLE_AUTHOR);
+            giveViewerRole = true;
+        }
 
-		if (organization.getRoles().isEmpty()) {
+        if (user.checkPermission(User.ROLE_REVIEWER, organization.getName(), null, null)) {
 
-			setRoles(user, organization, organization.getRoles());
-		}
+            roles.add(User.ROLE_REVIEWER);
+            giveViewerRole = true;
+        }
 
-		return organization.getRoles().contains(User.ROLE_ADMIN);
-	}
+        if (user.checkPermission(User.ROLE_ADMIN, organization.getName(), null, null)) {
 
-	/**
-	 * Check if a user can view an organization.
-	 *
-	 * @param user         the user
-	 * @param organization the organization
-	 * @return can the user view the organization
-	 * @throws Exception the exception
-	 */
-	public static boolean canUserViewOrganization(final User user, final Organization organization) throws Exception {
+            roles.add(User.ROLE_ADMIN);
+            giveViewerRole = true;
+        }
 
-		if (organization.getRoles().isEmpty()) {
+        if (user.checkPermission(User.ROLE_VIEWER, organization.getName(), null, null) || giveViewerRole) {
 
-			setRoles(user, organization, organization.getRoles());
-		}
+            roles.add(User.ROLE_VIEWER);
+        }
 
-		return organization.getRoles().contains(User.ROLE_VIEWER);
-	}
+        return roles;
+    }
 
-	/**
-	 * Invite user to organization.
-	 *
-	 * @param authUser          the auth user
-	 * @param organizationId    the organization id
-	 * @param recipientEmail    the recipient email
-	 * @param additionalMessage the additional message
-	 * @throws Exception the exception
-	 */
-	public static void inviteUserToOrganization(final User authUser, final String organizationId,
-			final String recipientEmail, final String additionalMessage) throws Exception {
+    /**
+     * Throw a exception if a user can't edit an organization.
+     *
+     * @param user the user
+     * @param organization the organization
+     * @throws Exception the exception
+     */
+    public static void checkEditPermissions(final User user, final Organization organization) throws Exception {
 
-		if (StringUtils.isBlank(recipientEmail)) {
+        boolean canUserEdit = false;
 
-			throw new Exception("Recipient must have an email address to invite to Refset.");
-		}
+        if (organization == null) {
 
-		// TODO: move this URL to properties.
-		final String accountSetupUrl = "https://confluence.ihtsdotools.org/display/ILS/Confluence+User+Accounts";
+            canUserEdit = canUserCreateOrganizations(user);
+        } else {
 
-		try (final TerminologyService service = new TerminologyService()) {
+            canUserEdit = canUserEditOrganization(user, organization);
+        }
 
-			service.setModifiedFlag(true);
-			service.setModifiedBy(SecurityService.getUserFromSession().getUserName());
+        if (!canUserEdit) {
 
-			final Organization organization = getActiveOrganization(service, authUser, organizationId, true);
+            final String message = "User " + user.getId() + " does not have permission to perform this Organization action on "
+                + (organization == null ? "null" : organization.getId());
+            throw new RestException(false, 403, "Forbidden", message);
+        }
 
-			final User crowdUser = CrowdAPIClient.findUserByEmail(recipientEmail.trim());
+    }
 
-			if (crowdUser != null) {
+    /**
+     * Check if a user can create an organization (must have "all_all_admin").
+     *
+     * @param user the user
+     * @return can the user create an organization
+     * @throws Exception the exception
+     */
+    public static boolean canUserCreateOrganizations(final User user) throws Exception {
 
-				// Ensure not already members of the organization
-				if (organization.getMembers().stream().anyMatch(u -> u.getId().equals(crowdUser.getId()))) {
+        return user.checkPermission(User.ROLE_ADMIN, "all", "all", null);
+    }
 
-					throw new Exception("User: " + crowdUser.getUserName() + " is already a member of organization: "
-							+ organization.getName());
-				}
+    /**
+     * Check if a user can edit an organization.
+     *
+     * @param user the user
+     * @param organization the organization
+     * @return can the user edit the organization
+     * @throws Exception the exception
+     */
+    public static boolean canUserEditOrganization(final User user, final Organization organization) throws Exception {
 
-			}
+        if (organization.getRoles().isEmpty()) {
 
-			// add in invite request
-			final InviteRequest request = new InviteRequest();
-			request.setAction(INVITE_ACTION);
-			request.setActive(true);
-			request.setRequester(authUser.getId());
-			request.setRecipientEmail(recipientEmail);
-			request.setPayload("organization:" + organizationId);
+            setRoles(user, organization, organization.getRoles());
+        }
 
-			service.setModifiedBy(SecurityService.getUserFromSession().getUserName());
-			service.add(request);
+        return organization.getRoles().contains(User.ROLE_ADMIN);
+    }
 
-			final String acceptUrl = appUrlRoot + "/invite/response?ir=" + request.getId() + "&r=true";
-			final String declineUrl = appUrlRoot + "/invite/response?ir=" + request.getId() + "&r=false";
+    /**
+     * Check if a user can view an organization.
+     *
+     * @param user the user
+     * @param organization the organization
+     * @return can the user view the organization
+     * @throws Exception the exception
+     */
+    public static boolean canUserViewOrganization(final User user, final Organization organization) throws Exception {
 
-			final String ahrefStyle = "'padding: 8px 12px; border: 1px solid #c3e7fe;border-radius: 2px;"
-					+ "font-family: Helvetica, Arial, sans-serif;font-size: 14px; color: #000000;"
-					+ "text-decoration: none;font-weight:bold;display: inline-block;'";
-			final String button = "<table style='width: 100%; padding-right: 50px; padding-left: 50px'><tr><td>"
-					+ "  <table style='padding: 0'><tr><td style='border-radius: 2px; background-color: #c3e7fe'>"
-					+ "    <a href='{{BUTTION_LINK}}' target='_blank' style=" + ahrefStyle + ">"
-					+ "      {{BUTTON_TEXT}}" + "</a></td></tr></table></td></tr></table>";
+        if (organization.getRoles().isEmpty()) {
 
-			final StringBuffer emailBody = new StringBuffer();
-			emailBody.append("<html>");
-			emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
-			emailBody.append("<div>");
+            setRoles(user, organization, organization.getRoles());
+        }
 
-			emailBody.append("    <span>Hello ").append((crowdUser != null) ? crowdUser.getName() : "")
-					.append(",</span><br/><br/>");
+        return organization.getRoles().contains(User.ROLE_VIEWER);
+    }
 
-			// Main invite
-			emailBody.append("    <span>").append(authUser.getName())
-					.append(" would like to invite you to work with the Organization '").append(organization.getName())
-					.append("' in order to participate in the reference set modeling project with the RT2 tool.</span><br/><br/>");
-			emailBody.append("    <span>To accept this invitation, and alert ").append(authUser.getName())
-					.append(" of your acceptance, please click the button below.</span><br/><br/>");
+    /**
+     * Invite user to organization.
+     *
+     * @param authUser the auth user
+     * @param organizationId the organization id
+     * @param recipientEmail the recipient email
+     * @param additionalMessage the additional message
+     * @throws Exception the exception
+     */
+    public static void inviteUserToOrganization(final User authUser, final String organizationId, final String recipientEmail, final String additionalMessage)
+        throws Exception {
 
-			// Additional Information
-			if (!StringUtils.isBlank(additionalMessage)) {
+        if (StringUtils.isBlank(recipientEmail)) {
 
-				emailBody.append("In addition, they have included the additional message:").append("<br/><br/>");
-				emailBody.append(additionalMessage).append("<br/><br/>");
-			}
+            throw new Exception("Recipient must have an email address to invite to Refset.");
+        }
 
-			// accept
-			emailBody
-					.append("    <span style='width: 300px; display: inline-block'>").append(button
-							.replace("{{BUTTION_LINK}}", acceptUrl).replace("{{BUTTON_TEXT}}", "Accept Invitation"))
-					.append("</span>");
+        // TODO: move this URL to properties.
+        final String accountSetupUrl = "https://confluence.ihtsdotools.org/display/ILS/Confluence+User+Accounts";
 
-			// decline
-			emailBody
-					.append("    <span style='width: 300px; display: inline-block'>").append(button
-							.replace("{{BUTTION_LINK}}", declineUrl).replace("{{BUTTON_TEXT}}", "Decline Invitation"))
-					.append("</span>");
+        try (final TerminologyService service = new TerminologyService()) {
 
-			if (crowdUser == null) {
+            service.setModifiedFlag(true);
+            service.setModifiedBy(SecurityService.getUserFromSession().getUserName());
 
-				emailBody.append("    <span><a href='").append(accountSetupUrl)
-						.append("' target='_blank'></a></span><br/><br/>");
-			}
+            final Organization organization = getActiveOrganization(service, authUser, organizationId, true);
 
-			emailBody.append("    <br/><br/>");
-			// Warning
-			emailBody.append(
-					"    <span>If you do not wish to accept the invitation, or this email was received in error, you can safely ignore it.</span><br/><br/>");
+            final User crowdUser = CrowdAPIClient.findUserByEmail(recipientEmail.trim());
+            final boolean isCrowdMember = (crowdUser != null);
 
-			// Signature
-			emailBody.append("    <span>Thank you,</span><br/>");
-			emailBody.append("    <span>The SNOMED CT Reference Set Tool Team</span>");
-			emailBody.append("</div>");
-			emailBody.append("</body>");
-			emailBody.append("</html>");
+            if (isCrowdMember) {
 
-			final String action = INVITE_ACTION;
-			final Set<String> recipients = new HashSet<>(Arrays.asList(recipientEmail.trim()));
-			EmailUtility.sendEmail(EMAIL_SUBJECT + action, authUser.getEmail(), recipients, emailBody.toString());
+                // Ensure not already members of the organization
+                if (organization.getMembers().stream().anyMatch(u -> u.getId().equals(crowdUser.getId()))) {
 
-			LOG.info("INVITE request - from {} to {} for organization {}", authUser.getEmail(), recipients,
-					organizationId);
+                    throw new Exception("User: " + crowdUser.getUserName() + " is already a member of organization: " + organization.getName());
+                }
 
-			service.add(AuditEntryHelper.sendOrganizationInvite(organization, authUser, recipientEmail.trim()));
-		}
+            }
 
-	}
+            // add in invite request
+            final InviteRequest request = new InviteRequest();
+            request.setAction(INVITE_ACTION);
+            request.setActive(true);
+            request.setRequester(authUser.getId());
+            request.setRecipientEmail(recipientEmail);
+            request.setPayload("organization:" + organizationId);
 
-	/**
-	 * Process organization invitation.
-	 *
-	 * @param service       the service
-	 * @param inviteRequest the invite request
-	 * @param acceptance    the acceptance
-	 * @throws Exception the exception
-	 */
-	public static void processOrganizationInvitation(final TerminologyService service,
-			final InviteRequest inviteRequest, final boolean acceptance) throws Exception {
+            service.setModifiedBy(SecurityService.getUserFromSession().getUserName());
+            service.add(request);
 
-		final User memberUser = CrowdAPIClient.findUserByEmail(inviteRequest.getRecipientEmail());
+            final String acceptUrl = appUrlRoot + "/invite/response?ir=" + request.getId() + "&r=true";
+            final String declineUrl = appUrlRoot + "/invite/response?ir=" + request.getId() + "&r=false";
 
-		final StringBuffer emailBody = new StringBuffer();
+            final String ahrefStyle = "'padding: 8px 12px; border: 1px solid #c3e7fe;border-radius: 2px;"
+                + "font-family: Helvetica, Arial, sans-serif;font-size: 14px; color: #000000;"
+                + "text-decoration: none;font-weight:bold;display: inline-block;'";
+            final String button = "<table style='width: 100%; padding-right: 50px; padding-left: 50px'><tr><td>"
+                + "  <table style='padding: 0'><tr><td style='border-radius: 2px; background-color: #c3e7fe'>"
+                + "    <a href='{{BUTTION_LINK}}' target='_blank' style=" + ahrefStyle + ">" + "      {{BUTTON_TEXT}}"
+                + "</a></td></tr></table></td></tr></table>";
 
-		final String ahrefStyle = "'padding: 8px 12px; border: 1px solid #c3e7fe;border-radius: 2px;"
-				+ "font-family: Helvetica, Arial, sans-serif;font-size: 14px; color: #000000;"
-				+ "text-decoration: none;font-weight:bold;display: inline-block;'";
-		final String button = "<table style='width: 100%; padding-right: 50px; padding-left: 50px'><tr><td>"
-				+ "  <table style='padding: 0'><tr><td style='border-radius: 2px; background-color: #c3e7fe'>"
-				+ "    <a href='{{BUTTION_LINK}}' target='_blank' style=" + ahrefStyle + ">" + "      {{BUTTON_TEXT}}"
-				+ "</a></td></tr></table></td></tr></table>";
+            final StringBuffer emailBody = new StringBuffer();
+            emailBody.append("<html>");
+            emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
+            emailBody.append("<div>");
 
-		final User requesterUser = UserService.getUser(inviteRequest.getRequester(), false);
+            emailBody.append("    <span>Hello ").append((isCrowdMember) ? crowdUser.getName() : "").append(",</span><br/><br/>");
 
-		if (requesterUser == null) {
-			throw new RestException(false, 417, "Expectation failed",
-					"Requester not found: " + inviteRequest.getRequester());
-		}
+            // Main invite
+            emailBody.append("    <span>").append(authUser.getName()).append(" would like to invite you to work with the Organization '")
+                .append(organization.getName()).append("' in order to participate in the reference set modeling project with the RT2 tool.</span><br/><br/>");
+            emailBody.append("    <span>To accept this invitation, and alert ").append(authUser.getName())
+                .append(" of your acceptance, please click the button below.</span><br/><br/>");
 
-		service.setModifiedBy(requesterUser.getUserName());
-		inviteRequest.setResponse(String.valueOf(acceptance));
-		inviteRequest.setResponseDate(new Date());
+            // Additional Information
+            if (!StringUtils.isBlank(additionalMessage)) {
 
-		service.update(inviteRequest);
+                emailBody.append("In addition, they have included the additional message:").append("<br/><br/>");
+                emailBody.append(additionalMessage).append("<br/><br/>");
+            }
 
-		LOG.info("Requester is: {}", requesterUser);
+            // accept
+            emailBody.append("    <span style='width: 300px; display: inline-block'>")
+                .append(button.replace("{{BUTTION_LINK}}", acceptUrl).replace("{{BUTTON_TEXT}}", "Accept Invitation")).append("</span>");
 
-		// get organization from payload
-		final Map<String, String> nameValuePairs = new HashMap<>();
-		final String[] pairs = inviteRequest.getPayload().split("&");
+            // decline
+            emailBody.append("    <span style='width: 300px; display: inline-block'>")
+                .append(button.replace("{{BUTTION_LINK}}", declineUrl).replace("{{BUTTON_TEXT}}", "Decline Invitation")).append("</span>");
 
-		for (final String pair : pairs) {
+            if (!isCrowdMember) {
 
-			final String[] keyValue = pair.split(":");
-			nameValuePairs.put(keyValue[0], keyValue[1]);
-		}
+                emailBody.append("    <span><a href='").append(accountSetupUrl).append("' target='_blank'></a></span><br/><br/>");
+            }
 
-		final String organizationId = nameValuePairs.get("organization");
-		final Organization organization = getActiveOrganization(service, requesterUser, organizationId, true);
+            emailBody.append("    <br/><br/>");
+            // Warning
+            emailBody.append(
+                "    <span>If you do not wish to accept the invitation, or this email was received in error, you can safely ignore it.</span><br/><br/>");
 
-		// if rejected, send notification to requester
-		if (!acceptance) {
+            // Signature
+            emailBody.append("    <span>Thank you,</span><br/>");
+            emailBody.append("    <span>The SNOMED CT Reference Set Tool Team</span>");
+            emailBody.append("</div>");
+            emailBody.append("</body>");
+            emailBody.append("</html>");
 
-			emailBody.append("<html>");
-			emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
-			emailBody.append("<div>");
+            final String action = INVITE_ACTION;
+            final Set<String> recipients = new HashSet<>(Arrays.asList(recipientEmail.trim()));
+            EmailUtility.sendEmail(EMAIL_SUBJECT + action, recipients, emailBody.toString());
 
-			emailBody.append("    <span>Hello, ").append(requesterUser.getName()).append("</span><br/><br/>");
+            LOG.info("INVITE request - from {} to {} for organization {}", authUser.getEmail(), recipients, organizationId);
 
-			// Main invite
-			emailBody.append("    <span>").append(memberUser != null ? memberUser.getName() : inviteRequest.getRecipientEmail())
-					.append(" has declined your invitation to join ").append(organization.getName())
-					.append(" as a collaborator.</span><br/><br/>");
+            service.add(AuditEntryHelper.sendOrganizationInvite(organization, authUser, recipientEmail.trim()));
+        }
 
-			// Go to app
-			emailBody.append("    <span style='width: 400px; display: inline-block'>").append(button
-					.replace("{{BUTTION_LINK}}", appUrlRoot).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool"))
-					.append("</span>");
+    }
 
-			emailBody.append("</div>");
-			emailBody.append("</body>");
-			emailBody.append("</html>");
+    /**
+     * Process organization invitation.
+     *
+     * @param service the service
+     * @param inviteRequest the invite request
+     * @param acceptance the acceptance
+     * @throws Exception the exception
+     */
+    public static void processOrganizationInvitation(final TerminologyService service, final InviteRequest inviteRequest, final boolean acceptance)
+        throws Exception {
 
-			final String action = INVITE_DECLINED;
+        final User memberUser = CrowdAPIClient.findUserByEmail(inviteRequest.getRecipientEmail());
+        final User requesterUser = UserService.getUser(service, inviteRequest.getRequester(), false);
 
-			// TODO: what should the from email be?
-			final Set<String> recipients = new HashSet<>(Arrays.asList(requesterUser.getEmail()));
-			LOG.info("REFSET INVITE declined - from {} to {}", requesterUser.getEmail(), recipients);
-			EmailUtility.sendEmail(EMAIL_SUBJECT + action, requesterUser.getEmail(), recipients, emailBody.toString());
+        if (requesterUser == null) {
+            LOG.error("Requester not found: {}", inviteRequest.getRequester());
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "This user does not have permission to perform this action");
+        }
 
-		}
+        final Set<String> requesterUserPermissions = CrowdAPIClient.getMembershipsForUser(requesterUser.getUserName());
+        final Set<String> updatedPermissions = requesterUserPermissions.stream().map(p -> p.replace(APP_PREFIX, "")).collect(Collectors.toSet());
+        requesterUser.getRoles().addAll(updatedPermissions);
 
-		// if accepted, add user to org, admin has to add to team and project since we
-		// can't determine here which of the project's team to add the user.
-		if (acceptance && memberUser != null) {
+        service.setModifiedBy(requesterUser.getUserName());
+        inviteRequest.setResponse(String.valueOf(acceptance));
+        inviteRequest.setResponseDate(new Date());
 
-			// add user to org as a viewer, will not error if already a member.
-			OrganizationService.addUserToOrganization(service, requesterUser, organization.getId(),
-					memberUser.getEmail());
+        service.update(inviteRequest);
 
-			emailBody.append("<html>");
-			emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
-			emailBody.append("<div>");
+        LOG.info("Requester is: {}", requesterUser);
 
-			emailBody.append("    <span>Hello, ").append(requesterUser.getName()).append("</span><br/><br/>");
+        // get organization from payload
+        final Map<String, String> nameValuePairs = new HashMap<>();
+        final String[] pairs = inviteRequest.getPayload().split("&");
 
-			// Main invite
-			emailBody.append("    <span>").append(memberUser.getName()).append(" has accepted your invitation to join ")
-					.append(organization.getName()).append(" as a collaborator.</span><br/><br/>");
-			emailBody.append("    <span>").append(memberUser.getName()).append("has been added to ")
-					.append(organization.getName()).append(" as a <b>Viewer</b>.</span><br/><br/>");
+        for (final String pair : pairs) {
 
-			// Warning
-			emailBody.append(
-					"    <span>Additional permissions can be configured through the SNOMED CT Reference Set Tool</span><br/><br/>");
+            final String[] keyValue = pair.split(":");
+            nameValuePairs.put(keyValue[0], keyValue[1]);
+        }
 
-			// Go to app
-			emailBody.append("    <span style='width: 400px; display: inline-block'>").append(button
-					.replace("{{BUTTION_LINK}}", appUrlRoot).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool"))
-					.append("</span>");
+        final String organizationId = nameValuePairs.get("organization");
+        final Organization organization = getActiveOrganization(service, requesterUser, organizationId, true);
 
-			emailBody.append("</div>");
-			emailBody.append("</body>");
-			emailBody.append("</html>");
+        final StringBuffer emailBody = new StringBuffer();
 
-			final String action = INVITE_ACCEPTED;
+        final String ahrefStyle = "'padding: 8px 12px; border: 1px solid #c3e7fe;border-radius: 2px;"
+            + "font-family: Helvetica, Arial, sans-serif;font-size: 14px; color: #000000;" + "text-decoration: none;font-weight:bold;display: inline-block;'";
+        final String button = "<table style='width: 100%; padding-right: 50px; padding-left: 50px'><tr><td>"
+            + "  <table style='padding: 0'><tr><td style='border-radius: 2px; background-color: #c3e7fe'>"
+            + "    <a href='{{BUTTION_LINK}}' target='_blank' style=" + ahrefStyle + ">" + "      {{BUTTON_TEXT}}" + "</a></td></tr></table></td></tr></table>";
 
-			// TODO: what should the from email be?
-			final Set<String> recipients = new HashSet<>(Arrays.asList(requesterUser.getEmail()));
-			LOG.info("REFSET INVITE accepted - from {} to {}", requesterUser.getEmail(), recipients);
-			EmailUtility.sendEmail(EMAIL_SUBJECT + action, requesterUser.getEmail(), recipients, emailBody.toString());
+        // if rejected, send notification to requester
+        if (!acceptance) {
 
-		}
+            emailBody.append("<html>");
+            emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
+            emailBody.append("<div>");
 
-		service.add(AuditEntryHelper.responseForOrganizationInvite(organization, requesterUser,
-				inviteRequest.getRecipientEmail(), acceptance));
+            emailBody.append("    <span>Hello, ").append(requesterUser.getName()).append("</span><br/><br/>");
 
-	}
+            // Main invite
+            emailBody.append("    <span>").append((memberUser != null) ? memberUser.getName() : inviteRequest.getRecipientEmail())
+                .append(" has declined your invitation to join ").append(organization.getName()).append(" as a collaborator.</span><br/><br/>");
 
-	/**
-	 * Removes the user from crowd group belonging to the organization.
-	 *
-	 * @param service        the service
-	 * @param organizationId the organization id
-	 * @param userToRemove   the user to remove
-	 * @param authUser       the auth user
-	 */
-	private static void removeUserFromTeams(final TerminologyService service, final String organizationId,
-			final User userToRemove, final User authUser) {
+            // Go to app
+            emailBody.append("    <span style='width: 400px; display: inline-block'>")
+                .append(button.replace("{{BUTTION_LINK}}", appUrlRoot).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
 
-		if (crowdUnitTestSkip == null || !"true".equalsIgnoreCase(crowdUnitTestSkip)) {
+            emailBody.append("</div>");
+            emailBody.append("</body>");
+            emailBody.append("</html>");
 
-			LOG.info("CALLING CROWD API from ProjectService updateMemberships");
+            final String action = INVITE_DECLINED;
 
-			try {
+            final Set<String> recipients = new HashSet<>(Arrays.asList(requesterUser.getEmail()));
+            LOG.info("ORGANIZATION INVITE declined - from {} to {}", requesterUser.getEmail(), recipients);
+            EmailUtility.sendEmail(EMAIL_SUBJECT + action, recipients, emailBody.toString());
 
-				// teams associated with projects for removal from crowd too.
-				final ResultList<Project> projects = getOrganizationProjects(service, organizationId);
+        }
 
-				if (projects != null && projects.getItems() != null) {
+        if (memberUser == null) {
+            LOG.error("Member not found: {}", inviteRequest.getRecipientEmail());
+            throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, "This user " + inviteRequest.getRecipientEmail() + " does not exist.");
+        }
 
-					for (final Project project : projects.getItems()) {
+        // if accepted, add user to org, admin has to add to team and project since we can't determine here which of the project's team to add the user.
+        if (acceptance) {
 
-						for (final String teamId : project.getTeams()) {
+            // add user to org as a viewer, will not error if already a member.
+            OrganizationService.addUserToOrganization(service, requesterUser, organization.getId(), memberUser.getEmail());
 
-							final Team team = TeamService.getTeam(teamId, true);
+            emailBody.append("<html>");
+            emailBody.append("<body style='font-family: Segoe UI, Tahoma, Geneva, Verdana, sans-serif;'>");
+            emailBody.append("<div>");
 
-							if (team.getMembers() != null && team.getMembers().contains(userToRemove.getId())) {
+            emailBody.append("    <span>Hello, ").append(requesterUser.getName()).append("</span><br/><br/>");
 
-								TeamService.removeUserFromTeam(authUser, teamId, userToRemove.getId());
-							}
+            // Main invite
+            emailBody.append("    <span>").append(memberUser.getName()).append(" has accepted your invitation to join ").append(organization.getName())
+                .append(" as a collaborator.</span><br/><br/>");
+            emailBody.append("    <span>").append(memberUser.getName()).append(" has been added to ").append(organization.getName())
+                .append(" as a <b>Viewer</b>.</span><br/><br/>");
 
-						}
+            // Warning
+            emailBody.append("    <span>Additional permissions can be configured through the SNOMED CT Reference Set Tool</span><br/><br/>");
 
-					}
+            // Go to app
+            emailBody.append("    <span style='width: 400px; display: inline-block'>")
+                .append(button.replace("{{BUTTION_LINK}}", appUrlRoot).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
 
-				}
+            emailBody.append("</div>");
+            emailBody.append("</body>");
+            emailBody.append("</html>");
 
-				// teams not associated with project that are would not be in crowd.
-				Organization organization = getOrganization(service, authUser, organizationId, false);
-				final ResultList<Team> orgTeams = OrganizationService.getOrganizationTeams(service, organization);
+            final String action = INVITE_ACCEPTED;
 
-				if (orgTeams != null && orgTeams.getItems() != null) {
+            final Set<String> recipients = new HashSet<>(Arrays.asList(requesterUser.getEmail()));
+            LOG.info("ORGANIZATION INVITE accepted - from {} to {}", requesterUser.getEmail(), recipients);
+            EmailUtility.sendEmail(EMAIL_SUBJECT + action, recipients, emailBody.toString());
 
-					for (final Team team : orgTeams.getItems()) {
+            final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(organization.getCrowdId(), "all", "all", User.ROLE_VIEWER);
+            CrowdAPIClient.addMembership(groupName, memberUser.getUserName());
 
-						if (team.getMembers() != null && team.getMembers().contains(userToRemove.getId())) {
+        }
 
-							TeamService.removeUserFromTeam(authUser, team.getId(), userToRemove.getId());
-						}
+        service.add(AuditEntryHelper.responseForOrganizationInvite(organization, requesterUser, inviteRequest.getRecipientEmail(), acceptance));
 
-					}
+    }
 
-				}
+    /**
+     * Removes the user from crowd group belonging to the organization.
+     *
+     * @param service the service
+     * @param organization the organization
+     * @param userToRemove the user to remove
+     * @param authUser the auth user
+     */
+    private static void removeUserFromTeams(final TerminologyService service, final Organization organization, final User userToRemove, final User authUser) {
 
-			} catch (final Exception e) {
+        if (crowdUnitTestSkip == null || !"true".equalsIgnoreCase(crowdUnitTestSkip)) {
 
-				LOG.error("ERROR removing user {} from CROWD groups.", userToRemove.getUserName(), e);
-			}
+            LOG.info("CALLING CROWD API from ProjectService updateMemberships");
 
-		}
+            try {
 
-	}
+                // teams associated with projects for removal from crowd too.
+                final ResultList<Project> projects = getOrganizationProjects(service, organization.getId());
 
-	/**
-	 * Returns the organization editions.
-	 *
-	 * @param service        the service
-	 * @param organizationId the organization id
-	 * @return the organization editions
-	 * @throws Exception the exception
-	 */
-	public static ResultList<Edition> getOrganizationEditions(final TerminologyService service,
-			final String organizationId) throws Exception {
+                if (projects != null && projects.getItems() != null) {
 
-		final PfsParameter pfs = new PfsParameter();
-		final QueryParameter query = new QueryParameter();
-		query.setQuery("organizationId:" + organizationId);
+                    for (final Project project : projects.getItems()) {
 
-		return service.find(query, pfs, Edition.class, null);
-	}
+                        for (final String teamId : project.getTeams()) {
 
-	/**
-	 * Returns the organization teams.
-	 *
-	 * @param service      the service
-	 * @param organization the organization
-	 * @return the organization teams
-	 * @throws Exception the exception
-	 */
-	public static ResultList<Team> getOrganizationTeams(final TerminologyService service,
-			final Organization organization) throws Exception {
+                            final Team team = TeamService.getTeam(authUser, teamId, true);
 
-		final PfsParameter pfs = new PfsParameter();
-		final QueryParameter query = new QueryParameter();
-		query.setQuery("organizationId:" + organization.getId());
+                            if (team.getMembers() != null && team.getMembers().contains(userToRemove.getId())) {
 
-		return service.find(query, pfs, Team.class, null);
-	}
+                                TeamService.removeUserFromTeam(service, authUser, team, userToRemove.getId());
+                            }
+
+                        }
+
+                    }
+
+                }
+
+                // teams not associated with project that are would not be in crowd.
+                final ResultList<Team> orgTeams = OrganizationService.getOrganizationTeams(service, organization.getId());
+
+                if (orgTeams != null && orgTeams.getItems() != null) {
+
+                    for (final Team team : orgTeams.getItems()) {
+
+                        if (team.getMembers() != null && team.getMembers().contains(userToRemove.getId())) {
+
+                            TeamService.removeUserFromTeam(service, authUser, team, userToRemove.getId());
+                        }
+
+                    }
+
+                }
+
+            } catch (final Exception e) {
+
+                LOG.error("ERROR removing user {} from CROWD groups.", userToRemove.getUserName(), e);
+            }
+
+        }
+
+    }
+
+    /**
+     * Returns the organization editions.
+     *
+     * @param service the service
+     * @param organizationId the organization id
+     * @return the organization editions
+     * @throws Exception the exception
+     */
+    public static ResultList<Edition> getOrganizationEditions(final TerminologyService service, final String organizationId) throws Exception {
+
+        final PfsParameter pfs = new PfsParameter();
+        final QueryParameter query = new QueryParameter();
+        query.setQuery("organizationId:" + organizationId);
+
+        return service.find(query, pfs, Edition.class, null);
+    }
+
+    /**
+     * Returns the organization teams.
+     *
+     * @param service the service
+     * @param id the id
+     * @return the organization teams
+     * @throws Exception the exception
+     */
+    public static ResultList<Team> getOrganizationTeams(final TerminologyService service, final String id) throws Exception {
+
+        final PfsParameter pfs = new PfsParameter();
+        final QueryParameter query = new QueryParameter();
+        query.setQuery("organizationId:" + id);
+
+        return service.find(query, pfs, Team.class, null);
+    }
 
 }

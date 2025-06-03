@@ -1,9 +1,9 @@
 /*
- * Copyright 2023 SNOMED International - All Rights Reserved.
+ * Copyright 2025 West Coast Informatics - All Rights Reserved.
  *
- * NOTICE:  All information contained herein is, and remains the property of SNOMED International
+ * NOTICE:  All information contained herein is, and remains the property of West Coast Informatics
  * The intellectual and technical concepts contained herein are proprietary to
- * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
+ * West Coast Informatics and may be covered by U.S. and Foreign Patents, patents in process,
  * and are protected by trade secret or copyright law.  Dissemination of this information
  * or reproduction of this material is strictly forbidden.
  */
@@ -21,18 +21,15 @@ import org.ihtsdo.refsetservice.test.EqualsHashcodeTester;
 import org.ihtsdo.refsetservice.test.GetterSetterTester;
 import org.ihtsdo.refsetservice.test.ProxyTester;
 import org.ihtsdo.refsetservice.test.SerializationTester;
+import org.ihtsdo.refsetservice.util.LanguageUtility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
 /**
  * Unit test for {@link Edition}.
  */
-@SpringBootTest
-@ActiveProfiles("test")
 public class EditionUnitTest extends BaseTest {
 
     /** The Constant LOG. */
@@ -43,9 +40,6 @@ public class EditionUnitTest extends BaseTest {
 
     /** The organization object. */
     private Organization organization;
-
-    /** The Constant DEFAULT_LANGUAGE_REFSET. */
-    private static final String DEFAULT_LANGUAGE_REFSET = "900000000000509007";
 
     /**
      * Setup.
@@ -104,8 +98,10 @@ public class EditionUnitTest extends BaseTest {
         tester.exclude("organization");
         tester.exclude("organizationId");
         tester.exclude("organizationName");
+
         tester.exclude("defaultLanguageRefsets");
         tester.exclude("moduleNames");
+        tester.exclude("librarySortField");
 
         assertTrue(tester.testIdentityFieldEquals());
         assertTrue(tester.testNonIdentityFieldEquals());
@@ -123,10 +119,9 @@ public class EditionUnitTest extends BaseTest {
     @Test
     public void testModelCopy() throws Exception {
 
-        final Edition copyObject = new Edition();
-        copyObject.setOrganization(organization);
-
-        final CopyConstructorTester tester = new CopyConstructorTester(copyObject);
+        final CopyConstructorTester tester = new CopyConstructorTester(object);
+        tester.proxy("organization", 1, organization);
+        tester.exclude("librarySortField");
         assertTrue(tester.testCopyConstructor(Edition.class));
     }
 
@@ -139,10 +134,7 @@ public class EditionUnitTest extends BaseTest {
     public void testModelSerialization() throws Exception {
 
         final SerializationTester tester = new SerializationTester(object);
-        tester.exclude("moduleNames");
-        tester.exclude("organization");
-        tester.exclude("organizationName");
-        tester.exclude("organizationId");
+        tester.proxy("organization", 1, organization);
         assertTrue(tester.testJsonSerialization());
     }
 
@@ -172,7 +164,7 @@ public class EditionUnitTest extends BaseTest {
 
             service.add(object);
 
-            object.getDefaultLanguageRefsets().add(DEFAULT_LANGUAGE_REFSET);
+            object.getDefaultLanguageRefsets().add(LanguageUtility.DEFAULT_LANGUAGE_REFSET_US);
 
             service.update(object);
 

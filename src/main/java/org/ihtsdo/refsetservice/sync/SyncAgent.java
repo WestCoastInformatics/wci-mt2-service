@@ -17,7 +17,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.ihtsdo.refsetservice.model.Edition;
-import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.util.SyncCodeSystemDeterminer;
 import org.ihtsdo.refsetservice.sync.util.SyncDatabaseHandler;
@@ -35,447 +34,351 @@ import com.fasterxml.jackson.databind.JsonNode;
  */
 public abstract class SyncAgent {
 
-	/** The logger. */
-	private static final Logger LOG = LoggerFactory.getLogger(SyncAgent.class);
-
-	/** The Constant BRANCH_DATE_FORMAT. */
-	public static final String BRANCH_DATE_FORMAT = "yyyy-MM-dd";
-
-	/** The utilities. */
-	private static SyncUtilities utilities;
-
-	/** The db handler. */
-	private static SyncDatabaseHandler dbHandler;
-
-	/** The Constant STATISTICS. */
-	protected static final SyncStatistics STATISTICS = new SyncStatistics();
-
-	/**
-	 * Sync component.
-	 *
-	 * @param service the service
-	 * @throws Exception the exception
-	 */
-	protected abstract void syncComponent(final TerminologyService service) throws Exception;
-
-	/** Execution options. */
-	private static Boolean isProductionSystem = null;
-
-	/** The is per version sync. */
-	private static Boolean isPerVersionSync = null;
-
-	/** The is ignore core refsets. */
-	private static Boolean isIgnoreCoreRefsets = null;
-
-	/** Testing options. */
-	private static boolean testing = false;
-
-	/** The testing edition short name. */
-	protected static String testingEditionShortName = "";
-
-	/** The testing refset. */
-
-	protected static String testingRefset = null; // To test entire edition
-	// private static String testingRefset = "421000210109"; // NZ with def clauses
-	// private static String testingRefset = "733991000"; // Core - Dentistry (in
-	// multiple projects in RTT)
-	// protected static String testingRefset = "751000172100"; // 751000172100 -
-	// from Belgium
-	// protected static String testingRefset = "723264001"; // 723264001 - TAGS
-	// (only one today) - from sct-core
-	// protected static String testingRefset = "64641000052102"; // Tim's for
-	// ugprade testing (on Swedish)
-	// protected static String testingRefset = "11000172109"; // Sync in the single
-	// Intensional refset available on dev-integeration (Belgium Editing)
-
-	/** The developer testing edition short name. */
-	private static String developerTestingEditionShortName = null;
-
-	/** The Constant DEVELOPER_CODE_SYSTEM_SHORTNAME. */
-	protected static final String DEVELOPER_CODE_SYSTEM_SHORTNAME = "SNOMEDCT-WCI";
-
-	/** The Constant ADMIN_USERNAMES. */
-	protected static final Set<String> ADMIN_USERNAMES = new HashSet<>();
-
-	/**
-	 * Sync.
-	 *
-	 * @param service              the service
-	 * @param refsetPerVersionSync the refset per version sync
-	 * @param runForProduction     the run for production
-	 * @param ignoreCoreRefsets    the ignore core refsets
-	 * @throws Exception the exception
-	 */
-	// Call when launching sync
-	public static void sync(final TerminologyService service, final boolean refsetPerVersionSync,
-			final boolean runForProduction, final boolean ignoreCoreRefsets) throws Exception {
-
-		if (isProductionSystem == null || !isProductionSystem) {
-
-			isPerVersionSync = refsetPerVersionSync;
-			isProductionSystem = runForProduction;
-			isIgnoreCoreRefsets = ignoreCoreRefsets;
-		}
-
-		sync(service);
-
-	}
-
-	/**
-	 * Sync.
-	 *
-	 * @param service the service
-	 * @throws Exception the exception
-	 */
-	// Call when launching a sync service were launching sync is secondary i.e.,
-	// resetRefset
-	public static void sync(final TerminologyService service) throws Exception {
-
-		final Date startOperationStartTime = new Date();
-
-		initialize(service);
-		service.add(AuditEntryHelper.syncBeginEntry(startOperationStartTime));
-
-		SyncCodeSystemDeterminer termServerCodeSystemConsumer = new SyncCodeSystemDeterminer(service, getUtilities(),
-				STATISTICS, isTesting(), testingEditionShortName);
-
-		Set<JsonNode> filteredCodeSystems = termServerCodeSystemConsumer.determineCodeSystemsToProcess();
-		final HashMap<String, String> termServerEditionToOrganizationMap = termServerCodeSystemConsumer
-				.getEditionToOrganizationMap(filteredCodeSystems);
-
-		LOG.info("Starting Syncing of Users, Projects, Code System, Branches, and Refsets from Termserver");
-
-		// Only identify branches on filtered code systems and on runShortSync value
-		LOG.info("Running sync on organizations & editions.");
-		SyncAgent agent = new SyncCodeSystemAgent(service, filteredCodeSystems, termServerEditionToOrganizationMap);
-		agent.syncComponent(service);
-
-		// Update available code systems due to potential migrations (edition move from
-		// one org to another) and reactivations
-		filteredCodeSystems = termServerCodeSystemConsumer.determineCodeSystemsToProcess();
-
-		// If first time processing a code system with projects, then and only then
-		// update users, teams, and projects based on crowd.
-		LOG.info("Review projects on crowd when encountering a code system without existing projects in system");
-		agent = new SyncCrowdAgent(filteredCodeSystems);
-		agent.syncComponent(service);
-
-		// Find all refsets from filtered branches
-		LOG.info("Running sync on refsets.");
-		agent = new SyncRefsetAgent(filteredCodeSystems);
-		agent.syncComponent(service);
-
-		// Post processing
-		LOG.info(STATISTICS.printStatistics());
-
-		utilities.emailSyncResults(service);
-
-		final long processingMinutes = utilities.getProcessingMinutes("FULL", startOperationStartTime);
-		service.add(AuditEntryHelper.syncFinishEntry(new Date(), processingMinutes));
-
-		LOG.info("Completed Syncing with Termserver");
-	}
-
-	/**
-	 * Returns the utilities.
-	 *
-	 * @return the utilities
-	 */
-	protected static SyncUtilities getUtilities() {
-
-		return utilities;
-	}
-
-	/**
-	 * Sets the utilities.
-	 *
-	 * @param utilities the utilities to set
-	 */
-	protected static void setUtilities(final SyncUtilities utilities) {
-
-		SyncAgent.utilities = utilities;
-	}
-
-	/**
-	 * Returns the db handler.
-	 *
-	 * @return the dbHandler
-	 */
-	protected static SyncDatabaseHandler getDbHandler() {
-
-		return dbHandler;
-	}
-
-	/**
-	 * Sets the db handler.
-	 *
-	 * @param dbHandler the dbHandler to set
-	 */
-	protected static void setDbHandler(final SyncDatabaseHandler dbHandler) {
-
-		SyncAgent.dbHandler = dbHandler;
-	}
-
-	/**
-	 * Sets the developer testing edition short name.
-	 *
-	 * @param editionShortName the developer testing edition short name
-	 */
-	public void setDeveloperTestingEditionShortName(final String editionShortName) {
-
-		developerTestingEditionShortName = editionShortName;
-	}
-
-	/**
-	 * Returns the developer testing edition short name.
-	 *
-	 * @return the developerTestingEditionShortName
-	 */
-	public String getDeveloperTestingEditionShortName() {
-
-		return developerTestingEditionShortName;
-	}
-
-	/**
-	 * Returns the testing refset.
-	 *
-	 * @return the testingRefset
-	 */
-	protected static String getTestingRefset() {
-
-		return testingRefset;
-	}
-
-	/**
-	 * Sets the testing refset.
-	 *
-	 * @param testingRefset the testingRefset to set
-	 */
-	protected static void setTestingRefset(final String testingRefset) {
-
-		SyncAgent.testingRefset = testingRefset;
-	}
-
-	/**
-	 * Returns the branchdateformatter.
-	 *
-	 * @return the branchdateformatter
-	 */
-	protected static String getBranchdateformatter() {
-
-		return BRANCH_DATE_FORMAT;
-	}
-
-	/**
-	 * Initialize.
-	 *
-	 * @param service the service
-	 */
-	private static void initialize(final TerminologyService service) {
-
-		service.setModifiedBy("Sync");
-		service.setModifiedFlag(true);
-
-		if (dbHandler == null) {
-
-			dbHandler = new SyncDatabaseHandler(null, STATISTICS);
-		}
-
-		if (utilities == null) {
-
-			utilities = new SyncUtilities(dbHandler);
-		}
-
-		dbHandler.setUtilities(utilities);
-	}
-
-	/**
-	 * Sets the refset to sync.
-	 *
-	 * @param refsetId         the refset id
-	 * @param editionShortName the edition short name
-	 * @throws Exception the exception
-	 */
-	public static void setRefsetToSync(final String refsetId, final String editionShortName) throws Exception {
-
-		setTesting(true);
-		testingRefset = refsetId;
-		testingEditionShortName = editionShortName;
-
-		RefsetMemberService.clearRefsetVersionsWithChanges(refsetId);
-	}
-
-	/**
-	 * Clear previous run.
-	 */
-	protected static void clearPreviousRun() {
-
-		developerTestingEditionShortName = null;
-
-		STATISTICS.clearStatistics();
-
-		if (utilities != null) {
-
-			utilities.clearPreviousRun();
-		}
-
-	}
-
-	/**
-	 * Indicates whether or not different attribute is the case.
-	 *
-	 * @param shortName           the short name
-	 * @param attributeName       the attribute name
-	 * @param databaseAttribute   the database attribute
-	 * @param termserverAttribute the termserver attribute
-	 * @return <code>true</code> if so, <code>false</code> otherwise
-	 */
-	protected boolean isDifferentAttribute(final String shortName, final String attributeName,
-			final Object databaseAttribute, final Object termserverAttribute) {
-
-		if (termserverAttribute == null && databaseAttribute == null) {
-
-			// Both null, no difference
-			return false;
-		} else if (termserverAttribute != null && databaseAttribute != null
-				&& databaseAttribute.equals(termserverAttribute)) {
-
-			// Both not null with identical value, no difference
-			return false;
-		}
-
-		// values are different. List them
-		if (databaseAttribute instanceof Long) {
-
-			LOG.info(" inconsistency found on attribute " + attributeName + " for edition " + shortName
-					+ " where termserver has "
-					+ (termserverAttribute != null ? new Date((Long) termserverAttribute) : null) + "' and DB is '"
-					+ new Date((Long) databaseAttribute) + "'");
-		} else {
-
-			LOG.info(" inconsistency found on attribute " + attributeName + " for edition " + shortName
-					+ " where termserver has '" + termserverAttribute + "' and DB is '" + databaseAttribute + "'");
-		}
-
-		return true;
-	}
-
-	/**
-	 * Returns the develeper testing edition short name.
-	 *
-	 * @return the develeper testing edition short name
-	 */
-	public static String getDeveleperTestingEditionShortName() {
-
-		return developerTestingEditionShortName;
-	}
-
-	/**
-	 * Indicates whether or not testing is the case.
-	 *
-	 * @return <code>true</code> if so, <code>false</code> otherwise
-	 */
-	public static boolean isTesting() {
-
-		return testing;
-
-	}
-
-	/**
-	 * Returns the is ignore core refsets.
-	 *
-	 * @return the is ignore core refsets
-	 */
-	public static Boolean getIsIgnoreCoreRefsets() {
-
-		return isIgnoreCoreRefsets == null ? false : isIgnoreCoreRefsets;
-	}
-
-	/**
-	 * Returns the is production system.
-	 *
-	 * @return the is production system
-	 */
-	public static Boolean getIsProductionSystem() {
-
-		return isProductionSystem == null ? false : isProductionSystem;
-	}
-
-	/**
-	 * Returns the is per version sync.
-	 *
-	 * @return the is per version sync
-	 */
-	public static Boolean getIsPerVersionSync() {
-
-		return isPerVersionSync == null ? false : isPerVersionSync;
-	}
-
-	/**
-	 * Sets the testing.
-	 *
-	 * @param testing the testing
-	 */
-	public static void setTesting(final boolean testing) {
-
-		SyncAgent.testing = testing;
-	}
-
-	/**
-	 * Returns the admin usernames.
-	 *
-	 * @return the admin usernames
-	 */
-	public static Set<String> getAdminUsernames() {
-
-		return ADMIN_USERNAMES;
-	}
-
-	/**
-	 * Read db organizations.
-	 *
-	 * @param service the service
-	 * @return the list
-	 * @throws Exception the exception
-	 */
-	public List<Organization> readDbOrganizations(final TerminologyService service) throws Exception {
-
-		return service.getAll(Organization.class);
-	}
-
-	/**
-	 * Read db all editions.
-	 *
-	 * @param service the service
-	 * @return the list
-	 * @throws Exception the exception
-	 */
-	public List<Edition> readDbAllEditions(final TerminologyService service) throws Exception {
-
-		return service.getAll(Edition.class);
-	}
-
-	/**
-	 * Read db active editions.
-	 *
-	 * @param service the service
-	 * @return the list
-	 * @throws Exception the exception
-	 */
-	public List<Edition> readDbActiveEditions(final TerminologyService service) throws Exception {
-
-		return readDbAllEditions(service).stream().filter(e -> e.isActive()).collect(Collectors.toList());
-	}
-
-	/**
-	 * Read db inactive editions.
-	 *
-	 * @param service the service
-	 * @return the list
-	 * @throws Exception the exception
-	 */
-	public List<Edition> readDbInactiveEditions(final TerminologyService service) throws Exception {
-
-		return readDbAllEditions(service).stream().filter(e -> !e.isActive()).collect(Collectors.toList());
-	}
+    /** The logger. */
+    private static final Logger LOG = LoggerFactory.getLogger(SyncAgent.class);
+
+    /** The utilities. */
+    private static SyncUtilities utilities;
+
+    /** The db handler. */
+    private static SyncDatabaseHandler dbHandler;
+
+    protected static String developerTestingBranchToUse;
+
+    /** The Constant STATISTICS. */
+    protected static final SyncStatistics STATISTICS = new SyncStatistics();
+
+    public static final String SNOMED_CORE_EDITION_NAME = "SNOMEDCT";
+
+    /**
+     * Sync component.
+     *
+     * @param service the service
+     * @throws Exception the exception
+     */
+    protected abstract void syncComponent(final TerminologyService service) throws Exception;
+
+    /** Execution options. */
+    private static Boolean isProductionSystem = null;
+
+    /** The is per version sync. */
+    private static Boolean isPerVersionSync = null;
+
+    /** The is ignore core refsets. */
+    private static Boolean isIgnoreCoreRefsets = null;
+
+    /** Testing options. */
+    /** The single code system short name. */
+    protected final static Set<String> shortNamesToSync = new HashSet<>();
+
+    /** The testing refset. */
+    // TODO: Make this a comma-delimited list and object
+    protected static String testingRefset = null; // To test entire edition
+    // protected static String testingRefset = "98031000146109"; // To test entire edition
+    // private static String testingRefset = "56421000052109"; // SE refset with only 6 concepts
+    // private static String testingRefset = "421000210109"; // NZ with def clauses
+    // private static String testingRefset = "733991000"; // Core - Dentistry (in multiple projects in RTT)
+    // protected static String testingRefset = "751000172100"; // 751000172100 - from Belgium
+    // protected static String testingRefset = "723264001"; // 723264001 - TAGS (only one today) - from sct-core
+    // protected static String testingRefset = "64641000052102"; // Tim's for ugprade testing (on Swedish)
+    // protected static String testingRefset = "11000172109"; // Sync in the single Intensional refset available on dev-integeration (Belgium Editing)
+    // protected static String testingRefset = "787778008"; // Global Patient Set (over 25k so should be ignored)
+
+    /** The Constant DEVELOPER_CODE_SYSTEM_SHORTNAME. */
+    public static final String DEVELOPER_CODE_SYSTEM_SHORTNAME = "SNOMEDCT-WCI-TEST";
+
+    /**
+     * Sync.
+     *
+     * @param service the service
+     * @param shortNamesToSync The short names to sync. Options are null (which syncs all), a single code system short name, or a comma-delimited list of short
+     *            names
+     * @param refsetPerVersionSync the refset per version sync
+     * @param runForProduction the run for production
+     * @param ignoreCoreRefsets the ignore core refsets
+     * @throws Exception the exception
+     */
+    // Call when launching sync
+    public static void sync(final TerminologyService service, final String shortNamesToSync, final boolean refsetPerVersionSync, final boolean runForProduction,
+        final boolean ignoreCoreRefsets) throws Exception {
+
+        if (isProductionSystem == null || !isProductionSystem) {
+
+            isProductionSystem = runForProduction;
+            isPerVersionSync = refsetPerVersionSync;
+            isIgnoreCoreRefsets = ignoreCoreRefsets;
+
+        }
+
+        setShortNamesToSync(shortNamesToSync);
+        setTestingRefset();
+
+        sync(service);
+
+    }
+
+    /**
+     * Sync.
+     *
+     * @param service the service
+     * @throws Exception the exception
+     */
+    // Call when launching a sync service were launching sync is secondary i.e., resetRefset
+    public static void sync(final TerminologyService service) throws Exception {
+
+        final Date startOperationStartTime = new Date();
+
+        initialize(service);
+        service.add(AuditEntryHelper.syncBeginEntry(startOperationStartTime));
+
+        LOG.info("Starting Syncing of Users, Projects, Code System, Branches, and Refsets from Termserver");
+
+        SyncCodeSystemDeterminer termServerCodeSystemDeterminer = new SyncCodeSystemDeterminer(service, getUtilities(), STATISTICS, shortNamesToSync);
+
+        Set<JsonNode> filteredCodeSystems = termServerCodeSystemDeterminer.determineCodeSystemsToProcess();
+        final HashMap<String, String> termServerShortNameToOwnerMap = termServerCodeSystemDeterminer.getTermServerShortNameToOwnerMap(filteredCodeSystems);
+
+        // Only identify branches on filtered code systems and on runShortSync value
+        LOG.info("Syncing - Running on organizations & editions.");
+        SyncAgent agent = new SyncCodeSystemAgent(service, filteredCodeSystems, termServerShortNameToOwnerMap, termServerCodeSystemDeterminer);
+        agent.syncComponent(service);
+
+        // Update available code systems due to potential migrations (edition move from one org to another) and reactivations
+        // TODO: Ensure this should be removed
+        // filteredCodeSystems = termServerCodeSystemConsumer.determineCodeSystemsToProcess();
+
+        // If first time processing a code system with projects, then and only then update users, teams, and projects based on crowd.
+        LOG.info("Syncing - Review projects on crowd when encountering a code system without existing projects in system");
+        agent = new SyncCrowdAgent(filteredCodeSystems);
+        agent.syncComponent(service);
+
+        // Find all refsets from filtered branches
+        LOG.info("Syncing - Running on all refsets.");
+        agent = new SyncRefsetAgent(filteredCodeSystems);
+        agent.syncComponent(service);
+
+        // Post processing
+        LOG.info(STATISTICS.printStatistics());
+
+        /*-
+         *  Contains ability to execute a series of SQL calls from a resource file
+         *  
+         *  final String results = getUtilities().getSyncResults(service);
+         */
+        final String results = STATISTICS.printStatistics();
+        getUtilities().emailResults(service, results);
+
+        final long processingMinutes = utilities.getProcessingMinutes("FULL", startOperationStartTime);
+        service.add(AuditEntryHelper.syncFinishEntry(new Date(), processingMinutes));
+
+        LOG.info("Syncing - Completed Syncing with Termserver");
+    }
+
+    /**
+     * Returns the utilities.
+     *
+     * @return the utilities
+     */
+    protected static SyncUtilities getUtilities() {
+
+        return utilities;
+    }
+
+    /**
+     * Sets the utilities.
+     *
+     * @param utilities the utilities to set
+     */
+    protected static void setUtilities(final SyncUtilities utilities) {
+
+        SyncAgent.utilities = utilities;
+    }
+
+    /**
+     * Returns the db handler.
+     *
+     * @return the dbHandler
+     */
+    protected static SyncDatabaseHandler getDbHandler() {
+
+        return dbHandler;
+    }
+
+    /**
+     * Sets the db handler.
+     *
+     * @param dbHandler the dbHandler to set
+     */
+    protected static void setDbHandler(final SyncDatabaseHandler dbHandler) {
+
+        SyncAgent.dbHandler = dbHandler;
+    }
+
+    /**
+     * Returns the testing refset.
+     *
+     * @return the testingRefset
+     */
+    protected static String getTestingRefset() {
+
+        return testingRefset;
+    }
+
+    /**
+     * Sets the testing refset. Currently supports single refset within one of the selected editions.
+     *
+     */
+    protected static void setTestingRefset() {
+
+        RefsetMemberService.clearRefsetVersionsWithChanges(testingRefset);
+    }
+
+    /**
+     * Initialize.
+     *
+     * @param service the service
+     */
+    private static void initialize(final TerminologyService service) {
+
+        // Agents begin and commit transactions themselves
+        service.setModifiedBy("Sync");
+        service.setModifiedFlag(true);
+        service.setTransactionPerOperation(false);
+
+        developerTestingBranchToUse = "";
+
+        if (dbHandler == null) {
+
+            dbHandler = new SyncDatabaseHandler(null, STATISTICS);
+        }
+
+        if (utilities == null) {
+
+            utilities = new SyncUtilities(dbHandler);
+        } else {
+            utilities.clearPreviousRun();
+        }
+
+        STATISTICS.clearStatistics();
+        dbHandler.setUtilities(utilities);
+    }
+
+    /**
+     * Sets the refset to sync.
+     *
+     * @param shortNames the comma or space-delimited edition short name(s)
+     * @throws Exception the exception
+     */
+    public static void setShortNamesToSync(final String shortNames) throws Exception {
+
+        // For now, support none, a single, or a comma-delimited set of short names (without space between).
+        // TODO: Improve later when not focusing elsewhere.
+        shortNamesToSync.clear();
+
+        if (shortNames != null && !shortNames.isEmpty()) {
+            if (!shortNames.contains(",") && !shortNames.contains(" ")) {
+                shortNamesToSync.add(shortNames);
+            } else {
+                String[] shortNamesArray = shortNames.split(",");
+
+                if (shortNamesArray.length == 0) {
+                    shortNamesArray = shortNames.split(" ");
+                }
+                for (int i = 0; i < shortNamesArray.length; i++) {
+                    shortNamesToSync.add(shortNamesArray[i]);
+                }
+            }
+        }
+    }
+
+    /**
+     * Indicates whether or not different attribute is the case.
+     *
+     * @param shortName the short name
+     * @param attributeName the attribute name
+     * @param databaseAttribute the database attribute
+     * @param termserverAttribute the termserver attribute
+     * @return <code>true</code> if so, <code>false</code> otherwise
+     */
+    protected boolean isDifferentAttribute(final String shortName, final String attributeName, final Object databaseAttribute,
+        final Object termserverAttribute) {
+
+        if (termserverAttribute == null && databaseAttribute == null) {
+
+            // Both null, no difference
+            return false;
+        } else if (termserverAttribute != null && databaseAttribute != null && databaseAttribute.equals(termserverAttribute)) {
+
+            // Both not null with identical value, no difference
+            return false;
+        }
+
+        // values are different. List them
+        if (databaseAttribute instanceof Long) {
+
+            LOG.info(" inconsistency found on attribute " + attributeName + " for edition " + shortName + " where termserver has "
+                + new Date((Long) termserverAttribute) + "' and DB is '" + new Date((Long) databaseAttribute) + "'");
+        } else {
+
+            LOG.info(" inconsistency found on attribute " + attributeName + " for edition " + shortName + " where termserver has '" + termserverAttribute
+                + "' and DB is '" + databaseAttribute + "'");
+        }
+
+        return true;
+    }
+
+    /**
+     * Returns the is ignore core refsets.
+     *
+     * @return the is ignore core refsets
+     */
+    public static Boolean getIsIgnoreCoreRefsets() {
+
+        return isIgnoreCoreRefsets == null ? false : isIgnoreCoreRefsets;
+    }
+
+    /**
+     * Returns the is production system.
+     *
+     * @return the is production system
+     */
+    public static Boolean getIsProductionSystem() {
+
+        return isProductionSystem == null ? false : isProductionSystem;
+    }
+
+    /**
+     * Returns the is per version sync.
+     *
+     * @return the is per version sync
+     */
+    public static Boolean getIsPerVersionSync() {
+
+        return isPerVersionSync == null ? false : isPerVersionSync;
+    }
+
+    /**
+     * Read db all editions.
+     *
+     * @param service the service
+     * @return the list
+     * @throws Exception the exception
+     */
+    public List<Edition> readDbAllEditions(final TerminologyService service) throws Exception {
+
+        return service.getAll(Edition.class);
+    }
+
+    /**
+     * Read db active editions.
+     *
+     * @param service the service
+     * @return the list
+     * @throws Exception the exception
+     */
+    public List<Edition> readDbActiveEditions(final TerminologyService service) throws Exception {
+
+        return readDbAllEditions(service).stream().filter(e -> e.isActive()).collect(Collectors.toList());
+    }
+
 }

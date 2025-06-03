@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 SNOMED International - All Rights Reserved.
+ * Copyright 2024 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -26,25 +26,21 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
 /**
  * Unit test for {@link Project}.
  */
-@SpringBootTest
-@ActiveProfiles("test")
 public class ProjectUnitTest extends BaseTest {
 
     /** The Constant LOG. */
+    @SuppressWarnings("unused")
     private static final Logger LOG = LoggerFactory.getLogger(ProjectUnitTest.class);
 
     /** The model object to test. */
     private Project object;
 
     /** The edition. */
-    @SuppressWarnings("unused")
-	private Edition edition;
+    private Edition edition;
 
     /**
      * Setup.
@@ -106,6 +102,7 @@ public class ProjectUnitTest extends BaseTest {
         tester.include("privateProject");
         tester.include("primaryContactEmail");
         tester.include("crowdProjectId");
+        tester.include("lockStatus");
 
         tester.exclude("edition");
         tester.exclude("teams");

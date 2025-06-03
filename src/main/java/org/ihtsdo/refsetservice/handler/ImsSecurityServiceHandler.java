@@ -15,6 +15,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.servlet.http.Cookie;
 import javax.ws.rs.client.Client;
@@ -165,7 +167,7 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 
                 final String resultString = response.readEntity(String.class);
                 final ObjectMapper mapper = new ObjectMapper();
-                final JsonNode root = mapper.readTree(resultString.toString());
+                final JsonNode root = mapper.readTree(resultString);
                 final String imsUserName = root.get("login").asText();
 
                 // make sure that the passed in user name is the same as what IMS has
@@ -224,6 +226,33 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
     public String getLogoutUrl() throws Exception {
 
         return PropertyUtility.getProperty("security.handler.IMS.url.logout");
+    }
+
+    /* see superclass */
+    @Override
+    public Set<String> getSystemAdminUserNames() throws Exception {
+
+        final String propertyValue = PropertyUtility.getProperty("security.handler.IMS.users.admin");
+
+        return Stream.of(propertyValue.trim().split("\\s*,\\s*")).collect(Collectors.toSet());
+    }
+
+    /* see superclass */
+    @Override
+    public Set<String> getSystemAuthorUserNames() throws Exception {
+
+        final String propertyValue = PropertyUtility.getProperty("security.handler.IMS.users.author");
+
+        return Stream.of(propertyValue.trim().split("\\s*,\\s*")).collect(Collectors.toSet());
+    }
+
+    /* see superclass */
+    @Override
+    public Set<String> getSystemReviewerUserNames() throws Exception {
+
+        final String propertyValue = PropertyUtility.getProperty("security.handler.IMS.users.reviewer");
+
+        return Stream.of(propertyValue.trim().split("\\s*,\\s*")).collect(Collectors.toSet());
     }
 
 }

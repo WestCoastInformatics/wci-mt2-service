@@ -61,7 +61,7 @@ public class SnowstormMultiSearch extends SnowstormAbstract {
       final String resultString = response.readEntity(String.class);
 
       final ObjectMapper mapper = new ObjectMapper();
-      final JsonNode root = mapper.readTree(resultString.toString());
+      final JsonNode root = mapper.readTree(resultString);
 
       if (root.get("buckets") != null) {
 
@@ -141,7 +141,7 @@ public class SnowstormMultiSearch extends SnowstormAbstract {
       }
 
       final String resultString = response.readEntity(String.class);
-      final JsonNode root = mapper.readTree(resultString.toString());
+      final JsonNode root = mapper.readTree(resultString);
 
       final Set<String> conceptIds = new HashSet<>();
 

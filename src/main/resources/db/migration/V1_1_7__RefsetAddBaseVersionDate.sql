@@ -1,0 +1,1 @@
+ALTER TABLE `refsets` ADD COLUMN `baseVersionDate` datetime(6) DEFAULT NULL;

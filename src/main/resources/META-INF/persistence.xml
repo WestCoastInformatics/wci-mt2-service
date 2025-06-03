@@ -20,7 +20,7 @@
     <class>org.ihtsdo.refsetservice.model.Project</class>
     <class>org.ihtsdo.refsetservice.model.DefinitionClause</class>
     <class>org.ihtsdo.refsetservice.model.DefinitionClauseEditHistory</class>
-    <class>org.ihtsdo.refsetservice.model.WorkflowHistory</class>
+    <class>org.ihtsdo.refsetservice.model.RefsetWorkflowHistory</class>
     <class>org.ihtsdo.refsetservice.model.UpgradeInactiveConcept</class>
     <class>org.ihtsdo.refsetservice.model.UpgradeReplacementConcept</class>
     <class>org.ihtsdo.refsetservice.model.Team</class>
@@ -29,25 +29,26 @@
     <class>org.ihtsdo.refsetservice.model.AuditEntry</class>
     <class>org.ihtsdo.refsetservice.model.Artifact</class>
     <class>org.ihtsdo.refsetservice.model.InviteRequest</class>
-   
-        
+
     <!--  import models for auth -->
     <class>org.ihtsdo.refsetservice.model.User</class>
-    
+
     <!-- import mapping models -->
-    <class>org.ihtsdo.refsetservice.model.MapUser</class>
     <class>org.ihtsdo.refsetservice.model.AdditionalMapEntryInfo</class>
-    <class>org.ihtsdo.refsetservice.model.MapEntry</class>
-    <class>org.ihtsdo.refsetservice.model.MapPrinciple</class>
-    <class>org.ihtsdo.refsetservice.model.MapRelation</class>
-    <class>org.ihtsdo.refsetservice.model.MapAdvice</class>
-    <class>org.ihtsdo.refsetservice.model.MapNote</class>
-    <class>org.ihtsdo.refsetservice.model.Mapping</class>
-    <class>org.ihtsdo.refsetservice.model.MapSet</class>
-    <class>org.ihtsdo.refsetservice.model.MapAgeRange</class>
-    <class>org.ihtsdo.refsetservice.model.MapProject</class>
-    <class>org.ihtsdo.refsetservice.model.MapReportDefinition</class>
     <class>org.ihtsdo.refsetservice.model.Job</class>
-    
+    <class>org.ihtsdo.refsetservice.model.MapAdvice</class>
+    <class>org.ihtsdo.refsetservice.model.MapAgeRange</class>
+    <class>org.ihtsdo.refsetservice.model.MapEntry</class>
+    <class>org.ihtsdo.refsetservice.model.MapNote</class>
+    <class>org.ihtsdo.refsetservice.model.MapPrinciple</class>
+    <class>org.ihtsdo.refsetservice.model.MapProject</class>
+    <class>org.ihtsdo.refsetservice.model.MapRelation</class>
+    <class>org.ihtsdo.refsetservice.model.MapReportDefinition</class>
+    <class>org.ihtsdo.refsetservice.model.MapSet</class>
+    <class>org.ihtsdo.refsetservice.model.MapSetEditHistory</class>
+    <class>org.ihtsdo.refsetservice.model.MapSetWorkflowHistory</class>
+    <class>org.ihtsdo.refsetservice.model.MapUser</class>
+    <class>org.ihtsdo.refsetservice.model.Mapping</class>
+
   </persistence-unit>
 </persistence>
