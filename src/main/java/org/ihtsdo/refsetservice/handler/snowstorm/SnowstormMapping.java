@@ -506,8 +506,8 @@ public class SnowstormMapping extends SnowstormAbstract {
         	mapEntry.setPriority(1);
         	mapEntry.setGroup(1);
         	mapEntry.setAdvices(new HashSet<>());
-        	mapEntry.setRelation("");
-        	mapEntry.setToCode("");
+        	mapEntry.setRelation(null);
+        	mapEntry.setToCode(null);
         	mapEntry.setToName("");
         }
         else {
