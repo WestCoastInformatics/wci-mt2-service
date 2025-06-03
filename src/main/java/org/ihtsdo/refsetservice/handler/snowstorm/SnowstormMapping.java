@@ -501,7 +501,16 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         final JsonNode additionalFields = mappingNode.get("additionalFields");
 
-        if(!additionalFields.isNull() && !additionalFields.isEmpty()) {
+        if(additionalFields.isNull() || additionalFields.isEmpty()) {
+        	mapEntry.setRule("");
+        	mapEntry.setPriority(1);
+        	mapEntry.setGroup(1);
+        	mapEntry.setAdvices(new HashSet<>());
+        	mapEntry.setRelation("");
+        	mapEntry.setToCode("");
+        	mapEntry.setToName("");
+        }
+        else {
             mapEntry.setRule(additionalFields.get("mapRule").asText());
             mapEntry.setPriority(additionalFields.get("mapPriority").asInt());
             mapEntry.setGroup(additionalFields.get("mapGroup").asInt());   
