@@ -48,15 +48,11 @@ import org.ihtsdo.refsetservice.model.SnowstormFhirCodeSystem;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
 import org.ihtsdo.refsetservice.model.User;
-import org.ihtsdo.refsetservice.model.enums.UpgradeDataResult;
-import org.ihtsdo.refsetservice.model.enums.VersionStatus;
-import org.ihtsdo.refsetservice.model.enums.WorkflowAction;
-import org.ihtsdo.refsetservice.model.enums.WorkflowStatus;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
-import org.ihtsdo.refsetservice.terminologyservice.RefsetWorkflowService;
+import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
 import org.ihtsdo.refsetservice.util.CachingUtility;
 import org.ihtsdo.refsetservice.util.ConceptLookupParameters;
 import org.ihtsdo.refsetservice.util.ModelUtility;
@@ -357,7 +353,7 @@ public class SnowstormConcept extends SnowstormAbstract {
             final String resultString = response.readEntity(String.class);
             response.close();
 
-            final JsonNode root = mapper.readTree(resultString);
+            final JsonNode root = mapper.readTree(resultString.toString());
             final Iterator<JsonNode> iterator = root.get("items").iterator();
 
             while (iterator != null && iterator.hasNext()) {
@@ -436,7 +432,7 @@ public class SnowstormConcept extends SnowstormAbstract {
         if (!areParentConcepts) {
 
             // get all the existing refsets for latest branch version
-            final String query = "(latestPublishedVersion: true AND hasVersionInDevelopment: false) OR versionStatus: (" + VersionStatus.IN_DEVELOPMENT + ")";
+            final String query = "(latestPublishedVersion: true AND hasVersionInDevelopment: false) OR versionStatus: (" + Refset.IN_DEVELOPMENT + ")";
             final ResultList<Refset> refsets = service.find(query, null, Refset.class, null);
 
             for (final Refset refset : refsets.getItems()) {
@@ -462,7 +458,7 @@ public class SnowstormConcept extends SnowstormAbstract {
             final ObjectMapper mapper = new ObjectMapper();
             final String resultString = response.readEntity(String.class);
             response.close();
-            final JsonNode root = mapper.readTree(resultString);
+            final JsonNode root = mapper.readTree(resultString.toString());
             final Iterator<JsonNode> iterator = root.get("items").iterator();
 
             // loop thru the returned member details and inactivate it or add it to
@@ -522,7 +518,7 @@ public class SnowstormConcept extends SnowstormAbstract {
 
             // create the body entity for the update call from the retrieved concept
             final String resultString = response.readEntity(String.class);
-            memberBody = (ObjectNode) mapper.readTree(resultString).deepCopy();
+            memberBody = (ObjectNode) mapper.readTree(resultString.toString()).deepCopy();
         }
 
         if (active != refset.isActive()) {
@@ -652,7 +648,7 @@ public class SnowstormConcept extends SnowstormAbstract {
 
             final String resultString = response.readEntity(String.class);
             final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString);
+            final JsonNode root = mapper.readTree(resultString.toString());
 
             final JsonNode allConceptNodes = root.get("items");
             final Iterator<JsonNode> conceptIterator = allConceptNodes.iterator();
@@ -735,7 +731,7 @@ public class SnowstormConcept extends SnowstormAbstract {
             // read the results of the call for ancestors for many concepts
             final String resultString = response.readEntity(String.class);
             final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString);
+            final JsonNode root = mapper.readTree(resultString.toString());
             final Iterator<JsonNode> iterator = root.iterator();
 
             // loop thru each concept to get the ancestor path for it
@@ -887,7 +883,7 @@ public class SnowstormConcept extends SnowstormAbstract {
                 }
 
                 final String resultString = response.readEntity(String.class);
-                final JsonNode root = mapper.readTree(resultString);
+                final JsonNode root = mapper.readTree(resultString.toString());
                 final JsonNode conceptNodeBatch = root.get("items");
 
                 if (limitReturnNumber < 0 && root.get("searchAfter") != null) {
@@ -1164,7 +1160,7 @@ public class SnowstormConcept extends SnowstormAbstract {
             }
 
             final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString);
+            final JsonNode root = mapper.readTree(resultString.toString());
 
             return RefsetMemberService.populateConcepts(root, refset, lookupParameters);
         }
@@ -1204,7 +1200,7 @@ public class SnowstormConcept extends SnowstormAbstract {
                 }
 
                 final String resultString = response.readEntity(String.class);
-                final JsonNode root = mapper.readTree(resultString);
+                final JsonNode root = mapper.readTree(resultString.toString());
                 final JsonNode items = root.get("items");
                 final Iterator<JsonNode> iterator = items.iterator();
                 totalReturned += items.size();
@@ -1258,32 +1254,28 @@ public class SnowstormConcept extends SnowstormAbstract {
      * @return the string
      * @throws Exception the exception
      */
-    public static UpgradeDataResult compileUpgradeData(final TerminologyService service, final User user, final String refsetInternalId,
-        final boolean isForUpgrade) throws Exception {
+    public static String compileUpgradeData(final TerminologyService service, final User user, final String refsetInternalId) throws Exception {
 
-        final UpgradeDataResult status = isForUpgrade ? UpgradeDataResult.UPGRADE_DATA_COMPILED : UpgradeDataResult.REVIEW_INACTIVES_DATA_COMPILED;
+        final String status = "Upgrade data compiled";
         Refset tempRefset = RefsetService.getRefset(service, user, refsetInternalId);
 
-        RefsetWorkflowService.canUserPerformWorkflowAction(user, tempRefset, WorkflowAction.UPGRADE);
+        WorkflowService.canUserPerformWorkflowAction(user, tempRefset, WorkflowService.UPGRADE);
 
-        if (tempRefset.getWorkflowStatus() == WorkflowStatus.PUBLISHED && tempRefset.getAvailableActions().contains(WorkflowAction.UPGRADE)) {
+        if (tempRefset.getWorkflowStatus().equals(WorkflowService.PUBLISHED) && tempRefset.getAvailableActions().contains(WorkflowService.UPGRADE)) {
 
-            tempRefset = RefsetService.createNewRefsetVersion(service, user, tempRefset.getId(), false);
-            LOG.info("Created new version of refset IN DEVELOPMENT for refsetId: " + tempRefset.getRefsetId());
+            final String newRefsetInternalId = RefsetService.createNewRefsetVersion(service, user, tempRefset.getId(), false);
+            tempRefset = service.get(newRefsetInternalId, Refset.class);
         }
 
-        if (tempRefset.getWorkflowStatus() != WorkflowStatus.READY_FOR_EDIT) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Reference Set is in the wrong status to be Upgraded/Inactivated");
+        if (!tempRefset.getWorkflowStatus().equals(WorkflowService.READY_FOR_EDIT)) {
+
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Reference Set is in the wrong status to be Upgraded");
         }
+
+        final Refset upgradeRefset = tempRefset;
 
         // set the refset into IN_UPGRADE status
-        final Refset upgradeRefset = RefsetWorkflowService.setWorkflowStatusByAction(service, user, WorkflowAction.UPGRADE, tempRefset, "");
-
-        if (isForUpgrade) {
-            upgradeRefset.setInUpgrade(true);
-        } else {
-            upgradeRefset.setInInactivate(true);
-        }
+        WorkflowService.setWorkflowStatusByAction(service, user, WorkflowService.UPGRADE, upgradeRefset, "");
 
         final List<Concept> inactiveMemberList = new ArrayList<>();
         final List<String> activeMemberList = new ArrayList<>();
@@ -1335,7 +1327,7 @@ public class SnowstormConcept extends SnowstormAbstract {
                     throw new Exception(Integer.toString(response.getStatus()));
                 }
 
-                final JsonNode root = mapper.readTree(resultString);
+                final JsonNode root = mapper.readTree(resultString.toString());
                 final JsonNode conceptNodeBatch = root.get("items");
 
                 // if the search returned results set the total
@@ -1380,7 +1372,7 @@ public class SnowstormConcept extends SnowstormAbstract {
         boolean searchAgain = true;
         int searchIndex = 0;
 
-        if (!inactiveMemberList.isEmpty()) {
+        if (inactiveMemberList.size() == 0) {
 
             return status;
         }
@@ -1436,7 +1428,7 @@ public class SnowstormConcept extends SnowstormAbstract {
                         + response.getStatusInfo().getReasonPhrase());
                 }
 
-                final JsonNode root = mapper.readTree(resultString);
+                final JsonNode root = mapper.readTree(resultString.toString());
                 iterator = root.get("items").iterator();
 
                 // loop thru the returned member details and process the descriptions
@@ -1481,7 +1473,7 @@ public class SnowstormConcept extends SnowstormAbstract {
                             replacementConceptIds = replacementConceptIds.substring(1, replacementConceptIds.length() - 1);
                         }
 
-                        replacementConceptIds = replacementConceptIds.replace("\"", "");
+                        replacementConceptIds = replacementConceptIds.replaceAll("\"", "");
 
                         for (final String replacementConceptId : replacementConceptIds.split(",")) {
 
@@ -1493,10 +1485,10 @@ public class SnowstormConcept extends SnowstormAbstract {
 
                         final String threadReplacementBodyConceptIds = StringUtils.removeEnd(replacementBodyConceptIds, ",") + "]";
 
-                        LOG.debug("compileUpgradeData replacementConceptsToLookup: {}", replacementConceptsToLookup);
+                        LOG.debug("compileUpgradeData replacementConceptsToLookup: " + replacementConceptsToLookup);
 
                         // process descriptions of any replacement concepts
-                        if (!replacementConceptsToLookup.isEmpty()) {
+                        if (replacementConceptsToLookup.size() > 0) {
 
                             executor.submit(new Runnable() {
 
@@ -1511,8 +1503,8 @@ public class SnowstormConcept extends SnowstormAbstract {
 
                                         final List<String> replacementThatAreMembers = new ArrayList<>();
                                         final String memberSearchBody = bodyBase + threadReplacementBodyConceptIds + "}";
-                                        LOG.debug("compileUpgradeData replacement member search url: {}", conceptSearchUrl);
-                                        LOG.debug("compileUpgradeData replacement member search body: {}", memberSearchBody);
+                                        LOG.debug("compileUpgradeData replacement member search url: " + conceptSearchUrl);
+                                        LOG.debug("compileUpgradeData replacement member search body: " + memberSearchBody);
 
                                         try (final Response response = SnowstormConnection.postResponse(conceptSearchUrl, memberSearchBody)) {
 
@@ -1525,7 +1517,7 @@ public class SnowstormConcept extends SnowstormAbstract {
                                                     + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
                                             }
 
-                                            final JsonNode root = mapper.readTree(resultString);
+                                            final JsonNode root = mapper.readTree(resultString.toString());
                                             final Iterator<JsonNode> iterator = root.get("items").iterator();
 
                                             // loop thru the returned member details to mark
@@ -1574,26 +1566,32 @@ public class SnowstormConcept extends SnowstormAbstract {
                                             }
 
                                             threadService.add(upgradeReplacementConcept);
-                                            LOG.debug("compileUpgradeData added Replacement Concept: {}", upgradeReplacementConcept);
+                                            LOG.debug("compileUpgradeData added Replacement Concept: " + upgradeReplacementConcept);
                                             inactiveConcept.getReplacementConcepts().add(upgradeReplacementConcept);
                                         }
 
                                         threadService.add(inactiveConcept);
-                                        LOG.debug("compileUpgradeData added inactive Concept: {}", inactiveConcept);
+                                        LOG.debug("compileUpgradeData added inactive Concept: " + inactiveConcept);
                                     } catch (final Exception e) {
 
                                         throw new RuntimeException(e);
                                     }
+
                                 }
                             });
 
                         } else {
+
                             service.add(inactiveConcept);
-                            LOG.debug("compileUpgradeData added inactive Concept with no replacement: {}", inactiveConcept);
+                            LOG.debug("compileUpgradeData added inactive Concept with no replacement: " + inactiveConcept);
                         }
+
                     }
+
                 }
+
             }
+
         }
 
         executor.shutdown();
@@ -1700,7 +1698,7 @@ public class SnowstormConcept extends SnowstormAbstract {
 
                 // see if there the concept was unable to be changed and craft the error
                 // message
-                if (!unchangedConcepts.isEmpty()) {
+                if (unchangedConcepts.size() > 0) {
 
                     return "The concept " + unchangedConcepts.get(0) + " was unable to be " + changeText;
                 }
@@ -1785,7 +1783,7 @@ public class SnowstormConcept extends SnowstormAbstract {
                                 throw new Exception(Integer.toString(response.getStatus()));
                             }
 
-                            final JsonNode root = mapper.readTree(resultString);
+                            final JsonNode root = mapper.readTree(resultString.toString());
                             final Iterator<JsonNode> iterator = root.get("items").iterator();
 
                             if (iterator.hasNext()) {

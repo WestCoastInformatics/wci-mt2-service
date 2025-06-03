@@ -24,8 +24,6 @@ DROP TABLE ${pre_if_exists} map_users ${post_if_exists};
 DROP TABLE ${pre_if_exists} mapentry_advices ${post_if_exists};
 DROP TABLE ${pre_if_exists} mappings ${post_if_exists};
 DROP TABLE ${pre_if_exists} jobs ${post_if_exists};
-DROP TABLE ${pre_if_exists} mapset_workflow_history ${post_if_exists};
-DROP TABLE ${pre_if_exists} mapset_history ${post_if_exists};
 
 CREATE TABLE `map_users` (
   `id` varchar(64) NOT NULL,
@@ -339,37 +337,3 @@ CREATE TABLE `jobs` (
   `result` varchar(4000) DEFAULT NULL,
   PRIMARY KEY (`id`)
 );
-
-CREATE TABLE `mapset_workflow_history` (
-  `id` varchar(64) NOT NULL,
-  `active` bit(1) NOT NULL,
-  `created` datetime(6) NOT NULL,
-  `modified` datetime(6) NOT NULL,
-  `modifiedBy` varchar(256) NOT NULL,
-  `notes` longtext,
-  `userName` varchar(256) NOT NULL,
-  `workflowStatus` varchar(256) DEFAULT NULL,
-  `workflowAction` varchar(256) DEFAULT NULL,
-  `mapset_id` varchar(64) NOT NULL,
-  PRIMARY KEY (`id`)
-);
-
-ALTER  TABLE `mapset_workflow_history` ADD CONSTRAINT `FK_mapset_workflow_history_mapset` FOREIGN KEY (`mapset_id`) REFERENCES `map_sets` (`id`);
-
-CREATE TABLE `mapset_history` (
-  `id` varchar(64) NOT NULL,
-  `active` bit(1) NOT NULL,
-  `created` datetime(6) NOT NULL,
-  `modified` datetime(6) NOT NULL,
-  `modifiedBy` varchar(256) NOT NULL,
-  `notes` longtext,
-  `userName` varchar(256) NOT NULL,
-  `workflowStatus` varchar(256) DEFAULT NULL,
-  `workflowAction` varchar(256) DEFAULT NULL,
-  `mapset_id` varchar(64) NOT NULL,
-  `inUpgrade` BOOLEAN DEFAULT false,
-  `inInactivate` BOOLEAN DEFAULT false,
-  PRIMARY KEY (`id`)
-);
-
-

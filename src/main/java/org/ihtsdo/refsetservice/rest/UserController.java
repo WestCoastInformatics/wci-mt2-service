@@ -19,7 +19,6 @@ import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
-import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.TeamService;
 import org.ihtsdo.refsetservice.terminologyservice.UserService;
 import org.ihtsdo.refsetservice.util.FileUtility;
@@ -95,14 +94,12 @@ public class UserController extends BaseController {
 			@RequestParam(value = "includeOrganizations") final boolean includeOrganizations,
 			@RequestParam(value = "includeTeams") final boolean includeTeams) throws Exception {
 
-        LOG.info("Get user: {}", id);
-        authorizeUser(request);
+		authorizeUser(request);
 
-        try (final TerminologyService service = new TerminologyService()) {
+		try {
 
-            final User user = UserService.getUser(service, id, includeTeams);
-            return new ResponseEntity<>(user, HttpStatus.OK);
-
+			final User user = UserService.getUser(id, includeTeams);
+			return new ResponseEntity<>(user, HttpStatus.OK);
 
 		} catch (final Exception e) {
 			handleException(e);
@@ -130,20 +127,27 @@ public class UserController extends BaseController {
 			@Parameter(name = "user", description = "User object", required = true) })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<User> updateUser(@PathVariable(value = "id") final String id,
-			@org.springframework.web.bind.annotation.RequestBody @RequestBody final User user) throws Exception {
+			@org.springframework.web.bind.annotation.RequestBody final String userStr) throws Exception {
 
-        LOG.info("Update user: {}", user);
-        final User authUser = authorizeUser(request);
+		final User authUser = authorizeUser(request);
 
-        if (user == null || !org.apache.commons.lang3.StringUtils.equals(id, user.getId())) {
-            LOG.info("User is null or user id does not match id in URL.");
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        }
+		try {
+			User user = null;
+			try {
+				user = ModelUtility.fromJson(userStr, User.class);
+			} catch (Exception e) {
+				throw new RestException(false, 417, "Expectation Failed ", "Unable to parse user = " + user);
 
-        try (final TerminologyService service = new TerminologyService()) {
+			}
+			if (!org.apache.commons.lang3.StringUtils.equals(id, user.getId())) {
+				throw new RestException(false, 417, "Expectation failed", "User user id does not match id in URL.");
+			}
+			if (UserService.getUser(id, false) == null) {
+				throw new RestException(false, 404, "Not found", "Unable to find user for id = " + id);
+			}
 
-            final User updatedUser = UserService.updateUser(service, authUser, user);
-            return new ResponseEntity<>(updatedUser, HttpStatus.OK);
+			final User updatedUser = UserService.updateUser(authUser, user);
+			return new ResponseEntity<>(updatedUser, HttpStatus.OK);
 
 		} catch (final Exception e) {
 			handleException(e);
@@ -171,27 +175,21 @@ public class UserController extends BaseController {
 	public @ResponseBody ResponseEntity<User> deleteUserIcon(@PathVariable(value = "id") final String id)
 			throws Exception {
 
-        LOG.info("Delete user icon: {}", id);
-        final User authUser = authorizeUser(request);
+		final User authUser = authorizeUser(request);
 
-        try (final TerminologyService service = new TerminologyService()) {
+		try {
+			final User user = UserService.getUser(id, false);
+			if (user == null) {
+				throw new RestException(false, 404, "Not found", "Unable to find user for id = " + id);
+			}
+			if (!org.apache.commons.lang3.StringUtils.equals(id, user.getId())) {
+				throw new RestException(false, 417, "Expectation failed",
+						"User is null or user id does not match id in URL.");
+			}
 
-            final User user = UserService.getUser(service, id, false);
-            if (user == null || !org.apache.commons.lang3.StringUtils.equals(id, user.getId())) {
-                LOG.info("User is null or user id does not match id in URL.");
-                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-            }
-
-            service.setModifiedBy(user.getUserName());
-            service.setTransactionPerOperation(false);
-            service.beginTransaction();
-
-            user.setIconUri(null);
-            final User original = UserService.updateUser(service, authUser, user);
-
-            service.commit();
-
-            return new ResponseEntity<>(original, HttpStatus.OK);
+			user.setIconUri(null);
+			final User original = UserService.updateUser(authUser, user);
+			return new ResponseEntity<>(original, HttpStatus.OK);
 
 		} catch (final Exception e) {
 			handleException(e);
@@ -227,29 +225,28 @@ public class UserController extends BaseController {
 			@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult)
 			throws Exception {
 
-        LOG.info("Search users: {}", ModelUtility.toJson(searchParameters));
-        authorizeUser(request);
+		authorizeUser(request);
 
-        // Check to make sure parameters were properly bound to variables.
-        checkBinding(bindingResult);
+		// Check to make sure parameters were properly bound to variables.
+		checkBinding(bindingResult);
 
-        try (final TerminologyService service = new TerminologyService()) {
+		try {
 
-            final ResultList<User> results = UserService.searchUsers(service, searchParameters);
+			final ResultList<User> results = UserService.searchUsers(searchParameters);
 
-            for (final User user : results.getItems()) {
+			for (final User user : results.getItems()) {
 
-                if (includeTeams) {
-                    final SearchParameters sp = new SearchParameters();
-                    sp.setQuery("members:" + user.getId());
-                    final ResultList<Team> teamsResultList = TeamService.searchTeams(user, sp);
-                    if (teamsResultList != null && teamsResultList.getItems() != null) {
-                        user.getTeams().addAll(teamsResultList.getItems());
-                    }
-                }
-            }
+				if (includeTeams) {
+					final SearchParameters sp = new SearchParameters();
+					sp.setQuery("members:" + user.getId());
+					final ResultList<Team> teamsResultList = TeamService.searchTeams(user, sp);
+					if (teamsResultList != null && teamsResultList.getItems() != null) {
+						user.getTeams().addAll(teamsResultList.getItems());
+					}
+				}
+			}
 
-            return new ResponseEntity<>(results, HttpStatus.OK);
+			return new ResponseEntity<>(results, HttpStatus.OK);
 
 		} catch (final Exception e) {
 			handleException(e);
@@ -311,27 +308,30 @@ public class UserController extends BaseController {
 	public ResponseEntity<String> editUserIcon(@PathVariable("id") final String id,
 			@RequestParam("file") final MultipartFile inputFile) throws Exception {
 
-        LOG.info("Edit icon for user: {}.", id);
-        final User authUser = authorizeUser(request);
+		final User authUser = authorizeUser(request);
 
-        try (final TerminologyService service = new TerminologyService()) {
+		try {
 
-            final User user = UserService.getUser(service, id, false);
-            if (user == null) {
-                throw new RestException(false, 404, "Not found", "Unable to find user for " + id);
-            }
+			final User user = UserService.getUser(id, false);
+			if (user == null) {
+				throw new RestException(false, 404, "Not found", "Unable to find user for id = " + id);
+			}
+			if (!org.apache.commons.lang3.StringUtils.equals(id, user.getId())) {
+				throw new RestException(false, 417, "Expectation failed",
+						"User is null or user id does not match id in URL.");
+			}
 
-            String fileToDelete = "";
+			String fileToDelete = "";
 
-            if (user.getIconUri() != null) {
-                fileToDelete = user.getIconUri().replace(ICON_URL_PREFIX, "");
-            }
+			if (user.getIconUri() != null) {
+				fileToDelete = user.getIconUri().replace(ICON_URL_PREFIX, "");
+			}
 
-            final File file = FileUtility.saveIconFile(inputFile, id, fileToDelete);
-            user.setIconUri(ICON_URL_PREFIX + file.getName());
-            UserService.updateUser(service, authUser, user);
+			final File file = FileUtility.saveIconFile(inputFile, id, fileToDelete);
+			user.setIconUri(ICON_URL_PREFIX + file.getName());
+			UserService.updateUser(authUser, user);
 
-            return new ResponseEntity<>("\"" + user.getIconUri() + "\"", HttpStatus.ACCEPTED);
+			return new ResponseEntity<>("\"" + user.getIconUri() + "\"", HttpStatus.ACCEPTED);
 
 		} catch (final Exception e) {
 			handleException(e);

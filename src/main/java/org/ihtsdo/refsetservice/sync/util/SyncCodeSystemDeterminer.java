@@ -41,9 +41,6 @@ public class SyncCodeSystemDeterminer {
     /** The Constant AFFILIATE_OWNER. */
     private static final String AFFILIATE_OWNER = "Affiliates";
 
-    /** The Constant DEFAULT_ORGANIZATION_PREFACE. */
-    public static final String DEFAULT_ORGANIZATION_PREFACE = "Owner of ";
-
     /** The service. */
     private TerminologyService service;
 
@@ -53,8 +50,11 @@ public class SyncCodeSystemDeterminer {
     /** The statistics. */
     private SyncStatistics statistics;
 
-    /** The single code system sync short name. */
-    private Set<String> shortNamesToSync;
+    /** The is testing. */
+    private boolean isTesting;
+
+    /** The testing edition short name. */
+    private String testingEditionShortName;
 
     /**
      * Instantiates a {@link SyncCodeSystemDeterminer} from the specified parameters.
@@ -62,15 +62,17 @@ public class SyncCodeSystemDeterminer {
      * @param service the service
      * @param syncUtilities the sync utilities
      * @param syncStatistics the sync statistics
-     * @param shortNamesToSync the short names to sync
+     * @param isTesting the is testing
+     * @param testingEditionShortName the testing edition short name
      */
     public SyncCodeSystemDeterminer(final TerminologyService service, final SyncUtilities syncUtilities, final SyncStatistics syncStatistics,
-        final Set<String> shortNamesToSync) {
+        final boolean isTesting, final String testingEditionShortName) {
 
         this.service = service;
         this.syncUtilities = syncUtilities;
         this.statistics = syncStatistics;
-        this.shortNamesToSync = shortNamesToSync;
+        this.isTesting = isTesting;
+        this.testingEditionShortName = testingEditionShortName;
     }
 
     /**
@@ -87,8 +89,9 @@ public class SyncCodeSystemDeterminer {
         final JsonNode organizationJsonRootNode = getSnowstormCodeSystems();
         LOG.info("Found " + countCodeSystems(organizationJsonRootNode) + " + Code Systems on term server ");
 
-        // Filter code systems (based on active-setting, ignoredCS list and bad data)
-        final Map<SyncReasonEditionSkipped, Set<String>> ignoredReasonsEditionMap = identifyEditionsToSkip(service, organizationJsonRootNode, syncUtilities);
+        // Filter code systems (based on active-setting, ignoredCS list, testing situation, and bad data)
+        final Map<SyncReasonEditionSkipped, Set<String>> ignoredReasonsEditionMap =
+            identifyEditionsToSkip(service, organizationJsonRootNode, syncUtilities, isTesting);
 
         filteredCodeSystems.addAll(filterValidCodeSystems(service, organizationJsonRootNode, ignoredReasonsEditionMap, syncUtilities));
 
@@ -108,20 +111,20 @@ public class SyncCodeSystemDeterminer {
      * @param filteredCodeSystems the filtered code systems
      * @return the edition to organization map
      */
-    public HashMap<String, String> getTermServerShortNameToOwnerMap(final Set<JsonNode> filteredCodeSystems) {
+    public HashMap<String, String> getEditionToOrganizationMap(final Set<JsonNode> filteredCodeSystems) {
 
-        final HashMap<String, String> termServerShortNameToOwnerMap = new HashMap<>();
+        final HashMap<String, String> termServerEditionToOrganizationMap = new HashMap<>();
 
         // Determine Snow edition-to-orgName map
         for (final JsonNode codeSystem : filteredCodeSystems) {
 
             final String shortName = codeSystem.get("shortName").asText();
-            final String owner = determineOrganizationName(codeSystem);
+            final String organizationName = syncUtilities.determineOrganizationName(codeSystem);
 
-            termServerShortNameToOwnerMap.put(shortName, owner);
+            termServerEditionToOrganizationMap.put(shortName, organizationName);
         }
 
-        return termServerShortNameToOwnerMap;
+        return termServerEditionToOrganizationMap;
     }
 
     /**
@@ -130,11 +133,12 @@ public class SyncCodeSystemDeterminer {
      * @param service the service
      * @param organizationJsonRootNode the organization json root node
      * @param syncUtilities the sync utilities
+     * @param isTesting the is testing
      * @return the map
      * @throws Exception the exception
      */
     private Map<SyncReasonEditionSkipped, Set<String>> identifyEditionsToSkip(final TerminologyService service, final JsonNode organizationJsonRootNode,
-        final SyncUtilities syncUtilities) throws Exception {
+        final SyncUtilities syncUtilities, final boolean isTesting) throws Exception {
 
         final Iterator<JsonNode> organizationIterator = organizationJsonRootNode.iterator();
         final Map<SyncReasonEditionSkipped, Set<String>> ignoredReasonEditionMap = new EnumMap<>(SyncReasonEditionSkipped.class);
@@ -161,9 +165,9 @@ public class SyncCodeSystemDeterminer {
 
                 final String maintainerType = syncUtilities.identifyMaintainerType(codeSystem, editionShortName);
 
-                if (!isShortNameToSync(editionShortName, syncUtilities)) {
+                if (isTesting && !isTestingEditionToProcess(editionShortName, syncUtilities)) {
 
-                    ignoredReasonEditionMap.get(SyncReasonEditionSkipped.NOT_SINGLE_CODE_SYSTEM_TO_SYNC).add(editionShortName);
+                    ignoredReasonEditionMap.get(SyncReasonEditionSkipped.WRONG_TESTING_EDITION).add(editionShortName);
 
                 } else if (codeSystem.has("active") && !codeSystem.get("active").asBoolean()) {
 
@@ -201,14 +205,14 @@ public class SyncCodeSystemDeterminer {
 
                 switch (reason) {
 
-                    case NOT_SINGLE_CODE_SYSTEM_TO_SYNC:
-                        s.append("not the single code system to sync");
+                    case WRONG_TESTING_EDITION:
+                        s.append("not the testing edition specified");
                         break;
                     case INACTIVE_EDITION:
                         s.append("inactive");
                         break;
                     case IGNORED_PER_FILE_EDITION:
-                        // Ideally, we don't rely on this, but rather programmatically calculate based on code system attributes
+                        // Ideally, we don't rely on this, but rather programmatically calculate based on code system attributes 
                         s.append("listed in ignoredCodeSystems.txt");
                         break;
                     case NON_SUPPORTED_MAINTAINER_TYPE:
@@ -271,10 +275,14 @@ public class SyncCodeSystemDeterminer {
 
                 final String editionShortName = codeSystem.get("shortName").asText();
 
+                // if ( editionShortName.equals("SNOMEDCT-NO") || editionShortName.equals("SNOMEDCT-SE") ) {
+
                 if (!ignoredEditions.contains(editionShortName)) {
 
                     filteredCodeSystems.add(codeSystem);
                 }
+
+                // }
 
             }
 
@@ -326,7 +334,7 @@ public class SyncCodeSystemDeterminer {
             final String resultString = response.readEntity(String.class);
 
             final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode organizationJsonRootNode = mapper.readTree(resultString);
+            final JsonNode organizationJsonRootNode = mapper.readTree(resultString.toString());
 
             return organizationJsonRootNode;
         }
@@ -334,36 +342,15 @@ public class SyncCodeSystemDeterminer {
     }
 
     /**
-     * Indicates whether or not a single code system is to be processed.
+     * Indicates whether or not testing edition to process is the case.
      *
      * @param codeSystem the code system
      * @param syncUtilities the sync utilities
      * @return <code>true</code> if so, <code>false</code> otherwise
      */
-    public boolean isShortNameToSync(final String shortNameToReview, final SyncUtilities syncUtilities) {
+    private boolean isTestingEditionToProcess(final String codeSystem, final SyncUtilities syncUtilities) {
 
-        return ((shortNamesToSync == null || shortNamesToSync.isEmpty())
-            || shortNamesToSync.stream().anyMatch(shortName -> shortName.toLowerCase().equals(shortNameToReview.toLowerCase())));
+        return ((testingEditionShortName == null || testingEditionShortName.isEmpty()) || codeSystem.equalsIgnoreCase(testingEditionShortName));
 
     }
-
-    /**
-     * Determine organization name.
-     *
-     * @param codeSystem the code system
-     * @return the string
-     */
-    private static String determineOrganizationName(final JsonNode codeSystem) {
-
-        // If owner defined, return it as organization name
-        if (codeSystem.has("owner") && !codeSystem.get("owner").asText().trim().isBlank()) {
-
-            return codeSystem.get("owner").asText();
-        }
-
-        // Create generic organization name
-        final String editionName = codeSystem.has("name") ? codeSystem.get("name").asText() : "";
-        return DEFAULT_ORGANIZATION_PREFACE + editionName;
-    }
-
 }

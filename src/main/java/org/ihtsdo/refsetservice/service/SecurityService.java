@@ -1,9 +1,9 @@
 /*
- * Copyright 2025 West Coast Informatics - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
- * NOTICE:  All information contained herein is, and remains the property of West Coast Informatics
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
- * West Coast Informatics and may be covered by U.S. and Foreign Patents, patents in process,
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
  * and are protected by trade secret or copyright law.  Dissemination of this information
  * or reproduction of this material is strictly forbidden.
  */
@@ -16,7 +16,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
@@ -116,7 +115,7 @@ public class SecurityService implements AutoCloseable {
         // TODO - Find a better solution for unit tests
         if (PropertyUtility.getProperty("springProfiles").toLowerCase().contains("test")) {
 
-            final User testUser = new User("unitTestUser", "Unit Test User", "", "", "", new HashSet<>());
+            final User testUser = new User("unitTestUser", "Unit Test User", "", "", "", new HashSet<String>());
             testUser.getRoles().add("all-all-author");
             testUser.getRoles().add("all-all-reviewer");
             testUser.getRoles().add("all-all-admin");
@@ -124,7 +123,7 @@ public class SecurityService implements AutoCloseable {
             return testUser;
         }
 
-        final User nonLoggedInUser = new User(GUEST_USERNAME, "Non Logged In User", "", "", "", new HashSet<>());
+        final User nonLoggedInUser = new User(GUEST_USERNAME, "Non Logged In User", "", "", "", new HashSet<String>());
         LOG.debug("getUserFromSession SESSION USER: " + ModelUtility.logJson(nonLoggedInUser));
 
         final ServletRequestAttributes requestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
@@ -433,11 +432,9 @@ public class SecurityService implements AutoCloseable {
         //
         // Call the security service
         //
-        try (final TerminologyService service = new TerminologyService()) {
-            final User authUser = handler.authenticate(userName);
-            LOG.info("Authenticated user is {}", authUser);
-            return authHelper(service, authUser);
-        }
+        final User authUser = handler.authenticate(userName);
+        LOG.info("Authenticated user is {}", authUser);
+        return authHelper(authUser);
     }
 
     /**
@@ -447,14 +444,14 @@ public class SecurityService implements AutoCloseable {
      * @return the user
      * @throws Exception the exception
      */
-    private User authHelper(final TerminologyService service, final User authUser) throws Exception {
+    private User authHelper(final User authUser) throws Exception {
 
         if (authUser == null) {
             return null;
         }
 
         // check if authenticated user exists
-        final User userFound = getUserFromUserName(service, authUser.getUserName());
+        final User userFound = getUserFromUserName(authUser.getUserName());
 
         // if user was found, update to match settings
         String userId = null;
@@ -549,15 +546,21 @@ public class SecurityService implements AutoCloseable {
     /**
      * Returns the user from user name.
      *
-     * @param service the service
      * @param userName the user name
      * @return the user from user name
      * @throws Exception the exception
      */
-    public static User getUserFromUserName(final TerminologyService service, final String userName) throws Exception {
+    public static User getUserFromUserName(final String userName) throws Exception {
 
-        // Note: When testing POSTMAN, hard code userName to your userName and relaunch server
-        final User user = service.findSingle("userName:" + userName, User.class, null);
+        User user = null;
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            // Note: When testing POSTMAN, hard code userName to your userName and relaunch
+            // server
+            user = service.findSingle("userName:" + userName, User.class, null);
+        }
+
         return user;
     }
 
@@ -625,65 +628,6 @@ public class SecurityService implements AutoCloseable {
         // n/a
 
     }
-    
-    /**
-     * Returns the system admin user names.
-     *
-     * @return the system admin user names
-     * @throws Exception the exception
-     */
-    public static Set<String> getSystemAdminUserNames() throws Exception {
-
-        setHandler();
-        return handler.getSystemAdminUserNames();
-    }
-
-    /**
-     * Returns the system author user names.
-     *
-     * @return the system author user names
-     * @throws Exception the exception
-     */
-    public static Set<String> getSystemAuthorUserNames() throws Exception {
-
-        setHandler();
-        return handler.getSystemAuthorUserNames();
-    }
-
-    /**
-     * Returns the system reviewer user names.
-     *
-     * @return the system reviewer user names
-     * @throws Exception the exception
-     */
-    public static Set<String> getSystemReviewerUserNames() throws Exception {
-
-        setHandler();
-        return handler.getSystemReviewerUserNames();
-    }
-
-    /**
-     * Sets the handler if null.
-     *
-     * @throws Exception the exception
-     */
-    private static void setHandler() throws Exception {
-
-        if (handler != null) {
-            return;
-        }
-
-        final Properties config = PropertyUtility.getProperties();
-
-        timeout = (StringUtils.isNotBlank(config.getProperty("spring.session.timeout.seconds")))
-            ? Integer.valueOf(config.getProperty("spring.session.timeout.seconds")) : 900000;
-
-        final String handlerName = (StringUtils.isNotBlank(config.getProperty("security.handler"))) ? config.getProperty("security.handler")
-            : "org.ihtsdo.refsetservice.handler.ImsSecurityServiceHandler";
-
-        handler = HandlerUtility.newStandardHandlerInstanceWithConfiguration("security.handler", handlerName, SecurityServiceHandler.class);
-
-    }
 
     /**
      * Gets the username from jwt.
@@ -719,7 +663,7 @@ public class SecurityService implements AutoCloseable {
 
         final ResultList<User> list = service.find("username:" + user.getUserName(), new PfsParameter(), User.class, null);
 
-        if (list.size() == 0 || list.getItems().isEmpty()) {
+        if (list.size() == 0 || list.getItems().size() == 0) {
             return null;
         }
 

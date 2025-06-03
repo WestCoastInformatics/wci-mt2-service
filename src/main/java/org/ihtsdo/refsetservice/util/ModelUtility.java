@@ -240,9 +240,6 @@ public final class ModelUtility {
      */
     public static String toJson(final Object object) throws Exception {
 
-        if (object == null) {
-            return null;
-        }
         final ObjectMapper mapper = new ObjectMapper();
         return mapper.writeValueAsString(object);
     }
@@ -256,10 +253,6 @@ public final class ModelUtility {
      */
     public static String logJson(final Object object) throws Exception {
 
-        if (object == null) {
-            return null;
-        }
-        
         final ObjectMapper mapper = new ObjectMapper();
         final JsonNode jsonNode = mapper.valueToTree(object);
 

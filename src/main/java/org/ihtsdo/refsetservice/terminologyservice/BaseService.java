@@ -17,8 +17,6 @@ import org.ihtsdo.refsetservice.util.SearchParameters;
  */
 public abstract class BaseService {
 
-    protected static final String APP_PREFIX = "rt2-";
-    
     /**
      * Returns the query for active only.
      *

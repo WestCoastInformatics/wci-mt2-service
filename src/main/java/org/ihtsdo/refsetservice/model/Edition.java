@@ -1,16 +1,15 @@
 /*
- * Copyright 2025 West Coast Informatics - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
- * NOTICE:  All information contained herein is, and remains the property of West Coast Informatics
+ * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
- * West Coast Informatics and may be covered by U.S. and Foreign Patents, patents in process,
+ * SNOMED International and may be covered by U.S. and Foreign Patents, patents in process,
  * and are protected by trade secret or copyright law.  Dissemination of this information
  * or reproduction of this material is strictly forbidden.
  */
 
 package org.ihtsdo.refsetservice.model;
 
-import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,7 +37,8 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDependency;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.ObjectPath;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.PropertyValue;
-import org.ihtsdo.refsetservice.util.LanguageUtility;
+import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
+import org.ihtsdo.refsetservice.util.LanguageConstants;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
@@ -80,7 +80,7 @@ public class Edition extends AbstractHasModified {
     /** The modules that are part of this edition. */
     @ElementCollection
     @Fetch(FetchMode.JOIN)
-    private Set<String> modules = new HashSet<>();
+    private Set<String> modules = new HashSet<String>();
 
     /** The default language code. */
     @Column(nullable = true, length = 256)
@@ -89,7 +89,7 @@ public class Edition extends AbstractHasModified {
     /** The default language refsets. */
     @ElementCollection
     @Fetch(FetchMode.JOIN)
-    private Set<String> defaultLanguageRefsets = new HashSet<>();
+    private Set<String> defaultLanguageRefsets = new HashSet<String>();
 
     /** The organization. */
     @ManyToOne(targetEntity = Organization.class)
@@ -102,14 +102,6 @@ public class Edition extends AbstractHasModified {
      */
     @Transient
     private Map<String, String> moduleNames;
-
-    /** The library sort field. */
-    @Transient
-    private String librarySortField;
-
-    /** The derivative. */
-    @Transient
-    private String derivative;
 
     /**
      * Instantiates an empty {@link Edition}.
@@ -246,33 +238,6 @@ public class Edition extends AbstractHasModified {
     }
 
     /**
-     * Returns the library sort field.
-     *
-     * @return the library sort field
-     */
-    @JsonGetter()
-    public String getLibrarySortField() {
-
-        if (librarySortField == null) {
-            return name;
-        }
-
-        // is Affiliate, so return librarySortField to enable sorting/filtering against the original edition's name
-        return librarySortField;
-    }
-
-    /**
-     * Sets the library sort field.
-     *
-     * @param affiliateBasisName the library sort field
-     */
-    public void setLibrarySortField(final String affiliateBasisName) {
-
-        librarySortField = affiliateBasisName;
-
-    }
-
-    /**
      * Gets the abbreviation version of the name.
      *
      * @return the abbreviation version of the name
@@ -369,28 +334,28 @@ public class Edition extends AbstractHasModified {
      * Gets the default language refsets qualified with the language code and types.
      *
      * @return the default language refsets qualified with the language code and types.
-     * @throws Exception the exception
      */
-    public List<Map<String, String>> getFullyQualifiedLanguageRefsets() throws Exception {
+    public List<Map<String, String>> getFullyQualifiedLanguageRefsets() {
 
+        final Map<String, String> refsetToLanguagesMap = RefsetMemberService.getRefsetToLanguagesMap();
         final List<Map<String, String>> qualifiedLanguageList = new ArrayList<>();
 
         for (final String languageRefsetCode : getDefaultLanguageRefsets()) {
-            // Determine language code with fallback option
-            String languageCode;
-            try {
-                languageCode = LanguageUtility.identifyLanguageCode(languageRefsetCode, getBranch());
-            } catch (final InvalidParameterException e) {
-                languageCode = LanguageUtility.UNKNOWN_LANGUAGE_CODE;
+
+            final String languageCode = refsetToLanguagesMap.get(languageRefsetCode);
+
+            if (languageCode == null) {
+
+                continue;
             }
 
-            // Create language refset details
             final Map<String, String> languageDetails = new HashMap<>();
             languageDetails.put("languageRefset", languageRefsetCode);
             languageDetails.put("languageCode", languageCode);
             languageDetails.put("qualifiedLanguageRefset", languageRefsetCode + "PT");
-            languageDetails.put("qualifiedLanguageCode", languageCode == null ? "" : languageCode.toUpperCase() + " (PT)");
-            languageDetails.put("qualifiedLanguageDialectCode", LanguageUtility.identifyCountryCode(languageRefsetCode) + "-" + languageCode.toUpperCase());
+            languageDetails.put("qualifiedLanguageCode", languageCode.toUpperCase() + " (PT)");
+            languageDetails.put("qualifiedLanguageDialectCode",
+                LanguageConstants.LANGUAGE_CODE_TO_COUNTRY_CODE.get(languageRefsetCode) + "-" + languageCode.toUpperCase());
 
             // if this is the default language code make sure it is first and
             // add a FSN version
@@ -403,12 +368,12 @@ public class Edition extends AbstractHasModified {
 
                 qualifiedLanguageList.add(0, languageDetails);
 
-                if (languageCode.equalsIgnoreCase("en")) {
+                if (languageCode.equals("en")) {
 
                     qualifiedLanguageList.add(1,
                         Map.of("languageRefset", languageRefsetCode, "languageCode", languageCode, "qualifiedLanguageRefset", languageRefsetCode + "FSN",
                             "qualifiedLanguageCode", languageCode.toUpperCase() + " (FSN)", "qualifiedLanguageDialectCode",
-                            LanguageUtility.identifyCountryCode(languageRefsetCode) + "-" + languageCode.toUpperCase()));
+                            LanguageConstants.LANGUAGE_CODE_TO_COUNTRY_CODE.get(languageRefsetCode) + "-" + languageCode.toUpperCase()));
                 }
 
             } else {
@@ -465,7 +430,7 @@ public class Edition extends AbstractHasModified {
     /**
      * Gets the short name.
      *
-     * @return the shortname
+     * @return the country
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getShortName() {
@@ -605,48 +570,26 @@ public class Edition extends AbstractHasModified {
         this.moduleNames = moduleNames;
     }
 
-    /**
-     * Indicates whether or not derivative is the case.
-     *
-     * @return <code>true</code> if so, <code>false</code> otherwise
-     */
-    public boolean isDerivative() {
-
-        return (getOrganization() == null) ? false : "SNOMED International".equalsIgnoreCase(getOrganization().getName());
-    }
-
-    /**
-     * Hash code.
-     *
-     * @return the int
-     */
     /* see superclass */
     @Override
     public int hashCode() {
 
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((branch == null) ? 0 : branch.hashCode());
-        result = prime * result + ((defaultLanguageCode == null) ? 0 : defaultLanguageCode.hashCode());
-        result = prime * result + ((defaultLanguageRefsets == null) ? 0 : defaultLanguageRefsets.hashCode());
-        result = prime * result + ((iconUri == null) ? 0 : iconUri.hashCode());
-        result = prime * result + ((librarySortField == null) ? 0 : librarySortField.hashCode());
-        result = prime * result + ((maintainerType == null) ? 0 : maintainerType.hashCode());
-        result = prime * result + ((moduleNames == null) ? 0 : moduleNames.hashCode());
-        result = prime * result + ((modules == null) ? 0 : modules.hashCode());
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((namespace == null) ? 0 : namespace.hashCode());
-        result = prime * result + ((organization == null) ? 0 : organization.hashCode());
+        result = prime * result + ((branch == null) ? 0 : branch.hashCode());
+        result = prime * result + ((iconUri == null) ? 0 : iconUri.hashCode());
+        result = prime * result + ((modules == null) ? 0 : modules.hashCode());
+        result = prime * result + ((defaultLanguageRefsets == null) ? 0 : defaultLanguageRefsets.hashCode());
+        result = prime * result + ((defaultLanguageCode == null) ? 0 : defaultLanguageCode.hashCode());
         result = prime * result + ((shortName == null) ? 0 : shortName.hashCode());
+        result = prime * result + ((organization == null) ? 0 : organization.hashCode());
+        result = prime * result + ((moduleNames == null) ? 0 : moduleNames.hashCode());
+        result = prime * result + ((maintainerType == null) ? 0 : maintainerType.hashCode());
         return result;
     }
 
-    /**
-     * Equals.
-     *
-     * @param obj the obj
-     * @return true, if successful
-     */
     /* see superclass */
     @Override
     public boolean equals(final Object obj) {
@@ -661,62 +604,7 @@ public class Edition extends AbstractHasModified {
             return false;
         }
         final Edition other = (Edition) obj;
-        if (branch == null) {
-            if (other.branch != null) {
-                return false;
-            }
-        } else if (!branch.equals(other.branch)) {
-            return false;
-        }
-        if (defaultLanguageCode == null) {
-            if (other.defaultLanguageCode != null) {
-                return false;
-            }
-        } else if (!defaultLanguageCode.equals(other.defaultLanguageCode)) {
-            return false;
-        }
-        if (defaultLanguageRefsets == null) {
-            if (other.defaultLanguageRefsets != null) {
-                return false;
-            }
-        } else if (!defaultLanguageRefsets.equals(other.defaultLanguageRefsets)) {
-            return false;
-        }
-        if (iconUri == null) {
-            if (other.iconUri != null) {
-                return false;
-            }
-        } else if (!iconUri.equals(other.iconUri)) {
-            return false;
-        }
-        if (librarySortField == null) {
-            if (other.librarySortField != null) {
-                return false;
-            }
-        } else if (!librarySortField.equals(other.librarySortField)) {
-            return false;
-        }
-        if (maintainerType == null) {
-            if (other.maintainerType != null) {
-                return false;
-            }
-        } else if (!maintainerType.equals(other.maintainerType)) {
-            return false;
-        }
-        if (moduleNames == null) {
-            if (other.moduleNames != null) {
-                return false;
-            }
-        } else if (!moduleNames.equals(other.moduleNames)) {
-            return false;
-        }
-        if (modules == null) {
-            if (other.modules != null) {
-                return false;
-            }
-        } else if (!modules.equals(other.modules)) {
-            return false;
-        }
+
         if (name == null) {
             if (other.name != null) {
                 return false;
@@ -731,11 +619,42 @@ public class Edition extends AbstractHasModified {
         } else if (!namespace.equals(other.namespace)) {
             return false;
         }
-        if (organization == null) {
-            if (other.organization != null) {
+
+        if (branch == null) {
+            if (other.branch != null) {
                 return false;
             }
-        } else if (!organization.equals(other.organization)) {
+        } else if (!branch.equals(other.branch)) {
+            return false;
+        }
+
+        if (iconUri == null) {
+            if (other.iconUri != null) {
+                return false;
+            }
+        } else if (!iconUri.equals(other.iconUri)) {
+            return false;
+        }
+        if (modules == null) {
+            if (other.modules != null) {
+                return false;
+            }
+        } else if (!modules.equals(other.modules)) {
+            return false;
+        }
+
+        if (defaultLanguageRefsets == null) {
+            if (other.defaultLanguageRefsets != null) {
+                return false;
+            }
+        } else if (!defaultLanguageRefsets.equals(other.defaultLanguageRefsets)) {
+            return false;
+        }
+        if (defaultLanguageCode == null) {
+            if (other.defaultLanguageCode != null) {
+                return false;
+            }
+        } else if (!defaultLanguageCode.equals(other.defaultLanguageCode)) {
             return false;
         }
         if (shortName == null) {
@@ -745,14 +664,37 @@ public class Edition extends AbstractHasModified {
         } else if (!shortName.equals(other.shortName)) {
             return false;
         }
+        if (organization == null) {
+            if (other.organization != null) {
+                return false;
+            }
+        } else if (!organization.equals(other.organization)) {
+            return false;
+        }
+
+        if (moduleNames == null) {
+            if (other.moduleNames != null) {
+                return false;
+            }
+        } else if (!moduleNames.equals(other.moduleNames)) {
+            return false;
+        }
+
+        if (maintainerType == null) {
+
+            if (other.maintainerType != null) {
+
+                return false;
+            }
+
+        } else if (!maintainerType.equals(other.maintainerType)) {
+
+            return false;
+        }
+
         return true;
     }
 
-    /**
-     * To string.
-     *
-     * @return the string
-     */
     /* see superclass */
     @Override
     public String toString() {

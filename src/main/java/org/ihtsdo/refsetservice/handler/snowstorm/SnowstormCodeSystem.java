@@ -41,7 +41,7 @@ public class SnowstormCodeSystem extends SnowstormAbstract {
 
       final String resultString = response.readEntity(String.class);
       final ObjectMapper mapper = new ObjectMapper();
-      final JsonNode organizationJsonRootNode = mapper.readTree(resultString);
+      final JsonNode organizationJsonRootNode = mapper.readTree(resultString.toString());
       final SyncUtilities syncUtilities =
           new SyncUtilities(new SyncDatabaseHandler(null, new SyncStatistics()));
 
@@ -92,7 +92,7 @@ public class SnowstormCodeSystem extends SnowstormAbstract {
           final String defaultLanguageCode =
               syncUtilities.identifyDefaultLanguageCode(codeSystem, editionName);
           final Set<String> defaultLanguageRefsets =
-              syncUtilities.identifyEditionLanguageRefsets(codeSystem, editionShortName, branch);
+              syncUtilities.identifyDefaultLanguageRefsets(codeSystem, editionShortName, branch);
 
           // Affiliates (on any extension) should not have the ability to choose
           // modules.

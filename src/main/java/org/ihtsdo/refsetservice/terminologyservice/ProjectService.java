@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 SNOMED International - All Rights Reserved.
+ * Copyright 2023 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -10,19 +10,20 @@
 package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotFoundException;
-import javax.ws.rs.core.Response;
 
-import org.apache.commons.lang3.StringUtils;
+import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
+import org.ihtsdo.refsetservice.model.Edition;
+import org.ihtsdo.refsetservice.model.MapAdvice;
+import org.ihtsdo.refsetservice.model.MapProject;
+import org.ihtsdo.refsetservice.model.MapRelation;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
@@ -33,15 +34,13 @@ import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
+import org.ihtsdo.refsetservice.util.HandlerUtility;
 import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * The Class ProjectService.
@@ -51,150 +50,128 @@ public class ProjectService extends BaseService {
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(ProjectService.class);
 
+    /** The terminology handler. */
+    private static TerminologyServerHandler terminologyHandler;
+
     /** The crowd unit test skip. */
     private static String crowdUnitTestSkip;
 
     static {
         crowdUnitTestSkip = PropertyUtility.getProperty("crowd.unit.test.skip");
+
+        // Instantiate terminology handler
+        try {
+            String key = "terminology.handler";
+            String handlerName = PropertyUtility.getProperty(key);
+            if (handlerName.isEmpty()) {
+                throw new Exception("terminology.handler expected and does not exist.");
+            }
+
+            terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName, TerminologyServerHandler.class);
+
+        } catch (Exception e) {
+            LOG.error("Failed to initialize terminology.handler - serious error", e);
+            terminologyHandler = null;
+        }
     }
 
     /**
      * Adds the project.
      *
-     * @param service the service
      * @param user the user
      * @param project the project
      * @return the project
      * @throws Exception the exception
      */
-    public static Project addProject(final TerminologyService service, final User user, final Project project) throws Exception {
-        // When a project is created, it does not have teams, those are added through update
+    public static Project addProject(final User user, final Project project) throws Exception {
+        // When a project is created, it does not have teams, those are added through
+        // update
 
-        RefsetService.setProjectPermissions(user, project);
-        checkPermissions(user, project);
+        try (final TerminologyService service = new TerminologyService()) {
 
-        // Allow for defining the
-        if (project.getCrowdProjectId() == null || project.getCrowdProjectId().isEmpty()) {
-            project.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(project.getName()));
-        }
+            RefsetService.setProjectPermissions(user, project);
+            checkPermissions(user, project);
 
-        project.setName(StringUtils.trim(project.getName()));
-        project.setDescription(StringUtils.trim(project.getDescription()));
-
-        service.add(project);
-        service.add(AuditEntryHelper.addProjectEntry(project));
-
-        // Return the response
-        return project;
-
-    }
-
-    /**
-     * Returns the active projects.
-     *
-     * @param service the service
-     * @return the projects
-     * @throws Exception the exception
-     */
-    public static List<Project> getProjects(final TerminologyService service) throws Exception {
-
-        final ResultList<Project> projects = service.find("active:true", null, Project.class, null);
-
-        if (projects != null) {
-            return projects.getItems();
-        }
-
-        return new ArrayList<Project>();
-    }
-
-    /**
-     * Returns the projects.
-     *
-     * @param service the service
-     * @param includeMembers the include members
-     * @return the projects
-     * @throws Exception the exception
-     */
-    public static List<Project> getProjects(final TerminologyService service, final boolean includeMembers) throws Exception {
-
-        final ResultList<Project> projects = service.find("active:true", null, Project.class, null);
-
-        if (projects == null) {
-            return new ArrayList<Project>();
-        }
-
-        if (!includeMembers) {
-            return projects.getItems();
-        }
-
-        for (final Project project : projects.getItems()) {
-            final Set<User> members = new HashSet<>();
-            for (final String teamId : project.getTeams()) {
-                final Team team = service.get(teamId, Team.class);
-                if (team != null && team.getMembers() != null) {
-                    for (final String userId : team.getMembers()) {
-                        final User member = service.get(userId, User.class);
-                        members.add(member);
-                    }
-                }
+            // Allow for defining the
+            if (project.getCrowdProjectId() == null || project.getCrowdProjectId().isEmpty()) {
+                project.setCrowdProjectId(CrowdGroupNameAlgorithm.getProjectString(project.getName()));
             }
-            project.getMemberList().addAll(members);
+
+            service.setModifiedBy(user.getUserName());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
+
+            service.add(project);
+            service.add(AuditEntryHelper.addProjectEntry(project));
+            service.commit();
+
+            // Return the response
+            return project;
         }
 
-        return projects.getItems();
     }
 
     /**
      * Returns the project if active.
      *
-     * @param service the service
      * @param projectId the project id
      * @param includeMembers the include members
      * @return the project
      * @throws Exception the exception
      */
-    public static Project getProject(final TerminologyService service, final String projectId, final boolean includeMembers) throws Exception {
+    public static Project getProject(final String projectId, final boolean includeMembers) throws Exception {
 
-        final Project project = service.findSingle("id: " + projectId + " AND active:true", Project.class, null);
+        try (final TerminologyService service = new TerminologyService()) {
 
-        if (project == null) {
+            final Project project = service.findSingle("id: " + projectId + " AND active:true", Project.class, null);
 
-            final String errorMessage = "Unable to find project for id " + projectId + ".";
-            LOG.info(errorMessage);
-            throw new NotFoundException(errorMessage);
-        }
+            if (project == null) {
 
-        if (includeMembers) {
-
-            final Set<User> members = new HashSet<>();
-            for (final String teamId : project.getTeams()) {
-                final Team team = service.get(teamId, Team.class);
-                if (team != null && team.getMembers() != null) {
-                    for (final String userId : team.getMembers()) {
-                        final User member = service.get(userId, User.class);
-                        members.add(member);
-                    }
-                }
+                final String errorMessage = "Unable to find project for id " + projectId + ".";
+                LOG.info(errorMessage);
+                throw new NotFoundException(errorMessage);
             }
-            project.getMemberList().addAll(members);
+
+            if (includeMembers) {
+
+                final Set<User> members = new HashSet<>();
+
+                for (final String teamId : project.getTeams()) {
+
+                    final Team team = service.get(teamId, Team.class);
+
+                    if (team != null && team.getMembers() != null) {
+
+                        for (final String userId : team.getMembers()) {
+
+                            final User member = service.get(userId, User.class);
+                            members.add(member);
+                        }
+
+                    }
+
+                }
+
+                project.getMemberList().addAll(members);
+            }
+
+            return project;
         }
-        return project;
 
     }
 
     /**
      * Returns the project names for edition.
      *
-     * @param service the service
      * @param editionId the edition id
      * @return the project names for edition
      * @throws Exception the exception
      */
-    public static Set<String> getProjectNamesForEdition(final TerminologyService service, final String editionId) throws Exception {
+    public static Set<String> getProjectNamesForEdition(final String editionId) throws Exception {
 
         final Set<String> projectNames = new HashSet<>();
 
-        final List<Project> projects = getProjectsForEdition(service, editionId);
+        final List<Project> projects = getProjectsForEdition(editionId);
 
         if (projects != null) {
 
@@ -208,40 +185,39 @@ public class ProjectService extends BaseService {
     /**
      * Returns the projects for edition.
      *
-     * @param service the service
      * @param editionId the edition id
      * @return the projects for edition
      * @throws Exception the exception
      */
-    public static List<Project> getProjectsForEdition(final TerminologyService service, final String editionId) throws Exception {
+    public static List<Project> getProjectsForEdition(final String editionId) throws Exception {
 
-        final ResultList<Project> projects = service.find("edition.id: " + editionId + " AND active:true", null, Project.class, null);
+        try (final TerminologyService service = new TerminologyService()) {
 
-        if (projects != null) {
-            return projects.getItems();
+            final ResultList<Project> projects = service.find("edition.id: " + editionId + " AND active:true", null, Project.class, null);
+
+            if (projects != null) {
+                return projects.getItems();
+            }
+
+            return new ArrayList<Project>();
         }
-
-        return new ArrayList<Project>();
-
     }
 
     /**
      * Returns the team assigned to this project.
      *
-     * @param service the service
-     * @param authUser the auth user
      * @param projectId the project ID
      * @return the project teams
      * @throws Exception the exception
      */
-    public static ResultList<Team> getProjectTeams(final TerminologyService service, final User authUser, final String projectId) throws Exception {
+    public static ResultList<Team> getProjectTeams(final String projectId) throws Exception {
 
-        final Project project = getProject(service, projectId, false);
+        final Project project = getProject(projectId, false);
         final ResultList<Team> teams = new ResultList<>();
 
         for (final String teamId : project.getTeams()) {
 
-            final Team team = TeamService.getTeam(authUser, teamId, true);
+            final Team team = TeamService.getTeam(teamId, true);
             teams.getItems().add(team);
         }
         teams.setTotal(teams.getItems().size());
@@ -289,7 +265,7 @@ public class ProjectService extends BaseService {
                 pfs.setSort("name");
             }
 
-            if (!StringUtils.isBlank(query)) {
+            if (query != null && !query.equals("")) {
 
                 query = IndexUtility.addWildcardsToQuery(query, Refset.class);
             }
@@ -303,7 +279,6 @@ public class ProjectService extends BaseService {
             for (Project project : projectList) {
 
                 final Organization organization = OrganizationService.getOrganization(service, user, project.getOrganizationId(), true);
-
                 if (organization.isAffiliate() && !organization.getMembers().stream().anyMatch(m -> m.getId().equals(user.getId()))) {
                     results.getItems().remove(project);
                     continue;
@@ -311,7 +286,8 @@ public class ProjectService extends BaseService {
 
                 project = RefsetService.setProjectPermissions(user, project);
 
-                if (!organization.getRoles().contains(User.ROLE_VIEWER)) {
+                if (!project.getRoles().contains(User.ROLE_VIEWER)) {
+
                     results.getItems().remove(project);
                 }
 
@@ -329,151 +305,120 @@ public class ProjectService extends BaseService {
      * @return the list of module IDs and names
      * @throws Exception the exception
      */
-    public static Map<String, String> getModuleNames(final Project project) throws Exception {
+    public static Map<String, String> getModuleNames(final Edition edition) throws Exception {
 
-        // Create Snowstorm URL
-        final String conceptSearchUrl = SnowstormConnection.getBaseUrl() + project.getEdition().getBranch() + "/concepts/search";
-        final String bodyBase = "{\"limit\": 1000, ";
-        String bodyConceptIds = "\"conceptIds\":[";
-        final ObjectMapper mapper = new ObjectMapper();
-        final Map<String, String> moduleNames = new HashMap<>();
+        return terminologyHandler.getModuleNames(edition);
 
-        for (final String moduleId : project.getEdition().getModules()) {
-            bodyConceptIds += "\"" + moduleId + "\",";
-        }
-
-        bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",") + "]";
-
-        final String searchBody = bodyBase + bodyConceptIds + "}";
-        LOG.debug("getModuleNames URL: " + conceptSearchUrl);
-        LOG.debug("getModuleNames BODY: " + searchBody);
-
-        try (final Response response = SnowstormConnection.postResponse(conceptSearchUrl, searchBody)) {
-
-            final String resultString = response.readEntity(String.class);
-
-            // Only process payload if Rest call is successful
-            if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-
-                throw new Exception("call to url '" + conceptSearchUrl + "' for module name lookup wasn't successful. Status: " + response.getStatus()
-                    + " Message: " + response.getStatusInfo().getReasonPhrase());
-            }
-
-            final JsonNode root = mapper.readTree(resultString);
-            final Iterator<JsonNode> iterator = root.get("items").iterator();
-
-            while (iterator != null && iterator.hasNext()) {
-
-                final JsonNode conceptNode = iterator.next();
-                final String conceptId = conceptNode.get("conceptId").asText();
-                String name = "";
-
-                if (conceptNode.get("fsn") != null && conceptNode.get("fsn").get("term") != null) {
-                    name = conceptNode.get("fsn").get("term").asText();
-                }
-
-                moduleNames.put(conceptId, name);
-            }
-        }
-
-        return moduleNames;
     }
 
     /**
      * Update projects.
      *
-     * @param service the service
-     * @param authUser the auth user
+     * @param user the user
      * @param projectId the project id
      * @param project the project
      * @return the project
      * @throws Exception the exception
      */
-    public static Project updateProject(final TerminologyService service, final User authUser, final String projectId, final Project project) throws Exception {
+    public static Project updateProjects(final User user, final String projectId, final Project project) throws Exception {
 
-        // Find the project
-        final Project existingProject = getProject(service, projectId, true);
+        try (final TerminologyService service = new TerminologyService()) {
 
-        RefsetService.setProjectPermissions(authUser, existingProject);
-        checkPermissions(authUser, existingProject);
+            // Find the project
+            final Project existingProject = getProject(projectId, true);
 
-        project.setName(StringUtils.trim(project.getName()));
-        project.setDescription(StringUtils.trim(project.getDescription()));
+            RefsetService.setProjectPermissions(user, existingProject);
+            checkPermissions(user, existingProject);
 
-        updateMemberships(authUser, existingProject, existingProject.getTeams(), project.getTeams());
+            service.setModifiedBy(user.getUserName());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
 
-        // Apply changes
-        existingProject.patchFrom(project);
+            updateMemberships(existingProject, existingProject.getTeams(), project.getTeams());
 
-        // Update
-        service.update(existingProject);
-        service.add(AuditEntryHelper.updateProjectEntry(existingProject));
+            // Apply changes
+            existingProject.patchFrom(project);
 
-        return existingProject;
+            // Update
+            service.update(existingProject);
+            service.add(AuditEntryHelper.updateProjectEntry(existingProject));
+            service.commit();
+
+            return existingProject;
+        }
+
     }
 
     /**
      * Inactivate project. Also inactivates teams and refsets associated with the project.
      *
-     * @param service the service
-     * @param authUser the auth user
+     * @param user the user
      * @param projectId the project id
      * @return the project
      * @throws Exception the exception
      */
-    public static Project inactivateProject(final TerminologyService service, final User authUser, final String projectId) throws Exception {
+    public static Project inactivateProject(final User user, final String projectId) throws Exception {
 
-        // Find the object
-        final Project project = getProject(service, projectId, true);
+        try (final TerminologyService service = new TerminologyService()) {
 
-        RefsetService.setProjectPermissions(authUser, project);
-        checkPermissions(authUser, project);
+            // Find the object
+            final Project project = getProject(projectId, true);
 
-        final Set<String> copyOfProjectTeams = (project.getTeams() != null) ? new HashSet<String>(project.getTeams()) : new HashSet<String>();
+            RefsetService.setProjectPermissions(user, project);
+            checkPermissions(user, project);
 
-        // inactivate projects, clear teams, and inactivate refsets
-        project.setActive(false);
+            final Set<String> copyOfProjectTeams = (project.getTeams() != null) ? new HashSet<String>(project.getTeams()) : new HashSet<String>();
 
-        updateMemberships(authUser, project, copyOfProjectTeams, null);
+            service.setModifiedBy(user.getUserName());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
 
-        if (project.getTeams() != null && !project.getTeams().isEmpty()) {
+            // inactivate projects, clear teams, and inactivate refsets
+            project.setActive(false);
 
-            for (final String teamId : project.getTeams()) {
+            updateMemberships(project, copyOfProjectTeams, null);
 
-                final Team team = service.get(teamId, Team.class);
+            if (project.getTeams() != null && !project.getTeams().isEmpty()) {
 
-                if (team != null && !team.getMembers().isEmpty()) {
+                for (final String teamId : project.getTeams()) {
 
-                    team.getMembers().clear();
-                    service.update(team);
+                    final Team team = service.get(teamId, Team.class);
+
+                    if (team != null && !team.getMembers().isEmpty()) {
+
+                        team.getMembers().clear();
+                        service.update(team);
+                    }
+
+                }
+
+                project.getTeams().clear();
+            }
+
+            // also inactivate refsets
+            final ResultList<Refset> projRefsets = service.find("projectId:" + project.getId() + " AND active:true", null, Refset.class, null);
+
+            if (projRefsets.getItems() != null && !projRefsets.getItems().isEmpty()) {
+
+                for (final Refset refset : projRefsets.getItems()) {
+
+                    if (refset != null && !projRefsets.getItems().isEmpty()) {
+
+                        refset.setBranchPath(RefsetService.getBranchPath(refset));
+                        RefsetService.updatedRefsetStatus(service, user, refset, false);
+                    }
+
                 }
 
             }
 
-            project.getTeams().clear();
+            final Project updatedProject = service.update(project);
+            service.add(AuditEntryHelper.changeProjectStatusEntry(project));
+            service.commit();
+
+            return updatedProject;
         }
 
-        // also inactivate refsets
-        final ResultList<Refset> projRefsets = service.find("projectId:" + project.getId() + " AND active:true", null, Refset.class, null);
-
-        if (projRefsets.getItems() != null && !projRefsets.getItems().isEmpty()) {
-
-            for (final Refset refset : projRefsets.getItems()) {
-
-                if (refset != null && !projRefsets.getItems().isEmpty()) {
-
-                    refset.setBranchPath(RefsetService.getBranchPath(refset));
-                    RefsetService.updatedRefsetStatus(service, authUser, refset, false);
-                }
-
-            }
-
-        }
-
-        final Project updatedProject = service.update(project);
-        service.add(AuditEntryHelper.changeProjectStatusEntry(project));
-
-        return updatedProject;
     }
 
     /**
@@ -496,20 +441,18 @@ public class ProjectService extends BaseService {
     /**
      * Add or removes users from Crowd based on addition or removal from teams from a project.
      *
-     * @param authUser the auth user
      * @param project the project
      * @param oldTeams the old teams
      * @param newTeams the new teams
      * @throws Exception the exception
      */
-    private static void updateMemberships(final User authUser, final Project project, final Set<String> oldTeams, final Set<String> newTeams) throws Exception {
+    private static void updateMemberships(final Project project, final Set<String> oldTeams, final Set<String> newTeams) throws Exception {
 
         if (crowdUnitTestSkip == null || !"true".equalsIgnoreCase(crowdUnitTestSkip)) {
 
             LOG.info("CALLING CROWD API from ProjectService updateMemberships");
 
-            // final String organizationName = project.getEdition().getOrganizationName();
-            final String organizationCrowdId = project.getEdition().getOrganization().getCrowdId();
+            final String organizationName = project.getEdition().getOrganizationName();
             final String editionName = project.getEdition().getShortName();
             final Set<String> copyOfOldTeams = (oldTeams != null) ? new HashSet<String>(oldTeams) : new HashSet<String>();
             final Set<String> copyOfNewTeams = (newTeams != null) ? new HashSet<String>(newTeams) : new HashSet<String>();
@@ -519,17 +462,16 @@ public class ProjectService extends BaseService {
                 copyOfNewTeams.removeAll(oldTeams);
             }
 
-            if (copyOfNewTeams != null && !copyOfNewTeams.isEmpty()) {
+            if (!copyOfNewTeams.isEmpty()) {
                 for (final String teamId : copyOfNewTeams) {
-                    final Team team = TeamService.getTeam(authUser, teamId, true);
+                    final Team team = TeamService.getTeam(teamId, true);
                     // ignores 400 errors, if the group already exists
-                    // CrowdAPIClient.addGroup(organizationName, organizationCrowdId, editionName, project.getCrowdProjectId(), project.getDescription(), false,
-                    // false);
+                    CrowdAPIClient.addGroup(organizationName, editionName, project.getName(), project.getDescription(), true, false);
                     if (team != null && team.getMemberList() != null) {
                         for (final String role : team.getRoles()) {
                             for (final User user : team.getMemberList()) {
                                 final String groupName =
-                                    CrowdGroupNameAlgorithm.buildCrowdGroupName(organizationCrowdId, editionName, project.getCrowdProjectId(), role);
+                                    CrowdGroupNameAlgorithm.buildCrowdGroupName(organizationName, editionName, project.getCrowdProjectId(), role);
                                 CrowdAPIClient.addMembership(groupName, user.getUserName());
                             }
                         }
@@ -541,70 +483,20 @@ public class ProjectService extends BaseService {
                 copyOfOldTeams.removeAll(newTeams);
             }
 
-            if (copyOfOldTeams != null && !copyOfOldTeams.isEmpty()) {
+            if (!copyOfOldTeams.isEmpty()) {
                 for (final String teamId : copyOfOldTeams) {
-                    final Team team = TeamService.getTeam(authUser, teamId, true);
+                    final Team team = TeamService.getTeam(teamId, true);
                     if (team != null && team.getMemberList() != null) {
                         for (final String role : team.getRoles()) {
                             for (final User user : team.getMemberList()) {
                                 final String groupName =
-                                    CrowdGroupNameAlgorithm.buildCrowdGroupName(organizationCrowdId, editionName, project.getCrowdProjectId(), role);
-                                if (CrowdAPIClient.isRt2GroupName(groupName)) {
-                                    CrowdAPIClient.deleteMembership(groupName, user.getUserName());
-                                }
+                                    CrowdGroupNameAlgorithm.buildCrowdGroupName(organizationName, editionName, project.getCrowdProjectId(), role);
+                                CrowdAPIClient.deleteMembership(groupName, user.getUserName());
                             }
                         }
                     }
                 }
             }
         }
-    }
-
-    /**
-     * Lock project.
-     *
-     * @param service the service
-     * @param projectId the project id
-     * @throws Exception the exception
-     */
-    public static void lockProject(final TerminologyService service, final String projectId) throws Exception {
-
-        // Find the object
-        final Project project = getProject(service, projectId, true);
-        project.setLockStatus(true);
-        service.update(project);
-    }
-
-    /**
-     * Unlock project.
-     *
-     * @param service the service
-     * @param projectId the project id
-     * @throws Exception the exception
-     */
-    public static void unlockProject(final TerminologyService service, final String projectId) throws Exception {
-
-        // Find the object
-        final Project project = getProject(service, projectId, true);
-        project.setLockStatus(false);
-        service.update(project);
-    }
-
-    /**
-     * Returns the accessible projects.
-     *
-     * @param service the service
-     * @param user the user
-     * @return the accessible projects
-     * @throws Exception the exception
-     */
-    public static Set<Project> getAccessibleProjects(final TerminologyService service, final User user) throws Exception {
-
-        // Identify the accessible versions for the user
-        final List<Project> projects = getProjects(service, true);
-        final Set<Project> memberProjects =
-            projects.stream().filter(project -> project.getMemberList().stream().anyMatch(u -> u.getId().equals(user.getId()))).collect(Collectors.toSet());
-
-        return memberProjects;
     }
 }

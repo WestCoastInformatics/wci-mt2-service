@@ -97,7 +97,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
       final String resultString = response.readEntity(String.class);
 
       final ObjectMapper mapper = new ObjectMapper();
-      final JsonNode root = mapper.readTree(resultString);
+      final JsonNode root = mapper.readTree(resultString.toString());
 
       final ResultListConcept conceptList =
           RefsetMemberService.populateConcepts(root, refset, lookupParameters);
@@ -204,7 +204,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
             }
 
             final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString);
+            final JsonNode root = mapper.readTree(resultString.toString());
             final JsonNode conceptNodeBatch = root.get("items");
 
             // if the search returned results set the total
@@ -455,7 +455,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
 
         final String resultString = response.readEntity(String.class);
         final ObjectMapper mapper = new ObjectMapper();
-        final JsonNode root = mapper.readTree(resultString);
+        final JsonNode root = mapper.readTree(resultString.toString());
         final JsonNode node = root.get("items");
         String currentVersionDate = null;
         final Iterator<JsonNode> iterator = node.iterator();
@@ -584,7 +584,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
       final String resultString = response.readEntity(String.class);
 
       final ObjectMapper mapper = new ObjectMapper();
-      final JsonNode root = mapper.readTree(resultString);
+      final JsonNode root = mapper.readTree(resultString.toString());
       final int memberTotal = root.get("total").asInt();
 
       if (memberTotal > 100000) {
@@ -637,7 +637,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
             final String resultString = response.readEntity(String.class);
 
             final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString);
+            final JsonNode root = mapper.readTree(resultString.toString());
             final JsonNode allResultNodes = root.get("items");
             final Iterator<JsonNode> resultsIterator = allResultNodes.iterator();
 
@@ -772,7 +772,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
       bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",") + "]";
 
       // verify the concept IDs if a bulk add is going to be used
-      if (!conceptIds.isEmpty()) {
+      if (conceptIds.size() > 0) {
 
         final String conceptVerificationBody = bodyBase + bodyConceptIds + "}";
         // LOG.debug("addRefsetMembers bulk verification body: " +
@@ -791,7 +791,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
                 + " Message: " + response.getStatusInfo().getReasonPhrase());
           }
 
-          final JsonNode root = mapper.readTree(resultString);
+          final JsonNode root = mapper.readTree(resultString.toString());
           iterator = root.get("items").iterator();
 
           while (iterator != null && iterator.hasNext()) {
@@ -840,7 +840,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
       conceptIds.removeAll(invalidConcepts);
       conceptBatch.removeAll(invalidConcepts);
 
-      if (!conceptBatch.isEmpty()) {
+      if (conceptBatch.size() > 0) {
 
         bodyConceptIds = "";
 
@@ -869,7 +869,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
                 + " Message: " + response.getStatusInfo().getReasonPhrase());
           }
 
-          final JsonNode root = mapper.readTree(resultString);
+          final JsonNode root = mapper.readTree(resultString.toString());
           iterator = root.get("items").iterator();
 
           // loop thru the returned member details
@@ -1074,7 +1074,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
           }
 
           final String resultString = response.readEntity(String.class);
-          final JsonNode root = mapper.readTree(resultString);
+          final JsonNode root = mapper.readTree(resultString.toString());
 
           // LOG.debug("addRefsetMembers job status response: " + root);
           final String status = root.get("status").asText();
@@ -1195,7 +1195,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
               + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
         }
 
-        final JsonNode root = mapper.readTree(resultString);
+        final JsonNode root = mapper.readTree(resultString.toString());
         iterator = root.get("items").iterator();
       }
 
@@ -1267,7 +1267,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
     try {
 
       // delete any members that haven't been released
-      if (!memberDeleteArray.isEmpty()) {
+      if (memberDeleteArray.size() > 0) {
 
         final String deleteBody =
             mapper.createObjectNode().set("memberIds", memberDeleteArray).toString();
@@ -1430,7 +1430,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
           }
 
           final String resultString = response.readEntity(String.class);
-          final JsonNode root = mapper.readTree(resultString);
+          final JsonNode root = mapper.readTree(resultString.toString());
 
           // LOG.debug("addRefsetMembers job status response: " + root);
           final String status = root.get("status").asText();
@@ -1505,7 +1505,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
       }
 
       final ObjectMapper mapper = new ObjectMapper();
-      final JsonNode root = mapper.readTree(resultString);
+      final JsonNode root = mapper.readTree(resultString.toString());
       count = root.get("total").asInt();
     }
 
@@ -1522,7 +1522,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
    * @return the member sctids
    * @throws Exception the exception
    */
-  public static String getMemberSctIds(final String refsetId, final int limit,
+  public static String getMemberSctids(final String refsetId, final int limit,
     final String searchAfter, final String branchPath) throws Exception {
 
     final String pagingParams = "&limit=" + limit + "&searchAfter=" + searchAfter;
@@ -1530,7 +1530,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
     final String url = SnowstormConnection.getBaseUrl() + "" + branchPath + "/members?referenceSet="
         + refsetId + "&" + pagingParams;
 
-    LOG.debug("Snowstorm URL: {}", url);
+    LOG.debug("Snowstorm URL: " + url);
 
     try (Response response = SnowstormConnection.getResponse(url)) {
 
@@ -1548,70 +1548,6 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
       throw new Exception(
           "Could not retrieve Reference Set members from snowstorm: " + ex.getMessage(), ex);
     }
-  }
-  
-  /**
-   * Returns the member Snomed codes.
-   *
-   * @param refsetId the refset id
-   * @param branchPath the branch path
-   * @return the member sct codes
-   * @throws Exception the exception
-   */
-  public static List<String> getMemberSctCodes(final String refsetId, final String branchPath) throws Exception {
-
-
-      String searchAfter = "";
-      boolean hasMorePages = true;
-      final List<String> sctCodes = new ArrayList<>();
-      int count = 0;
-      int total = 0;
-
-      final String url = SnowstormConnection.getBaseUrl() + branchPath + "/members?referenceSet=" + refsetId + "&active=true&offset=0&limit="
-          + ELASTICSEARCH_MAX_RECORD_LENGTH;
-
-      final ObjectMapper mapper = new ObjectMapper();
-
-      try {
-
-          while (hasMorePages) {
-
-              final String fullSnowstormUrl = url + searchAfter;
-              LOG.info("getMemberSctCodes URL: {}", fullSnowstormUrl);
-
-              try (final Response response = SnowstormConnection.getResponse(fullSnowstormUrl, SnowstormConnection.DEFAULT_ACCECPT_LANGUAGES)) {
-
-                  if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-
-                      hasMorePages = false;
-                      throw new Exception("Call to URL '" + fullSnowstormUrl + "' wasn't successful. Status: " + response.getStatus() + " Message: "
-                          + formatErrorMessage(response));
-                  }
-
-                  final String resultString = response.readEntity(String.class);
-                  final JsonNode root = mapper.readTree(resultString);
-                  final JsonNode itemsNodeArray = root.get("items");
-
-                  for (final JsonNode item : itemsNodeArray) {
-                      sctCodes.add(item.get("referencedComponentId").asText());
-                      count++;
-                  }
-                  if (root.get("total") != null) {
-                      total = root.get("total").asInt();
-                  }
-                  if (count >= total) {
-                      hasMorePages = false;
-                  } else {
-                      searchAfter = "&searchAfter=" + root.get("searchAfter").asText();
-                  }
-              }
-          }
-
-          return sctCodes;
-
-      } catch (final Exception ex) {
-          throw new Exception("Could not retrieve Reference Set members from snowstorm: " + ex.getMessage(), ex);
-      }
   }
 
 }

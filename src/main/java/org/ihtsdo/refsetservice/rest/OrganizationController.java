@@ -198,7 +198,7 @@ public class OrganizationController extends BaseController {
 				throw new RestException(false, 417, "Expectation failed", e.getMessage());
 			}
 
-			final Organization org = OrganizationService.createAffiliateOrganization(service, authUser, organization);
+			final Organization org = OrganizationService.createOrganization(service, authUser, organization);
 
 			return new ResponseEntity<>(org, HttpStatus.CREATED);
 

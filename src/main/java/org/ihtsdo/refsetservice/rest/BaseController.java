@@ -20,7 +20,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
-import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ConfigUtility;
 import org.ihtsdo.refsetservice.util.JwtUtility;
 import org.ihtsdo.refsetservice.util.LocalException;
@@ -117,20 +116,17 @@ public class BaseController {
             username = SecurityService.getUsernameFromJwt(jwtToken);
         }
 
-        try (final TerminologyService service = new TerminologyService()) {
-            User authUser = SecurityService.getUserFromUserName(service, username);
-            if (authUser != null) {
-                final String roles = JwtUtility.getRole(djwt.getClaims());
-                authUser.getRoles().addAll(Set.of(roles.split(",")));
-            }
-
-            if (authUser == null || (authUser.getId() == null && !PropertyUtility.getProperty("springProfiles").toLowerCase().contains("test"))) {
-
-                throw new RestException(false, 401, "Unauthorized", "Unable to find user from session");
-            }
-            return authUser;
+        User authUser = SecurityService.getUserFromUserName(username);
+        if (authUser != null) {
+            final String roles = JwtUtility.getRole(djwt.getClaims());
+            authUser.getRoles().addAll(Set.of(roles.split(",")));
         }
-        
+
+        if (authUser == null || (authUser.getId() == null && !PropertyUtility.getProperty("springProfiles").toLowerCase().contains("test"))) {
+
+            throw new RestException(false, 401, "Unauthorized", "Unable to find user from session");
+        }
+        return authUser;
     }
 
     /**

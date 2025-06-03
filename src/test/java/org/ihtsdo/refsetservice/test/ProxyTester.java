@@ -1,3 +1,4 @@
+
 package org.ihtsdo.refsetservice.test;
 
 import java.lang.reflect.InvocationHandler;
@@ -46,7 +47,7 @@ public class ProxyTester {
 
     /**
      * Constructs a new tester for the specified class.
-     *
+     * 
      * @param obj Object to test.
      */
     public ProxyTester(final Object obj) {
@@ -55,11 +56,9 @@ public class ProxyTester {
     }
 
     /**
-     * Adds a field to the list of tested fields. If this method is called, the
-     * tester will not attempt to list all the getters and setters on the object
-     * under
+     * Adds a field to the list of tested fields. If this method is called, the tester will not attempt to list all the getters and setters on the object under
      * test, and will instead simply test all the fields in the include list.
-     *
+     * 
      * @param field Field name whose getter/setter should be tested.
      */
     public void include(final String field) {
@@ -69,7 +68,7 @@ public class ProxyTester {
 
     /**
      * Adds a field to the list of excluded fields.
-     *
+     * 
      * @param field Field name to exclude from testing.
      */
     public void exclude(final String field) {
@@ -81,8 +80,8 @@ public class ProxyTester {
      * Proxy the specified object for the class type.
      *
      * @param clazz the class to match
-     * @param i     the i the initializer key
-     * @param o     the o the object
+     * @param i the i the initializer key
+     * @param o the o the object
      */
     public void proxy(final Class<?> clazz, final int i, final Object o) {
 
@@ -97,8 +96,8 @@ public class ProxyTester {
      * Proxy.
      *
      * @param field the field
-     * @param i     the i
-     * @param o     the o
+     * @param i the i
+     * @param o the o
      */
     public void proxy(final String field, final int i, final Object o) {
 
@@ -110,8 +109,7 @@ public class ProxyTester {
     }
 
     /**
-     * Walks through the methods in the class looking for getters and setters that
-     * are on our include list (if any) and are not on our exclude list.
+     * Walks through the methods in the class looking for getters and setters that are on our include list (if any) and are not on our exclude list.
      *
      * @param initializer a value that when used produces certain field values
      * @return the object
@@ -134,14 +132,13 @@ public class ProxyTester {
     /**
      * Sets the fields.
      *
-     * @param o               the object
+     * @param o the object
      * @param reverseIncludes the reverse includes
-     * @param logField        the log set
-     * @param initializer     the initializer
+     * @param logField the log set
+     * @param initializer the initializer
      * @throws Exception the exception
      */
-    protected void setFields(final Object o, final boolean reverseIncludes, final boolean logField,
-            final int initializer) throws Exception {
+    protected void setFields(final Object o, final boolean reverseIncludes, final boolean logField, final int initializer) throws Exception {
 
         final Set<String> fieldsSeen = new HashSet<>();
         final Method[] methods = clazz.getMethods();
@@ -209,7 +206,7 @@ public class ProxyTester {
                     notSeen.add(field);
                 }
             }
-            if (!notSeen.isEmpty()) {
+            if (notSeen.size() > 0) {
                 throw new Exception("Some included fields were not found: " + notSeen);
             }
         }
@@ -221,7 +218,7 @@ public class ProxyTester {
                     notSeen.add(field);
                 }
             }
-            if (!notSeen.isEmpty()) {
+            if (notSeen.size() > 0) {
                 throw new Exception("Some excluded fields were not found: " + notSeen);
             }
         }
@@ -250,29 +247,27 @@ public class ProxyTester {
     /**
      * Tests a single getter/setter pair using an argument of a particular type.
      *
-     * @param o           the o
-     * @param fieldName   the field name
-     * @param get         the get method
-     * @param set         the set method
-     * @param argType     the data type
+     * @param o the o
+     * @param fieldName the field name
+     * @param get the get method
+     * @param set the set method
+     * @param argType the data type
      * @param initializer the initializer
      * @throws Exception the exception
      */
-    protected void setField(final Object o, final String fieldName, final Method get, final Method set,
-            final Class<?> argType, final int initializer)
-            throws Exception {
+    protected void setField(final Object o, final String fieldName, final Method get, final Method set, final Class<?> argType, final int initializer)
+        throws Exception {
 
         final Object proxy = makeProxy(fieldName, argType, initializer);
 
         // LOG.info(" " + set.getName() + " = " + proxy.toString());
         try {
             set.invoke(o, new Object[] {
-                    proxy
+                proxy
             });
         } catch (final InvocationTargetException e) {
             e.printStackTrace();
-            throw new RuntimeException("Setter " + set.getDeclaringClass().getName() + "." + set.getName() + " threw "
-                    + e.getTargetException().toString());
+            throw new RuntimeException("Setter " + set.getDeclaringClass().getName() + "." + set.getName() + " threw " + e.getTargetException().toString());
         } catch (final IllegalArgumentException e) {
             LOG.debug("o=" + o.getClass().getName());
             LOG.debug("proxy=" + proxy.getClass().getName());
@@ -281,19 +276,17 @@ public class ProxyTester {
     }
 
     /**
-     * Makes a proxy of a given class. If the class is an interface type, uses the
-     * standard JDK proxy mechanism. If it's not, uses cglib. The use of cglib is
-     * via reflection so that cglib is not required to use this library unless the
-     * caller actually needs to proxy a concrete class.
+     * Makes a proxy of a given class. If the class is an interface type, uses the standard JDK proxy mechanism. If it's not, uses cglib. The use of cglib is
+     * via reflection so that cglib is not required to use this library unless the caller actually needs to proxy a concrete class.
      *
-     * @param fieldName   the field name
-     * @param type        the type
+     * @param fieldName the field name
+     * @param type the type
      * @param initializer the initializer
      * @return a class of the specified type
      * @throws Exception the exception
      */
     @SuppressWarnings({
-            "rawtypes"
+        "rawtypes"
     })
     protected Object makeProxy(final String fieldName, final Class<?> type, final int initializer) throws Exception {
 
@@ -371,7 +364,7 @@ public class ProxyTester {
         /* Use JDK dynamic proxy if the argument is an interface. */
         if (type.isInterface()) {
             return Proxy.newProxyInstance(type.getClassLoader(), new Class[] {
-                    type
+                type
             }, new DummyInvocationHandler());
         }
 
@@ -384,39 +377,38 @@ public class ProxyTester {
             callbackClass = Class.forName("net.sf.cglib.proxy.Callback");
             fixedValueClass = Class.forName("net.sf.cglib.proxy.FixedValue");
         } catch (final ClassNotFoundException e) {
-            throw new ClassNotFoundException("Need cglib to make a dummy " + type.getName()
-                    + ". Make sure cglib.jar is on " + "your classpath.");
+            throw new ClassNotFoundException("Need cglib to make a dummy " + type.getName() + ". Make sure cglib.jar is on " + "your classpath.");
         }
 
         /* Make a dummy callback (proxies within proxies!) */
         Object callback;
         callback = Proxy.newProxyInstance(callbackClass.getClassLoader(), new Class[] {
-                fixedValueClass
+            fixedValueClass
         }, new DummyInvocationHandler());
 
         final Method createMethod = enhancerClass.getMethod("create", new Class[] {
-                Class.class, callbackClass
+            Class.class, callbackClass
         });
         return createMethod.invoke(null, new Object[] {
-                type, callback
+            type, callback
         });
     }
 
     /**
      * Returns an instance of an enum.
-     *
+     * 
      * JAVA5 - Comment out or remove this method on older Java versions.
      *
-     * @param clazz1      the class
+     * @param clazz1 the class
      * @param initializer the initializer
      * @return an instance of an enum
      * @throws Exception the exception
      */
     private Object makeEnum(final Class<?> clazz1, final int initializer) throws Exception {
+
         final Method m = clazz1.getMethod("values", new Class[0]);
         final Object[] o = (Object[]) m.invoke(null, new Object[0]);
-        // Use modulo to ensure we don't go out of bounds
-        return o[initializer % o.length];
+        return o[initializer];
     }
 
     /**

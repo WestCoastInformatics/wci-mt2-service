@@ -11,7 +11,6 @@
 package org.ihtsdo.refsetservice.rest.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -30,18 +29,12 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import org.ihtsdo.refsetservice.model.Concept;
-import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Refset;
-import org.ihtsdo.refsetservice.model.User;
-import org.ihtsdo.refsetservice.model.enums.VersionStatus;
 import org.ihtsdo.refsetservice.rest.test.util.EditUnitTestUtilities;
-import org.ihtsdo.refsetservice.rest.test.util.EditUnitTestUtilities.RefsetType;
 import org.ihtsdo.refsetservice.rest.test.util.ExportUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.GetUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.WorkflowUnitTestUtilities;
-import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.test.BaseTest;
-import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
@@ -333,10 +326,11 @@ public abstract class AbstractRefsetTests extends BaseTest {
             // assertThat(refset.getNarrative()).isEqualToIgnoringCase("Description of refset General Practice / Family Practice reference set");
 
             assertThat(refset.getModifiedBy()).isNotEmpty();
-            assertEquals(refset.getType(), RefsetType.EXTENSIONAL);
+            assertThat(refset.getType()).isEqualToIgnoringCase("extensional");
             assertThat(refset.getModuleId()).isEqualTo("900000000000012004");
             assertThat(refset.getEdition().getName()).isEqualToIgnoringCase("International Edition");
-            assertEquals(refset.getVersionStatus(), VersionStatus.PUBLISHED);
+            assertThat(refset.getType()).isEqualToIgnoringCase("extensional");
+            assertThat(refset.getVersionStatus()).isEqualToIgnoringCase("published");
             assertThat(refset.getVersionNotes()).isNull();
             assertThat(refset.getProject().getName()).isEqualTo("SNOMED International Project");
 
@@ -358,10 +352,11 @@ public abstract class AbstractRefsetTests extends BaseTest {
             // extension");
 
             assertThat(refset.getModifiedBy()).isNotBlank();
-            assertEquals(refset.getType(), RefsetType.EXTENSIONAL);
+            assertThat(refset.getType()).isEqualToIgnoringCase("extensional");
             assertThat(refset.getModuleId()).isEqualTo("11000172109");
             assertThat(refset.getEdition().getName()).isEqualToIgnoringCase("Belgian Extension");
-            assertEquals(refset.getVersionStatus(), VersionStatus.PUBLISHED);
+            assertThat(refset.getType()).isEqualToIgnoringCase("extensional");
+            assertThat(refset.getVersionStatus()).isEqualToIgnoringCase("published");
             assertThat(refset.getVersionNotes()).isNull();
             /*
              * this refset has no tags assertThat(refset.getTags().size()).isEqualTo(1);
@@ -401,7 +396,7 @@ public abstract class AbstractRefsetTests extends BaseTest {
     // concept name for validating descriptions
     protected void validateConcept(final Concept concept, final String conceptId, final String memberEfectiveTime, final boolean isRefsetMember,
         final List<String> descriptionList, final int roleGroupSize, final int parentSize, final int childSize, final boolean useDescriptions)
-            throws ParseException {
+        throws ParseException {
 
         assertThat(concept).isNotNull();
         assertThat(concept.getCode()).isEqualTo(conceptId);
@@ -715,32 +710,4 @@ public abstract class AbstractRefsetTests extends BaseTest {
 
         AbstractRefsetTests.mainNrcTestingRefsetInternalId = mainNrcTestingRefsetInternalId;
     }
-
-    /**
-     * Creates the edition.
-     *
-     * @param user the user
-     * @param edition the edition
-     * @return the edition
-     * @throws Exception the exception
-     */
-    static Edition createEdition(final User user, final Edition edition) throws Exception {
-
-        try (final TerminologyService service = new TerminologyService()) {
-
-            final Edition newEdition = new Edition();
-            newEdition.populateFrom(edition);
-
-            service.setModifiedBy(user.getUserName());
-            service.setTransactionPerOperation(false);
-            service.beginTransaction();
-
-            service.add(newEdition);
-            service.add(AuditEntryHelper.addEditionEntry(newEdition));
-            service.commit();
-
-            return newEdition;
-        }
-    }
-
 }

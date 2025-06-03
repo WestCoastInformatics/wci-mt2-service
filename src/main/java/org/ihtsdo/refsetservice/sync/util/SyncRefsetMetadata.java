@@ -35,9 +35,6 @@ public class SyncRefsetMetadata {
     /** The branch path. */
     private String branchPath;
 
-    /** The module Id . */
-    private String moduleId;
-
     /**
      * Instantiates a {@link SyncRefsetMetadata} from the specified parameters.
      *
@@ -47,15 +44,14 @@ public class SyncRefsetMetadata {
      * @param version the version
      * @param branchPath the branch path
      */
-    public SyncRefsetMetadata(final JsonNode refsetNode, final Edition edition, final Set<Long> allRefsetVersions, final long version, final String branchPath,
-        final String moduleId) {
+    public SyncRefsetMetadata(final JsonNode refsetNode, final Edition edition, final Set<Long> allRefsetVersions, final long version,
+        final String branchPath) {
 
         this.refsetNode = refsetNode;
         this.edition = edition;
         this.allRefsetVersions = allRefsetVersions;
         this.version = version;
         this.branchPath = branchPath;
-        this.moduleId = moduleId;
     }
 
     /**
@@ -166,25 +162,5 @@ public class SyncRefsetMetadata {
     protected void setBranchPath(final String branchPath) {
 
         this.branchPath = branchPath;
-    }
-
-    /**
-     * Returns the module Id.
-     *
-     * @return the module Id
-     */
-    public String getModuleId() {
-
-        return moduleId;
-    }
-
-    /**
-     * Sets the module Id.
-     *
-     * @param moduleId the module Id
-     */
-    protected void setModuleId(final String moduleId) {
-
-        this.moduleId = moduleId;
     }
 }

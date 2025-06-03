@@ -10,7 +10,6 @@
 package org.ihtsdo.refsetservice.handler;
 
 import java.io.File;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -23,13 +22,11 @@ import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.MapSetExportRequest;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingExportRequest;
-import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.ResultListConcept;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
 import org.ihtsdo.refsetservice.model.User;
-import org.ihtsdo.refsetservice.model.enums.WorkflowAction;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ConceptLookupParameters;
 import org.ihtsdo.refsetservice.util.SearchParameters;
@@ -243,17 +240,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @return the member sctids
      * @throws Exception the exception
      */
-    public String getMemberSctIds(final String refsetId, final int limit, final String searchAfter, final String branchPath) throws Exception;
-
-    /**
-     * Returns the member Snomed codes.
-     *
-     * @param refsetId the refset id
-     * @param branchPath the branch path
-     * @return the member sct codes
-     * @throws Exception the exception
-     */
-    public List<String> getMemberSctCodes(final String refsetId, final String branchPath) throws Exception;
+    public String getMemberSctids(final String refsetId, final int limit, final String searchAfter, final String branchPath) throws Exception;
 
     /**
      * Populate all language descriptions.
@@ -532,15 +519,6 @@ public interface TerminologyServerHandler extends Configurable {
     public String modifyUpgradeConcept(final TerminologyService service, final User user, final Refset refset, final String inactiveConceptId,
         final String replacementConceptId, final UpgradeReplacementConcept manualReplacementConcept, final String changed) throws Exception;
 
-    /**
-     * Identify refset name.
-     *
-     * @param refset the refset
-     * @return the string
-     * @throws Exception the exception
-     */
-    public String identifyRefsetName(final Refset refset) throws Exception;
-
     /* Mapping Service calls */
 
     /**
@@ -658,104 +636,4 @@ public interface TerminologyServerHandler extends Configurable {
      * @throws Exception the exception
      */
     public String exportMapSet(final User user, final MapProject mapProject, final MapSetExportRequest mapSetExportRequest) throws Exception;
-
-    /**
-     * Sets the workflow status.
-     *
-     * @param service the service
-     * @param user the user
-     * @param mapSetInternalId the map set internal id
-     * @param action the action
-     * @param notes the notes
-     * @return the map set
-     * @throws Exception the exception
-     */
-    public MapSet setWorkflowStatus(final TerminologyService service, final User user, final String mapSetInternalId, final WorkflowAction action,
-        final String notes) throws Exception;
-
-    /**
-     * Clear all refset caches.
-     *
-     * @param branch the branch
-     * @throws Exception the exception
-     */
-    public void clearAllRefsetCaches(final String branch) throws Exception;
-
-    /**
-     * Gets the branch path.
-     *
-     * @param mapSet the map set
-     * @return the branch path
-     * @throws Exception the exception
-     */
-    public String getBranchPath(final MapSet mapSet) throws Exception;
-
-    /**
-     * Gets the refset date from formatted string.
-     *
-     * @param publicationDateString the publication date string
-     * @return the refset date from formatted string
-     * @throws Exception the exception
-     */
-    public Date getRefsetDateFromFormattedString(final String publicationDateString) throws Exception;
-
-    /**
-     * Sets the roles.
-     *
-     * @param user the user
-     * @param project the project
-     * @param roles the roles
-     * @return the list
-     * @throws Exception the exception
-     */
-    public List<String> setRoles(final User user, final Project project, final List<String> roles) throws Exception;
-
-    /**
-     * Removes the map set edit history.
-     *
-     * @param service the service
-     * @param user the user
-     * @param refsetCode the refset code
-     * @throws Exception the exception
-     */
-    public void removeMapSetEditHistory(final TerminologyService service, final String refsetCode) throws Exception;
-
-    /**
-     * Sets the mapSet member count.
-     *
-     * @param service the service
-     * @param mapSet the map set
-     * @param force the force
-     * @return true, if successful
-     * @throws Exception the exception
-     */
-    public boolean setMapSetMemberCount(final TerminologyService service, final MapSet mapSet, final boolean force) throws Exception;
-
-    /**
-     * Removes the upgrade data.
-     *
-     * @param service the service
-     * @param mapSet the map set
-     * @throws Exception the exception
-     */
-    public void removeUpgradeData(final TerminologyService service, final MapSet mapSet) throws Exception;
-
-    /**
-     * Replace map set with edit history.
-     *
-     * @param service the service
-     * @param mapSet the map set
-     * @throws Exception the exception
-     */
-    public void replaceMapSetWithEditHistory(final TerminologyService service, final MapSet mapSet) throws Exception;
-
-    /**
-     * Sets the map set permissions.
-     *
-     * @param user the user
-     * @param mapSet the map set
-     * @return the map set
-     * @throws Exception the exception
-     */
-    public MapSet setMapSetPermissions(final User user, final MapSet mapSet) throws Exception;
 }

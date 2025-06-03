@@ -42,6 +42,15 @@ public final class EmailUtility {
     /** The email SMTP password. */
     private static String smtpPassword;
 
+    // /** The email SMTP host. */
+    // private static String smtpHost;
+    //
+    // /** The email SMTP port. */
+    // private static String smtpPort;
+    //
+    // /** The email to send errors to. */
+    // private static String errorToEmail;
+
     /** The email address sent emails are from. */
     private static String emailFrom;
 
@@ -57,8 +66,11 @@ public final class EmailUtility {
 
         smtpUser = PropertyUtility.getProperty("mail.smtp.user");
         smtpPassword = PropertyUtility.getProperty("mail.smtp.password");
+        // smtpHost = PropertyUtility.getProperty("mail.smtp.host");
+        // smtpPort = PropertyUtility.getProperty("mail.smtp.port");
+        // errorToEmail = PropertyUtility.getProperty("mail.smtp.error.to");
         emailFrom = PropertyUtility.getProperty("mail.smtp.from");
-        emailEnabled = PropertyUtility.getProperty("mail.smtp.enabled");
+        emailEnabled = PropertyUtility.getProperty("mail.enabled");
     }
 
     /**
@@ -78,7 +90,7 @@ public final class EmailUtility {
      * @param body the body
      * @throws Exception the exception
      */
-    public static void sendEmail(final String subject, final Set<String> recipients, final String body) throws Exception {
+    public static void sendEmail(final String subject, final String from, final Set<String> recipients, final String body) throws Exception {
 
         if (recipients == null || recipients.isEmpty()) {
 
@@ -124,7 +136,8 @@ public final class EmailUtility {
         }
 
         message.setSubject(subject);
-        message.setFrom(new InternetAddress(emailFrom));
+        final String fromAdress = (from != null && !from.isBlank()) ? from : emailFrom;
+        message.setFrom(new InternetAddress(fromAdress));
 
         for (final String recipient : recipients) {
 
@@ -139,11 +152,12 @@ public final class EmailUtility {
      * Sends email. Convert recipients with either semi-colon or comma delimiter to List<String>.
      *
      * @param subject the subject
+     * @param from the from
      * @param recipients the recipients
      * @param body the body
      * @throws Exception the exception
      */
-    public static void sendEmail(final String subject, final String recipients, final String body) throws Exception {
+    public static void sendEmail(final String subject, final String from, final String recipients, final String body) throws Exception {
 
         if (recipients != null && StringUtils.isNotBlank(recipients)) {
 
@@ -157,7 +171,7 @@ public final class EmailUtility {
                 recipientList.add(recipients);
             }
 
-            sendEmail(subject, recipientList, body);
+            sendEmail(subject, from, recipientList, body);
         } else {
             throw new Exception("Email must have recipients");
         }

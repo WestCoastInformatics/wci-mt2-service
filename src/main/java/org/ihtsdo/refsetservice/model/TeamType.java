@@ -7,39 +7,39 @@
  * and are protected by trade secret or copyright law.  Dissemination of this information
  * or reproduction of this material is strictly forbidden.
  */
-package org.ihtsdo.refsetservice.model.enums;
+package org.ihtsdo.refsetservice.model;
 
 /**
  * The Enum TeamType.
  */
 public enum TeamType {
 
-    /** For organization administration team. */
-    ORGANIZATION("O"),
-    /** For project team. */
-    PROJECT("P");
+  /** For organization administration team. */
+  ORGANIZATION("O"),
+  /** For project team. */
+  PPROJECT("P");
 
-    /** The text. */
-    private final String text;
+  /** The text. */
+  private final String text;
 
-    /**
-     * Instantiates a {@link TeamType} from the specified parameters.
-     *
-     * @param text the text
-     */
-    private TeamType(final String text) {
+  /**
+   * Instantiates a {@link TeamType} from the specified parameters.
+   *
+   * @param text the text
+   */
+  private TeamType(final String text) {
 
-        this.text = text;
-    }
+    this.text = text;
+  }
 
-    /**
-     * Returns the text.
-     *
-     * @return the text
-     */
-    public String getText() {
+  /**
+   * Returns the text.
+   *
+   * @return the text
+   */
+  public String getText() {
 
-        return this.text;
-    }
+    return this.text;
+  }
 
 }

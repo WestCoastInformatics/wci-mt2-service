@@ -8,8 +8,8 @@ import java.util.List;
  */
 public enum SyncReasonEditionSkipped {
 
-    /** The code system isn't the single one to be synced. */
-    NOT_SINGLE_CODE_SYSTEM_TO_SYNC,
+    /** The wrong testing edition. */
+    WRONG_TESTING_EDITION,
     /** The inactive edition. */
     INACTIVE_EDITION,
     /** The ignored per file edition. */
@@ -32,7 +32,7 @@ public enum SyncReasonEditionSkipped {
 
         if (ALL_REASONS.isEmpty()) {
 
-            ALL_REASONS.add(NOT_SINGLE_CODE_SYSTEM_TO_SYNC);
+            ALL_REASONS.add(WRONG_TESTING_EDITION);
             ALL_REASONS.add(INACTIVE_EDITION);
             ALL_REASONS.add(IGNORED_PER_FILE_EDITION);
             ALL_REASONS.add(NON_SUPPORTED_MAINTAINER_TYPE);

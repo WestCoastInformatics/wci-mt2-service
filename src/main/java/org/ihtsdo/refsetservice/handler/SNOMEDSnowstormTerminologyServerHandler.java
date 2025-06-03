@@ -10,7 +10,6 @@
 package org.ihtsdo.refsetservice.handler;
 
 import java.io.File;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -33,13 +32,11 @@ import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.MapSetExportRequest;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingExportRequest;
-import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.ResultListConcept;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
 import org.ihtsdo.refsetservice.model.User;
-import org.ihtsdo.refsetservice.model.enums.WorkflowAction;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.util.ConceptLookupParameters;
@@ -191,14 +188,6 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     /* see superclass */
     @Override
-    public List<String> getMemberSctCodes(final String refsetId, final String branchPath) throws Exception {
-
-        return SnowstormRefsetMember.getMemberSctCodes(refsetId, branchPath);
-
-    }
-
-    /* see superclass */
-    @Override
     public Set<String> getDirectoryMembers(final String snowstormQuery) throws Exception {
 
         return SnowstormMultiSearch.getDirectoryMembers(snowstormQuery);
@@ -216,9 +205,9 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     /* see superclass */
     @Override
-    public String getMemberSctIds(final String refsetId, final int limit, final String searchAfter, final String branchPath) throws Exception {
+    public String getMemberSctids(final String refsetId, final int limit, final String searchAfter, final String branchPath) throws Exception {
 
-        return SnowstormRefsetMember.getMemberSctIds(refsetId, limit, searchAfter, branchPath);
+        return SnowstormRefsetMember.getMemberSctids(refsetId, limit, searchAfter, branchPath);
 
     }
 
@@ -420,13 +409,6 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     }
 
-    @Override
-    public String identifyRefsetName(final Refset refset) throws Exception {
-
-        return SnowstormRefset.identifyRefsetName(refset);
-
-    }
-
     /*
      *
      * MAPPING FUNCTIONALITY
@@ -530,82 +512,6 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
         return SnowstormMapSet.exportMapSet(user, mapProject, mapSetExportRequest);
 
-    }
-
-    /* see superclass */
-    @Override
-    public MapSet setWorkflowStatus(final TerminologyService service, final User user, final String mapSetInternalId, final WorkflowAction action,
-        final String notes) throws Exception {
-
-        return SnowstormMapSet.setWorkflowStatus(service, user, mapSetInternalId, action, notes);
-    }
-
-    /* see superclass */
-    @Override
-    public void clearAllRefsetCaches(final String branch) {
-
-        SnowstormMapSet.clearAllRefsetCaches(branch);
-        
-    }
-
-    /* see superclass */
-    @Override
-    public String getBranchPath(final MapSet mapSet) throws Exception {
-
-        return SnowstormMapSet.getBranchPath(mapSet);
-    }
-
-    /* see superclass */
-    @Override
-    public Date getRefsetDateFromFormattedString(final String publicationDateString) throws Exception {
-
-        return SnowstormMapSet.getRefsetDateFromFormattedString(publicationDateString);
-    }
-
-    /* see superclass */
-    @Override
-    public List<String> setRoles(final User user, final Project project, final List<String> roles) throws Exception {
-
-        return SnowstormMapSet.setRoles(user, project, roles);
-    }
-
-    /* see superclass */
-    @Override
-    public void removeMapSetEditHistory(final TerminologyService service, final String refsetCode) throws Exception {
-
-        SnowstormMapSet.removeMapSetEditHistory(service, refsetCode);
-        
-    }
-
-    /* see superclass */
-    @Override
-    public boolean setMapSetMemberCount(final TerminologyService service, final MapSet mapSet, final boolean force) throws Exception {
-
-        return SnowstormMapSet.setMapSetMemberCount(service, mapSet, force);
-        
-    }
-
-    /* see superclass */
-    @Override
-    public void removeUpgradeData(final TerminologyService service, final MapSet mapSet) throws Exception {
-
-        SnowstormMapSet.removeUpgradeData(service, mapSet);
-        
-    }
-
-    /* see superclass */
-    @Override
-    public void replaceMapSetWithEditHistory(final TerminologyService service, final MapSet mapSet) throws Exception {
-
-        SnowstormMapSet.replaceMapSetWithEditHistory(service, mapSet);
-        
-    }
-
-    /* see superclass */
-    @Override
-    public MapSet setMapSetPermissions(final User user, final MapSet mapSet) throws Exception{
-
-        return SnowstormMapSet.setMapSetPermissions(user, mapSet);
     }
 
 }

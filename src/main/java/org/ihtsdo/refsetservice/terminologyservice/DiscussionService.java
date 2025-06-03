@@ -65,7 +65,7 @@ public final class DiscussionService {
 			final DiscussionType type, final Refset refset, final String conceptId) throws Exception {
 
 		if (user.getUserName().equals(SecurityService.GUEST_USERNAME)) {
-			return new ResultList<>();
+			return new ResultList<DiscussionThread>();
 		}
 
 		boolean canViewPrivate = true;

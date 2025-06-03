@@ -18,7 +18,7 @@ public class SyncProjectMetadata {
     private String rttId;
 
     /** The crowd id within the rule associated with project. */
-    private String organizationCrowdId;
+    private String crowdId;
 
     /** The project's name. */
     private String name;
@@ -33,14 +33,14 @@ public class SyncProjectMetadata {
      * Instantiates a {@link SyncProjectMetadata} from the specified parameters.
      *
      * @param rttId the rtt project id
-     * @param organizationCrowdId the organization crowd Id
+     * @param crowdId the crowd project Id
      * @param name the name name
      * @param description the name description
      */
-    public SyncProjectMetadata(final String rttId, final String organizationCrowdId, final String name, final String description, final String editionShortName) {
+    public SyncProjectMetadata(final String rttId, final String crowdId, final String name, final String description, final String editionShortName) {
 
         this.rttId = rttId;
-        this.organizationCrowdId = organizationCrowdId;
+        this.crowdId = crowdId;
         this.name = name;
         this.description = description;
         this.editionShortName = editionShortName;
@@ -113,17 +113,17 @@ public class SyncProjectMetadata {
      */
     public String getCrowdId() {
 
-        return organizationCrowdId;
+        return crowdId;
     }
 
     /**
      * Sets the project's id in crowd (if exists).
      *
-     * @param organizationCrowdId the organization crowd Id
+     * @param crowdId the crowd Id
      */
-    public void setCrowdId(final String organizationCrowdId) {
+    public void setCrowdId(final String crowdId) {
 
-        this.organizationCrowdId = organizationCrowdId;
+        this.crowdId = crowdId;
     }
 
     /**
