@@ -73,7 +73,7 @@ public final class LanguageUtility {
 
     /** The Constant LANGUAGE_TO_LANGUAGE_CODE_REFERENCE_RESOURCE. */
     private static final ClassPathResource LANGUAGE_TO_LANGUAGE_CODE_REFERENCE_RESOURCE =
-        new ClassPathResource("sync/supporting-files/languageToLanguageCode.txt");
+        new ClassPathResource("config/languageToLanguageCode.txt");
 
     /** The Constant LANGUAGE_TO_LANGUAGE_CODE_REFERENCE_MAP. */
     private static final Map<String, String> LANGUAGE_TO_LANGUAGE_CODE_REFERENCE_MAP = new HashMap<>();
