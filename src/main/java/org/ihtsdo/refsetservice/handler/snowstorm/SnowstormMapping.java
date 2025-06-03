@@ -424,6 +424,8 @@ public class SnowstormMapping extends SnowstormAbstract {
 
             if (concept != null) {
                 mapping.setName(concept.getName());
+            } else if (mapping.getCode() == null || mapping.getCode().equals("")){
+            	mapping.setName("");
             } else {
                 LOG.error("Concept not found: terminology:{}, code:{}", fromTerminology, mapping.getCode());
                 mapping.setName(mapping.getCode() + " CONCEPT NOT FOUND");
@@ -433,11 +435,23 @@ public class SnowstormMapping extends SnowstormAbstract {
             for (final MapEntry entry : mapping.getMapEntries()) {
 
                 final Concept relationConcept = terminologyConceptMap.get(fromTerminology).get(entry.getRelationCode());
-                entry.setRelation(relationConcept != null ? relationConcept.getName() : entry.getRelationCode() + " CONCEPT NOT FOUND");
-
+                if (relationConcept != null) {
+                	entry.setRelation(relationConcept.getName());
+                } else if (entry.getRelationCode() == null || entry.getRelationCode().equals("")) {
+                	entry.setRelation("");
+                } else {
+                	entry.setRelation(entry.getRelationCode() + " CONCEPT NOT FOUND");
+                }
+                
                 final Concept toConcept = terminologyConceptMap.get(toTerminology).get(entry.getToCode());
-                entry.setToName(toConcept != null ? toConcept.getName() : entry.getToCode() + " CONCEPT NOT FOUND");
-
+                if (toConcept != null) {
+                	entry.setToName(relationConcept.getName());
+                } else if (entry.getToCode() == null || entry.getToCode().equals("")) {
+                	entry.setToName("");
+                } else {
+                	entry.setToName(entry.getToCode() + " CONCEPT NOT FOUND");
+                }
+                	
             }
         }
 
@@ -506,8 +520,8 @@ public class SnowstormMapping extends SnowstormAbstract {
         	mapEntry.setPriority(1);
         	mapEntry.setGroup(1);
         	mapEntry.setAdvices(new HashSet<>());
-        	mapEntry.setRelation(null);
-        	mapEntry.setToCode(null);
+        	mapEntry.setRelation("");
+        	mapEntry.setToCode("");
         	mapEntry.setToName("");
         }
         else {
