@@ -444,7 +444,7 @@ public class SnowstormMapping extends SnowstormAbstract {
                 
                 final Concept toConcept = terminologyConceptMap.get(toTerminology).get(entry.getToCode());
                 if (toConcept != null) {
-                	entry.setToName(relationConcept.getName());
+                	entry.setToName(toConcept.getName());
                 } else if (entry.getToCode() == null || entry.getToCode().equals("")) {
                 	entry.setToName("");
                 } else {
