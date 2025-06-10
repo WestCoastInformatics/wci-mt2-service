@@ -158,7 +158,7 @@ public class MapSetController extends BaseController {
      * @return A ResponseEntity containing the response message.
      * @throws Exception if an error occurs during export.
      */
-    @PostMapping(value = "/mapset/export/", produces = MediaType.APPLICATION_JSON)
+    @PostMapping(value = "/mapset/export", produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Generate export RF2 Map Sets files.", tags = {
         "mapset"
     }, requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "MapSetExportRequest schema", required = true,
