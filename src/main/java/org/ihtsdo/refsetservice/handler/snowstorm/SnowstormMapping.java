@@ -203,7 +203,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/concepts?activeFilter=true&includeLeafFlag=false&form=inferred&conceptIds="
             + code + SnowstormApiPaging.getPagingQueryString(null);
 
-        LOG.info("getSnowstormMapset url: " + targetUri);
+        LOG.info("getSnowstormMapset url: {}", targetUri);
 
         final WebTarget target = client.target(targetUri);
 
@@ -250,6 +250,7 @@ public class SnowstormMapping extends SnowstormAbstract {
             mapSet.setFromTerminology("SNOMEDCT-NO");
             mapSet.setFromVersion("2024-04-15");
             mapSet.setToTerminology("TBD");
+            mapSet.setBranchPath("MAIN/SNOMEDCT-NO/2024-04-15/WCITEST");
 
             // TEMPORARY//
             if (mapSet.getRefSetCode().equals("447562003")) {
@@ -339,7 +340,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
             final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/search?" + SnowstormApiPaging.getPagingQueryString(searchParameters);
             LOG.debug("getSnowstormMappings url: {}", targetUri);
-            LOG.debug("request body: {}", requestBody.toString());
+            LOG.debug("request body: {}", requestBody);
 
             try (final Response response = SnowstormConnection.postResponse(targetUri, requestBody.toString())) {
 
