@@ -2085,7 +2085,7 @@ public class SnowstormConcept extends SnowstormAbstract {
         final Optional<List> list = CachingUtility.getObject(SNOWSTORM_TERMINOLOGY_CACHE, cacheKey, List.class);
         @SuppressWarnings("unchecked")
         final List<Concept> terminologyConcepts = list.get();
-        LOG.debug("findConcepts: terminologyCacheKey: {}, list size:", cacheKey, terminologyConcepts.size());
+        LOG.debug("findConcepts: terminologyCacheKey: {}, list size: {}", cacheKey, terminologyConcepts.size());
 
         List<Concept> matchingConcepts = null;
         if (query.toLowerCase().contains("code:")) {
@@ -2120,7 +2120,7 @@ public class SnowstormConcept extends SnowstormAbstract {
         results.setTotal(matchingConcepts.size());
         results.setOffset(searchParameters.getOffset());
 
-        LOG.info("findConcepts took: " + (System.currentTimeMillis() - start) + " ms for cacheKey: " + cacheKey + ", query: " + query);
+        LOG.info("findConcepts took: {} ms for cacheKey: {}, query: {}", (System.currentTimeMillis() - start), cacheKey, query);
         return results;
 
     }

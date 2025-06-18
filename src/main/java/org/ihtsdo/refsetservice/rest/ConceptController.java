@@ -126,8 +126,7 @@ public class ConceptController extends BaseController {
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
 
-        LOG.info("Concept: terminology: " + terminology + ", version: " + version + ", searchParameters: "
-            + (searchParameters == null ? "" : searchParameters.toString()));
+        LOG.info("Concept: terminology: {}, version: {}, searchParameters:{}", terminology, version, (searchParameters == null ? "" : searchParameters));
 
         // final User authUser = authorizeUser(request);
 
@@ -136,23 +135,16 @@ public class ConceptController extends BaseController {
             if (searchParameters == null) {
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
-            
-            ResultListConcept resultListConcept = new ResultListConcept();
-            
-            if (StringUtils.isBlank(searchParameters.getQuery()) || searchParameters.getQuery().length() < 2) {
-                return new ResponseEntity<>(resultListConcept, HttpStatus.OK);
-            }
-            
-            
+
             if (searchParameters.getOffset() == null) {
                 searchParameters.setOffset(0);
             }
-            
+
             if (searchParameters.getLimit() == null || searchParameters.getLimit() == 0) {
                 searchParameters.setLimit(20);
             }
 
-            resultListConcept = ConceptService.findConcepts(terminology, version, searchParameters);
+            final ResultListConcept resultListConcept = ConceptService.findConcepts(terminology, version, searchParameters);
             return new ResponseEntity<>(resultListConcept, HttpStatus.OK);
 
         } catch (final Exception e) {
