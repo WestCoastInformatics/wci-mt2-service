@@ -9,6 +9,7 @@
  */
 package org.ihtsdo.refsetservice.handler;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -19,6 +20,7 @@ import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormCodeSystem;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormConcept;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormDescription;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormExport;
+import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormMapSet;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormMapping;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormMultiSearch;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormRefset;
@@ -27,7 +29,9 @@ import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
+import org.ihtsdo.refsetservice.model.MapSetExportRequest;
 import org.ihtsdo.refsetservice.model.Mapping;
+import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.ResultListConcept;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
@@ -40,6 +44,7 @@ import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -449,11 +454,10 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
         return SnowstormConcept.getConcept(terminology, version, code);
 
     }
-    
+
     /* see superclass */
     @Override
-    public ResultListConcept findConcepts(final String terminology, final String version, final SearchParameters searchParameters)
-        throws Exception {
+    public ResultListConcept findConcepts(final String terminology, final String version, final SearchParameters searchParameters) throws Exception {
 
         return SnowstormConcept.findConcepts(terminology, version, searchParameters);
     }
@@ -487,4 +491,27 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
         return SnowstormMapping.updateMappings(mapProject, branch, mapSetCode, mappings);
     }
+
+    /* see superclass */
+    @Override
+    public File exportMappings(final String branch, final String mapSetCode, final MappingExportRequest mappingExportRequest) throws Exception {
+
+        return SnowstormMapping.exportMappings(branch, mapSetCode, mappingExportRequest);
+    }
+
+    /* see superclass */
+    @Override
+    public List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile) throws Exception {
+
+        return SnowstormMapping.importMappings(mapProject, branch, mappingFile);
+    }
+
+    /* see superclass */
+    @Override
+    public String exportMapSet(final User user, final MapProject mapProject, final MapSetExportRequest mapSetExportRequest) throws Exception {
+
+        return SnowstormMapSet.exportMapSet(user, mapProject, mapSetExportRequest);
+
+    }
+
 }

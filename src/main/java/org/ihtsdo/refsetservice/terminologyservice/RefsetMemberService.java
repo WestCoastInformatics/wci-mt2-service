@@ -54,12 +54,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.handler.ExportHandler;
 import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
 import org.ihtsdo.refsetservice.model.Concept;
-import org.ihtsdo.refsetservice.model.ResultListConcept;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RefsetMemberComparison;
+import org.ihtsdo.refsetservice.model.ResultListConcept;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
 import org.ihtsdo.refsetservice.model.User;
@@ -366,7 +366,8 @@ public final class RefsetMemberService {
 	 * @throws Exception the exception
 	 */
 	public static List<Map<String, String>> sortConceptDescriptions(final String conceptId,
-			final Set<Map<String, String>> descriptions, final Refset refset,
+			final Set<Map<String, String>> descriptions, 
+			final Edition edition,
 			final List<String> nonDefaultPreferredTerms) throws Exception {
 
 		// Sort descriptions in the order defined below.
@@ -392,7 +393,7 @@ public final class RefsetMemberService {
 			}
 
 			// Handle the default language
-			if (descriptionMap.get(DESCRIPTION_LANGUAGE).equals(refset.getEdition().getDefaultLanguageCode())) {
+			if (descriptionMap.get(DESCRIPTION_LANGUAGE).equals(edition.getDefaultLanguageCode())) {
 
 				if (descriptionMap.get(DESCRIPTION_TYPE).equalsIgnoreCase("fsn")) {
 
@@ -451,7 +452,7 @@ public final class RefsetMemberService {
 
 		}
 
-		final List<Map<String, String>> languageRefsets = refset.getEdition().getFullyQualifiedLanguageRefsets();
+		final List<Map<String, String>> languageRefsets = edition.getFullyQualifiedLanguageRefsets();
 
 		final Set<String> languageIdsProcessed = new HashSet<>();
 
@@ -826,9 +827,6 @@ public final class RefsetMemberService {
 
 			LOG.debug("Final Export File Path: " + exportFileDir + rt2VersionFileName);
 
-			// if download is from RT2 server
-			// ServletUriComponentsBuilder builder =
-			// ServletUriComponentsBuilder.fromCurrentContextPath();
 			return rt2VersionFileName;
 
 		} catch (final Exception ex) {
@@ -1125,9 +1123,6 @@ public final class RefsetMemberService {
 
 			}
 
-			// if download is from RT2 server
-			// final ServletUriComponentsBuilder builder =
-			// ServletUriComponentsBuilder.fromCurrentContextPath();
 			return EXPORT_DOWNLOAD_URL + deltaRt2VersionFileName;
 
 		} catch (final Exception ex) {
@@ -1538,14 +1533,13 @@ public final class RefsetMemberService {
 		// Delete temp directory structure and files
 		FileUtility.deleteDirectory(tempDirectoryPath.toFile());
 
-		// if download is from RT2 server
-		// final ServletUriComponentsBuilder builder =
-		// ServletUriComponentsBuilder.fromCurrentContextPath();
 		final String zippedFileUrl = EXPORT_DOWNLOAD_URL + refsetFileName.replace(".txt", ".zip");
 
 		return zippedFileUrl;
 	}
 
+
+	
 	/**
 	 * Export a freeset.
 	 *
@@ -1669,9 +1663,6 @@ public final class RefsetMemberService {
 		// Delete temp directory structure and files
 		FileUtility.deleteDirectory(tempDirectoryPath.toFile());
 
-		// if download is from RT2 server
-		// final ServletUriComponentsBuilder builder =
-		// ServletUriComponentsBuilder.fromCurrentContextPath();
 		final String zippedFileUrl = EXPORT_DOWNLOAD_URL + refsetFileName.replace(".txt", ".zip");
 
 		return zippedFileUrl;
@@ -2952,7 +2943,7 @@ public final class RefsetMemberService {
 		final Set<Map<String, String>> populatedDescriptions = processDescriptionNodes(descriptionNodes,
 				refset.getEdition().getDefaultLanguageRefsets(), nonDefaultPreferredTerms);
 
-		return sortConceptDescriptions(conceptId, populatedDescriptions, refset, nonDefaultPreferredTerms);
+		return sortConceptDescriptions(conceptId, populatedDescriptions, refset.getEdition(), nonDefaultPreferredTerms);
 	}
 
 	/**

@@ -199,7 +199,6 @@ public class SnowstormConcept extends SnowstormAbstract {
         final long start = System.currentTimeMillis();
 
         boolean done = false;
-        final int batchSizeLimit = 10000;
         String searchAfter = "";
 
         final String branch = "MAIN/" + terminology + "/" + version;
@@ -208,8 +207,8 @@ public class SnowstormConcept extends SnowstormAbstract {
 
         while (!done) {
 
-            final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/concepts?activeFilter=true&termActive=true&limit=" + batchSizeLimit
-                + (StringUtils.isNotEmpty(searchAfter) ? "&searchAfter=" + searchAfter : "");
+            final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/concepts?activeFilter=true&termActive=true&limit="
+                + ELASTICSEARCH_MAX_RECORD_LENGTH + (StringUtils.isNotEmpty(searchAfter) ? "&searchAfter=" + searchAfter : "");
 
             LOG.info("cacheConcepts url: " + targetUri);
 
@@ -236,9 +235,10 @@ public class SnowstormConcept extends SnowstormAbstract {
                     final String cacheKey = getConceptCacheKey(terminology, version, concept.getCode());
                     CachingUtility.cacheObject(SNOWSTORM_CONCEPTS_CACHE, cacheKey, Concept.class, concept);
                     terminologyConcepts.add(concept);
+
                 }
 
-                if (conceptNodeBatch.size() < batchSizeLimit) {
+                if (conceptNodeBatch.size() < ELASTICSEARCH_MAX_RECORD_LENGTH) {
                     done = true;
                 } else {
                     searchAfter = (doc.has("searchAfter") ? doc.get("searchAfter").asText() : "");
@@ -2085,7 +2085,7 @@ public class SnowstormConcept extends SnowstormAbstract {
         final Optional<List> list = CachingUtility.getObject(SNOWSTORM_TERMINOLOGY_CACHE, cacheKey, List.class);
         @SuppressWarnings("unchecked")
         final List<Concept> terminologyConcepts = list.get();
-        LOG.debug("findConcepts: terminologyCacheKey: {}, list size:", cacheKey, terminologyConcepts.size());
+        LOG.debug("findConcepts: terminologyCacheKey: {}, list size: {}", cacheKey, terminologyConcepts.size());
 
         List<Concept> matchingConcepts = null;
         if (query.toLowerCase().contains("code:")) {
@@ -2120,7 +2120,7 @@ public class SnowstormConcept extends SnowstormAbstract {
         results.setTotal(matchingConcepts.size());
         results.setOffset(searchParameters.getOffset());
 
-        LOG.info("findConcepts took: " + (System.currentTimeMillis() - start) + " ms for cacheKey: " + cacheKey + ", query: " + query);
+        LOG.info("findConcepts took: {} ms for cacheKey: {}, query: {}", (System.currentTimeMillis() - start), cacheKey, query);
         return results;
 
     }
@@ -2144,7 +2144,7 @@ public class SnowstormConcept extends SnowstormAbstract {
         final String version = codeSystem.getVersion();
 
         final List<Concept> concepts = new ArrayList<>();
-        final int fetchSize = 10000;
+        final int fetchSize = ELASTICSEARCH_MAX_RECORD_LENGTH;
         int offset = 0;
         boolean moreToFetch = true;
 

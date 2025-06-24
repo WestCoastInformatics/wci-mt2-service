@@ -184,6 +184,7 @@
 		<packageUrl regex="true">^pkg:maven/org\.springframework\.security/spring\-security\-crypto@.*$
 		</packageUrl>
 		<vulnerabilityName>CVE-2020-5408</vulnerabilityName>
+		<vulnerabilityName>CVE-2025-22228</vulnerabilityName>
 	</suppress>
 
 	<suppress>
@@ -213,5 +214,98 @@
 		<vulnerabilityName>CVE-2024-21634</vulnerabilityName>
 	</suppress>
 
+	<suppress>
+		<notes><![CDATA[
+   file name: swagger-ui-5.11.8.jar: swagger-ui-bundle.js
+   ]]></notes>
+		<packageUrl regex="true">^pkg:javascript/DOMPurify@.*$
+		</packageUrl>
+		<vulnerabilityName>CVE-2024-45801</vulnerabilityName>
+		<vulnerabilityName>CVE-2024-47875</vulnerabilityName>
+		<vulnerabilityName>CVE-2025-26791</vulnerabilityName>
+	</suppress>
+
+	<suppress>
+		<notes><![CDATA[
+   file name: swagger-ui-5.11.8.jar: swagger-ui-es-bundle.js
+   ]]></notes>
+		<packageUrl regex="true">^pkg:javascript/DOMPurify@.*$
+		</packageUrl>
+		<vulnerabilityName>CVE-2024-45801</vulnerabilityName>
+		<vulnerabilityName>CVE-2024-47875</vulnerabilityName>
+		<vulnerabilityName>CVE-2025-26791</vulnerabilityName>
+	</suppress>
+
+	<suppress>
+		<notes><![CDATA[
+   file name: lucene-analyzers-common-8.7.0.jar
+   ]]></notes>
+		<packageUrl regex="true">^pkg:maven/org\.apache\.lucene/lucene\-analyzers\-common@.*$
+		</packageUrl>
+		<cve>CVE-2024-45772</cve>
+	</suppress>
+
+	<suppress>
+		<notes><![CDATA[
+   file name: lucene-core-8.7.0.jar
+   ]]></notes>
+		<packageUrl regex="true">^pkg:maven/org\.apache\.lucene/lucene\-core@.*$
+		</packageUrl>
+		<cve>CVE-2024-45772</cve>
+	</suppress>
+
+	<suppress>
+		<notes><![CDATA[
+   file name: lucene-facet-8.7.0.jar
+   ]]></notes>
+		<packageUrl regex="true">^pkg:maven/org\.apache\.lucene/lucene\-facet@.*$
+		</packageUrl>
+		<cve>CVE-2024-45772</cve>
+	</suppress>
+
+	<suppress>
+		<notes><![CDATA[
+   file name: lucene-join-8.7.0.jar
+   ]]></notes>
+		<packageUrl regex="true">^pkg:maven/org\.apache\.lucene/lucene\-join@.*$
+		</packageUrl>
+		<cve>CVE-2024-45772</cve>
+	</suppress>
+
+	<suppress>
+		<notes><![CDATA[
+   file name: lucene-queries-8.7.0.jar
+   ]]></notes>
+		<packageUrl regex="true">^pkg:maven/org\.apache\.lucene/lucene\-queries@.*$
+		</packageUrl>
+		<cve>CVE-2024-45772</cve>
+	</suppress>
+
+	<suppress>
+		<notes><![CDATA[
+   file name: lucene-queryparser-8.7.0.jar
+   ]]></notes>
+		<packageUrl regex="true">^pkg:maven/org\.apache\.lucene/lucene\-queryparser@.*$
+		</packageUrl>
+		<cve>CVE-2024-45772</cve>
+	</suppress>
+
+	<suppress>
+		<notes><![CDATA[
+   file name: lucene-sandbox-8.7.0.jar
+   ]]></notes>
+		<packageUrl regex="true">^pkg:maven/org\.apache\.lucene/lucene\-sandbox@.*$
+		</packageUrl>
+		<cve>CVE-2024-45772</cve>
+	</suppress>
+
+	<suppress>
+		<notes><![CDATA[
+   file name: spring-webmvc-5.3.39.jar
+   ]]></notes>
+		<packageUrl regex="true">^pkg:maven/org\.springframework/spring\-webmvc@.*$
+		</packageUrl>
+		<vulnerabilityName>CVE-2024-38816</vulnerabilityName>
+	</suppress>
 
 </suppressions>

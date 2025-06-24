@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 West Coast Informatics - All Rights Reserved.
+ * Copyright 2025 West Coast Informatics - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of West Coast Informatics
  * The intellectual and technical concepts contained herein are proprietary to
@@ -9,16 +9,20 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
+import java.io.File;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.Mapping;
+import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.MapProjectService;
@@ -27,7 +31,9 @@ import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -39,6 +45,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -54,14 +61,6 @@ public class MappingController extends BaseController {
 
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(MappingController.class);
-
-    /** The request. */
-    @SuppressWarnings("unused")
-    @Autowired
-    private HttpServletRequest request;
-
-    /** Search teams API notes. */
-    private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
 
     /**
      * Gets the mappings.
@@ -115,6 +114,119 @@ public class MappingController extends BaseController {
 
             handleException(e);
             return null;
+        }
+    }
+
+    /**
+     * Export mappings for a map set.
+     *
+     * @author vparekh export the mappings.
+     * @param mapSetCode the map set code
+     * @param mappingExportRequest the mapping export request
+     * @return zip file
+     * @throws Exception the exception
+     */
+    @PostMapping(value = "/mapset/{mapSetCode}/export", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_OCTET_STREAM)
+    @Operation(summary = "Export Mapset Rows", tags = {
+        "mapset"
+    }, responses = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"), @ApiResponse(responseCode = "403", description = "Forbidden"),
+        @ApiResponse(responseCode = "404", description = "Resource not found"), @ApiResponse(responseCode = "417", description = "Failed Expectation")
+    })
+    @Parameters({
+        @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. 447562003", required = true)
+    })
+    @RecordMetric
+    public @ResponseBody ResponseEntity<Resource> exportMappings(@PathVariable(value = "mapSetCode") final String mapSetCode,
+        @RequestBody final MappingExportRequest mappingExportRequest) throws Exception {
+
+        // final User authUser = authorizeUser(request);
+
+        if (mappingExportRequest == null) {
+            throw new RuntimeException("MappingExportRequest is required.");
+        }
+
+        if (mappingExportRequest.getColumnNames() == null || mappingExportRequest.getColumnNames().isEmpty()) {
+            throw new RuntimeException("One or more column names are required.");
+        }
+
+        try {
+
+            final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
+            final File exportMapPkg = MappingService.exportMappings(branch, mapSetCode, mappingExportRequest);
+
+            final Resource file = new UrlResource(exportMapPkg.toURI());
+            if (!file.exists() || !file.isReadable()) {
+                throw new RuntimeException("Could not read the file!");
+            }
+
+            return ResponseEntity.ok().header(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, HttpHeaders.CONTENT_DISPOSITION)
+                .header(HttpHeaders.CONTENT_TYPE, Files.probeContentType(exportMapPkg.toPath()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"").contentLength(file.contentLength()).body(file);
+
+        } catch (final Exception e) {
+            handleException(e);
+            return null;
+        }
+    }
+
+    /**
+     * Import mappings.
+     *
+     * @author vparekh import mappings from external sources.
+     * @param branch the branch
+     * @param mappingFile the mappingFile
+     * @return the response entity
+     */
+    @PostMapping(value = "/mapset/{branch:.+}/mappings/import", consumes = MediaType.MULTIPART_FORM_DATA)
+    @Operation(summary = "Import mappings from RF2 file.", tags = {
+        "mapset"
+    }, responses = {
+        @ApiResponse(responseCode = "200", description = "Successfully imported RF2 mappings"),
+        @ApiResponse(responseCode = "417", description = "Failed to import the mappings"),
+        @ApiResponse(responseCode = "400", description = "Invalid request parameters")
+    })
+    @RecordMetric
+    public ResponseEntity<String> importMappings(@PathVariable(name = "branch", required = true) String branch,
+        @RequestParam(name = "mappingFile", required = true) MultipartFile mappingFile) {
+
+        LOG.info("RF2 Map Import file: {}", mappingFile);
+        LOG.info("RF2 Map Import branch : {}", branch);
+        final String decodedBranch = URLDecoder.decode(branch, StandardCharsets.UTF_8);
+
+        try {
+            // Validate the mapping file
+            if (mappingFile == null || mappingFile.isEmpty()) {
+                LOG.error("Mapping file is missing or empty.");
+                return new ResponseEntity<>(HttpStatus.EXPECTATION_FAILED);
+            }
+
+            // TODO: Remove hard-coding of mapProject stuff
+            final String id = "1";
+            MapProject mapProject = null;
+
+            try (final TerminologyService service = new TerminologyService()) {
+                mapProject = MapProjectService.getMapProject(service, id, false);
+                LOG.info("Fetched MapProject with ID: {}", id);
+
+                // Import RF2 mappings
+                final List<Mapping> updatedRF2Mappings = MappingService.importMappings(mapProject, decodedBranch, mappingFile);
+                if (updatedRF2Mappings == null || updatedRF2Mappings.isEmpty())
+                    LOG.info("Mapping import wasn't successful for branch: {}", decodedBranch);
+                else
+                    LOG.info("Mapping import was successful for branch: {}", decodedBranch);
+
+                return new ResponseEntity<>(HttpStatus.OK);
+
+            } catch (Exception e) {
+                LOG.error("Error fetching map project: {}", e.getMessage());
+                return new ResponseEntity<>("Failed to fetch map project.", HttpStatus.EXPECTATION_FAILED);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity<>(HttpStatus.EXPECTATION_FAILED);
         }
     }
 

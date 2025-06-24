@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 West Coast Informatics - All Rights Reserved.
+ * Copyright 2025 West Coast Informatics - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of West Coast Informatics
  * The intellectual and technical concepts contained herein are proprietary to
@@ -10,9 +10,13 @@
 package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.util.List;
+import java.util.Properties;
 
 import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
+import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
+import org.ihtsdo.refsetservice.model.MapSetExportRequest;
+import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
@@ -23,32 +27,34 @@ import org.slf4j.LoggerFactory;
  */
 public class MapSetService {
 
-  /** The Constant LOG. */
-  private static final Logger LOG = LoggerFactory.getLogger(MapSetService.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(MapSetService.class);
 
-  /** The terminology handler. */
-  private static TerminologyServerHandler terminologyHandler;
+    /** The config properties. */
+    protected static final Properties PROPERTIES = PropertyUtility.getProperties();
 
-  static {
+    /** The terminology handler. */
+    private static TerminologyServerHandler terminologyHandler;
 
-    // Instantiate terminology handler
-    try {
-      final String key = "terminology.handler";
-      final String handlerName = PropertyUtility.getProperty(key);
-      if (handlerName.isEmpty()) {
-        throw new Exception("terminology.handler expected and does not exist.");
-      }
+    static {
 
-      terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key,
-          handlerName, TerminologyServerHandler.class);
+        // Instantiate terminology handler
+        try {
+            final String key = "terminology.handler";
+            final String handlerName = PropertyUtility.getProperty(key);
+            if (handlerName.isEmpty()) {
+                throw new Exception("terminology.handler expected and does not exist.");
+            }
 
-    } catch (Exception e) {
-      LOG.error("Failed to initialize terminology.handler - serious error", e);
-      terminologyHandler = null;
+            terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName, TerminologyServerHandler.class);
+
+        } catch (Exception e) {
+            LOG.error("Failed to initialize terminology.handler - serious error", e);
+            terminologyHandler = null;
+        }
     }
-  }
 
-  /**
+    /**
      * Returns the map set.
      *
      * @param branch the branch
@@ -62,16 +68,31 @@ public class MapSetService {
 
     }
 
-  /**
-   * Returns the map sets.
-   *
-   * @param branch the branch
-   * @return the map sets
-   * @throws Exception the exception
-   */
-  public static List<MapSet> getMapSets(final String branch) throws Exception {
+    /**
+     * Returns the map sets.
+     *
+     * @param branch the branch
+     * @return the map sets
+     * @throws Exception the exception
+     */
+    public static List<MapSet> getMapSets(final String branch) throws Exception {
 
-    return terminologyHandler.getMapSets(branch);
+        return terminologyHandler.getMapSets(branch);
 
-  }
+    }
+
+    /**
+     * Get the map set member concepts in RF2 format.
+     *
+     * @param user the user
+     * @param mapProject the map project
+     * @param mapSetExportRequest the map set export request
+     * @return the refset member concepts
+     * @throws Exception the exception
+     */
+    public static String exportMapSet(final User user, final MapProject mapProject, final MapSetExportRequest mapSetExportRequest) throws Exception {
+
+        return terminologyHandler.exportMapSet(user, mapProject, mapSetExportRequest);
+    }
+
 }

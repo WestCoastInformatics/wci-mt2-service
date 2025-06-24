@@ -102,7 +102,7 @@ public class MapAdviceController extends BaseController {
      */
     @RequestMapping(method = RequestMethod.GET, value = "/mapAdvice/{id}", produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Get mapAdvice", tags = {
-        "mapadvice"
+        "map advice"
     }, responses = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information")
     })
@@ -132,7 +132,7 @@ public class MapAdviceController extends BaseController {
      */
     @RequestMapping(method = RequestMethod.GET, value = "/mapAdvice/", produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Get all map advices", tags = {
-        "mapadvice"
+        "map advice"
     }, responses = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information")
     })
@@ -222,7 +222,7 @@ public class MapAdviceController extends BaseController {
      */
     @RequestMapping(method = RequestMethod.GET, value = "/mapAdvice/search", produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Find map advices.", tags = {
-        "mapadvice"
+        "map advice"
     }, responses = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
         @ApiResponse(responseCode = "417", description = "Failed Expectation")

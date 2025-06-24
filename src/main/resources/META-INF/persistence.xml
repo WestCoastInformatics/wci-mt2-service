@@ -47,6 +47,7 @@
     <class>org.ihtsdo.refsetservice.model.MapAgeRange</class>
     <class>org.ihtsdo.refsetservice.model.MapProject</class>
     <class>org.ihtsdo.refsetservice.model.MapReportDefinition</class>
+    <class>org.ihtsdo.refsetservice.model.Job</class>
     
   </persistence-unit>
 </persistence>

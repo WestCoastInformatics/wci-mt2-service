@@ -9,17 +9,21 @@
  */
 package org.ihtsdo.refsetservice.terminologyservice;
 
+import java.io.File;
+import java.nio.file.Paths;
 import java.util.List;
 
 import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.Mapping;
+import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Service class to get refset member concept information from a terminology
@@ -128,4 +132,36 @@ public final class MappingService {
 
         return terminologyHandler.updateMappings(mapProject, branch, mapSetCode, mapping);
     }
+
+    /**
+     * Export mappings.
+     *
+     * @param mapProject the map project
+     * @param branch the branch
+     * @param mapSetCode the map set code
+     * @param conceptCodes the concept codes
+     * @param includedColumnsList the included columns list
+     * @return the file
+     * @throws Exception the exception
+     */
+    public static File exportMappings(final String branch, final String mapSetCode, final MappingExportRequest mappingExportRequest) throws Exception {
+
+        return terminologyHandler.exportMappings(branch, mapSetCode, mappingExportRequest);
+    }
+
+    
+    /**
+     * Import mappings.
+     *
+     * @param mapProject the map project
+     * @param branch the branch
+     * @param mappingFile the RF2 file
+     * @return the imported mappings
+     * @throws Exception the exception
+     */
+	public static List<Mapping> importMappings(MapProject mapProject, String branch,  MultipartFile mappingFile) throws Exception {
+	
+		return terminologyHandler.importMappings(mapProject, branch, mappingFile);
+	}
+    
 }

@@ -142,7 +142,7 @@ ospackage {
 
 // overrides for spring boot dependency versions
 ext['log4j2.version'] = '2.20.0'
-ext['tomcat.version'] = '9.0.84'
+ext['tomcat.version'] = '9.0.102'
 ext['snakeyaml.version'] = '2.2'
 ext['com.h2database']= 'h2:2.1.210'
 
@@ -157,6 +157,7 @@ dependencies {
   implementation "org.jboss.resteasy:resteasy-jackson2-provider:5.0.9.Final"
 
   implementation "org.springframework:spring-web:5.3.39"
+  implementation "org.springframework:spring-webmvc:5.3.39" // added
   implementation "org.springframework.boot:spring-boot-starter-log4j2"
   implementation "org.springframework.boot:spring-boot-devtools"
   implementation "org.springframework.boot:spring-boot-starter-actuator"
@@ -167,9 +168,9 @@ dependencies {
   implementation "org.springframework.boot:spring-boot-starter-tomcat"
   implementation "org.springframework.session:spring-session-core"
   implementation "org.springframework.session:spring-session-jdbc"
-  implementation "org.springframework.security:spring-security-core:5.8.11"
-  implementation "org.springframework.security:spring-security-crypto:5.8.11"
-  implementation "org.springframework.security:spring-security-web:5.8.11"
+  implementation "org.springframework.security:spring-security-core:5.8.16"
+  implementation "org.springframework.security:spring-security-crypto:5.8.16"
+  implementation "org.springframework.security:spring-security-web:5.8.16"
   implementation "org.springframework.cloud:spring-cloud-starter-consul-config"
   implementation "org.springframework.cloud:spring-cloud-starter-consul-discovery"
   implementation "org.springframework.cloud:spring-cloud-starter-vault-config"
@@ -192,7 +193,7 @@ dependencies {
   // Springfox is deprecated
   // implementation "io.springfox:springfox-boot-starter:3.0.0"
   // implementation "io.springfox:springfox-swagger-ui:3.0.0"
-  implementation "org.springdoc:springdoc-openapi-ui:1.7.0"
+  implementation "org.springdoc:springdoc-openapi-ui:1.8.0"
   
   // Others
   implementation "org.aspectj:aspectjweaver:1.9.2"
@@ -280,7 +281,7 @@ tasks.withType(Checkstyle) {
 
 dependencyCheck {
     failBuildOnCVSS = 7.0
-    format = 'XML'
+    format = 'HTML'
     outputDirectory = file("$buildDir/reports/dependency-check")
     suppressionFile = file("dependencies.xml")
 }

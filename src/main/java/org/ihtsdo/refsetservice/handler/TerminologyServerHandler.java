@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 West Coast Informatics - All Rights Reserved.
+ * Copyright 2025 West Coast Informatics - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of West Coast Informatics
  * The intellectual and technical concepts contained herein are proprietary to
@@ -9,6 +9,7 @@
  */
 package org.ihtsdo.refsetservice.handler;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -18,7 +19,9 @@ import org.ihtsdo.refsetservice.model.Configurable;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
+import org.ihtsdo.refsetservice.model.MapSetExportRequest;
 import org.ihtsdo.refsetservice.model.Mapping;
+import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.ResultListConcept;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
@@ -27,6 +30,7 @@ import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ConceptLookupParameters;
 import org.ihtsdo.refsetservice.util.SearchParameters;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -282,14 +286,13 @@ public interface TerminologyServerHandler extends Configurable {
     /**
      * Returns the concepts.
      *
-     * @param branch the branch
      * @param terminology the terminology
      * @param version the version
      * @param searchParameters the search parameters
      * @return the concept
      * @throws Exception the exception
      */
-    public ResultListConcept findConcepts(/*final String branch, */ final String terminology, final String version, final SearchParameters searchParameters)
+    public ResultListConcept findConcepts(/* final String branch, */ final String terminology, final String version, final SearchParameters searchParameters)
         throws Exception;
 
     /**
@@ -567,14 +570,13 @@ public interface TerminologyServerHandler extends Configurable {
     /**
      * Returns the concept.
      *
-     * @param branch the branch
      * @param terminology the terminology
      * @param version the version
      * @param code the code
      * @return the concept
      * @throws Exception the exception
      */
-    public Concept getConcept(/*final String branch,*/ final String terminology, final String version, final String code) throws Exception;
+    public Concept getConcept(/* final String branch, */ final String terminology, final String version, final String code) throws Exception;
 
     /**
      * Creates the mappings.
@@ -601,4 +603,37 @@ public interface TerminologyServerHandler extends Configurable {
      */
     public List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mapping)
         throws Exception;
+
+    /**
+     * Export mappings.
+     *
+     * @param branch the branch
+     * @param mapSetCode the map set code
+     * @param mappingExportRequest the mapping export request
+     * @return the paths
+     * @throws Exception the exception
+     */
+    public File exportMappings(final String branch, final String mapSetCode, final MappingExportRequest mappingExportRequest) throws Exception;
+
+    /**
+     * Import mappings.
+     *
+     * @param mapProject the map project
+     * @param branch the branch
+     * @param mappingFile the mappingFile
+     * @return the list
+     * @throws Exception the exception
+     */
+    public List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile) throws Exception;
+
+    /**
+     * Export map set as an RF2 file.
+     *
+     * @param user the user
+     * @param mapProject the map project
+     * @param mapSetExportRequest the map set export request
+     * @return the file
+     * @throws Exception the exception
+     */
+    public String exportMapSet(final User user, final MapProject mapProject, final MapSetExportRequest mapSetExportRequest) throws Exception;
 }

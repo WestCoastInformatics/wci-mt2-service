@@ -46,7 +46,9 @@ import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.MapEntry;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
+import org.ihtsdo.refsetservice.model.MapSetExportRequest;
 import org.ihtsdo.refsetservice.model.Mapping;
+import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RestException;
@@ -72,6 +74,7 @@ import org.ihtsdo.refsetservice.util.StringUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -1423,7 +1426,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     RefsetMemberService.processDescriptionNodes(descriptionNodes, refset.getEdition().getDefaultLanguageRefsets(), nonDefaultPreferredTerms);
 
                 final List<Map<String, String>> sortedDescriptions =
-                    RefsetMemberService.sortConceptDescriptions(conceptId, descriptions, refset, nonDefaultPreferredTerms);
+                    RefsetMemberService.sortConceptDescriptions(conceptId, descriptions, refset.getEdition(), nonDefaultPreferredTerms);
                 conceptDescriptionMap.put(conceptId, sortedDescriptions);
             }
 
@@ -4271,7 +4274,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             if (!conceptIdToMappingMap.containsKey(mappingNode.get("referencedComponentId").asText())) {
                 final Mapping mapping = new Mapping();
                 mapping.setCode(mappingNode.get("referencedComponentId").asText());
-                mapping.setName(getConcept(/*branch,*/ mapSet.getFromTerminology(), "", mapping.getCode()).getName());
+                mapping.setName(getConcept(/* branch, */ mapSet.getFromTerminology(), "", mapping.getCode()).getName());
                 mapping.setMapSetId(mapSet.getId());
                 mapping.setMapEntries(new ArrayList<>());
 
@@ -4299,7 +4302,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             }
             mapEntry.setAdvices(advices);
 
-            final Concept relationConcept = getConcept(/*branch,*/ mapSet.getFromTerminology(), "", additionalFields.get("mapCategoryId").asText());
+            final Concept relationConcept = getConcept(/* branch, */ mapSet.getFromTerminology(), "", additionalFields.get("mapCategoryId").asText());
             if (relationConcept != null) {
                 mapEntry.setRelation(relationConcept.getName());
             } else {
@@ -4308,7 +4311,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             mapEntry.setToCode(additionalFields.get("mapTarget").asText());
 
-            final Concept toConcept = getConcept(/*branch,*/ mapSet.getToTerminology(), "", additionalFields.get("mapTarget").asText());
+            final Concept toConcept = getConcept(/* branch, */ mapSet.getToTerminology(), "", additionalFields.get("mapTarget").asText());
 
             if (toConcept != null) {
                 mapEntry.setToName(toConcept.getName());
@@ -4372,7 +4375,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             // mapping
             if (mapping.getCode() == null || mapping.getCode().isEmpty()) {
                 mapping.setCode(mappingNode.get("referencedComponentId").asText());
-                mapping.setName(getConcept(/*branch,*/ mapSet.getFromTerminology(), "", mapping.getCode()).getName());
+                mapping.setName(getConcept(/* branch, */ mapSet.getFromTerminology(), "", mapping.getCode()).getName());
                 mapping.setMapSetId(mapSet.getId());
                 mapping.setMapEntries(new ArrayList<>());
             }
@@ -4397,7 +4400,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             }
             mapEntry.setAdvices(advices);
 
-            final Concept relationConcept = getConcept(/*branch,*/ mapSet.getFromTerminology(), "", additionalFields.get("mapCategoryId").asText());
+            final Concept relationConcept = getConcept(/* branch, */ mapSet.getFromTerminology(), "", additionalFields.get("mapCategoryId").asText());
             if (relationConcept != null) {
                 mapEntry.setRelation(relationConcept.getName());
             } else {
@@ -4406,7 +4409,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             mapEntry.setToCode(additionalFields.get("mapTarget").asText());
 
-            final Concept toConcept = getConcept(/*branch,*/ mapSet.getToTerminology(), "", additionalFields.get("mapTarget").asText());
+            final Concept toConcept = getConcept(/* branch, */ mapSet.getToTerminology(), "", additionalFields.get("mapTarget").asText());
 
             if (toConcept != null) {
                 mapEntry.setToName(toConcept.getName());
@@ -4425,7 +4428,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
     /* see superclass */
     @Override
-    public Concept getConcept(/*final String branch,*/ final String terminology, final String version, final String code) throws Exception {
+    public Concept getConcept(/* final String branch, */ final String terminology, final String version, final String code) throws Exception {
 
         final File f = new File(handlerProperties.getProperty("dir") + "/Concepts" + terminology + ".json");
         if (!f.exists()) {
@@ -4479,7 +4482,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         // If no concept with the specified terminology and code found, return null
         return null;
     }
-    
+
     /* see superclass */
     @Override
     public ResultListConcept findConcepts(final String terminology, final String version, final SearchParameters searchParameters) throws Exception {
@@ -4519,5 +4522,29 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         // TODO implement with Snowstorm
         throw new UnsupportedOperationException("Method not implemented");
     }
-    
+
+    /* see superclass */
+    @Override
+    public File exportMappings(final String branch, final String mapSetCode, final MappingExportRequest mappingExportRequest) throws Exception {
+
+        // TODO implement with Snowstorm
+        throw new UnsupportedOperationException("Method not implemented");
+    }
+
+    /* see superclass */
+    @Override
+    public List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile) throws Exception {
+
+        // TODO implement with Snowstorm
+        throw new UnsupportedOperationException("Method not implemented");
+    }
+
+    /* see superclass */
+    @Override
+    public String exportMapSet(final User user, final MapProject mapProject, final MapSetExportRequest mapSetExportRequest) throws Exception {
+
+        // TODO implement with Snowstorm
+        throw new UnsupportedOperationException("Method not implemented");
+    }
+
 }
