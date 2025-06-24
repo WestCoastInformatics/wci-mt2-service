@@ -52,7 +52,7 @@ public class MapEntryUtility {
      * @param mapping2 the mapping 2
      * @return the boolean
      */
-    public static Boolean areMapsEquivalent(Mapping mapping1, Mapping mapping2) {
+    public static Boolean areMapsEquivalent(final Mapping mapping1, final Mapping mapping2) {
 
         // Check for null mappings
         if ((mapping1 == null && mapping2 == null)) {
@@ -103,7 +103,7 @@ public class MapEntryUtility {
      * @param mapEntry2 the map entry 2
      * @return the boolean
      */
-    public static Boolean areMapEntriesEquivalent(MapEntry mapEntry1, MapEntry mapEntry2) {
+    public static Boolean areMapEntriesEquivalent(final MapEntry mapEntry1, final MapEntry mapEntry2) {
 
         Boolean mapEntriesEquivalent = true;
 
