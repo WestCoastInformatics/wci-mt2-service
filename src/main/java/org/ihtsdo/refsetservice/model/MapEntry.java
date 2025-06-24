@@ -23,6 +23,7 @@ import javax.persistence.OrderBy;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.hibernate.search.engine.backend.types.Projectable;
@@ -418,6 +419,36 @@ public class MapEntry extends AbstractHasModified {
         } catch (final Exception e) {
             return e.getMessage();
         }
+    }
+    
+
+    /**
+     * Compares this mapEntry with the other mapEntry to see if there
+     * are relevant differences.
+     *
+     * @param other the other
+     * @return true, if is different
+     */
+    public boolean isSame(final MapEntry other) {
+
+        if (this == other)
+            return true;
+        if (getClass() != other.getClass())
+            return false;
+        // ignore timestamps from super and check active.
+        return Objects.equals(this.advices, other.advices) 
+            && Objects.equals(this.additionalMapEntryInfos, other.additionalMapEntryInfos)
+            && Objects.equals(this.toCode, other.toCode) 
+            && Objects.equals(this.toName, other.toName) 
+            && StringUtils.equalsIgnoreCase(this.rule, other.rule)
+            && Objects.equals(this.priority, other.priority) 
+            && StringUtils.equalsIgnoreCase(this.relation, other.relation)
+            && StringUtils.equalsIgnoreCase(this.relationCode, other.relationCode) 
+            && Objects.equals(this.block, other.block) 
+            && Objects.equals(this.group, other.group)
+            && Objects.equals(this.moduleId, other.moduleId) 
+            && Objects.equals(this.released, other.released)
+            && Objects.equals(this.isActive(), other.isActive());
     }
 
 }
