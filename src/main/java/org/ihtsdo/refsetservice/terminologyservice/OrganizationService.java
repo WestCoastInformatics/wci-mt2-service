@@ -323,7 +323,7 @@ public class OrganizationService extends BaseService {
 			throw new RestException(false, 404, "Not found", message);
 		}
 
-		if (organization.isActive() == organizationStatus) {
+		if (organization.getActive() == organizationStatus) {
 
 			throw new Exception("Attempting to modify status of organization " + organization.getName() + " ("
 					+ organizationId + ") " + organizationStatus
@@ -706,7 +706,7 @@ public class OrganizationService extends BaseService {
 					+ " in order to addUserToOrganization via email address.";
 			LOG.error(message);
 			throw new RestException(false, 404, "Not found", message);
-		} else if (!organization.isActive()) {
+		} else if (!organization.getActive()) {
 
 			final String message = "Unable to add users to inactive organization for " + organizationId;
 			LOG.error(message);
@@ -744,7 +744,7 @@ public class OrganizationService extends BaseService {
 					+ " in order to addUserToOrganization.";
 			LOG.error(message);
 			throw new RestException(false, 404, "Not found", message);
-		} else if (!organization.isActive()) {
+		} else if (!organization.getActive()) {
 
 			final String message = "Unable to add users to inactive organization for " + organizationId;
 			LOG.error(message);

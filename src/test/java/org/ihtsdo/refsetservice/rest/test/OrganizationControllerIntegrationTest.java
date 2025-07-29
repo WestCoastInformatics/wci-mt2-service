@@ -23,6 +23,7 @@ import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.terminologyservice.EditionService;
 import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.util.ResultList;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
@@ -42,7 +43,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * The Class OrganizationControllerIntegrationTest.
@@ -60,15 +60,8 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
 	@Autowired
 	private MockMvc mvc;
 
-	/** The object mapper. */
-	private ObjectMapper objectMapper;
-
 	/** The base url. */
 	private String baseUrl = "";
-
-	/** The env. */
-	// @Autowired
-	// private Environment env;
 
 	/** The test user. */
 	private User testUser = null;
@@ -131,8 +124,7 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
 	@BeforeEach
 	public void setUp() {
 
-		objectMapper = new ObjectMapper();
-		JacksonTester.initFields(this, objectMapper);
+		JacksonTester.initFields(this, ThreadLocalMapper.get());
 		baseUrl = "/organization";
 
 		url = null;
@@ -183,7 +175,7 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
 
 		content = result.getResponse().getContentAsString();
 		LOG.info(" content = {}", content);
-		final Organization newOrg = new ObjectMapper().readValue(content, Organization.class);
+		final Organization newOrg = ThreadLocalMapper.get().readValue(content, Organization.class);
 		assertThat(compareOrganization(originalOrg, newOrg, true)).isTrue();
 		assertThat(newOrg.isAffiliate()).isTrue();
 	}
@@ -215,7 +207,7 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
 
 		content = result.getResponse().getContentAsString();
 		LOG.info(" content = {}", content);
-		final Organization newOrg = new ObjectMapper().readValue(content, Organization.class);
+		final Organization newOrg = ThreadLocalMapper.get().readValue(content, Organization.class);
 		assertThat(compareOrganization(originalOrg, newOrg, true)).isTrue();
 
 		// UPDATE
@@ -247,7 +239,7 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
 		content = result.getResponse().getContentAsString();
 		LOG.info(" content = {}", content);
 
-		final Organization updatedOrg = new ObjectMapper().readValue(content, Organization.class);
+		final Organization updatedOrg = ThreadLocalMapper.get().readValue(content, Organization.class);
 		assertThat(compareOrganization(newOrg, updatedOrg, true)).isTrue();
 	}
 
@@ -278,7 +270,7 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
 
 		content = result.getResponse().getContentAsString();
 		LOG.info(" content = {}", content);
-		final Organization newOrg = new ObjectMapper().readValue(content, Organization.class);
+		final Organization newOrg = ThreadLocalMapper.get().readValue(content, Organization.class);
 		assertThat(compareOrganization(originalOrg, newOrg, true)).isTrue();
 
 		// get
@@ -290,7 +282,7 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
 		content = result.getResponse().getContentAsString();
 		LOG.info(" content = {}", content);
 
-		final Organization getOrg = new ObjectMapper().readValue(content, Organization.class);
+		final Organization getOrg = ThreadLocalMapper.get().readValue(content, Organization.class);
 		assertThat(compareOrganization(getOrg, newOrg, true)).isTrue();
 	}
 
@@ -321,7 +313,7 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
 
 		content = result.getResponse().getContentAsString();
 		LOG.info(" content = {}", content);
-		final Organization newOrg = new ObjectMapper().readValue(content, Organization.class);
+		final Organization newOrg = ThreadLocalMapper.get().readValue(content, Organization.class);
 		assertThat(compareOrganization(originalOrg, newOrg, true)).isTrue();
 
 		// get - search
@@ -336,7 +328,7 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
 				.andExpect(status().isOk()).andReturn();
 		content = result.getResponse().getContentAsString();
 		LOG.info(" content = {}", content);
-		final ResultList<Organization> resultList1 = new ObjectMapper().readValue(content,
+		final ResultList<Organization> resultList1 = ThreadLocalMapper.get().readValue(content,
 				(new TypeReference<ResultList<Organization>>() {
 					// n/a
 				}));
@@ -352,7 +344,7 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
 				.andExpect(status().isOk()).andReturn();
 		content = result.getResponse().getContentAsString();
 		LOG.info(" content = {}", content);
-		final ResultList<Organization> resultList2 = new ObjectMapper().readValue(content,
+		final ResultList<Organization> resultList2 = ThreadLocalMapper.get().readValue(content,
 				(new TypeReference<ResultList<Organization>>() {
 					// n/a
 				}));
@@ -390,7 +382,7 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
 
 		content = result.getResponse().getContentAsString();
 		LOG.info(" content = {}", content);
-		final Organization newOrg = new ObjectMapper().readValue(content, Organization.class);
+		final Organization newOrg = ThreadLocalMapper.get().readValue(content, Organization.class);
 		assertThat(compareOrganization(originalOrg, newOrg, true)).isTrue();
 
 		// inactive tests
@@ -414,7 +406,7 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
 				.andExpect(status().isOk()).andReturn();
 		content = result.getResponse().getContentAsString();
 		LOG.info(" content = {}", content);
-		final ResultList<Organization> resultList1 = new ObjectMapper().readValue(content,
+		final ResultList<Organization> resultList1 = ThreadLocalMapper.get().readValue(content,
 				(new TypeReference<ResultList<Organization>>() {
 					// n/a
 				}));
@@ -428,7 +420,7 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
 				.andExpect(status().isOk()).andReturn();
 		content = result.getResponse().getContentAsString();
 		LOG.info(" content = {}", content);
-		final ResultList<Organization> resultList = new ObjectMapper().readValue(content,
+		final ResultList<Organization> resultList = ThreadLocalMapper.get().readValue(content,
 				(new TypeReference<ResultList<Organization>>() {
 					// n/a
 				}));
@@ -453,7 +445,7 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
 		LOG.info("new org record = {}", newOrganization);
 		assertThat(newOrganization).isNotNull();
 		assertThat(newOrganization.getName()).isEqualTo(originalOrganization.getName());
-		assertThat(newOrganization.isActive()).isEqualTo(originalOrganization.isActive());
+		assertThat(newOrganization.getActive()).isEqualTo(originalOrganization.getActive());
 		assertThat(newOrganization.getDescription()).isEqualTo(originalOrganization.getDescription());
 		assertThat(newOrganization.getPrimaryContactEmail()).isEqualTo(originalOrganization.getPrimaryContactEmail());
 		if (nonUpdatedAttributes) {

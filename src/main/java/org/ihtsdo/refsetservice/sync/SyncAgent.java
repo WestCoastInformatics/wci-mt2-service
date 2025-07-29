@@ -464,7 +464,7 @@ public abstract class SyncAgent {
 	 */
 	public List<Edition> readDbActiveEditions(final TerminologyService service) throws Exception {
 
-		return readDbAllEditions(service).stream().filter(e -> e.isActive()).collect(Collectors.toList());
+		return readDbAllEditions(service).stream().filter(e -> e.getActive()).collect(Collectors.toList());
 	}
 
 	/**
@@ -476,6 +476,6 @@ public abstract class SyncAgent {
 	 */
 	public List<Edition> readDbInactiveEditions(final TerminologyService service) throws Exception {
 
-		return readDbAllEditions(service).stream().filter(e -> !e.isActive()).collect(Collectors.toList());
+		return readDbAllEditions(service).stream().filter(e -> !e.getActive()).collect(Collectors.toList());
 	}
 }

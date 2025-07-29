@@ -27,6 +27,7 @@ import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.TypeKeyValue;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ResultList;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -35,7 +36,6 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Integration tests for MetadataController.
@@ -194,7 +194,7 @@ public class GetUnitTestUtilities {
 			final String content = result.getResponse().getContentAsString();
 			LOG.info(" content = " + content);
 
-			final Project project = new ObjectMapper().readValue(content, Project.class);
+			final Project project = ThreadLocalMapper.get().readValue(content, Project.class);
 
 			assertThat(project).isNotNull();
 			return project;
@@ -227,7 +227,7 @@ public class GetUnitTestUtilities {
 			final String content = result.getResponse().getContentAsString();
 			LOG.info(" content = " + content);
 
-			final Refset refset = new ObjectMapper().readValue(content, Refset.class);
+			final Refset refset = ThreadLocalMapper.get().readValue(content, Refset.class);
 
 			assertThat(refset).isNotNull();
 			return refset;
@@ -284,7 +284,7 @@ public class GetUnitTestUtilities {
 			final String content = result.getResponse().getContentAsString();
 			LOG.info(" content = " + content);
 
-			final ResultList<TypeKeyValue> editions = new ObjectMapper().readValue(content,
+			final ResultList<TypeKeyValue> editions = ThreadLocalMapper.get().readValue(content,
 					(new TypeReference<ResultList<TypeKeyValue>>() {
 						/* NA */
 					}));
@@ -318,7 +318,7 @@ public class GetUnitTestUtilities {
 					.andExpect(status().isOk()).andReturn();
 			final String content = result.getResponse().getContentAsString();
 			LOG.info(" content = " + content);
-			final ResultList<String> versions = new ObjectMapper().readValue(content,
+			final ResultList<String> versions = ThreadLocalMapper.get().readValue(content,
 					(new TypeReference<ResultList<String>>() {
 						/* NA */
 					}));
@@ -353,7 +353,7 @@ public class GetUnitTestUtilities {
 			final String content = result.getResponse().getContentAsString();
 			LOG.info(" content = " + content);
 
-			final ResultList<Project> projectList = new ObjectMapper().readValue(content,
+			final ResultList<Project> projectList = ThreadLocalMapper.get().readValue(content,
 					(new TypeReference<ResultList<Project>>() {
 						// n/a
 					}));
@@ -390,7 +390,7 @@ public class GetUnitTestUtilities {
 					.andExpect(status().isOk()).andReturn();
 			final String content = result.getResponse().getContentAsString();
 			LOG.info(" content = " + content);
-			final ResultList<Refset> refsetList = new ObjectMapper().readValue(content,
+			final ResultList<Refset> refsetList = ThreadLocalMapper.get().readValue(content,
 					(new TypeReference<ResultList<Refset>>() {
 						// n/a
 					}));
@@ -426,7 +426,7 @@ public class GetUnitTestUtilities {
 			final String content = result.getResponse().getContentAsString();
 			LOG.info(" content = " + content);
 
-			final Concept concept = new ObjectMapper().readValue(content, Concept.class);
+			final Concept concept = ThreadLocalMapper.get().readValue(content, Concept.class);
 			return concept;
 
 		} catch (final Exception e) {
@@ -464,7 +464,7 @@ public class GetUnitTestUtilities {
 			final String content = result.getResponse().getContentAsString();
 			LOG.info(" content = " + content);
 
-			final ResultListConcept refsetConcepts = new ObjectMapper().readValue(content, ResultListConcept.class);
+			final ResultListConcept refsetConcepts = ThreadLocalMapper.get().readValue(content, ResultListConcept.class);
 			assertThat(refsetConcepts.getItems()).isNotEmpty();
 			return refsetConcepts;
 
@@ -495,7 +495,7 @@ public class GetUnitTestUtilities {
 					.andExpect(status().isOk()).andReturn();
 			final String content = result.getResponse().getContentAsString();
 			LOG.info(" content = " + content);
-			final ResultListConcept members = new ObjectMapper().readValue(content, (ResultListConcept.class));
+			final ResultListConcept members = ThreadLocalMapper.get().readValue(content, (ResultListConcept.class));
 
 			// Testing Results
 			assertThat(members).isNotNull();
@@ -531,7 +531,7 @@ public class GetUnitTestUtilities {
 			final String content = result.getResponse().getContentAsString();
 
 			LOG.info(" content = " + content);
-			final ResultListConcept members = new ObjectMapper().readValue(content, (ResultListConcept.class));
+			final ResultListConcept members = ThreadLocalMapper.get().readValue(content, (ResultListConcept.class));
 
 			// Testing Results
 			assertThat(members).isNotNull();
@@ -567,7 +567,7 @@ public class GetUnitTestUtilities {
 			final String content = result.getResponse().getContentAsString();
 
 			LOG.info(" content = " + content);
-			final ResultListConcept members = new ObjectMapper().readValue(content, (ResultListConcept.class));
+			final ResultListConcept members = ThreadLocalMapper.get().readValue(content, (ResultListConcept.class));
 
 			// Testing Results
 			assertThat(members).isNotNull();
@@ -604,7 +604,7 @@ public class GetUnitTestUtilities {
 			final String content = result.getResponse().getContentAsString();
 			LOG.info(" content = " + content);
 
-			final ResultListConcept children = new ObjectMapper().readValue(content, (ResultListConcept.class));
+			final ResultListConcept children = ThreadLocalMapper.get().readValue(content, (ResultListConcept.class));
 
 			assertThat(children).isNotNull();
 			assertThat(children.getItems()).isNotEmpty();
@@ -639,7 +639,7 @@ public class GetUnitTestUtilities {
 			final String content = result.getResponse().getContentAsString();
 			LOG.info(" content = " + content);
 
-			final ResultList<Map<String, String>> memberHistory = new ObjectMapper().readValue(content,
+			final ResultList<Map<String, String>> memberHistory = ThreadLocalMapper.get().readValue(content,
 					(new TypeReference<ResultList<Map<String, String>>>() {
 						/* NA */
 					}));
@@ -677,7 +677,7 @@ public class GetUnitTestUtilities {
 			final String content = result.getResponse().getContentAsString();
 			LOG.info(" content = " + content);
 
-			final Concept returnedconcept = new ObjectMapper().readValue(content, Concept.class);
+			final Concept returnedconcept = ThreadLocalMapper.get().readValue(content, Concept.class);
 			return returnedconcept;
 
 		} catch (final Exception e) {
@@ -709,7 +709,7 @@ public class GetUnitTestUtilities {
 			final String content = result.getResponse().getContentAsString();
 			LOG.info(" content = " + content);
 
-			final JsonNode root = new ObjectMapper().readTree(content);
+			final JsonNode root = ThreadLocalMapper.get().readTree(content);
 			final boolean success = root.get("success").asBoolean();
 
 			return success;

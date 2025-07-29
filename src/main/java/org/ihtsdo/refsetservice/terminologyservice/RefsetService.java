@@ -293,7 +293,7 @@ public class RefsetService {
 
         if (!StringUtility.isEmpty(refsetEditParameters.getModuleId()) && !refsetEditParameters.getModuleId().equals(refset.getModuleId())) {
 
-            updateRefsetConcept(refset, refset.isActive(), refsetEditParameters.getModuleId());
+            updateRefsetConcept(refset, refset.getActive(), refsetEditParameters.getModuleId());
             refset.setModuleId(refsetEditParameters.getModuleId());
         }
 

@@ -15,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.CaseFormat;
 
 /**
@@ -39,9 +38,6 @@ public final class StringUtility {
     /** The Constant NORM_PUNCTUATION_REGEX. */
     public static final String NORM_PUNCTUATION_REGEX = "[ \\t\\-{}_!@#%&\\*\\\\:;,?/~+=|<>$`^]";
     
-    /**  The Constant objectMapper. */
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
     /**
      * Instantiates an empty {@link StringUtility}.
      */
@@ -490,7 +486,7 @@ public final class StringUtility {
      */
     public static boolean isJson(final String str) {
         try {
-            OBJECT_MAPPER.readTree(str);
+            ThreadLocalMapper.get().readTree(str);
             return true;
         } catch (JsonProcessingException e) {
             return false;

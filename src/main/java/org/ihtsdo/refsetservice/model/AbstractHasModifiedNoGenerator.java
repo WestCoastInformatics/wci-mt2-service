@@ -74,20 +74,20 @@ public abstract class AbstractHasModifiedNoGenerator extends AbstractHasIdNoGene
       modified = other.getModified();
       modifiedBy = other.getModifiedBy();
     }
-    active = other.isActive();
+    active = other.getActive();
   }
 
   /* see superclass */
   @Override
   @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
-  public boolean isActive() {
+  public Boolean getActive() {
 
     return active;
   }
 
   /* see superclass */
   @Override
-  public void setActive(final boolean active) {
+  public void setActive(final Boolean active) {
 
     this.active = active;
   }

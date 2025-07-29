@@ -23,6 +23,7 @@ import org.ihtsdo.refsetservice.terminologyservice.EditionService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.util.ResultList;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
@@ -42,7 +43,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * The Class UserControllerIntegrationTest.
@@ -60,19 +60,8 @@ public class UserControllerIntegrationTest extends BaseTest {
 	@Autowired
 	private MockMvc mvc;
 
-	// /** The test properties. */
-	// @Autowired
-	// private Properties testProperties;
-
-	/** The object mapper. */
-	private ObjectMapper objectMapper;
-
 	/** The base url. */
 	private String baseUrl = "";
-
-	// /** The env. */
-	// @Autowired
-	// private Environment env;
 
 	/** The edition. */
 	private Edition edition = null;
@@ -98,8 +87,7 @@ public class UserControllerIntegrationTest extends BaseTest {
 	@BeforeEach
 	public void setUp() {
 
-		objectMapper = new ObjectMapper();
-		JacksonTester.initFields(this, objectMapper);
+		JacksonTester.initFields(this, ThreadLocalMapper.get());
 		baseUrl = "/user";
 	}
 
@@ -220,7 +208,7 @@ public class UserControllerIntegrationTest extends BaseTest {
 		content = result.getResponse().getContentAsString();
 		LOG.info(" content = {}", content);
 
-		final User newUser = new ObjectMapper().readValue(content, User.class);
+		final User newUser = ThreadLocalMapper.get().readValue(content, User.class);
 		assertThat(compareUsers(testUser, newUser, false)).isTrue();
 	}
 
@@ -250,7 +238,7 @@ public class UserControllerIntegrationTest extends BaseTest {
 				.andExpect(status().isOk()).andReturn();
 		content = result.getResponse().getContentAsString();
 
-		final User updatedUser = new ObjectMapper().readValue(content, User.class);
+		final User updatedUser = ThreadLocalMapper.get().readValue(content, User.class);
 		assertThat(compareUsers(testUser, updatedUser, false)).isTrue();
 
 	}
@@ -271,7 +259,7 @@ public class UserControllerIntegrationTest extends BaseTest {
 				.queryParam("includeOrganizations", "false").queryParam("includeTeams", "false")
 				.contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
 		content = result.getResponse().getContentAsString();
-		final ResultList<User> userNameResultList = new ObjectMapper().readValue(content,
+		final ResultList<User> userNameResultList = ThreadLocalMapper.get().readValue(content,
 				(new TypeReference<ResultList<User>>() {
 					// n/a
 				}));
@@ -345,7 +333,7 @@ public class UserControllerIntegrationTest extends BaseTest {
 		LOG.info("new user record = {}", newUser);
 		assertThat(newUser).isNotNull();
 		assertThat(newUser.getName()).isEqualTo(originalUser.getName());
-		assertThat(newUser.isActive()).isEqualTo(originalUser.isActive());
+		assertThat(newUser.getActive()).isEqualTo(originalUser.getActive());
 		assertThat(newUser.getEmail()).isEqualTo(originalUser.getEmail());
 		assertThat(newUser.getTitle()).isEqualTo(originalUser.getTitle());
 

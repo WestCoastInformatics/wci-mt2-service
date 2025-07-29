@@ -12,6 +12,7 @@ package org.ihtsdo.refsetservice.terminologyservice;
 import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.ResultListConcept;
+import org.ihtsdo.refsetservice.model.ResultListConceptRef;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.SearchParameters;
@@ -68,10 +69,25 @@ public final class ConceptService {
      * @return the concept
      * @throws Exception the exception
      */
+    public static Concept getConcept(final String terminology, final String code) throws Exception {
+
+        return terminologyHandler.getConcept(terminology, code);
+    }
+    
+    /**
+     * Returns the concept.
+     *
+     * @param terminology the terminology
+     * @param version the version
+     * @param code the concept code
+     * @return the concept
+     * @throws Exception the exception
+     */
     public static Concept getConcept(final String terminology, final String version, final String code) throws Exception {
 
         return terminologyHandler.getConcept(terminology, version, code);
     }
+
 
     /**
      * Find concepts.
@@ -86,6 +102,21 @@ public final class ConceptService {
         throws Exception {
 
         return terminologyHandler.findConcepts(terminology, version, searchParameters);
+    }
+    
+    /**
+     * Find concepts.
+     *
+     * @param terminology the terminology
+     * @param version the version
+     * @param searchParameters the search parameters
+     * @return the result list concept
+     * @throws Exception the exception
+     */
+    public static ResultListConceptRef autoComplete(final String terminology, final String version, final SearchParameters searchParameters)
+        throws Exception {
+
+        return terminologyHandler.autoComplete(terminology, version, searchParameters);
     }
 
 }

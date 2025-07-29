@@ -5,9 +5,9 @@ import java.util.Date;
 import java.util.Map;
 
 import org.ihtsdo.refsetservice.app.MetricAdvice;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Represents a metric associated with a REST call.
@@ -189,7 +189,7 @@ public class Metric {
   public String toString() {
 
     try {
-      return new ObjectMapper().writeValueAsString(this);
+      return ThreadLocalMapper.get().writeValueAsString(this);
     } catch (final Exception e) {
       return e.getMessage();
     }

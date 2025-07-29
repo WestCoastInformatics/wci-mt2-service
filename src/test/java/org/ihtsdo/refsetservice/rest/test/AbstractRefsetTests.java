@@ -334,7 +334,7 @@ public abstract class AbstractRefsetTests extends BaseTest {
             assertThat(refset.getVersionNotes()).isNull();
             assertThat(refset.getProject().getName()).isEqualTo("SNOMED International Project");
 
-            assertThat(refset.isActive()).isTrue();
+            assertThat(refset.getActive()).isTrue();
             assertThat(refset.isLocalSet()).isFalse();
             assertThat(refset.isPrivateRefset()).isFalse();
 
@@ -364,7 +364,7 @@ public abstract class AbstractRefsetTests extends BaseTest {
              */
             assertThat(refset.getProject().getName()).isEqualTo("Belgian Extension Project");
 
-            assertThat(refset.isActive()).isTrue();
+            assertThat(refset.getActive()).isTrue();
             assertThat(refset.isLocalSet()).isFalse();
             assertThat(refset.isPrivateRefset()).isFalse();
 

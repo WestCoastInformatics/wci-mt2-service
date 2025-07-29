@@ -83,7 +83,7 @@ public class MapSetMetadataExporter {
             .append("MapSet Last Modified Date" + separator + DateUtility.formatDate(mapset.getModified(), DateUtility.DATE_FORMAT_REVERSE, null) + LINE_FEED);
         fileLines.append("MapSet Type" + separator + type + LINE_FEED);
 
-        if (mapset.isActive()) {
+        if (mapset.getActive()) {
             fileLines.append("MapSet Status" + separator + "Active" + LINE_FEED);
         } else {
             fileLines.append("MapSet Status" + separator + "Inactive" + LINE_FEED);

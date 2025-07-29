@@ -21,11 +21,11 @@ import javax.ws.rs.core.Response;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.SyncCodeSystemAgent;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * The Class SyncCodeSystemDeterminer.
@@ -212,7 +212,7 @@ public class SyncCodeSystemDeterminer {
                         s.append("inactive");
                         break;
                     case IGNORED_PER_FILE_EDITION:
-                        // Ideally, we don't rely on this, but rather programmatically calculate based on code system attributes 
+                        // Ideally, we don't rely on this, but rather programmatically calculate based on code system attributes
                         s.append("listed in ignoredCodeSystems.txt");
                         break;
                     case NON_SUPPORTED_MAINTAINER_TYPE:
@@ -330,12 +330,8 @@ public class SyncCodeSystemDeterminer {
         LOG.info("getSnowstormCodeSystems url: " + url);
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
-
             final String resultString = response.readEntity(String.class);
-
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode organizationJsonRootNode = mapper.readTree(resultString.toString());
-
+            final JsonNode organizationJsonRootNode = ThreadLocalMapper.get().readTree(resultString);
             return organizationJsonRootNode;
         }
 

@@ -34,6 +34,7 @@ import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.ResultListConcept;
+import org.ihtsdo.refsetservice.model.ResultListConceptRef;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
 import org.ihtsdo.refsetservice.model.User;
@@ -449,7 +450,16 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     /* see superclass */
     @Override
-    public Concept getConcept(final String terminology, final String version, final String code) throws Exception {
+    public Concept getConcept(final String terminology, final String code) throws Exception {
+
+        // return SnowstormConcept.getConcept(terminology, code);
+        return null;
+
+    }
+    
+    /* see superclass */
+    @Override
+    public Concept getConcept(final String terminology, final String  version, final String code) throws Exception {
 
         return SnowstormConcept.getConcept(terminology, version, code);
 
@@ -460,6 +470,13 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
     public ResultListConcept findConcepts(final String terminology, final String version, final SearchParameters searchParameters) throws Exception {
 
         return SnowstormConcept.findConcepts(terminology, version, searchParameters);
+    }
+    
+    /* see superclass */
+    @Override
+    public ResultListConceptRef autoComplete(final String terminology, final String version, final SearchParameters searchParameters) throws Exception {
+
+        return SnowstormConcept.autoComplete(terminology, version, searchParameters);
     }
 
     /* see superclass */

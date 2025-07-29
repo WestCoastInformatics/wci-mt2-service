@@ -28,13 +28,11 @@ import javax.ws.rs.core.Response.Status.Family;
 
 import org.ihtsdo.refsetservice.util.LocalException;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
-import org.jboss.resteasy.plugins.providers.RegisterBuiltin;
-import org.jboss.resteasy.spi.ResteasyProviderFactory;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 
 /**
@@ -76,14 +74,6 @@ public final class SnowstormConnection {
         authUrl = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.authUrl");
         userName = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.username");
         password = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.password");
-
-        // Initialize RESTEasy providers
-        try {
-            ResteasyProviderFactory factory = ResteasyProviderFactory.getInstance();
-            RegisterBuiltin.register(factory);
-        } catch (Exception e) {
-            LOG.warn("Failed to register RESTEasy built-in providers", e);
-        }
     }
 
     /**
@@ -351,29 +341,6 @@ public final class SnowstormConnection {
      * @return the configured client
      */
     private static Client getClient(final Client client) {
-
-        // Register JSON providers
-        client.register(JacksonJsonProvider.class);
-
-        // Register providers for binary content
-        client.register(org.jboss.resteasy.plugins.providers.ByteArrayProvider.class);
-        client.register(org.jboss.resteasy.plugins.providers.InputStreamProvider.class);
-
-        // Register text/plain providers
-        client.register(org.jboss.resteasy.plugins.providers.StringTextStar.class);
-
-        // Register additional JSON providers
-        client.register(org.jboss.resteasy.plugins.providers.jackson.ResteasyJackson2Provider.class);
-        client.register(org.jboss.resteasy.plugins.providers.jackson.Jackson2JsonpInterceptor.class);
-        client.register(org.jboss.resteasy.plugins.providers.DefaultTextPlain.class);
-
-        // Register the built-in providers
-        try {
-            client.register(Class.forName("org.jboss.resteasy.plugins.providers.RegisterBuiltin"));
-        } catch (Exception e) {
-            LOG.warn("Could not register ResteasyProviderFactory.registerBuiltin", e);
-        }
-
         return client;
     }
 
@@ -387,8 +354,7 @@ public final class SnowstormConnection {
     @SuppressWarnings("unchecked")
     private static Map<String, Object> jsonToMap(String jsonString) throws Exception {
 
-        final ObjectMapper mapper = new ObjectMapper();
-        return mapper.readValue(jsonString, Map.class);
+        return ThreadLocalMapper.get().readValue(jsonString, Map.class);
     }
 
     /**
@@ -403,7 +369,7 @@ public final class SnowstormConnection {
         try {
             // First try the direct approach
             return response.readEntity(String.class);
-            
+
         } catch (Exception e) {
             LOG.warn("Could not read entity as String directly: {}", e.getMessage());
 
@@ -411,7 +377,7 @@ public final class SnowstormConnection {
                 // Try reading as byte array and convert to string
                 byte[] bytes = response.readEntity(byte[].class);
                 return new String(bytes, StandardCharsets.UTF_8);
-                
+
             } catch (Exception e2) {
                 LOG.error("Could not read entity as byte array: {}", e2.getMessage());
                 throw new LocalException("Could not read response entity: " + e2.getMessage());

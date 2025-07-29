@@ -25,6 +25,9 @@ public class SerializationTester extends ProxyTester {
 
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(SerializationTester.class);
+    
+    /** The Constant OBJECT_MAPPER. */
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     /**
      * Constructs a new getter/setter tester to test objects of a particular class.
@@ -44,16 +47,15 @@ public class SerializationTester extends ProxyTester {
      */
     public boolean testJsonSerialization() throws Exception {
 
-        LOG.debug("Test json serialization - " + getClazz().getName());
+        LOG.debug("Test json serialization - {}", getClazz().getName());
         final Object obj = createObject(1);
-        final ObjectMapper mapper = new ObjectMapper();
-        mapper.setSerializationInclusion(Include.NON_EMPTY);
-        LOG.debug(" " + obj);
-        final String json = mapper.writeValueAsString(obj);
-        LOG.info("json = " + json);
-        final Object obj3 = mapper.readValue(json, obj.getClass());
+        OBJECT_MAPPER.setSerializationInclusion(Include.NON_EMPTY);
+        LOG.debug("  {}", obj);
+        final String json = OBJECT_MAPPER.writeValueAsString(obj);
+        LOG.info("json = {}", json);
+        final Object obj3 = OBJECT_MAPPER.readValue(json, obj.getClass());
 
-        LOG.debug(" " + obj3);
+        LOG.debug("  {}", obj3);
 
         // If obj has an "id" field, compare the ids
         try {
@@ -63,7 +65,7 @@ public class SerializationTester extends ProxyTester {
                 final Long id1 = (Long) method.invoke(obj, new Object[] {});
                 final Long id3 = (Long) method.invoke(obj3, new Object[] {});
                 if (!id1.equals(id3)) {
-                    LOG.error("  id fields do not match " + id1 + ", " + id3);
+                    LOG.error("  id fields do not match {}, {}", id1, id3);
                     return false;
                 }
             }
@@ -74,9 +76,9 @@ public class SerializationTester extends ProxyTester {
             return true;
         } else {
             LOG.info("obj and obj3 are not equal");
-            LOG.info("obj = " + obj);
-            LOG.debug("json = " + json);
-            LOG.info("obj3 = " + obj3);
+            LOG.info("obj = {}", obj);
+            LOG.debug("json = {}", json);
+            LOG.info("obj3 = {}", obj3);
             return false;
         }
     }

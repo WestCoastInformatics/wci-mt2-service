@@ -37,7 +37,6 @@ import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
 /**
@@ -81,8 +80,6 @@ public final class AuditEntryHelper {
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(AuditEntryHelper.class);
 
-    /** The object mapper. */
-    private static ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * Log.
@@ -148,7 +145,7 @@ public final class AuditEntryHelper {
         entry.setEntityType(EntityType.EDITION.toString());
         entry.setEntityId(edition.getId());
 
-        if (edition.isActive()) {
+        if (edition.getActive()) {
             entry.setMessage("REACTIVATE Edition");
         } else {
             entry.setMessage("INACTIVATE Edition");
@@ -206,7 +203,7 @@ public final class AuditEntryHelper {
         entry.setEntityType(EntityType.ORGANIZATION.toString());
         entry.setEntityId(organization.getId());
 
-        if (organization.isActive()) {
+        if (organization.getActive()) {
             entry.setMessage("REACTIVATE Organization");
         } else {
             entry.setMessage("INACTIVATE Organization");
@@ -383,7 +380,7 @@ public final class AuditEntryHelper {
         entry.setEntityType(EntityType.PROJECT.toString());
         entry.setEntityId(project.getId());
 
-        if (project.isActive()) {
+        if (project.getActive()) {
             entry.setMessage("REACTIVATE Project");
         } else {
             entry.setMessage("INACTIVATE Project");
@@ -441,7 +438,7 @@ public final class AuditEntryHelper {
         entry.setEntityType(EntityType.TEAM.toString());
         entry.setEntityId(team.getId());
 
-        if (team.isActive()) {
+        if (team.getActive()) {
             entry.setMessage("REACTIVATE Team");
         } else {
             entry.setMessage("INACTIVATE Team");
@@ -571,7 +568,7 @@ public final class AuditEntryHelper {
         entry.setEntityType(EntityType.USER.toString());
         entry.setEntityId(user.getId());
 
-        if (user.isActive()) {
+        if (user.getActive()) {
             entry.setMessage("REACTIVATE User");
         } else {
             entry.setMessage("INACTIVATE User");
@@ -646,7 +643,7 @@ public final class AuditEntryHelper {
         entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(refset.getId());
 
-        if (refset.isActive()) {
+        if (refset.getActive()) {
             entry.setMessage("REACTIVATE Refset");
         } else {
             entry.setMessage("INACTIVATE Refset");
@@ -1051,7 +1048,7 @@ public final class AuditEntryHelper {
         entry.setEntityType(EntityType.PROJECT.toString());
         entry.setEntityId(mapProject.getId());
 
-        if (mapProject.isActive()) {
+        if (mapProject.getActive()) {
             entry.setMessage("REACTIVATE Project");
         } else {
             entry.setMessage("INACTIVATE Project");
@@ -1153,7 +1150,7 @@ public final class AuditEntryHelper {
         entry.setEntityId(refsetId);
         entry.setMessage("UPDATE MapEntry for concept " + mapping.getCode());
         entry.setDetails("Map entry for concept " + mapping.getCode()
-                + ((mapEntry.isActive()) ? " activated." : " inactivated."));
+                + ((mapEntry.getActive()) ? " activated." : " inactivated."));
         log(entry);
         return entry;
     }

@@ -114,7 +114,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
      */
     private void toggleOrganizationStatus(final TerminologyService service, final Map<Boolean, List<String>> migrationActivationMap) throws Exception {
 
-        final List<Organization> activeDbOrganizations = readDbOrganizations(service).stream().filter(o -> o.isActive()).collect(Collectors.toList());
+        final List<Organization> activeDbOrganizations = readDbOrganizations(service).stream().filter(o -> o.getActive()).collect(Collectors.toList());
 
         for (boolean migrationOrganizationStatus : migrationActivationMap.keySet()) {
 
@@ -125,7 +125,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
                 final Organization organizationToMigrate = (Organization) getUtilities().validateMatches(matchingOrganizationsStream, organizationName);
 
                 // Only inactivate those organizations that aren't pointing to an edition anymore
-                if ((migrationOrganizationStatus && !organizationToMigrate.isActive())
+                if ((migrationOrganizationStatus && !organizationToMigrate.getActive())
                     || (!migrationOrganizationStatus && OrganizationService.getOrganizationEditions(service, organizationToMigrate.getId()).getTotal() == 0)) {
 
                     // TODO: Add (in migrationOrganization) the removal of users from crowd groups (check with Tim on timing)
@@ -166,8 +166,8 @@ public class SyncCodeSystemAgent extends SyncAgent {
         // organization names
         final List<Organization> dbOrganizations = service.getAll(Organization.class);
 
-        dbOrganizations.stream().filter(o -> o.isActive()).forEach(o -> dbActiveOrganizationNameIdMaps.put(o.getName(), o.getId()));
-        dbOrganizations.stream().filter(o -> !o.isActive()).forEach(o -> dbInactiveOrganizationNameIdMaps.put(o.getName(), o.getId()));
+        dbOrganizations.stream().filter(o -> o.getActive()).forEach(o -> dbActiveOrganizationNameIdMaps.put(o.getName(), o.getId()));
+        dbOrganizations.stream().filter(o -> !o.getActive()).forEach(o -> dbInactiveOrganizationNameIdMaps.put(o.getName(), o.getId()));
 
         for (JsonNode codeSystem : filteredCodySystems) {
 
@@ -229,8 +229,8 @@ public class SyncCodeSystemAgent extends SyncAgent {
         final Set<String> termserverShortNames = new HashSet<>();
 
         final List<Edition> dbEditions = service.getAll(Edition.class);
-        dbEditions.stream().filter(e -> e.isActive()).forEach(e -> dbActiveEditionShortNames.add(e.getShortName()));
-        dbEditions.stream().filter(e -> !e.isActive()).forEach(e -> dbInactiveEditionShortNames.add(e.getShortName()));
+        dbEditions.stream().filter(e -> e.getActive()).forEach(e -> dbActiveEditionShortNames.add(e.getShortName()));
+        dbEditions.stream().filter(e -> !e.getActive()).forEach(e -> dbInactiveEditionShortNames.add(e.getShortName()));
 
         // Based on FILTERED_CODE_SYSTEMS which already filtered for active code systems
         filteredCodySystems.stream().forEach(cs -> termserverShortNameCodeSystemMap.put(cs.get("shortName").asText(), cs));
@@ -386,7 +386,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
             + editionToMove.getOrganizationId() + ") to org: " + newOrganization.getName() + "(" + newOrganization.getId());
 
         // Ensure target organization (and it's admin team) are active before proceeding
-        if (!targetOrganization.isActive()) {
+        if (!targetOrganization.getActive()) {
 
             targetOrganization.setActive(true);
 
@@ -395,7 +395,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
             final Team adminTeam = OrganizationService.getOrganizationAdminTeam(service, targetOrganization.getId());
 
-            if (!adminTeam.isActive()) {
+            if (!adminTeam.getActive()) {
 
                 adminTeam.setActive(true);
 

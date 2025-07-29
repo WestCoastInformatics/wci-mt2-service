@@ -27,11 +27,11 @@ import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * The Class SnowstormDescription.
@@ -47,7 +47,6 @@ public class SnowstormDescription extends SnowstormAbstract {
         TYPE_ID_TO_TYPE_NAME.put("900000000000003001", "FSN");
         TYPE_ID_TO_TYPE_NAME.put("900000000000550004", "DEF");
     };
-
 
     /**
      * Populate all language descriptions.
@@ -77,8 +76,7 @@ public class SnowstormDescription extends SnowstormAbstract {
             }
 
             final String resultString = SnowstormConnection.readEntityAsString(response);
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString);
+            final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
 
             final JsonNode allDescriptionNodes = root.get("items");
             final Iterator<JsonNode> descriptionIterator = allDescriptionNodes.iterator();
@@ -194,8 +192,7 @@ public class SnowstormDescription extends SnowstormAbstract {
             }
 
             final String resultString = SnowstormConnection.readEntityAsString(response);
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString);
+            final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
 
             final JsonNode allDescriptionNodes = root.get("items");
             final Iterator<JsonNode> descriptionIterator = allDescriptionNodes.iterator();
@@ -303,8 +300,7 @@ public class SnowstormDescription extends SnowstormAbstract {
                 }
 
                 final String resultString = SnowstormConnection.readEntityAsString(response);
-                final ObjectMapper mapper = new ObjectMapper();
-                final JsonNode root = mapper.readTree(resultString);
+                final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
 
                 final JsonNode allDescriptionNodes = root.get("items");
                 final Iterator<JsonNode> descriptionIterator = allDescriptionNodes.iterator();

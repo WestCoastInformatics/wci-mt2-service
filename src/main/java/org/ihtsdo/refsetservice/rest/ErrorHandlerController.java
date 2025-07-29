@@ -6,6 +6,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang3.StringEscapeUtils;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
@@ -20,8 +21,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.swagger.v3.oas.annotations.Hidden;
 
@@ -64,7 +63,7 @@ public class ErrorHandlerController implements ErrorController {
 		final Map<String, Object> body = getErrorAttributes(request, false);
 		String ppBody = null;
 		try {
-			ppBody = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(body);
+			ppBody = ThreadLocalMapper.get().writerWithDefaultPrettyPrinter().writeValueAsString(body);
 		} catch (final Exception e) {
 			ppBody = body.toString().replaceAll("<", "&lt;");
 		}

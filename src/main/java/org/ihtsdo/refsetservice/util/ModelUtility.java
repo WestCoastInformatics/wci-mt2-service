@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
@@ -189,8 +189,7 @@ public final class ModelUtility {
         if (StringUtility.isEmpty(json)) {
             return null;
         }
-        final ObjectMapper mapper = new ObjectMapper();
-        return mapper.readValue(json, graphClass);
+        return ThreadLocalMapper.get().readValue(json, graphClass);
 
     }
 
@@ -208,8 +207,7 @@ public final class ModelUtility {
         if (json == null) {
             return null;
         }
-        final ObjectMapper mapper = new ObjectMapper();
-        return mapper.treeToValue(mapper.readTree(json), graphClass);
+        return ThreadLocalMapper.get().treeToValue(ThreadLocalMapper.get().readTree(json), graphClass);
     }
 
     /**
@@ -227,8 +225,7 @@ public final class ModelUtility {
             return null;
         }
         final InputStream in = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
-        final ObjectMapper mapper = new ObjectMapper();
-        return mapper.readValue(in, typeRef);
+        return ThreadLocalMapper.get().readValue(in, typeRef);
     }
 
     /**
@@ -240,8 +237,7 @@ public final class ModelUtility {
      */
     public static String toJson(final Object object) throws Exception {
 
-        final ObjectMapper mapper = new ObjectMapper();
-        return mapper.writeValueAsString(object);
+        return ThreadLocalMapper.get().writeValueAsString(object);
     }
 
     /**
@@ -253,8 +249,7 @@ public final class ModelUtility {
      */
     public static String logJson(final Object object) throws Exception {
 
-        final ObjectMapper mapper = new ObjectMapper();
-        final JsonNode jsonNode = mapper.valueToTree(object);
+        final JsonNode jsonNode = ThreadLocalMapper.get().valueToTree(object);
 
         if (jsonNode.has("authToken")) {
             ((ObjectNode) jsonNode).put("authToken", "******");
@@ -262,7 +257,7 @@ public final class ModelUtility {
         if (jsonNode.has("password")) {
             ((ObjectNode) jsonNode).put("password", "******");
         }
-        return mapper.writeValueAsString(jsonNode);
+        return ThreadLocalMapper.get().writeValueAsString(jsonNode);
     }
 
     /**
@@ -274,7 +269,7 @@ public final class ModelUtility {
      */
     public static JsonNode toJsonNode(final String string) throws Exception {
 
-        return new ObjectMapper().readTree(string);
+        return ThreadLocalMapper.get().readTree(string);
     }
 
     /**
@@ -286,8 +281,7 @@ public final class ModelUtility {
      */
     public static String prettyFormatJson(final Object input) throws JsonProcessingException {
 
-        final ObjectMapper mapper = new ObjectMapper();
-        return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(input);
+        return ThreadLocalMapper.get().writerWithDefaultPrettyPrinter().writeValueAsString(input);
     }
 
     /**
@@ -299,8 +293,7 @@ public final class ModelUtility {
      */
     public static String prettyFormatJson(final String input) throws Exception {
 
-        final ObjectMapper mapper = new ObjectMapper();
-        return prettyFormatJson(mapper.readTree(input));
+        return prettyFormatJson(ThreadLocalMapper.get().readTree(input));
     }
 
     /**

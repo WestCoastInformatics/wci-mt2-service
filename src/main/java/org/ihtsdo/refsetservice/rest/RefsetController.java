@@ -891,9 +891,7 @@ public class RefsetController extends BaseController {
         final User authUser = authorizeUser(request);
         try (final TerminologyService service = new TerminologyService()) {
 
-            // LOG.debug("getWorkflowHistory refsetInternalId: " + refsetInternalId +
-            // " ;
-            // searchParameters: " + ModelUtility.toJson(searchParameters));
+             // LOG.debug("getWorkflowHistory refsetInternalId: {}, searchParameters: {}", refsetInternalId, searchParameters);
 
             final Refset refset = RefsetService.getRefset(service, authUser, refsetInternalId);
             final ResultList<WorkflowHistory> results = WorkflowService.getWorkflowHistory(service, refset, searchParameters);
@@ -1621,8 +1619,8 @@ public class RefsetController extends BaseController {
 
             RefsetService.getInDevelopmentBranchPaths(service);
 
-            LOG.debug("searchRefsets searchParameters: " + ModelUtility.toJson(searchParameters) + "; searchConcepts: " + searchConcepts
-                + " ; showInDevelopment: " + includeInDevelopment + " ; countComments: " + countComments);
+            LOG.debug("searchRefsets searchParameters: {}; searchConcepts:{}; showInDevelopment:{}; countComments:{}", searchParameters, searchConcepts,
+                includeInDevelopment, countComments);
 
             final ResultList<Refset> results =
                 RefsetService.searchRefsets(authUser, service, searchParameters, searchConcepts, true, false, includeInDevelopment, onlyShowPermitted);
@@ -1688,8 +1686,8 @@ public class RefsetController extends BaseController {
             ResultListConcept results = new ResultListConcept();
             final String query = searchParameters.getQuery();
 
-            LOG.debug("taxonomySearch: searchConcepts: " + refsetInternalId + " ; searchParameters: " + ModelUtility.toJson(searchParameters)
-                + " ; searchRefsetMembers: " + searchRefsetMembers);
+            LOG.debug("taxonomySearch: searchConcepts: {}; searchParameters: {}; searchRefsetMembers:{}", refsetInternalId, searchParameters,
+                searchRefsetMembers);
 
             if (query != null && !query.equals("")) {
 
@@ -3053,7 +3051,7 @@ public class RefsetController extends BaseController {
             ResultList<UpgradeReplacementConcept> results = new ResultList<>();
             final String query = searchParameters.getQuery();
 
-            LOG.debug("replacementConceptSearch: refsetInternalId: " + refsetInternalId + " ; searchParameters: " + ModelUtility.toJson(searchParameters));
+            LOG.debug("replacementConceptSearch: refsetInternalId: {}; searchParameters: {} ", refsetInternalId, searchParameters);
 
             if (query != null && !query.equals("")) {
 
@@ -3104,7 +3102,7 @@ public class RefsetController extends BaseController {
             ResultList<Refset> results = new ResultList<>();
             final String query = searchParameters.getQuery();
 
-            LOG.debug("refsetDropdownSearch: searchParameters: " + ModelUtility.toJson(searchParameters));
+            LOG.debug("refsetDropdownSearch: searchParameters: {}", searchParameters);
 
             if (query != null && !query.equals("")) {
 
