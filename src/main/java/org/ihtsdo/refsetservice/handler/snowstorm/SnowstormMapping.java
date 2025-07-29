@@ -1504,7 +1504,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 			final MappingExportRequest mappingExportRequest) throws Exception {
 
 		final SearchParameters sp = new SearchParameters();
-		sp.setLimit(100000000);
+		sp.setLimit(10000);
 
 		final ResultListMapping mappings = getMappings(branch, mapSetCode, sp, "", false,
 				mappingExportRequest.getConceptCodes());
