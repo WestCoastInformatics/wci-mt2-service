@@ -1429,11 +1429,19 @@ public class SnowstormMapping extends SnowstormAbstract {
         return existingMapEntry;
     }
 
-		final SearchParameters sp = new SearchParameters();
-		sp.setLimit(10000);
+    /**
+     * Export mappings.
+     *
+     * @param branch the branch
+     * @param mapSetCode the map set code
+     * @param mappingExportRequest the mapping export request
+     * @return the file
+     * @throws Exception the exception
+     */
+    public static File exportMappings(final String branch, final String mapSetCode, final MappingExportRequest mappingExportRequest) throws Exception {
 
         final SearchParameters sp = new SearchParameters();
-        sp.setLimit(100000000);
+        sp.setLimit(10000);
 
         final ResultListMapping mappings = getMappings(branch, mapSetCode, sp, "", false, mappingExportRequest.getConceptCodes());
 
@@ -1553,7 +1561,7 @@ public class SnowstormMapping extends SnowstormAbstract {
      */
     public static List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile) throws Exception {
 
-        final List<Mapping> mappings = getMappingsFromFile(mappingFile, mapProject); // return mapsetCode
+        final List<Mapping> mappings = getMappingsFromFile(mappingFile, mapProject);
         final List<Mapping> updatedRF2Mappings = new ArrayList<>();
         final List<String> conceptIds = new ArrayList<>();
         LOG.info("importMappings -RF2 Mapping obj  : {}", mappings);

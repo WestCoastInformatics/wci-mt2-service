@@ -58,12 +58,6 @@ public class ConceptController extends BaseController {
     @SuppressWarnings("unused")
     private static final String API_NOTES = "Use cases for search range from use of paging parameters, additional filters, searches properties, and so on.";
 
-    // /concept/{terminology}/autocomplete - Find concepts for a type-ahead search field
-    // /concept - Find concepts matching the specified search criteria across all terminologies
-    // /concept/{terminology} - Find concepts matching the specified search criteria
-    // /concept/{terminology}/{code} - Get concept object for the specified terminology, code, and resolver
-    
-    
     
     @RequestMapping(value = "/concept/{terminology}/{version}/autocomplete", method = RequestMethod.GET)
     @Operation(summary = "Suggest autocompletions for text while searching", description = "Finds top ten strings matching input query.", tags = {

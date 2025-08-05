@@ -71,7 +71,25 @@ public class ConceptRef extends AbstractHasModified implements HasName, Terminol
         this.code = code;
         this.name = name;
     }
+    
+    /**
+     * Instantiates a new concept ref.
+     *
+     * @param code the code
+     * @param name the name
+     * @param terminology the terminology
+     * @param version the version
+     */
+    public ConceptRef(final String code, final String name, final String terminology, final String version) {
 
+        this.code = code;
+        this.name = name;
+        this.terminology = terminology;
+        this.version = version;
+        this.setActive(true);
+        this.setDefined(true);
+    }
+    
     /**
      * Instantiates a {@link ConceptRef} from the specified parameters.
      *
