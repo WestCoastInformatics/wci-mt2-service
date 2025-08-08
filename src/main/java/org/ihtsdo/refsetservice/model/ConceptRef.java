@@ -43,7 +43,7 @@ public class ConceptRef extends AbstractHasModified implements HasName, Terminol
     /** The historical rel. */
     private String historical;
 
-    /** The anonymous flag. */
+    /** The leaf flag. */
     private Boolean leaf = false;
 
     /** The defined. */
@@ -51,6 +51,9 @@ public class ConceptRef extends AbstractHasModified implements HasName, Terminol
 
     /** The level. */
     private Integer level;
+
+    /** The has children flag. */
+    private Boolean hasChildren;
 
     /**
      * Instantiates an empty {@link ConceptRef}.
@@ -71,7 +74,7 @@ public class ConceptRef extends AbstractHasModified implements HasName, Terminol
         this.code = code;
         this.name = name;
     }
-    
+
     /**
      * Instantiates a new concept ref.
      *
@@ -89,7 +92,7 @@ public class ConceptRef extends AbstractHasModified implements HasName, Terminol
         this.setActive(true);
         this.setDefined(true);
     }
-    
+
     /**
      * Instantiates a {@link ConceptRef} from the specified parameters.
      *
@@ -113,6 +116,7 @@ public class ConceptRef extends AbstractHasModified implements HasName, Terminol
         leaf = other.getLeaf();
         defined = other.getDefined();
         level = other.getLevel();
+        hasChildren = other.getHasChildren();
     }
 
     /* see superclass */
@@ -144,6 +148,9 @@ public class ConceptRef extends AbstractHasModified implements HasName, Terminol
         if (other.getLevel() != null) {
             level = other.getLevel();
         }
+        if (other.getHasChildren() != null) {
+            hasChildren = other.getHasChildren();
+        }
     }
 
     /* see superclass */
@@ -160,7 +167,7 @@ public class ConceptRef extends AbstractHasModified implements HasName, Terminol
 
         return super.getId();
     }
-    
+
     /* see superclass */
     @Override
     @Schema(description = "Concept name", requiredMode = RequiredMode.NOT_REQUIRED)
@@ -338,7 +345,7 @@ public class ConceptRef extends AbstractHasModified implements HasName, Terminol
         return level;
     }
 
-    
+
     /**
      * Sets the level.
      *
@@ -347,6 +354,25 @@ public class ConceptRef extends AbstractHasModified implements HasName, Terminol
     public void setLevel(final Integer level) {
 
         this.level = level;
+    }
+
+    /**
+     * Returns the has children flag.
+     *
+     * @return the has children flag
+     */
+    @Schema(description = "Indicates whether or not this concept has children")
+    public Boolean getHasChildren() {
+        return hasChildren;
+    }
+
+    /**
+     * Sets the has children flag.
+     *
+     * @param hasChildren the has children flag
+     */
+    public void setHasChildren(final Boolean hasChildren) {
+        this.hasChildren = hasChildren;
     }
 
     @Override

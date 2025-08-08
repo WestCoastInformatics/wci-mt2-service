@@ -177,7 +177,6 @@ public final class SnowstormConcept extends SnowstormAbstract {
      *
      * @param terminology the terminology
      * @param version the version
-     * @param searchParameters the search parameters
      * @return the result list concept
      * @throws Exception the exception
      */
@@ -208,6 +207,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
      * AutoComplete.
      *
      * @param terminology the terminology
+     * @param version the version
      * @param searchParameters the search parameters
      * @return the result list concept ref
      * @throws Exception the exception
@@ -288,6 +288,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                 }
             }
         }
+
         CachingUtility.cacheObject(SNOWSTORM_TERMINOLOGY_CACHE, terminologyCacheKey, List.class, terminologyConcepts);
         LOG.info("cacheConcepts took: {} ms for branch: {}, terminology: {}, version: {}", (System.currentTimeMillis() - start), branch, terminology, version);
     }
@@ -2054,10 +2055,10 @@ public final class SnowstormConcept extends SnowstormAbstract {
         final String conceptCacheKey = getConceptCacheKey(terminology, version, code);
         final Optional<Concept> cachedConcept = CachingUtility.getObject(SNOWSTORM_CONCEPTS_CACHE, conceptCacheKey, Concept.class);
 
-        if (cachedConcept.isPresent()) {
-            LOG.info("Found concept in cache for key: {}", conceptCacheKey);
-            return cachedConcept.get();
-        }
+        // if (cachedConcept.isPresent()) {
+        // LOG.info("Found concept in cache for key: {}", conceptCacheKey);
+        // return cachedConcept.get();
+        // }
 
         // If not found in concepts cache, perform full FHIR lookup to get complete concept with parents/children
         return getConceptFhir(terminology, version, code);
@@ -2262,6 +2263,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
                                 if ("parent".equals(propertyCode) && propertyValue != null) {
                                     final ConceptRef parent = new ConceptRef(propertyValue, propertyDisplay, terminology, version);
+                                    parent.setHasChildren(true);
                                     parents.add(parent);
                                 } else if ("child".equals(propertyCode) && propertyValue != null) {
                                     final ConceptRef child = new ConceptRef(propertyValue, propertyDisplay, terminology, version);
@@ -2276,6 +2278,10 @@ public final class SnowstormConcept extends SnowstormAbstract {
             concept.setParentRefs(parents);
             concept.setChildRefs(children);
 
+            if (!concept.getChildRefs().isEmpty()) {
+                hasChildren(codeSystem, concept.getChildRefs());
+            }
+
             // Cache the concept
             CachingUtility.cacheObject(SNOWSTORM_CONCEPTS_CACHE, conceptCacheKey, Concept.class, concept);
 
@@ -2286,6 +2292,118 @@ public final class SnowstormConcept extends SnowstormAbstract {
             LOG.error("Error retrieving concept for code: {} in terminology: {} version: {}", code, terminology, version, e);
             throw e;
         }
+    }
+
+    /**
+     * Checks for children.
+     *
+     * @param codeSystem the code system
+     * @param conceptRefs the concept refs
+     * @throws Exception the exception
+     */
+    private static void hasChildren(final SnowstormFhirCodeSystem codeSystem, final List<ConceptRef> conceptRefs) throws Exception {
+
+        if (conceptRefs == null || conceptRefs.isEmpty()) {
+            return;
+        }
+
+        final int threadPoolSize = Math.min(10, conceptRefs.size());
+        final ExecutorService executor = new ThreadPoolExecutor(threadPoolSize, threadPoolSize, 0L, TimeUnit.MILLISECONDS,
+            new ArrayBlockingQueue<>(threadPoolSize), new ThreadPoolExecutor.CallerRunsPolicy());
+
+        try {
+            // Submit tasks for each concept to check if it has children
+            final List<java.util.concurrent.Future<Boolean>> futures = new ArrayList<>();
+
+            for (final ConceptRef conceptRef : conceptRefs) {
+                futures.add(executor.submit(() -> {
+                    try {
+                        return checkConceptHasChildren(codeSystem, conceptRef);
+                    } catch (Exception e) {
+                        LOG.error("Error checking children for concept: {}", conceptRef.getCode(), e);
+                        return false;
+                    }
+                }));
+            }
+
+            // Wait for all tasks to complete and update the ConceptRef objects
+            for (int i = 0; i < conceptRefs.size(); i++) {
+                try {
+                    final boolean hasChildren = futures.get(i).get(30, TimeUnit.SECONDS);
+                    conceptRefs.get(i).setHasChildren(hasChildren);
+                } catch (Exception e) {
+                    LOG.error("Error getting result for concept: {}", conceptRefs.get(i).getCode(), e);
+                    conceptRefs.get(i).setHasChildren(false);
+                }
+            }
+
+        } finally {
+            executor.shutdown();
+            try {
+                if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                    executor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                executor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
+    /**
+     * Check if a concept has children using FHIR API.
+     *
+     * @param codeSystem the code system
+     * @param conceptRef the concept reference
+     * @return true if the concept has children, false otherwise
+     * @throws Exception the exception
+     */
+    private static boolean checkConceptHasChildren(final SnowstormFhirCodeSystem codeSystem, final ConceptRef conceptRef) throws Exception {
+
+        if (conceptRef == null || StringUtils.isBlank(conceptRef.getCode())) {
+            return false;
+        }
+
+        // Build the FHIR lookup URL to check for children
+        final String encodedSystem = URLEncoder.encode(codeSystem.getUrl(), StandardCharsets.UTF_8);
+        final String targetUri =
+            SnowstormConnection.getBaseUrl() + "fhir/CodeSystem/$lookup?code=" + conceptRef.getCode() + "&system=" + encodedSystem + "&_format=json";
+        LOG.debug("checkConceptHasChildren url: {}", targetUri);
+
+        try (final Response response = SnowstormConnection.getResponse(targetUri)) {
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                LOG.warn("Call to URL '{}' wasn't successful. Status: {}", targetUri, response.getStatus());
+                return false;
+            }
+
+            final String resultString = response.readEntity(String.class);
+            final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
+
+            // Check if this is a Parameters resource (FHIR lookup response)
+            if (!root.has("resourceType") || !"Parameters".equals(root.get("resourceType").asText())) {
+                return false;
+            }
+
+            final JsonNode parametersNode = root.get("parameter");
+            if (parametersNode.isArray()) {
+                for (final JsonNode parameterNode : parametersNode) {
+                    final JsonNode partArray = parameterNode.get("part");
+                    if (partArray != null && partArray.isArray()) {
+                        for (final JsonNode partNode : partArray) {
+                            // if part contains valueCode with "child", it indicates children, return true
+                            if ("valueCode".equals(partNode.get("name").asText()) && "child".equals(partNode.get("valueCode").asText())) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+
+        } catch (Exception e) {
+            LOG.error("Error checking children for concept: {}", conceptRef.getCode(), e);
+        }
+
+        return false;
     }
 
     /**
