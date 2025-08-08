@@ -26,6 +26,7 @@ import org.ihtsdo.refsetservice.model.WorkflowHistory;
 import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
 import org.ihtsdo.refsetservice.util.FieldedStringTokenizer;
 import org.ihtsdo.refsetservice.util.ResultList;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
@@ -34,7 +35,6 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * The Class WorkflowUnitTestUtilities.
@@ -105,8 +105,7 @@ public class WorkflowUnitTestUtilities {
 			final String content = result.getResponse().getContentAsString();
 			LOG.info(" content = " + content);
 
-			final ObjectMapper mapper = new ObjectMapper();
-			final JsonNode root = mapper.readTree(content);
+			final JsonNode root = ThreadLocalMapper.get().readTree(content);
 
 			assertThat(root).isNotNull();
 			return root;
@@ -143,7 +142,7 @@ public class WorkflowUnitTestUtilities {
 			return null;
 		}
 
-		final Refset updatedRefset = new ObjectMapper().readValue(content, Refset.class);
+		final Refset updatedRefset = ThreadLocalMapper.get().readValue(content, Refset.class);
 
 		return updatedRefset;
 	}
@@ -247,7 +246,7 @@ public class WorkflowUnitTestUtilities {
 
 		final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
 		final String content = result.getResponse().getContentAsString();
-		final ResultList<WorkflowHistory> resultList = new ObjectMapper().readValue(content,
+		final ResultList<WorkflowHistory> resultList = ThreadLocalMapper.get().readValue(content,
 				(new TypeReference<ResultList<WorkflowHistory>>() {
 					// n/a
 				}));

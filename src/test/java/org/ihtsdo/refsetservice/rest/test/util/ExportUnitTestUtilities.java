@@ -15,13 +15,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.ihtsdo.refsetservice.handler.ExportHandler;
 import org.ihtsdo.refsetservice.terminologyservice.S3ConnectionWrapper;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * The Class ExportUnitTestUtilities.
@@ -60,8 +60,7 @@ public class ExportUnitTestUtilities {
             final String content = result.getResponse().getContentAsString();
             LOG.info(" content = " + content);
 
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(content);
+            final JsonNode root = ThreadLocalMapper.get().readTree(content);
 
             assertThat(root).isNotNull();
             return root;
@@ -120,8 +119,7 @@ public class ExportUnitTestUtilities {
             final String content = result.getResponse().getContentAsString();
             LOG.info(" content = " + content);
 
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(content);
+            final JsonNode root = ThreadLocalMapper.get().readTree(content);
 
             return root;
         } catch (final Exception e) {

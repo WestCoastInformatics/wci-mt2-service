@@ -10,6 +10,7 @@
 
 package org.ihtsdo.refsetservice.model;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -18,7 +19,7 @@ import java.util.Map;
 
 /**
  * Represents a concept with a code from a terminology.
- * 
+ *
  * <pre>
  * {
  *   "code" : "C3224",
@@ -26,7 +27,7 @@ import java.util.Map;
  * }
  * </pre>
  */
-
+ @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Concept extends AbstractHasModified implements Comparable<Concept> {
 
   /** The code. */
@@ -89,6 +90,12 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
 
   /** A list of the children of this concept. */
   private List<Concept> children = new ArrayList<>();
+
+  /** A list of the parents of this concept as ConceptRef objects (lightweight). */
+  private List<ConceptRef> parentRefs = new ArrayList<>();
+
+  /** A list of the children of this concept as ConceptRef objects (lightweight). */
+  private List<ConceptRef> childRefs = new ArrayList<>();
 
   /** Does this concept have descendants that are members of the refset. */
   private boolean hasDescendantRefsetMembers;
@@ -160,8 +167,10 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     version = other.getVersion();
     memberEffectiveTime = other.getMemberEffectiveTime();
     parents = other.getParents();
+    parentRefs = other.getParentRefs();
     hasAncestorRefsetMembers = other.getHasAncestorRefsetMembers();
     children = other.getChildren();
+    childRefs = other.getChildRefs();
     hasDescendantRefsetMembers = other.getHasDescendantRefsetMembers();
     memberOfRefset = other.isMemberOfRefset();
     definitionExceptionType = other.getDefinitionExceptionType();
@@ -564,6 +573,54 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
   }
 
   /**
+   * Gets the parent refs.
+   *
+   * @return the parent refs
+   */
+  public List<ConceptRef> getParentRefs() {
+
+    if (parentRefs == null) {
+      parentRefs = new ArrayList<>();
+    }
+
+    return parentRefs;
+  }
+
+  /**
+   * Sets the parent refs.
+   *
+   * @param parentRefs the parent refs to set
+   */
+  public void setParentRefs(final List<ConceptRef> parentRefs) {
+
+    this.parentRefs = parentRefs;
+  }
+
+  /**
+   * Gets the child refs.
+   *
+   * @return the child refs
+   */
+  public List<ConceptRef> getChildRefs() {
+
+    if (childRefs == null) {
+      childRefs = new ArrayList<>();
+    }
+
+    return childRefs;
+  }
+
+  /**
+   * Sets the child refs.
+   *
+   * @param childRefs the child refs to set
+   */
+  public void setChildRefs(final List<ConceptRef> childRefs) {
+
+    this.childRefs = childRefs;
+  }
+
+  /**
    * Gets the checks for children refset members.
    *
    * @return the hasDescendantRefsetMembers
@@ -653,6 +710,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
 
     final int prime = 31;
     int result = 1;
+    result = prime * result + ((childRefs == null) ? 0 : childRefs.hashCode());
     result = prime * result + ((children == null) ? 0 : children.hashCode());
     result = prime * result + ((code == null) ? 0 : code.hashCode());
     result = prime * result + ((memberId == null) ? 0 : memberId.hashCode());
@@ -672,6 +730,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     result = prime * result + (memberOfRefset ? 1231 : 1237);
     result = prime * result + ((name == null) ? 0 : name.hashCode());
     result = prime * result + ((parents == null) ? 0 : parents.hashCode());
+    result = prime * result + ((parentRefs == null) ? 0 : parentRefs.hashCode());
     result = prime * result + (released ? 1231 : 1237);
     result = prime * result + ((roleGroups == null) ? 0 : roleGroups.hashCode());
     result = prime * result + ((terminology == null) ? 0 : terminology.hashCode());
@@ -700,6 +759,15 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     }
 
     final Concept other = (Concept) obj;
+
+    if (childRefs == null) {
+      if (other.childRefs != null) {
+        return false;
+      }
+
+    } else if (!childRefs.equals(other.childRefs)) {
+      return false;
+    }
 
     if (children == null) {
       if (other.children != null) {
@@ -807,6 +875,15 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
       }
 
     } else if (!name.equals(other.name)) {
+      return false;
+    }
+
+    if (parentRefs == null) {
+      if (other.parentRefs != null) {
+        return false;
+      }
+
+    } else if (!parentRefs.equals(other.parentRefs)) {
       return false;
     }
 

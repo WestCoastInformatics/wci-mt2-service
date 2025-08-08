@@ -74,12 +74,12 @@ import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.TaxonomyParameters;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Service class to get refset member concept information from a terminology
@@ -1475,8 +1475,7 @@ public final class RefsetMemberService {
 				final String resultString = getMemberSctids(refset.getRefsetId(), limit, searchAfter,
 						getBranchPath(refset));
 				// LOG.debug("exportRefsetSctidList: resultString" + resultString);
-				final ObjectMapper mapper = new ObjectMapper();
-				final JsonNode root = mapper.readTree(resultString);
+				final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
 				final JsonNode items = root.get("items");
 				final Iterator<JsonNode> iterator = items.iterator();
 				LOG.debug("exportRefsetSctidList items.size(): " + items.size());
@@ -1636,7 +1635,7 @@ public final class RefsetMemberService {
 				}
 
 				fileLines.append(cpt.getCode()).append("\t");
-				fileLines.append(cpt.isActive() ? "1" : "0").append("\t");
+				fileLines.append(cpt.getActive() ? "1" : "0").append("\t");
 				fileLines.append(StringUtils.isNotEmpty(fsn) ? fsn : "").append("\t");
 				fileLines.append(StringUtils.isNotEmpty(pt) ? pt : cpt.getName());
 				fileLines.append("\r\n");
@@ -1822,7 +1821,7 @@ public final class RefsetMemberService {
 				+ DateUtility.formatDate(refset.getModified(), DateUtility.DATE_FORMAT_REVERSE, null) + "\n");
 		fileLines.append("Reference Set Type" + separator + refset.getType() + "\n");
 
-		if (refset.isActive()) {
+		if (refset.getActive()) {
 
 			fileLines.append("Reference Set Status" + separator + "Active" + "\n");
 		} else {
@@ -2750,14 +2749,14 @@ public final class RefsetMemberService {
 
 			// Snowstorm throws a 400-Exception when children/parents of an inactive
 			// concepts are requested
-			if (missingLookupParameters.isGetParents() && concept.isActive()) {
+			if (missingLookupParameters.isGetParents() && concept.getActive()) {
 
 				concept.setParents(getParents(conceptId, refset, null).getItems());
 			}
 
 			// Snowstorm throws a 400-Exception when children/parents of an inactive
 			// concepts are requested
-			if (missingLookupParameters.isGetChildren() && concept.isActive()) {
+			if (missingLookupParameters.isGetChildren() && concept.getActive()) {
 
 				concept.setChildren(getChildren(conceptId, refset, null).getItems());
 			}
@@ -3654,7 +3653,7 @@ public final class RefsetMemberService {
 			final Concept activeConcept = activeMemberEntry.getValue();
 			final Map<String, String> returnMap = new HashMap<>();
 			returnMap.put("code", activeConceptId);
-			returnMap.put("active", activeConcept.isActive() + "");
+			returnMap.put("active", activeConcept.getActive() + "");
 			returnMap.put("memberOfRefset", "true");
 			returnMap.put("definitionExceptionType", activeConcept.getDefinitionExceptionType());
 			returnMap.put("hasChildren", "false"); // activeConcept.getHasChildren() + "");
@@ -3707,7 +3706,7 @@ public final class RefsetMemberService {
 			final Concept comparisonConcept = comparisonMemberEntry.getValue();
 			final Map<String, String> returnMap = new HashMap<>();
 			returnMap.put("code", comparisonConceptId);
-			returnMap.put("active", comparisonConcept.isActive() + "");
+			returnMap.put("active", comparisonConcept.getActive() + "");
 			returnMap.put("memberOfRefset", "false");
 			returnMap.put("definitionExceptionType", comparisonConcept.getDefinitionExceptionType());
 			returnMap.put("hasChildren", "false"); // comparisonConcept.getHasChildren() + "");

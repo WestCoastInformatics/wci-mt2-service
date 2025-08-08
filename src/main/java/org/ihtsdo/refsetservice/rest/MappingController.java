@@ -92,7 +92,7 @@ public class MappingController extends BaseController {
         @RequestParam(required = false) final String filter, @RequestParam(required = false, defaultValue = "true") boolean showOverriddenEntries,
         @RequestParam(required = false) final String conceptCodes, @ModelAttribute final SearchParameters searchParameters) throws Exception {
 
-        LOG.info("Mappings for a Mapset " + mapSetCode, ModelUtility.toJson(searchParameters));
+        LOG.info("Mappings for a Mapset {}: {}", mapSetCode, searchParameters);
         // final User authUser = authorizeUser(request);
 
         try {
@@ -266,7 +266,7 @@ public class MappingController extends BaseController {
         @RequestParam(required = false, defaultValue = "true") boolean showOverriddenEntries, @ModelAttribute final SearchParameters searchParameters)
         throws Exception {
 
-        LOG.info("Mapping for Mapset " + mapSetCode + ", Source Concept " + conceptCode, ModelUtility.toJson(searchParameters));
+        LOG.info("Mapping for Mapset: {}, Source Concept Code: {}, Search params: {}", mapSetCode, conceptCode, searchParameters);
         // final User authUser = authorizeUser(request);
 
         try {

@@ -32,6 +32,7 @@ import org.ihtsdo.refsetservice.rest.test.util.RefsetConceptsType;
 import org.ihtsdo.refsetservice.rest.test.util.WorkflowUnitTestUtilities;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -43,7 +44,6 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Integration tests for MetadataController.
@@ -185,7 +185,7 @@ public class RefsetControllerIntegrationTests extends AbstractRefsetTests {
         }
 
         // Setup Utility classes
-        setObjectMapper(new ObjectMapper());
+        setObjectMapper(ThreadLocalMapper.get());
         JacksonTester.initFields(this, getObjectMapper());
         setBaseUrl("/refset");
 
@@ -594,7 +594,7 @@ public class RefsetControllerIntegrationTests extends AbstractRefsetTests {
         concept = identifyMemberFromList(members, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
 
         assertThat(concept).isNotNull();
-        assertThat(concept.isActive()).isFalse();
+        assertThat(concept.getActive()).isFalse();
         assertThat(concept.isMemberOfRefset()).isTrue();
     }
 
@@ -807,7 +807,7 @@ public class RefsetControllerIntegrationTests extends AbstractRefsetTests {
         final MvcResult result = getMvc().perform(get(url)).andExpect(status().isOk()).andReturn();
         final String content = result.getResponse().getContentAsString();
         LOG.info(" content = " + content);
-        final ResultList<TypeKeyValue> versionStatuses = new ObjectMapper().readValue(content, (new TypeReference<ResultList<TypeKeyValue>>() {
+        final ResultList<TypeKeyValue> versionStatuses = ThreadLocalMapper.get().readValue(content, (new TypeReference<ResultList<TypeKeyValue>>() {
             /* NA */
         }));
         assertThat(versionStatuses).isNotNull();
@@ -830,12 +830,12 @@ public class RefsetControllerIntegrationTests extends AbstractRefsetTests {
         if (!skipEarlierInactiveVersionTests) {
 
             final Concept matchedConcept = getGetUtil().getConceptDetails(earlierInactiveRefsetInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
-            assertThat(matchedConcept.isActive()).isTrue();
+            assertThat(matchedConcept.getActive()).isTrue();
         }
 
         // Inactivated in latest Version
         final Concept latestConcept = getGetUtil().getConceptDetails(inactiveRefsetVersionInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
-        assertThat(latestConcept.isActive()).isFalse();
+        assertThat(latestConcept.getActive()).isFalse();
 
         /*
          * In List Search
@@ -844,7 +844,7 @@ public class RefsetControllerIntegrationTests extends AbstractRefsetTests {
 
             final ResultListConcept members = getGetUtil().searchMembers(earlierInactiveRefsetInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
             final Concept member = identifyMemberFromList(members, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
-            assertThat(member.isActive()).isTrue();
+            assertThat(member.getActive()).isTrue();
         }
 
         ResultListConcept members = getGetUtil().searchMembers(inactiveRefsetVersionInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
@@ -859,7 +859,7 @@ public class RefsetControllerIntegrationTests extends AbstractRefsetTests {
 
             final ResultListConcept children = getGetUtil().getChildren(earlierInactiveRefsetInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_PARENT_CONCEPT_ID);
             member = identifyMemberFromList(children, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
-            assertThat(member.isActive()).isTrue();
+            assertThat(member.getActive()).isTrue();
         }
 
         ResultListConcept children = null;
@@ -882,7 +882,7 @@ public class RefsetControllerIntegrationTests extends AbstractRefsetTests {
             members = getGetUtil().searchTaxonomy(earlierInactiveRefsetInternalId, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
             member = identifyMemberFromList(members, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID);
             assertThat(member).isNotNull();
-            assertThat(member.isActive()).isTrue();
+            assertThat(member.getActive()).isTrue();
         }
 
         try {
@@ -899,7 +899,7 @@ public class RefsetControllerIntegrationTests extends AbstractRefsetTests {
         // Do this for List only (doesn't work for taxonomy which is only active concepts)
 
         // members = getGetUtil().searchMembers(refsetWithInactiveConceptAsActiveMember, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID); member =
-        // identifyMemberFromList(members, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID); assertThat(member).isNotNull(); assertThat(member.isActive()).isFalse();
+        // identifyMemberFromList(members, INACTIVE_CONCEPT_ACTIVE_MEMBER_CONCEPT_ID); assertThat(member).isNotNull(); assertThat(member.getActive()).isFalse();
         // assertThat(member.isMemberOfRefset()).isTrue();
 
     }

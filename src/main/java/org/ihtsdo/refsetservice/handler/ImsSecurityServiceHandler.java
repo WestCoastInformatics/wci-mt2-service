@@ -29,11 +29,12 @@ import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+// import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Implements a security handler that authorizes via IHTSDO authentication.
@@ -164,8 +165,7 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
             if (response.getStatus() == Response.Status.OK.getStatusCode()) {
 
                 final String resultString = response.readEntity(String.class);
-                final ObjectMapper mapper = new ObjectMapper();
-                final JsonNode root = mapper.readTree(resultString.toString());
+                final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                 final String imsUserName = root.get("login").asText();
 
                 // make sure that the passed in user name is the same as what IMS has

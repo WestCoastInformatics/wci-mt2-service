@@ -24,12 +24,12 @@ import org.hibernate.search.engine.backend.types.Sortable;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -48,11 +48,8 @@ public class Job extends AbstractHasModified {
     /** The Constant serialVersionUID. */
     private static final long serialVersionUID = 1L;
 
-    /** The Constant MAPPER. */
-    private static final ObjectMapper MAPPER = new ObjectMapper();
-
     static {
-        MAPPER.setSerializationInclusion(JsonInclude.Include.ALWAYS);
+        ThreadLocalMapper.get().setSerializationInclusion(JsonInclude.Include.ALWAYS);
     }
 
     /** The job type. */
@@ -423,7 +420,7 @@ public class Job extends AbstractHasModified {
     @Override
     public String toString() {
         try {
-            return MAPPER.writeValueAsString(this);
+            return ThreadLocalMapper.get().writeValueAsString(this);
         } catch (final Exception e) {
             return e.getMessage();
         }

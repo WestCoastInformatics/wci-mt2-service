@@ -4,34 +4,42 @@
 
  	<diskStore path="./cache" />
 
-	<defaultCache 
-		maxElementsInMemory="10000" 
+	<defaultCache
+		maxElementsInMemory="10000"
 		eternal="false"
-		timeToIdleSeconds="120" 
-		timeToLiveSeconds="120" 
+		timeToIdleSeconds="120"
+		timeToLiveSeconds="120"
 		overflowToDisk="true"
-		diskSpoolBufferSizeMB="30" 
+		diskSpoolBufferSizeMB="30"
 		maxElementsOnDisk="10000000"
-		diskPersistent="false" 
+		diskPersistent="false"
 		diskExpiryThreadIntervalSeconds="120"
-		memoryStoreEvictionPolicy="LRU" 
+		memoryStoreEvictionPolicy="LRU"
 		clearOnFlush="true" />
 
 	<!-- Add your cache configurations here -->
-	<cache name="snowstorm_concepts" 
-		maxElementsInMemory="1000" 
+	<cache name="snowstorm_concepts"
+		maxElementsInMemory="1000"
 		eternal="false"
-		overflowToDisk="true" 
+		overflowToDisk="true"
 		diskPersistent="true"
-		diskExpiryThreadIntervalSeconds="900" 
+		diskExpiryThreadIntervalSeconds="900"
 		memoryStoreEvictionPolicy="LRU" />
-		
-	<cache name="snowstorm_terminology" 
-		maxElementsInMemory="1000" 
+
+	<cache name="snowstorm_concept_refs"
+		maxElementsInMemory="1000"
 		eternal="false"
-		overflowToDisk="true" 
+		overflowToDisk="true"
 		diskPersistent="true"
-		diskExpiryThreadIntervalSeconds="0" 
+		diskExpiryThreadIntervalSeconds="900"
+		memoryStoreEvictionPolicy="LRU" />
+
+	<cache name="snowstorm_terminology"
+		maxElementsInMemory="1000"
+		eternal="false"
+		overflowToDisk="true"
+		diskPersistent="true"
+		diskExpiryThreadIntervalSeconds="0"
 		memoryStoreEvictionPolicy="LRU" />
 
 </ehcache>

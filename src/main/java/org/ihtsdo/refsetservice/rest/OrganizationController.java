@@ -142,7 +142,7 @@ public class OrganizationController extends BaseController {
 			@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult)
 			throws Exception {
 
-		LOG.info("Search organizations: {}", ModelUtility.toJson(searchParameters));
+		LOG.info("Search organizations: {}", searchParameters);
 		final User authUser = authorizeUser(request);
 
 		// Check to make sure parameters were properly bound to variables.

@@ -15,12 +15,12 @@ import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.MapSetExportRequest;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Service for managing asynchronous jobs.
@@ -30,9 +30,6 @@ public class JobService {
 
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(JobService.class);
-
-    /** The object mapper. */
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     /**
      * Instantiates a new job service.
@@ -66,17 +63,16 @@ public class JobService {
 
             try {
                 final ExportJobParameters params = new ExportJobParameters(mapSet, mapProject, request);
-                job.setParameters(OBJECT_MAPPER.writeValueAsString(params));
+                job.setParameters(ThreadLocalMapper.get().writeValueAsString(params));
 
             } catch (JsonProcessingException e) {
                 LOG.error("Failed to serialize export parameters", e);
                 job.setErrorMessage("Failed to serialize export parameters: " + e.getMessage());
             }
-            
-           
+
             final Job createdJob = service.add(job);
             service.commit();
-            
+
             return createdJob;
         }
 
@@ -111,7 +107,7 @@ public class JobService {
             service.update(job);
             service.commit();
         }
-        
+
     }
 
     /**

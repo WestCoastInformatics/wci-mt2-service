@@ -448,7 +448,7 @@ public class MapEntry extends AbstractHasModified {
             && Objects.equals(this.group, other.group)
             && Objects.equals(this.moduleId, other.moduleId) 
             && Objects.equals(this.released, other.released)
-            && Objects.equals(this.isActive(), other.isActive());
+            && Objects.equals(this.getActive(), other.getActive());
     }
 
 }

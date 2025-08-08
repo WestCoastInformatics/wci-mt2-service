@@ -24,6 +24,7 @@ import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.ResultListConcept;
+import org.ihtsdo.refsetservice.model.ResultListConceptRef;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
 import org.ihtsdo.refsetservice.model.User;
@@ -292,8 +293,18 @@ public interface TerminologyServerHandler extends Configurable {
      * @return the concept
      * @throws Exception the exception
      */
-    public ResultListConcept findConcepts(/* final String branch, */ final String terminology, final String version, final SearchParameters searchParameters)
-        throws Exception;
+    public ResultListConcept findConcepts(final String terminology, final String version, final SearchParameters searchParameters) throws Exception;
+
+    /**
+     * AutoComplete.
+     *
+     * @param terminology the terminology
+     * @param version the version
+     * @param searchParameters the search parameters
+     * @return the result list concept ref
+     * @throws Exception the exception
+     */
+    public ResultListConceptRef autoComplete(final String terminology, final String version, final SearchParameters searchParameters) throws Exception;
 
     /**
      * Returns the member count.
@@ -571,12 +582,22 @@ public interface TerminologyServerHandler extends Configurable {
      * Returns the concept.
      *
      * @param terminology the terminology
+     * @param code the code
+     * @return the concept
+     * @throws Exception the exception
+     */
+    public Concept getConcept(final String terminology, final String code) throws Exception;
+    
+    /**
+     * Returns the concept.
+     *
+     * @param terminology the terminology
      * @param version the version
      * @param code the code
      * @return the concept
      * @throws Exception the exception
      */
-    public Concept getConcept(/* final String branch, */ final String terminology, final String version, final String code) throws Exception;
+    public Concept getConcept(final String terminology, final String version, final String code) throws Exception;
 
     /**
      * Creates the mappings.

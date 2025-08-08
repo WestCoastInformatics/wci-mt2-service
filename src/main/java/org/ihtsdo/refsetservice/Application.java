@@ -94,8 +94,8 @@ public class Application extends SpringBootServletInitializer {
                 service.clearUserSessions();
 
                 // prewarm the cache
-                SnowstormConcept.findConcepts("SNOMEDCT-NO", "2024-04-15", new SearchParameters("name:heart", 1, 0));
-                SnowstormConcept.findConcepts("ICD-10-NO", "20240723", new SearchParameters("name:Annen", 1, 0));
+                SnowstormConcept.cacheConcepts("SNOMEDCT-NO", "2024-04-15");
+                SnowstormConcept.cacheConcepts("ICD-10-NO", "20240723");
 
             }
 

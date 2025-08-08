@@ -124,7 +124,7 @@ public class MapSetController extends BaseController {
 	public @ResponseBody ResponseEntity<List<MapSet>> getMapSets(
 			@ModelAttribute final SearchParameters searchParameters) throws Exception {
 
-		LOG.info("Search mapsets: {}", ModelUtility.toJson(searchParameters));
+		LOG.info("Search mapsets: {}", searchParameters);
 		// final User authUser = authorizeUser(request);
 
 		try {

@@ -13,11 +13,11 @@ import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.util.StringUtility;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * The Class SnowstormAbstract.
@@ -43,9 +43,8 @@ public class SnowstormAbstract {
             return "";
         }
         if (StringUtility.isJson(snowstormErrorMessage)) {
-            final ObjectMapper mapper = new ObjectMapper();
             try {
-                final JsonNode json = mapper.readTree(snowstormErrorMessage);
+                final JsonNode json = ThreadLocalMapper.get().readTree(snowstormErrorMessage);
                 snowstormErrorMessage = json.has("message") ? json.get("message").asText() : "";
             } catch (final Exception e) {
                 LOG.error("formatErrorMessage snowstormErrorMessage:{}", snowstormErrorMessage, e);

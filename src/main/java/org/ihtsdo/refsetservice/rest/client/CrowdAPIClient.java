@@ -29,6 +29,7 @@ import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -107,8 +108,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         if (response.statusCode() == 200) {
 
             final String jsonString = response.body();
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(jsonString);
+            final JsonNode root = ThreadLocalMapper.get().readTree(jsonString);
 
             final User user = new User();
             user.setName(root.get("display-name").asText());

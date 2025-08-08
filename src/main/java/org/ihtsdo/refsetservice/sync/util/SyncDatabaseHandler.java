@@ -523,7 +523,7 @@ public class SyncDatabaseHandler {
 					.filter(e -> e.getShortName().equals(shortName));
 			final Edition edition = (Edition) utilities.validateMatches(editionStream, shortName);
 
-			if (isActive == edition.isActive()) {
+			if (isActive == edition.getActive()) {
 
 				LOG.error("Attempting to set active status to " + isActive + " for an edition " + edition.getName()
 						+ " whose status is already that");
@@ -566,7 +566,7 @@ public class SyncDatabaseHandler {
 
 			final Organization organization = service.get(organizationId, Organization.class);
 
-			if (isActive == organization.isActive()) {
+			if (isActive == organization.getActive()) {
 
 				LOG.error("Attempting to set active status to " + isActive + " for an organization " + organizationId
 						+ " whose status is already that");

@@ -40,6 +40,7 @@ import javax.ws.rs.core.Response.Status.Family;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
+import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormConcept;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.Edition;
@@ -53,6 +54,7 @@ import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.ResultListConcept;
+import org.ihtsdo.refsetservice.model.ResultListConceptRef;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
@@ -71,6 +73,7 @@ import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.StringUtility;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -78,7 +81,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+// import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -106,8 +109,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         final long start = System.currentTimeMillis();
         String refsetBranchPath = null;
         final String url = SnowstormConnection.getBaseUrl() + "branches";
-        final ObjectMapper mapper = new ObjectMapper();
-        final ObjectNode body = mapper.createObjectNode().put("name", branchName).put("parent", parentBranchPath);
+        final ObjectNode body = ThreadLocalMapper.get().createObjectNode().put("name", branchName).put("parent", parentBranchPath);
 
         LOG.debug("createBranch URL: " + url + " ; body: " + body.toString());
 
@@ -122,8 +124,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             }
 
             final String resultString = response.readEntity(String.class);
-
-            final JsonNode root = mapper.readTree(resultString.toString());
+            final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
             final JsonNode rootNode = root;
 
             if (rootNode.has("path")) {
@@ -211,8 +212,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 throw new Exception(Integer.toString(response.getStatus()));
             }
 
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString.toString());
+            final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
             final Iterator<JsonNode> iterator = root.iterator();
 
             if (iterator.hasNext()) {
@@ -231,8 +231,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
         final long start = System.currentTimeMillis();
         final String mergeUrl = SnowstormConnection.getBaseUrl() + "merges";
-        final ObjectMapper mapper = new ObjectMapper();
-        final ObjectNode body = mapper.createObjectNode().put("source", sourceBranchPath).put("target", targetBranchPath);
+
+        final ObjectNode body = ThreadLocalMapper.get().createObjectNode().put("source", sourceBranchPath).put("target", targetBranchPath);
         boolean jobDone = false;
 
         if (comment != null) {
@@ -269,7 +269,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 try (final Response mergeInfoResponse = SnowstormConnection.getResponse(jobStatusUrl)) {
 
                     final String resultString = mergeInfoResponse.readEntity(String.class);
-                    final JsonNode root = mapper.readTree(resultString.toString());
+                    final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                     final String status = root.get("status").asText();
 
                     LOG.info("Merge status is: " + status);
@@ -329,7 +329,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                                 try (final Response stateResponse = SnowstormConnection.getResponse(stateUrl)) {
 
                                     final String stateResultString = stateResponse.readEntity(String.class);
-                                    final JsonNode stateRoot = mapper.readTree(stateResultString.toString());
+                                    final JsonNode stateRoot = ThreadLocalMapper.get().readTree(stateResultString);
                                     final String state = stateRoot.get("state").asText();
 
                                     LOG.info("Promoted branch state is: " + state);
@@ -362,8 +362,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
     @Override
     public String mergeRebaseReview(final String sourceBranchPath, final String targetBranchPath) throws Exception {
 
-        final ObjectMapper mapper = new ObjectMapper();
-        final ObjectNode body = mapper.createObjectNode().put("source", sourceBranchPath).put("target", targetBranchPath);
+        final ObjectNode body = ThreadLocalMapper.get().createObjectNode().put("source", sourceBranchPath).put("target", targetBranchPath);
         final String reviewUrl = SnowstormConnection.getBaseUrl() + "merge-reviews";
         String jobStatusUrl = null;
         boolean jobDone = false;
@@ -399,7 +398,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 }
 
                 final String resultString = response.readEntity(String.class);
-                final JsonNode root = mapper.readTree(resultString.toString());
+                final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                 final String status = root.get("status").asText();
                 LOG.debug("merge review status: " + status);
 
@@ -438,8 +437,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
     public String getNewRefsetId(final String editionBranchPath) throws Exception {
 
         String refsetConceptId = null;
-        final ObjectMapper mapper = new ObjectMapper();
-        final ObjectNode body = mapper.createObjectNode();
+        final ObjectNode body = ThreadLocalMapper.get().createObjectNode();
         final String projectBranchPath = WorkflowService.getProjectBranchPath(editionBranchPath);
         String tempBranchPath = null;
 
@@ -473,8 +471,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             }
 
             final String resultString = response.readEntity(String.class);
-
-            final JsonNode root = mapper.readTree(resultString.toString());
+            final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
             final JsonNode conceptNode = root;
 
             if (conceptNode.has("conceptId")) {
@@ -515,8 +512,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             }
 
             final String resultString = response.readEntity(String.class);
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString.toString());
+            final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
             final Iterator<JsonNode> branchIterator = root.iterator();
 
             // get versions from edition as long as active & within edition's module
@@ -627,7 +623,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         final String conceptSearchUrl = SnowstormConnection.getBaseUrl() + edition.getBranch() + "/concepts/search";
         final String bodyBase = "{\"limit\": 1000, ";
         String bodyConceptIds = "\"conceptIds\":[";
-        final ObjectMapper mapper = new ObjectMapper();
+
         final Map<String, String> moduleNames = new HashMap<>();
 
         for (final String moduleId : edition.getModules()) {
@@ -651,7 +647,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     + " Message: " + response.getStatusInfo().getReasonPhrase());
             }
 
-            final JsonNode root = mapper.readTree(resultString.toString());
+            final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
             final Iterator<JsonNode> iterator = root.get("items").iterator();
 
             while (iterator != null && iterator.hasNext()) {
@@ -682,9 +678,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
             final String resultString = response.readEntity(String.class);
-
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode organizationJsonRootNode = mapper.readTree(resultString.toString());
+            final JsonNode organizationJsonRootNode = ThreadLocalMapper.get().readTree(resultString);
             final Iterator<JsonNode> organizationIterator = organizationJsonRootNode.iterator();
             final SyncUtilities syncUtilities = new SyncUtilities(new SyncDatabaseHandler(null, new SyncStatistics()));
 
@@ -803,31 +797,29 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 parentConceptId = RefsetService.SIMPLE_TYPE_REFERENCE_SET;
             }
 
-            final ObjectMapper mapper = new ObjectMapper();
-
-            final ObjectNode descriptions = mapper.createObjectNode().set("descriptions",
-                mapper.createArrayNode()
-                    .add(mapper.createObjectNode().put("moduleId", moduleId).put("term", refsetEditParameters.getName()).put("typeId", "900000000000013009")
+            final ObjectNode descriptions = ThreadLocalMapper.get().createObjectNode().set("descriptions",
+                ThreadLocalMapper.get().createArrayNode()
+                    .add(ThreadLocalMapper.get().createObjectNode().put("moduleId", moduleId).put("term", refsetEditParameters.getName()).put("typeId", "900000000000013009")
                         .put("caseSignificance", "CASE_INSENSITIVE").put("lang", "en")
-                        .set("acceptabilityMap", mapper.createObjectNode().put("900000000000509007", "PREFERRED").put("900000000000508004", "PREFERRED")))
-                    .add(mapper.createObjectNode().put("moduleId", moduleId).put("term", refsetEditParameters.getName() + " (foundation metadata concept)")
+                        .set("acceptabilityMap", ThreadLocalMapper.get().createObjectNode().put("900000000000509007", "PREFERRED").put("900000000000508004", "PREFERRED")))
+                    .add(ThreadLocalMapper.get().createObjectNode().put("moduleId", moduleId).put("term", refsetEditParameters.getName() + " (foundation metadata concept)")
                         .put("typeId", "900000000000003001").put("caseSignificance", "CASE_INSENSITIVE").put("lang", "en")
-                        .set("acceptabilityMap", mapper.createObjectNode().put("900000000000509007", "PREFERRED").put("900000000000508004", "PREFERRED"))));
+                        .set("acceptabilityMap", ThreadLocalMapper.get().createObjectNode().put("900000000000509007", "PREFERRED").put("900000000000508004", "PREFERRED"))));
 
-            final ObjectNode relationships = mapper.createObjectNode().set("relationships",
-                mapper.createArrayNode()
-                    .add(mapper.createObjectNode().put("moduleId", moduleId).put("destinationId", parentConceptId).put("typeId", "116680003").put("groupId", 0)
+            final ObjectNode relationships = ThreadLocalMapper.get().createObjectNode().set("relationships",
+                ThreadLocalMapper.get().createArrayNode()
+                    .add(ThreadLocalMapper.get().createObjectNode().put("moduleId", moduleId).put("destinationId", parentConceptId).put("typeId", "116680003").put("groupId", 0)
                         .put("lang", "en")
-                        .set("acceptabilityMap", mapper.createObjectNode().put("900000000000509007", "PREFERRED").put("900000000000508004", "PREFERRED")))
-                    .add(mapper.createObjectNode().put("destinationId", "446609009").put("typeId", "116680003").put("groupId", 0)));
+                        .set("acceptabilityMap", ThreadLocalMapper.get().createObjectNode().put("900000000000509007", "PREFERRED").put("900000000000508004", "PREFERRED")))
+                    .add(ThreadLocalMapper.get().createObjectNode().put("destinationId", "446609009").put("typeId", "116680003").put("groupId", 0)));
 
-            final ObjectNode classAxioms = mapper.createObjectNode().set("classAxioms",
-                mapper.createArrayNode().add(mapper.createObjectNode().put("moduleId", moduleId).put("definitionStatusId", "900000000000074008")
-                    .set("relationships", mapper.createArrayNode().add(
-                        mapper.createObjectNode().put("moduleId", moduleId).put("destinationId", "446609009").put("typeId", "116680003").put("groupId", 0)))));
+            final ObjectNode classAxioms = ThreadLocalMapper.get().createObjectNode().set("classAxioms",
+                ThreadLocalMapper.get().createArrayNode().add(ThreadLocalMapper.get().createObjectNode().put("moduleId", moduleId).put("definitionStatusId", "900000000000074008")
+                    .set("relationships", ThreadLocalMapper.get().createArrayNode().add(
+                        ThreadLocalMapper.get().createObjectNode().put("moduleId", moduleId).put("destinationId", "446609009").put("typeId", "116680003").put("groupId", 0)))));
 
             final long start = System.currentTimeMillis();
-            final ObjectNode body = mapper.createObjectNode().put("conceptId", refsetConceptId).put("moduleId", moduleId);
+            final ObjectNode body = ThreadLocalMapper.get().createObjectNode().put("conceptId", refsetConceptId).put("moduleId", moduleId);
             body.setAll(relationships);
             body.setAll(classAxioms);
             body.setAll(descriptions);
@@ -852,8 +844,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 }
 
                 final String resultString = response.readEntity(String.class);
-
-                final JsonNode root = mapper.readTree(resultString.toString());
+                final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                 final JsonNode conceptNode = root;
 
                 if (conceptNode.has("conceptId")) {
@@ -1013,9 +1004,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     + response.getStatusInfo().getReasonPhrase());
             }
 
-            final ObjectMapper mapper = new ObjectMapper();
             final String resultString = response.readEntity(String.class);
-            final JsonNode root = mapper.readTree(resultString.toString());
+            final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
             final Iterator<JsonNode> iterator = root.get("items").iterator();
 
             // loop thru the returned member details and inactivate it or add it to
@@ -1056,7 +1046,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         final String refsetId = refset.getRefsetId();
         final String branch = refset.getBranchPath();
         final String url = SnowstormConnection.getBaseUrl() + "browser/" + branch + "/" + "concepts/" + refsetId;
-        final ObjectMapper mapper = new ObjectMapper();
+
         ObjectNode memberBody = null;
 
         LOG.debug("updateRefsetConcept URL: " + url);
@@ -1072,10 +1062,10 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             // create the body entity for the update call from the retrieved concept
             final String resultString = response.readEntity(String.class);
-            memberBody = (ObjectNode) mapper.readTree(resultString.toString()).deepCopy();
+            memberBody = (ObjectNode) ThreadLocalMapper.get().readTree(resultString).deepCopy();
         }
 
-        if (active != refset.isActive()) {
+        if (active != refset.getActive()) {
 
             LOG.info("Changing refset concept active status to: " + active);
 
@@ -1195,10 +1185,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             }
 
             final String resultString = response.readEntity(String.class);
-
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString.toString());
-
+            final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
             final ResultListConcept conceptList = RefsetMemberService.populateConcepts(root, refset, lookupParameters);
             concepts.addAll(conceptList.getItems());
 
@@ -1243,9 +1230,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             }
 
             final String resultString = response.readEntity(String.class);
-
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString.toString());
+            final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
 
             if (root.get("buckets") != null) {
 
@@ -1277,9 +1262,9 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             Arrays.asList("id", "refsetId", "name", "editionName", "organizationName", "versionStatus", "versionDate", "modified", "privateRefset");
         String snowstormQuery = "";
         final String[] queryParts = query.split(" AND ");
-        final ObjectMapper mapper = new ObjectMapper();
-        final ObjectNode body = mapper.createObjectNode();
-        final ArrayNode bodyPaths = mapper.createArrayNode();
+
+        final ObjectNode body = ThreadLocalMapper.get().createObjectNode();
+        final ArrayNode bodyPaths = ThreadLocalMapper.get().createArrayNode();
 
         for (final String queryPart : queryParts) {
 
@@ -1314,7 +1299,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             }
 
             final String resultString = response.readEntity(String.class);
-            final JsonNode root = mapper.readTree(resultString.toString());
+            final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
 
             final Set<String> conceptIds = new HashSet<>();
 
@@ -1386,9 +1371,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             }
 
             final String resultString = response.readEntity(String.class);
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString.toString());
-
+            final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
             final JsonNode allDescriptionNodes = root.get("items");
             final Iterator<JsonNode> descriptionIterator = allDescriptionNodes.iterator();
             final HashMap<String, Set<JsonNode>> conceptDescriptionNodes = new HashMap<>();
@@ -1512,9 +1495,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             }
 
             final String resultString = response.readEntity(String.class);
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString.toString());
-
+            final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
             final JsonNode allConceptNodes = root.get("items");
             final Iterator<JsonNode> conceptIterator = allConceptNodes.iterator();
             final HashMap<String, JsonNode> conceptNodes = new HashMap<>();
@@ -1589,8 +1570,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             // read the results of the call for ancestors for many concepts
             final String resultString = response.readEntity(String.class);
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString.toString());
+            final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
             final Iterator<JsonNode> iterator = root.iterator();
 
             // loop thru each concept to get the ancestor path for it
@@ -1622,7 +1602,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         final int limitReturnNumber) throws Exception {
 
         final ResultListConcept returnConcepts = new ResultListConcept();
-        final ObjectMapper mapper = new ObjectMapper();
+
         final String encodedCaret = "%5E";
         final String encodedSpace = "%20";
         // final String encodedLeftBrace = "%7B";
@@ -1734,7 +1714,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 }
 
                 final String resultString = response.readEntity(String.class);
-                final JsonNode root = mapper.readTree(resultString.toString());
+                final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                 final JsonNode conceptNodeBatch = root.get("items");
 
                 if (limitReturnNumber < 0 && root.get("searchAfter") != null) {
@@ -1878,8 +1858,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 throw new Exception(Integer.toString(response.getStatus()));
             }
 
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString.toString());
+            final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
             count = root.get("total").asInt();
         }
 
@@ -1960,8 +1939,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                             throw new Exception(Integer.toString(response.getStatus()));
                         }
 
-                        final ObjectMapper mapper = new ObjectMapper();
-                        final JsonNode root = mapper.readTree(resultString.toString());
+                        final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                         final JsonNode conceptNodeBatch = root.get("items");
 
                         // if the search returned results set the total
@@ -2206,8 +2184,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 throw new Exception(Integer.toString(response.getStatus()));
             }
 
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString.toString());
+            final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
 
             return RefsetMemberService.populateConcepts(root, refset, lookupParameters);
         }
@@ -2334,8 +2311,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     throw new Exception(Integer.toString(response.getStatus()));
                 }
 
-                final ObjectMapper mapper = new ObjectMapper();
-                final JsonNode root = mapper.readTree(resultString.toString());
+                final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                 final JsonNode conceptNodeBatch = root.get("items");
 
                 searchAfter = (root.get("searchAfter") != null ? "&searchAfter=" + root.get("searchAfter").asText() : "");
@@ -2439,8 +2415,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 throw new Exception(Integer.toString(response.getStatus()));
             }
 
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode conceptNode = mapper.readTree(resultString.toString());
+            final JsonNode conceptNode = ThreadLocalMapper.get().readTree(resultString);
 
             if (conceptNode.has("releasedEffectiveTime")) {
 
@@ -2494,8 +2469,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 }
 
                 final String resultString = response.readEntity(String.class);
-                final ObjectMapper mapper = new ObjectMapper();
-                final JsonNode root = mapper.readTree(resultString.toString());
+                final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                 final JsonNode node = root.get("items");
                 String currentVersionDate = null;
                 final Iterator<JsonNode> iterator = node.iterator();
@@ -2613,9 +2587,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             }
 
             final String resultString = response.readEntity(String.class);
-
-            final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode root = mapper.readTree(resultString.toString());
+            final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
             final int memberTotal = root.get("total").asInt();
 
             if (memberTotal > 100000) {
@@ -2663,9 +2635,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                         }
 
                         final String resultString = response.readEntity(String.class);
-
-                        final ObjectMapper mapper = new ObjectMapper();
-                        final JsonNode root = mapper.readTree(resultString.toString());
+                        final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                         final JsonNode allResultNodes = root.get("items");
                         final Iterator<JsonNode> resultsIterator = allResultNodes.iterator();
 
@@ -2720,7 +2690,6 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         }
 
         final List<String> unaddedConcepts = new ArrayList<>();
-        final ObjectMapper mapper = new ObjectMapper();
 
         final String branchPath = RefsetService.getBranchPath(refset);
         final String url = SnowstormConnection.getBaseUrl() + branchPath + "/" + "members";
@@ -2743,7 +2712,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         final List<String> permanentFullConceptList = new ArrayList<>(conceptIds);
         final Map<String, Map<String, String>> conceptsStatus = RefsetMemberService.REFSETS_UPDATED_MEMBERS.get(refset.getId());
         final List<String> validatedConcepts = new ArrayList<>();
-        final ArrayNode memberUpdateArray = mapper.createArrayNode();
+        final ArrayNode memberUpdateArray = ThreadLocalMapper.get().createArrayNode();
         boolean searchAgain = true;
         int searchIndex = 0;
         int loopNumber = 1;
@@ -2803,7 +2772,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                             + " Message: " + response.getStatusInfo().getReasonPhrase());
                     }
 
-                    final JsonNode root = mapper.readTree(resultString.toString());
+                    final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                     iterator = root.get("items").iterator();
 
                     while (iterator != null && iterator.hasNext()) {
@@ -2879,7 +2848,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                             + " Message: " + response.getStatusInfo().getReasonPhrase());
                     }
 
-                    final JsonNode root = mapper.readTree(resultString.toString());
+                    final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                     iterator = root.get("items").iterator();
 
                     // loop thru the returned member details
@@ -2906,7 +2875,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                             conceptIds.remove(conceptId);
 
-                            final ObjectNode memberBody = mapper.createObjectNode().put("active", true).put("memberId", conceptNode.get("memberId").asText())
+                            final ObjectNode memberBody = ThreadLocalMapper.get().createObjectNode().put("active", true).put("memberId", conceptNode.get("memberId").asText())
                                 .put("moduleId", conceptNode.get("moduleId").asText())
                                 .put("referencedComponentId", conceptNode.get("referencedComponentId").asText())
                                 .put("refsetId", conceptNode.get("refsetId").asText()).put("released", conceptNode.get("released").asBoolean())
@@ -2970,9 +2939,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
     public List<String> callAddMemberSingle(final String refsetId, final String url, final String conceptId, final String moduleId) throws Exception {
 
         final List<String> unaddedConcepts = new ArrayList<>();
-
-        final ObjectMapper mapper = new ObjectMapper();
-        final ObjectNode body = mapper.createObjectNode().put("refsetId", refsetId).put("moduleId", moduleId).put("referencedComponentId", conceptId);
+        final ObjectNode body = ThreadLocalMapper.get().createObjectNode().put("refsetId", refsetId).put("moduleId", moduleId).put("referencedComponentId", conceptId);
 
         LOG.debug("callAddMemberSingle URL: " + url);
         // LOG.debug("callAddMemberSingle URL body: " + body.toString());
@@ -2998,12 +2965,11 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
         final List<String> unaddedConcepts = new ArrayList<>();
         final String bulkUrl = url + "/bulk";
-        final ObjectMapper mapper = new ObjectMapper();
-        final ArrayNode body = mapper.createArrayNode();
+        final ArrayNode body = ThreadLocalMapper.get().createArrayNode();
 
         for (final String conceptId : conceptIds) {
 
-            final ObjectNode memberBody = mapper.createObjectNode().put("refsetId", refsetId).put("moduleId", moduleId).put("referencedComponentId", conceptId);
+            final ObjectNode memberBody = ThreadLocalMapper.get().createObjectNode().put("refsetId", refsetId).put("moduleId", moduleId).put("referencedComponentId", conceptId);
 
             body.add(memberBody);
         }
@@ -3056,7 +3022,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     }
 
                     final String resultString = response.readEntity(String.class);
-                    final JsonNode root = mapper.readTree(resultString.toString());
+                    final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
 
                     // LOG.debug("addRefsetMembers job status response: " + root);
                     final String status = root.get("status").asText();
@@ -3098,7 +3064,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
     public List<String> removeRefsetMembers(final TerminologyService service, final User user, final Refset refset, final String conceptIds) throws Exception {
 
         List<String> unremovedConcepts = new ArrayList<>();
-        final ObjectMapper mapper = new ObjectMapper();
+
         final Map<String, Map<String, String>> conceptsStatus = RefsetMemberService.REFSETS_UPDATED_MEMBERS.get(refset.getId());
 
         if (conceptIds.isEmpty()) {
@@ -3115,8 +3081,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         // (though the concept itself can be inactive)
         final String memberSearchUrlBase = SnowstormConnection.getBaseUrl() + branchPath + "/members?referenceSet=" + refset.getRefsetId()
             + "&offset=0&active=true" + "&limit=" + RefsetMemberService.URL_MAX_CHAR_LENGTH + "&referencedComponentId=";
-        final ArrayNode memberDeleteArray = mapper.createArrayNode();
-        final ArrayNode memberUpdateArray = mapper.createArrayNode();
+        final ArrayNode memberDeleteArray = ThreadLocalMapper.get().createArrayNode();
+        final ArrayNode memberUpdateArray = ThreadLocalMapper.get().createArrayNode();
         final List<String> permanentFullConceptList = Arrays.asList(conceptIds.split(","));
         final List<String> members = new ArrayList<>();
         boolean searchAgain = true;
@@ -3163,7 +3129,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                         + response.getStatusInfo().getReasonPhrase());
                 }
 
-                final JsonNode root = mapper.readTree(resultString.toString());
+                final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                 iterator = root.get("items").iterator();
             }
 
@@ -3186,7 +3152,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 // array
                 else {
 
-                    final ObjectNode memberBody = mapper.createObjectNode().put("active", false).put("effectiveTime", conceptNode.get("effectiveTime").asText())
+                    final ObjectNode memberBody = ThreadLocalMapper.get().createObjectNode().put("active", false).put("effectiveTime", conceptNode.get("effectiveTime").asText())
                         .put("memberId", membershipId).put("moduleId", conceptNode.get("moduleId").asText())
                         .put("referencedComponentId", conceptNode.get("referencedComponentId").asText()).put("refsetId", conceptNode.get("refsetId").asText())
                         .put("released", released).put("releasedEffectiveTime", conceptNode.get("releasedEffectiveTime").asInt())
@@ -3234,7 +3200,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             // delete any members that haven't been released
             if (memberDeleteArray.size() > 0) {
 
-                final String deleteBody = mapper.createObjectNode().set("memberIds", memberDeleteArray).toString();
+                final String deleteBody = ThreadLocalMapper.get().createObjectNode().set("memberIds", memberDeleteArray).toString();
                 final String deleteUrl = url + "?force";
                 final String errorMessage =
                     "Remove Reference Set Member bulk call to url '" + deleteUrl + "' for Reference Set '" + refsetId + " wasn't successful. ";
@@ -3321,7 +3287,6 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
     public List<String> callUpdateMembersBulk(final String refsetId, final String url, final ArrayNode memberBodies) throws Exception {
 
         final List<String> unchangedConcepts = new ArrayList<>();
-        final ObjectMapper mapper = new ObjectMapper();
 
         LOG.debug("callUpdateMembersBulk URL: " + url);
         LOG.debug("callUpdateMembersBulk URL body: " + memberBodies.toString());
@@ -3371,7 +3336,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     }
 
                     final String resultString = response.readEntity(String.class);
-                    final JsonNode root = mapper.readTree(resultString.toString());
+                    final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
 
                     // LOG.debug("addRefsetMembers job status response: " + root);
                     final String status = root.get("status").asText();
@@ -3414,7 +3379,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
     public List<String> getConceptIdsFromEcl(final String branch, final String ecl) throws Exception {
 
         final List<String> concepts = new ArrayList<>();
-        final ObjectMapper mapper = new ObjectMapper();
+
         final String url = SnowstormConnection.getBaseUrl() + branch + "/" + "concepts?ecl=" + StringUtility.encodeValue(ecl) + "&limit="
             + RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH;
         boolean keepSearching = true;
@@ -3437,7 +3402,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 }
 
                 final String resultString = response.readEntity(String.class);
-                final JsonNode root = mapper.readTree(resultString.toString());
+                final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                 final JsonNode items = root.get("items");
                 final Iterator<JsonNode> iterator = items.iterator();
                 totalReturned += items.size();
@@ -3520,7 +3485,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         int memberTotal = 0;
         boolean memberTotalKnown = false;
         String inactiveConceptIds = "";
-        final ObjectMapper mapper = new ObjectMapper();
+
         final List<String> nonDefaultPreferredTerms = RefsetMemberService.identifyNonDefaultPreferredTerms(upgradeRefset.getEdition());
         @SuppressWarnings("unused")
         int replacementCount = 0;
@@ -3557,7 +3522,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     throw new Exception(Integer.toString(response.getStatus()));
                 }
 
-                final JsonNode root = mapper.readTree(resultString.toString());
+                final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                 final JsonNode conceptNodeBatch = root.get("items");
 
                 // if the search returned results set the total
@@ -3582,7 +3547,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 // filter for inactive concepts
                 for (final Concept concept : currentMemberBatch.getItems()) {
 
-                    if (concept.isActive()) {
+                    if (concept.getActive()) {
 
                         activeMemberList.add(concept.getCode());
                     } else {
@@ -3658,7 +3623,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                         + response.getStatusInfo().getReasonPhrase());
                 }
 
-                final JsonNode root = mapper.readTree(resultString.toString());
+                final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                 iterator = root.get("items").iterator();
 
                 // loop thru the returned member details and process the descriptions
@@ -3747,7 +3712,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                                                     + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
                                             }
 
-                                            final JsonNode root = mapper.readTree(resultString.toString());
+                                            final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                                             final Iterator<JsonNode> iterator = root.get("items").iterator();
 
                                             // loop thru the returned member details to mark
@@ -3783,7 +3748,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                                             final UpgradeReplacementConcept upgradeReplacementConcept = new UpgradeReplacementConcept();
                                             upgradeReplacementConcept.setCode(replacementConcept.getCode());
                                             upgradeReplacementConcept.setReason(reasonMap.get(replacementConcept.getCode()));
-                                            upgradeReplacementConcept.setActive(replacementConcept.isActive());
+                                            upgradeReplacementConcept.setActive(replacementConcept.getActive());
 
                                             if (replacementThatAreMembers.contains(replacementConcept.getCode())) {
 
@@ -3993,7 +3958,6 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                                     + response.getStatusInfo().getReasonPhrase());
                             }
 
-                            final ObjectMapper mapper = new ObjectMapper();
                             final String resultString = response.readEntity(String.class);
 
                             // Only process payload if Rest call is successful
@@ -4002,7 +3966,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                                 throw new Exception(Integer.toString(response.getStatus()));
                             }
 
-                            final JsonNode root = mapper.readTree(resultString.toString());
+                            final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                             final Iterator<JsonNode> iterator = root.get("items").iterator();
 
                             if (iterator.hasNext()) {
@@ -4140,10 +4104,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         }
 
         final ArrayList<MapSet> mapSets = new ArrayList<>();
-
-        final ObjectMapper mapper = new ObjectMapper();
-
-        final JsonNode root = mapper.readTree(f);
+        final JsonNode root = ThreadLocalMapper.get().readTree(f);
         final JsonNode mapSetsBatch = root.get("items");
 
         final Iterator<JsonNode> itemIterator = mapSetsBatch.iterator();
@@ -4191,9 +4152,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             return null;
         }
 
-        final ObjectMapper mapper = new ObjectMapper();
-
-        final JsonNode root = mapper.readTree(f);
+        final JsonNode root = ThreadLocalMapper.get().readTree(f);
         final JsonNode mapSetsBatch = root.get("items");
 
         final Iterator<JsonNode> itemIterator = mapSetsBatch.iterator();
@@ -4249,12 +4208,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
         // Grab the specified mapSet
         final MapSet mapSet = getMapSet(branch, mapSetCode);
-
         final Map<String, Mapping> conceptIdToMappingMap = new HashMap<>();
-
-        final ObjectMapper mapper = new ObjectMapper();
-
-        final JsonNode root = mapper.readTree(f);
+        final JsonNode root = ThreadLocalMapper.get().readTree(f);
         final JsonNode mappingsBatch = root.get("items");
 
         final Iterator<JsonNode> itemIterator = mappingsBatch.iterator();
@@ -4274,7 +4229,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             if (!conceptIdToMappingMap.containsKey(mappingNode.get("referencedComponentId").asText())) {
                 final Mapping mapping = new Mapping();
                 mapping.setCode(mappingNode.get("referencedComponentId").asText());
-                mapping.setName(getConcept(/* branch, */ mapSet.getFromTerminology(), "", mapping.getCode()).getName());
+                mapping.setName(getConcept(mapSet.getFromTerminology(), mapping.getCode()).getName());
                 mapping.setMapSetId(mapSet.getId());
                 mapping.setMapEntries(new ArrayList<>());
 
@@ -4302,7 +4257,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             }
             mapEntry.setAdvices(advices);
 
-            final Concept relationConcept = getConcept(/* branch, */ mapSet.getFromTerminology(), "", additionalFields.get("mapCategoryId").asText());
+            final Concept relationConcept = getConcept(mapSet.getFromTerminology(), additionalFields.get("mapCategoryId").asText());
             if (relationConcept != null) {
                 mapEntry.setRelation(relationConcept.getName());
             } else {
@@ -4311,7 +4266,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             mapEntry.setToCode(additionalFields.get("mapTarget").asText());
 
-            final Concept toConcept = getConcept(/* branch, */ mapSet.getToTerminology(), "", additionalFields.get("mapTarget").asText());
+            final Concept toConcept = getConcept(mapSet.getToTerminology(), additionalFields.get("mapTarget").asText());
 
             if (toConcept != null) {
                 mapEntry.setToName(toConcept.getName());
@@ -4340,18 +4295,14 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
         final File f = new File(handlerProperties.getProperty("dir") + "/Mappings.json");
         if (!f.exists()) {
-            LOG.error("Mappings file doesn't exist: " + f.getPath());
+            LOG.error("Mappings file doesn't exist: {}", f.getPath());
             return null;
         }
 
         // Grab the specified mapSet
         final MapSet mapSet = getMapSet(branch, mapSetCode);
-
         final Mapping mapping = new Mapping();
-
-        final ObjectMapper mapper = new ObjectMapper();
-
-        final JsonNode root = mapper.readTree(f);
+        final JsonNode root = ThreadLocalMapper.get().readTree(f);
         final JsonNode mappingsBatch = root.get("items");
 
         final Iterator<JsonNode> itemIterator = mappingsBatch.iterator();
@@ -4375,7 +4326,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             // mapping
             if (mapping.getCode() == null || mapping.getCode().isEmpty()) {
                 mapping.setCode(mappingNode.get("referencedComponentId").asText());
-                mapping.setName(getConcept(/* branch, */ mapSet.getFromTerminology(), "", mapping.getCode()).getName());
+                mapping.setName(getConcept(mapSet.getFromTerminology(), mapping.getCode()).getName());
                 mapping.setMapSetId(mapSet.getId());
                 mapping.setMapEntries(new ArrayList<>());
             }
@@ -4400,7 +4351,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             }
             mapEntry.setAdvices(advices);
 
-            final Concept relationConcept = getConcept(/* branch, */ mapSet.getFromTerminology(), "", additionalFields.get("mapCategoryId").asText());
+            final Concept relationConcept = getConcept(mapSet.getFromTerminology(), additionalFields.get("mapCategoryId").asText());
             if (relationConcept != null) {
                 mapEntry.setRelation(relationConcept.getName());
             } else {
@@ -4409,7 +4360,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             mapEntry.setToCode(additionalFields.get("mapTarget").asText());
 
-            final Concept toConcept = getConcept(/* branch, */ mapSet.getToTerminology(), "", additionalFields.get("mapTarget").asText());
+            final Concept toConcept = getConcept(mapSet.getToTerminology(), additionalFields.get("mapTarget").asText());
 
             if (toConcept != null) {
                 mapEntry.setToName(toConcept.getName());
@@ -4428,7 +4379,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
     /* see superclass */
     @Override
-    public Concept getConcept(/* final String branch, */ final String terminology, final String version, final String code) throws Exception {
+    public Concept getConcept(final String terminology, final String code) throws Exception {
 
         final File f = new File(handlerProperties.getProperty("dir") + "/Concepts" + terminology + ".json");
         if (!f.exists()) {
@@ -4436,9 +4387,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             return null;
         }
 
-        final ObjectMapper mapper = new ObjectMapper();
-
-        final JsonNode root = mapper.readTree(f);
+        final JsonNode root = ThreadLocalMapper.get().readTree(f);
         final JsonNode conceptNodeBatch = root.get("items");
 
         final Iterator<JsonNode> itemIterator = conceptNodeBatch.iterator();
@@ -4485,9 +4434,23 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
     /* see superclass */
     @Override
+    public Concept getConcept(final String terminology, final String version, final String code) throws Exception {
+
+        throw new UnsupportedOperationException("Method not implemented");
+
+    }
+
+    /* see superclass */
+    @Override
     public ResultListConcept findConcepts(final String terminology, final String version, final SearchParameters searchParameters) throws Exception {
 
-        // TODO implement with Snowstorm
+        throw new UnsupportedOperationException("Method not implemented");
+    }
+
+    /* see superclass */
+    @Override
+    public ResultListConceptRef autoComplete(final String terminology, final String version, final SearchParameters searchParameters) throws Exception {
+
         throw new UnsupportedOperationException("Method not implemented");
     }
 
@@ -4510,7 +4473,6 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
     public List<Mapping> createMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mappings)
         throws Exception {
 
-        // TODO implement with Snowstorm
         throw new UnsupportedOperationException("Method not implemented");
     }
 
@@ -4519,7 +4481,6 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
     public List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mappings)
         throws Exception {
 
-        // TODO implement with Snowstorm
         throw new UnsupportedOperationException("Method not implemented");
     }
 
@@ -4527,7 +4488,6 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
     @Override
     public File exportMappings(final String branch, final String mapSetCode, final MappingExportRequest mappingExportRequest) throws Exception {
 
-        // TODO implement with Snowstorm
         throw new UnsupportedOperationException("Method not implemented");
     }
 
@@ -4535,7 +4495,6 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
     @Override
     public List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile) throws Exception {
 
-        // TODO implement with Snowstorm
         throw new UnsupportedOperationException("Method not implemented");
     }
 
@@ -4543,7 +4502,6 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
     @Override
     public String exportMapSet(final User user, final MapProject mapProject, final MapSetExportRequest mapSetExportRequest) throws Exception {
 
-        // TODO implement with Snowstorm
         throw new UnsupportedOperationException("Method not implemented");
     }
 
