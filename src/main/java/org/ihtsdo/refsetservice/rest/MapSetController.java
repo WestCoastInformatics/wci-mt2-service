@@ -204,12 +204,18 @@ public class MapSetController extends BaseController {
 					HttpStatus.BAD_REQUEST);
 		}
 
-		if (mapSetExportRequest.getFileFormatType() == FileFormatType.DELTA
-				&& StringUtils.isBlank(mapSetExportRequest.getStartEffectiveTime())) {
-			LOG.error("Invalid request parameters: Only SNAPSHOT can use startEffectiveTime.");
-			return new ResponseEntity<>("Invalid request parameters: Only DELTA can use startEffectiveTime.",
-					HttpStatus.BAD_REQUEST);
-		}
+//		if (mapSetExportRequest.getFileFormatType() == FileFormatType.DELTA
+//				&& StringUtils.isBlank(mapSetExportRequest.getStartEffectiveTime())) {
+//			LOG.error("Invalid request parameters: Only SNAPSHOT can use startEffectiveTime.");
+//			return new ResponseEntity<>("Invalid request parameters: Only DELTA can use startEffectiveTime.",
+//					HttpStatus.BAD_REQUEST);
+//		}
+		
+		// startEffectiveTime is, strangely, only usable with SNAPSHOT exports, but creates a Delta.
+		// If we leave it blank, it creates the exports we want correctly.
+		if (!StringUtils.isBlank(mapSetExportRequest.getStartEffectiveTime())) {
+			mapSetExportRequest.setStartEffectiveTime(null);
+		}		
 
 		// TODO: Remove hard-coding of mapProject stuff
 		final User user = getUser();
