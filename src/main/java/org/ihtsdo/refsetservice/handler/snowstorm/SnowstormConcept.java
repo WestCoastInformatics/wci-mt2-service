@@ -141,34 +141,47 @@ public final class SnowstormConcept extends SnowstormAbstract {
      */
     public static ResultListConcept findConcepts(final String terminology, final String version, final SearchParameters searchParameters) throws Exception {
 
-        // if (StringUtils.isAnyBlank(terminology, version)) {
-        // throw new Exception("terminology and version are required parameters. Must not be null or empty.");
-        // }
-        //
-        // if (searchParameters == null) {
-        // throw new Exception("searchParameters is required parameter. Must not be null.");
-        // }
-        //
-        // final String terminologyCacheKey = getTerminologyCacheKey(terminology, version);
-        //
-        // if (terminology.trim().toUpperCase().startsWith("SNOMEDCT")) {
-        // final boolean exists = CachingUtility.containsObjects(SNOWSTORM_TERMINOLOGY_CACHE, terminologyCacheKey);
-        //
-        // if (!exists) {
-        // cacheSnowstormConcepts(terminology, version);
-        // }
-        // } else {
-        // final boolean exists = CachingUtility.containsObjects(SNOWSTORM_TERMINOLOGY_CACHE, terminologyCacheKey);
-        //
-        // if (!exists) {
-        // getCodeSystemsFromFhir();
-        // final SnowstormFhirCodeSystem snowstormFhirCodeSystem = codeSystems.get(terminology + "_" + version);
-        // cacheSnowstormConceptsFhirApi(snowstormFhirCodeSystem);
-        // }
-        // }
-        //
-        // return findConceptsFromCache(terminologyCacheKey, searchParameters);
-        return null;
+        if (StringUtils.isAnyBlank(terminology, version)) {
+            throw new Exception("terminology and version are required parameters. Must not be null or empty.");
+        }
+
+        if (searchParameters == null) {
+            throw new Exception("searchParameters is required parameter. Must not be null.");
+        }
+
+        final String terminologyCacheKey = getTerminologyCacheKey(terminology, version);
+
+        // Check if concepts are already cached for this terminology/version
+        final boolean exists = CachingUtility.containsObjects(SNOWSTORM_TERMINOLOGY_CACHE, terminologyCacheKey);
+
+        if (!exists) {
+            // Cache concepts if not already cached
+            if (terminology.trim().toUpperCase().startsWith("SNOMEDCT")) {
+                cacheSnowstormConcepts(terminology, version);
+            } else {
+                getCodeSystemsFromFhir();
+                final SnowstormFhirCodeSystem snowstormFhirCodeSystem = codeSystems.get(terminology + "_" + version);
+                if (snowstormFhirCodeSystem != null) {
+                    cacheSnowstormConceptRefsFhirApi(snowstormFhirCodeSystem);
+                }
+            }
+        }
+
+        // Get cached concepts and convert to ResultListConcept
+        final ResultListConceptRef cachedResults = findConceptRefFromCache(terminologyCacheKey, searchParameters);
+
+        // Convert ConceptRef to Concept objects for the final result
+        final ResultListConcept results = new ResultListConcept();
+        results.setParameters(searchParameters);
+        results.setTotal(cachedResults.getTotal());
+        results.setOffset(cachedResults.getOffset());
+
+        for (final ConceptRef conceptRef : cachedResults.getItems()) {
+            final Concept concept = new Concept(conceptRef);
+            results.getItems().add(concept);
+        }
+
+        return results;
 
     }
 
@@ -2120,20 +2133,32 @@ public final class SnowstormConcept extends SnowstormAbstract {
             return new ResultListConceptRef();
         }
 
+        // Determine sort order based on SearchParameters
+        final String sortField = searchParameters.getSort();
+        final boolean sortAscending = searchParameters.getSortAscending() != null ? searchParameters.getSortAscending() : true;
+
+        Comparator<ConceptRef> comparator;
+        if ("name".equalsIgnoreCase(sortField)) {
+            comparator = sortAscending ? Comparator.comparing(ConceptRef::getName) : Comparator.comparing(ConceptRef::getName).reversed();
+        } else {
+            // Default to code sorting
+            comparator = sortAscending ? Comparator.comparing(ConceptRef::getCode) : Comparator.comparing(ConceptRef::getCode).reversed();
+        }
+
         List<ConceptRef> matchingConcepts;
-        if (query.toLowerCase().contains("code:")) {
+        if (StringUtils.isBlank(query)) {
+            matchingConcepts = terminologyConcepts.stream().sorted(comparator).toList();
+        } else if (query.toLowerCase().contains("code:")) {
             final String code = query.replace("code:", "").trim();
-            matchingConcepts =
-                terminologyConcepts.stream().filter(concept -> concept.getCode().startsWith(code)).sorted(Comparator.comparing(ConceptRef::getCode)).toList();
+            matchingConcepts = terminologyConcepts.stream().filter(concept -> concept.getCode().startsWith(code)).sorted(comparator).toList();
         } else if (query.toLowerCase().contains("name:")) {
             final String name = query.replace("name:", "").trim();
-            matchingConcepts =
-                terminologyConcepts.stream().filter(concept -> concept.getName() != null && concept.getName().toLowerCase().contains(name.toLowerCase()))
-                    .sorted(Comparator.comparing(ConceptRef::getName)).toList();
+            matchingConcepts = terminologyConcepts.stream()
+                .filter(concept -> concept.getName() != null && concept.getName().toLowerCase().contains(name.toLowerCase())).sorted(comparator).toList();
         } else {
             matchingConcepts = terminologyConcepts.stream().filter(
                 concept -> (concept.getName() != null && concept.getName().toLowerCase().contains(query.toLowerCase())) || concept.getCode().startsWith(query))
-                .sorted(Comparator.comparing(ConceptRef::getName)).toList();
+                .sorted(comparator).toList();
         }
 
         if (matchingConcepts.isEmpty()) {
@@ -2150,7 +2175,9 @@ public final class SnowstormConcept extends SnowstormAbstract {
         results.setItems(matchingConceptsPage);
         results.setParameters(searchParameters);
         results.setTotal(matchingConcepts.size());
+        results.setLimit(limit);
         results.setOffset(offset);
+        results.setTotalKnown(true);
 
         LOG.info("findConcepts took: {} ms for cacheKey: {}, query: {}", (System.currentTimeMillis() - start), cacheKey, query);
         return results;
@@ -2191,7 +2218,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
         // Build the FHIR lookup URL
         // endpoint
-        // https://snowstorm.terminology.tools/fhir/CodeSystem/$lookup?code=K03&system=https%3A%2F%2Ffat.terminologi.ehelse.no%2Findex.html%23%2Ficd10no&_format=json
+        // <host>/fhir/CodeSystem/$lookup?code=K03&system=https%3A%2F%2Ffat.terminologi.ehelse.no%2Findex.html%23%2Ficd10no&_format=json
         final String encodedSystem = URLEncoder.encode(codeSystem.getUrl(), StandardCharsets.UTF_8);
         final String targetUri = SnowstormConnection.getBaseUrl() + "fhir/CodeSystem/$lookup?code=" + code + "&system=" + encodedSystem + "&_format=json";
 
@@ -2432,7 +2459,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
         final String terminologyCacheKey = getTerminologyCacheKey(terminology, version);
 
         // example:
-        // https://host:port/fhir/ValueSet/$expand?filter=Annen&offset=0&count=10
+        // <host>/fhir/ValueSet/$expand?filter=Annen&offset=0&count=10
         // &url=https%3A%2F%2Ffat.terminologi.ehelse.no%2Findex.html%23%2Ficd10no%3Ffhir_vs&_format=json
         final String encodedUrl = URLEncoder.encode(codeSystem.getUrl().concat("?fhir_vs"), StandardCharsets.UTF_8);
 

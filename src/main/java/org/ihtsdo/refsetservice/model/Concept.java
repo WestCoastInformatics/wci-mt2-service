@@ -10,12 +10,13 @@
 
 package org.ihtsdo.refsetservice.model;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
  * Represents a concept with a code from a terminology.
@@ -139,6 +140,19 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     this.terminology = terminology;
     this.code = code;
     this.name = name;
+  }
+
+  /**
+   * Instantiates a new concept.
+   *
+   * @param conceptRef the concept ref
+   */
+  public Concept(final ConceptRef conceptRef) {
+
+    this.code = conceptRef.getCode();
+    this.name = conceptRef.getName();
+    this.terminology = conceptRef.getTerminology();
+    this.version = conceptRef.getVersion();
   }
 
   /**
@@ -938,12 +952,6 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     return true;
   }
 
-  /**
-   * Compare to.
-   *
-   * @param o the o
-   * @return the int
-   */
   /* see superclass */
   @Override
   public int compareTo(final Concept o) {
@@ -952,9 +960,6 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
     return (name + code).compareToIgnoreCase(o.getName() + o.getCode());
   }
 
-  /**
-   * Lazy init.
-   */
   @Override
   public void lazyInit() {
     // n/a
