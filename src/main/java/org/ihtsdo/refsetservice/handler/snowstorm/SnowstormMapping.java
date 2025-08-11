@@ -169,14 +169,14 @@ public class SnowstormMapping extends SnowstormAbstract {
             mapSet.setFromTerminology("SNOMEDCT-NO");
             mapSet.setFromVersion("2024-04-15");
             mapSet.setToTerminology("TBD");
-
+            mapSet.setBranchPath("MAIN/SNOMEDCT-NO/2024-04-15/WCITEST");
             // TEMPORARY//
-            if (mapSet.getRefSetCode().equals("447562003")) {
+            if ("447562003".equals(mapSet.getRefSetCode())) {
                 mapSet.setToTerminology("ICD-10-NO");
                 mapSet.setToVersion("20240723");
-            } else if (mapSet.getRefSetCode().equals("68101000202102")) {
+            } else if ("68101000202102".equals(mapSet.getRefSetCode())) {
                 mapSet.setToTerminology("ICPC2NO");
-                mapSet.setToVersion("");
+                mapSet.setToVersion("TBD");
             }
             // TEMPORARY//
 
@@ -252,14 +252,13 @@ public class SnowstormMapping extends SnowstormAbstract {
             mapSet.setFromVersion("2024-04-15");
             mapSet.setToTerminology("TBD");
             mapSet.setBranchPath("MAIN/SNOMEDCT-NO/2024-04-15/WCITEST");
-
             // TEMPORARY//
-            if (mapSet.getRefSetCode().equals("447562003")) {
+            if ("447562003".equals(mapSet.getRefSetCode())) {
                 mapSet.setToTerminology("ICD-10-NO");
-                mapSet.setFromVersion("");
-            } else if (mapSet.getRefSetCode().equals("68101000202102")) {
+                mapSet.setToVersion("20240723");
+            } else if ("68101000202102".equals(mapSet.getRefSetCode())) {
                 mapSet.setToTerminology("ICPC2NO");
-                mapSet.setFromVersion("");
+                mapSet.setToVersion("TBD");
             }
             // TEMPORARY//
 
