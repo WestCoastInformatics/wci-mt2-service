@@ -2232,8 +2232,9 @@ public final class SnowstormConcept extends SnowstormAbstract {
         try (final Response response = SnowstormConnection.getResponse(targetUri)) {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-                throw new Exception(
-                    "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
+            	return null;
+                //throw new Exception(
+                //    "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
             }
 
             final String resultString = response.readEntity(String.class);
