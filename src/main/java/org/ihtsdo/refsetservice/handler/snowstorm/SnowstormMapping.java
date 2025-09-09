@@ -113,7 +113,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         final int limit = 50;
 
         final String targetUri =
-            SnowstormConnection.getBaseUrl() + branch + "/concepts?activeFilter=true&ecl=%3C609331003&includeLeafFlag=false&form=inferred&offset=0&limit="
+            SnowstormConnection.getBaseUrl() + branch + "/concepts?activeFilter=true&ecl=%3C447250001&includeLeafFlag=false&form=inferred&offset=0&limit="
                 + limit + (searchAfter != null ? "&searchAfter=" + searchAfter : "");
         LOG.info("getSnowstormMapsets url: " + targetUri);
 
@@ -137,10 +137,9 @@ public class SnowstormMapping extends SnowstormAbstract {
 
             final JsonNode mapSetNode = itemIterator.next();
 
-            // TEMPORARY - only keep ICD10NO (447562003) and ICPC2NO (68101000202102)
-            // maps//
+            // TEMPORARY - only keep ICD10CM (6011000124106) map
             final String refsetId = mapSetNode.get("conceptId").asText();
-            if (!(refsetId.equals("447562003") || refsetId.equals("68101000202102"))) {
+            if (!(refsetId.equals("6011000124106"))) {
                 continue;
             }
             // TEMPORARY//
@@ -164,19 +163,16 @@ public class SnowstormMapping extends SnowstormAbstract {
             final JsonNode additionalFields = mapSetNode.get("additionalFields");
 
             mapSet.setVersionStatus("Published");
-            mapSet.setVersion("2024-04-15");
-            mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse("2024-04-15"));
-            mapSet.setFromTerminology("SNOMEDCT-NO");
-            mapSet.setFromVersion("2024-04-15");
+            mapSet.setVersion("2025-03-01");
+            mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse("2025-03-01"));
+            mapSet.setFromTerminology("SNOMEDCT-US");
+            mapSet.setFromVersion("2025-03-01");
             mapSet.setToTerminology("TBD");
-            mapSet.setBranchPath("MAIN/SNOMEDCT-NO/2024-04-15/WCITEST");
+            mapSet.setBranchPath("MAIN/SNOMEDCT-US/2025-03-01/WCITEST");
             // TEMPORARY//
-            if ("447562003".equals(mapSet.getRefSetCode())) {
-                mapSet.setToTerminology("ICD-10-NO");
-                mapSet.setToVersion("20240723");
-            } else if ("68101000202102".equals(mapSet.getRefSetCode())) {
-                mapSet.setToTerminology("ICPC2NO");
-                mapSet.setToVersion("TBD");
+            if ("6011000124106".equals(mapSet.getRefSetCode())) {
+                mapSet.setToTerminology("ICD-10-CM");
+                mapSet.setToVersion("2026");
             }
             // TEMPORARY//
 
