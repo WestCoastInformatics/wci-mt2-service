@@ -135,7 +135,7 @@ public class ConceptController extends BaseController {
         // final User authUser = authorizeUser(request);
 
         try {
-
+        	LOG.info("coming from getConcept (ConceptController)");
             final Concept concept = ConceptService.getConcept(terminology, version, code);
             return new ResponseEntity<>(concept, HttpStatus.OK);
 
