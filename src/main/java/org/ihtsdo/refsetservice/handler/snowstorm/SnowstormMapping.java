@@ -438,16 +438,13 @@ public class SnowstormMapping extends SnowstormAbstract {
                     entry.setRelation(entry.getRelationCode() + " CONCEPT NOT FOUND");
                 }
 
-                LOG.info("Checkpoint 1. entry.getToCode()="+entry.getToCode()+", toTerminology="+toTerminology);
                 final Concept toConcept = terminologyConceptMap.get(toTerminology).get(entry.getToCode());
-                LOG.info("Checkpoint 2. toConcept="+toConcept == null ? "" : toConcept.toString());
                 if (toConcept != null) {
                     entry.setToName(toConcept.getName());
                 } else if (entry.getToCode() == null || entry.getToCode().equals("")) {
                     entry.setToName("");
                 } else {
-                    LOG.info("Checkpoint 3 - setting to CONCPET NOT FOUND");
-                	entry.setToName(entry.getToCode() + " CONCEPT NOT FOUND");
+                    entry.setToName(entry.getToCode() + " CONCEPT NOT FOUND");
                 }
 
             }
@@ -535,8 +532,6 @@ public class SnowstormMapping extends SnowstormAbstract {
             }
             mapEntry.setAdvices(advices);
 
-            LOG.info("coming from convertSnowstormMemberToMapEntry");
-            
             final Concept relationConcept =
                 SnowstormConcept.getConcept(mapSet.getFromTerminology(), mapSet.getFromVersion(), additionalFields.get("mapCategoryId").asText());
             if (relationConcept != null) {
@@ -682,7 +677,6 @@ public class SnowstormMapping extends SnowstormAbstract {
             // mapping
             if (mapping.getCode() == null || mapping.getCode().isEmpty()) {
                 mapping.setCode(mappingNode.get("referencedComponentId").asText());
-                LOG.info("coming from getMapping");
                 mapping.setName(SnowstormConcept.getConcept(mapSet.getFromTerminology(), mapSet.getFromVersion(), mapping.getCode()).getName());
                 mapping.setMapSetId(mapSet.getId());
                 mapping.setMapEntries(new ArrayList<>());
@@ -1215,7 +1209,6 @@ public class SnowstormMapping extends SnowstormAbstract {
         // TODO: fix this hacky hardcoding
         if (!terminology.contains("SNOMEDCT")) {
             for (final String code : codes) {
-            	LOG.info("coming from getConceptsFromSnowstorm");
                 final Concept concept = SnowstormConcept.getConcept(terminology, "2026", code);
                 conceptMap.put(code, concept);
             }
@@ -1645,7 +1638,6 @@ public class SnowstormMapping extends SnowstormAbstract {
                 mapEntry.addAdvice(mapAdvice);
                 // calculated in updateMappings method
                 mapEntry.setRelationCode(relationCode); // mapCategoryId
-                LOG.info("coming from getMappingFromFile");
                 final Concept toConcept =
                     SnowstormConcept.getConcept(mapProject.getDestinationTerminology(), mapProject.getDestinationTerminologyVersion(), mapTarget);
                 mapEntry.setToName((toConcept != null) ? toConcept.getName() : "Mapping for " + referencedComponentId);
