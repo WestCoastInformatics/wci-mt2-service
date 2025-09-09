@@ -127,7 +127,8 @@ public final class SnowstormConcept extends SnowstormAbstract {
                 concept.setVersion(version);
                 return concept;
             }
-
+            
+            LOG.info("Coming from getConcept");
             return getConceptByCodeFhirApi(terminology, version, code);
         }
 
@@ -322,7 +323,9 @@ public final class SnowstormConcept extends SnowstormAbstract {
      */
     private static Concept getConceptFromSnowstorm(final String terminology, final String version, final String code) throws Exception {
 
-        if ("ICD-10-CM".equals(terminology)) {
+        LOG.info("Coming from getConceptFromSnowstorm");
+
+    	if ("ICD-10-CM".equals(terminology)) {
             return getConceptByCodeFhirApi(terminology, version, code);
 
         } else if ("ICPC2NO".equals(terminology)) {

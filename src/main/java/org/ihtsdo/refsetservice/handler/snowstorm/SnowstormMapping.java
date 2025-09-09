@@ -440,7 +440,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
                 LOG.info("Checkpoint 1. entry.getToCode()="+entry.getToCode()+", toTerminology="+toTerminology);
                 final Concept toConcept = terminologyConceptMap.get(toTerminology).get(entry.getToCode());
-                LOG.info("Checkpoint 1. toConcept="+toConcept.toString());
+                LOG.info("Checkpoint 2. toConcept="+toConcept == null? "" : toConcept.toString());
                 if (toConcept != null) {
                     entry.setToName(toConcept.getName());
                 } else if (entry.getToCode() == null || entry.getToCode().equals("")) {
