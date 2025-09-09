@@ -543,10 +543,6 @@ public class SnowstormMapping extends SnowstormAbstract {
 
             mapEntry.setToCode(additionalFields.get("mapTarget").asText());
 
-            //TESTTEST
-            LOG.info("mapSet.getToTerminology():" + mapSet.getToTerminology() + ", mapSet.getToVersion():" + mapSet.getToVersion() + ", additionalFields.get(\"mapTarget\").asText():" + additionalFields.get("mapTarget").asText());
-            //ENDTESTTESTT
-            
             final Concept toConcept = SnowstormConcept.getConcept(mapSet.getToTerminology(), mapSet.getToVersion(), additionalFields.get("mapTarget").asText());
 
             if (toConcept != null) {

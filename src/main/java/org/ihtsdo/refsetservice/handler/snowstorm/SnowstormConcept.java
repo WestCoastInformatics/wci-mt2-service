@@ -2422,13 +2422,10 @@ public final class SnowstormConcept extends SnowstormAbstract {
                 for (final JsonNode parameterNode : parametersNode) {
                     final JsonNode partArray = parameterNode.get("part");
                     if (partArray != null && partArray.isArray()) {
-                    	LOG.debug("checkpoint 1");
                     	String propertyCode = null;
                         
                         for (final JsonNode partNode : partArray) {
-                        	LOG.debug("checkpoint 2 - partNode="+partNode.toString());
                         	final String partName = partNode.get("name").asText();
-                        	LOG.debug("checkpoint 3 - partName="+partName);
                         	
                         	switch (partName) {
 	                            case "code":
