@@ -82,7 +82,7 @@ public class MappingController extends BaseController {
         @ApiResponse(responseCode = "404", description = "Resource not found"), @ApiResponse(responseCode = "417", description = "Failed Expectation")
     })
     @Parameters({
-        @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. 447562003", required = true),
+        @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. 61000202103", required = true),
         @Parameter(name = "filter", description = "Text to search, e.g. Brain", required = false),
         @Parameter(name = "showOverriddenEntries", description = "Show underlying entries that have been overridden by this extension", required = false),
         @Parameter(name = "conceptCodes", description = "Comma delimited list of concept codes, e.g. 880057004,880057005", required = false)
@@ -135,7 +135,7 @@ public class MappingController extends BaseController {
         @ApiResponse(responseCode = "404", description = "Resource not found"), @ApiResponse(responseCode = "417", description = "Failed Expectation")
     })
     @Parameters({
-        @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. 447562003", required = true)
+        @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. 61000202103", required = true)
     })
     @RecordMetric
     public @ResponseBody ResponseEntity<Resource> exportMappings(@PathVariable(value = "mapSetCode") final String mapSetCode,
@@ -257,7 +257,7 @@ public class MappingController extends BaseController {
         @ApiResponse(responseCode = "404", description = "Resource not found"), @ApiResponse(responseCode = "417", description = "Failed Expectation")
     })
     @Parameters({
-        @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. 447562003", required = true),
+        @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. 61000202103", required = true),
         @Parameter(name = "conceptCode", description = "Source concept code identifier, e.g. 880057004", required = true),
         @Parameter(name = "showOverriddenEntries", description = "Show underlying entries that have been overridden by this extension", required = false)
     })

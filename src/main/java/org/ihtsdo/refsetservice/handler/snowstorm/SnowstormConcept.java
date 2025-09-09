@@ -239,7 +239,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
         final String terminologyCacheKey = getTerminologyCacheKey(terminology, version);
         if (!CachingUtility.containsObjects(SNOWSTORM_TERMINOLOGY_CACHE, terminologyCacheKey)) {
-            final SnowstormFhirCodeSystem snowstormFhirCodeSystem = codeSystems.get(terminology + "_20240723");
+            final SnowstormFhirCodeSystem snowstormFhirCodeSystem = codeSystems.get(terminology + "_2026");
             cacheSnowstormConceptRefsFhirApi(snowstormFhirCodeSystem);
         }
 

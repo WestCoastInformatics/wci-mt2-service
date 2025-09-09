@@ -33,7 +33,7 @@ public class MapSetExportRequest {
     private String branch;
 
     /** The map set code. */
-    @Schema(description = "The map set code. e.g. 447562003")
+    @Schema(description = "The map set code. e.g. 61000202103")
     private String mapSetCode;
 
     /** The file format type. */

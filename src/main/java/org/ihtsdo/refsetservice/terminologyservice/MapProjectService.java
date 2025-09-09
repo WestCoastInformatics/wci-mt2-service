@@ -119,14 +119,14 @@ public class MapProjectService extends BaseService {
         
         final MapProject mapProject = new MapProject();
 
-        mapProject.setRefSetId("447562003");
+        mapProject.setRefSetId("61000202103");
         mapProject.setModuleId("51000202101");
         mapProject.setRefSetName("SNOMED CT to International Classification of Diseases tenth revision extended map reference set (foundation metadata concept)");
         mapProject.setActive(true);
         mapProject.setSourceTerminology("SNOMEDCT-US");
         mapProject.setSourceTerminologyVersion("2025-03-01");
         mapProject.setDestinationTerminology("ICD-10-CM");
-        mapProject.setDestinationTerminologyVersion("20240723");
+        mapProject.setDestinationTerminologyVersion("2026");
         mapProject.setName("SNOMEDCT-US TO ICD-10-CM");
         
         

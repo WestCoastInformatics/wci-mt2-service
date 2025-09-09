@@ -249,9 +249,9 @@ public class SnowstormMapping extends SnowstormAbstract {
             mapSet.setToTerminology("TBD");
             mapSet.setBranchPath("MAIN/SNOMEDCT-US/2025-03-01/WCITEST");
             // TEMPORARY//
-            if ("447562003".equals(mapSet.getRefSetCode())) {
+            if ("61000202103".equals(mapSet.getRefSetCode())) {
                 mapSet.setToTerminology("ICD-10-CM");
-                mapSet.setToVersion("20240723");
+                mapSet.setToVersion("2026");
             } else if ("68101000202102".equals(mapSet.getRefSetCode())) {
                 mapSet.setToTerminology("ICPC2NO");
                 mapSet.setToVersion("TBD");
@@ -1307,7 +1307,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         // snowstorm map example
         /*
          * { "active": true, "moduleId": "449080006", "released": true, "releasedEffectiveTime": 20150731, "memberId": "baaae0b7-f564-505e-b604-0bbdd60a69f4",
-         * "refsetId": "447562003", "referencedComponentId": "70273001", "additionalFields": { "mapCategoryId": "447637006", "mapRule": "TRUE", "mapAdvice":
+         * "refsetId": "61000202103", "referencedComponentId": "70273001", "additionalFields": { "mapCategoryId": "447637006", "mapRule": "TRUE", "mapAdvice":
          * "ALWAYS X40 | MAPPED FOLLOWING WHO GUIDANCE | POSSIBLE REQUIREMENT FOR PLACE OF OCCURRENCE" , "mapPriority": "1", "mapGroup": "2", "correlationId":
          * "447561005", "mapTarget": "X40" }, "referencedComponent": { "conceptId": "70273001", "active": true, "definitionStatus": "FULLY_DEFINED", "moduleId":
          * "900000000000207008", "fsn": { "term": "Poisoning caused by paracetamol (disorder)", "lang": "en" }, "pt": { "term":
