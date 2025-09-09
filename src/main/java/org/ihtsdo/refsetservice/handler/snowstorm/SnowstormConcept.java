@@ -108,8 +108,13 @@ public final class SnowstormConcept extends SnowstormAbstract {
      */
     public static Concept getConcept(final String terminology, final String version, final String code) throws Exception {
 
+    	//Check for empty code (this can happen for empty target maps.
+    	if (StringUtils.isAnyBlank(code)) {
+    		return null;
+    	}
+    	
         if (StringUtils.isAnyBlank(terminology, version, code)) {
-            throw new Exception("Terminology, version and code are required parameters. Neither must not be null or empty");
+            throw new Exception("Terminology and version and code are required parameters. Neither must not be null or empty");
         }
 
         if (!terminology.trim().toUpperCase().startsWith("SNOMEDCT")) {
