@@ -2412,27 +2412,23 @@ public final class SnowstormConcept extends SnowstormAbstract {
             final String resultString = response.readEntity(String.class);
             final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
 
-            LOG.debug("checkpoint 1");
-            
             // Check if this is a Parameters resource (FHIR lookup response)
             if (!root.has("resourceType") || !"Parameters".equals(root.get("resourceType").asText())) {
                 return false;
             }
 
-            LOG.debug("checkpoint 2");
-            
             final JsonNode parametersNode = root.get("parameter");
             if (parametersNode.isArray()) {
-                LOG.debug("checkpoint 3");
-
-            	for (final JsonNode parameterNode : parametersNode) {
+                for (final JsonNode parameterNode : parametersNode) {
                     final JsonNode partArray = parameterNode.get("part");
                     if (partArray != null && partArray.isArray()) {
-                    	LOG.debug("checkpoint 4");
+                    	LOG.debug("checkpoint 1");
                     	String propertyCode = null;
                         
                         for (final JsonNode partNode : partArray) {
+                        	LOG.debug("checkpoint 2 - partNode="+partNode.toString());
                         	final String partName = partNode.get("name").asText();
+                        	LOG.debug("checkpoint 3 - partName="+partName);
                         	
                         	switch (partName) {
 	                            case "code":
@@ -2441,7 +2437,6 @@ public final class SnowstormConcept extends SnowstormAbstract {
                         	}
                             // if part contains valueCode with "child", it indicates children, return true
                             if ("child".equals(propertyCode)) {
-                            	LOG.debug("checkpoint 5");
                                 return true;
                             }
                         }
