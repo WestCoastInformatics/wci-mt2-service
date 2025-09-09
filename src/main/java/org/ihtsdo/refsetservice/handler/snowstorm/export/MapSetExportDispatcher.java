@@ -65,7 +65,7 @@ public class MapSetExportDispatcher {
 
         // Set branch path if not already set
         if (mapSet.getBranchPath() == null || mapSet.getBranchPath().isEmpty()) {
-            mapSet.setBranchPath("MAIN/SNOMEDCT-NO/2024-04-15"); // Default branch path
+            mapSet.setBranchPath("MAIN/SNOMEDCT-US/2025-03-01"); // Default branch path
         }
 
         // Create job first

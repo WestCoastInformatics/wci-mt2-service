@@ -122,8 +122,8 @@ public class ConceptController extends BaseController {
         @ApiResponse(responseCode = "404", description = "Resource not found"), @ApiResponse(responseCode = "417", description = "Failed Expectation")
     })
     @Parameters({
-        @Parameter(name = "terminology", description = "Concept terminology", required = true, example = "SNOMEDCT-NO or ICD10NO"),
-        @Parameter(name = "version", description = "Version of the terminology", required = true, example = "2024-04-15 or 20240723"),
+        @Parameter(name = "terminology", description = "Concept terminology", required = true, example = "SNOMEDCT-US or ICD10NO"),
+        @Parameter(name = "version", description = "Version of the terminology", required = true, example = "2025-03-01 or 20240723"),
         @Parameter(name = "code", description = "Concept code", required = true, example = "4579201")
     })
     @RecordMetric
@@ -166,7 +166,7 @@ public class ConceptController extends BaseController {
         @ApiResponse(responseCode = "417", description = "Failed Expectation")
     })
     @Parameters({
-        @Parameter(name = "terminology", description = "Concept terminology", required = true, example = "SNOMEDCT-NO or ICD10NO"),
+        @Parameter(name = "terminology", description = "Concept terminology", required = true, example = "SNOMEDCT-US or ICD10NO"),
         @Parameter(name = "version", description = "Concept terminology version", required = true)
     })
     @RecordMetric

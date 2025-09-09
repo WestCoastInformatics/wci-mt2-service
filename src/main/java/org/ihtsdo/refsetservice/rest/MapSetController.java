@@ -93,7 +93,7 @@ public class MapSetController extends BaseController {
 		try {
 
 			// TODO: determine branch.
-			final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
+			final String branch = "MAIN/SNOMEDCT-US/2025-03-01/WCITEST";
 			final MapSet mapset = MapSetService.getMapSet(branch, code);
 			return new ResponseEntity<>(mapset, HttpStatus.OK);
 
@@ -130,7 +130,7 @@ public class MapSetController extends BaseController {
 		try {
 
 			// TODO: determine branch.
-			final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
+			final String branch = "MAIN/SNOMEDCT-US/2025-03-01/WCITEST";
 			final List<MapSet> mapSets = MapSetService.getMapSets(branch);
 
 			return new ResponseEntity<>(mapSets, HttpStatus.OK);

@@ -86,7 +86,7 @@ public class Rf2DeltaExportStrategy extends AbstractMapSetExportStrategy {
         mapSetVersionList.add(Map.of("date", "2024-01-01"));
         mapSetVersionList.add(Map.of("date", "2024-01-15"));
         mapSetVersionList.add(Map.of("date", "2024-03-15"));
-        mapSetVersionList.add(Map.of("date", "2024-04-15"));
+        mapSetVersionList.add(Map.of("date", "2025-03-01"));
 
         try {
             if (mapSet == null) {

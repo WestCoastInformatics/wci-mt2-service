@@ -104,7 +104,7 @@ public class MappingController extends BaseController {
             final String filterString = (StringUtils.isBlank(filter)) ? StringUtils.EMPTY : StringUtils.trim(filter);
 
             // TODO: determine branch.
-            final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
+            final String branch = "MAIN/SNOMEDCT-US/2025-03-01/WCITEST";
 
             final ResultListMapping mappings = MappingService.getMappings(branch, mapSetCode, sp, filterString, showOverriddenEntries, conceptCodesList);
 
@@ -161,7 +161,7 @@ public class MappingController extends BaseController {
         
         try {
 
-            final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
+            final String branch = "MAIN/SNOMEDCT-US/2025-03-01/WCITEST";
             final File exportMapPkg = MappingService.exportMappings(branch, mapSetCode, mappingExportRequest);
 
             final Resource file = new UrlResource(exportMapPkg.toURI());
@@ -272,7 +272,7 @@ public class MappingController extends BaseController {
         try {
 
             // TODO: determine branch.
-            final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
+            final String branch = "MAIN/SNOMEDCT-US/2025-03-01/WCITEST";
             final Mapping mapping = MappingService.getMapping(branch, mapSetCode, conceptCode, showOverriddenEntries);
 
             return new ResponseEntity<>(mapping, HttpStatus.OK);
@@ -326,7 +326,7 @@ public class MappingController extends BaseController {
         try {
 
             // TODO: determine branch.
-            final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
+            final String branch = "MAIN/SNOMEDCT-US/2025-03-01/WCITEST";
             final List<Mapping> mappings = new ArrayList<>();
             mappings.add(mapping);
             MappingService.createMappings(mapProject, branch, mapSetCode, mappings);
@@ -381,7 +381,7 @@ public class MappingController extends BaseController {
         try {
 
             // TODO: determine branch.
-            final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
+            final String branch = "MAIN/SNOMEDCT-US/2025-03-01/WCITEST";
             final List<Mapping> createdMappings = MappingService.createMappings(mapProject, branch, mapSetCode, mappings);
             return new ResponseEntity<>(createdMappings, HttpStatus.CREATED);
 
@@ -434,7 +434,7 @@ public class MappingController extends BaseController {
         try {
 
             // TODO: determine branch.
-            final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
+            final String branch = "MAIN/SNOMEDCT-US/2025-03-01/WCITEST";
             final List<Mapping> mappings = new ArrayList<>();
             mappings.add(mapping);
             MappingService.updateMappings(mapProject, branch, mapSetCode, mappings);
@@ -492,7 +492,7 @@ public class MappingController extends BaseController {
         try {
 
             // TODO: determine branch.
-            final String branch = "MAIN/SNOMEDCT-NO/2024-04-15/WCITEST";
+            final String branch = "MAIN/SNOMEDCT-US/2025-03-01/WCITEST";
             final List<Mapping> updatedMappings = MappingService.updateMappings(mapProject, branch, mapSetCode, mappings);
 
             return new ResponseEntity<>(updatedMappings, HttpStatus.OK);

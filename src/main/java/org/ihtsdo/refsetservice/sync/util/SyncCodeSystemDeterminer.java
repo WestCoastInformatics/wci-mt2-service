@@ -275,7 +275,7 @@ public class SyncCodeSystemDeterminer {
 
                 final String editionShortName = codeSystem.get("shortName").asText();
 
-                // if ( editionShortName.equals("SNOMEDCT-NO") || editionShortName.equals("SNOMEDCT-SE") ) {
+                // if ( editionShortName.equals("SNOMEDCT-US") || editionShortName.equals("SNOMEDCT-SE") ) {
 
                 if (!ignoredEditions.contains(editionShortName)) {
 

@@ -138,7 +138,7 @@ public class CrowdGroupNameAlgorithmTest {
         result = CrowdGroupNameAlgorithm.getEditionString("SNOMEDCT-KR");
         assertThat(result).isEqualTo("snomedctkr");
 
-        result = CrowdGroupNameAlgorithm.getEditionString("SNOMEDCT-NO");
+        result = CrowdGroupNameAlgorithm.getEditionString("SNOMEDCT-US");
         assertThat(result).isEqualTo("snomedctno");
 
         result = CrowdGroupNameAlgorithm.getEditionString("SNOMEDCT-NZ");
