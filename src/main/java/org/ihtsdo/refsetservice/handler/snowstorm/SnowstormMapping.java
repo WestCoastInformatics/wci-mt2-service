@@ -249,7 +249,7 @@ public class SnowstormMapping extends SnowstormAbstract {
             mapSet.setToTerminology("TBD");
             mapSet.setBranchPath("MAIN/SNOMEDCT-US/2025-03-01/WCITEST");
             // TEMPORARY//
-            if ("61000202103".equals(mapSet.getRefSetCode())) {
+            if ("6011000124106".equals(mapSet.getRefSetCode())) {
                 mapSet.setToTerminology("ICD-10-CM");
                 mapSet.setToVersion("2026");
             } else if ("68101000202102".equals(mapSet.getRefSetCode())) {
