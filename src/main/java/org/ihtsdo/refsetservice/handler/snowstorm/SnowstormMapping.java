@@ -438,13 +438,16 @@ public class SnowstormMapping extends SnowstormAbstract {
                     entry.setRelation(entry.getRelationCode() + " CONCEPT NOT FOUND");
                 }
 
+                LOG.info("Checkpoint 1. entry.getToCode()="+entry.getToCode()+", toTerminology="+toTerminology);
                 final Concept toConcept = terminologyConceptMap.get(toTerminology).get(entry.getToCode());
+                LOG.info("Checkpoint 1. toConcept="+toConcept.toString());
                 if (toConcept != null) {
                     entry.setToName(toConcept.getName());
                 } else if (entry.getToCode() == null || entry.getToCode().equals("")) {
                     entry.setToName("");
                 } else {
-                    entry.setToName(entry.getToCode() + " CONCEPT NOT FOUND");
+                    LOG.info("Checkpoint 3 - setting to CONCPET NOT FOUND");
+                	entry.setToName(entry.getToCode() + " CONCEPT NOT FOUND");
                 }
 
             }
