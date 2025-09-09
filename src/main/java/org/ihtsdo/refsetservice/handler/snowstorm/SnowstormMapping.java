@@ -1213,7 +1213,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         // TODO: fix this hacky hardcoding
         if (!terminology.contains("SNOMEDCT")) {
             for (final String code : codes) {
-                final Concept concept = SnowstormConcept.getConcept(terminology, branch, code);
+                final Concept concept = SnowstormConcept.getConcept(terminology, "20240723", code);
                 conceptMap.put(code, concept);
             }
             return conceptMap;
