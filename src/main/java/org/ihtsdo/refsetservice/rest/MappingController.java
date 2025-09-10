@@ -116,6 +116,64 @@ public class MappingController extends BaseController {
             return null;
         }
     }
+    
+    /**
+     * Gets the new mappings.
+     *
+     * @param mapSetCode the map set code
+     * @param filter the filter
+     * @param showOverriddenEntries the show overridden entries
+     * @param conceptCodes the concept codes
+     * @param searchParameters the search parameters
+     * @return the mappings
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/mapset/{mapSetCode}/mappings/new", produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Get map set. This call requires authentication with the correct role.", tags = {
+        "mapset"
+    }, responses = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"), @ApiResponse(responseCode = "403", description = "Forbidden"),
+        @ApiResponse(responseCode = "404", description = "Resource not found"), @ApiResponse(responseCode = "417", description = "Failed Expectation")
+    })
+    @Parameters({
+        @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. 61000202103", required = true),
+        @Parameter(name = "filter", description = "Text to search, e.g. Brain", required = false),
+        @Parameter(name = "showOverriddenEntries", description = "Show underlying entries that have been overridden by this extension", required = false),
+        @Parameter(name = "conceptCodes", description = "Comma delimited list of concept codes, e.g. 880057004,880057005", required = false)
+    })
+    @RecordMetric
+    public @ResponseBody ResponseEntity<ResultListMapping> getNewMappings(@PathVariable(value = "mapSetCode") final String mapSetCode,
+        @RequestParam(required = false) final String filter, @RequestParam(required = false, defaultValue = "true") boolean showOverriddenEntries,
+        @RequestParam(required = false) final String conceptCodes, @ModelAttribute final SearchParameters searchParameters) throws Exception {
+
+        LOG.info("Mappings for a Mapset {}: {}", mapSetCode, searchParameters);
+        // final User authUser = authorizeUser(request);
+
+        try {
+            final SearchParameters sp = (searchParameters != null) ? searchParameters : new SearchParameters();
+            if (sp.getLimit() == null || sp.getLimit() == 0) {
+                sp.setLimit(100);
+            }
+            final List<String> conceptCodesList = (StringUtils.isBlank(conceptCodes)) ? new ArrayList<>() : List.of(conceptCodes.split(","));
+            final String filterString = (StringUtils.isBlank(filter)) ? StringUtils.EMPTY : StringUtils.trim(filter);
+
+            // TODO: determine branch.
+            final String branch = "MAIN/SNOMEDCT-US/2025-03-01/WCITEST";
+            // TODO: fix hardcoding
+            conceptCodesList.clear();
+            conceptCodesList.add(Arrays.asList("9999005"));
+
+            final ResultListMapping mappings = MappingService.getMappings(branch, mapSetCode, sp, filterString, showOverriddenEntries, conceptCodesList);
+
+            return new ResponseEntity<>(mappings, HttpStatus.OK);
+
+        } catch (final Exception e) {
+
+            handleException(e);
+            return null;
+        }
+    }    
 
     /**
      * Export mappings for a map set.
