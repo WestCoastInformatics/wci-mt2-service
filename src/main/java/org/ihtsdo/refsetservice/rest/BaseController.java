@@ -37,7 +37,7 @@ import com.auth0.jwt.interfaces.DecodedJWT;
  * Base controller for error handling.
  */
 @CrossOrigin(origins = {
-    "http://localhost:4200", "http://localhost:8888", "http://local.ihtsdotools.org:8888", "https://mt2-dev.westcoastinformatics.com/",
+    "http://localhost:4200", "http://localhost:8888", "http://local.ihtsdotools.org:8888", "https://mt2-demo.westcoastinformatics.com/",
     "https://mt2-uat.westcoastinformatics.com/"
 }, allowCredentials = "true")
 public class BaseController {
