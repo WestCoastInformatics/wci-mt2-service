@@ -1003,16 +1003,16 @@ public class SnowstormMapping extends SnowstormAbstract {
                 }
             }
             if (!matchFound) {
-                if (existingActiveInternationalMapping != null && existingActiveInternationalMapping.getMapEntries() != null) {
-                    // Find matching International entry to track what we're replacing
-                    final MapEntry originalMapEntry = existingActiveInternationalMapping.getMapEntries().stream()
-                        .filter(e -> e.getGroup() == submittedMapEntry.getGroup() && e.getPriority() == submittedMapEntry.getPriority()).findFirst()
-                        .orElse(null);
-                    mapEntryCreateList.put(submittedMapEntry, originalMapEntry);
-                } else {
+//                if (existingActiveInternationalMapping != null && existingActiveInternationalMapping.getMapEntries() != null) {
+//                    // Find matching International entry to track what we're replacing
+//                    final MapEntry originalMapEntry = existingActiveInternationalMapping.getMapEntries().stream()
+//                        .filter(e -> e.getGroup() == submittedMapEntry.getGroup() && e.getPriority() == submittedMapEntry.getPriority()).findFirst()
+//                        .orElse(null);
+//                    mapEntryCreateList.put(submittedMapEntry, originalMapEntry);
+//                } else {
                     // No International entry exists, just create new entry
                     mapEntryCreateList.put(submittedMapEntry, null);
-                }
+//                }
             }
         }
 
