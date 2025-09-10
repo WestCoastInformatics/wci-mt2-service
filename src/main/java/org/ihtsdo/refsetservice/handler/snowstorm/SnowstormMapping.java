@@ -873,14 +873,13 @@ public class SnowstormMapping extends SnowstormAbstract {
         final Map<MapEntry, MapEntry> mapEntryModifyMap = new HashMap<>();
 
         // get all the map entries for the existing active mapping already in snowstorm
-        // This is the current mapping that has precedence, so may be International or
-        // Norwegian
-        final Mapping existingActiveMapping = getMapping(branch, mapSetCode, submittedMapping.getCode(), null, true, false, false);
+        // This is the current US map
+        final Mapping existingActiveMapping = getMapping(branch, mapSetCode, submittedMapping.getCode(), mapProject.getModuleId(), true, false, false);
 
         // also get the map entries for the active International mapping in snowstorm
         // (this may the same or different than the above).
-        final Mapping existingActiveInternationalMapping =
-            getMapping(branch, mapSetCode, submittedMapping.getCode(), SnomedConstants.SNOMEDCT_TO_ICD10_MAPPING_MODULE, true, false, false);
+        //final Mapping existingActiveInternationalMapping =
+        //   getMapping(branch, mapSetCode, submittedMapping.getCode(), SnomedConstants.SNOMEDCT_TO_ICD10_MAPPING_MODULE, true, false, false);
 
         // If map content is identical to the existing active map, do nothing.
         if (MapEntryUtility.areMapsEquivalent(submittedMapping, existingActiveMapping)) {
@@ -903,22 +902,22 @@ public class SnowstormMapping extends SnowstormAbstract {
         // If the existing active mapping is International, then all entries
         // of the submitted map will be added (this is a new Norwegian map overriding
         // the International)
-        else if (!existingActiveMapping.getMapEntries().isEmpty()
-            && SnomedConstants.SNOMEDCT_TO_ICD10_MAPPING_MODULE.equals(existingActiveMapping.getMapEntries().get(0).getModuleId())) {
-            for (final MapEntry submittedMapEntry : submittedMapping.getMapEntries()) {
-                mapEntryAddList.add(submittedMapEntry);
-            }
-        }
+//        else if (!existingActiveMapping.getMapEntries().isEmpty()
+//            && SnomedConstants.SNOMEDCT_TO_ICD10_MAPPING_MODULE.equals(existingActiveMapping.getMapEntries().get(0).getModuleId())) {
+//            for (final MapEntry submittedMapEntry : submittedMapping.getMapEntries()) {
+//                mapEntryAddList.add(submittedMapEntry);
+//            }
+//        }
         // Next check if the submitted map is identical to the active International map.
         // This identifies where the Norwegian map had diverged from the international,
         // but now matches again.
         // In this case, remove all existing Norwegian map entries, and revert back to
         // the International.
-        else if (MapEntryUtility.areMapsEquivalent(submittedMapping, existingActiveInternationalMapping)) {
-            for (final MapEntry existingMapEntry : existingActiveMapping.getMapEntries()) {
-                mapEntryRemoveList.add(existingMapEntry);
-            }
-        }
+//        else if (MapEntryUtility.areMapsEquivalent(submittedMapping, existingActiveInternationalMapping)) {
+//            for (final MapEntry existingMapEntry : existingActiveMapping.getMapEntries()) {
+//                mapEntryRemoveList.add(existingMapEntry);
+//            }
+//        }
         // Now that all mapping-wide cases have been handled,
         // check entry-by-entry to determine which need to be added, removed, or
         // modified
