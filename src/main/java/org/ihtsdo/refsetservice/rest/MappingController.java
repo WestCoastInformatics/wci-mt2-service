@@ -163,7 +163,7 @@ public class MappingController extends BaseController {
             final String branch = "MAIN/SNOMEDCT-US/2025-03-01/WCITEST";
             // TODO: fix hardcoding
             conceptCodesList.clear();
-            conceptCodesList.addAll(Arrays.asList("9999005"));
+            conceptCodesList.addAll(Arrays.asList("9999005","9996003","9993006","997199941000119102","9940005"));
 
             final ResultListMapping mappings = MappingService.getMappings(branch, mapSetCode, sp, filterString, showOverriddenEntries, conceptCodesList);
 
