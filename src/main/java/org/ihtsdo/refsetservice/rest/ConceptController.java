@@ -123,7 +123,7 @@ public class ConceptController extends BaseController {
     })
     @Parameters({
         @Parameter(name = "terminology", description = "Concept terminology", required = true, example = "SNOMEDCT-NO or ICD10NO"),
-        @Parameter(name = "version", description = "Version of the terminology", required = true, example = "2024-04-15 or 20240723"),
+        @Parameter(name = "version", description = "Version of the terminology", required = true, example = "2025-12-15 or 20240723"),
         @Parameter(name = "code", description = "Concept code", required = true, example = "4579201")
     })
     @RecordMetric

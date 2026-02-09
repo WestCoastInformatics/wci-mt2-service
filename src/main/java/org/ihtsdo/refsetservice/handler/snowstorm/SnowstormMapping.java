@@ -164,12 +164,12 @@ public class SnowstormMapping extends SnowstormAbstract {
             final JsonNode additionalFields = mapSetNode.get("additionalFields");
 
             mapSet.setVersionStatus("Published");
-            mapSet.setVersion("2024-04-15");
-            mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse("2024-04-15"));
+            mapSet.setVersion("2025-12-15");
+            mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse("2025-12-15"));
             mapSet.setFromTerminology("SNOMEDCT-NO");
-            mapSet.setFromVersion("2024-04-15");
+            mapSet.setFromVersion("2025-12-15");
             mapSet.setToTerminology("TBD");
-            mapSet.setBranchPath("MAIN/SNOMEDCT-NO/2024-04-15/WCITEST");
+            mapSet.setBranchPath("MAIN/SNOMEDCT-NO/2025-12-15/WCITEST");
             // TEMPORARY//
             if ("447562003".equals(mapSet.getRefSetCode())) {
                 mapSet.setToTerminology("ICD-10-NO");
@@ -246,12 +246,12 @@ public class SnowstormMapping extends SnowstormAbstract {
             final JsonNode additionalFields = mapSetNode.get("additionalFields");
 
             mapSet.setVersionStatus("Published");
-            mapSet.setVersion("2024-04-15");
-            mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse("2024-04-15"));
+            mapSet.setVersion("2025-12-15");
+            mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse("2025-12-15"));
             mapSet.setFromTerminology("SNOMEDCT-NO");
-            mapSet.setFromVersion("2024-04-15");
+            mapSet.setFromVersion("2025-12-15");
             mapSet.setToTerminology("TBD");
-            mapSet.setBranchPath("MAIN/SNOMEDCT-NO/2024-04-15/WCITEST");
+            mapSet.setBranchPath("MAIN/SNOMEDCT-NO/2025-12-15/WCITEST");
             // TEMPORARY//
             if ("447562003".equals(mapSet.getRefSetCode())) {
                 mapSet.setToTerminology("ICD-10-NO");

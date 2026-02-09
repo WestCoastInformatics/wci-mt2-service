@@ -29,7 +29,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public class MapSetExportRequest {
 
     /** The branch. */
-    @Schema(description = "Branch path. e.g. MAIN/SNOMEDCT-NO/2024-04-15/WCITEST")
+    @Schema(description = "Branch path. e.g. MAIN/SNOMEDCT-NO/2025-12-15/WCITEST")
     private String branch;
 
     /** The map set code. */

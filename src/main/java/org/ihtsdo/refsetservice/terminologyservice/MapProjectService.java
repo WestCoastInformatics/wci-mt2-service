@@ -124,7 +124,7 @@ public class MapProjectService extends BaseService {
         mapProject.setRefSetName("SNOMED CT to International Classification of Diseases tenth revision extended map reference set (foundation metadata concept)");
         mapProject.setActive(true);
         mapProject.setSourceTerminology("SNOMEDCT-NO");
-        mapProject.setSourceTerminologyVersion("2024-04-15");
+        mapProject.setSourceTerminologyVersion("2025-12-15");
         mapProject.setDestinationTerminology("ICD-10-NO");
         mapProject.setDestinationTerminologyVersion("20240723");
         mapProject.setName("SNOMEDCT-NO TO ICD-10-NO");
@@ -138,7 +138,7 @@ public class MapProjectService extends BaseService {
         edition.getDefaultLanguageRefsets().add("61000202103");
         edition.getDefaultLanguageRefsets().add("900000000000509007");
         edition.setShortName("SNOMEDCT-NO");
-        edition.setBranch("MAIN/SNOMEDCT-NO/2024-04-15/WCITEST");
+        edition.setBranch("MAIN/SNOMEDCT-NO/2025-12-15/WCITEST");
         edition.setOrganization(organization);
         mapProject.setEdition(edition);
 
