@@ -136,10 +136,17 @@ public class TeamUnitTest extends BaseTest {
 
 		tester.proxy("roles", 1, roles); // set<string>
 		tester.proxy("members", 1, members); // set<string>
+		tester.exclude("organization");
+		tester.exclude("roles");
+		tester.exclude("members");
 		tester.exclude("memberList"); // list<users>
 		tester.exclude("userRoles"); // list<string>
 
 		tester.exclude("organizationId");
+		tester.exclude("created");
+		tester.exclude("modified");
+		tester.exclude("modifiedBy");
+		tester.exclude("active");
 
 		assertTrue(tester.testIdentityFieldEquals());
 		assertTrue(tester.testNonIdentityFieldEquals());

@@ -151,18 +151,29 @@ public class RefsetUnitTest extends BaseTest {
 		tester.include("workflowStatus");
 
 		tester.exclude("availableActions");
+		tester.exclude("baseContentVersion");
+		tester.exclude("internationalContentVersion");
+		tester.exclude("inInactivate");
+		tester.exclude("inUpgrade");
 		tester.exclude("basedOnLatestVersion");
 		tester.exclude("comboRefset");
 		tester.exclude("definitionClauses");
 		tester.exclude("descriptions");
+		tester.exclude("edition");
+		tester.exclude("editionBranch");
+		tester.exclude("editionId");
+		tester.exclude("editionName");
+		tester.exclude("editionShortName");
 		tester.exclude("localsetVersionName");
 		tester.exclude("memberSearchMatch");
+		tester.exclude("organizationName");
 		tester.exclude("project");
 		tester.exclude("projectId");
 		tester.exclude("refsetBranchId");
 		tester.exclude("roles");
 		tester.exclude("tags");
 		tester.exclude("terminologyVersionDate");
+		tester.exclude("upgradeVersionsCandidate");
 		tester.exclude("versionList");
 
 		assertTrue(tester.testIdentityFieldEquals());

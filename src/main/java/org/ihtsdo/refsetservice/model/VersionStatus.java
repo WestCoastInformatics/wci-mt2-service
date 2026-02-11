@@ -9,37 +9,37 @@
  */
 package org.ihtsdo.refsetservice.model;
 
-/**
- * The Enum VersionStatus.
- */
-public enum VersionStatus {
-
-  /** Captures all non-published status. */
-  IN_DEVELOPMENT("IN DEVELOPMENT"),
-
-  /** The published status. */
-  PUBLISHED("PUBLISHED");
-
-  /** The label. */
-  private final String label;
-
-  /**
-   * Instantiates a {@link VersionStatus} from the specified parameters.
-   *
-   * @param label the label
-   */
-  private VersionStatus(final String label) {
-
-    this.label = label;
-  }
-
-  /**
-   * Returns the label.
-   *
-   * @return the label
-   */
-  public String getLabel() {
-
-    return label;
-  }
-}
+///**
+// * The Enum VersionStatus.
+// */
+//public enum VersionStatus {
+//
+//  /** Captures all non-published status. */
+//  IN_DEVELOPMENT("IN DEVELOPMENT"),
+//
+//  /** The published status. */
+//  PUBLISHED("PUBLISHED");
+//
+//  /** The label. */
+//  private final String label;
+//
+//  /**
+//   * Instantiates a {@link VersionStatus} from the specified parameters.
+//   *
+//   * @param label the label
+//   */
+//  private VersionStatus(final String label) {
+//
+//    this.label = label;
+//  }
+//
+//  /**
+//   * Returns the label.
+//   *
+//   * @return the label
+//   */
+//  public String getLabel() {
+//
+//    return label;
+//  }
+//}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 SNOMED International - All Rights Reserved.
+ * Copyright 2024 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -10,6 +10,7 @@
 
 package org.ihtsdo.refsetservice.util;
 
+import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -27,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.slf4j.Logger;
@@ -247,6 +249,32 @@ public final class DateUtility {
     }
 
     /**
+     * Indicates whether or not valid date string (yyyy-MM-dd or yyyymmdd) is the case.
+     *
+     * @param dateString the date string
+     * @return <code>true</code> if so, <code>false</code> otherwise
+     */
+    public static boolean isValidDateString(final String dateString) {
+        
+        if (StringUtils.isEmpty(dateString)) {
+            return false;
+        }
+        try {
+            if (dateString.contains("-")) {
+                SimpleDateFormat df = new SimpleDateFormat(DateUtility.DATE_FORMAT_REVERSE);
+                df.parse(dateString);   
+            } else {
+                SimpleDateFormat df = new SimpleDateFormat(DateUtility.DATE_FORMAT_REVERSE_ONLY_NUMBERS);
+                df.parse(dateString);
+            }
+            return true;
+        } catch (Exception e) {
+            LOG.warn("Date string is not in the format of yyyy-MM-dd or yyyymmdd. Got {}", dateString);
+            return false;
+        }        
+    }
+
+    /**
      * Returns the date.
      *
      * @param yyyymmdd the yyyymmdd
@@ -313,6 +341,34 @@ public final class DateUtility {
     public static Date getDateWithNoTime(final String dateString, final String pattern) throws Exception {
 
         return getDate(dateString + " 00:00", pattern + " HH:mm", null);
+    }
+    
+    /**
+     * 
+     * @param dateString the date string
+     * @param pattern the pattern
+     * @return the date
+     * @throws Exception the exception
+     */
+    public static LocalDate getLocalDateNoTime(final String dateString, final String pattern) throws Exception {
+        
+        return LocalDate.parse(dateString);
+    }
+    
+    /**
+     * Returns the local date no time.
+     *
+     * @param date the date
+     * @return the local date no time
+     * @throws Exception the exception
+     */
+    public static LocalDate getLocalDateNoTimeUTC(final Date date) throws Exception {
+        
+        if (date == null) {
+            return null;
+        }
+        
+        return date.toInstant().atZone(ZoneOffset.UTC).toLocalDate();
     }
 
     /**

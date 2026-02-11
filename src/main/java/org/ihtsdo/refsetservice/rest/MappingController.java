@@ -150,15 +150,15 @@ public class MappingController extends BaseController {
         if (mappingExportRequest.getColumnNames() == null || mappingExportRequest.getColumnNames().isEmpty()) {
             throw new RuntimeException("One or more column names are required.");
         }
-        
+
         if (mappingExportRequest.getConceptCodes() == null || mappingExportRequest.getConceptCodes().isEmpty()) {
         	throw new RuntimeException("One or more concept selections are required.");
         }
-        
+
         if (mappingExportRequest.getConceptCodes() != null && mappingExportRequest.getConceptCodes().size() > 10000) {
         	throw new RuntimeException("Maximum concept limit of 10,000 exceeded.");
         }
-        
+
         try {
 
             final String branch = "MAIN/SNOMEDCT-NO/2025-12-15/WCITEST";

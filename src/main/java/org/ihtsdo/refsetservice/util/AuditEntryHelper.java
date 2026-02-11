@@ -27,13 +27,17 @@ import org.ihtsdo.refsetservice.model.MapAdvice;
 import org.ihtsdo.refsetservice.model.MapEntry;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapRelation;
+import org.ihtsdo.refsetservice.model.MapSet;
+import org.ihtsdo.refsetservice.model.MapSetWorkflowHistory;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.model.RefsetWorkflowHistory;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.WorkflowHistory;
+import org.ihtsdo.refsetservice.model.enums.WorkflowStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +63,8 @@ public final class AuditEntryHelper {
         TEAM,
         /** The refset. */
         REFSET,
+        /** MAPSET. */
+        MAPSET,
         /** The user. */
         USER,
         /** The discussion. */
@@ -145,7 +151,7 @@ public final class AuditEntryHelper {
         entry.setEntityType(EntityType.EDITION.toString());
         entry.setEntityId(edition.getId());
 
-        if (edition.getActive()) {
+        if (edition.isActive()) {
             entry.setMessage("REACTIVATE Edition");
         } else {
             entry.setMessage("INACTIVATE Edition");
@@ -203,7 +209,7 @@ public final class AuditEntryHelper {
         entry.setEntityType(EntityType.ORGANIZATION.toString());
         entry.setEntityId(organization.getId());
 
-        if (organization.getActive()) {
+        if (organization.isActive()) {
             entry.setMessage("REACTIVATE Organization");
         } else {
             entry.setMessage("INACTIVATE Organization");
@@ -380,7 +386,7 @@ public final class AuditEntryHelper {
         entry.setEntityType(EntityType.PROJECT.toString());
         entry.setEntityId(project.getId());
 
-        if (project.getActive()) {
+        if (project.isActive()) {
             entry.setMessage("REACTIVATE Project");
         } else {
             entry.setMessage("INACTIVATE Project");
@@ -438,7 +444,7 @@ public final class AuditEntryHelper {
         entry.setEntityType(EntityType.TEAM.toString());
         entry.setEntityId(team.getId());
 
-        if (team.getActive()) {
+        if (team.isActive()) {
             entry.setMessage("REACTIVATE Team");
         } else {
             entry.setMessage("INACTIVATE Team");
@@ -568,7 +574,7 @@ public final class AuditEntryHelper {
         entry.setEntityType(EntityType.USER.toString());
         entry.setEntityId(user.getId());
 
-        if (user.getActive()) {
+        if (user.isActive()) {
             entry.setMessage("REACTIVATE User");
         } else {
             entry.setMessage("INACTIVATE User");
@@ -643,7 +649,7 @@ public final class AuditEntryHelper {
         entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(refset.getId());
 
-        if (refset.getActive()) {
+        if (refset.isActive()) {
             entry.setMessage("REACTIVATE Refset");
         } else {
             entry.setMessage("INACTIVATE Refset");
@@ -822,18 +828,17 @@ public final class AuditEntryHelper {
      * Adds the workflow history entry.
      *
      * @param workflowHistory the workflow history
-     * @param refset          the refset
-     * @param newState        the new state
+     * @param refset the refset
+     * @param newState the new state
      * @return the audit entry
      */
-    public static AuditEntry addWorkflowHistoryEntry(final WorkflowHistory workflowHistory, final Refset refset,
-            final String newState) {
+    public static AuditEntry addWorkflowHistoryEntry(final RefsetWorkflowHistory workflowHistory, final Refset refset, final WorkflowStatus newState) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(refset.getId());
         entry.setMessage("NEW Workflow History");
-        entry.setDetails("Refset " + refset.getRefsetId() + " has advanced workflow to " + newState);
+        entry.setDetails("Refset " + refset.getRefsetId() + " has advanced workflow to " + newState.toString());
         log(entry);
         return entry;
     }
@@ -845,7 +850,7 @@ public final class AuditEntryHelper {
      * @param refset          the refset
      * @return the audit entry
      */
-    public static AuditEntry updateWorkflowNoteEntry(final WorkflowHistory workflowHistory, final Refset refset) {
+    public static AuditEntry updateWorkflowNoteEntry(final RefsetWorkflowHistory workflowHistory, final Refset refset) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.REFSET.toString());
@@ -1048,7 +1053,7 @@ public final class AuditEntryHelper {
         entry.setEntityType(EntityType.PROJECT.toString());
         entry.setEntityId(mapProject.getId());
 
-        if (mapProject.getActive()) {
+        if (mapProject.isActive()) {
             entry.setMessage("REACTIVATE Project");
         } else {
             entry.setMessage("INACTIVATE Project");
@@ -1150,7 +1155,7 @@ public final class AuditEntryHelper {
         entry.setEntityId(refsetId);
         entry.setMessage("UPDATE MapEntry for concept " + mapping.getCode());
         entry.setDetails("Map entry for concept " + mapping.getCode()
-                + ((mapEntry.getActive()) ? " activated." : " inactivated."));
+                + ((mapEntry.isActive()) ? " activated." : " inactivated."));
         log(entry);
         return entry;
     }
@@ -1333,6 +1338,61 @@ public final class AuditEntryHelper {
         entry.setEntityId(mapRelation.getId());
         entry.setMessage("UPDATE MapRelation");
         entry.setDetails(mapRelation.toString());
+        log(entry);
+        return entry;
+    }
+    
+    /**
+     * Complete refset publication entry.
+     *
+     * @param refset the refset
+     * @return the audit entry
+     */
+    // Workflow
+    public static AuditEntry completeMapSetPublicationEntry(final MapSet mapSet) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(EntityType.MAPSET.toString());
+        entry.setEntityId(mapSet.getId());
+        entry.setMessage("UPDATE MapSet");
+        entry.setDetails("Complete Publication on map set " + mapSet.getRefSetCode());
+        log(entry);
+        return entry;
+    }
+    
+    /**
+     * Adds the workflow history entry.
+     *
+     * @param workflowHistory the workflow history
+     * @param refset the refset
+     * @param newState the new state
+     * @return the audit entry
+     */
+    public static AuditEntry addWorkflowHistoryEntry(final MapSetWorkflowHistory workflowHistory, final MapSet mapSet, final WorkflowStatus newState) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(EntityType.MAPSET.toString());
+        entry.setEntityId(mapSet.getId());
+        entry.setMessage("NEW Workflow History");
+        entry.setDetails("Mapset " + mapSet.getRefSetCode() + " has advanced workflow to " + newState.toString());
+        log(entry);
+        return entry;
+    }
+    
+    /**
+     * Update workflow note entry.
+     *
+     * @param workflowHistory the workflow history
+     * @param refset the refset
+     * @return the audit entry
+     */
+    public static AuditEntry updateWorkflowNoteEntry(final MapSetWorkflowHistory workflowHistory, final MapSet mapSet) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(EntityType.MAPSET.toString());
+        entry.setEntityId(mapSet.getId());
+        entry.setMessage("NEW Workflow History");
+        entry.setDetails("Note for workflow history entry with status " + mapSet.getWorkflowStatus() + " updated for refset " + mapSet.getRefSetCode() + ".");
         log(entry);
         return entry;
     }

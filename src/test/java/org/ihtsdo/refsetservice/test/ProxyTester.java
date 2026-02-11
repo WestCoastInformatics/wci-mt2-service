@@ -408,7 +408,7 @@ public class ProxyTester {
 
         final Method m = clazz1.getMethod("values", new Class[0]);
         final Object[] o = (Object[]) m.invoke(null, new Object[0]);
-        return o[initializer];
+        return o[initializer % o.length];
     }
 
     /**

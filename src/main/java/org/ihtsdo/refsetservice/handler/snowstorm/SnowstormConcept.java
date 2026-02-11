@@ -50,11 +50,15 @@ import org.ihtsdo.refsetservice.model.SnowstormFhirCodeSystem;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.model.enums.UpgradeDataResult;
+import org.ihtsdo.refsetservice.model.enums.VersionStatus;
+import org.ihtsdo.refsetservice.model.enums.WorkflowAction;
+import org.ihtsdo.refsetservice.model.enums.WorkflowStatus;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
-import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
+import org.ihtsdo.refsetservice.terminologyservice.RefsetWorkflowService;
 import org.ihtsdo.refsetservice.util.CachingUtility;
 import org.ihtsdo.refsetservice.util.ConceptLookupParameters;
 import org.ihtsdo.refsetservice.util.ModelUtility;
@@ -112,7 +116,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
     	if (StringUtils.isAnyBlank(code)) {
     		return null;
     	}
-    	
+
         if (StringUtils.isAnyBlank(terminology, version)) {
             throw new Exception("Terminology and version are required parameters. Neither must not be null or empty");
         }
@@ -508,7 +512,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
         if (!areParentConcepts) {
 
             // get all the existing refsets for latest branch version
-            final String query = "(latestPublishedVersion: true AND hasVersionInDevelopment: false) OR versionStatus: (" + Refset.IN_DEVELOPMENT + ")";
+            final String query = "(latestPublishedVersion: true AND hasVersionInDevelopment: false) OR versionStatus: (" + VersionStatus.IN_DEVELOPMENT + ")";
             final ResultList<Refset> refsets = service.find(query, null, Refset.class, null);
 
             for (final Refset refset : refsets.getItems()) {
@@ -594,7 +598,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
             memberBody = (ObjectNode) ThreadLocalMapper.get().readTree(resultString).deepCopy();
         }
 
-        if (active != refset.getActive()) {
+        if (active != refset.isActive()) {
 
             LOG.info("Changing refset concept active status to: " + active);
 
@@ -1320,28 +1324,32 @@ public final class SnowstormConcept extends SnowstormAbstract {
      * @return the string
      * @throws Exception the exception
      */
-    public static String compileUpgradeData(final TerminologyService service, final User user, final String refsetInternalId) throws Exception {
+    public static UpgradeDataResult compileUpgradeData(final TerminologyService service, final User user, final String refsetInternalId,
+        final boolean isForUpgrade) throws Exception {
 
-        final String status = "Upgrade data compiled";
+        final UpgradeDataResult status = isForUpgrade ? UpgradeDataResult.UPGRADE_DATA_COMPILED : UpgradeDataResult.REVIEW_INACTIVES_DATA_COMPILED;
         Refset tempRefset = RefsetService.getRefset(service, user, refsetInternalId);
 
-        WorkflowService.canUserPerformWorkflowAction(user, tempRefset, WorkflowService.UPGRADE);
+        RefsetWorkflowService.canUserPerformWorkflowAction(user, tempRefset, WorkflowAction.UPGRADE);
 
-        if (tempRefset.getWorkflowStatus().equals(WorkflowService.PUBLISHED) && tempRefset.getAvailableActions().contains(WorkflowService.UPGRADE)) {
+        if (tempRefset.getWorkflowStatus() == WorkflowStatus.PUBLISHED && tempRefset.getAvailableActions().contains(WorkflowAction.UPGRADE)) {
 
-            final String newRefsetInternalId = RefsetService.createNewRefsetVersion(service, user, tempRefset.getId(), false);
-            tempRefset = service.get(newRefsetInternalId, Refset.class);
+            tempRefset = RefsetService.createNewRefsetVersion(service, user, tempRefset.getId(), false);
+            LOG.info("Created new version of refset IN DEVELOPMENT for refsetId: " + tempRefset.getRefsetId());
         }
 
-        if (!tempRefset.getWorkflowStatus().equals(WorkflowService.READY_FOR_EDIT)) {
-
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Reference Set is in the wrong status to be Upgraded");
+        if (tempRefset.getWorkflowStatus() != WorkflowStatus.READY_FOR_EDIT) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Reference Set is in the wrong status to be Upgraded/Inactivated");
         }
-
-        final Refset upgradeRefset = tempRefset;
 
         // set the refset into IN_UPGRADE status
-        WorkflowService.setWorkflowStatusByAction(service, user, WorkflowService.UPGRADE, upgradeRefset, "");
+        final Refset upgradeRefset = RefsetWorkflowService.setWorkflowStatusByAction(service, user, WorkflowAction.UPGRADE, tempRefset, "");
+
+        if (isForUpgrade) {
+            upgradeRefset.setInUpgrade(true);
+        } else {
+            upgradeRefset.setInInactivate(true);
+        }
 
         final List<Concept> inactiveMemberList = new ArrayList<>();
         final List<String> activeMemberList = new ArrayList<>();
@@ -1417,7 +1425,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                 // filter for inactive concepts
                 for (final Concept concept : currentMemberBatch.getItems()) {
 
-                    if (concept.getActive()) {
+                    if (concept.isActive()) {
 
                         activeMemberList.add(concept.getCode());
                     } else {
@@ -1437,7 +1445,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
         boolean searchAgain = true;
         int searchIndex = 0;
 
-        if (inactiveMemberList.size() == 0) {
+        if (!inactiveMemberList.isEmpty()) {
 
             return status;
         }
@@ -1550,10 +1558,10 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
                         final String threadReplacementBodyConceptIds = StringUtils.removeEnd(replacementBodyConceptIds, ",") + "]";
 
-                        LOG.debug("compileUpgradeData replacementConceptsToLookup: " + replacementConceptsToLookup);
+                        LOG.debug("compileUpgradeData replacementConceptsToLookup: {}", replacementConceptsToLookup);
 
                         // process descriptions of any replacement concepts
-                        if (replacementConceptsToLookup.size() > 0) {
+                        if (!replacementConceptsToLookup.isEmpty()) {
 
                             executor.submit(new Runnable() {
 
@@ -1568,8 +1576,8 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
                                         final List<String> replacementThatAreMembers = new ArrayList<>();
                                         final String memberSearchBody = bodyBase + threadReplacementBodyConceptIds + "}";
-                                        LOG.debug("compileUpgradeData replacement member search url: " + conceptSearchUrl);
-                                        LOG.debug("compileUpgradeData replacement member search body: " + memberSearchBody);
+                                        LOG.debug("compileUpgradeData replacement member search url: {}", conceptSearchUrl);
+                                        LOG.debug("compileUpgradeData replacement member search body: {}", memberSearchBody);
 
                                         try (final Response response = SnowstormConnection.postResponse(conceptSearchUrl, memberSearchBody)) {
 
@@ -1618,7 +1626,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                                             final UpgradeReplacementConcept upgradeReplacementConcept = new UpgradeReplacementConcept();
                                             upgradeReplacementConcept.setCode(replacementConcept.getCode());
                                             upgradeReplacementConcept.setReason(reasonMap.get(replacementConcept.getCode()));
-                                            upgradeReplacementConcept.setActive(replacementConcept.getActive());
+                                            upgradeReplacementConcept.setActive(replacementConcept.isActive());
 
                                             if (replacementThatAreMembers.contains(replacementConcept.getCode())) {
 
@@ -1631,12 +1639,12 @@ public final class SnowstormConcept extends SnowstormAbstract {
                                             }
 
                                             threadService.add(upgradeReplacementConcept);
-                                            LOG.debug("compileUpgradeData added Replacement Concept: " + upgradeReplacementConcept);
+                                            LOG.debug("compileUpgradeData added Replacement Concept: {}", upgradeReplacementConcept);
                                             inactiveConcept.getReplacementConcepts().add(upgradeReplacementConcept);
                                         }
 
                                         threadService.add(inactiveConcept);
-                                        LOG.debug("compileUpgradeData added inactive Concept: " + inactiveConcept);
+                                        LOG.debug("compileUpgradeData added inactive Concept: {}", inactiveConcept);
                                     } catch (final Exception e) {
 
                                         throw new RuntimeException(e);
@@ -1648,7 +1656,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                         } else {
 
                             service.add(inactiveConcept);
-                            LOG.debug("compileUpgradeData added inactive Concept with no replacement: " + inactiveConcept);
+                            LOG.debug("compileUpgradeData added inactive Concept with no replacement: {}", inactiveConcept);
                         }
 
                     }
@@ -2422,10 +2430,10 @@ public final class SnowstormConcept extends SnowstormAbstract {
                     final JsonNode partArray = parameterNode.get("part");
                     if (partArray != null && partArray.isArray()) {
                     	String propertyCode = null;
-                        
+
                         for (final JsonNode partNode : partArray) {
                         	final String partName = partNode.get("name").asText();
-                        	
+
                         	switch (partName) {
 	                            case "code":
 	                                propertyCode = partNode.get("valueCode").asText();

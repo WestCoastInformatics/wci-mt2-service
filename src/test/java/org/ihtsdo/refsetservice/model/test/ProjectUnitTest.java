@@ -106,6 +106,7 @@ public class ProjectUnitTest extends BaseTest {
         tester.include("privateProject");
         tester.include("primaryContactEmail");
         tester.include("crowdProjectId");
+        tester.include("lockStatus");
 
         tester.exclude("edition");
         tester.exclude("teams");

@@ -1,8 +1,6 @@
 
 package org.ihtsdo.refsetservice.model;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-
 /**
  * Generically represents something that is active or inactive.
  */
@@ -13,8 +11,7 @@ public interface HasActive {
      *
      * @return <code>true</code> if so, <code>false</code> otherwise
      */
-    @Schema(description = "Indicates whether or not the component is active")
-    public Boolean getActive();
+  public boolean isActive();
 
     /**
      * Sets the active.

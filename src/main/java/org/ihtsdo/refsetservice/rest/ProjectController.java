@@ -16,6 +16,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.IdName;
 import org.ihtsdo.refsetservice.model.MapProject;
@@ -24,8 +25,10 @@ import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.rest.client.CrowdAPIClient;
+import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.ProjectService;
 import org.ihtsdo.refsetservice.terminologyservice.TeamService;
+import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
@@ -97,15 +100,20 @@ public class ProjectController extends BaseController {
         @Parameter(name = "includeMembers", description = "Include project's members (users)", required = false, example = "false")
     })
     @RecordMetric
-    public @ResponseBody ResponseEntity<Project> getProject(@PathVariable(value = "id") final String id,
+    public @ResponseBody ResponseEntity getProject(@PathVariable(value = "id") final String id,
         @RequestParam(value = "includeMembers", defaultValue = "false") final boolean includeMembers) throws Exception {
 
         LOG.info("Project: id: " + id);
         authorizeUser(request);
 
-        try {
-            final Project project = ProjectService.getProject(id, includeMembers);
+        try (final TerminologyService service = new TerminologyService()) {
+
+            final Project project = ProjectService.getProject(service, id, includeMembers);
             return new ResponseEntity<>(project, HttpStatus.OK);
+
+        } catch (final NotFoundException npe) {
+
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(npe.getMessage());
 
         } catch (final Exception e) {
 
@@ -137,11 +145,11 @@ public class ProjectController extends BaseController {
     public @ResponseBody ResponseEntity<ResultList<Team>> getProjectTeams(@PathVariable(value = "id") final String id) throws Exception {
 
         LOG.info("Project: id: " + id);
-        authorizeUser(request);
+        final User authUser = authorizeUser(request);
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
-            final ResultList<Team> results = ProjectService.getProjectTeams(id);
+            final ResultList<Team> results = ProjectService.getProjectTeams(service, authUser, id);
             return new ResponseEntity<>(results, HttpStatus.OK);
 
         } catch (final Exception e) {
@@ -182,7 +190,7 @@ public class ProjectController extends BaseController {
         @RequestParam(value = "includeModuleNames", required = false, defaultValue = "false") final Boolean includeModuleNames,
         @RequestParam(value = "icludeTeamDetails", required = false, defaultValue = "false") final Boolean includeTeamDetails) throws Exception {
 
-        authorizeUser(request);
+        final User authUser = authorizeUser(request);
 
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);
@@ -191,7 +199,9 @@ public class ProjectController extends BaseController {
         final boolean addTeamDetails = includeTeamDetails != null && includeTeamDetails;
 
         try {
-            final User authUser = authorizeUser(request);
+
+            LOG.debug("getProjects searchParameters: {}", ModelUtility.toJson(searchParameters));
+
             final ResultList<Project> results = ProjectService.searchProjects(authUser, searchParameters);
 
             if (results == null || results.getItems() == null || results.getItems().isEmpty()) {
@@ -203,14 +213,14 @@ public class ProjectController extends BaseController {
                 for (final Project project : results.getItems()) {
 
                     if (addModuleName) {
-                        project.getEdition().setModuleNames(ProjectService.getModuleNames(project.getEdition()));
+                        project.getEdition().setModuleNames(ProjectService.getModuleNames(project));
                     }
 
                     final Set<User> members = new HashSet<>();
 
                     for (final String teamId : project.getTeams()) {
 
-                        final Team team = TeamService.getTeam(teamId, includeMembers);
+                        final Team team = TeamService.getTeam(authUser, teamId, includeMembers);
 
                         if (includeMembers) {
                             members.addAll(team.getMemberList());
@@ -254,49 +264,42 @@ public class ProjectController extends BaseController {
         @Content(mediaType = "application/json", schema = @Schema(implementation = Project.class))
     }))
     @RecordMetric
-    public @ResponseBody ResponseEntity<Project> addProject(@org.springframework.web.bind.annotation.RequestBody final Project project) throws Exception {
+    public @ResponseBody ResponseEntity addProject(@org.springframework.web.bind.annotation.RequestBody final Project project) throws Exception {
 
+        LOG.info("Add project: {}", project);
         final User authUser = authorizeUser(request);
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
+
+            service.setModifiedBy(authUser.getUserName());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
 
             if (project == null) {
-                throw new RestException(false, 417, "Expectation failed", "Project payload is missing");
+
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing project");
             }
 
-            final Set<String> projectNames = ProjectService.getProjectNamesForEdition(project.getEdition().getId());
+            final Set<String> projectNames = ProjectService.getProjectNamesForEdition(service, project.getEdition().getId());
 
-            if (projectNames.contains(project.getName())) {
-                throw new RestException(false, 417, "Expectation failed", "A project with the name " + project.getName() + " already exists for this edition.");
+            if (projectNames.contains(StringUtils.trim(project.getName()))) {
+
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("A project with the name " + project.getName() + " already exists for this edition.");
             }
 
             try {
 
                 project.validateAdd();
             } catch (final Exception e) {
+
                 final String errorMessage = "Project validation failed for add. Message: " + e.getMessage();
-                throw new RestException(false, 417, "Expectation failed", errorMessage);
+                LOG.error(errorMessage, e);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
             }
 
-            final Project localProject = ProjectService.addProject(authUser, project);
+            final Project localProject = ProjectService.addProject(service, authUser, project);
 
-            if (crowdUnitTestSkip == null || !"true".equalsIgnoreCase(crowdUnitTestSkip)) {
-                LOG.info("CALLING CROWD API");
-                try {
-
-                    final String organizationName = project.getEdition().getOrganizationName();
-                    final String editionName = project.getEdition().getShortName();
-
-                    CrowdAPIClient.addGroup(organizationName, editionName, localProject.getName(), localProject.getDescription(), true, false);
-
-                } catch (final Exception e) {
-                    final String errorMessage = "Failed adding Crowd groups. Message: " + e.getMessage();
-                    throw new RestException(false, 417, "Expectation failed", errorMessage);
-                }
-
-            } else {
-                LOG.info("SKIP CALLING CROWD API");
-            }
+            service.commit();
 
             // Return the response
             return ResponseEntity.status(HttpStatus.CREATED).body(localProject);
@@ -330,27 +333,35 @@ public class ProjectController extends BaseController {
         @Parameter(name = "id", description = "Project id, e.g. &lt;uuid&gt;", required = true)
     })
     @RecordMetric
-    public @ResponseBody ResponseEntity<Project> updateProject(@PathVariable(value = "id") final String id,
+    public @ResponseBody ResponseEntity updateProject(@PathVariable(value = "id") final String id,
         @org.springframework.web.bind.annotation.RequestBody final Project project) throws Exception {
 
+        LOG.info("Update project: {}", project);
         final User authUser = authorizeUser(request);
 
         if (project == null || !org.apache.commons.lang3.StringUtils.equals(id, project.getId())) {
-
             final String errorMessage = "Project is null or project id does not match id in URL.";
-            throw new RestException(false, 404, "Not found", errorMessage);
+            LOG.error(errorMessage);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);
         }
 
         try {
-
             project.validateUpdate(null);
         } catch (final Exception e) {
-            throw new RestException(false, 417, "Expectation failed", "Project validation failed = " + project.getId());
+            LOG.error("Bad request for project update.", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
-            final Project proj = ProjectService.updateProjects(authUser, id, project);
+            service.setModifiedBy(authUser.getUserName());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
+
+            final Project proj = ProjectService.updateProject(service, authUser, id, project);
+
+            service.commit();
+
             return ResponseEntity.status(HttpStatus.OK).body(proj);
 
         } catch (final Exception e) {
@@ -379,19 +390,18 @@ public class ProjectController extends BaseController {
         @Parameter(name = "id", description = "Project id, e.g. &lt;uuid&gt;", required = true)
     })
     @RecordMetric
-    public ResponseEntity<Void> deleteProject(@PathVariable("id") final String id) throws Exception {
+    public ResponseEntity deleteProject(@PathVariable("id") final String id) throws Exception {
 
-        final User authUser = authorizeUser(request);
+        LOG.info("getProjectRefsetsLockStatus Project: id: {}", id);
 
-        ProjectService.getProject(id, false);
+        try (final TerminologyService service = new TerminologyService()) {
 
-        try {
+            final Project project = ProjectService.getProject(service, id, false);
+            return new ResponseEntity<>("{\"status\": \"" + project.getLockStatus() + "\"}", HttpStatus.OK);
 
-            ProjectService.inactivateProject(authUser, id);
-            return new ResponseEntity<>(HttpStatus.ACCEPTED);
+        } catch (final NotFoundException npe) {
 
-        } catch (final NotFoundException nfe) {
-            return new ResponseEntity<>(new HttpHeaders(), HttpStatus.NOT_FOUND);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(npe.getMessage());
 
         } catch (final Exception e) {
 

@@ -59,20 +59,20 @@ public final class ConceptService {
         // n/a
     }
 
-    /**
-     * Returns the concept.
-     *
-     * @param branch the branch
-     * @param terminology the terminology
-     * @param version the version
-     * @param code the concept code
-     * @return the concept
-     * @throws Exception the exception
-     */
-    public static Concept getConcept(final String terminology, final String code) throws Exception {
-
-        return terminologyHandler.getConcept(terminology, code);
-    }
+//    /**
+//     * Returns the concept.
+//     *
+//     * @param branch the branch
+//     * @param terminology the terminology
+//     * @param version the version
+//     * @param code the concept code
+//     * @return the concept
+//     * @throws Exception the exception
+//     */
+//    public static Concept getConcept(final String terminology, final String code) throws Exception {
+//
+//        return terminologyHandler.getConcept(terminology, code);
+//    }
     
     /**
      * Returns the concept.

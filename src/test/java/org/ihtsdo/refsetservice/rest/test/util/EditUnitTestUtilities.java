@@ -29,6 +29,7 @@ import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RefsetMemberComparison;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
+import org.ihtsdo.refsetservice.model.enums.VersionStatus;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
@@ -306,7 +307,7 @@ public class EditUnitTestUtilities {
 
                 final GetUnitTestUtilities getUtil = new GetUnitTestUtilities(mvc, baseUrl, sdf);
 
-                refset = getUtil.getRefsetFromRefsetIdAndVersion(refsetId, Refset.IN_DEVELOPMENT);
+                refset = getUtil.getRefsetFromRefsetIdAndVersion(refsetId, VersionStatus.IN_DEVELOPMENT);
                 assertThat(refset).isNotNull();
                 assertThat(refset.getName()).isEqualTo(refsetDetail.get("name"));
                 assertThat(refset.getModuleId()).isEqualTo(refsetDetail.get("moduleId"));

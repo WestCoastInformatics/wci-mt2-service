@@ -445,7 +445,7 @@ public class OrganizationControllerIntegrationTest extends BaseTest {
 		LOG.info("new org record = {}", newOrganization);
 		assertThat(newOrganization).isNotNull();
 		assertThat(newOrganization.getName()).isEqualTo(originalOrganization.getName());
-		assertThat(newOrganization.getActive()).isEqualTo(originalOrganization.getActive());
+		assertThat(newOrganization.isActive()).isEqualTo(originalOrganization.isActive());
 		assertThat(newOrganization.getDescription()).isEqualTo(originalOrganization.getDescription());
 		assertThat(newOrganization.getPrimaryContactEmail()).isEqualTo(originalOrganization.getPrimaryContactEmail());
 		if (nonUpdatedAttributes) {

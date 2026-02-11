@@ -53,8 +53,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "Represents an organization.")
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Indexed
-public class Organization extends AbstractHasModified
-    implements Copyable<Organization>, ValidateCrud<Organization> {
+public class Organization extends AbstractHasModified implements Copyable<Organization>, ValidateCrud<Organization> {
 
   /** The name. */
   @Column(nullable = false)
@@ -87,6 +86,14 @@ public class Organization extends AbstractHasModified
   /** The affiliate flag. */
   @Column(nullable = false)
   private boolean affiliate;
+
+    /** The affiliate flag. */
+    @Column(nullable = false, length = 4)
+    private String countryCode;
+
+    /** The immutable crowdId id representing the organization. */
+    @Column(nullable = false, length = 255, updatable = false)
+    private String crowdId;
 
   /** The of roles for this project. */
   @Transient
@@ -136,6 +143,8 @@ public class Organization extends AbstractHasModified
     members = other.getMembers();
     roles = other.getRoles();
     affiliate = other.isAffiliate();
+        countryCode = other.getCountryCode();
+        crowdId = other.getCrowdId();
   }
 
   /**
@@ -152,6 +161,8 @@ public class Organization extends AbstractHasModified
     primaryContactEmail = other.getPrimaryContactEmail();
     roles = other.getRoles();
     affiliate = other.isAffiliate();
+        countryCode = other.getCountryCode();
+        crowdId = other.getCrowdId();
   }
 
   /**
@@ -160,8 +171,7 @@ public class Organization extends AbstractHasModified
    * @return the name
    */
   @FullTextField(analyzer = "standard")
-  @GenericField(name = "nameSort", searchable = Searchable.YES, projectable = Projectable.NO,
-      sortable = Sortable.YES)
+    @GenericField(name = "nameSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
   public String getName() {
 
     return name;
@@ -313,6 +323,46 @@ public class Organization extends AbstractHasModified
     this.affiliate = affiliate;
   }
 
+    /**
+     * Returns the description.
+     *
+     * @return the description
+     */
+    public String getCountryCode() {
+
+        return countryCode;
+    }
+
+    /**
+     * Sets the description.
+     *
+     * @param description the description to set
+     */
+    public void setCountryCode(final String countryCode) {
+
+        this.countryCode = countryCode;
+    }
+
+    /**
+     * Returns the description.
+     *
+     * @return the description
+     */
+    public String getCrowdId() {
+
+        return crowdId;
+    }
+
+    /**
+     * Sets the description.
+     *
+     * @param description the description to set
+     */
+    public void setCrowdId(final String crowdId) {
+
+        this.crowdId = crowdId;
+    }
+
   /* see superclass */
   @Override
   public int hashCode() {
@@ -326,6 +376,8 @@ public class Organization extends AbstractHasModified
     result = prime * result + ((primaryContactEmail == null) ? 0 : primaryContactEmail.hashCode());
     result = prime * result + ((roles == null) ? 0 : roles.hashCode());
     result = prime * result + (affiliate ? 1 : 0);
+        result = prime * result + ((countryCode == null) ? 0 : countryCode.hashCode());
+        result = prime * result + ((crowdId == null) ? 0 : crowdId.hashCode());
     return result;
   }
 
@@ -390,6 +442,20 @@ public class Organization extends AbstractHasModified
     if (affiliate != other.affiliate) {
       return false;
     }
+        if (countryCode == null) {
+            if (other.countryCode != null) {
+                return false;
+            }
+        } else if (!countryCode.equals(other.countryCode)) {
+            return false;
+        }
+        if (crowdId == null) {
+            if (other.crowdId != null) {
+                return false;
+            }
+        } else if (!crowdId.equals(other.crowdId)) {
+            return false;
+        }
     return true;
   }
 

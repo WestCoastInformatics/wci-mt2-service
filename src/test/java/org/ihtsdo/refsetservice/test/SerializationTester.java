@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
@@ -74,13 +75,19 @@ public class SerializationTester extends ProxyTester {
         }
         if (obj.equals(obj3)) {
             return true;
-        } else {
-            LOG.info("obj and obj3 are not equal");
-            LOG.info("obj = {}", obj);
-            LOG.debug("json = {}", json);
-            LOG.info("obj3 = {}", obj3);
-            return false;
         }
+        final String json3 = OBJECT_MAPPER.writeValueAsString(obj3);
+        final JsonNode tree1 = OBJECT_MAPPER.readTree(json);
+        final JsonNode tree3 = OBJECT_MAPPER.readTree(json3);
+        if (tree1.equals(tree3)) {
+            return true;
+        }
+        LOG.info("obj and obj3 are not equal and JSON round-trip differs");
+        LOG.info("obj = {}", obj);
+        LOG.debug("json = {}", json);
+        LOG.info("obj3 = {}", obj3);
+        LOG.debug("json3 = {}", json3);
+        return false;
     }
 
 }

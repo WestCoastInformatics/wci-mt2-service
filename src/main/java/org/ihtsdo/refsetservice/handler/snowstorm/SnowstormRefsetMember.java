@@ -1437,7 +1437,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
      * @return the member sctids
      * @throws Exception the exception
      */
-    public static String getMemberSctids(final String refsetId, final int limit, final String searchAfter, final String branchPath) throws Exception {
+    public static String getMemberSctIds(final String refsetId, final int limit, final String searchAfter, final String branchPath) throws Exception {
 
         final String pagingParams = "&limit=" + limit + "&searchAfter=" + searchAfter;
 

@@ -25,6 +25,7 @@ import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.TypeKeyValue;
+import org.ihtsdo.refsetservice.model.enums.VersionStatus;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
@@ -37,6 +38,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 
+// TODO: Auto-generated Javadoc
 /**
  * Integration tests for MetadataController.
  */
@@ -207,18 +209,19 @@ public class GetUnitTestUtilities {
 
 	}
 
+
 	/**
-	 * Returns the refset from refset id and version.
+	 * Gets the refset from refset id and version.
 	 *
 	 * @param refsetId the refset id
-	 * @param version  the version
+	 * @param versionDate the version date
 	 * @return the refset from refset id and version
 	 */
-	public Refset getRefsetFromRefsetIdAndVersion(final String refsetId, final String version) {
+	public Refset getRefsetFromRefsetIdAndVersion(final String refsetId, final String versionDate) {
 
 		try {
 
-			final String url = baseUrl + "/" + refsetId + "/versionDate/" + version;
+			final String url = baseUrl + "/" + refsetId + "/versionDate/" + versionDate;
 			LOG.info("Get Refset Testing url - " + url);
 
 			final MvcResult result = mvc
@@ -239,6 +242,39 @@ public class GetUnitTestUtilities {
 		}
 
 	}
+	
+    /**
+     * Gets the refset from refset id and version.
+     *
+     * @param refsetId the refset id
+     * @param versionStatus the version status
+     * @return the refset from refset id and version
+     */
+    public Refset getRefsetFromRefsetIdAndVersion(final String refsetId, final VersionStatus versionStatus) {
+
+        try {
+
+            final String url = baseUrl + "/" + refsetId + "/versionDate/" + versionStatus.getLabel();
+            LOG.info("Get Refset Testing url - " + url);
+
+            final MvcResult result = mvc
+                    .perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+            LOG.info(" content = " + content);
+
+            final Refset refset = ThreadLocalMapper.get().readValue(content, Refset.class);
+
+            assertThat(refset).isNotNull();
+            return refset;
+        } catch (final Exception e) {
+
+            e.printStackTrace();
+
+            return null;
+        }
+
+    }
 
 	/**
 	 * Returns the refset from internal id.

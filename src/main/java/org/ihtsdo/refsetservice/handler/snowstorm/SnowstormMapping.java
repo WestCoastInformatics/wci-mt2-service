@@ -46,6 +46,7 @@ import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.model.enums.VersionStatus;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
@@ -163,7 +164,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
             final JsonNode additionalFields = mapSetNode.get("additionalFields");
 
-            mapSet.setVersionStatus("Published");
+            mapSet.setVersionStatus(VersionStatus.PUBLISHED);
             mapSet.setVersion("2025-12-15");
             mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse("2025-12-15"));
             mapSet.setFromTerminology("SNOMEDCT-NO");
@@ -245,7 +246,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
             final JsonNode additionalFields = mapSetNode.get("additionalFields");
 
-            mapSet.setVersionStatus("Published");
+            mapSet.setVersionStatus(VersionStatus.PUBLISHED);
             mapSet.setVersion("2025-12-15");
             mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse("2025-12-15"));
             mapSet.setFromTerminology("SNOMEDCT-NO");
@@ -1326,7 +1327,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         } else {
             mapEntryJson.append("\"memberId\": \"").append(UUID.randomUUID().toString()).append("\",");
         }
-        mapEntryJson.append("\"active\": ").append(mapEntry.getActive()).append(",");
+        mapEntryJson.append("\"active\": ").append(mapEntry.isActive()).append(",");
         // Module id for created or updated map entries will always match the map
         // project
         mapEntryJson.append("\"moduleId\": \"").append(mapProject.getModuleId()).append("\",");

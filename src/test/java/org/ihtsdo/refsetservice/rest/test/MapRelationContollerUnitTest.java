@@ -129,7 +129,7 @@ public class MapRelationContollerUnitTest extends BaseTest {
 
         final MapRelation mapRelation2 = new MapRelation();
         mapRelation2.setTerminologyId("term");
-        mapRelation.setName(notUniqueName);
+        mapRelation2.setName(notUniqueName);
         mapRelation2.setAbbreviation("abbreviation 1");
         mapRelation2.setAllowableForNullTarget(false);
         mapRelation2.setComputed(false);
