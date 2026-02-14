@@ -16,21 +16,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
 /**
- * The Class ThreadLocalMapper.
+ * Supply object mapper per thread.
  */
-public class ThreadLocalMapper {
+public final class ThreadLocalMapper {
 
     /** The Constant mapper. */
     private static final ThreadLocal<ObjectMapper> MAPPER = ThreadLocal.withInitial(ThreadLocalMapper::newMapper);
 
-    
     /**
      * Instantiates a new thread local mapper.
      */
     private ThreadLocalMapper() {
         // n/a
     }
-    
+
     /**
      * New mapper.
      *

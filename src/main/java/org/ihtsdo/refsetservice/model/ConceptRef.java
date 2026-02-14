@@ -123,7 +123,7 @@ public class ConceptRef extends AbstractHasModified implements HasName, Terminol
     @Override
     public void patchFrom(final ConceptRef other) {
 
-        super.patchFrom(other);
+        // super.patchFrom(other); N/A
         if (other.getCode() != null) {
             code = other.getCode();
         }

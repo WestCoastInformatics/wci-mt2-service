@@ -46,6 +46,7 @@ import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.model.enums.VersionStatus;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
@@ -92,6 +93,47 @@ public class SnowstormMapping extends SnowstormAbstract {
     private static ThreadLocal<Client> getClients() {
 
         return clients;
+    }
+
+    /**
+     * Derives branch/version from branch path parameter when map_sets not yet populated.
+     * Branch format: MAIN/SNOMEDCT-NO/2025-12-15/WCITEST.
+     *
+     * @param mapSet the map set
+     * @param branch the branch path
+     */
+    private static void deriveBranchAndVersionFromBranch(final MapSet mapSet, final String branch) {
+
+        mapSet.setBranchPath(branch);
+        final String[] parts = branch.split("/");
+        if (parts.length >= 2) {
+            mapSet.setFromTerminology(parts[1]);
+            mapSet.setFromBranchPath(parts.length >= 3 ? parts[0] + "/" + parts[1] + "/" + parts[2] : branch);
+        }
+        if (parts.length >= 3) {
+            mapSet.setFromVersion(parts[2]);
+        }
+        if (StringUtils.isBlank(mapSet.getFromTerminology())) {
+            mapSet.setFromTerminology("SNOMEDCT-NO");
+        }
+        if (StringUtils.isBlank(mapSet.getFromVersion())) {
+            mapSet.setFromVersion("2025-12-15");
+        }
+        if (StringUtils.isBlank(mapSet.getFromBranchPath())) {
+            mapSet.setFromBranchPath("MAIN/SNOMEDCT-NO/2025-12-15");
+        }
+        mapSet.setToTerminology("TBD");
+        mapSet.setToVersion("TBD");
+        mapSet.setToBranchPath("TBD");
+        if ("447562003".equals(mapSet.getRefSetCode())) {
+            mapSet.setToTerminology("ICD-10-NO");
+            mapSet.setToVersion("20240723");
+            mapSet.setToBranchPath("ICD10NO/20240723");
+        } else if ("68101000202102".equals(mapSet.getRefSetCode())) {
+            mapSet.setToTerminology("ICPC2NO");
+            mapSet.setToVersion("TBD");
+            mapSet.setToBranchPath("ICPC2NO/TBD");
+        }
     }
 
     /**
@@ -158,27 +200,11 @@ public class SnowstormMapping extends SnowstormAbstract {
                 mapSet.setRefSetName(mapSetNode.get("fsn").get("term").asText());
             }
 
-            // TODO - unhack this. Some will need to be pulled from database rather
-            // than snowstorm
-
             final JsonNode additionalFields = mapSetNode.get("additionalFields");
-
-            mapSet.setVersionStatus("Published");
-            mapSet.setVersion("2025-12-15");
-            mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse("2025-12-15"));
-            mapSet.setFromTerminology("SNOMEDCT-NO");
-            mapSet.setFromVersion("2025-12-15");
-            mapSet.setToTerminology("TBD");
-            mapSet.setBranchPath("MAIN/SNOMEDCT-NO/2025-12-15/WCITEST");
-            // TEMPORARY//
-            if ("447562003".equals(mapSet.getRefSetCode())) {
-                mapSet.setToTerminology("ICD-10-NO");
-                mapSet.setToVersion("20240723");
-            } else if ("68101000202102".equals(mapSet.getRefSetCode())) {
-                mapSet.setToTerminology("ICPC2NO");
-                mapSet.setToVersion("TBD");
-            }
-            // TEMPORARY//
+            deriveBranchAndVersionFromBranch(mapSet, branch);
+            mapSet.setVersionStatus(VersionStatus.PUBLISHED);
+            mapSet.setVersion(mapSet.getFromVersion());
+            mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse(mapSet.getFromVersion()));
 
             mapSets.add(mapSet);
         }
@@ -240,27 +266,11 @@ public class SnowstormMapping extends SnowstormAbstract {
                 mapSet.setRefSetName(mapSetNode.get("fsn").get("term").asText());
             }
 
-            // TODO - unhack this. Some will need to be pulled from database rather
-            // than snowstorm
-
             final JsonNode additionalFields = mapSetNode.get("additionalFields");
-
-            mapSet.setVersionStatus("Published");
-            mapSet.setVersion("2025-12-15");
-            mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse("2025-12-15"));
-            mapSet.setFromTerminology("SNOMEDCT-NO");
-            mapSet.setFromVersion("2025-12-15");
-            mapSet.setToTerminology("TBD");
-            mapSet.setBranchPath("MAIN/SNOMEDCT-NO/2025-12-15/WCITEST");
-            // TEMPORARY//
-            if ("447562003".equals(mapSet.getRefSetCode())) {
-                mapSet.setToTerminology("ICD-10-NO");
-                mapSet.setToVersion("20240723");
-            } else if ("68101000202102".equals(mapSet.getRefSetCode())) {
-                mapSet.setToTerminology("ICPC2NO");
-                mapSet.setToVersion("TBD");
-            }
-            // TEMPORARY//
+            deriveBranchAndVersionFromBranch(mapSet, branch);
+            mapSet.setVersionStatus(VersionStatus.PUBLISHED);
+            mapSet.setVersion(mapSet.getFromVersion());
+            mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse(mapSet.getFromVersion()));
 
             return mapSet;
         }
@@ -1326,7 +1336,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         } else {
             mapEntryJson.append("\"memberId\": \"").append(UUID.randomUUID().toString()).append("\",");
         }
-        mapEntryJson.append("\"active\": ").append(mapEntry.getActive()).append(",");
+        mapEntryJson.append("\"active\": ").append(mapEntry.isActive()).append(",");
         // Module id for created or updated map entries will always match the map
         // project
         mapEntryJson.append("\"moduleId\": \"").append(mapProject.getModuleId()).append("\",");

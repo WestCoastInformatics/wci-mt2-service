@@ -60,7 +60,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class TeamControllerIntegrationTest extends BaseTest {
+public class TeamControllerIntegrationTest extends AbstractRefsetTests {
 
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(TeamControllerIntegrationTest.class);
@@ -146,34 +146,29 @@ public class TeamControllerIntegrationTest extends BaseTest {
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
-            organization = OrganizationService.createOrganization(service, testUser, tempOrganization);
+            organization = OrganizationService.createAffiliateOrganization(service, testUser, tempOrganization);
 
             service.commit();
 
-        } catch (final Exception e) {
+            assertThat(organization).isNotNull();
+            assertThat(organization.getId()).isNotNull();
+    
+            final Project tempProject = new Project();
+            tempProject.setId(null);
+            tempProject.setName("Unit Test Create");
+            tempProject.setActive(true);
+            tempProject.setDescription("Generated from unit test");
+            tempProject.setPrivateProject(false);
+            tempProject.setPrimaryContactEmail("project@test.com");
+            tempProject.setEdition(edition);
+            tempProject.getTeams().add(UUID.randomUUID().toString());
+            tempProject.getTeams().add(UUID.randomUUID().toString());
+            tempProject.getRoles().add("author");
+            tempProject.getRoles().add("reviewer");
 
-            LOG.error("ERROR {}", e.getMessage(), e);
-            assertTrue(false);
-        }
-
-        assertThat(organization).isNotNull();
-        assertThat(organization.getId()).isNotNull();
-
-        final Project tempProject = new Project();
-        tempProject.setId(null);
-        tempProject.setName("Unit Test Create");
-        tempProject.setActive(true);
-        tempProject.setDescription("Generated from unit test");
-        tempProject.setPrivateProject(false);
-        tempProject.setPrimaryContactEmail("project@test.com");
-        tempProject.setEdition(edition);
-        tempProject.getTeams().add(UUID.randomUUID().toString());
-        tempProject.getTeams().add(UUID.randomUUID().toString());
-        tempProject.getRoles().add("author");
-        tempProject.getRoles().add("reviewer");
-
-        try {
-            project = ProjectService.addProject(testUser, tempProject);
+            project = ProjectService.addProject(service, testUser, tempProject);
+            
+            service.commit();
         } catch (final Exception e) {
             LOG.error("ERROR {}", e.getMessage(), e);
             assertTrue(false);
@@ -526,7 +521,7 @@ public class TeamControllerIntegrationTest extends BaseTest {
         LOG.info("new project record = {}", newTeam);
         assertThat(newTeam).isNotNull();
         assertThat(newTeam.getName()).isEqualTo(originalTeam.getName());
-        assertThat(newTeam.getActive()).isEqualTo(originalTeam.getActive());
+        assertThat(newTeam.isActive()).isEqualTo(originalTeam.isActive());
         assertThat(newTeam.getDescription()).isEqualTo(originalTeam.getDescription());
         assertThat(compareOrganizations(newTeam.getOrganization(), originalTeam.getOrganization(), true)).isTrue();
         assertThat(newTeam.getPrimaryContactEmail()).isEqualTo(originalTeam.getPrimaryContactEmail());
@@ -550,7 +545,7 @@ public class TeamControllerIntegrationTest extends BaseTest {
         LOG.info("new org record = {}", newOrganization);
         assertThat(newOrganization).isNotNull();
         assertThat(newOrganization.getName()).isEqualTo(originalOrganization.getName());
-        assertThat(newOrganization.getActive()).isEqualTo(originalOrganization.getActive());
+        assertThat(newOrganization.isActive()).isEqualTo(originalOrganization.isActive());
         assertThat(newOrganization.getDescription()).isEqualTo(originalOrganization.getDescription());
         assertThat(newOrganization.getPrimaryContactEmail()).isEqualTo(originalOrganization.getPrimaryContactEmail());
         if (nonUpdatedAttributes) {

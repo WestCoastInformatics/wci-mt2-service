@@ -18,15 +18,16 @@ import java.util.Set;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
 import org.ihtsdo.refsetservice.model.DiscussionPost;
 import org.ihtsdo.refsetservice.model.DiscussionThread;
-import org.ihtsdo.refsetservice.model.DiscussionType;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.User;
-import org.ihtsdo.refsetservice.model.VersionStatus;
+import org.ihtsdo.refsetservice.model.enums.DiscussionType;
+import org.ihtsdo.refsetservice.model.enums.RefsetType;
+import org.ihtsdo.refsetservice.model.enums.VersionStatus;
+import org.ihtsdo.refsetservice.model.enums.WorkflowStatus;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +80,7 @@ public class SyncTestingInitializer {
         // Support one-off usages for specific testing cases i.e. adding an intensional refset
         try (TerminologyService service = new TerminologyService()) {
             initializeSync(service);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             LOG.error("Failed starting the testing initialization from controller other than sync with errorMessage: " + e.getMessage());
         }
     }
@@ -110,7 +111,7 @@ public class SyncTestingInitializer {
                 new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
             userResponderUser = utilities.getUser(service, "feedbackResponder", "feedbackResponder", "feedbackResponder@westcoastinformatics.com",
                 new HashSet<String>(Arrays.asList(User.ROLE_AUTHOR)));
-        } catch (Exception e) {
+        } catch (final Exception e) {
 
             e.printStackTrace();
         }
@@ -119,7 +120,7 @@ public class SyncTestingInitializer {
 
     /**
      * Creates the testing feedback refset. Called when adding another instance of testing-feedback refset.
-     * 
+     *
      * @return the refset
      * @throws Exception the exception
      */
@@ -196,7 +197,7 @@ public class SyncTestingInitializer {
         if (latestVersion == 0) {
 
             newTestingRefset = dbHandler.addWCIRefset(service, SecurityService.getUserFromSession(), testingRefsetName + "1", testingRefsetId + "01",
-                getDeveloperTestingEdition(service).getModules().iterator().next(), new Date(), "", VersionStatus.PUBLISHED, WorkflowService.PUBLISHED,
+                getDeveloperTestingEdition(service).getModules(), new Date(), "", VersionStatus.PUBLISHED, WorkflowStatus.PUBLISHED,
                 getDeveloperTestingProject(service));
         } else {
 
@@ -205,8 +206,8 @@ public class SyncTestingInitializer {
             final String onesValue = Integer.toString(latestVersion % 10);
 
             newTestingRefset = dbHandler.addWCIRefset(service, SecurityService.getUserFromSession(), testingRefsetName + latestVersion,
-                testingRefsetId + tensValue + onesValue, getDeveloperTestingEdition(service).getModules().iterator().next(), new Date(), "",
-                VersionStatus.PUBLISHED, WorkflowService.PUBLISHED, getDeveloperTestingProject(service));
+                testingRefsetId + tensValue + onesValue, getDeveloperTestingEdition(service).getModules(), new Date(), "", VersionStatus.PUBLISHED,
+                WorkflowStatus.PUBLISHED, getDeveloperTestingProject(service));
         }
 
         LOG.info("Creating new testing refset: newTestingRefset: " + newTestingRefset.getRefsetId() + " - " + newTestingRefset.getName());
@@ -231,7 +232,7 @@ public class SyncTestingInitializer {
         final DefinitionClause persistedClause = dbHandler.addDefinitionClause(service, clause);
 
         // Set Intensional Refset Infromation
-        refset.setType(Refset.INTENSIONAL);
+        refset.setType(RefsetType.INTENSIONAL);
         refset.getDefinitionClauses().add(persistedClause);
 
         dbHandler.updateRefset(service, refset);

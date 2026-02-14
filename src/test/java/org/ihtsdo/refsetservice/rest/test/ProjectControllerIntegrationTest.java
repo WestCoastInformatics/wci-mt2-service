@@ -483,7 +483,7 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         LOG.info("new project record = {}", newProject);
         assertThat(newProject).isNotNull();
         assertThat(newProject.getName()).isEqualTo(originalProject.getName());
-        assertThat(newProject.getActive()).isEqualTo(originalProject.getActive());
+        assertThat(newProject.isActive()).isEqualTo(originalProject.isActive());
         assertThat(newProject.getDescription()).isEqualTo(originalProject.getDescription());
         assertThat(compareEditions(newProject.getEdition(), originalProject.getEdition(), true)).isTrue();
         assertThat(newProject.isPrivateProject()).isEqualTo(originalProject.isPrivateProject());
@@ -513,7 +513,7 @@ public class ProjectControllerIntegrationTest extends BaseTest {
         LOG.info("new org record = {}", newEdition);
         assertThat(newEdition).isNotNull();
         assertThat(newEdition.getName()).isEqualTo(originalEdition.getName());
-        assertThat(newEdition.getActive()).isEqualTo(originalEdition.getActive());
+        assertThat(newEdition.isActive()).isEqualTo(originalEdition.isActive());
         assertThat(newEdition.getOrganization()).isEqualTo(originalEdition.getOrganization());
         assertThat(newEdition.getNamespace()).isEqualTo(originalEdition.getNamespace());
         assertThat(newEdition.getShortName()).isEqualTo(originalEdition.getShortName());

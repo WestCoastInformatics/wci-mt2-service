@@ -29,6 +29,7 @@ public class SyncPersistenceMetadata {
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(SyncPersistenceMetadata.class);
 
+    // TODO: Replace all formatters with DateFormat Class-based instantiations
     /** The Constant ISO_DATE_TIME_FORMAT. */
     public static final String ISO_DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 

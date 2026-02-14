@@ -75,25 +75,13 @@ public abstract class AbstractHasModified extends AbstractHasId implements HasMo
             modified = other.getModified();
             modifiedBy = other.getModifiedBy();
         }
-        active = other.getActive();
+    active = other.isActive();
     }
 
-    /**
-     * Patch from.
-     *
-     * @param other the other
-     */
-    public void patchFrom(final HasModified other) {
-
-        // Only these field can be patched
-        if (other.getActive() != null) {
-            active = other.getActive();
-        }
-    }
-
-    /* see superclass */
-    @Override
-    public Boolean getActive() {
+  /* see superclass */
+  @Override
+  @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+  public boolean isActive() {
 
         return active;
     }

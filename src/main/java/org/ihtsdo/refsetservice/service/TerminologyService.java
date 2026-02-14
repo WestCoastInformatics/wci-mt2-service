@@ -38,6 +38,7 @@ import org.hibernate.search.mapper.orm.Search;
 import org.hibernate.search.mapper.orm.schema.management.SearchSchemaManager;
 import org.hibernate.search.mapper.orm.session.SearchSession;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.hibernate.search.util.common.SearchException;
 import org.ihtsdo.refsetservice.handler.SearchHandler;
 import org.ihtsdo.refsetservice.model.HasId;
 import org.ihtsdo.refsetservice.model.HasModified;
@@ -1472,6 +1473,9 @@ public class TerminologyService implements RootService {
 				} catch (final IllegalArgumentException e) {
 					LOG.warn("      NOT AN ENTITY in this project");
 					// throw new Exception (e);
+				} catch (final SearchException e) {
+					LOG.warn("      Type not in search mapping, skipping: " + key, e);
+					objectsToReindex.remove(key);
 				}
 
 				// if using elasticsearch the max result window size must be

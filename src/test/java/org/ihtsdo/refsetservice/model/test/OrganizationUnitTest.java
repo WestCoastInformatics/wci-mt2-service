@@ -98,6 +98,8 @@ public class OrganizationUnitTest extends BaseTest {
         tester.exclude("members");
         tester.include("iconUri");
         tester.include("affiliate");
+        tester.include("countryCode");
+        tester.include("crowdId");
         tester.exclude("roles");
 
         assertTrue(tester.testIdentityFieldEquals());

@@ -106,17 +106,17 @@ public class MapProjectService extends BaseService {
      */
     public static MapProject getMapProject(final TerminologyService service, final String mapProjectId, final boolean includeMembers) throws Exception {
 
-        
+
     	final Organization organization = new Organization();
         organization.setActive(true);
         organization.setAffiliate(false);
         organization.setName("Norwegian Directorate of Health");
         organization.setDescription("Norwegian Directorate of Health"); //Norwegian NRC
-        
+
     	// WMT-192 - use a dummy lookup for now.
         // Remove if(true) clause once MapProjects are stored in the database
         if(true) {
-        
+
         final MapProject mapProject = new MapProject();
 
         mapProject.setRefSetId("447562003");
@@ -128,8 +128,8 @@ public class MapProjectService extends BaseService {
         mapProject.setDestinationTerminology("ICD-10-NO");
         mapProject.setDestinationTerminologyVersion("20240723");
         mapProject.setName("SNOMEDCT-NO TO ICD-10-NO");
-        
-        
+
+
         // TODO: get from find mapProject
         final Edition edition = new Edition();
         edition.setActive(true);
@@ -177,10 +177,10 @@ public class MapProjectService extends BaseService {
 
         mapProject.setRuleBased(false);
 
-        return mapProject;  
+        return mapProject;
         }
-        
-        
+
+
         final MapProject mapProject = service.findSingle("id: " + mapProjectId + " AND active:true", MapProject.class, null);
 
         if (mapProject == null) {

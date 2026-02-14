@@ -11,6 +11,7 @@
 package org.ihtsdo.refsetservice.rest.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
@@ -21,13 +22,14 @@ import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RefsetMemberComparison;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
 import org.ihtsdo.refsetservice.model.UpgradeReplacementConcept;
+import org.ihtsdo.refsetservice.model.enums.VersionStatus;
+import org.ihtsdo.refsetservice.model.enums.WorkflowAction;
 import org.ihtsdo.refsetservice.rest.test.util.EditUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.ExportUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.GetUnitTestUtilities;
 import org.ihtsdo.refsetservice.rest.test.util.WorkflowUnitTestUtilities;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
-import org.ihtsdo.refsetservice.terminologyservice.WorkflowService;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -141,16 +143,16 @@ public class RefsetEditingIntegrationTests extends AbstractRefsetTests {
      * refsetExistingConcept.put("narrative", "Test."); refsetExistingConcept.put("type", "EXTENSIONAL"); refsetExistingConcept.put("privateRefset", "false");
      * refsetExistingConcept.put("localSet", "false"); refsetExistingConcept.put("refsetDeleteStatus", "deleted"); // DO NOT LEAVE THIS UNCOMMENTED - for one
      * test we will try to remove a // member that has already been published // refsetExistingConcept.put("additionalMemberIdsToRemove", // "734147008");
-     * 
+     *
      * // prepare the call to create refset from an existing concept final ObjectNode refsetExistingConceptBody = new ObjectMapper().createObjectNode()
      * .put("refsetId", refsetExistingConcept.get("refsetId")) .put("name", refsetExistingConcept.get("name")) .put("parentConceptId",
      * refsetExistingConcept.get("parentConceptId")) .put("moduleId", refsetExistingConcept.get("moduleId")) .put("editionId",
      * refsetExistingConcept.get("editionId")) .put("projectId", refsetExistingConcept.get("projectId")) .put("narrative",
      * refsetExistingConcept.get("narrative")) .put("type", refsetExistingConcept.get("type")) .put("privateRefset",
      * Boolean.parseBoolean(refsetExistingConcept.get("privateRefset"))) .put("localSet", Boolean.parseBoolean(refsetExistingConcept.get("localSet")));
-     * 
+     *
      * refsetExistingConcept.put("body", refsetExistingConceptBody.toString());
-     * 
+     *
      * // TODO: Add execution }
      *
      * @throws Exception the exception
@@ -218,8 +220,7 @@ public class RefsetEditingIntegrationTests extends AbstractRefsetTests {
      * @throws Exception the exception
      */
     // @Test
-    // TODO: Make it based on refset in wci project. Need to update this including
-    // defining of metadata
+    // TODO: Make it based on refset in wci project. Need to update this including defining of metadata
     public void testCreateNewVersionWithChangesFromPublished() throws Exception {
 
         // ADD NEW VERSION
@@ -235,16 +236,17 @@ public class RefsetEditingIntegrationTests extends AbstractRefsetTests {
             final Refset refset = service.get(newRefsetInternalId, Refset.class);
             assertThat(refset).isNotNull();
             assertThat(refset.getRefsetId()).isEqualTo(MAIN_NRC_TESTING_REFSET_ID);
-            assertThat(refset.getVersionStatus()).isEqualTo(Refset.IN_DEVELOPMENT);
+
+            assertEquals(refset.getVersionStatus(), VersionStatus.IN_DEVELOPMENT);
             assertThat(refset.getVersionDate()).isNull();
             assertThat(refset.isLatestPublishedVersion()).isTrue();
             assertThat(refset.getTags().size()).isLessThanOrEqualTo(1);
 
-            modifyData.put("workflowStatus", refset.getWorkflowStatus());
+            modifyData.put("workflowStatus", refset.getWorkflowStatus().toString());
             modifyData.put("versionNotes", refset.getVersionNotes());
             modifyData.put("narrative", refset.getNarrative());
             modifyData.put("privateRefset", Boolean.toString(refset.isPrivateRefset()));
-            modifyData.put("type", refset.getType());
+            modifyData.put("type", refset.getType().toString());
             modifyData.put("externalUrl", refset.getExternalUrl());
             final Set<String> tags = refset.getTags();
 
@@ -305,24 +307,21 @@ public class RefsetEditingIntegrationTests extends AbstractRefsetTests {
     public void testUpgradeRefset() throws Exception {
 
         // CHOOSE ONE: 1. ADD NEW VERSION AND MOVE TO READY FOR EDIT
-        // final String newRefsetInternalId =
-        // getEditUtil().createNewRefsetVersion(refsetWithInactiveConceptAsActiveMemberInternalId);
+        // final String newRefsetInternalId = getEditUtil().createNewRefsetVersion(refsetWithInactiveConceptAsActiveMemberInternalId);
         Refset refset = getGetUtil().getRefsetFromInternalId(getRefsetWithInactiveConceptAsActiveMemberInternalId());
-        refset = getWorkflowUtil().updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowService.EDIT, "");
-        refset = getWorkflowUtil().updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowService.FINISH_EDIT, "");
+        refset = getWorkflowUtil().updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowAction.EDIT, "");
+        refset = getWorkflowUtil().updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowAction.FINISH_EDIT, "");
         final String newRefsetInternalId = refset.getId();
 
         // CHOOSE ONE: 2. GET PUBLISHED VERSION TO UPGRADE DIRECTLY
-        // Refset refset =
-        // getGetUtil().getRefsetFromInternalId(refsetWithInactiveConceptAsActiveMemberInternalId);
+        // Refset refset = getGetUtil().getRefsetFromInternalId(refsetWithInactiveConceptAsActiveMemberInternalId);
 
         // START THE UPGRADE PROCESS
         getEditUtil().compileUpgradeData(refset.getId());
         getEditUtil().resolveBackgroundOperation(refset.getId());
 
         // ONLY UNCOMMENT IF YOU CHOOSE OPTION 2 ABOVE
-        // refset = getGetUtil().getRefsetFromRefsetIdAndVersion(refset.getRefsetId(),
-        // Refset.IN_DEVELOPMENT);
+        // refset = getGetUtil().getRefsetFromRefsetIdAndVersion(refset.getRefsetId(), Refset.IN_DEVELOPMENT);
         // final String newRefsetInternalId = refset.getId();
 
         // GET THE UPGRADE DATA
@@ -356,8 +355,7 @@ public class RefsetEditingIntegrationTests extends AbstractRefsetTests {
         // for the the first inactive concept add the manual replacement
         getEditUtil().updateUpgradeConcept(newRefsetInternalId, RefsetMemberService.NEW_MANUAL_REPLACEMENT, inactiveConceptId, null, manualReplacementConcept);
 
-        // for the the first inactive concept remove the manual replacement before it is
-        // added as a member
+        // for the the first inactive concept remove the manual replacement before it is added as a member
         getEditUtil().updateUpgradeConcept(newRefsetInternalId, RefsetMemberService.REMOVED_MANUAL_REPLACEMENT, inactiveConceptId, replacementConceptId, null);
 
         // for the the first inactive concept add the manual replacement again
@@ -366,12 +364,11 @@ public class RefsetEditingIntegrationTests extends AbstractRefsetTests {
         // for the the first inactive concept add the manual replacement as a member
         getEditUtil().updateUpgradeConcept(newRefsetInternalId, RefsetMemberService.REPLACEMENT_ADDED, inactiveConceptId, replacementConceptId, null);
 
-        // for the the first inactive concept remove the manual replacement again after
-        // it is added as a member
+        // for the the first inactive concept remove the manual replacement again after it is added as a member
         getEditUtil().updateUpgradeConcept(newRefsetInternalId, RefsetMemberService.REMOVED_MANUAL_REPLACEMENT, inactiveConceptId, replacementConceptId, null);
 
         // Finish the upgrade
-        refset = getWorkflowUtil().updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowService.CANCEL_UPGRADE, "");
+        refset = getWorkflowUtil().updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowAction.CANCEL_UPGRADE, "");
 
         // DELETE NEW VERSION
         getEditUtil().deleteVersionedRefset(newRefsetInternalId);
@@ -394,8 +391,8 @@ public class RefsetEditingIntegrationTests extends AbstractRefsetTests {
     public void testUpgradeRefsetBulkActions() throws Exception {
 
         Refset refset = getGetUtil().getRefsetFromInternalId(getRefsetWithInactiveConceptAsActiveMemberInternalId());
-        refset = getWorkflowUtil().updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowService.EDIT, "");
-        refset = getWorkflowUtil().updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowService.FINISH_EDIT, "");
+        refset = getWorkflowUtil().updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowAction.EDIT, "");
+        refset = getWorkflowUtil().updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowAction.FINISH_EDIT, "");
         final String newRefsetInternalId = refset.getId();
 
         // START THE UPGRADE PROCESS
@@ -424,7 +421,7 @@ public class RefsetEditingIntegrationTests extends AbstractRefsetTests {
         getEditUtil().addAllUpgradeReplacementConcepts(newRefsetInternalId);
 
         // Finish the upgrade
-        refset = getWorkflowUtil().updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowService.CANCEL_UPGRADE, "");
+        refset = getWorkflowUtil().updateWorkflow(refset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowAction.CANCEL_UPGRADE, "");
 
         // DELETE NEW VERSION
         getEditUtil().deleteVersionedRefset(newRefsetInternalId);
@@ -448,7 +445,7 @@ public class RefsetEditingIntegrationTests extends AbstractRefsetTests {
 
         // ADD NEW VERSION AND MOVE TO READY FOR EDIT
         Refset activeRefset = getGetUtil().getRefsetFromInternalId(getMainNrcTestingRefsetInternalId());
-        activeRefset = getWorkflowUtil().updateWorkflow(activeRefset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowService.EDIT, "");
+        activeRefset = getWorkflowUtil().updateWorkflow(activeRefset, WorkflowUnitTestUtilities.AUTHOR_USER, WorkflowAction.EDIT, "");
         final String newActiveRefsetInternalId = activeRefset.getId();
 
         try {
@@ -481,7 +478,6 @@ public class RefsetEditingIntegrationTests extends AbstractRefsetTests {
     // TODO: fill out test
     public void testOtherWaysToAdd() throws Exception {
 
-        // n/a
     }
 
     /**
@@ -493,7 +489,6 @@ public class RefsetEditingIntegrationTests extends AbstractRefsetTests {
     // TODO: fill out test
     public void testAllWaysToRemove() throws Exception {
 
-        // n/a
     }
 
     /**
@@ -505,7 +500,6 @@ public class RefsetEditingIntegrationTests extends AbstractRefsetTests {
     // TODO: fill out test
     public void testAddRemoveInBulk() throws Exception {
 
-        // n/a
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 SNOMED International - All Rights Reserved.
+ * Copyright 2024 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -15,6 +15,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -28,8 +30,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
-import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
-import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -70,18 +70,45 @@ public class CrowdAPIClient extends CrowdClientAbstract {
     /** Get group memberships GET. */
     private static final String GET_MEMBERSHIPS = "/rest/usermanagement/1/group/membership";
 
+    /** The Constant GET_GROUP. */
+    private static final String GET_GROUP = "/rest/usermanagement/1/group?groupname=";
+
     /** Add group POST. */
     private static final String ADD_GROUP = "/rest/usermanagement/1/group";
+
+    /** The Constant GET_APPLICATION_GROUPS. */
+    private static final String GET_APPLICATION_GROUPS = "/rest/usermanagement/1/search?entity-type=group&restriction=name%3D%22" + APP_PREFIX + "*%22";
 
     // MEMBERSHIP
     /** Add a user to a group. */
     private static final String ADD_USER_TO_GROUP = "/rest/usermanagement/1/group/user/direct?groupname=";
 
+    /** Get all users in group. */
+    private static final String GET_USERS_FROM_GROUP = "/rest/usermanagement/1/group/user/direct?groupname=";
+
     /** Remove user from group DELETE. */
     private static final String REMOVE_USER_FROM_GROUP = "/rest/usermanagement/1/user/group/direct";
 
+    /** The Constant GET_RT2_ADMIN_GROUPS. */
+    private static final String GET_RT2_ADMIN_GROUPS = "/rest/usermanagement/1/search?entity-type=group&restriction=name%3D%22" + APP_PREFIX + "all-*%22";
+
     /** The Constant VALID_RULE_PARTS. */
     private static final int VALID_RULE_PARTS = 5;
+
+    /** The Constant SUPER_ADMIN_USERS_RULE_NAME. */
+    private static final String SUPER_ADMIN_USERS_RULE_NAME = APP_PREFIX + "all-all-all-admin";
+
+    /** The Constant SUPER_USER_GROUPNAME_CACHE. */
+    private static final Set<String> SUPER_USER_GROUPNAME_CACHE = new HashSet<>();
+
+    /** The super users cache. */
+    private static final Set<String> SUPER_USERS_CACHE = new HashSet<>();
+
+    /** The super users cache refresh datetime. */
+    private static LocalDateTime SUPER_USERS_CACHE_REFRESH_DATETIME = LocalDateTime.now();
+
+    /** The super users cache expire in seconds. */
+    private static final int SUPER_USERS_CACHE_EXPIRE = 5 * 60;
 
     /**
      * Returns the user from Crowd.
@@ -108,7 +135,8 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         if (response.statusCode() == 200) {
 
             final String jsonString = response.body();
-            final JsonNode root = ThreadLocalMapper.get().readTree(jsonString);
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode root = mapper.readTree(jsonString);
 
             final User user = new User();
             user.setName(root.get("display-name").asText());
@@ -126,107 +154,42 @@ public class CrowdAPIClient extends CrowdClientAbstract {
     }
 
     /**
-     * Add all groups with roles e.g. rt2-no-abc-author. - rt2 is the application - no is the two letter code for the organization (country) - abc is the
-     * acronym of the group name - author is the role (admin, author, reviewer and viewer are the others)
+     * Group exists.
      *
-     * @param organizationName the organization name
-     * @param editionName the edition name
-     * @param projectName the project name
-     * @param projectDescription the project description
-     * @param generateProjectName the generate project name
-     * @param adminOnly to add the all-admin permission for organization administrators
-     * @throws Exception the exception
+     * @param groupName the group name
+     * @return true, if successful
      */
-    public static void addGroup(final String organizationName, final String editionName, final String projectName, final String projectDescription,
-        final boolean generateProjectName, final boolean adminOnly) throws Exception {
+    private static boolean groupExists(final String groupName) {
 
-        LOG.info("Add group {} to organization {} with description of {}", projectName, organizationName, projectDescription);
-
-        if (StringUtils.isBlank(organizationName)) {
-            throw new Exception("Organization name cannot be empty or null. Received organization: " + organizationName);
-        }
-
-        if (StringUtils.isBlank(editionName)) {
-            throw new Exception("Edition name cannot be empty or null. Received edition: " + editionName);
-        }
-
-        if (StringUtils.isEmpty(projectName)) {
-            throw new Exception("Project name cannot be empty or null. Received project: " + projectName);
-        }
-
-        final String description = (!StringUtils.isEmpty(projectDescription)) ? projectDescription.trim() : projectName.trim();
-
-        /*
-         * {"name": "rt2-ownerofinternational-test-all-author", "description": "test crowd client", "type": "GROUP" }
-         */
-        final Set<String> rolesToAdd = new HashSet<>();
-        if (adminOnly) {
-            rolesToAdd.add("admin");
-        } else {
-            rolesToAdd.addAll(ROLES);
-        }
-
-        for (final String role : rolesToAdd) {
-
-            final String groupName =
-                generateProjectName ? CrowdGroupNameAlgorithm.generateCrowdGroupName(organizationName, editionName, projectName, role, false)
-                    : CrowdGroupNameAlgorithm.buildCrowdGroupName(organizationName, editionName, projectName, role);
-
-            LOG.info("CALL CROWD API url:" + getBaseUrl() + ADD_GROUP);
-            final String entity = "{\"name\": \"" + groupName + "\", \"description\": \"" + description + "\", \"type\": \"GROUP\" }";
-
-            LOG.info("CALL CROWD API payload: " + entity);
-            final int statusCode = post(getBaseUrl() + ADD_GROUP, entity);
-
-            // 201 Returned if the group is successfully created.
-            // 400 Returned if the group already exists.
-            // 403 Returned if the application is not allowed to create a new group.
-            if (statusCode == 201) {
-
-                // expected 201 status, error occurred.
-                LOG.info("Added group {}.", groupName);
-
-            } else if (statusCode == 400) {
-
-                LOG.info("Group already exists {}.", groupName);
-
-            } else if (statusCode == 403) {
-
-                LOG.error("The group " + groupName + " could not be created. Not allowed.");
-                throw new Exception("The group " + groupName + " could not be created. Not allowed.");
-
-            } else {
-                LOG.error("The group " + groupName + " could not be created. Received HTTP " + statusCode + " from the API server.");
-                throw new Exception("The group " + groupName + " could not be created. Received HTTP " + statusCode + " from the API server.");
-            }
+        final String crowdUrl = getBaseUrl() + GET_GROUP + groupName;
+        LOG.info("CALL CROWD API url: {}", crowdUrl);
+        try {
+            // get throws an exception if the result is not HTTP 200 OK
+            get(crowdUrl);
+            return true;
+        } catch (Exception e) {
+            return false;
         }
     }
 
     /**
-     * Add admin group for an organization.
+     * Calls Crowd API to create a group with the provided name. Optionally add a description.
      *
-     * @param organizationName the organizationName
+     * @param groupName the group name
      * @param description the description
-     * @return the string
      * @throws Exception the exception
      */
-    public static String addAdminGroup(final String organizationName, final String description) throws Exception {
+    private static void addGroup(final String groupName, final String description) throws Exception {
 
-        LOG.info("Add group {} to organization {} with description of {}", "all", organizationName, description);
-
-        if (StringUtils.isBlank(organizationName)) {
-            throw new Exception("Organization name cannot be empty or null. Received organization: " + organizationName);
+        if (StringUtils.isBlank(groupName)) {
+            throw new Exception("Crowd Group name cannot be empty or null. Received: " + groupName);
         }
 
-        /*
-         * {"name": "rt2-test-all-admin", "description": "admin for organization", "type": "GROUP" }
-         */
-        final String groupName = CrowdGroupNameAlgorithm.generateCrowdGroupName(organizationName, "all", "all", "admin", true);
+        LOG.info("CALL CROWD API url: {}", getBaseUrl() + ADD_GROUP);
+        final String entity =
+            "{\"name\": \"" + groupName + "\", \"description\": \"" + ((description != null) ? description.trim() : "") + "\", \"type\": \"GROUP\" }";
 
-        LOG.info("CALL CROWD API url:" + getBaseUrl() + ADD_GROUP);
-        final String entity = "{\"name\": \"" + groupName + "\", \"description\": \"" + description + "\", \"type\": \"GROUP\" }";
-
-        LOG.info("CALL CROWD API payload: " + entity);
+        LOG.info("CALL CROWD API payload: {}", entity);
         final int statusCode = post(getBaseUrl() + ADD_GROUP, entity);
 
         // 201 Returned if the group is successfully created.
@@ -234,35 +197,25 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         // 403 Returned if the application is not allowed to create a new group.
         if (statusCode == 201) {
 
-            // expected 201 status, error occurred.
-            LOG.info("Added group {}", groupName);
-            return groupName;
+            // Success
+            LOG.info("Added group {}.", groupName);
+        } else if (statusCode == 400) {
+            LOG.info("Group already exists {}.", groupName);
 
-        }
+        } else if (statusCode == 403) {
 
-        if (statusCode == 400) {
-
-            // ignore 400 and continue?
-            LOG.error("The group " + groupName + " already exists");
-            // throw new Exception("The group " + groupName + " already exists");
-            return groupName;
-        }
-
-        if (statusCode == 403) {
-
-            LOG.error("The group " + groupName + " could not be created. Not allowed.");
+            LOG.error("The group {} could not be created. Not allowed.", groupName);
             throw new Exception("The group " + groupName + " could not be created. Not allowed.");
 
+        } else {
+            LOG.error("The group {} could not be created. Received HTTP {} from the API server.", groupName, statusCode);
+            throw new Exception("The group " + groupName + " could not be created. Received HTTP " + statusCode + " from the API server.");
         }
-
-        LOG.error("The group " + groupName + " could not be created. Received HTTP " + statusCode + " from the API server.");
-        throw new Exception("The group " + groupName + " could not be created. Received HTTP " + statusCode + " from the API server.");
-
     }
 
     /**
      * Get URL to a user's avatar.
-     * 
+     *
      * @param username The user's username.
      * @return String - URL for user's avatar.
      * @throws Exception the exception.
@@ -357,7 +310,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
 
     /**
      * Returns the all crowd rule members.
-     * 
+     *
      * As rule-to-users map
      *
      * @return the all crowd rule members
@@ -367,12 +320,26 @@ public class CrowdAPIClient extends CrowdClientAbstract {
 
         LOG.debug("Get all groups' members {}");
 
-        final Map<String, Set<String>> groupMemberMap = new HashMap<>();
         LOG.debug("url: " + getBaseUrl() + GET_MEMBERSHIPS);
 
         final String xmlString = get(getBaseUrl() + GET_MEMBERSHIPS, MediaType.APPLICATION_XML);
 
-        try (final ByteArrayInputStream input = new ByteArrayInputStream(xmlString.toString().getBytes("UTF-8"));) {
+        return processCrowdRuleMembersResponse(xmlString);
+
+    }
+
+    /**
+     * Process crowd rule members response.
+     *
+     * @param xmlString the xml string
+     * @return the map
+     * @throws Exception the exception
+     */
+    private static Map<String, Set<String>> processCrowdRuleMembersResponse(String xmlString) throws Exception {
+
+        final Map<String, Set<String>> groupMemberMap = new HashMap<>();
+
+        try (final ByteArrayInputStream input = new ByteArrayInputStream(xmlString.toString().getBytes(StandardCharsets.UTF_8));) {
 
             // Load the input XML document, parse it and return an instance of the
             // Document class.
@@ -434,13 +401,17 @@ public class CrowdAPIClient extends CrowdClientAbstract {
                 }
             }
 
+            if (!groupMemberMap.containsKey(SUPER_ADMIN_USERS_RULE_NAME)) {
+                throw new Exception("Must contain a super user category");
+            }
+
+            SUPER_USERS_CACHE.addAll(groupMemberMap.get(SUPER_ADMIN_USERS_RULE_NAME));
             return groupMemberMap;
 
         } catch (Exception e) {
             throw new Exception(
                 "The groups could not be retrieved. Received HTTP " + xmlString + " from the API server with error Message--> " + e.getMessage());
         }
-
     }
 
     /**
@@ -508,23 +479,27 @@ public class CrowdAPIClient extends CrowdClientAbstract {
 
     /**
      * Add a user to a group.
-     * 
-     * @param groupname Name of the group from which the user membership will be added.
+     *
+     * @param groupName Name of the group from which the user membership will be added.
      * @param username Name of the user to have their membership added.
      * @throws Exception the exception.
      */
-    public static void addMembership(final String groupname, final String username) throws Exception {
+    public static void addMembership(final String groupName, final String username) throws Exception {
 
-        LOG.info("Add user {} to group {}", username, groupname);
-        if (StringUtils.isBlank(groupname)) {
-            throw new Exception("Group name cannot be empty or null. Received groupname: " + groupname);
+        LOG.info("Add user {} to group {}", username, groupName);
+        if (StringUtils.isBlank(groupName)) {
+            throw new Exception("Group name cannot be empty or null. Received groupname: " + groupName);
         }
         if (StringUtils.isBlank(username)) {
             throw new Exception("User name cannot be empty or null. Received username: " + username);
         }
 
+        if (!groupExists(groupName)) {
+            addGroup(groupName, null);
+        }
+
         final String body = "{ \"name\":\"" + username.trim() + "\" }";
-        final int statusCode = post(getBaseUrl() + ADD_USER_TO_GROUP + groupname.trim(), body);
+        final int statusCode = post(getBaseUrl() + ADD_USER_TO_GROUP + groupName.trim(), body);
 
         // 201 Returned if the user is successfully added as a member of the group.
         // 400 Returned if the user could not be found or groupName is not specified or
@@ -533,41 +508,41 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         // 409 Returned if the user is already a direct member of the group.
         if (statusCode == 201) {
 
-            LOG.info("User {} now is a member of {}.", username, groupname);
+            LOG.info("User {} now is a member of {}.", username, groupName);
 
             final User loggedInUser = SecurityService.getUserFromSession();
 
             // if the user modified is the current user then update their roles
             if (username.equals(loggedInUser.getUserName())) {
 
-                loggedInUser.getRoles().add(groupname.substring("rt2-".length()));
+                loggedInUser.getRoles().add(groupName.substring(APP_PREFIX.length()));
                 SecurityService.setUserInSession(loggedInUser);
             }
 
         } else if (statusCode == 400) {
 
-            throw new Exception("Failed to add " + username.trim() + " to group " + groupname.trim() + ". "
+            throw new Exception("Failed to add " + username.trim() + " to group " + groupName.trim() + ". "
                 + "User could not be found or groupName is not specified or user has no name.");
 
         } else if (statusCode == 404) {
 
-            throw new Exception("Failed to add username " + username.trim() + " to group " + groupname.trim() + ". Group could not be found.");
+            throw new Exception("Failed to add username " + username.trim() + " to group " + groupName.trim() + ". Group could not be found.");
 
         } else if (statusCode == 409) {
 
             // throw new Exception("Failed to add username " + username.trim() + " to group
             // " + groupname.trim() + ". User is already a direct member of the group.");
-            LOG.warn("Failed to add username " + username.trim() + " to group " + groupname.trim() + ". User is already a direct member of the group.");
+            LOG.warn("Failed to add username " + username.trim() + " to group " + groupName.trim() + ". User is already a direct member of the group.");
 
         } else {
             throw new Exception(
-                "Failed to add username " + username.trim() + " to group " + groupname.trim() + ". Received HTTP " + statusCode + " from the API server.");
+                "Failed to add username " + username.trim() + " to group " + groupName.trim() + ". Received HTTP " + statusCode + " from the API server.");
         }
     }
 
     /**
      * Remove user's membership from a group.
-     * 
+     *
      * @param groupname Name of the group from which the user membership will be removed.
      * @param username Name of the user to have their membership removed.
      * @throws Exception the exception
@@ -580,6 +555,10 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         }
         if (StringUtils.isBlank(username)) {
             throw new Exception("User name cannot be empty or null. Received username: " + username);
+        }
+        if (!isRt2GroupName(groupname)) {
+            LOG.info("Group name is not an RT2 group.  Group name: {}", groupname);
+            return;
         }
         final int statusCode = delete(getBaseUrl() + REMOVE_USER_FROM_GROUP + "?groupname=" + groupname.trim() + "&username=" + username.trim());
 
@@ -594,7 +573,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
             // if the user modified is the current user then update their roles
             if (username.equals(loggedInUser.getUserName())) {
 
-                loggedInUser.getRoles().remove(groupname.substring("rt2-".length()));
+                loggedInUser.getRoles().remove(groupname.substring(APP_PREFIX.length()));
                 SecurityService.setUserInSession(loggedInUser);
             }
 
@@ -646,5 +625,120 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         final String name = users.get(0).findValue("name").asText();
         return (StringUtils.isNotBlank(name)) ? getUser(name) : null;
 
+    }
+
+    /**
+     * Returns the users.
+     *
+     * @param groupName the group name
+     * @return the users
+     * @throws Exception the exception
+     */
+    public static Set<String> getUsers(final String groupName) throws Exception {
+
+        if (StringUtils.isBlank(groupName)) {
+
+        }
+        final Set<String> usernames = new HashSet<>();
+        final String jsonString = get(getBaseUrl() + GET_USERS_FROM_GROUP + groupName);
+
+        // 200 OK.
+        // 404 the group name could not be found
+
+        final ObjectMapper mapper = new ObjectMapper();
+        final JsonNode root = mapper.readTree(jsonString);
+        final JsonNode users = root.get("users");
+        if (users != null && !users.isEmpty()) {
+            users.forEach(user -> {
+                final String name = user.findValue("name").asText();
+                usernames.add(name);
+            });
+        }
+
+        return usernames;
+    }
+
+    /**
+     * Find crowd super users (those found in the Crowd Group Id rt2-all-all-all-admin).
+     *
+     *
+     * @return the user
+     * @throws Exception the exception
+     */
+    public static Set<String> getCrowdSuperUsers() throws Exception {
+
+        if (!SUPER_USERS_CACHE.isEmpty() && LocalDateTime.now().isBefore(SUPER_USERS_CACHE_REFRESH_DATETIME)) {
+            return SUPER_USERS_CACHE;
+        }
+
+        LOG.debug("Get RT2 super users");
+        setSuperUserGroups();
+
+        SUPER_USERS_CACHE_REFRESH_DATETIME = LocalDateTime.now().plusSeconds(SUPER_USERS_CACHE_EXPIRE);
+        SUPER_USERS_CACHE.clear();
+
+        for (final String groupName : SUPER_USER_GROUPNAME_CACHE) {
+            SUPER_USERS_CACHE.addAll(getUsers(groupName));
+        }
+
+        return SUPER_USERS_CACHE;
+
+    }
+
+    /**
+     * Sets the super user groups.
+     *
+     * @throws Exception the exception
+     */
+    private static void setSuperUserGroups() throws Exception {
+
+        final Set<String> groupNames = getRt2GroupNames();
+
+        if (groupNames != null && !groupNames.isEmpty()) {
+            SUPER_USER_GROUPNAME_CACHE.clear();
+            SUPER_USER_GROUPNAME_CACHE.addAll(groupNames);
+        }
+
+    }
+
+    /**
+     * Returns the RT2 groups.
+     *
+     * @return the RT2 groups
+     * @throws Exception the exception
+     */
+    private static Set<String> getRt2GroupNames() throws Exception {
+
+        LOG.debug("Get list of RT2 groups");
+
+        final Set<String> groupList = new HashSet<>();
+        final String jsonString = get(getBaseUrl() + GET_RT2_ADMIN_GROUPS);
+
+        final ObjectMapper mapper = new ObjectMapper();
+        final JsonNode root = mapper.readTree(jsonString);
+        final JsonNode groups = root.get("groups");
+        if (groups != null && !groups.isEmpty()) {
+            groups.forEach(groupName -> {
+                final String name = groupName.findValue("name").asText();
+                if (name.startsWith(APP_PREFIX)) {
+                    groupList.add(name);
+                }
+            });
+        }
+        return groupList;
+    }
+
+    /**
+     * Indicates whether or not group name is the case.
+     *
+     * @param groupName the group name
+     * @return <code>true</code> if so, <code>false</code> otherwise
+     * @throws Exception the exception
+     */
+    public static boolean isRt2GroupName(final String groupName) throws Exception {
+        if (StringUtils.isBlank(groupName)) {
+            return false;
+        }
+        return groupName.matches("^rt2-([a-zA-Z0-9]+)-([a-zA-Z0-9]+)-([a-zA-Z0-9]+)-([a-zA-Z0-9]+)$");
     }
 }

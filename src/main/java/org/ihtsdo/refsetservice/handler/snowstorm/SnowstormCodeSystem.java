@@ -86,7 +86,7 @@ public class SnowstormCodeSystem extends SnowstormAbstract {
                     final String editionName = codeSystem.get("name").asText();
                     final String branch = codeSystem.get("branchPath").asText();
                     final String defaultLanguageCode = syncUtilities.identifyDefaultLanguageCode(codeSystem, editionName);
-                    final Set<String> defaultLanguageRefsets = syncUtilities.identifyDefaultLanguageRefsets(codeSystem, editionShortName, branch);
+                    final Set<String> defaultLanguageRefsets = syncUtilities.identifyEditionLanguageRefsets(codeSystem, editionShortName, branch);
 
                     // Affiliates (on any extension) should not have the ability to choose
                     // modules.

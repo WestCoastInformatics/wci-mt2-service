@@ -34,7 +34,12 @@ public class EqualsHashcodeTester extends ProxyTester {
 
         LOG.debug("Test identity field equals - " + getClazz().getName());
         final Object o1 = createObject(1);
-        final Object o2 = createObject(1);
+        Object o2;
+        try {
+            o2 = getClazz().getConstructor(new Class<?>[] { getClazz() }).newInstance(new Object[] { o1 });
+        } catch (final NoSuchMethodException e) {
+            o2 = createObject(1);
+        }
         if (o1.equals(o2)) {
             return true;
         } else {
@@ -54,7 +59,12 @@ public class EqualsHashcodeTester extends ProxyTester {
 
         LOG.debug("Test non identity field equals - " + getClazz().getName());
         final Object o1 = createObject(1);
-        final Object o2 = createObject(1);
+        Object o2;
+        try {
+            o2 = getClazz().getConstructor(new Class<?>[] { getClazz() }).newInstance(new Object[] { o1 });
+        } catch (final NoSuchMethodException e) {
+            o2 = createObject(1);
+        }
         setFields(o2, true, true, 2);
         if (o1.equals(o2)) {
             return true;
@@ -119,11 +129,13 @@ public class EqualsHashcodeTester extends ProxyTester {
                 }
             }
 
-            // Create second object each time, so we can compare resetting each
-            // field
-            // value
-            final Object o2 = createObject(1);
-            // Change the field (use an initializer of 2).
+            // Create second object as copy of o1, then change one field
+            Object o2;
+            try {
+                o2 = getClazz().getConstructor(new Class<?>[] { getClazz() }).newInstance(new Object[] { o1 });
+            } catch (final NoSuchMethodException e) {
+                o2 = createObject(1);
+            }
             setField(o2, fieldName, getter, m, args[0], 2);
 
             if (o1.equals(o2)) {
@@ -147,7 +159,12 @@ public class EqualsHashcodeTester extends ProxyTester {
 
         LOG.debug("Test identity field hashcode - " + getClazz().getName());
         final Object o1 = createObject(1);
-        final Object o2 = createObject(1);
+        Object o2;
+        try {
+            o2 = getClazz().getConstructor(new Class<?>[] { getClazz() }).newInstance(new Object[] { o1 });
+        } catch (final NoSuchMethodException e) {
+            o2 = createObject(1);
+        }
         return o1.hashCode() == o2.hashCode();
     }
 
@@ -161,7 +178,12 @@ public class EqualsHashcodeTester extends ProxyTester {
 
         LOG.debug("Test non identity field hashcode - " + getClazz().getName());
         final Object o1 = createObject(1);
-        final Object o2 = createObject(1);
+        Object o2;
+        try {
+            o2 = getClazz().getConstructor(new Class<?>[] { getClazz() }).newInstance(new Object[] { o1 });
+        } catch (final NoSuchMethodException e) {
+            o2 = createObject(1);
+        }
         setFields(o2, true, true, 2);
         if (o1.hashCode() != o2.hashCode()) {
             LOG.info("o1 = " + o1.hashCode() + ", " + o1);
@@ -224,13 +246,15 @@ public class EqualsHashcodeTester extends ProxyTester {
                 }
             }
 
-            // Create second object each time, so we can compare resetting each
-            // field
-            // value
-            final Object o2 = createObject(1);
+            // Create second object as copy of o1, then change one field
+            Object o2;
+            try {
+                o2 = getClazz().getConstructor(new Class<?>[] { getClazz() }).newInstance(new Object[] { o1 });
+            } catch (final NoSuchMethodException e) {
+                o2 = createObject(1);
+            }
             LOG.debug("  field = " + fieldName);
 
-            // Change the field (use an initializer of 2).
             setField(o2, fieldName, getter, m, args[0], 2);
 
             if (o1.hashCode() == o2.hashCode()) {

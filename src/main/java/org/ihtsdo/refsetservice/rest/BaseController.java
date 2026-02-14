@@ -20,6 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
+import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ConfigUtility;
 import org.ihtsdo.refsetservice.util.JwtUtility;
 import org.ihtsdo.refsetservice.util.LocalException;
@@ -116,7 +117,8 @@ public class BaseController {
             username = SecurityService.getUsernameFromJwt(jwtToken);
         }
 
-        User authUser = SecurityService.getUserFromUserName(username);
+        try (final TerminologyService service = new TerminologyService()) {
+            User authUser = SecurityService.getUserFromUserName(service, username);
         if (authUser != null) {
             final String roles = JwtUtility.getRole(djwt.getClaims());
             authUser.getRoles().addAll(Set.of(roles.split(",")));
@@ -127,6 +129,8 @@ public class BaseController {
             throw new RestException(false, 401, "Unauthorized", "Unable to find user from session");
         }
         return authUser;
+        }
+        
     }
 
     /**
@@ -153,15 +157,26 @@ public class BaseController {
             else {
                 if (!ConfigUtility.isEmpty(jwt) && jwt.equals("Bearer guest")) {
                     throw new Exception("Guest login is not supported when login is enabled");
-                } else {
-                    throw new Exception("Unexpected authorization token = " + request.getHeader("Authorization") + ", " + headerToken + ", "
-                        + request.getHeader(ConfigUtility.getHeaderToken()));
                 }
+                if (isAuthDevBypassEnabled()) {
+                    return null;
+                }
+                throw new Exception("Unexpected authorization token = " + request.getHeader("Authorization") + ", " + headerToken + ", "
+                    + request.getHeader(ConfigUtility.getHeaderToken()));
             }
             return jwt;
         } else {
             return jwt.replaceFirst("Bearer ", "");
         }
+    }
+
+    private static boolean isAuthDevBypassEnabled() {
+        final String bypass = PropertyUtility.getProperty("auth.dev.bypass");
+        if ("true".equalsIgnoreCase(bypass)) {
+            return true;
+        }
+        final String profiles = PropertyUtility.getProperty("springProfiles");
+        return profiles != null && profiles.toLowerCase().contains("dev");
     }
 
 }

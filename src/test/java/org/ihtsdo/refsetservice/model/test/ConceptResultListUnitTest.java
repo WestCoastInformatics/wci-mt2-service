@@ -154,7 +154,7 @@ public class ConceptResultListUnitTest extends BaseTest {
     public void testModelSerialization() throws Exception {
 
         final SerializationTester tester = new SerializationTester(object);
-        tester.proxy("concepts", 1, c1);
+        tester.proxy("items", 1, c1);
         tester.proxy(SearchParameters.class, 1, sp1);
 
         assertTrue(tester.testJsonSerialization());

@@ -77,11 +77,12 @@ CREATE DATABASE %DB_DATABASE%;
 
 * Create the following directory structure for local elasticsearch indexes: %INDEX_BASE%
 
-Download and install the latest version of Docker. 
-Download and run elasticsearch in a Docker container, pointing to the directory you created above:
+Download and install the latest version of Docker.
+Option A: Use the Compose stack (recommended for dev). From `.work/mt2-dev`, after setting INDEX_BASE and ELASTICSEARCH_PORT in `.env`, run: `docker compose up -d`. This starts Elasticsearch and NGINX.
+Option B: Run Elasticsearch in a container, pointing to the directory you created above:
 
 ```
-docker run -d --name=es_rt2 --rm -p 9200:9200 -v %INDEX_BASE%:/usr/share/elasticsearch/data  -e "discovery.type=single-node" -e ES_JAVA_OPTS="-Xms1g -Xmx3g"  docker.elastic.co/elasticsearch/elasticsearch:7.1.0
+docker run -d --name=es_rt2 --rm -p 9200:9200 -v %INDEX_BASE%:/usr/share/elasticsearch/data -e "discovery.type=single-node" -e "ES_JAVA_OPTS=-Xms1g -Xmx3g" -e "xpack.security.enabled=false" docker.elastic.co/elasticsearch/elasticsearch:8.18.8
 ```
 
 ##  Application Authentication

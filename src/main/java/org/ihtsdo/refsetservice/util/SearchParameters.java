@@ -328,21 +328,37 @@ public class SearchParameters {
 			return false;
 		}
 
-		if (!activeOnly.equals(other.activeOnly)) {
+		if (activeOnly == null) {
+			if (other.activeOnly != null) {
+				return false;
+			}
+		} else if (!activeOnly.equals(other.activeOnly)) {
 			return false;
 		}
 
-		if (!sortAscending.equals(other.sortAscending)) {
+		if (sortAscending == null) {
+			if (other.sortAscending != null) {
+				return false;
+			}
+		} else if (!sortAscending.equals(other.sortAscending)) {
 			return false;
 		}
 
-		if (!editing.equals(other.editing)) {
+		if (editing == null) {
+			if (other.editing != null) {
+				return false;
+			}
+		} else if (!editing.equals(other.editing)) {
 			return false;
 		}
-		
-		if (!searchAfter.equals(other.searchAfter)) {
-          return false;
-      }
+
+		if (searchAfter == null) {
+			if (other.searchAfter != null) {
+				return false;
+			}
+		} else if (!searchAfter.equals(other.searchAfter)) {
+			return false;
+		}
 
 		return true;
 	}
@@ -361,9 +377,9 @@ public class SearchParameters {
 		result = prime * result + ((offset == null) ? 0 : offset.hashCode());
 		result = prime * result + ((query == null) ? 0 : query.hashCode());
 		result = prime * result + ((sort == null) ? 0 : sort.hashCode());
-		result = prime * result + (activeOnly ? 1 : 0);
-		result = prime * result + (sortAscending ? 1 : 0);
-		result = prime * result + (editing ? 1 : 0);
+		result = prime * result + ((activeOnly == null) ? 0 : activeOnly.hashCode());
+		result = prime * result + ((sortAscending == null) ? 0 : sortAscending.hashCode());
+		result = prime * result + ((editing == null) ? 0 : editing.hashCode());
 		result = prime * result + ((searchAfter == null) ? 0 : searchAfter.hashCode());
 		return result;
 	}

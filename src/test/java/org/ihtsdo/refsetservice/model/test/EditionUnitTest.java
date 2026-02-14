@@ -100,12 +100,14 @@ public class EditionUnitTest extends BaseTest {
         tester.include("iconUri");
         tester.include("branch");
         tester.include("defaultLanguageCode");
+        tester.include("librarySortField");
 
+        tester.exclude("modules");
+        tester.exclude("defaultLanguageRefsets");
+        tester.exclude("moduleNames");
         tester.exclude("organization");
         tester.exclude("organizationId");
         tester.exclude("organizationName");
-        tester.exclude("defaultLanguageRefsets");
-        tester.exclude("moduleNames");
 
         assertTrue(tester.testIdentityFieldEquals());
         assertTrue(tester.testNonIdentityFieldEquals());
