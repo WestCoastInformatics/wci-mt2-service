@@ -19,11 +19,14 @@ DROP TABLE ${pre_if_exists} map_projects_scope_excluded_concepts ${post_if_exist
 DROP TABLE ${pre_if_exists} map_relations ${post_if_exists};
 DROP TABLE ${pre_if_exists} map_report_definitions ${post_if_exists};
 DROP TABLE ${pre_if_exists} map_projects ${post_if_exists};
+DROP TABLE ${pre_if_exists} mapset_workflow_history ${post_if_exists};
+DROP TABLE ${pre_if_exists} mapset_history ${post_if_exists};
 DROP TABLE ${pre_if_exists} map_sets ${post_if_exists};
 DROP TABLE ${pre_if_exists} map_users ${post_if_exists};
 DROP TABLE ${pre_if_exists} mapentry_advices ${post_if_exists};
 DROP TABLE ${pre_if_exists} mappings ${post_if_exists};
 DROP TABLE ${pre_if_exists} jobs ${post_if_exists};
+DROP TABLE ${pre_if_exists} refset_workflow_history ${post_if_exists};
 
 CREATE TABLE `map_users` (
   `id` varchar(64) NOT NULL,
@@ -336,4 +339,73 @@ CREATE TABLE `jobs` (
   `errorMessage` varchar(4000) DEFAULT NULL,
   `result` varchar(4000) DEFAULT NULL,
   PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `mapset_history` (
+  `id` varchar(64) NOT NULL,
+  `active` bit(1) NOT NULL,
+  `created` datetime(6) NOT NULL,
+  `modified` datetime(6) NOT NULL,
+  `modifiedBy` varchar(256) NOT NULL,
+  `refSetCode` varchar(255) NOT NULL,
+  `refSetName` varchar(255) NOT NULL,
+  `moduleId` varchar(255) DEFAULT NULL,
+  `name` varchar(4000) NOT NULL,
+  `versionStatus` varchar(256) NOT NULL,
+  `workflowStatus` varchar(256) DEFAULT NULL,
+  `branchPath` varchar(4000) NOT NULL,
+  `version` varchar(4000) NOT NULL,
+  `versionDate` datetime(6) DEFAULT NULL,
+  `baseContentVersion` varchar(255) NOT NULL,
+  `internationalContentVersion` varchar(255) NOT NULL,
+  `narrative` text DEFAULT NULL,
+  `fromTerminology` varchar(4000) NOT NULL,
+  `fromVersion` varchar(4000) NOT NULL,
+  `fromBranchPath` varchar(4000) NOT NULL,
+  `toTerminology` varchar(4000) NOT NULL,
+  `toVersion` varchar(4000) NOT NULL,
+  `toBranchPath` varchar(4000) NOT NULL,
+  `latestPublishedVersion` bit(1) DEFAULT NULL,
+  `hasVersionInDevelopment` bit(1) DEFAULT NULL,
+  `assignedUser` varchar(255) DEFAULT NULL,
+  `scopeCount` int NOT NULL DEFAULT '-1',
+  `mappedCount` int NOT NULL DEFAULT '-1',
+  `editBranchId` varchar(256) DEFAULT NULL,
+  `mapBranchId` varchar(256) DEFAULT NULL,
+  `project_id` varchar(64) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FK_mapset_history_project` (`project_id`),
+  CONSTRAINT `FK_mapset_history_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`)
+);
+
+CREATE TABLE `refset_workflow_history` (
+  `id` varchar(64) NOT NULL,
+  `active` bit(1) NOT NULL,
+  `created` datetime(6) NOT NULL,
+  `modified` datetime(6) NOT NULL,
+  `modifiedBy` varchar(256) NOT NULL,
+  `userName` varchar(256) NOT NULL,
+  `workflowStatus` varchar(256) DEFAULT NULL,
+  `workflowAction` varchar(256) DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `refset_id` varchar(64) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FK_refset_workflow_history_refset` (`refset_id`),
+  CONSTRAINT `FK_refset_workflow_history_refset` FOREIGN KEY (`refset_id`) REFERENCES `refsets` (`id`)
+);
+
+CREATE TABLE `mapset_workflow_history` (
+  `id` varchar(64) NOT NULL,
+  `active` bit(1) NOT NULL,
+  `created` datetime(6) NOT NULL,
+  `modified` datetime(6) NOT NULL,
+  `modifiedBy` varchar(256) NOT NULL,
+  `userName` varchar(256) NOT NULL,
+  `workflowStatus` varchar(256) DEFAULT NULL,
+  `workflowAction` varchar(256) DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `mapSet_id` varchar(64) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FK_mapset_workflow_history_mapset` (`mapSet_id`),
+  CONSTRAINT `FK_mapset_workflow_history_mapset` FOREIGN KEY (`mapSet_id`) REFERENCES `map_sets` (`id`)
 );
