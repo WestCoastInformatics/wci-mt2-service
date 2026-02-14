@@ -780,6 +780,27 @@ public final class AuditEntryHelper {
     }
 
     /**
+     * Add editing cycle entry for MapSet.
+     *
+     * @param mapSet  the map set
+     * @param isSaving the is saving
+     * @return the audit entry
+     */
+    public static AuditEntry addEditingCycleEntry(final MapSet mapSet, final boolean isSaving) {
+
+        final String type = (isSaving) ? "saved" : " canceled";
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(EntityType.MAPSET.toString());
+        entry.setEntityId(mapSet.getId());
+        entry.setMessage("UPDATE MapSet");
+        entry.setDetails("MapSet " + mapSet.getRefSetCode() + " changes since map set was put IN_EDIT have been " + type);
+        log(entry);
+
+        return entry;
+    }
+
+    /**
      * Send refset invite.
      *
      * @param refset         the refset

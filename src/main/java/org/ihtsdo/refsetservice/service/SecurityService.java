@@ -114,14 +114,18 @@ public class SecurityService implements AutoCloseable {
         }
 
         // TODO - Find a better solution for unit tests
-        if (PropertyUtility.getProperty("springProfiles").toLowerCase().contains("test")) {
+        final String profiles = PropertyUtility.getProperty("springProfiles");
+        final String authDevBypass = PropertyUtility.getProperty("auth.dev.bypass");
+        final boolean devBypass = "true".equalsIgnoreCase(authDevBypass)
+            || (profiles != null && (profiles.toLowerCase().contains("test") || profiles.toLowerCase().contains("dev")));
+        if (devBypass) {
 
-            final User testUser = new User("unitTestUser", "Unit Test User", "", "", "", new HashSet<>());
-            testUser.getRoles().add("all-all-author");
-            testUser.getRoles().add("all-all-reviewer");
-            testUser.getRoles().add("all-all-admin");
-            LOG.debug("getUserFromSession SESSION USER: " + ModelUtility.logJson(testUser));
-            return testUser;
+            final User devUser = new User("devUser", "Dev User", "", "", "", new HashSet<>());
+            devUser.getRoles().add("all-all-author");
+            devUser.getRoles().add("all-all-reviewer");
+            devUser.getRoles().add("all-all-admin");
+            LOG.debug("getUserFromSession SESSION USER (dev bypass): " + ModelUtility.logJson(devUser));
+            return devUser;
         }
 
         final User nonLoggedInUser = new User(GUEST_USERNAME, "Non Logged In User", "", "", "", new HashSet<>());

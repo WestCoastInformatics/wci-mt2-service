@@ -157,15 +157,26 @@ public class BaseController {
             else {
                 if (!ConfigUtility.isEmpty(jwt) && jwt.equals("Bearer guest")) {
                     throw new Exception("Guest login is not supported when login is enabled");
-                } else {
-                    throw new Exception("Unexpected authorization token = " + request.getHeader("Authorization") + ", " + headerToken + ", "
-                        + request.getHeader(ConfigUtility.getHeaderToken()));
                 }
+                if (isAuthDevBypassEnabled()) {
+                    return null;
+                }
+                throw new Exception("Unexpected authorization token = " + request.getHeader("Authorization") + ", " + headerToken + ", "
+                    + request.getHeader(ConfigUtility.getHeaderToken()));
             }
             return jwt;
         } else {
             return jwt.replaceFirst("Bearer ", "");
         }
+    }
+
+    private static boolean isAuthDevBypassEnabled() {
+        final String bypass = PropertyUtility.getProperty("auth.dev.bypass");
+        if ("true".equalsIgnoreCase(bypass)) {
+            return true;
+        }
+        final String profiles = PropertyUtility.getProperty("springProfiles");
+        return profiles != null && profiles.toLowerCase().contains("dev");
     }
 
 }

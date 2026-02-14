@@ -395,6 +395,10 @@ public class User extends AbstractHasModified
   public boolean doesUserHavePermission(final String roleToCheck, final Project project)
     throws Exception {
 
+    if (project == null) {
+      return getRoles().stream().anyMatch(r -> r != null && r.startsWith("all-all-"));
+    }
+
     final String organizationName = project.getEdition().getOrganizationName();
     final String editionName = project.getEdition().getShortName();
 
@@ -414,6 +418,10 @@ public class User extends AbstractHasModified
    */
   public boolean checkPermission(final String roleToCheck, final String organizationName,
     final String editionName, final String projectCrowdId) throws Exception {
+
+    if (getRoles().stream().anyMatch(r -> r != null && r.startsWith("all-all-"))) {
+      return true;
+    }
 
       // specifc to RT2 and Crowd
 //    try {

@@ -26,6 +26,7 @@ import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.MapProjectService;
+import org.ihtsdo.refsetservice.terminologyservice.MapSetService;
 import org.ihtsdo.refsetservice.terminologyservice.MappingService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.SearchParameters;
@@ -95,7 +96,7 @@ public class MappingController extends BaseController {
         LOG.info("Mappings for a Mapset {}: {}", mapSetCode, searchParameters);
         // final User authUser = authorizeUser(request);
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
             final SearchParameters sp = (searchParameters != null) ? searchParameters : new SearchParameters();
             if (sp.getLimit() == null || sp.getLimit() == 0) {
                 sp.setLimit(100);
@@ -103,8 +104,10 @@ public class MappingController extends BaseController {
             final List<String> conceptCodesList = (StringUtils.isBlank(conceptCodes)) ? new ArrayList<>() : List.of(conceptCodes.split(","));
             final String filterString = (StringUtils.isBlank(filter)) ? StringUtils.EMPTY : StringUtils.trim(filter);
 
-            // TODO: determine branch.
-            final String branch = "MAIN/SNOMEDCT-NO/2025-12-15/WCITEST";
+            final String branch = MapSetService.resolveBranchFromMapSets(service, mapSetCode);
+            if (branch == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
 
             final ResultListMapping mappings = MappingService.getMappings(branch, mapSetCode, sp, filterString, showOverriddenEntries, conceptCodesList);
 
@@ -159,9 +162,12 @@ public class MappingController extends BaseController {
         	throw new RuntimeException("Maximum concept limit of 10,000 exceeded.");
         }
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
-            final String branch = "MAIN/SNOMEDCT-NO/2025-12-15/WCITEST";
+            final String branch = MapSetService.resolveBranchFromMapSets(service, mapSetCode);
+            if (branch == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
             final File exportMapPkg = MappingService.exportMappings(branch, mapSetCode, mappingExportRequest);
 
             final Resource file = new UrlResource(exportMapPkg.toURI());
@@ -269,10 +275,12 @@ public class MappingController extends BaseController {
         LOG.info("Mapping for Mapset: {}, Source Concept Code: {}, Search params: {}", mapSetCode, conceptCode, searchParameters);
         // final User authUser = authorizeUser(request);
 
-        try {
+        try (final TerminologyService service = new TerminologyService()) {
 
-            // TODO: determine branch.
-            final String branch = "MAIN/SNOMEDCT-NO/2025-12-15/WCITEST";
+            final String branch = MapSetService.resolveBranchFromMapSets(service, mapSetCode);
+            if (branch == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
             final Mapping mapping = MappingService.getMapping(branch, mapSetCode, conceptCode, showOverriddenEntries);
 
             return new ResponseEntity<>(mapping, HttpStatus.OK);
@@ -316,17 +324,10 @@ public class MappingController extends BaseController {
 
         try (final TerminologyService service = new TerminologyService()) {
             mapProject = MapProjectService.getMapProject(service, id, includeMembers);
-
-        } catch (final Exception e) {
-
-            handleException(e);
-            return null;
-        }
-
-        try {
-
-            // TODO: determine branch.
-            final String branch = "MAIN/SNOMEDCT-NO/2025-12-15/WCITEST";
+            final String branch = MapSetService.resolveBranchFromMapSets(service, mapSetCode);
+            if (branch == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
             final List<Mapping> mappings = new ArrayList<>();
             mappings.add(mapping);
             MappingService.createMappings(mapProject, branch, mapSetCode, mappings);
@@ -371,17 +372,10 @@ public class MappingController extends BaseController {
 
         try (final TerminologyService service = new TerminologyService()) {
             mapProject = MapProjectService.getMapProject(service, id, includeMembers);
-
-        } catch (final Exception e) {
-
-            handleException(e);
-            return null;
-        }
-
-        try {
-
-            // TODO: determine branch.
-            final String branch = "MAIN/SNOMEDCT-NO/2025-12-15/WCITEST";
+            final String branch = MapSetService.resolveBranchFromMapSets(service, mapSetCode);
+            if (branch == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
             final List<Mapping> createdMappings = MappingService.createMappings(mapProject, branch, mapSetCode, mappings);
             return new ResponseEntity<>(createdMappings, HttpStatus.CREATED);
 
@@ -424,17 +418,10 @@ public class MappingController extends BaseController {
 
         try (final TerminologyService service = new TerminologyService()) {
             mapProject = MapProjectService.getMapProject(service, id, includeMembers);
-
-        } catch (final Exception e) {
-
-            handleException(e);
-            return null;
-        }
-
-        try {
-
-            // TODO: determine branch.
-            final String branch = "MAIN/SNOMEDCT-NO/2025-12-15/WCITEST";
+            final String branch = MapSetService.resolveBranchFromMapSets(service, mapSetCode);
+            if (branch == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
             final List<Mapping> mappings = new ArrayList<>();
             mappings.add(mapping);
             MappingService.updateMappings(mapProject, branch, mapSetCode, mappings);
@@ -482,17 +469,10 @@ public class MappingController extends BaseController {
 
         try (final TerminologyService service = new TerminologyService()) {
             mapProject = MapProjectService.getMapProject(service, id, includeMembers);
-
-        } catch (final Exception e) {
-
-            handleException(e);
-            return null;
-        }
-
-        try {
-
-            // TODO: determine branch.
-            final String branch = "MAIN/SNOMEDCT-NO/2025-12-15/WCITEST";
+            final String branch = MapSetService.resolveBranchFromMapSets(service, mapSetCode);
+            if (branch == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
             final List<Mapping> updatedMappings = MappingService.updateMappings(mapProject, branch, mapSetCode, mappings);
 
             return new ResponseEntity<>(updatedMappings, HttpStatus.OK);

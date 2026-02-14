@@ -107,11 +107,11 @@ public class MapSet extends AbstractHasModified {
     private Date versionDate;
 
     /** The last refset published release upon which the refset's content is based on. */
-    @Column(nullable = false, length = 255)
+    @Column(nullable = true, length = 255)
     private String baseContentVersion;
 
     /** The international release upon which the refset's content is based on. */
-    @Column(nullable = false, length = 255)
+    @Column(nullable = true, length = 255)
     private String internationalContentVersion;
 
     /** The version narrative. */
@@ -780,8 +780,14 @@ public class MapSet extends AbstractHasModified {
      *
      * @return the edition branch
      */
-    // for compile, need to verify if still needed for MapSetWorkflow
     public String getEditionBranch() {
+        if (getProject() != null && getProject().getEdition() != null && getProject().getEdition().getBranch() != null) {
+            return getProject().getEdition().getBranch();
+        }
+        if (fromBranchPath != null) {
+            final int lastSlash = fromBranchPath.lastIndexOf('/');
+            return lastSlash > 0 ? fromBranchPath.substring(0, lastSlash) : fromBranchPath;
+        }
         return "";
     }
 
@@ -792,7 +798,7 @@ public class MapSet extends AbstractHasModified {
      */
     // for compile, need to verify if still needed for MapSetWorkflow
     public String getRefsetBranchId() {
-        return "";
+        return mapBranchId != null ? mapBranchId : "";
     }
 
     /**

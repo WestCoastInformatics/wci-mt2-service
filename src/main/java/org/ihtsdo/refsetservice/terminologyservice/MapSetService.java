@@ -13,6 +13,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 
+import javax.persistence.TypedQuery;
+
 import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
@@ -78,6 +80,82 @@ public class MapSetService {
 
         return terminologyHandler.getMapSet(branch, code);
 
+    }
+
+    /**
+     * Finds MapSet from map_sets table by refSetCode (for workflow/tracking data).
+     * Uses direct JPA query so it works regardless of search index state.
+     * Returns null if not found.
+     *
+     * @param service the terminology service
+     * @param refSetCode the ref set code
+     * @return the map set from DB, or null
+     * @throws Exception the exception
+     */
+    public static MapSet findMapSetByRefSetCode(final TerminologyService service, final String refSetCode) throws Exception {
+
+        if (refSetCode == null || refSetCode.isBlank()) {
+            return null;
+        }
+        final List<MapSet> results = service.getEntityManager()
+            .createQuery("SELECT m FROM MapSet m WHERE m.refSetCode = :refSetCode", MapSet.class)
+            .setParameter("refSetCode", refSetCode)
+            .setMaxResults(1)
+            .getResultList();
+        return results.isEmpty() ? null : results.get(0);
+    }
+
+    /**
+     * Gets MapSet for workflow operations by id or refSetCode.
+     * Tries id first (JPA get), then refSetCode lookup.
+     *
+     * @param service the terminology service
+     * @param mapSetInternalId the map set id or ref set code
+     * @return the map set from DB
+     * @throws Exception if not found
+     */
+    public static MapSet getMapSetForWorkflow(final TerminologyService service, final String mapSetInternalId) throws Exception {
+
+        if (mapSetInternalId == null || mapSetInternalId.isBlank()) {
+            throw new Exception("MapSet identifier is required");
+        }
+        MapSet mapSet = null;
+        try {
+            mapSet = service.get(mapSetInternalId, MapSet.class);
+        } catch (final Exception e) {
+            // id lookup failed, try refSetCode
+        }
+        if (mapSet == null) {
+            mapSet = findMapSetByRefSetCode(service, mapSetInternalId);
+        }
+        if (mapSet == null) {
+            throw new Exception("Unable to retrieve map set " + mapSetInternalId);
+        }
+        return mapSet;
+    }
+
+    /**
+     * Resolves branch path for map set operations from map_sets table.
+     * For a specific map set: uses its branchPath. For general operations: uses branch from first map_sets record.
+     *
+     * @param service the terminology service
+     * @param mapSetCode optional ref set code; if provided, uses that map set's branch
+     * @return the branch path, or null if no map_sets records exist
+     * @throws Exception the exception
+     */
+    public static String resolveBranchFromMapSets(final TerminologyService service, final String mapSetCode) throws Exception {
+
+        if (mapSetCode != null && !mapSetCode.isBlank()) {
+            final MapSet mapSet = findMapSetByRefSetCode(service, mapSetCode);
+            if (mapSet != null && mapSet.getBranchPath() != null) {
+                return mapSet.getBranchPath();
+            }
+        }
+        final TypedQuery<String> query = service.getEntityManager()
+            .createQuery("SELECT m.branchPath FROM MapSet m WHERE m.branchPath IS NOT NULL ORDER BY m.modified DESC", String.class)
+            .setMaxResults(1);
+        final List<String> results = query.getResultList();
+        return results.isEmpty() ? null : results.get(0);
     }
 
     /**

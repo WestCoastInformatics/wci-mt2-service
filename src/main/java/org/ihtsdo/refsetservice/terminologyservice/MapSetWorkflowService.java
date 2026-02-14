@@ -431,9 +431,9 @@ public final class MapSetWorkflowService {
     public static MapSet setWorkflowStatus(final TerminologyService service, final User user, final WorkflowAction action, final MapSet mapSet,
         final String notes, final WorkflowStatus nextStatus, final String assignedUser) throws Exception {
 
-        final MapSet updatedRefset = setRefsetWorkflowStatus(service, user, mapSet, nextStatus, assignedUser);
+        final MapSet updatedMapSet = setRefsetWorkflowStatus(service, user, mapSet, nextStatus, assignedUser);
         addWorkflowHistory(service, user, action, mapSet, notes);
-        return updatedRefset;
+        return updatedMapSet;
 
     }
 

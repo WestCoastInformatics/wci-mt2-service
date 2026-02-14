@@ -31,14 +31,17 @@ import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.enums.VersionStatus;
 import org.ihtsdo.refsetservice.model.enums.WorkflowAction;
 import org.ihtsdo.refsetservice.model.enums.WorkflowStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.BranchService;
+import org.ihtsdo.refsetservice.terminologyservice.MapSetService;
+import org.ihtsdo.refsetservice.terminologyservice.RefsetMemberService;
 import org.ihtsdo.refsetservice.terminologyservice.MapSetWorkflowService;
+import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
@@ -59,7 +62,6 @@ public class SnowstormMapSet extends SnowstormAbstract {
     private static final Set<String> UNIQUE_REFSET_IDS = new HashSet<>();
 
     /** The Constant LOG. */
-    @SuppressWarnings("unused")
     private static final Logger LOG = LoggerFactory.getLogger(SnowstormMapSet.class);
 
     /**
@@ -91,7 +93,31 @@ public class SnowstormMapSet extends SnowstormAbstract {
     public static MapSet setWorkflowStatus(final TerminologyService service, final User user, final String mapSetInternalId, final WorkflowAction action,
         final String notes) throws Exception {
 
-        return new MapSet();
+        MapSet mapSet = MapSetService.getMapSetForWorkflow(service, mapSetInternalId);
+        MapSetWorkflowService.canUserPerformWorkflowAction(user, mapSet, action);
+        final WorkflowStatus currentStatus = mapSet.getWorkflowStatus();
+
+        if (action == WorkflowAction.FINISH_EDIT) {
+            service.add(AuditEntryHelper.addEditingCycleEntry(mapSet, true));
+        } else if (action == WorkflowAction.CANCEL_EDIT) {
+            service.add(AuditEntryHelper.addEditingCycleEntry(mapSet, false));
+        } else if (action == WorkflowAction.CANCEL_UPGRADE) {
+            RefsetMemberService.REFSETS_UPDATED_MEMBERS.remove(mapSetInternalId);
+        }
+
+        if (currentStatus == null || currentStatus == WorkflowStatus.PUBLISHED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "MapSet is in final/published state. Create a new version before editing.");
+        }
+
+        mapSet = MapSetWorkflowService.setWorkflowStatusByAction(service, user, action, mapSet, notes);
+
+        if (currentStatus == mapSet.getWorkflowStatus()) {
+            LOG.info("setWorkflowStatus: did not update workflow status.");
+            return null;
+        }
+
+        return mapSet;
     }
 
     /**

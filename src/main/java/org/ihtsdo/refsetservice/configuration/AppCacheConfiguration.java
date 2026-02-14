@@ -10,13 +10,16 @@
 
 package org.ihtsdo.refsetservice.configuration;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.ehcache.EhCacheCacheManager;
+import org.springframework.cache.ehcache.EhCacheManagerFactoryBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
 
 /**
  * Cache configuration.
@@ -32,25 +35,32 @@ public class AppCacheConfiguration {
     private static final Logger LOG = LoggerFactory.getLogger(AppCacheConfiguration.class);
 
     /**
-     * Eh cache manager.
+     * EhCache manager factory bean. Uses EhCacheManagerFactoryBean to ensure
+     * proper shutdown (dispose) so disk-persistent caches are flushed on exit.
      *
-     * @return the net.sf.ehcache. cache manager
+     * @return the eh cache manager factory bean
      */
     @Bean
-    public net.sf.ehcache.CacheManager ehCacheManager() {
+    public EhCacheManagerFactoryBean ehCacheManagerFactoryBean(
+            @Value("${ehcache.cache.manager.name:refsetServiceCacheManager}") final String cacheManagerName) {
 
-        return net.sf.ehcache.CacheManager.create();
+        final EhCacheManagerFactoryBean bean = new EhCacheManagerFactoryBean();
+        bean.setConfigLocation(new ClassPathResource("ehcache.xml"));
+        bean.setShared(false);
+        bean.setCacheManagerName(cacheManagerName);
+        return bean;
     }
 
     /**
      * Cache manager.
      *
-     * @return the cache manager
+     * @param ehCacheManager the underlying eh cache manager from factory
+     * @return the spring cache manager
      */
     @Bean
-    public CacheManager cacheManager() {
+    public CacheManager cacheManager(final net.sf.ehcache.CacheManager ehCacheManager) {
 
-        return new EhCacheCacheManager(ehCacheManager());
+        return new EhCacheCacheManager(ehCacheManager);
     }
 
 }
