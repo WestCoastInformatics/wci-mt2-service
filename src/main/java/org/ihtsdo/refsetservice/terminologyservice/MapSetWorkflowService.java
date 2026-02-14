@@ -487,8 +487,6 @@ public final class MapSetWorkflowService {
             assignedUser = user.getUserName();
         }
 
-        final List<String> mapSetBranchVersions = MapSetService.getBranchVersions(mapSet.getEditionBranch());
-
         LOG.info("currentStatus: " + currentStatus + " ; nextStatus: " + nextStatus);
 
         // if edits have just been completed then merge the edit branch into the mapSet branch and delete the edit branch
@@ -519,6 +517,7 @@ public final class MapSetWorkflowService {
             if (currentStatus.equals(WorkflowStatus.IN_UPGRADE) && Arrays.asList(WorkflowAction.FINISH_UPGRADE).contains(action)) {
                 if (mapSet.isInUpgrade()) {
 
+                    final List<String> mapSetBranchVersions = MapSetService.getBranchVersions(mapSet.getEditionBranch());
                     if (mapSetBranchVersions != null && !mapSetBranchVersions.isEmpty()) {
                         Collections.sort(mapSetBranchVersions, Comparator.reverseOrder());
 
