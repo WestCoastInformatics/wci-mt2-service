@@ -35,6 +35,7 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.ihtsdo.refsetservice.model.enums.VersionStatus;
 import org.ihtsdo.refsetservice.model.enums.WorkflowStatus;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
@@ -681,6 +682,7 @@ public class MapSetEditHistory extends AbstractHasModified implements Comparable
      * @return true, if is local set
      */
     // for compile, need to verify if still needed for MapSetWorkflow
+    @JsonIgnore
     public boolean isLocalSet() {
 
         return true;
@@ -701,6 +703,7 @@ public class MapSetEditHistory extends AbstractHasModified implements Comparable
      *
      * @return true, if is in upgrade
      */
+    @JsonIgnore
     public boolean isInUpgrade() {
 
         return false;
@@ -721,6 +724,7 @@ public class MapSetEditHistory extends AbstractHasModified implements Comparable
      *
      * @return true, if is in inactivate
      */
+    @JsonIgnore
     public boolean isInInactivate() {
 
         return false;
