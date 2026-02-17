@@ -1,3 +1,6 @@
+DROP TABLE ${pre_if_exists} mapset_workflow_history ${post_if_exists};
+DROP TABLE ${pre_if_exists} mapset_history ${post_if_exists};
+DROP TABLE ${pre_if_exists} refset_workflow_history ${post_if_exists};
 DROP TABLE ${pre_if_exists} additional_map_entry_info ${post_if_exists};
 DROP TABLE ${pre_if_exists} map_advices ${post_if_exists};
 DROP TABLE ${pre_if_exists} map_age_ranges ${post_if_exists};
@@ -134,8 +137,92 @@ CREATE TABLE `map_sets` (
   `toVersion` varchar(255) NOT NULL,
   `version` varchar(255) NOT NULL,
   `versionStatus` varchar(256) NOT NULL,
+  `workflowStatus` varchar(256) DEFAULT NULL,
+  `versionDate` datetime(6) DEFAULT NULL,
+  `baseContentVersion` varchar(255) DEFAULT NULL,
+  `internationalContentVersion` varchar(255) DEFAULT NULL,
+  `narrative` text DEFAULT NULL,
+  `latestPublishedVersion` bit(1) DEFAULT false,
+  `hasVersionInDevelopment` bit(1) DEFAULT false,
+  `assignedUser` varchar(255) DEFAULT NULL,
+  `scopeCount` int NOT NULL DEFAULT -1,
+  `mappedCount` int NOT NULL DEFAULT -1,
+  `editBranchId` varchar(256) DEFAULT NULL,
+  `mapBranchId` varchar(256) DEFAULT NULL,
+  `project_id` varchar(64) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `UKneur0v3alqt6vuup23cqlhiwt` (`name`)
+  UNIQUE KEY `UKneur0v3alqt6vuup23cqlhiwt` (`name`),
+  KEY `FK_map_sets_project` (`project_id`),
+  CONSTRAINT `FK_map_sets_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`)
+);
+
+CREATE TABLE `refset_workflow_history` (
+  `id` varchar(64) NOT NULL,
+  `active` bit(1) NOT NULL,
+  `created` datetime(6) NOT NULL,
+  `modified` datetime(6) NOT NULL,
+  `modifiedBy` varchar(256) NOT NULL,
+  `notes` longtext,
+  `userName` varchar(256) NOT NULL,
+  `workflowStatus` varchar(256) DEFAULT NULL,
+  `workflowAction` varchar(256) DEFAULT NULL,
+  `refset_id` varchar(64) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FK_refset_workflow_history_refset` (`refset_id`),
+  CONSTRAINT `FK_refset_workflow_history_refset` FOREIGN KEY (`refset_id`) REFERENCES `refsets` (`id`)
+);
+
+CREATE TABLE `mapset_history` (
+  `id` varchar(64) NOT NULL,
+  `active` bit(1) NOT NULL,
+  `created` datetime(6) NOT NULL,
+  `modified` datetime(6) NOT NULL,
+  `modifiedBy` varchar(256) NOT NULL,
+  `refSetCode` varchar(255) NOT NULL,
+  `refSetName` varchar(255) NOT NULL,
+  `moduleId` varchar(255) DEFAULT NULL,
+  `name` varchar(255) NOT NULL,
+  `versionStatus` varchar(256) NOT NULL,
+  `workflowStatus` varchar(256) DEFAULT NULL,
+  `branchPath` varchar(255) NOT NULL,
+  `version` varchar(255) NOT NULL,
+  `versionDate` datetime(6) DEFAULT NULL,
+  `baseContentVersion` varchar(255) NOT NULL,
+  `internationalContentVersion` varchar(255) NOT NULL,
+  `narrative` text DEFAULT NULL,
+  `fromTerminology` varchar(255) NOT NULL,
+  `fromVersion` varchar(255) NOT NULL,
+  `fromBranchPath` varchar(255) NOT NULL,
+  `toTerminology` varchar(255) NOT NULL,
+  `toVersion` varchar(255) NOT NULL,
+  `toBranchPath` varchar(255) NOT NULL,
+  `latestPublishedVersion` bit(1) DEFAULT false,
+  `hasVersionInDevelopment` bit(1) DEFAULT false,
+  `assignedUser` varchar(255) DEFAULT NULL,
+  `scopeCount` int NOT NULL DEFAULT -1,
+  `mappedCount` int NOT NULL DEFAULT -1,
+  `editBranchId` varchar(256) DEFAULT NULL,
+  `mapBranchId` varchar(256) DEFAULT NULL,
+  `project_id` varchar(64) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FK_mapset_history_project` (`project_id`),
+  CONSTRAINT `FK_mapset_history_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`)
+);
+
+CREATE TABLE `mapset_workflow_history` (
+  `id` varchar(64) NOT NULL,
+  `active` bit(1) NOT NULL,
+  `created` datetime(6) NOT NULL,
+  `modified` datetime(6) NOT NULL,
+  `modifiedBy` varchar(256) NOT NULL,
+  `userName` varchar(256) NOT NULL,
+  `workflowStatus` varchar(256) DEFAULT NULL,
+  `workflowAction` varchar(256) DEFAULT NULL,
+  `notes` longtext,
+  `mapSet_id` varchar(64) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `FK_mapset_workflow_history_mapset` (`mapSet_id`),
+  CONSTRAINT `FK_mapset_workflow_history_mapset` FOREIGN KEY (`mapSet_id`) REFERENCES `map_sets` (`id`)
 );
 
 CREATE TABLE `map_notes` (
@@ -337,3 +424,10 @@ CREATE TABLE `jobs` (
   `result` varchar(4000) DEFAULT NULL,
   PRIMARY KEY (`id`)
 );
+
+ALTER TABLE `organizations` ADD COLUMN `countryCode` VARCHAR(4) NOT NULL DEFAULT 'XX';
+ALTER TABLE `organizations` ADD COLUMN `crowdId` VARCHAR(255) NULL;
+UPDATE `organizations` SET `crowdId` = `id` WHERE `crowdId` IS NULL;
+ALTER TABLE `organizations` MODIFY COLUMN `crowdId` VARCHAR(255) NOT NULL;
+
+ALTER TABLE `projects` ADD COLUMN `lockStatus` bit(1) NOT NULL DEFAULT 0;

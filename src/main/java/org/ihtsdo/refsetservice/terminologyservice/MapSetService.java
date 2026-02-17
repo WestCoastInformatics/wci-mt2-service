@@ -21,10 +21,15 @@ import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.MapSetExportRequest;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.model.enums.VersionStatus;
 import org.ihtsdo.refsetservice.model.enums.WorkflowAction;
+import org.ihtsdo.refsetservice.model.enums.WorkflowStatus;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
+import org.ihtsdo.refsetservice.util.ResultList;
+
+import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -200,6 +205,83 @@ public class MapSetService {
         final String notes) throws Exception {
 
         return terminologyHandler.setWorkflowStatus(service, user, mapSetInternalId, action, notes);
+    }
+
+    /**
+     * Create a new version of a map set.
+     *
+     * @param service the Terminology Service
+     * @param user the user
+     * @param mapSetInternalId the internal map set ID to base the new version on
+     * @param inEdit should the map set be set into IN_EDIT status, if false it will be in READY_FOR_EDIT
+     * @return the new map set version
+     * @throws Exception the exception
+     */
+    public static MapSet createNewMapSetVersion(final TerminologyService service, final User user, final String mapSetInternalId, final boolean inEdit)
+        throws Exception {
+
+        MapSet oldLatestVersionMapSet = null;
+        final MapSet mapSet = getMapSetForWorkflow(service, mapSetInternalId);
+
+        // Check no existing IN_DEVELOPMENT version
+        final ResultList<MapSet> results =
+            service.find("versionStatus: (" + VersionStatus.IN_DEVELOPMENT.toString() + ") AND refSetCode: " + QueryParserBase.escape(mapSet.getRefSetCode()),
+                null, MapSet.class, null);
+
+        if (!results.getItems().isEmpty()) {
+            throw new Exception("There is already a version of this map set that is 'In Development', and there can only be one");
+        }
+
+        final MapSet newMapSetVersion = new MapSet(mapSet);
+
+        // set automatic changed fields
+        final String editBranchId = BranchService.generateBranchId();
+        final String mapBranchId = BranchService.generateBranchId();
+        newMapSetVersion.setVersionDate(null);
+        newMapSetVersion.setId(null);
+        newMapSetVersion.setVersionStatus(VersionStatus.IN_DEVELOPMENT);
+        newMapSetVersion.setLatestPublishedVersion(false);
+        newMapSetVersion.setWorkflowStatus(WorkflowStatus.READY_FOR_EDIT);
+        newMapSetVersion.setEditBranchId(editBranchId);
+        newMapSetVersion.setMapBranchId(mapBranchId);
+        newMapSetVersion.setBaseContentVersion(mapSet.getBaseContentVersion());
+        newMapSetVersion.setInternationalContentVersion(mapSet.getInternationalContentVersion());
+        newMapSetVersion.setVersion(mapSet.getVersion());
+        newMapSetVersion.setProject(mapSet.getProject());
+
+        mapSet.setMapBranchId(mapBranchId);
+
+        // Persist new version
+        service.add(newMapSetVersion);
+
+        // Create the Snowstorm branches
+        BranchService.createRefsetBranch(mapSet.toBranchDetails());
+        BranchService.createEditBranch(newMapSetVersion.toBranchDetails(), editBranchId);
+
+        // Add a workflow history entry for CREATE
+        MapSetWorkflowService.addWorkflowHistory(service, user, WorkflowAction.CREATE, newMapSetVersion, "");
+
+        // Update the workflow to IN_EDIT if required
+        if (inEdit) {
+            MapSetWorkflowService.setWorkflowStatus(service, user, WorkflowAction.EDIT, newMapSetVersion, "", WorkflowStatus.IN_EDIT, user.getUserName());
+        }
+
+        // Find the previous latest version
+        if (mapSet.isLatestPublishedVersion()) {
+            oldLatestVersionMapSet = mapSet;
+        } else {
+            oldLatestVersionMapSet =
+                service.findSingle("refSetCode:" + QueryParserBase.escape(mapSet.getRefSetCode()) + " AND latestPublishedVersion: true", MapSet.class, null);
+        }
+
+        // Update the previous latest version so it is marked as having a version in development
+        if (oldLatestVersionMapSet != null) {
+            oldLatestVersionMapSet.setHasVersionInDevelopment(true);
+            service.update(oldLatestVersionMapSet);
+            LOG.info("MapSet {} version marked as having in development version.", oldLatestVersionMapSet.getId());
+        }
+
+        return newMapSetVersion;
     }
 
     /**

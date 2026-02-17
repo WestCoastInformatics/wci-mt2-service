@@ -66,26 +66,26 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MapSet extends AbstractHasModified {
 
-  /** The ref set code. */
+    /** The ref set code. */
     @Column(nullable = false, length = 255)
-  private String refSetCode;
+    private String refSetCode;
 
-  /** The ref set name. */
+    /** The ref set name. */
     @Column(nullable = false, length = 255)
-  private String refSetName;
+    private String refSetName;
 
-  /** The module id. */
-  @Column(nullable = true)
-  private String moduleId;
+    /** The module id. */
+    @Column(nullable = true)
+    private String moduleId;
 
-  /** The name. */
-  @Column(nullable = false)
-  private String name;
+    /** The name. */
+    @Column(nullable = false)
+    private String name;
 
-  /** The version status. */
+    /** The version status. */
     @Convert(converter = VersionStatusConverter.class)
     @JsonSerialize(using = VersionStatusJsonSerializer.class)
-  @Column(nullable = false, length = 256)
+    @Column(nullable = false, length = 256)
     private VersionStatus versionStatus;
 
     /** The workflow status. */
@@ -93,13 +93,13 @@ public class MapSet extends AbstractHasModified {
     @Column(nullable = true, length = 256)
     private WorkflowStatus workflowStatus;
 
-  /** The branch path. */
-  @Column(nullable = false)
-  private String branchPath;
+    /** The branch path. */
+    @Column(nullable = false)
+    private String branchPath;
 
-  /** The version. */
-  @Column(nullable = false)
-  private String version;
+    /** The version. */
+    @Column(nullable = false)
+    private String version;
 
     /** The version date. */
     @Column(nullable = true)
@@ -119,29 +119,29 @@ public class MapSet extends AbstractHasModified {
     @Type(type = "text")
     private String narrative;
 
-  /** The branch path. */
-  @Column(nullable = false)
-  private String fromTerminology;
+    /** The branch path. */
+    @Column(nullable = false)
+    private String fromTerminology;
 
-  /** The from version. */
-  @Column(nullable = false)
-  private String fromVersion;
+    /** The from version. */
+    @Column(nullable = false)
+    private String fromVersion;
 
-  /** The from branch path. */
-  @Column(nullable = false)
-  private String fromBranchPath;
+    /** The from branch path. */
+    @Column(nullable = false)
+    private String fromBranchPath;
 
-  /** The to terminology. */
-  @Column(nullable = false)
-  private String toTerminology;
+    /** The to terminology. */
+    @Column(nullable = false)
+    private String toTerminology;
 
-  /** The to version. */
-  @Column(nullable = false)
-  private String toVersion;
+    /** The to version. */
+    @Column(nullable = false)
+    private String toVersion;
 
-  /** The to branch path. */
-  @Column(nullable = false)
-  private String toBranchPath;
+    /** The to branch path. */
+    @Column(nullable = false)
+    private String toBranchPath;
 
     /** The latest published version flag. */
     @Column(nullable = true)
@@ -176,7 +176,6 @@ public class MapSet extends AbstractHasModified {
     @JoinColumn(nullable = true)
     @Fetch(FetchMode.JOIN)
     private Project project;
-
 
     /** The flag for if a user can see the feedback for this refset. */
     @Transient
@@ -233,98 +232,98 @@ public class MapSet extends AbstractHasModified {
     @Transient
     public List<String> upgradeVersionsCandidate;
 
-//    /** The value to use for the 'INCLUSION' intensional definition exception type. */
-//    @Transient
-//    public static final String INCLUSION = "INCLUSION";
-//
-//    /** The value to use for the 'EXCLUSION' intensional definition exception type. */
-//    @Transient
-//    public static final String EXCLUSION = "EXCLUSION";
+    // /** The value to use for the 'INCLUSION' intensional definition exception type. */
+    // @Transient
+    // public static final String INCLUSION = "INCLUSION";
+    //
+    // /** The value to use for the 'EXCLUSION' intensional definition exception type. */
+    // @Transient
+    // public static final String EXCLUSION = "EXCLUSION";
 
-  /**
-   * Default constructor.
-   */
-  public MapSet() {
+    /**
+     * Default constructor.
+     */
+    public MapSet() {
 
-    // n/a
-  }
+        // n/a
+    }
 
-  /**
-   * Instantiates a {@link MapSet} from the specified parameters.
-   *
-   * @param mapSet the map set
-   */
-  public MapSet(final MapSet mapSet) {
+    /**
+     * Instantiates a {@link MapSet} from the specified parameters.
+     *
+     * @param mapSet the map set
+     */
+    public MapSet(final MapSet mapSet) {
 
-    super();
-    super.setId(mapSet.getId());
-    this.refSetCode = mapSet.getRefSetCode();
-    this.refSetName = mapSet.getRefSetName();
-    this.moduleId = mapSet.getModuleId();
-    this.name = mapSet.getName();
-    this.branchPath = mapSet.getBranchPath();
-    this.fromTerminology = mapSet.getFromTerminology();
-    this.fromVersion = mapSet.getFromVersion();
-    this.fromBranchPath = mapSet.getFromBranchPath();
-    this.toTerminology = mapSet.getToTerminology();
-    this.toVersion = mapSet.getToVersion();
-    this.toBranchPath = mapSet.getToBranchPath();
-  }
+        super();
+        super.setId(mapSet.getId());
+        this.refSetCode = mapSet.getRefSetCode();
+        this.refSetName = mapSet.getRefSetName();
+        this.moduleId = mapSet.getModuleId();
+        this.name = mapSet.getName();
+        this.branchPath = mapSet.getBranchPath();
+        this.fromTerminology = mapSet.getFromTerminology();
+        this.fromVersion = mapSet.getFromVersion();
+        this.fromBranchPath = mapSet.getFromBranchPath();
+        this.toTerminology = mapSet.getToTerminology();
+        this.toVersion = mapSet.getToVersion();
+        this.toBranchPath = mapSet.getToBranchPath();
+    }
 
-  /**
+    /**
      * To branch details.
      *
      * @return the branch information
      */
     public BranchInformation toBranchDetails() {
+
         return new BranchInformation(this);
     }
 
-    
     /**
-   * Gets the name.
-   *
-   * @return the name
-   */
-  @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
-  public String getName() {
+     * Gets the name.
+     *
+     * @return the name
+     */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    public String getName() {
 
-    return name;
-  }
+        return name;
+    }
 
-  /**
-   * Sets the name.
-   *
-   * @param name the new name
-   */
-  public void setName(final String name) {
+    /**
+     * Sets the name.
+     *
+     * @param name the new name
+     */
+    public void setName(final String name) {
 
-    this.name = name;
-  }
+        this.name = name;
+    }
 
-  /**
-   * Returns the version status.
-   *
-   * @return the version status
-   */
-  @FullTextField(analyzer = "standard")
+    /**
+     * Returns the version status.
+     *
+     * @return the version status
+     */
+    @FullTextField(analyzer = "standard")
     @GenericField(name = "versionStatusSort", searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public VersionStatus getVersionStatus() {
 
-    return versionStatus;
-  }
+        return versionStatus;
+    }
 
-  /**
-   * Sets the version.
-   *
-   * @param versionStatus the version status
-   */
+    /**
+     * Sets the version.
+     *
+     * @param versionStatus the version status
+     */
     public void setVersionStatus(final VersionStatus versionStatus) {
 
-    this.versionStatus = versionStatus;
-  }
+        this.versionStatus = versionStatus;
+    }
 
-  /**
+    /**
      * Returns the workflow status.
      *
      * @return the workflow status
@@ -408,88 +407,88 @@ public class MapSet extends AbstractHasModified {
     }
 
     /**
-   * Returns the version.
-   *
-   * @return the version
-   */
-  public String getVersion() {
+     * Returns the version.
+     *
+     * @return the version
+     */
+    public String getVersion() {
 
-    return version;
-  }
+        return version;
+    }
 
-  /**
-   * Sets the version.
-   *
-   * @param version the version
-   */
-  public void setVersion(final String version) {
+    /**
+     * Sets the version.
+     *
+     * @param version the version
+     */
+    public void setVersion(final String version) {
 
-    this.version = version;
-  }
+        this.version = version;
+    }
 
-  /**
-   * Gets the ref set name.
-   *
-   * @return the ref set name
-   */
-  public String getRefSetName() {
+    /**
+     * Gets the ref set name.
+     *
+     * @return the ref set name
+     */
+    public String getRefSetName() {
 
-    return this.refSetName;
-  }
+        return this.refSetName;
+    }
 
-  /**
-   * Sets the ref set name.
-   *
-   * @param refSetName the new ref set name
-   */
-  public void setRefSetName(final String refSetName) {
+    /**
+     * Sets the ref set name.
+     *
+     * @param refSetName the new ref set name
+     */
+    public void setRefSetName(final String refSetName) {
 
-    this.refSetName = refSetName;
+        this.refSetName = refSetName;
 
-  }
+    }
 
-  /**
-   * Returns the ref set code.
-   *
-   * @return the ref set code
-   */
-  @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
-  public String getRefSetCode() {
+    /**
+     * Returns the ref set code.
+     *
+     * @return the ref set code
+     */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    public String getRefSetCode() {
 
-    return refSetCode;
-  }
+        return refSetCode;
+    }
 
-  /**
-   * Sets the ref set code.
-   *
-   * @param refSetCode the ref set code
-   */
-  public void setRefSetCode(final String refSetCode) {
+    /**
+     * Sets the ref set code.
+     *
+     * @param refSetCode the ref set code
+     */
+    public void setRefSetCode(final String refSetCode) {
 
-    this.refSetCode = refSetCode;
-  }
+        this.refSetCode = refSetCode;
+    }
 
-  /**
-   * Gets the module id.
-   *
-   * @return the module id
-   */
-  public String getModuleId() {
+    /**
+     * Gets the module id.
+     *
+     * @return the module id
+     */
+    public String getModuleId() {
 
-    return moduleId;
-  }
+        return moduleId;
+    }
 
-  /**
-   * Sets the module id.
-   *
-   * @param moduleId the new module id
-   */
-  public void setModuleId(final String moduleId) {
+    /**
+     * Sets the module id.
+     *
+     * @param moduleId the new module id
+     */
+    public void setModuleId(final String moduleId) {
 
-    this.moduleId = moduleId;
-  }
+        this.moduleId = moduleId;
+    }
 
-  /**
+    /**
      * Gets the edit branch ID.
      *
      * @return the edit branch ID
@@ -510,26 +509,26 @@ public class MapSet extends AbstractHasModified {
     }
 
     /**
-   * Gets the branch path.
-   *
-   * @return the branch path
-   */
-  public String getBranchPath() {
+     * Gets the branch path.
+     *
+     * @return the branch path
+     */
+    public String getBranchPath() {
 
-    return branchPath;
-  }
+        return branchPath;
+    }
 
-  /**
-   * Sets the branch path.
-   *
-   * @param branchPath the new branch path
-   */
-  public void setBranchPath(final String branchPath) {
+    /**
+     * Sets the branch path.
+     *
+     * @param branchPath the new branch path
+     */
+    public void setBranchPath(final String branchPath) {
 
-    this.branchPath = branchPath;
-  }
+        this.branchPath = branchPath;
+    }
 
-  /**
+    /**
      * Returns the user assigned to work on the refset.
      *
      * @return the assigned user
@@ -552,126 +551,126 @@ public class MapSet extends AbstractHasModified {
     }
 
     /**
-   * Gets the from terminology.
-   *
-   * @return the from terminology
-   */
-  public String getFromTerminology() {
+     * Gets the from terminology.
+     *
+     * @return the from terminology
+     */
+    public String getFromTerminology() {
 
-    return fromTerminology;
-  }
+        return fromTerminology;
+    }
 
-  /**
-   * Sets the from terminology.
-   *
-   * @param fromTerminology the new from terminology
-   */
-  public void setFromTerminology(final String fromTerminology) {
+    /**
+     * Sets the from terminology.
+     *
+     * @param fromTerminology the new from terminology
+     */
+    public void setFromTerminology(final String fromTerminology) {
 
-    this.fromTerminology = fromTerminology;
-  }
+        this.fromTerminology = fromTerminology;
+    }
 
-  /**
-   * Gets the from version.
-   *
-   * @return the from version
-   */
-  public String getFromVersion() {
+    /**
+     * Gets the from version.
+     *
+     * @return the from version
+     */
+    public String getFromVersion() {
 
-    return fromVersion;
-  }
+        return fromVersion;
+    }
 
-  /**
-   * Sets the from version.
-   *
-   * @param fromVersion the new from version
-   */
-  public void setFromVersion(final String fromVersion) {
+    /**
+     * Sets the from version.
+     *
+     * @param fromVersion the new from version
+     */
+    public void setFromVersion(final String fromVersion) {
 
-    this.fromVersion = fromVersion;
-  }
+        this.fromVersion = fromVersion;
+    }
 
-  /**
-   * Gets the from branch path.
-   *
-   * @return the from branch path
-   */
-  public String getFromBranchPath() {
+    /**
+     * Gets the from branch path.
+     *
+     * @return the from branch path
+     */
+    public String getFromBranchPath() {
 
-    return fromBranchPath;
-  }
+        return fromBranchPath;
+    }
 
-  /**
-   * Sets the from branch path.
-   *
-   * @param fromBranchPath the new from branch path
-   */
-  public void setFromBranchPath(final String fromBranchPath) {
+    /**
+     * Sets the from branch path.
+     *
+     * @param fromBranchPath the new from branch path
+     */
+    public void setFromBranchPath(final String fromBranchPath) {
 
-    this.fromBranchPath = fromBranchPath;
-  }
+        this.fromBranchPath = fromBranchPath;
+    }
 
-  /**
-   * Gets the to terminology.
-   *
-   * @return the to terminology
-   */
-  public String getToTerminology() {
+    /**
+     * Gets the to terminology.
+     *
+     * @return the to terminology
+     */
+    public String getToTerminology() {
 
-    return toTerminology;
-  }
+        return toTerminology;
+    }
 
-  /**
-   * Sets the to terminology.
-   *
-   * @param toTerminology the new to terminology
-   */
-  public void setToTerminology(final String toTerminology) {
+    /**
+     * Sets the to terminology.
+     *
+     * @param toTerminology the new to terminology
+     */
+    public void setToTerminology(final String toTerminology) {
 
-    this.toTerminology = toTerminology;
-  }
+        this.toTerminology = toTerminology;
+    }
 
-  /**
-   * Gets the to version.
-   *
-   * @return the to version
-   */
-  public String getToVersion() {
+    /**
+     * Gets the to version.
+     *
+     * @return the to version
+     */
+    public String getToVersion() {
 
-    return toVersion;
-  }
+        return toVersion;
+    }
 
-  /**
-   * Sets the to version.
-   *
-   * @param toVersion the new to version
-   */
-  public void setToVersion(final String toVersion) {
+    /**
+     * Sets the to version.
+     *
+     * @param toVersion the new to version
+     */
+    public void setToVersion(final String toVersion) {
 
-    this.toVersion = toVersion;
-  }
+        this.toVersion = toVersion;
+    }
 
-  /**
-   * Gets the to branch path.
-   *
-   * @return the to branch path
-   */
-  public String getToBranchPath() {
+    /**
+     * Gets the to branch path.
+     *
+     * @return the to branch path
+     */
+    public String getToBranchPath() {
 
-    return toBranchPath;
-  }
+        return toBranchPath;
+    }
 
-  /**
-   * Sets the to branch path.
-   *
-   * @param toBranchPath the new to branch path
-   */
-  public void setToBranchPath(final String toBranchPath) {
+    /**
+     * Sets the to branch path.
+     *
+     * @param toBranchPath the new to branch path
+     */
+    public void setToBranchPath(final String toBranchPath) {
 
-    this.toBranchPath = toBranchPath;
-  }
+        this.toBranchPath = toBranchPath;
+    }
 
-  /**
+    /**
      * Gets the project.
      *
      * @return the project
@@ -690,7 +689,7 @@ public class MapSet extends AbstractHasModified {
 
         this.project = project;
     }
-    
+
     /**
      * Indicates whether or not latest published version is the case.
      *
@@ -781,6 +780,7 @@ public class MapSet extends AbstractHasModified {
      * @return the edition branch
      */
     public String getEditionBranch() {
+
         if (getProject() != null && getProject().getEdition() != null && getProject().getEdition().getBranch() != null) {
             return getProject().getEdition().getBranch();
         }
@@ -798,7 +798,18 @@ public class MapSet extends AbstractHasModified {
      */
     // for compile, need to verify if still needed for MapSetWorkflow
     public String getRefsetBranchId() {
+
         return mapBranchId != null ? mapBranchId : "";
+    }
+
+    /**
+     * Sets the map branch id.
+     *
+     * @param mapBranchId the new map branch id
+     */
+    public void setMapBranchId(final String mapBranchId) {
+
+        this.mapBranchId = mapBranchId;
     }
 
     /**
@@ -808,6 +819,7 @@ public class MapSet extends AbstractHasModified {
      */
     // for compile, need to verify if still needed for MapSetWorkflow
     public boolean isLocalSet() {
+
         return true;
     }
 
@@ -817,33 +829,37 @@ public class MapSet extends AbstractHasModified {
      * @return the edition short name
      */
     public String getEditionShortName() {
+
         return "";
     }
-    
+
     public boolean isInUpgrade() {
+
         return false;
     }
-    
+
     public void setInUpgrade(boolean inUpgrade) {
+
         // n/a
     }
-    
+
     public boolean isInInactivate() {
+
         return false;
     }
-    
+
     public void setInInactivate(boolean inInactivate) {
+
         // n/a
     }
-    
 
     /**
-   * Lazy init.
-   */
-  @Override
-  public void lazyInit() {
+     * Lazy init.
+     */
+    @Override
+    public void lazyInit() {
 
-    // n/a
-  }
+        // n/a
+    }
 
 }
