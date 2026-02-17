@@ -18,9 +18,10 @@
 		clearOnFlush="true" />
 
 	<!-- Add your cache configurations here -->
+	<!-- Terminology caches: eternal=true for versioned data that does not change -->
 	<cache name="snowstorm_concepts"
 		maxElementsInMemory="1000"
-		eternal="false"
+		eternal="true"
 		overflowToDisk="true"
 		diskPersistent="true"
 		diskExpiryThreadIntervalSeconds="900"
@@ -28,7 +29,7 @@
 
 	<cache name="snowstorm_concept_refs"
 		maxElementsInMemory="1000"
-		eternal="false"
+		eternal="true"
 		overflowToDisk="true"
 		diskPersistent="true"
 		diskExpiryThreadIntervalSeconds="900"
@@ -36,7 +37,7 @@
 
 	<cache name="snowstorm_terminology"
 		maxElementsInMemory="1000"
-		eternal="false"
+		eternal="true"
 		overflowToDisk="true"
 		diskPersistent="true"
 		diskExpiryThreadIntervalSeconds="0"

@@ -31,6 +31,7 @@ import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnomedConstants;
+import org.ihtsdo.refsetservice.model.BranchInformation;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.MapSetWorkflowHistory;
@@ -487,6 +488,8 @@ public final class MapSetWorkflowService {
             assignedUser = user.getUserName();
         }
 
+        final List<String> mapSetBranchVersions = MapSetService.getBranchVersions(mapSet.getEditionBranch());
+
         LOG.info("currentStatus: " + currentStatus + " ; nextStatus: " + nextStatus);
 
         // if edits have just been completed then merge the edit branch into the mapSet branch and delete the edit branch
@@ -517,7 +520,6 @@ public final class MapSetWorkflowService {
             if (currentStatus.equals(WorkflowStatus.IN_UPGRADE) && Arrays.asList(WorkflowAction.FINISH_UPGRADE).contains(action)) {
                 if (mapSet.isInUpgrade()) {
 
-                    final List<String> mapSetBranchVersions = MapSetService.getBranchVersions(mapSet.getEditionBranch());
                     if (mapSetBranchVersions != null && !mapSetBranchVersions.isEmpty()) {
                         Collections.sort(mapSetBranchVersions, Comparator.reverseOrder());
 
@@ -566,6 +568,17 @@ public final class MapSetWorkflowService {
         else if (action == WorkflowAction.EDIT || action == WorkflowAction.UPGRADE) {
 
             if (currentStatus != WorkflowStatus.IN_UPGRADE) {
+
+                // Ensure the mapSet branch exists on Snowstorm before creating the edit branch
+                if (StringUtils.isEmpty(mapSet.getRefsetBranchId())) {
+                    mapSet.setMapBranchId(BranchService.generateBranchId());
+                }
+                final BranchInformation branchInfo = mapSet.toBranchDetails();
+                branchInfo.setBranchId(mapSet.getRefsetBranchId());
+                final String refsetBranchPath = BranchService.getRefsetBranchPath(branchInfo);
+                if (!BranchService.doesBranchExist(refsetBranchPath)) {
+                    BranchService.createRefsetBranch(branchInfo);
+                }
 
                 // Upgrade creates or merges the edit branch separately
                 if (StringUtils.isEmpty(mapSet.getEditBranchId())) {
