@@ -406,6 +406,29 @@ public class User extends AbstractHasModified
   }
 
   /**
+   * Check if the user has the specified role on the map project.
+   * Uses the map project's edition for organization and edition name; no project-level crowd ID.
+   *
+   * @param roleToCheck the role to look for
+   * @param mapProject the map project to check permissions against
+   * @return if the user has the specified role
+   * @throws Exception the exception
+   */
+  public boolean doesUserHavePermission(final String roleToCheck, final MapProject mapProject)
+    throws Exception {
+
+    if (mapProject == null) {
+      return getRoles().stream().anyMatch(r -> r != null && r.startsWith("all-all-"));
+    }
+    if (mapProject.getEdition() == null) {
+      return checkPermission(roleToCheck, null, null, null);
+    }
+    final String organizationName = mapProject.getEdition().getOrganizationName();
+    final String editionName = mapProject.getEdition().getShortName();
+    return checkPermission(roleToCheck, organizationName, editionName, null);
+  }
+
+  /**
    * Check if the user has the specified role on the organization or project.
    *
    * @param roleToCheck the role to look for

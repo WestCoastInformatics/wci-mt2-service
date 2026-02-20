@@ -140,10 +140,28 @@ public class MapSetController extends BaseController {
 					@ApiResponse(responseCode = "403", description = "Forbidden"),
 					@ApiResponse(responseCode = "404", description = "Resource not found"),
 					@ApiResponse(responseCode = "417", description = "Failed Expectation") })
+	@Parameters({
+			@Parameter(name = "query", description = "The search query", required = false),
+			@Parameter(name = "limit", description = "Maximum number of search results", required = false),
+			@Parameter(name = "offset", description = "Start index of search results", required = false),
+			@Parameter(name = "activeOnly", description = "Only active content", required = false),
+			@Parameter(name = "sort", description = "Sort field for search results", required = false),
+			@Parameter(name = "sortAscending", description = "Sort ascending (true) or descending (false)", required = false),
+			@Parameter(name = "editing", description = "Search is for editing", required = false),
+			@Parameter(name = "searchAfter", description = "Search after cursor", required = false)
+	})
 	@RecordMetric
 	public @ResponseBody ResponseEntity<List<MapSet>> getMapSets(
+			@Parameter(hidden = true)
 			@ModelAttribute final SearchParameters searchParameters) throws Exception {
 
+		// #region agent log
+		try {
+			Files.write(Paths.get("debug-ea312a.log"), java.util.Collections.singletonList(
+				"{\"sessionId\":\"ea312a\",\"runId\":\"swagger\",\"hypothesisId\":\"H1\",\"location\":\"MapSetController.getMapSets\",\"message\":\"getMapSets entered\",\"data\":{\"reached\":true},\"timestamp\":" + System.currentTimeMillis() + "}"),
+				java.nio.charset.StandardCharsets.UTF_8, java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
+		} catch (Exception e) { /* ignore */ }
+		// #endregion
 		LOG.info("Search mapsets: {}", searchParameters);
 		// final User authUser = authorizeUser(request);
 
@@ -242,14 +260,15 @@ public class MapSetController extends BaseController {
 			mapSetExportRequest.setStartEffectiveTime(null);
 		}
 
-		// TODO: Remove hard-coding of mapProject stuff
 		final User user = getUser();
-		final String id = "1";
 
 		try (final TerminologyService service = new TerminologyService()) {
 
-			final MapProject mapProject = MapProjectService.getMapProject(service, id, Boolean.FALSE);
-			// User user = SecurityService.getUserFromSession(); //No auth
+			final MapSet mapSet = MapSetService.findMapSetByRefSetCode(service, mapSetExportRequest.getMapSetCode());
+			if (mapSet == null || mapSet.getMapProject() == null) {
+				return new ResponseEntity<>("Map set or map project not found for mapSetCode.", HttpStatus.BAD_REQUEST);
+			}
+			final MapProject mapProject = MapProjectService.getMapProject(service, mapSet.getMapProject().getId(), Boolean.FALSE);
 
 			final String jobId = MapSetService.exportMapSet(user, mapProject, mapSetExportRequest);
 			final String responseMessage = "{\"url\": \"job/" + jobId + "\"}";
@@ -332,11 +351,19 @@ public class MapSetController extends BaseController {
 	})
 	@Parameters({
 			@Parameter(name = "mapSetInternalId", description = "The internal ID or refSetCode of the map set.", required = true),
+			@Parameter(name = "query", description = "The search query", required = false),
+			@Parameter(name = "limit", description = "Maximum number of search results", required = false),
+			@Parameter(name = "offset", description = "Start index of search results", required = false),
+			@Parameter(name = "activeOnly", description = "Only active content", required = false),
+			@Parameter(name = "sort", description = "Sort field for search results", required = false),
+			@Parameter(name = "sortAscending", description = "Sort ascending (true) or descending (false)", required = false),
+			@Parameter(name = "editing", description = "Search is for editing", required = false),
+			@Parameter(name = "searchAfter", description = "Search after cursor", required = false)
 	})
 	@RecordMetric
 	public @ResponseBody ResponseEntity<ResultList<MapSetWorkflowHistory>> getWorkflowHistory(
 			@PathVariable(value = "mapSetInternalId") final String mapSetInternalId,
-			final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
+			@Parameter(hidden = true) @ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult) throws Exception {
 
 		checkBinding(bindingResult);
 

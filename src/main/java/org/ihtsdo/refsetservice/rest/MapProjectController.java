@@ -209,14 +209,22 @@ public class MapProjectController extends BaseController {
         @ApiResponse(responseCode = "401", description = "Unauthorized"), @ApiResponse(responseCode = "403", description = "Forbidden"),
         @ApiResponse(responseCode = "404", description = "Resource not found"), @ApiResponse(responseCode = "417", description = "Expectation failed")
     })
-    // @ModelAttribute API params documented in SearchParameter
     @Parameters({
         @Parameter(name = "includeMembers", description = "Include map mapProject's members (users)", required = false, example = "false"),
         @Parameter(name = "includeModuleNames", description = "Include names of modules for the edition", required = false, example = "false"),
         @Parameter(name = "includeTeamDetails", description = "Include id and name of assigned teams", required = false, example = "false"),
+        @Parameter(name = "query", description = "The search query", required = false),
+        @Parameter(name = "limit", description = "Maximum number of search results", required = false),
+        @Parameter(name = "offset", description = "Start index of search results", required = false),
+        @Parameter(name = "activeOnly", description = "Only active content", required = false),
+        @Parameter(name = "sort", description = "Sort field for search results", required = false),
+        @Parameter(name = "sortAscending", description = "Sort ascending (true) or descending (false)", required = false),
+        @Parameter(name = "editing", description = "Search is for editing", required = false),
+        @Parameter(name = "searchAfter", description = "Search after cursor", required = false)
     })
     @RecordMetric
-    public @ResponseBody ResponseEntity<ResultList<MapProject>> getMapProjects(@ModelAttribute final SearchParameters searchParameters,
+    public @ResponseBody ResponseEntity<ResultList<MapProject>> getMapProjects(
+        @Parameter(hidden = true) @ModelAttribute final SearchParameters searchParameters,
         final BindingResult bindingResult, @RequestParam(value = "includeMembers", defaultValue = "false") final boolean includeMembers,
         @RequestParam(value = "includeModuleNames", required = false, defaultValue = "false") final Boolean includeModuleNames,
         @RequestParam(value = "icludeTeamDetails", required = false, defaultValue = "false") final Boolean includeTeamDetails) throws Exception {

@@ -225,9 +225,19 @@ public class MapRelationController extends BaseController {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
         @ApiResponse(responseCode = "417", description = "Failed Expectation")
     })
-    // @ModelAttribute API params documented in SearchParameter
+    @Parameters({
+        @Parameter(name = "query", description = "The search query", required = false),
+        @Parameter(name = "limit", description = "Maximum number of search results", required = false),
+        @Parameter(name = "offset", description = "Start index of search results", required = false),
+        @Parameter(name = "activeOnly", description = "Only active content", required = false),
+        @Parameter(name = "sort", description = "Sort field for search results", required = false),
+        @Parameter(name = "sortAscending", description = "Sort ascending (true) or descending (false)", required = false),
+        @Parameter(name = "editing", description = "Search is for editing", required = false),
+        @Parameter(name = "searchAfter", description = "Search after cursor", required = false)
+    })
     @RecordMetric
-    public @ResponseBody ResponseEntity<ResultList<MapRelation>> getMapRelations(@ModelAttribute final SearchParameters searchParameters,
+    public @ResponseBody ResponseEntity<ResultList<MapRelation>> getMapRelations(
+        @Parameter(hidden = true) @ModelAttribute final SearchParameters searchParameters,
         final BindingResult bindingResult) throws Exception {
         // no auth required
 

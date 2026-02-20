@@ -150,6 +150,7 @@ CREATE TABLE `map_sets` (
   `editBranchId` varchar(256) DEFAULT NULL,
   `mapBranchId` varchar(256) DEFAULT NULL,
   `project_id` varchar(64) DEFAULT NULL,
+  `map_project_id` varchar(64) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UKneur0v3alqt6vuup23cqlhiwt` (`name`),
   KEY `FK_map_sets_project` (`project_id`),
@@ -276,6 +277,8 @@ CREATE TABLE `map_projects` (
 );
 ALTER TABLE `map_projects` ADD INDEX `FK70c8p1lcf83c2sxj840vuws8x` (`edition_id`);
 ALTER TABLE `map_projects` ADD CONSTRAINT `FK70c8p1lcf83c2sxj840vuws8x` FOREIGN KEY (`edition_id`) REFERENCES `editions` (`id`);
+ALTER TABLE `map_sets` ADD INDEX `FK_map_sets_map_project` (`map_project_id`);
+ALTER TABLE `map_sets` ADD CONSTRAINT `FK_map_sets_map_project` FOREIGN KEY (`map_project_id`) REFERENCES `map_projects` (`id`);
 
 CREATE TABLE `map_report_definitions` (
   `id` varchar(64) NOT NULL,

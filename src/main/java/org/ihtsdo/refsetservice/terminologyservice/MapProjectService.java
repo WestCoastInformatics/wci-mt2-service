@@ -10,7 +10,6 @@
 package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -105,81 +104,6 @@ public class MapProjectService extends BaseService {
      * @throws Exception the exception
      */
     public static MapProject getMapProject(final TerminologyService service, final String mapProjectId, final boolean includeMembers) throws Exception {
-
-
-    	final Organization organization = new Organization();
-        organization.setActive(true);
-        organization.setAffiliate(false);
-        organization.setName("Norwegian Directorate of Health");
-        organization.setDescription("Norwegian Directorate of Health"); //Norwegian NRC
-
-    	// WMT-192 - use a dummy lookup for now.
-        // Remove if(true) clause once MapProjects are stored in the database
-        if(true) {
-
-        final MapProject mapProject = new MapProject();
-
-        mapProject.setRefSetId("447562003");
-        mapProject.setModuleId("51000202101");
-        mapProject.setRefSetName("SNOMED CT to International Classification of Diseases tenth revision extended map reference set (foundation metadata concept)");
-        mapProject.setActive(true);
-        mapProject.setSourceTerminology("SNOMEDCT-NO");
-        mapProject.setSourceTerminologyVersion("2025-12-15");
-        mapProject.setDestinationTerminology("ICD-10-NO");
-        mapProject.setDestinationTerminologyVersion("20240723");
-        mapProject.setName("SNOMEDCT-NO TO ICD-10-NO");
-
-
-        // TODO: get from find mapProject
-        final Edition edition = new Edition();
-        edition.setActive(true);
-        edition.setAbbreviation("NO");
-        edition.setDefaultLanguageCode("no");
-        edition.getDefaultLanguageRefsets().add("61000202103");
-        edition.getDefaultLanguageRefsets().add("900000000000509007");
-        edition.setShortName("SNOMEDCT-NO");
-        edition.setBranch("MAIN/SNOMEDCT-NO/2025-12-15/WCITEST");
-        edition.setOrganization(organization);
-        mapProject.setEdition(edition);
-
-        final Set<MapAdvice> mapAdvices = new HashSet<>();
-        final List<String> adviceNames = new ArrayList<>(Arrays.asList("MAPPED FOLLOWING WHO GUIDANCE", "POSSIBLE REQUIREMENT FOR PLACE OF OCCURRENCE",
-            "POSSIBLE REQUIREMENT FOR CAUSATIVE AGENT CODE", "POSSIBLE REQUIREMENT FOR MORPHOLOGY CODE", "POSSIBLE REQUIREMENT FOR AN EXTERNAL CAUSE CODE",
-            "POSSIBLE REQUIREMENT FOR ADDITIONAL CODE TO FULLY DESCRIBE DISEASE OR CONDITION"));
-
-        for (final String adviceName : adviceNames) {
-            final MapAdvice mapAdvice = new MapAdvice();
-            mapAdvice.setName(adviceName);
-            mapAdvice.setDetail(adviceName);
-            mapAdvice.setAllowableForNullTarget(false);
-            mapAdvice.setComputed(false);
-            mapAdvices.add(mapAdvice);
-        }
-
-        mapProject.setMapAdvices(mapAdvices);
-
-        final Set<MapRelation> mapRelations = new HashSet<>();
-        MapRelation mapRelation = new MapRelation();
-        mapRelation.setTerminologyId("447638001");
-        mapRelation.setName("MAP SOURCE CONCEPT CANNOT BE CLASSIFIED WITH AVAILABLE DATA");
-        mapRelation.setAllowableForNullTarget(true);
-        mapRelation.setComputed(false);
-        mapRelations.add(mapRelation);
-
-        mapRelation = new MapRelation();
-        mapRelation.setTerminologyId("447637006");
-        mapRelation.setName("MAP SOURCE CONCEPT IS PROPERLY CLASSIFIED");
-        mapRelation.setAllowableForNullTarget(false);
-        mapRelation.setComputed(true);
-        mapRelations.add(mapRelation);
-
-        mapProject.setMapRelations(mapRelations);
-
-        mapProject.setRuleBased(false);
-
-        return mapProject;
-        }
-
 
         final MapProject mapProject = service.findSingle("id: " + mapProjectId + " AND active:true", MapProject.class, null);
 
