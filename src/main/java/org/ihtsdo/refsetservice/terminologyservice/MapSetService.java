@@ -111,6 +111,28 @@ public class MapSetService {
     }
 
     /**
+     * Finds a map set by branch path (branchPath or fromBranchPath).
+     * Used when only branch is known (e.g. import flow).
+     *
+     * @param service the terminology service
+     * @param branchPath the branch path
+     * @return the first matching map set, or null
+     * @throws Exception the exception
+     */
+    public static MapSet findMapSetByBranchPath(final TerminologyService service, final String branchPath) throws Exception {
+
+        if (branchPath == null || branchPath.isBlank()) {
+            return null;
+        }
+        final List<MapSet> results = service.getEntityManager()
+            .createQuery("SELECT m FROM MapSet m WHERE m.branchPath = :branchPath OR m.fromBranchPath = :branchPath", MapSet.class)
+            .setParameter("branchPath", branchPath)
+            .setMaxResults(1)
+            .getResultList();
+        return results.isEmpty() ? null : results.get(0);
+    }
+
+    /**
      * Gets MapSet for workflow operations by id or refSetCode.
      * Tries id first (JPA get), then refSetCode lookup.
      *

@@ -21,6 +21,7 @@ import javax.ws.rs.core.MediaType;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.MapProject;
+import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
@@ -86,21 +87,37 @@ public class MappingController extends BaseController {
         @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. 447562003", required = true),
         @Parameter(name = "filter", description = "Text to search, e.g. Brain", required = false),
         @Parameter(name = "showOverriddenEntries", description = "Show underlying entries that have been overridden by this extension", required = false),
-        @Parameter(name = "conceptCodes", description = "Comma delimited list of concept codes, e.g. 880057004,880057005", required = false)
+        @Parameter(name = "conceptCodes", description = "Comma delimited list of concept codes, e.g. 880057004,880057005", required = false),
+        @Parameter(name = "query", description = "The search query", required = false),
+        @Parameter(name = "limit", description = "Maximum number of search results", required = false),
+        @Parameter(name = "offset", description = "Start index of search results", required = false),
+        @Parameter(name = "activeOnly", description = "Only active content", required = false),
+        @Parameter(name = "sort", description = "Sort field for search results", required = false),
+        @Parameter(name = "sortAscending", description = "Sort ascending (true) or descending (false)", required = false),
+        @Parameter(name = "editing", description = "Search is for editing", required = false),
+        @Parameter(name = "searchAfter", description = "Search after cursor", required = false)
     })
     @RecordMetric
     public @ResponseBody ResponseEntity<ResultListMapping> getMappings(@PathVariable(value = "mapSetCode") final String mapSetCode,
         @RequestParam(required = false) final String filter, @RequestParam(required = false, defaultValue = "true") boolean showOverriddenEntries,
-        @RequestParam(required = false) final String conceptCodes, @ModelAttribute final SearchParameters searchParameters) throws Exception {
+        @RequestParam(required = false) final String conceptCodes,
+        @RequestParam(required = false) final String query, @RequestParam(required = false) final Integer limit, @RequestParam(required = false) final Integer offset,
+        @RequestParam(required = false) final Boolean activeOnly, @RequestParam(required = false) final String sort, @RequestParam(required = false) final Boolean sortAscending,
+        @RequestParam(required = false) final Boolean editing, @RequestParam(required = false) final String searchAfter) throws Exception {
 
-        LOG.info("Mappings for a Mapset {}: {}", mapSetCode, searchParameters);
+        final SearchParameters sp = new SearchParameters();
+        sp.setQuery(query);
+        sp.setLimit(limit != null && limit > 0 ? limit : 100);
+        sp.setOffset(offset);
+        sp.setActiveOnly(activeOnly);
+        sp.setSort(sort);
+        sp.setSortAscending(sortAscending);
+        sp.setEditing(Boolean.TRUE.equals(editing));
+        sp.setSearchAfter(searchAfter);
+        LOG.info("Mappings for a Mapset {}: {}", mapSetCode, sp);
         // final User authUser = authorizeUser(request);
 
         try (final TerminologyService service = new TerminologyService()) {
-            final SearchParameters sp = (searchParameters != null) ? searchParameters : new SearchParameters();
-            if (sp.getLimit() == null || sp.getLimit() == 0) {
-                sp.setLimit(100);
-            }
             final List<String> conceptCodesList = (StringUtils.isBlank(conceptCodes)) ? new ArrayList<>() : List.of(conceptCodes.split(","));
             final String filterString = (StringUtils.isBlank(filter)) ? StringUtils.EMPTY : StringUtils.trim(filter);
 
@@ -216,13 +233,14 @@ public class MappingController extends BaseController {
                 return new ResponseEntity<>(HttpStatus.EXPECTATION_FAILED);
             }
 
-            // TODO: Remove hard-coding of mapProject stuff
-            final String id = "1";
-            MapProject mapProject = null;
-
             try (final TerminologyService service = new TerminologyService()) {
-                mapProject = MapProjectService.getMapProject(service, id, false);
-                LOG.info("Fetched MapProject with ID: {}", id);
+                final MapSet mapSet = MapSetService.findMapSetByBranchPath(service, decodedBranch);
+                if (mapSet == null || mapSet.getMapProject() == null) {
+                    LOG.error("No map set or map project found for branch: {}", decodedBranch);
+                    return new ResponseEntity<>("No map set or map project found for branch.", HttpStatus.EXPECTATION_FAILED);
+                }
+                final MapProject mapProject = MapProjectService.getMapProject(service, mapSet.getMapProject().getId(), false);
+                LOG.info("Fetched MapProject with ID: {}", mapSet.getMapProject().getId());
 
                 // Import RF2 mappings
                 final List<Mapping> updatedRF2Mappings = MappingService.importMappings(mapProject, decodedBranch, mappingFile);
@@ -265,11 +283,19 @@ public class MappingController extends BaseController {
     @Parameters({
         @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. 447562003", required = true),
         @Parameter(name = "conceptCode", description = "Source concept code identifier, e.g. 880057004", required = true),
-        @Parameter(name = "showOverriddenEntries", description = "Show underlying entries that have been overridden by this extension", required = false)
+        @Parameter(name = "showOverriddenEntries", description = "Show underlying entries that have been overridden by this extension", required = false),
+        @Parameter(name = "query", description = "The search query", required = false),
+        @Parameter(name = "limit", description = "Maximum number of search results", required = false),
+        @Parameter(name = "offset", description = "Start index of search results", required = false),
+        @Parameter(name = "activeOnly", description = "Only active content", required = false),
+        @Parameter(name = "sort", description = "Sort field for search results", required = false),
+        @Parameter(name = "sortAscending", description = "Sort ascending (true) or descending (false)", required = false),
+        @Parameter(name = "editing", description = "Search is for editing", required = false),
+        @Parameter(name = "searchAfter", description = "Search after cursor", required = false)
     })
     @RecordMetric
     public @ResponseBody ResponseEntity<Mapping> getMapping(@PathVariable final String mapSetCode, @PathVariable final String conceptCode,
-        @RequestParam(required = false, defaultValue = "true") boolean showOverriddenEntries, @ModelAttribute final SearchParameters searchParameters)
+        @RequestParam(required = false, defaultValue = "true") boolean showOverriddenEntries, @Parameter(hidden = true) @ModelAttribute final SearchParameters searchParameters)
         throws Exception {
 
         LOG.info("Mapping for Mapset: {}, Source Concept Code: {}, Search params: {}", mapSetCode, conceptCode, searchParameters);
@@ -317,13 +343,12 @@ public class MappingController extends BaseController {
 
         LOG.info("Create Mapping mapSetCode:{}, mapping:{}", mapSetCode, ModelUtility.toJson(mapping));
 
-        // TODO: Remove hard-coding of mapProject stuff
-        final String id = "1";
-        final Boolean includeMembers = Boolean.FALSE;
-        MapProject mapProject = null;
-
         try (final TerminologyService service = new TerminologyService()) {
-            mapProject = MapProjectService.getMapProject(service, id, includeMembers);
+            final MapSet mapSet = MapSetService.findMapSetByRefSetCode(service, mapSetCode);
+            if (mapSet == null || mapSet.getMapProject() == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+            final MapProject mapProject = MapProjectService.getMapProject(service, mapSet.getMapProject().getId(), Boolean.FALSE);
             final String branch = MapSetService.resolveBranchFromMapSets(service, mapSetCode);
             if (branch == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -365,13 +390,12 @@ public class MappingController extends BaseController {
 
         LOG.info("Create Mapping mapSetCode:{}, mapping:{}", mapSetCode, ModelUtility.toJson(mappings));
 
-        // TODO: Remove hard-coding of mapProject stuff
-        final String id = "1";
-        final Boolean includeMembers = Boolean.FALSE;
-        MapProject mapProject = null;
-
         try (final TerminologyService service = new TerminologyService()) {
-            mapProject = MapProjectService.getMapProject(service, id, includeMembers);
+            final MapSet mapSet = MapSetService.findMapSetByRefSetCode(service, mapSetCode);
+            if (mapSet == null || mapSet.getMapProject() == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+            final MapProject mapProject = MapProjectService.getMapProject(service, mapSet.getMapProject().getId(), Boolean.FALSE);
             final String branch = MapSetService.resolveBranchFromMapSets(service, mapSetCode);
             if (branch == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -411,13 +435,12 @@ public class MappingController extends BaseController {
 
         LOG.info("Update Mapping mapSetCode:{}, mapping:{}", mapSetCode, ModelUtility.toJson(mapping));
 
-        // TODO: Remove hard-coding of mapProject stuff
-        final String id = "1";
-        final Boolean includeMembers = Boolean.FALSE;
-        MapProject mapProject = null;
-
         try (final TerminologyService service = new TerminologyService()) {
-            mapProject = MapProjectService.getMapProject(service, id, includeMembers);
+            final MapSet mapSet = MapSetService.findMapSetByRefSetCode(service, mapSetCode);
+            if (mapSet == null || mapSet.getMapProject() == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+            final MapProject mapProject = MapProjectService.getMapProject(service, mapSet.getMapProject().getId(), Boolean.FALSE);
             final String branch = MapSetService.resolveBranchFromMapSets(service, mapSetCode);
             if (branch == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -462,13 +485,12 @@ public class MappingController extends BaseController {
 
         LOG.info("Update Mapping mapSetCode:{}, mapping:{}", mapSetCode, ModelUtility.toJson(mappings));
 
-        // TODO: Remove hard-coding of mapProject stuff
-        final String id = "1";
-        final Boolean includeMembers = Boolean.FALSE;
-        MapProject mapProject = null;
-
         try (final TerminologyService service = new TerminologyService()) {
-            mapProject = MapProjectService.getMapProject(service, id, includeMembers);
+            final MapSet mapSet = MapSetService.findMapSetByRefSetCode(service, mapSetCode);
+            if (mapSet == null || mapSet.getMapProject() == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+            final MapProject mapProject = MapProjectService.getMapProject(service, mapSet.getMapProject().getId(), Boolean.FALSE);
             final String branch = MapSetService.resolveBranchFromMapSets(service, mapSetCode);
             if (branch == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
