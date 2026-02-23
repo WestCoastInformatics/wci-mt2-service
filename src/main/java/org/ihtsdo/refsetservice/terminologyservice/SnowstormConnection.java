@@ -34,8 +34,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
-import org.jboss.resteasy.plugins.providers.ByteArrayProvider;
-import org.jboss.resteasy.plugins.providers.InputStreamProvider;
 
 /**
  * Class to handle making calls to Snowstorm.
@@ -369,10 +367,8 @@ public final class SnowstormConnection {
      * @return the configured client
      */
     public static Client getClient(final Client client) {
-        // Ensure JSON and binary providers are registered for all clients created via this helper
+        // RESTEasy default client already has InputStreamProvider and ByteArrayProvider; only add JSON
         client.register(JacksonJsonProvider.class);
-        client.register(InputStreamProvider.class);
-        client.register(ByteArrayProvider.class);
         return client;
     }
 
