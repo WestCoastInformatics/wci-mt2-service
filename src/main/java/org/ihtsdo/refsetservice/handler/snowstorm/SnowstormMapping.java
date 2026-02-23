@@ -81,7 +81,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         @Override
         public Client initialValue() {
 
-            return ClientBuilder.newClient();
+            return SnowstormConnection.getClient(ClientBuilder.newClient());
         }
     };
 

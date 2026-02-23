@@ -12,8 +12,10 @@ package org.ihtsdo.refsetservice.handler.snowstorm.export;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -75,9 +77,12 @@ public class SctIdExportStrategy extends AbstractMapSetExportStrategy {
             // 1. Check S3 for _member_ids.zip (sctIdsZipFileName) using isInS3Cache
             LOG.info("Checking S3 for existing SCTID zip file: {} in {}", sctIdsZipFileName, awsVersionedPath);
             if (S3ConnectionWrapper.isInS3Cache(awsVersionedPath, sctIdsZipFileName)) {
-                // 2. If found return the zip file
-                LOG.info("SCTID zip file found in S3. Returning existing file.");
-                return sctIdsZipFileName;
+                // 2. If found, download to export dir so download endpoint can serve it, then return
+                final String exportFileDir = PropertyUtility.getProperty("mapexport.fileDir");
+                final String localPath = Paths.get(exportFileDir, sctIdsZipFileName).toString();
+                S3ConnectionWrapper.downloadFileFromS3(awsVersionedPath, sctIdsZipFileName, localPath);
+                LOG.info("SCTID zip file found in S3, downloaded to: {}", localPath);
+                return FILE_DOWNLOAD_URL + sctIdsZipFileName;
             }
 
             // If not found, create the temp directory
@@ -151,7 +156,14 @@ public class SctIdExportStrategy extends AbstractMapSetExportStrategy {
             LOG.info("Uploading zipped SCTID file to S3: {} to {}", sctIdsZipFileName, awsVersionedPath);
             S3ConnectionWrapper.uploadToS3(awsVersionedPath, localSctIdsZipPath, sctIdsZipFileName);
 
-            // 9. Return the zipped SCTID file name
+            // 9. Copy zip to export file dir so download endpoint can serve it
+            final String exportFileDir = PropertyUtility.getProperty("mapexport.fileDir");
+            final Path sourceZip = Paths.get(localSctIdsZipPath, sctIdsZipFileName);
+            final Path targetZip = Paths.get(exportFileDir, sctIdsZipFileName);
+            Files.copy(sourceZip, targetZip, StandardCopyOption.REPLACE_EXISTING);
+            LOG.info("Copied SCTID zip to export dir for download: {}", targetZip);
+
+            // 10. Return the zipped SCTID file name
             LOG.info("SCTID export successful. Returning file name: {}", sctIdsZipFileName);
             return FILE_DOWNLOAD_URL + sctIdsZipFileName;
 
