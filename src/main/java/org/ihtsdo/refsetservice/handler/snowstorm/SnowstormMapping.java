@@ -331,7 +331,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         final MapSet mapSet = getMapSet(branch, mapSetCode);
         final String fromTerminology = mapSet.getFromTerminology();
         final String toTerminology = mapSet.getToTerminology();
-        final Map<String, Mapping> conceptIdToMappingMap = new HashMap<>();
+        final Map<String, Mapping> conceptIdToMappingMap = new LinkedHashMap<>();
 
         final Map<String, Set<String>> conceptsToLookup = new HashMap<>();
         conceptsToLookup.put(mapSet.getToTerminology(), new HashSet<>());
