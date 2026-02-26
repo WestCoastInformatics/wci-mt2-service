@@ -177,6 +177,12 @@ public class MapSet extends AbstractHasModified {
     @Fetch(FetchMode.JOIN)
     private Project project;
 
+    /** The map project. */
+    @ManyToOne(targetEntity = MapProject.class)
+    @JoinColumn(name = "map_project_id", nullable = true)
+    @Fetch(FetchMode.JOIN)
+    private MapProject mapProject;
+
     /** The flag for if a user can see the feedback for this refset. */
     @Transient
     private boolean feedbackVisible;
@@ -691,6 +697,26 @@ public class MapSet extends AbstractHasModified {
     }
 
     /**
+     * Gets the map project.
+     *
+     * @return the map project
+     */
+    public MapProject getMapProject() {
+
+        return mapProject;
+    }
+
+    /**
+     * Sets the map project.
+     *
+     * @param mapProject the map project to set
+     */
+    public void setMapProject(final MapProject mapProject) {
+
+        this.mapProject = mapProject;
+    }
+
+    /**
      * Indicates whether or not latest published version is the case.
      *
      * @return the latestPublishedVersion
@@ -781,6 +807,9 @@ public class MapSet extends AbstractHasModified {
      */
     public String getEditionBranch() {
 
+        if (getMapProject() != null && getMapProject().getEdition() != null && getMapProject().getEdition().getBranch() != null) {
+            return getMapProject().getEdition().getBranch();
+        }
         if (getProject() != null && getProject().getEdition() != null && getProject().getEdition().getBranch() != null) {
             return getProject().getEdition().getBranch();
         }

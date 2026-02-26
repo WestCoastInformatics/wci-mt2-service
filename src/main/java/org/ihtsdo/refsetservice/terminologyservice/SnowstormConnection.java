@@ -175,9 +175,8 @@ public final class SnowstormConnection {
             throw new LocalException(errorMsg);
         }
 
-        // Read the entity as a byte array and convert to InputStream
-        byte[] byteArray = response.readEntity(byte[].class);
-        final InputStream inputStream = new java.io.ByteArrayInputStream(byteArray);
+        // Read the entity as an InputStream so we don't depend on a byte[] MessageBodyReader
+        final InputStream inputStream = response.readEntity(InputStream.class);
 
         return inputStream;
     }
@@ -201,8 +200,35 @@ public final class SnowstormConnection {
             builder.header("Cookie", cookie);
         }
 
-        // Convert the JSON string to a Map
+        // Convert the JSON string to a Map so JacksonJsonProvider can serialize it as JSON
         final Map<String, Object> entityMap = jsonToMap(entity);
+
+        // #region agent log
+        try {
+            final Map<String, Object> data = new HashMap<>();
+            data.put("url", url);
+            data.put("entityClass", entityMap != null ? entityMap.getClass().getName() : "null");
+            data.put("clientClass", client.getClass().getName());
+            data.put("runId", "post-fix-map");
+
+            final Map<String, Object> logEntry = new HashMap<>();
+            logEntry.put("sessionId", "d7a125");
+            logEntry.put("hypothesisId", "H1");
+            logEntry.put("location", "SnowstormConnection.java:193");
+            logEntry.put("message", "postResponse before POST");
+            logEntry.put("data", data);
+            logEntry.put("timestamp", System.currentTimeMillis());
+
+            final String json = ThreadLocalMapper.get().writeValueAsString(logEntry);
+            java.nio.file.Files.write(java.nio.file.Paths.get("debug-d7a125.log"),
+                (json + System.lineSeparator()).getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
+        } catch (final Exception e) {
+            // ignore instrumentation failures
+        }
+        // #endregion agent log
+
+        // Send Map so JacksonJsonProvider can write application/json correctly
         final Response response = builder.post(Entity.entity(entityMap, MediaType.APPLICATION_JSON));
 
         return response;
@@ -340,7 +366,9 @@ public final class SnowstormConnection {
      * @param client the client to configure
      * @return the configured client
      */
-    private static Client getClient(final Client client) {
+    public static Client getClient(final Client client) {
+        // RESTEasy default client already has InputStreamProvider and ByteArrayProvider; only add JSON
+        client.register(JacksonJsonProvider.class);
         return client;
     }
 
@@ -367,21 +395,13 @@ public final class SnowstormConnection {
     public static String readEntityAsString(Response response) throws Exception {
 
         try {
-            // First try the direct approach
-            return response.readEntity(String.class);
+            // Read as byte array (using ByteArrayProvider) and convert to String once
+            byte[] bytes = response.readEntity(byte[].class);
+            return new String(bytes, StandardCharsets.UTF_8);
 
         } catch (Exception e) {
-            LOG.warn("Could not read entity as String directly: {}", e.getMessage());
-
-            try {
-                // Try reading as byte array and convert to string
-                byte[] bytes = response.readEntity(byte[].class);
-                return new String(bytes, StandardCharsets.UTF_8);
-
-            } catch (Exception e2) {
-                LOG.error("Could not read entity as byte array: {}", e2.getMessage());
-                throw new LocalException("Could not read response entity: " + e2.getMessage());
-            }
+            LOG.error("Could not read entity as byte array: {}", e.getMessage());
+            throw new LocalException("Could not read response entity: " + e.getMessage());
         }
     }
 }
