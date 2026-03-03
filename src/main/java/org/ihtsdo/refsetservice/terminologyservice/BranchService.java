@@ -16,8 +16,6 @@ import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.BranchInformation;
-import org.ihtsdo.refsetservice.model.User;
-import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.SyncAgent;
 import org.ihtsdo.refsetservice.util.StringUtility;
 import org.slf4j.Logger;

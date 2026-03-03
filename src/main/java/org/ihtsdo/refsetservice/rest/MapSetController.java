@@ -9,6 +9,9 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -382,6 +385,51 @@ public class MapSetController extends BaseController {
 		}
 
 	}
+
+    /**
+     * Get the workflow status of a map set.
+     *
+     * @param mapSetInternalId the internal map set ID or refSetCode
+     * @return response with xyz (map set id) and workflowStatus
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/mapset/{mapSetInternalId}/workflowStatus")
+    @Operation(summary = "Get the workflow status of a map set.", tags = {
+        "mapset"
+    }, responses = {
+        @ApiResponse(responseCode = "200", description = "Workflow status of the map set"), @ApiResponse(responseCode = "400", description = "Bad request"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"), @ApiResponse(responseCode = "403", description = "Forbidden"),
+        @ApiResponse(responseCode = "404", description = "Resource not found")
+    })
+    @Parameters({
+        @Parameter(name = "mapSetInternalId", description = "The internal ID or refSetCode of the map set.", required = true),
+    })
+    public @ResponseBody ResponseEntity<Map<String, String>> getWorkflowStatus(@PathVariable(value = "mapSetInternalId") final String mapSetInternalId)
+        throws Exception {
+
+        authorizeUser(request);
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            LOG.info("getWorkflowStatus: mapSetInternalId: {}", mapSetInternalId);
+
+            final MapSet mapSet = MapSetService.getMapSetForWorkflow(service, mapSetInternalId);
+
+            if (mapSet == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+
+            final Map<String, String> body = new HashMap<>();
+            body.put("refSetCode", mapSetInternalId);
+            body.put("workflowStatus", mapSet.getWorkflowStatus() != null ? mapSet.getWorkflowStatus().name() : null);
+            return new ResponseEntity<>(body, HttpStatus.OK);
+
+        } catch (final Exception e) {
+            handleException(e);
+            return null;
+        }
+
+    }
 
 	/**
 	 * Change the workflow status of a map set.
