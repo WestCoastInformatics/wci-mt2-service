@@ -20,10 +20,7 @@ import javax.ws.rs.NotFoundException;
 
 import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
 import org.ihtsdo.refsetservice.model.Edition;
-import org.ihtsdo.refsetservice.model.MapAdvice;
 import org.ihtsdo.refsetservice.model.MapProject;
-import org.ihtsdo.refsetservice.model.MapRelation;
-import org.ihtsdo.refsetservice.model.Organization;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.Team;

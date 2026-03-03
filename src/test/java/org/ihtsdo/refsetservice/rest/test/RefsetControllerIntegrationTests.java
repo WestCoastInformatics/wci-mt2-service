@@ -21,9 +21,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.ihtsdo.refsetservice.model.Concept;
-import org.ihtsdo.refsetservice.model.ResultListConcept;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
+import org.ihtsdo.refsetservice.model.ResultListConcept;
 import org.ihtsdo.refsetservice.model.TypeKeyValue;
 import org.ihtsdo.refsetservice.model.enums.VersionStatus;
 import org.ihtsdo.refsetservice.rest.test.util.ExportUnitTestUtilities;
