@@ -117,7 +117,7 @@ public abstract class AbstractMapSetExportStrategy implements MapSetExportStrate
             .withConceptsAndRelationshipsOnly(false).withFilenameEffectiveDate(mapSetExportRequest.getFileNameDate()).withLegacyZipNaming(false)
             .withType(mapSetExportRequest.getFileFormatType()).withUnpromotedChangesOnly(false).withModuleIds(moduleIds)
             .withTransientEffectiveTime(mapSetExportRequest.getTransientEffectiveTime()).withStartEffectiveTime(mapSetExportRequest.getStartEffectiveTime())
-            .build();
+            .withStartExport(false).build();
     }
 
     /**

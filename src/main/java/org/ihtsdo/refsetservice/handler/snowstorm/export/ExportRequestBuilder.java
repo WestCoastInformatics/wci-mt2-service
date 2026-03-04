@@ -159,6 +159,18 @@ public class ExportRequestBuilder {
         }
         return this;
     }
+    
+    /**
+     * With start export.
+     *
+     * @param startExport the start export
+     * @return the export request builder
+    */
+    public ExportRequestBuilder withStartExport(final boolean startExport) {
+
+        parameters.append(", \"startExport\": ").append(startExport);
+        return this;
+    }
 
     /**
      * Build the export request string.

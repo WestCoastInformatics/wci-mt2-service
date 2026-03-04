@@ -64,7 +64,7 @@ public final class SnowstormBranch extends SnowstormAbstract {
                 throw new Exception(error);
             }
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
             final JsonNode rootNode = root;
 
@@ -163,7 +163,7 @@ public final class SnowstormBranch extends SnowstormAbstract {
                 throw new Exception(Integer.toString(response.getStatus()));
             }
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
             final Iterator<JsonNode> iterator = root.iterator();
 
@@ -226,7 +226,7 @@ public final class SnowstormBranch extends SnowstormAbstract {
 
                 try (final Response mergeInfoResponse = SnowstormConnection.getResponse(jobStatusUrl)) {
 
-                    final String resultString = mergeInfoResponse.readEntity(String.class);
+                    final String resultString = SnowstormConnection.readEntityAsString(mergeInfoResponse);
                     final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                     final String status = root.get("status").asText();
 
@@ -286,7 +286,7 @@ public final class SnowstormBranch extends SnowstormAbstract {
 
                                 try (final Response stateResponse = SnowstormConnection.getResponse(stateUrl)) {
 
-                                    final String stateResultString = stateResponse.readEntity(String.class);
+                                    final String stateResultString = SnowstormConnection.readEntityAsString(stateResponse);
                                     final JsonNode stateRoot = ThreadLocalMapper.get().readTree(stateResultString);
                                     final String state = stateRoot.get("state").asText();
 
@@ -361,7 +361,7 @@ public final class SnowstormBranch extends SnowstormAbstract {
                     LOG.error(error + " Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.getStatusInfo().getReasonPhrase());
                 }
 
-                final String resultString = response.readEntity(String.class);
+                final String resultString = SnowstormConnection.readEntityAsString(response);
                 final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                 final String status = root.get("status").asText();
                 LOG.debug("merge review status: " + status);
@@ -422,7 +422,7 @@ public final class SnowstormBranch extends SnowstormAbstract {
                     + response.getStatusInfo().getReasonPhrase());
             }
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
             final Iterator<JsonNode> branchIterator = root.iterator();
 

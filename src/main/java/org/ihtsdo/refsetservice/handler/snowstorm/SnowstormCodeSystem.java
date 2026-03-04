@@ -39,7 +39,7 @@ public class SnowstormCodeSystem extends SnowstormAbstract {
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             final JsonNode organizationJsonRootNode = ThreadLocalMapper.get().readTree(resultString);
             final SyncUtilities syncUtilities = new SyncUtilities(new SyncDatabaseHandler(null, new SyncStatistics()));
 
