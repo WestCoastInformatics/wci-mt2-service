@@ -443,10 +443,13 @@ public class SnowstormMapping extends SnowstormAbstract {
                 mapping.setMapSetId(mapSet.getId());
                 mapping.setMapEntries(new ArrayList<>());
                 MapEntry mapEntry = new MapEntry();
-                mapEntry.setGroup(1);
-                mapEntry.setPriority(1);
                 mapEntry.setRule("");
-                mapping.getMapEntries().add(mapEntry);
+                mapEntry.setPriority(1);
+                mapEntry.setGroup(1);
+                mapEntry.setAdvices(new HashSet<>());
+                mapEntry.setRelation("");
+                mapEntry.setToCode("");
+                mapEntry.setToName("");
                 conceptIdToMappingMap.put(conceptId, mapping);
             }
         }
