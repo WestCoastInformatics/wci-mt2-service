@@ -94,14 +94,17 @@ public class Rf2SnapshotExportStrategy extends AbstractMapSetExportStrategy {
             if (!S3ConnectionWrapper.isInS3Cache(awsVersionedPath, snowGeneratedFileName)) {
 
                 final Set<String> moduleIds = new HashSet<>();
-                moduleIds.add(mapProject.getModuleId());
+                if (mapProject.getModuleId() != null) {
+                    moduleIds.add(mapProject.getModuleId());
+                }
                 moduleIds.add(SnomedConstants.SNOMEDCT_TO_ICD10_MAPPING_MODULE);
 
                 // Base-SnowVersion file is not on S3, so generate it, and after downloading it, store it on S3
-                final ExportRequestBuilder builder = new ExportRequestBuilder().withRefsetId(mapSet.getRefSetCode()).withBranchPath(request.getBranch())
-                    .withConceptsAndRelationshipsOnly(false).withFilenameEffectiveDate(request.getFileNameDate()).withLegacyZipNaming(false)
-                    .withType(request.getFileFormatType()).withUnpromotedChangesOnly(false).withModuleIds(moduleIds)
-                    .withTransientEffectiveTime(request.getTransientEffectiveTime()).withStartEffectiveTime(request.getStartEffectiveTime());
+                final ExportRequestBuilder builder =
+                    new ExportRequestBuilder().withRefsetId(mapSet.getRefSetCode()).withBranchPath(request.getBranch()).withConceptsAndRelationshipsOnly(false)
+                        .withFilenameEffectiveDate(request.getFileNameDate()).withLegacyZipNaming(false).withType(request.getFileFormatType())
+                        .withUnpromotedChangesOnly(false).withModuleIds(moduleIds).withTransientEffectiveTime(request.getTransientEffectiveTime())
+                        .withStartEffectiveTime(request.getStartEffectiveTime()).withStartExport(false);
                 final String exportRequestParameters = builder.build();
 
                 LOG.info("Snowstorm export request: {}", exportRequestParameters);

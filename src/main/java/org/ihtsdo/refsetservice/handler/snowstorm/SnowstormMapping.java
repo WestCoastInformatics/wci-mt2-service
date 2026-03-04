@@ -28,7 +28,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -81,7 +80,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         @Override
         public Client initialValue() {
 
-            return SnowstormConnection.getClient(ClientBuilder.newClient());
+            return SnowstormConnection.getClient();
         }
     };
 
@@ -163,7 +162,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         final Response response = target.request(DEFAULT_ACCEPT)
             // .header("Cookie", ConfigUtility.getGenericUserCookie())
             .get();
-        final String resultString = response.readEntity(String.class);
+        final String resultString = SnowstormConnection.readEntityAsString(response);
         if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
             throw new Exception(
                 "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
@@ -238,7 +237,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         final Response response = target.request(DEFAULT_ACCEPT)
             // .header("Cookie", ConfigUtility.getGenericUserCookie())
             .get();
-        final String resultString = response.readEntity(String.class);
+        final String resultString = SnowstormConnection.readEntityAsString(response);
         if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
             throw new Exception(
                 "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
@@ -358,7 +357,7 @@ public class SnowstormMapping extends SnowstormAbstract {
                         "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
                 }
 
-                final JsonNode data = ThreadLocalMapper.get().readTree(response.readEntity(String.class));
+                final JsonNode data = ThreadLocalMapper.get().readTree(SnowstormConnection.readEntityAsString(response));
                 final JsonNode mappingsBatch = data.get("items");
                 if (mappingsBatch.isArray() && mappingsBatch.isEmpty()) {
                     done = true;
@@ -610,7 +609,7 @@ public class SnowstormMapping extends SnowstormAbstract {
                         "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
                 }
 
-                final JsonNode data = ThreadLocalMapper.get().readTree(response.readEntity(String.class));
+                final JsonNode data = ThreadLocalMapper.get().readTree(SnowstormConnection.readEntityAsString(response));
 
                 final JsonNode conceptNodeBatch = data.get("items");
                 if (conceptNodeBatch.isArray() && conceptNodeBatch.isEmpty()) {
@@ -667,7 +666,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         final Response response = target.request(DEFAULT_ACCEPT)
             // .header("Cookie", ConfigUtility.getGenericUserCookie())
             .get();
-        final String resultString = response.readEntity(String.class);
+        final String resultString = SnowstormConnection.readEntityAsString(response);
         if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
             throw new Exception(
                 "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
@@ -807,7 +806,7 @@ public class SnowstormMapping extends SnowstormAbstract {
                         "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
                 }
 
-                final JsonNode data = ThreadLocalMapper.get().readTree(response.readEntity(String.class));
+                final JsonNode data = ThreadLocalMapper.get().readTree(SnowstormConnection.readEntityAsString(response));
                 newMapping.getMapEntries().add(convertSnowstormMemberToMapEntry(data, mapSet, branch));
 
             }
@@ -1080,7 +1079,7 @@ public class SnowstormMapping extends SnowstormAbstract {
                     throw new Exception(
                         "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
                 }
-                final JsonNode updatedMapEntryJson = ThreadLocalMapper.get().readTree(response.readEntity(String.class));
+                final JsonNode updatedMapEntryJson = ThreadLocalMapper.get().readTree(SnowstormConnection.readEntityAsString(response));
                 final MapEntry updatedMapEntry = convertSnowstormMemberToMapEntry(updatedMapEntryJson, mapSet, branch);
                 updatedMapEntries.add(updatedMapEntry);
 
@@ -1114,7 +1113,7 @@ public class SnowstormMapping extends SnowstormAbstract {
                     throw new Exception(
                         "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
                 }
-                final JsonNode updatedMapEntryJson = ThreadLocalMapper.get().readTree(response.readEntity(String.class));
+                final JsonNode updatedMapEntryJson = ThreadLocalMapper.get().readTree(SnowstormConnection.readEntityAsString(response));
                 final MapEntry updatedMapEntry = convertSnowstormMemberToMapEntry(updatedMapEntryJson, mapSet, branch);
                 updatedMapEntries.add(updatedMapEntry);
                 auditEntries.add(AuditEntryHelper.statusChangeMappingEntry(mapProject.getRefSetId(), existingActiveMapping, updatedMapEntry));
@@ -1132,7 +1131,7 @@ public class SnowstormMapping extends SnowstormAbstract {
                     throw new Exception(
                         "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
                 }
-                final JsonNode updatedMapEntryJson = ThreadLocalMapper.get().readTree(response.readEntity(String.class));
+                final JsonNode updatedMapEntryJson = ThreadLocalMapper.get().readTree(SnowstormConnection.readEntityAsString(response));
                 final MapEntry updatedMapEntry = convertSnowstormMemberToMapEntry(updatedMapEntryJson, mapSet, branch);
                 updatedMapEntries.add(updatedMapEntry);
                 auditEntries.add(AuditEntryHelper.statusChangeMappingEntry(mapProject.getRefSetId(), existingActiveMapping, updatedMapEntry));
@@ -1151,7 +1150,7 @@ public class SnowstormMapping extends SnowstormAbstract {
                     throw new Exception(
                         "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
                 }
-                final JsonNode updatedMapEntryJson = ThreadLocalMapper.get().readTree(response.readEntity(String.class));
+                final JsonNode updatedMapEntryJson = ThreadLocalMapper.get().readTree(SnowstormConnection.readEntityAsString(response));
                 final MapEntry updatedMapEntry = convertSnowstormMemberToMapEntry(updatedMapEntryJson, mapSet, branch);
                 updatedMapEntries.add(updatedMapEntry);
                 auditEntries.add(AuditEntryHelper.updateMappingEntry(mapProject.getRefSetId(), existingActiveMapping, updatedMapEntry, originalMapEntry));
@@ -1255,7 +1254,7 @@ public class SnowstormMapping extends SnowstormAbstract {
                         "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
                 }
 
-                final JsonNode doc = ThreadLocalMapper.get().readTree(response.readEntity(String.class));
+                final JsonNode doc = ThreadLocalMapper.get().readTree(SnowstormConnection.readEntityAsString(response));
                 final JsonNode conceptNodeBatch = doc.get("items");
                 final Iterator<JsonNode> itemIterator = conceptNodeBatch.iterator();
 

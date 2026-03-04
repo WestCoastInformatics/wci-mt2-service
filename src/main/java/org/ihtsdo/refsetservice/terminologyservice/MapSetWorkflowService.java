@@ -31,6 +31,7 @@ import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnomedConstants;
+import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.model.BranchInformation;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.MapSet;
@@ -841,7 +842,7 @@ public final class MapSetWorkflowService {
                 throw new Exception(Integer.toString(response.getStatus()));
             }
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode root = mapper.readTree(resultString);
             final JsonNode conceptNode = root;
@@ -1181,7 +1182,13 @@ public final class MapSetWorkflowService {
      */
     private static String formatErrorMessage(final Response response) {
 
-        String snowstormErrorMessage = response.readEntity(String.class);
+        String snowstormErrorMessage;
+        try {
+            snowstormErrorMessage = SnowstormConnection.readEntityAsString(response);
+        } catch (final Exception e) {
+            LOG.warn("Could not read response entity: {}", e.getMessage());
+            return "";
+        }
         if (StringUtils.isEmpty(snowstormErrorMessage)) {
             return "";
         }

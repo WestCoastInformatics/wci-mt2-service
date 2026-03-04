@@ -16,6 +16,7 @@ import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.BranchInformation;
+import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.sync.SyncAgent;
 import org.ihtsdo.refsetservice.util.StringUtility;
 import org.slf4j.Logger;
@@ -156,7 +157,7 @@ public final class BranchService {
                 throw new Exception(error);
             }
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             final JsonNode root = mapper.readTree(resultString);
             final JsonNode rootNode = root;
 
@@ -521,9 +522,13 @@ public final class BranchService {
      */
     private static String formatErrorMessage(final Response response) {
 
-        final String resultString = response.readEntity(String.class);
-
-        return formatErrorMessage(resultString);
+        try {
+            final String resultString = SnowstormConnection.readEntityAsString(response);
+            return formatErrorMessage(resultString);
+        } catch (final Exception e) {
+            LOG.warn("Could not read response entity: {}", e.getMessage());
+            return "";
+        }
     }
 
     /**
@@ -646,7 +651,7 @@ public final class BranchService {
 
             // create the body entity for the update call from the retrieved concept
             final ObjectMapper mapper = new ObjectMapper();
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             final JsonNode root = mapper.readTree(resultString);
             final String status = root.get("status").asText();
 
@@ -726,7 +731,7 @@ public final class BranchService {
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
 
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode organizationJsonRootNode = mapper.readTree(resultString);
@@ -753,7 +758,7 @@ public final class BranchService {
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
 
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode organizationJsonRootNode = mapper.readTree(resultString);
@@ -814,7 +819,7 @@ public final class BranchService {
                 throw new Exception(error);
             }
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
 
             LOG.info("perform branch merge result: " + resultString);
         }
@@ -927,7 +932,7 @@ public final class BranchService {
 
                 try (final Response mergeInfoResponse = SnowstormConnection.getResponse(jobStatusUrl)) {
 
-                    final String resultString = mergeInfoResponse.readEntity(String.class);
+                    final String resultString = SnowstormConnection.readEntityAsString(mergeInfoResponse);
                     final JsonNode root = mapper.readTree(resultString);
                     final String status = root.get("status").asText();
 
@@ -988,7 +993,7 @@ public final class BranchService {
 
                                 try (final Response stateResponse = SnowstormConnection.getResponse(stateUrl)) {
 
-                                    final String stateResultString = stateResponse.readEntity(String.class);
+                                    final String stateResultString = SnowstormConnection.readEntityAsString(stateResponse);
                                     final JsonNode stateRoot = mapper.readTree(stateResultString);
                                     final String state = stateRoot.get("state").asText();
 
@@ -1065,7 +1070,7 @@ public final class BranchService {
                     LOG.error("{} Status: {}. Message: {}", error , response.getStatus(), formatErrorMessage(response));
                 }
 
-                final String resultString = response.readEntity(String.class);
+                final String resultString = SnowstormConnection.readEntityAsString(response);
                 final JsonNode root = mapper.readTree(resultString);
                 final String status = root.get("status").asText();
                 LOG.info("merge review status: {}, source:{}, target:{}", status, sourceBranchPath, targetBranchPath);

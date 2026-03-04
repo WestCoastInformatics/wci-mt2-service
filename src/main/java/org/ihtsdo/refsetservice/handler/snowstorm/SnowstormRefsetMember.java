@@ -91,7 +91,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
                     "call to url '" + url + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
             }
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
 
             final ResultListConcept conceptList = RefsetMemberService.populateConcepts(root, refset, lookupParameters);
@@ -189,7 +189,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
                             throw new Exception(Integer.toString(response.getStatus()));
                         }
 
-                        final String resultString = response.readEntity(String.class);
+                        final String resultString = SnowstormConnection.readEntityAsString(response);
                         final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                         final JsonNode conceptNodeBatch = root.get("items");
 
@@ -426,7 +426,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
                         + response.getStatusInfo().getReasonPhrase());
                 }
 
-                final String resultString = response.readEntity(String.class);
+                final String resultString = SnowstormConnection.readEntityAsString(response);
                 final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                 final JsonNode node = root.get("items");
                 String currentVersionDate = null;
@@ -549,7 +549,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
                     "Call to url '" + memberCountUrl + "' wasn't successful. " + response.getStatus() + ": " + response.getStatusInfo().getReasonPhrase());
             }
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
             final int memberTotal = root.get("total").asInt();
 
@@ -597,7 +597,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
                                 + response.getStatusInfo().getReasonPhrase());
                         }
 
-                        final String resultString = response.readEntity(String.class);
+                        final String resultString = SnowstormConnection.readEntityAsString(response);
                         final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                         final JsonNode allResultNodes = root.get("items");
                         final Iterator<JsonNode> resultsIterator = allResultNodes.iterator();
@@ -733,7 +733,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
 
                 try (final Response response = SnowstormConnection.postResponse(conceptSearchUrl, conceptVerificationBody)) {
 
-                    final String resultString = response.readEntity(String.class);
+                    final String resultString = SnowstormConnection.readEntityAsString(response);
 
                     // Only process payload if Rest call is successful
                     if (response.getStatus() != Response.Status.OK.getStatusCode()) {
@@ -809,7 +809,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
 
                 try (final Response response = SnowstormConnection.postResponse(memberSearchUrl, memberSearchBody)) {
 
-                    final String resultString = response.readEntity(String.class);
+                    final String resultString = SnowstormConnection.readEntityAsString(response);
 
                     // Only process payload if Rest call is successful
                     if (response.getStatus() != Response.Status.OK.getStatusCode()) {
@@ -1010,7 +1010,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
                             errorMessage + " Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
                     }
 
-                    final String resultString = response.readEntity(String.class);
+                    final String resultString = SnowstormConnection.readEntityAsString(response);
                     final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
 
                     // LOG.debug("addRefsetMembers job status response: " + root);
@@ -1116,7 +1116,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
 
             try (final Response response = SnowstormConnection.getResponse(memberSearchUrl)) {
 
-                final String resultString = response.readEntity(String.class);
+                final String resultString = SnowstormConnection.readEntityAsString(response);
 
                 // Only process payload if Rest call is successful
                 if (response.getStatus() != Response.Status.OK.getStatusCode()) {
@@ -1347,7 +1347,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
                             errorMessage + " Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
                     }
 
-                    final String resultString = response.readEntity(String.class);
+                    final String resultString = SnowstormConnection.readEntityAsString(response);
                     final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
 
                     // LOG.debug("addRefsetMembers job status response: " + root);
@@ -1419,7 +1419,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
                 throw new Exception(Integer.toString(response.getStatus()));
             }
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
             count = root.get("total").asInt();
         }
@@ -1453,7 +1453,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
                     "call to url '" + url + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
             }
 
-            return response.readEntity(String.class);
+            return SnowstormConnection.readEntityAsString(response);
 
         } catch (final Exception ex) {
 

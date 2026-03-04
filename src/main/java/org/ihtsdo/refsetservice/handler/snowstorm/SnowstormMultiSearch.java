@@ -58,7 +58,7 @@ public class SnowstormMultiSearch extends SnowstormAbstract {
                     "call to url '" + url + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
             }
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
 
             if (root.get("buckets") != null) {
@@ -131,7 +131,7 @@ public class SnowstormMultiSearch extends SnowstormAbstract {
                     "call to url '" + url + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
             }
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
             final Set<String> conceptIds = new HashSet<>();
 
