@@ -287,7 +287,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                         "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
                 }
 
-                final String resultString = response.readEntity(String.class);
+                final String resultString = SnowstormConnection.readEntityAsString(response);
                 final JsonNode doc = ThreadLocalMapper.get().readTree(resultString);
                 final JsonNode conceptNodeBatch = doc.get("items");
                 final Iterator<JsonNode> conceptIterator = conceptNodeBatch.iterator();
@@ -356,7 +356,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                     "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
             }
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
 
             final JsonNode doc = ThreadLocalMapper.get().readTree(resultString);
             final JsonNode conceptNodeBatch = doc.get("items");
@@ -411,7 +411,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                     + " Message: " + response.getStatusInfo().getReasonPhrase());
             }
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
             final Iterator<JsonNode> iterator = root.get("items").iterator();
 
@@ -535,7 +535,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                     + response.getStatusInfo().getReasonPhrase());
             }
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
             final Iterator<JsonNode> iterator = root.get("items").iterator();
 
@@ -594,7 +594,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
             }
 
             // create the body entity for the update call from the retrieved concept
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             memberBody = (ObjectNode) ThreadLocalMapper.get().readTree(resultString).deepCopy();
         }
 
@@ -723,7 +723,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                     + response.getStatusInfo().getReasonPhrase());
             }
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
             final JsonNode allConceptNodes = root.get("items");
             final Iterator<JsonNode> conceptIterator = allConceptNodes.iterator();
@@ -804,7 +804,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
             }
 
             // read the results of the call for ancestors for many concepts
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
             final Iterator<JsonNode> iterator = root.iterator();
 
@@ -955,7 +955,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                         + formatErrorMessage(response));
                 }
 
-                final String resultString = response.readEntity(String.class);
+                final String resultString = SnowstormConnection.readEntityAsString(response);
                 final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                 final JsonNode conceptNodeBatch = root.get("items");
 
@@ -1224,7 +1224,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                     "Error looking up concept(s).");
             }
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
 
             // Only process payload if Rest call is successful
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
@@ -1269,7 +1269,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                         + response.getStatusInfo().getReasonPhrase());
                 }
 
-                final String resultString = response.readEntity(String.class);
+                final String resultString = SnowstormConnection.readEntityAsString(response);
                 final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                 final JsonNode items = root.get("items");
                 final Iterator<JsonNode> iterator = items.iterator();
@@ -1392,7 +1392,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                         + response.getStatusInfo().getReasonPhrase());
                 }
 
-                final String resultString = response.readEntity(String.class);
+                final String resultString = SnowstormConnection.readEntityAsString(response);
 
                 // Only process payload if Rest call is successful
                 if (response.getStatus() != Response.Status.OK.getStatusCode()) {
@@ -1491,7 +1491,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
             try (final Response response = SnowstormConnection.getResponse(memberDetailsUrl)) {
 
-                final String resultString = response.readEntity(String.class);
+                final String resultString = SnowstormConnection.readEntityAsString(response);
 
                 // Only process payload if Rest call is successful
                 if (response.getStatus() != Response.Status.OK.getStatusCode()) {
@@ -1581,7 +1581,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
                                         try (final Response response = SnowstormConnection.postResponse(conceptSearchUrl, memberSearchBody)) {
 
-                                            final String resultString = response.readEntity(String.class);
+                                            final String resultString = SnowstormConnection.readEntityAsString(response);
 
                                             // Only process payload if Rest call is successful
                                             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
@@ -1852,7 +1852,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                                 throw new Exception(Integer.toString(response.getStatus()));
                             }
 
-                            final String resultString = response.readEntity(String.class);
+                            final String resultString = SnowstormConnection.readEntityAsString(response);
                             final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                             final Iterator<JsonNode> iterator = root.get("items").iterator();
 
@@ -2244,7 +2244,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                     "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
             }
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
 
             // Check if this is a Parameters resource (FHIR lookup response)
@@ -2416,7 +2416,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                 return false;
             }
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
 
             // Check if this is a Parameters resource (FHIR lookup response)
@@ -2499,7 +2499,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                         "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
                 }
 
-                final String resultString = response.readEntity(String.class);
+                final String resultString = SnowstormConnection.readEntityAsString(response);
                 final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                 final JsonNode expansionNode = root.get("expansion");
 
@@ -2577,7 +2577,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                         "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
                 }
 
-                final String resultString = response.readEntity(String.class);
+                final String resultString = SnowstormConnection.readEntityAsString(response);
                 final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                 final JsonNode expansionNode = root.get("expansion");
 
@@ -2688,7 +2688,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                     "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
             }
 
-            resultString = response.readEntity(String.class);
+            resultString = SnowstormConnection.readEntityAsString(response);
         }
 
         return resultString;

@@ -209,7 +209,7 @@ public class SyncUtilities {
             }
 
             // get RefSets from edition as long as a) active & b) not a core refset
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             final ObjectMapper mapper = new ObjectMapper();
 
             final JsonNode root = mapper.readTree(resultString);
@@ -328,7 +328,7 @@ public class SyncUtilities {
                 throw new Exception("Failed to get branch information to obtain optional language refsets for edition's main branch");
             }
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode root = mapper.readTree(resultString);
 
@@ -382,7 +382,7 @@ public class SyncUtilities {
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
 
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode branchJsonRootNode = mapper.readTree(resultString);

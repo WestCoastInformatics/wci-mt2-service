@@ -19,6 +19,7 @@ import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
+import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnomedConstants;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.PfsParameter;
@@ -204,7 +205,7 @@ public class EditionService extends BaseService {
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
 
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode codeSystemJsonRootNode = mapper.readTree(resultString);
@@ -243,7 +244,7 @@ public class EditionService extends BaseService {
                     + formatErrorMessage(response));
             }
             
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode codeSystemJsonRootNode = mapper.readTree(resultString);
 
@@ -414,7 +415,7 @@ public class EditionService extends BaseService {
 
             try (final Response response = SnowstormConnection.getResponse(url)) {
 
-                final String resultString = response.readEntity(String.class);
+                final String resultString = SnowstormConnection.readEntityAsString(response);
 
                 final ObjectMapper mapper = new ObjectMapper();
                 final JsonNode root = mapper.readTree(resultString);
@@ -457,7 +458,7 @@ public class EditionService extends BaseService {
 
             try (final Response response = SnowstormConnection.getResponse(url)) {
 
-                final String resultString = response.readEntity(String.class);
+                final String resultString = SnowstormConnection.readEntityAsString(response);
 
                 final ObjectMapper mapper = new ObjectMapper();
                 final Iterator<JsonNode> moduleDependencyIterator = mapper.readTree(resultString).get("items").iterator();
@@ -512,7 +513,13 @@ public class EditionService extends BaseService {
      */
     private static String formatErrorMessage(final Response response) {
 
-        String snowstormErrorMessage = response.readEntity(String.class);
+        String snowstormErrorMessage;
+        try {
+            snowstormErrorMessage = SnowstormConnection.readEntityAsString(response);
+        } catch (final Exception e) {
+            LOG.warn("Could not read response entity: {}", e.getMessage());
+            return "";
+        }
         if (StringUtils.isEmpty(snowstormErrorMessage)) {
             return "";
         }

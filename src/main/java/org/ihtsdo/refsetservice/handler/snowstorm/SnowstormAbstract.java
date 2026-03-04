@@ -12,6 +12,7 @@ package org.ihtsdo.refsetservice.handler.snowstorm;
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
+import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.util.StringUtility;
 import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
@@ -38,7 +39,13 @@ public class SnowstormAbstract {
      */
     public static String formatErrorMessage(final Response response) {
 
-        String snowstormErrorMessage = response.readEntity(String.class);
+        String snowstormErrorMessage;
+        try {
+            snowstormErrorMessage = SnowstormConnection.readEntityAsString(response);
+        } catch (final Exception e) {
+            LOG.warn("Could not read response entity: {}", e.getMessage());
+            return "";
+        }
         if (StringUtils.isEmpty(snowstormErrorMessage)) {
             return "";
         }

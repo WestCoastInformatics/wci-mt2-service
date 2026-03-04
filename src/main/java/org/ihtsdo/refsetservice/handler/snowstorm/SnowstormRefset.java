@@ -171,7 +171,7 @@ public class SnowstormRefset extends SnowstormAbstract {
                     throw new Exception(Integer.toString(response.getStatus()));
                 }
 
-                final String resultString = response.readEntity(String.class);
+                final String resultString = SnowstormConnection.readEntityAsString(response);
 
                 final JsonNode root = mapper.readTree(resultString);
                 final JsonNode conceptNode = root;
@@ -361,7 +361,7 @@ public class SnowstormRefset extends SnowstormAbstract {
                 throw new Exception(Integer.toString(response.getStatus()));
             }
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode root = mapper.readTree(resultString);
             final JsonNode conceptNode = root;
@@ -419,7 +419,7 @@ public class SnowstormRefset extends SnowstormAbstract {
                         + response.getStatusInfo().getReasonPhrase());
                 }
 
-                final String resultString = response.readEntity(String.class);
+                final String resultString = SnowstormConnection.readEntityAsString(response);
 
                 // Only process payload if Rest call is successful
                 if (response.getStatus() != Response.Status.OK.getStatusCode()) {
@@ -530,7 +530,7 @@ public class SnowstormRefset extends SnowstormAbstract {
                     "call to url '" + url + "' wasn't successful. Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
             }
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
 
             // Only process payload if Rest call is successful
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
@@ -580,7 +580,7 @@ public class SnowstormRefset extends SnowstormAbstract {
 
                 // create the body entity for the update call from the retrieved concept
                 final ObjectMapper mapper = new ObjectMapper();
-                final String resultString = response.readEntity(String.class);
+                final String resultString = SnowstormConnection.readEntityAsString(response);
                 final JsonNode conceptNode = mapper.readTree(resultString);
 
                 return conceptNode.get("pt").get("term").asText();

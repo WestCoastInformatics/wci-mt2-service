@@ -323,7 +323,7 @@ public class SyncCodeSystemDeterminer {
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
 
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode organizationJsonRootNode = mapper.readTree(resultString);

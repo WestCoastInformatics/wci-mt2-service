@@ -823,7 +823,7 @@ public class SyncRefsetAgent extends SyncAgent {
             }
 
             // get RefSets from edition as long as a) active & b) not a core refset
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             final ObjectMapper mapper = new ObjectMapper();
 
             final JsonNode root = mapper.readTree(resultString);
@@ -907,7 +907,7 @@ public class SyncRefsetAgent extends SyncAgent {
             }
 
             // get RefSets from edition as long as a) active & b) not a core refset
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode root = mapper.readTree(resultString);
 
@@ -999,7 +999,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode conceptNode = mapper.readTree(resultString);
 
@@ -1357,7 +1357,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
             try (final Response response = SnowstormConnection.getResponse(genericUrl.replace("{branch}", parentBranchPath))) {
 
-                final String resultString = response.readEntity(String.class);
+                final String resultString = SnowstormConnection.readEntityAsString(response);
                 final ObjectMapper mapper = new ObjectMapper();
                 final JsonNode root = mapper.readTree(resultString);
 

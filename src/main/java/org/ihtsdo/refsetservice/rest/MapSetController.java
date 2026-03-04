@@ -262,6 +262,9 @@ public class MapSetController extends BaseController {
 		if (!StringUtils.isBlank(mapSetExportRequest.getStartEffectiveTime())) {
 			mapSetExportRequest.setStartEffectiveTime(null);
 		}
+		
+		//TODO: Get language + "FSN" or "PT" from UI
+		mapSetExportRequest.setLanguageId("900000000000509007PT"); // English language refset
 
 		final User user = getUser();
 
