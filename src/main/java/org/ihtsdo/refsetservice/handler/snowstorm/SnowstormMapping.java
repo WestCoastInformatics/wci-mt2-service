@@ -450,6 +450,7 @@ public class SnowstormMapping extends SnowstormAbstract {
                 mapEntry.setRelation("");
                 mapEntry.setToCode("");
                 mapEntry.setToName("");
+                mapping.getMapEntries().add(mapEntry);
                 conceptIdToMappingMap.put(conceptId, mapping);
             }
         }
