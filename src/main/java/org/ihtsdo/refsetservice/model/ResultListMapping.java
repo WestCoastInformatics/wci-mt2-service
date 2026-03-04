@@ -9,6 +9,7 @@
  */
 package org.ihtsdo.refsetservice.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.ihtsdo.refsetservice.util.ResultList;
@@ -20,6 +21,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
  */
 @Schema(description = "Represents a list of mappings returned from a find call")
 public class ResultListMapping extends ResultList<Mapping> {
+
+    /** Concept IDs that were requested but are not valid (e.g. not found). Only set when conceptCodes were supplied. */
+    @Schema(description = "Concept IDs that were requested but could not be resolved (e.g. not found). Present only when conceptCodes were supplied and some were invalid.")
+    private List<String> invalidConceptIds;
 
     /**
      * Instantiates an empty {@link ResultListMapping}.
@@ -47,5 +52,28 @@ public class ResultListMapping extends ResultList<Mapping> {
     public ResultListMapping(final ResultListMapping other) {
 
         super.populateFrom(other);
+        if (other.invalidConceptIds != null) {
+            this.invalidConceptIds = new ArrayList<>(other.invalidConceptIds);
+        }
+    }
+
+    /**
+     * Gets the list of concept IDs that were requested but could not be resolved.
+     *
+     * @return the invalid concept IDs, or null if none
+     */
+    public List<String> getInvalidConceptIds() {
+
+        return invalidConceptIds;
+    }
+
+    /**
+     * Sets the list of concept IDs that were requested but could not be resolved.
+     *
+     * @param invalidConceptIds the invalid concept IDs
+     */
+    public void setInvalidConceptIds(final List<String> invalidConceptIds) {
+
+        this.invalidConceptIds = invalidConceptIds;
     }
 }
