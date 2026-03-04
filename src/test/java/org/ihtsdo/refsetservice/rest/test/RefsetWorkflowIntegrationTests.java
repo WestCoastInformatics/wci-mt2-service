@@ -18,8 +18,8 @@ import java.util.List;
 import java.util.Set;
 
 import org.ihtsdo.refsetservice.model.Refset;
-import org.ihtsdo.refsetservice.model.ResultListConcept;
 import org.ihtsdo.refsetservice.model.RefsetWorkflowHistory;
+import org.ihtsdo.refsetservice.model.ResultListConcept;
 import org.ihtsdo.refsetservice.model.enums.WorkflowAction;
 import org.ihtsdo.refsetservice.model.enums.WorkflowStatus;
 import org.ihtsdo.refsetservice.rest.test.util.EditUnitTestUtilities;

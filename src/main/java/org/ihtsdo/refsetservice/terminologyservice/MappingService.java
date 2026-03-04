@@ -10,7 +10,6 @@
 package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.io.File;
-import java.nio.file.Paths;
 import java.util.List;
 
 import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
