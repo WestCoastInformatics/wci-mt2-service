@@ -15,7 +15,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -74,6 +73,9 @@ public final class SnowstormConnection {
 
     /** The default English language acceptance strings. */
     public static final String DEFAULT_ACCECPT_LANGUAGES = "en-X-900000000000509007,en-X-900000000000508004,en";
+
+    /** Cached RESTEasy client – created once, reused for all Snowstorm calls. */
+    private static volatile Client sharedClient;
 
     /** Static initialization. */
     static {
@@ -203,31 +205,6 @@ public final class SnowstormConnection {
 
         // Convert the JSON string to a Map so JacksonJsonProvider can serialize it as JSON
         final Map<String, Object> entityMap = jsonToMap(entity);
-
-        // #region agent log
-        try {
-            final Map<String, Object> data = new HashMap<>();
-            data.put("url", url);
-            data.put("entityClass", entityMap != null ? entityMap.getClass().getName() : "null");
-            data.put("clientClass", client.getClass().getName());
-            data.put("runId", "post-fix-map");
-
-            final Map<String, Object> logEntry = new HashMap<>();
-            logEntry.put("sessionId", "d7a125");
-            logEntry.put("hypothesisId", "H1");
-            logEntry.put("location", "SnowstormConnection.java:193");
-            logEntry.put("message", "postResponse before POST");
-            logEntry.put("data", data);
-            logEntry.put("timestamp", System.currentTimeMillis());
-
-            final String json = ThreadLocalMapper.get().writeValueAsString(logEntry);
-            java.nio.file.Files.write(java.nio.file.Paths.get("debug-d7a125.log"),
-                (json + System.lineSeparator()).getBytes(java.nio.charset.StandardCharsets.UTF_8),
-                java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
-        } catch (final Exception e) {
-            // ignore instrumentation failures
-        }
-        // #endregion agent log
 
         // Send Map so JacksonJsonProvider can write application/json correctly
         final Response response = builder.post(Entity.entity(entityMap, MediaType.APPLICATION_JSON));
@@ -367,17 +344,25 @@ public final class SnowstormConnection {
      * on the classpath.
      */
     public static Client configClient(final Client client) {
-        // ByteArrayProvider is already registered by RESTEasy – do not register again
+        client.register(ByteArrayProvider.class);
         client.register(JacksonJsonProvider.class);
         return client;
     }
 
     /**
-     * Creates a new RESTEasy client for Snowstorm calls. Uses ResteasyClientBuilderImpl to ensure
-     * RESTEasy (with DELETE+body support) is used when Jersey is also on the classpath.
+     * Returns the shared RESTEasy client for Snowstorm calls. Created once, reused for all requests.
+     * Uses ResteasyClientBuilderImpl to ensure RESTEasy (with DELETE+body support) is used when
+     * Jersey is also on the classpath.
      */
     public static Client getClient() {
-        return configClient(new ResteasyClientBuilderImpl().build());
+        if (sharedClient == null) {
+            synchronized (SnowstormConnection.class) {
+                if (sharedClient == null) {
+                    sharedClient = configClient(new ResteasyClientBuilderImpl().build());
+                }
+            }
+        }
+        return sharedClient;
     }
 
     /**
@@ -403,12 +388,9 @@ public final class SnowstormConnection {
     public static String readEntityAsString(Response response) throws Exception {
 
         try {
-            // Read as byte array (using ByteArrayProvider) and convert to String once
-            byte[] bytes = response.readEntity(byte[].class);
-            return new String(bytes, StandardCharsets.UTF_8);
-
+            return response.readEntity(String.class);
         } catch (Exception e) {
-            LOG.error("Could not read entity as byte array: {}", e.getMessage());
+            LOG.error("Could not read response entity: {}", e.getMessage());
             throw new LocalException("Could not read response entity: " + e.getMessage());
         }
     }
