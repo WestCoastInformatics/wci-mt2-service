@@ -138,7 +138,7 @@ public class Rf2SnapshotExportStrategy extends AbstractMapSetExportStrategy {
 
         } else {
 
-            final Path exportFilePath = Paths.get(exportFileDir + mt2VersionFileName);
+            final Path exportFilePath = Paths.get(exportFileDir, mt2VersionFileName);
 
             if (!Files.exists(exportFilePath)) {
 
