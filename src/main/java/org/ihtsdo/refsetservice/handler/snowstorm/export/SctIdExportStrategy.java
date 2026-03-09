@@ -105,13 +105,16 @@ public class SctIdExportStrategy extends AbstractMapSetExportStrategy {
                 LOG.info("RF2 snapshot file not found in S3, generating it first...");
 
                 final Set<String> moduleIds = new HashSet<>();
-                moduleIds.add(mapProject.getModuleId());
+                if (mapProject.getModuleId() != null) {
+                    moduleIds.add(mapProject.getModuleId());
+                }
                 moduleIds.add(SnomedConstants.SNOMEDCT_TO_ICD10_MAPPING_MODULE);
 
-                final ExportRequestBuilder builder = new ExportRequestBuilder().withRefsetId(mapSet.getRefSetCode()).withBranchPath(request.getBranch())
-                    .withConceptsAndRelationshipsOnly(false).withFilenameEffectiveDate(request.getFileNameDate()).withLegacyZipNaming(false)
-                    .withType(FileFormatType.SNAPSHOT).withUnpromotedChangesOnly(false).withModuleIds(moduleIds)
-                    .withTransientEffectiveTime(request.getTransientEffectiveTime()).withStartEffectiveTime(request.getStartEffectiveTime());
+                final ExportRequestBuilder builder =
+                    new ExportRequestBuilder().withRefsetId(mapSet.getRefSetCode()).withBranchPath(request.getBranch()).withConceptsAndRelationshipsOnly(false)
+                        .withFilenameEffectiveDate(request.getFileNameDate()).withLegacyZipNaming(false).withType(FileFormatType.SNAPSHOT)
+                        .withUnpromotedChangesOnly(false).withModuleIds(moduleIds).withTransientEffectiveTime(request.getTransientEffectiveTime())
+                        .withStartEffectiveTime(request.getStartEffectiveTime()).withStartExport(false);
                 final String exportRequestParameters = builder.build();
 
                 LOG.info("Generating RF2 snapshot file: {}", exportRequestParameters);

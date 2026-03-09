@@ -9,15 +9,18 @@
  */
 package org.ihtsdo.refsetservice.terminologyservice;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation.Builder;
 import javax.ws.rs.client.WebTarget;
@@ -25,6 +28,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
+
+import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
+import org.jboss.resteasy.plugins.providers.ByteArrayProvider;
 
 import org.ihtsdo.refsetservice.util.LocalException;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
@@ -68,6 +74,9 @@ public final class SnowstormConnection {
     /** The default English language acceptance strings. */
     public static final String DEFAULT_ACCECPT_LANGUAGES = "en-X-900000000000509007,en-X-900000000000508004,en";
 
+    /** Cached RESTEasy client – created once, reused for all Snowstorm calls. */
+    private static volatile Client sharedClient;
+
     /** Static initialization. */
     static {
         baseUrl = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.baseUrl");
@@ -104,7 +113,7 @@ public final class SnowstormConnection {
      */
     public static Response getResponse(final String url, final String language) throws Exception {
 
-        final Client client = getClient(ClientBuilder.newClient());
+        final Client client = getClient();
         final WebTarget target = client.target(url);
         String cookie = getGenericUserCookie(false);
         Response response = null;
@@ -146,39 +155,33 @@ public final class SnowstormConnection {
     }
 
     /**
-     * Calls a Snowstorm URL and returns the response.
+     * Downloads a file from the given URL. Uses Java HttpClient to bypass RESTEasy, which fails on
+     * binary responses when the server omits Content-Type or returns a generic type.
      *
-     * @param url The Snowstorm URL to call
-     * @return The Snowstorm response
-     * @throws Exception the exception
+     * @param url The Snowstorm archive URL to download
+     * @return The file content as an InputStream
+     * @throws Exception on download failure
      */
-    @SuppressWarnings("resource")
     public static InputStream getFileDownload(final String url) throws Exception {
 
-        final Client client = getClient(ClientBuilder.newClient());
-        final WebTarget target = client.target(url);
-
         final String cookie = getGenericUserCookie(false);
-        final Builder builder = target.request("application/zip").header(HttpHeaders.ACCEPT_LANGUAGE, DEFAULT_ACCECPT_LANGUAGES);
-
+        final HttpRequest.Builder requestBuilder = HttpRequest.newBuilder().uri(URI.create(url)).header("Accept", "application/zip")
+            .header(HttpHeaders.ACCEPT_LANGUAGE, DEFAULT_ACCECPT_LANGUAGES);
         if (cookie != null && !cookie.isEmpty()) {
-            builder.header("Cookie", cookie);
+            requestBuilder.header("Cookie", cookie);
         }
+        final HttpRequest request = requestBuilder.GET().build();
 
-        // Get the response
-        final Response response = builder.get();
+        final HttpClient httpClient = HttpClient.newBuilder().build();
+        final HttpResponse<byte[]> response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
 
-        // Check if the response was successful
-        if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-            String errorMsg = "Failed to download file. Status: " + response.getStatus();
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            final String errorMsg = "Failed to download file. Status: " + response.statusCode();
             LOG.error(errorMsg);
             throw new LocalException(errorMsg);
         }
 
-        // Read the entity as an InputStream so we don't depend on a byte[] MessageBodyReader
-        final InputStream inputStream = response.readEntity(InputStream.class);
-
-        return inputStream;
+        return new ByteArrayInputStream(response.body());
     }
 
     /**
@@ -191,7 +194,7 @@ public final class SnowstormConnection {
      */
     public static Response postResponse(final String url, final String entity) throws Exception {
 
-        final Client client = getClient(ClientBuilder.newClient());
+        final Client client = getClient();
         final WebTarget target = client.target(url);
         final Builder builder = target.request(MediaType.APPLICATION_JSON).header(HttpHeaders.ACCEPT_LANGUAGE, DEFAULT_ACCECPT_LANGUAGES);
 
@@ -202,31 +205,6 @@ public final class SnowstormConnection {
 
         // Convert the JSON string to a Map so JacksonJsonProvider can serialize it as JSON
         final Map<String, Object> entityMap = jsonToMap(entity);
-
-        // #region agent log
-        try {
-            final Map<String, Object> data = new HashMap<>();
-            data.put("url", url);
-            data.put("entityClass", entityMap != null ? entityMap.getClass().getName() : "null");
-            data.put("clientClass", client.getClass().getName());
-            data.put("runId", "post-fix-map");
-
-            final Map<String, Object> logEntry = new HashMap<>();
-            logEntry.put("sessionId", "d7a125");
-            logEntry.put("hypothesisId", "H1");
-            logEntry.put("location", "SnowstormConnection.java:193");
-            logEntry.put("message", "postResponse before POST");
-            logEntry.put("data", data);
-            logEntry.put("timestamp", System.currentTimeMillis());
-
-            final String json = ThreadLocalMapper.get().writeValueAsString(logEntry);
-            java.nio.file.Files.write(java.nio.file.Paths.get("debug-d7a125.log"),
-                (json + System.lineSeparator()).getBytes(java.nio.charset.StandardCharsets.UTF_8),
-                java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
-        } catch (final Exception e) {
-            // ignore instrumentation failures
-        }
-        // #endregion agent log
 
         // Send Map so JacksonJsonProvider can write application/json correctly
         final Response response = builder.post(Entity.entity(entityMap, MediaType.APPLICATION_JSON));
@@ -244,7 +222,7 @@ public final class SnowstormConnection {
      */
     public static Response putResponse(final String url, final String entity) throws Exception {
 
-        final Client client = getClient(ClientBuilder.newClient());
+        final Client client = getClient();
         final WebTarget target = client.target(url);
         final Builder builder = target.request(MediaType.APPLICATION_JSON).header(HttpHeaders.ACCEPT_LANGUAGE, DEFAULT_ACCECPT_LANGUAGES);
 
@@ -268,7 +246,7 @@ public final class SnowstormConnection {
      */
     public static Response deleteResponse(final String url, final String entity) throws Exception {
 
-        final Client client = getClient(ClientBuilder.newClient());
+        final Client client = getClient();
         final WebTarget target = client.target(url);
         final Builder builder = target.request(ACCEPT).header(HttpHeaders.ACCEPT_LANGUAGE, DEFAULT_ACCECPT_LANGUAGES);
 
@@ -325,7 +303,7 @@ public final class SnowstormConnection {
         }
 
         // Login the generic user, then save and return the cookie
-        final Client client = getClient(ClientBuilder.newClient());
+        final Client client = getClient();
         final WebTarget target = client.target(authUrl + "authenticate");
         final Builder builder = target.request(MediaType.APPLICATION_JSON);
 
@@ -361,15 +339,30 @@ public final class SnowstormConnection {
     }
 
     /**
-     * Configures a client with all necessary providers for JSON processing.
-     *
-     * @param client the client to configure
-     * @return the configured client
+     * Creates a RESTEasy client with all providers needed for Snowstorm API (DELETE with body, JSON,
+     * binary). Uses ResteasyClientBuilderImpl to ensure RESTEasy is used (not Jersey) when both are
+     * on the classpath.
      */
-    public static Client getClient(final Client client) {
-        // RESTEasy default client already has InputStreamProvider and ByteArrayProvider; only add JSON
+    public static Client configClient(final Client client) {
+        client.register(ByteArrayProvider.class);
         client.register(JacksonJsonProvider.class);
         return client;
+    }
+
+    /**
+     * Returns the shared RESTEasy client for Snowstorm calls. Created once, reused for all requests.
+     * Uses ResteasyClientBuilderImpl to ensure RESTEasy (with DELETE+body support) is used when
+     * Jersey is also on the classpath.
+     */
+    public static Client getClient() {
+        if (sharedClient == null) {
+            synchronized (SnowstormConnection.class) {
+                if (sharedClient == null) {
+                    sharedClient = configClient(new ResteasyClientBuilderImpl().build());
+                }
+            }
+        }
+        return sharedClient;
     }
 
     /**
@@ -395,12 +388,9 @@ public final class SnowstormConnection {
     public static String readEntityAsString(Response response) throws Exception {
 
         try {
-            // Read as byte array (using ByteArrayProvider) and convert to String once
-            byte[] bytes = response.readEntity(byte[].class);
-            return new String(bytes, StandardCharsets.UTF_8);
-
+            return response.readEntity(String.class);
         } catch (Exception e) {
-            LOG.error("Could not read entity as byte array: {}", e.getMessage());
+            LOG.error("Could not read response entity: {}", e.getMessage());
             throw new LocalException("Could not read response entity: " + e.getMessage());
         }
     }

@@ -175,7 +175,7 @@ public final class LanguageUtility {
 
         try (final Response response = SnowstormConnection.getResponse(conceptLookupUrl)) {
 
-            final String resultString = response.readEntity(String.class);
+            final String resultString = SnowstormConnection.readEntityAsString(response);
 
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode root = mapper.readTree(resultString);

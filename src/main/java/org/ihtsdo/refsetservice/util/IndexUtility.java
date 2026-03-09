@@ -42,6 +42,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
@@ -973,7 +974,7 @@ public final class IndexUtility {
             WebTarget target = client.target(esUrl);
             try (Response response = target.request().get()) {
                 if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-                    final String resultString = response.readEntity(String.class);
+                    final String resultString = SnowstormConnection.readEntityAsString(response);
 
                     // if the index isn't found it then just log it and exit the
                     // function
@@ -983,7 +984,7 @@ public final class IndexUtility {
                     }
 
                     LOG.error("Unexpected attempt to search index = " + index);
-                    throw new WebApplicationException(response.readEntity(String.class), response.getStatus());
+                    throw new WebApplicationException(SnowstormConnection.readEntityAsString(response), response.getStatus());
                 }
             }
 
@@ -995,7 +996,7 @@ public final class IndexUtility {
             try (Response response = target.request().put(Entity.json(requestBody))) {
                 if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
                     LOG.error("Unexpected attempt to set max index size = " + index);
-                    throw new WebApplicationException(response.readEntity(String.class), response.getStatus());
+                    throw new WebApplicationException(SnowstormConnection.readEntityAsString(response), response.getStatus());
                 }
             }
         }

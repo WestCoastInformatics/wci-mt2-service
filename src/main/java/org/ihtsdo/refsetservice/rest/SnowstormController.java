@@ -64,10 +64,10 @@ public class SnowstormController extends BaseController {
 
 				if (response.getStatus() != 200) {
 					LOG.info("ERROR from snowstorm server {}", response.getStatus());
-					LOG.info("{}", response.readEntity(String.class));
+					LOG.info("{}", SnowstormConnection.readEntityAsString(response));
 					throw new RestException(false, 417, "Expectation failed", "Error occured performing lookup.");
 				}
-				final String json = response.readEntity(String.class);
+				final String json = SnowstormConnection.readEntityAsString(response);
 				return new ResponseEntity<>(json, HttpStatus.OK);
 			}
 		} catch (final Exception e) {
@@ -100,10 +100,10 @@ public class SnowstormController extends BaseController {
 
 				if (response.getStatus() < 200 && response.getStatus() > 399) {
 					LOG.info("ERROR from snowstorm server {}", response.getStatus());
-					LOG.info("{}", response.readEntity(String.class));
+					LOG.info("{}", SnowstormConnection.readEntityAsString(response));
 					throw new RestException(false, 417, "Expectation failed", "Error occured performing lookup.");
 				}
-				final String json = response.readEntity(String.class);
+				final String json = SnowstormConnection.readEntityAsString(response);
 				return new ResponseEntity<>(json, HttpStatus.OK);
 			}
 		} catch (final Exception e) {

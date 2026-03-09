@@ -35,7 +35,7 @@ public final class SnomedConstants {
 
     /** The column index of the concept ID in an RF2 file. */
     public static final int REFEST_RF2_CONCEPTID_COLUMN = 5;
-    
+
     /** The description type. */
     public static final String DESCRIPTION_TYPE = "type";
 

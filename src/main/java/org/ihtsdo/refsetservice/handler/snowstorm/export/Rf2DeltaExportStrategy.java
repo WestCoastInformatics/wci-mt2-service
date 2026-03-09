@@ -119,7 +119,9 @@ public class Rf2DeltaExportStrategy extends AbstractMapSetExportStrategy {
                 LOG.info("versionsInScope: {}", versionsInScope);
 
                 final Set<String> moduleIds = new HashSet<>();
-                moduleIds.add(mapProject.getModuleId());
+                if (mapProject.getModuleId() != null) {
+                    moduleIds.add(mapProject.getModuleId());
+                }
                 moduleIds.add(SnomedConstants.SNOMEDCT_TO_ICD10_MAPPING_MODULE);
 
                 // Local place to store snowBaseVersionFileName
@@ -158,7 +160,7 @@ public class Rf2DeltaExportStrategy extends AbstractMapSetExportStrategy {
                         final ExportRequestBuilder builder = new ExportRequestBuilder().withRefsetId(mapSet.getRefSetCode())
                             .withBranchPath(mapSet.getBranchPath()).withConceptsAndRelationshipsOnly(false).withFilenameEffectiveDate(transientEffectiveTime)
                             .withLegacyZipNaming(false).withType(FileFormatType.SNAPSHOT).withUnpromotedChangesOnly(false).withModuleIds(moduleIds)
-                            .withStartEffectiveTime(request.getStartEffectiveTime()).withTransientEffectiveTime(transientEffectiveTime);
+                            .withStartEffectiveTime(request.getStartEffectiveTime()).withTransientEffectiveTime(transientEffectiveTime).withStartExport(false);
 
                         final String exportRequestParameters = builder.build();
 
