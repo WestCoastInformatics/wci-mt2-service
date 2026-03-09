@@ -113,6 +113,11 @@ public class Artifact extends AbstractHasModified {
   public void populateFrom(final Artifact other) {
 
     super.populateFrom(other);
+    this.entityType = other.getEntityType();
+    this.entityId = other.getEntityId();
+    this.fileName = other.getFileName();
+    this.storedFileName = other.getStoredFileName();
+    this.fileType = other.getFileType();
     this.description = other.getDescription();
 
   }
