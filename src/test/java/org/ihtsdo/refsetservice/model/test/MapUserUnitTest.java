@@ -2,7 +2,8 @@ package org.ihtsdo.refsetservice.model.test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.ihtsdo.refsetservice.model.MapRelation;
+import org.ihtsdo.refsetservice.helpers.MapUserRole;
+import org.ihtsdo.refsetservice.model.MapUser;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.test.CopyConstructorTester;
@@ -12,69 +13,48 @@ import org.ihtsdo.refsetservice.test.GetterSetterTester;
 import org.ihtsdo.refsetservice.test.SerializationTester;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+/**
+ * Unit test for {@link MapUser}.
+ */
 @SpringBootTest
 @ActiveProfiles("test")
-public class MapRelationUnitTest extends BaseTest {
+public class MapUserUnitTest extends BaseTest {
 
-    @SuppressWarnings("unused")
-    private static final Logger LOG = LoggerFactory.getLogger(MapRelationUnitTest.class);
+    private MapUser object;
 
-    /** The model object to test. */
-    private MapRelation object;
-
-    /**
-     * Setup.
-     *
-     * @throws Exception the exception
-     */
     @BeforeEach
     public void setup() throws Exception {
 
-        // MapRelation
-        object = new MapRelation();
-
+        object = new MapUser();
+        object.setApplicationRole(MapUserRole.LEAD);
     }
 
-    /**
-     * Test getter and setter methods of model object.
-     *
-     * @throws Exception the exception
-     */
     @Test
     public void testModelGetSet() throws Exception {
 
         final GetterSetterTester tester = new GetterSetterTester(object);
+        tester.exclude("authToken");
         tester.test();
     }
 
-    /**
-     * Test equals and hashcode methods.
-     *
-     * @throws Exception the exception
-     */
     @Test
     public void testModelEqualsHashcode() throws Exception {
 
         final EqualsHashcodeTester tester = new EqualsHashcodeTester(object);
-        // from AbstractHasModified
         tester.exclude("id");
         tester.exclude("created");
         tester.exclude("modified");
         tester.exclude("modifiedBy");
         tester.exclude("active");
-
-        tester.include("terminologyId");
+        tester.include("userName");
         tester.include("name");
-        tester.include("abbreviation");
-
-        tester.exclude("allowableForNullTarget");
-        tester.exclude("computed");
-
+        tester.include("email");
+        tester.include("applicationRole");
+        tester.include("team");
+        tester.exclude("authToken");
         assertTrue(tester.testIdentityFieldEquals());
         assertTrue(tester.testNonIdentityFieldEquals());
         assertTrue(tester.testIdentityFieldNotEquals());
@@ -83,35 +63,26 @@ public class MapRelationUnitTest extends BaseTest {
         assertTrue(tester.testIdentityFieldDifferentHashcode());
     }
 
-    /**
-     * Test model copy.
-     *
-     * @throws Exception the exception
-     */
     @Test
     public void testModelCopy() throws Exception {
 
         final CopyConstructorTester tester = new CopyConstructorTester(object);
-        assertTrue(tester.testCopyConstructor(MapRelation.class));
+        tester.exclude("id");
+        tester.exclude("created");
+        tester.exclude("modified");
+        tester.exclude("modifiedBy");
+        tester.exclude("active");
+        assertTrue(tester.testCopyConstructor(MapUser.class));
     }
 
-    /**
-     * Test model serialization.
-     *
-     * @throws Exception the exception
-     */
     @Test
     public void testModelSerialization() throws Exception {
 
         final SerializationTester tester = new SerializationTester(object);
+        tester.exclude("authToken");
         assertTrue(tester.testJsonSerialization());
     }
 
-    /**
-     * Test persistence.
-     *
-     * @throws Exception the exception
-     */
     @Test
     public void testPersistence() throws Exception {
 
@@ -120,25 +91,24 @@ public class MapRelationUnitTest extends BaseTest {
             service.setModifiedBy("test");
             service.setModifiedFlag(true);
 
-            final ProxyTester tester = new ProxyTester(new MapRelation());
-            final MapRelation object = (MapRelation) tester.createObject(1);
+            final ProxyTester tester = new ProxyTester(new MapUser());
+            final MapUser object = (MapUser) tester.createObject(1);
             object.setId(null);
-            object.setName("test-map-relation-" + System.currentTimeMillis());
+            object.setUserName("test-map-user-" + System.currentTimeMillis());
 
             service.add(object);
 
-            final MapRelation retrieved = service.get(object.getId(), MapRelation.class);
+            final MapUser retrieved = service.get(object.getId(), MapUser.class);
             if (!object.getId().equals(retrieved.getId())) {
                 throw new Exception("Original id unexpectedly does not match retrieved object id = " + object.getId() + ", " + retrieved.getId());
             }
 
             service.remove(object);
 
-            final MapRelation afterRemove = service.get(object.getId(), MapRelation.class);
+            final MapUser afterRemove = service.get(object.getId(), MapUser.class);
             if (afterRemove != null) {
                 throw new Exception("Search results unexpectedly not empty = " + afterRemove.getId());
             }
         }
     }
-
 }
