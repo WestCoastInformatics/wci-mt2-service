@@ -951,7 +951,7 @@ public class SnowstormMapping extends SnowstormAbstract {
             // If the mapping only has one empty entry, don't save it to snowstorm.  
             // This is a special case for mappings brought in to batch edit via list of concept ids, and
             // if no map information was added we don't want to create a new, empty map.
-            if (submittedMapping.getMapEntries().size() == 1 && submittedMapping.getMapEntries().get(0).getToCode() == null && submittedMapping.getMapEntries().get(0).getToName() == null && submittedMapping.getMapEntries().get(0).getRelation() == null) {
+            if (submittedMapping.getMapEntries().size() == 1 && submittedMapping.getMapEntries().get(0).getToCode().isEmpty() && submittedMapping.getMapEntries().get(0).getToName().isEmpty() && (submittedMapping.getMapEntries().get(0).getRelation() == null || submittedMapping.getMapEntries().get(0).getRelation().equals("---"))) {
                 LOG.info("No update required for mapping for {} - empty mapping with no pre-existing map entries", submittedMapping.getCode());
                 return submittedMapping;
             }
