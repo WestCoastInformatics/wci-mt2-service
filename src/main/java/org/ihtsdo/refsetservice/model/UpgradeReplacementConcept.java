@@ -224,6 +224,7 @@ public class UpgradeReplacementConcept extends AbstractHasModified {
     result = prime * result + ((code == null) ? 0 : code.hashCode());
     result = prime * result + ((memberId == null) ? 0 : memberId.hashCode());
     result = prime * result + ((descriptions == null) ? 0 : descriptions.hashCode());
+    result = prime * result + ((reason == null) ? 0 : reason.hashCode());
     result = prime * result + (existingMember ? 1 : 0);
     result = prime * result + (added ? 1 : 0);
     return result;

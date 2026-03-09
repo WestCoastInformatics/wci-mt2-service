@@ -6,6 +6,7 @@ import org.ihtsdo.refsetservice.model.MapAdvice;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.test.CopyConstructorTester;
+import org.ihtsdo.refsetservice.test.ProxyTester;
 import org.ihtsdo.refsetservice.test.EqualsHashcodeTester;
 import org.ihtsdo.refsetservice.test.GetterSetterTester;
 import org.ihtsdo.refsetservice.test.SerializationTester;
@@ -118,8 +119,27 @@ public class MapAdviceUnitTest extends BaseTest {
             service.setModifiedBy("test");
             service.setModifiedFlag(true);
 
-        }
+            final ProxyTester tester = new ProxyTester(new MapAdvice());
+            final MapAdvice object = (MapAdvice) tester.createObject(1);
+            object.setId(null);
+            final String unique = "test-map-advice-" + System.currentTimeMillis();
+            object.setName(unique);
+            object.setDetail(unique);
 
+            service.add(object);
+
+            final MapAdvice retrieved = service.get(object.getId(), MapAdvice.class);
+            if (!object.getId().equals(retrieved.getId())) {
+                throw new Exception("Original id unexpectedly does not match retrieved object id = " + object.getId() + ", " + retrieved.getId());
+            }
+
+            service.remove(object);
+
+            final MapAdvice afterRemove = service.get(object.getId(), MapAdvice.class);
+            if (afterRemove != null) {
+                throw new Exception("Search results unexpectedly not empty = " + afterRemove.getId());
+            }
+        }
     }
 
 }
