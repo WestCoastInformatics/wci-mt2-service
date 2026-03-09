@@ -30,6 +30,10 @@ DROP TABLE ${pre_if_exists} jobs ${post_if_exists};
 
 CREATE TABLE `map_users` (
   `id` varchar(64) NOT NULL,
+  `active` bit(1) NOT NULL,
+  `created` datetime(6) NOT NULL,
+  `modified` datetime(6) NOT NULL,
+  `modifiedBy` varchar(256) NOT NULL,
   `applicationRole` varchar(255) NOT NULL,
   `email` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
@@ -49,6 +53,10 @@ CREATE TABLE `additional_map_entry_info` (
 
 CREATE TABLE `map_advices` (
   `id` varchar(64) NOT NULL,
+  `active` bit(1) NOT NULL,
+  `created` datetime(6) NOT NULL,
+  `modified` datetime(6) NOT NULL,
+  `modifiedBy` varchar(256) NOT NULL,
   `detail` varchar(255) NOT NULL,
   `isAllowableForNullTarget` bit(1) NOT NULL,
   `isComputed` bit(1) NOT NULL,
@@ -109,6 +117,10 @@ CREATE TABLE `map_principles` (
 
 CREATE TABLE `map_relations` (
   `id` varchar(64) NOT NULL,
+  `active` bit(1) NOT NULL,
+  `created` datetime(6) NOT NULL,
+  `modified` datetime(6) NOT NULL,
+  `modifiedBy` varchar(256) NOT NULL,
   `abbreviation` varchar(255) DEFAULT NULL,
   `isAllowableForNullTarget` bit(1) NOT NULL,
   `isComputed` bit(1) NOT NULL,
