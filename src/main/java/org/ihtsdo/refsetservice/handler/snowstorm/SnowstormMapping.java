@@ -312,6 +312,10 @@ public class SnowstormMapping extends SnowstormAbstract {
         if (filteredConceptList != null && !filteredConceptList.isEmpty()) {
             requestBody.append(",").append("\"referencedComponentIds\": [").append(String.join(",", filteredConceptList)).append("]");
         }
+
+        // Keep track of the concepts that were requested
+        final Set<String> requestedConcepts = new HashSet<>(filteredConceptList);
+
         // if (searchParameters.getLimit() != null) {
         // requestBody.append(",").append("\"limit\":
         // ").append(searchParameters.getLimit());
@@ -421,6 +425,37 @@ public class SnowstormMapping extends SnowstormAbstract {
             }
         }
 
+        // Identify concepts that were requested where no mappings were found
+        // Check all concepts.  If they are invalid, add them to the invalid list.  If they are valid, create an empty Group 1, Priority 1 map object for them.
+        Set<String> noMapConceptIds = new HashSet<>(requestedConcepts);
+        noMapConceptIds.removeAll(conceptIdToMappingMap.keySet());
+
+        List<String> invalidConceptIds = new ArrayList<>();
+
+        for (String conceptId : noMapConceptIds) {
+            final Concept concept = SnowstormConcept.getConcept(fromTerminology, mapSet.getFromVersion(), conceptId);
+            if (concept == null) {
+                invalidConceptIds.add(conceptId);
+            } else {
+                final Mapping mapping = new Mapping();
+                mapping.setCode(conceptId);
+                conceptsToLookup.get(fromTerminology).add(mapping.getCode());
+                mapping.setMapSetId(mapSet.getId());
+                mapping.setMapEntries(new ArrayList<>());
+                
+                MapEntry mapEntry = new MapEntry();
+                mapEntry.setRule("");
+                mapEntry.setPriority(1);
+                mapEntry.setGroup(1);
+                mapEntry.setAdvices(new HashSet<>());
+                mapEntry.setRelation("");
+                mapEntry.setToCode("");
+                mapEntry.setToName("");
+                mapping.getMapEntries().add(mapEntry);
+                conceptIdToMappingMap.put(conceptId, mapping);
+            }
+        }
+
         // get a list of codes to get concepts
         final Map<String, Map<String, Concept>> terminologyConceptMap = getConcepts(branch, conceptsToLookup);
         final List<String> conceptIds = new ArrayList<>();
@@ -496,6 +531,11 @@ public class SnowstormMapping extends SnowstormAbstract {
         mappings.setLimit(limit);
         mappings.setOffset(offset);
         mappings.setSearchAfter(searchAfter);
+
+        // Add the invalid concept ids to the result list
+        if(!invalidConceptIds.isEmpty()) {
+            mappings.setInvalidConceptIds(invalidConceptIds);
+        }
 
         return mappings;
 
@@ -908,6 +948,13 @@ public class SnowstormMapping extends SnowstormAbstract {
         // If there is no existing active mapping, then all entries of the submitted map
         // will be added (brand new map)
         if (existingActiveMapping == null || existingActiveMapping.getMapEntries() == null || existingActiveMapping.getMapEntries().size() == 0) {
+            // If the mapping only has one empty entry, don't save it to snowstorm.  
+            // This is a special case for mappings brought in to batch edit via list of concept ids, and
+            // if no map information was added we don't want to create a new, empty map.
+            if (submittedMapping.getMapEntries().size() == 1 && submittedMapping.getMapEntries().get(0).getToCode().isEmpty() && submittedMapping.getMapEntries().get(0).getToName().isEmpty() && (submittedMapping.getMapEntries().get(0).getRelation() == null || submittedMapping.getMapEntries().get(0).getRelation().equals("---"))) {
+                LOG.info("No update required for mapping for {} - empty mapping with no pre-existing map entries", submittedMapping.getCode());
+                return submittedMapping;
+            }
             for (final MapEntry submittedMapEntry : submittedMapping.getMapEntries()) {
                 mapEntryAddList.add(submittedMapEntry);
             }
