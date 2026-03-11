@@ -69,13 +69,15 @@ public class SnowstormMapSet extends SnowstormAbstract {
      * @param user the user
      * @param mapProject the map project
      * @param mapSetExportRequest the map set export request
+     * @param mapSet the map set (required; paths must come from DB)
      * @return the string
      * @throws Exception the exception
      */
-    public static String exportMapSet(final User user, final MapProject mapProject, final MapSetExportRequest mapSetExportRequest) throws Exception {
+    public static String exportMapSet(final User user, final MapProject mapProject, final MapSetExportRequest mapSetExportRequest, final MapSet mapSet)
+        throws Exception {
 
         final MapSetExportDispatcher exportDispatcher = new MapSetExportDispatcher(new ExportHandler());
-        return exportDispatcher.exportMapSet(user, mapProject, mapSetExportRequest);
+        return exportDispatcher.exportMapSet(user, mapProject, mapSetExportRequest, mapSet);
     }
 
     /**
@@ -150,35 +152,7 @@ public class SnowstormMapSet extends SnowstormAbstract {
      */
     public static String getBranchPath(final MapSet mapSet) throws Exception {
 
-        String branchPath = "";
-        String pathDate = "";
-
-        if (!mapSet.isLocalSet()) {
-
-            if (mapSet.getVersionDate() != null) {
-                // Published version
-                final Date tmpDate = mapSet.getVersionDate();
-                pathDate = "/" + DateUtility.formatDate(tmpDate, DateUtility.DATE_FORMAT_REVERSE, null);
-                branchPath = mapSet.getEditionBranch() + pathDate;
-            } else {
-                // In Development version
-                if (Arrays.asList(WorkflowStatus.IN_EDIT, WorkflowStatus.IN_UPGRADE).contains(mapSet.getWorkflowStatus())) {
-                    branchPath = BranchService.getEditBranchPath(mapSet.toBranchDetails());
-                } else {
-                    branchPath = BranchService.getRefsetBranchPath(mapSet.toBranchDetails());
-                }
-            }
-        } else {
-
-            // for localsets if it isn't being edited always pull from the refset branch
-            if (Arrays.asList(WorkflowStatus.IN_EDIT, WorkflowStatus.IN_UPGRADE).contains(mapSet.getWorkflowStatus())) {
-                branchPath = BranchService.getEditBranchPath(mapSet.toBranchDetails());
-            } else {
-                branchPath = BranchService.getRefsetBranchPath(mapSet.toBranchDetails());
-            }
-        }
-
-        return branchPath;
+        return BranchService.getMapSetBranchPath(mapSet);
     }
 
     /**

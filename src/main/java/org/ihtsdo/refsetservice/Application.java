@@ -11,8 +11,8 @@ package org.ihtsdo.refsetservice;
 
 import javax.persistence.PersistenceException;
 
-import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormConcept;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.terminologyservice.MapSetService;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,14 +91,13 @@ public class Application extends SpringBootServletInitializer {
                 // also delete user sessions on application startup
                 service.clearUserSessions();
 
-                // prewarm the cache (skip when cache.terminology.prewarm.enabled=false for faster restart with persisted cache)
-                final String prewarmEnabled = PropertyUtility.getProperty("cache.terminology.prewarm.enabled");
-                final boolean shouldPrewarm = prewarmEnabled == null || "true".equalsIgnoreCase(prewarmEnabled);
-                if (shouldPrewarm) {
-                    SnowstormConcept.cacheConcepts("SNOMEDCT-NO", "2025-12-15");
-                    SnowstormConcept.cacheConcepts("ICD-10-NO", "20240723");
+                // cache concepts at startup (skip when cache.terminology.prewarm.enabled=false for faster restart with persisted cache)
+                final String cacheConceptsEnabled = PropertyUtility.getProperty("cache.terminology.prewarm.enabled");
+                final boolean shouldCacheConcepts = cacheConceptsEnabled == null || "true".equalsIgnoreCase(cacheConceptsEnabled);
+                if (shouldCacheConcepts) {
+                    MapSetService.cacheConceptsForActiveMapSets(service);
                 } else {
-                    LOG.info("Terminology cache prewarm skipped (cache.terminology.prewarm.enabled=false)");
+                    LOG.info("Concept caching skipped (cache.terminology.prewarm.enabled=false)");
                 }
             }
 

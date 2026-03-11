@@ -453,18 +453,19 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     /* see superclass */
     @Override
-    public ResultListMapping getMappings(final String branch, final String mapSetCode, final SearchParameters searchParameters, final String filter,
+    public ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter,
         final boolean showOverriddenEntries, final List<String> conceptCodes) throws Exception {
 
-        return SnowstormMapping.getMappings(branch, mapSetCode, searchParameters, filter, showOverriddenEntries, conceptCodes);
+        return SnowstormMapping.getMappings(branch, mapSet, searchParameters, filter, showOverriddenEntries, conceptCodes);
 
     }
 
     /* see superclass */
     @Override
-    public Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode, final boolean showOverriddenEntries) throws Exception {
+    public Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode, final boolean showOverriddenEntries, final MapSet mapSet)
+        throws Exception {
 
-        return SnowstormMapping.getMapping(branch, mapSetCode, conceptCode, null, true, showOverriddenEntries, true);
+        return SnowstormMapping.getMapping(branch, mapSetCode, conceptCode, null, true, showOverriddenEntries, true, mapSet);
 
     }
 
@@ -492,6 +493,15 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
     
     /* see superclass */
     @Override
+    public void cacheConcepts(final Map<String, String> terminologyToVersion) throws Exception {
+
+        for (final Map.Entry<String, String> e : terminologyToVersion.entrySet()) {
+            SnowstormConcept.cacheConcepts(e.getKey(), e.getValue());
+        }
+    }
+
+    /* see superclass */
+    @Override
     public String getName() {
 
         return ModelUtility.getNameFromClass(SNOMEDSnowstormTerminologyServerHandler.class);
@@ -514,31 +524,33 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     /* see superclass */
     @Override
-    public List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mappings)
+    public List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mappings,
+        final MapSet mapSet) throws Exception {
+
+        return SnowstormMapping.updateMappings(mapProject, branch, mapSetCode, mappings, mapSet);
+    }
+
+    /* see superclass */
+    @Override
+    public File exportMappings(final String branch, final String mapSetCode, final MappingExportRequest mappingExportRequest, final MapSet mapSet)
         throws Exception {
 
-        return SnowstormMapping.updateMappings(mapProject, branch, mapSetCode, mappings);
+        return SnowstormMapping.exportMappings(branch, mapSetCode, mappingExportRequest, mapSet);
     }
 
     /* see superclass */
     @Override
-    public File exportMappings(final String branch, final String mapSetCode, final MappingExportRequest mappingExportRequest) throws Exception {
+    public List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile, final MapSet mapSet) throws Exception {
 
-        return SnowstormMapping.exportMappings(branch, mapSetCode, mappingExportRequest);
+        return SnowstormMapping.importMappings(mapProject, branch, mappingFile, mapSet);
     }
 
     /* see superclass */
     @Override
-    public List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile) throws Exception {
+    public String exportMapSet(final User user, final MapProject mapProject, final MapSetExportRequest mapSetExportRequest, final MapSet mapSet)
+        throws Exception {
 
-        return SnowstormMapping.importMappings(mapProject, branch, mappingFile);
-    }
-
-    /* see superclass */
-    @Override
-    public String exportMapSet(final User user, final MapProject mapProject, final MapSetExportRequest mapSetExportRequest) throws Exception {
-
-        return SnowstormMapSet.exportMapSet(user, mapProject, mapSetExportRequest);
+        return SnowstormMapSet.exportMapSet(user, mapProject, mapSetExportRequest, mapSet);
 
     }
 

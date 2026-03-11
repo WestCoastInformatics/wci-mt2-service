@@ -158,7 +158,7 @@ public class Rf2DeltaExportStrategy extends AbstractMapSetExportStrategy {
                         // .withLegacyZipNaming(false).withType(FileFormatType.SNAPSHOT).withUnpromotedChangesOnly(false).withModuleIds(moduleIds)
                         // .withStartEffectiveTime(transientEffectiveTime).withTransientEffectiveTime(transientEffectiveTime);
                         final ExportRequestBuilder builder = new ExportRequestBuilder().withRefsetId(mapSet.getRefSetCode())
-                            .withBranchPath(mapSet.getBranchPath()).withConceptsAndRelationshipsOnly(false).withFilenameEffectiveDate(transientEffectiveTime)
+                            .withBranchPath(request.getBranch()).withConceptsAndRelationshipsOnly(false).withFilenameEffectiveDate(transientEffectiveTime)
                             .withLegacyZipNaming(false).withType(FileFormatType.SNAPSHOT).withUnpromotedChangesOnly(false).withModuleIds(moduleIds)
                             .withStartEffectiveTime(request.getStartEffectiveTime()).withTransientEffectiveTime(transientEffectiveTime).withStartExport(false);
 

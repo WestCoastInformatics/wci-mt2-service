@@ -14,6 +14,7 @@ import java.util.List;
 
 import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
 import org.ihtsdo.refsetservice.model.MapProject;
+import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
@@ -70,7 +71,7 @@ public final class MappingService {
      * Returns the mappings.
      *
      * @param branch the branch
-     * @param mapSetCode the map set code
+     * @param mapSet the map set
      * @param searchParameters the search parameters
      * @param filter the filter
      * @param showOverriddenEntries the show overridden entries
@@ -78,10 +79,13 @@ public final class MappingService {
      * @return the mappings
      * @throws Exception the exception
      */
-    public static ResultListMapping getMappings(final String branch, final String mapSetCode, final SearchParameters searchParameters, final String filter,
+    public static ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter,
         final boolean showOverriddenEntries, final List<String> conceptCodes) throws Exception {
 
-        return terminologyHandler.getMappings(branch, mapSetCode, searchParameters, filter, showOverriddenEntries, conceptCodes);
+        if (mapSet == null) {
+            throw new IllegalArgumentException("MapSet from database is required for getMappings. No fallback.");
+        }
+        return terminologyHandler.getMappings(branch, mapSet, searchParameters, filter, showOverriddenEntries, conceptCodes);
     }
 
     /**
@@ -94,10 +98,10 @@ public final class MappingService {
      * @return the mapping
      * @throws Exception the exception
      */
-    public static Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode, final boolean showOverriddenEntries)
-        throws Exception {
+    public static Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode, final boolean showOverriddenEntries,
+        final MapSet mapSet) throws Exception {
 
-        return terminologyHandler.getMapping(branch, mapSetCode, conceptCode, showOverriddenEntries);
+        return terminologyHandler.getMapping(branch, mapSetCode, conceptCode, showOverriddenEntries, mapSet);
     }
 
     /**
@@ -126,10 +130,10 @@ public final class MappingService {
      * @return the list
      * @throws Exception the exception
      */
-    public static List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mapping)
-        throws Exception {
+    public static List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mapping,
+        final MapSet mapSet) throws Exception {
 
-        return terminologyHandler.updateMappings(mapProject, branch, mapSetCode, mapping);
+        return terminologyHandler.updateMappings(mapProject, branch, mapSetCode, mapping, mapSet);
     }
 
     /**
@@ -143,9 +147,13 @@ public final class MappingService {
      * @return the file
      * @throws Exception the exception
      */
-    public static File exportMappings(final String branch, final String mapSetCode, final MappingExportRequest mappingExportRequest) throws Exception {
+    public static File exportMappings(final String branch, final String mapSetCode, final MappingExportRequest mappingExportRequest, final MapSet mapSet)
+        throws Exception {
 
-        return terminologyHandler.exportMappings(branch, mapSetCode, mappingExportRequest);
+        if (mapSet == null) {
+            throw new IllegalArgumentException("MapSet from database is required for exportMappings. No fallback.");
+        }
+        return terminologyHandler.exportMappings(branch, mapSetCode, mappingExportRequest, mapSet);
     }
 
     
@@ -158,9 +166,9 @@ public final class MappingService {
      * @return the imported mappings
      * @throws Exception the exception
      */
-	public static List<Mapping> importMappings(MapProject mapProject, String branch,  MultipartFile mappingFile) throws Exception {
-	
-		return terminologyHandler.importMappings(mapProject, branch, mappingFile);
+	public static List<Mapping> importMappings(MapProject mapProject, String branch, MultipartFile mappingFile, MapSet mapSet) throws Exception {
+
+		return terminologyHandler.importMappings(mapProject, branch, mappingFile, mapSet);
 	}
     
 }

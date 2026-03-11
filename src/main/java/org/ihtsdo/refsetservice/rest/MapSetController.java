@@ -110,8 +110,8 @@ public class MapSetController extends BaseController {
 		try (final TerminologyService service = new TerminologyService()) {
 
 			final String branch = MapSetService.resolveBranchFromMapSets(service, code);
-			if (branch == null) {
-				LOG.error("No branch found in map_sets for map set code: {}", code);
+			if (StringUtils.isBlank(branch) || "empty".equals(branch) || "none".equals(branch)) {
+				LOG.error("No valid branch found in map_sets for map set code: {}. Resolved: '{}'", code, branch);
 				return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 			}
 			final MapSet mapset = MapSetService.getMapSet(branch, code);
@@ -171,8 +171,8 @@ public class MapSetController extends BaseController {
 		try (final TerminologyService service = new TerminologyService()) {
 
 			final String branch = MapSetService.resolveBranchFromMapSets(service, null);
-			if (branch == null) {
-				LOG.error("No branch found in map_sets table");
+			if (StringUtils.isBlank(branch) || "empty".equals(branch) || "none".equals(branch)) {
+				LOG.error("No valid branch found in map_sets table. Resolved branch: '{}'. Ensure map_sets has active records with editionBranch, refSetCode, mapBranchId, editBranchId.", branch);
 				return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
 			}
 			final List<MapSet> mapSets = MapSetService.getMapSets(branch);
@@ -212,11 +212,6 @@ public class MapSetController extends BaseController {
 		if (mapSetExportRequest == null) {
 			LOG.error("Invalid request parameters: missing all parameters.");
 			return new ResponseEntity<>("Invalid request parameters: missing all parameters.", HttpStatus.BAD_REQUEST);
-		}
-
-		if (StringUtils.isBlank(mapSetExportRequest.getBranch())) {
-			LOG.error("Invalid request parameters: missing branch.");
-			return new ResponseEntity<>("Invalid request parameters: missing branch.", HttpStatus.BAD_REQUEST);
 		}
 
 		if (StringUtils.isBlank(mapSetExportRequest.getMapSetCode())) {
@@ -274,9 +269,16 @@ public class MapSetController extends BaseController {
 			if (mapSet == null || mapSet.getMapProject() == null) {
 				return new ResponseEntity<>("Map set or map project not found for mapSetCode.", HttpStatus.BAD_REQUEST);
 			}
+			if (StringUtils.isBlank(mapSetExportRequest.getBranch())) {
+				mapSetExportRequest.setBranch(MapSetService.getBranchPath(mapSet));
+			}
+			if (StringUtils.isBlank(mapSetExportRequest.getBranch())) {
+				return new ResponseEntity<>("map_sets.branchPath is required for map set " + mapSetExportRequest.getMapSetCode() + ". Database is missing required path data.",
+						HttpStatus.BAD_REQUEST);
+			}
 			final MapProject mapProject = MapProjectService.getMapProject(service, mapSet.getMapProject().getId(), Boolean.FALSE);
 
-			final String jobId = MapSetService.exportMapSet(user, mapProject, mapSetExportRequest);
+			final String jobId = MapSetService.exportMapSet(user, mapProject, mapSetExportRequest, mapSet);
 			final String responseMessage = "{\"url\": \"job/" + jobId + "\"}";
 			return new ResponseEntity<>(responseMessage, HttpStatus.OK);
 
@@ -542,9 +544,9 @@ public class MapSetController extends BaseController {
 	 */
 	private void mergeMapSetWithDbTracking(final TerminologyService service, final MapSet mapSet) throws Exception {
 
-		final MapSet dbMapSet = MapSetService.findMapSetByRefSetCode(service, mapSet.getRefSetCode());
-		if (dbMapSet != null) {
-			BeanUtils.copyProperties(dbMapSet, mapSet);
+		final MapSet existingMapSet = MapSetService.findMapSetByRefSetCode(service, mapSet.getRefSetCode());
+		if (existingMapSet != null) {
+			BeanUtils.copyProperties(existingMapSet, mapSet);
 		}
 	}
 

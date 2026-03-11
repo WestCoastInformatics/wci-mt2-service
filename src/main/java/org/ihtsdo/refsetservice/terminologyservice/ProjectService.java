@@ -10,9 +10,7 @@
 package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -20,11 +18,9 @@ import java.util.stream.Collectors;
 
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotFoundException;
-import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.Organization;
-import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.Refset;
@@ -40,9 +36,6 @@ import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * The Class ProjectService.
@@ -324,60 +317,15 @@ public class ProjectService extends BaseService {
     }
 
     /**
-     * Search Projects.
+     * Returns module IDs and names for the project's edition.
      *
      * @param project the project
-     * @return the list of module IDs and names
+     * @return map of module ID to name
      * @throws Exception the exception
      */
     public static Map<String, String> getModuleNames(final Project project) throws Exception {
 
-        // Create Snowstorm URL
-        final String conceptSearchUrl = SnowstormConnection.getBaseUrl() + project.getEdition().getBranch() + "/concepts/search";
-        final String bodyBase = "{\"limit\": 1000, ";
-        String bodyConceptIds = "\"conceptIds\":[";
-        final ObjectMapper mapper = new ObjectMapper();
-        final Map<String, String> moduleNames = new HashMap<>();
-
-        for (final String moduleId : project.getEdition().getModules()) {
-            bodyConceptIds += "\"" + moduleId + "\",";
-        }
-
-        bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",") + "]";
-
-        final String searchBody = bodyBase + bodyConceptIds + "}";
-        LOG.debug("getModuleNames URL: " + conceptSearchUrl);
-        LOG.debug("getModuleNames BODY: " + searchBody);
-
-        try (final Response response = SnowstormConnection.postResponse(conceptSearchUrl, searchBody)) {
-
-            final String resultString = SnowstormConnection.readEntityAsString(response);
-
-            // Only process payload if Rest call is successful
-            if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-
-                throw new Exception("call to url '" + conceptSearchUrl + "' for module name lookup wasn't successful. Status: " + response.getStatus()
-                    + " Message: " + response.getStatusInfo().getReasonPhrase());
-            }
-
-            final JsonNode root = mapper.readTree(resultString);
-            final Iterator<JsonNode> iterator = root.get("items").iterator();
-
-            while (iterator != null && iterator.hasNext()) {
-
-                final JsonNode conceptNode = iterator.next();
-                final String conceptId = conceptNode.get("conceptId").asText();
-                String name = "";
-
-                if (conceptNode.get("fsn") != null && conceptNode.get("fsn").get("term") != null) {
-                    name = conceptNode.get("fsn").get("term").asText();
-                }
-
-                moduleNames.put(conceptId, name);
-            }
-        }
-
-        return moduleNames;
+        return MapProjectService.getModuleNames(project.getEdition());
     }
 
     /**
