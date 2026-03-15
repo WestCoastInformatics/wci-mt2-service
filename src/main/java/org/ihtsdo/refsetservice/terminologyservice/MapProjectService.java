@@ -18,6 +18,7 @@ import java.util.Set;
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotFoundException;
 
+import org.hibernate.Hibernate;
 import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.MapProject;
@@ -110,6 +111,14 @@ public class MapProjectService extends BaseService {
             LOG.info(errorMessage);
             throw new NotFoundException(errorMessage);
         }
+
+        // Initialize lazy collections so they are serialized in the API response
+        Hibernate.initialize(mapProject.getMapAdvices());
+        Hibernate.initialize(mapProject.getMapPrinciples());
+        Hibernate.initialize(mapProject.getPresetAgeRanges());
+        Hibernate.initialize(mapProject.getAdditionalMapEntryInfos());
+        Hibernate.initialize(mapProject.getMapRelations());
+        Hibernate.initialize(mapProject.getMapReportDefinitions());
 
         // if (includeMembers) {
         //
