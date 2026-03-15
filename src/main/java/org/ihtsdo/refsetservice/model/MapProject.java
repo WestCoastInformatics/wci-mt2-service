@@ -174,7 +174,8 @@ public class MapProject extends AbstractHasModified implements Copyable<MapProje
 
     /** The preset age ranges. */
     @ManyToMany(targetEntity = MapAgeRange.class, fetch = FetchType.LAZY)
-    @CollectionTable(name = "map_projects_map_age_ranges", joinColumns = @JoinColumn(name = "map_projects_id"))
+    @JoinTable(name = "map_projects_map_age_ranges", joinColumns = @JoinColumn(name = "map_projects_id"),
+        inverseJoinColumns = @JoinColumn(name = "presetAgeRanges_id"))
     private Set<MapAgeRange> presetAgeRanges = new HashSet<>();
 
     /** The map leads. */
@@ -192,31 +193,36 @@ public class MapProject extends AbstractHasModified implements Copyable<MapProje
 
     /** The allowable map principles for this MapProject. */
     @ManyToMany(targetEntity = MapPrinciple.class, fetch = FetchType.LAZY)
-    @CollectionTable(name = "map_projects_map_principles", joinColumns = @JoinColumn(name = "map_projects_id"))
+    @JoinTable(name = "map_projects_map_principles", joinColumns = @JoinColumn(name = "map_projects_id"),
+        inverseJoinColumns = @JoinColumn(name = "mapPrinciples_id"))
     // @IndexedEmbedded
     private Set<MapPrinciple> mapPrinciples = new HashSet<>();
 
     /** The allowable map advices for this MapProject. */
     @ManyToMany(targetEntity = MapAdvice.class, fetch = FetchType.LAZY)
-    @CollectionTable(name = "map_projects_map_advices", joinColumns = @JoinColumn(name = "map_projects_id"))
+    @JoinTable(name = "map_projects_map_advices", joinColumns = @JoinColumn(name = "map_projects_id"),
+        inverseJoinColumns = @JoinColumn(name = "mapAdvices_id"))
     // @IndexedEmbedded
     private Set<MapAdvice> mapAdvices = new HashSet<>();
 
     /** The allowable additional map entry info for this MapProject. */
     @ManyToMany(targetEntity = AdditionalMapEntryInfo.class, fetch = FetchType.LAZY)
-    @CollectionTable(name = "map_projects_additional_map_entry_infos", joinColumns = @JoinColumn(name = "map_projects_id"))
+    @JoinTable(name = "map_projects_additional_map_entry_infos", joinColumns = @JoinColumn(name = "map_projects_id"),
+        inverseJoinColumns = @JoinColumn(name = "additionalMapEntryInfos_id"))
     // @IndexedEmbedded
     private Set<AdditionalMapEntryInfo> additionalMapEntryInfos = new HashSet<>();
 
     /** The allowable map relations for this MapProject. */
     @ManyToMany(targetEntity = MapRelation.class, fetch = FetchType.LAZY)
-    @CollectionTable(name = "map_projects_map_relations", joinColumns = @JoinColumn(name = "map_projects_id"))
+    @JoinTable(name = "map_projects_map_relations", joinColumns = @JoinColumn(name = "map_projects_id"),
+        inverseJoinColumns = @JoinColumn(name = "mapRelations_id"))
     // @IndexedEmbedded
     private Set<MapRelation> mapRelations = new HashSet<>();
 
     /** The allowable report definitions for this MapProject. */
     @ManyToMany(targetEntity = MapReportDefinition.class, fetch = FetchType.LAZY)
-    @CollectionTable(name = "map_projects_report_definitions", joinColumns = @JoinColumn(name = "map_projects_id"))
+    @JoinTable(name = "map_projects_report_definitions", joinColumns = @JoinColumn(name = "map_projects_id"),
+        inverseJoinColumns = @JoinColumn(name = "mapMapReportDefinitions_id"))
     // @IndexedEmbedded
     private Set<MapReportDefinition> mapReportDefinitions = new HashSet<>();
 
