@@ -2244,7 +2244,13 @@ public final class SnowstormConcept extends SnowstormAbstract {
         try (final Response response = SnowstormConnection.getResponse(targetUri)) {
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-                throw new Exception(
+
+                if (response.getStatus() == 404) {
+                    throw new RestException(false, 404, "Concept not found", "No concept found for terminology=" + terminology + ", version=" + version
+                        + ", code=" + code);
+                }
+
+                throw new RestException(false, HttpStatus.BAD_GATEWAY.value(), "Terminology service error",
                     "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
             }
 
