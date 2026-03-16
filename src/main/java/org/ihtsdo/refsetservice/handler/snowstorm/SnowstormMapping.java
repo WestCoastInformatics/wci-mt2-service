@@ -121,11 +121,13 @@ public class SnowstormMapping extends SnowstormAbstract {
         final Response response = target.request(DEFAULT_ACCEPT)
             // .header("Cookie", ConfigUtility.getGenericUserCookie())
             .get();
-        final String resultString = SnowstormConnection.readEntityAsString(response);
         if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+            final String body = SnowstormConnection.readEntityAsStringSafe(response);
+            final String message = StringUtils.isNotBlank(body) ? SnowstormAbstract.formatErrorMessageFromBody(body) : "(response body not available)";
             throw new Exception(
-                "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
+                "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + message);
         }
+        final String resultString = SnowstormConnection.readEntityAsString(response);
 
         final JsonNode doc = ThreadLocalMapper.get().readTree(resultString);
         final JsonNode mappingsBatch = doc.get("items");

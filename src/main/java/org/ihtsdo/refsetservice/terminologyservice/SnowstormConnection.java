@@ -394,4 +394,21 @@ public final class SnowstormConnection {
             throw new LocalException("Could not read response entity: " + e.getMessage());
         }
     }
+
+    /**
+     * Tries to read the response entity as a String without throwing.
+     * Use when handling error responses (e.g. 4xx) where the body may be closed or empty.
+     *
+     * @param response the response to read
+     * @return the response body as a string, or null if the body could not be read
+     */
+    public static String readEntityAsStringSafe(Response response) {
+
+        try {
+            return response.readEntity(String.class);
+        } catch (Exception e) {
+            LOG.warn("Could not read response entity: {}", e.getMessage());
+            return null;
+        }
+    }
 }

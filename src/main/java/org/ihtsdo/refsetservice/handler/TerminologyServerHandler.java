@@ -578,7 +578,7 @@ public interface TerminologyServerHandler extends Configurable {
      * Returns the mappings.
      *
      * @param branch the branch
-     * @param mapSetCode the map set code
+     * @param mapSet the map set
      * @param searchParameters the search parameters
      * @param filter the filter
      * @param showOverriddenEntries the show overridden entries
@@ -586,7 +586,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @return the mappings
      * @throws Exception the exception
      */
-    public ResultListMapping getMappings(final String branch, final String mapSetCode, final SearchParameters searchParameters, final String filter,
+    public ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter,
         final boolean showOverriddenEntries, final List<String> conceptCodes) throws Exception;
 
     /**
@@ -599,7 +599,8 @@ public interface TerminologyServerHandler extends Configurable {
      * @return the mapping
      * @throws Exception the exception
      */
-    public Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode, final boolean showOverriddenEntries) throws Exception;
+    public Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode, final boolean showOverriddenEntries, final MapSet mapSet)
+        throws Exception;
 
     /**
      * Returns the concept.
@@ -635,7 +636,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @return the list
      * @throws Exception the exception
      */
-    public List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mapping)
+    public List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mapping, final MapSet mapSet)
         throws Exception;
 
     /**
@@ -647,7 +648,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @return the paths
      * @throws Exception the exception
      */
-    public File exportMappings(final String branch, final String mapSetCode, final MappingExportRequest mappingExportRequest) throws Exception;
+    File exportMappings(final String branch, final String mapSetCode, final MappingExportRequest mappingExportRequest, final MapSet mapSet) throws Exception;
 
     /**
      * Import mappings.
@@ -658,7 +659,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @return the list
      * @throws Exception the exception
      */
-    public List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile) throws Exception;
+    public List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile, final MapSet mapSet) throws Exception;
 
     /**
      * Export map set as an RF2 file.
@@ -666,10 +667,12 @@ public interface TerminologyServerHandler extends Configurable {
      * @param user the user
      * @param mapProject the map project
      * @param mapSetExportRequest the map set export request
+     * @param mapSet the map set (required; paths must come from DB)
      * @return the file
      * @throws Exception the exception
      */
-    public String exportMapSet(final User user, final MapProject mapProject, final MapSetExportRequest mapSetExportRequest) throws Exception;
+    public String exportMapSet(final User user, final MapProject mapProject, final MapSetExportRequest mapSetExportRequest, final MapSet mapSet)
+        throws Exception;
 
     /**
      * Sets the workflow status.
@@ -770,4 +773,13 @@ public interface TerminologyServerHandler extends Configurable {
      * @throws Exception the exception
      */
     public MapSet setMapSetPermissions(final User user, final MapSet mapSet) throws Exception;
+
+    /**
+     * Caches concepts for the given terminology/version pairs.
+     * Handler-specific; may be no-op for servers that do not support concept caching.
+     *
+     * @param terminologyToVersion map of terminology name to version
+     * @throws Exception the exception
+     */
+    void cacheConcepts(Map<String, String> terminologyToVersion) throws Exception;
 }
