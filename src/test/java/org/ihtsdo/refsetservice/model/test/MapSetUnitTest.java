@@ -151,7 +151,7 @@ public class MapSetUnitTest extends BaseTest {
             mapSet.setName("Test MapSet " + System.currentTimeMillis());
             mapSet.setVersionStatus(VersionStatus.IN_DEVELOPMENT);
             mapSet.setWorkflowStatus(WorkflowStatus.READY_FOR_EDIT);
-            mapSet.setBranchPath("MAIN/TEST/2025-01-01/WCITEST");
+//            mapSet.setBranchPath("MAIN/TEST/2025-01-01/WCITEST");
             mapSet.setFromBranchPath("MAIN/TEST/2025-01-01");
             mapSet.setFromTerminology("TEST");
             mapSet.setFromVersion("2025-01-01");

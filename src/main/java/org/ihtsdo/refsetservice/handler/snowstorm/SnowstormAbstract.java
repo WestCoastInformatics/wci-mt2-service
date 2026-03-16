@@ -32,23 +32,29 @@ public class SnowstormAbstract {
     protected static final int ELASTICSEARCH_MAX_RECORD_LENGTH = 5000;
 
     /**
-     * Format error message.
+     * Format error message from a response (reads entity once; safe when body may be closed).
      *
      * @param response the response
      * @return the string
      */
     public static String formatErrorMessage(final Response response) {
 
-        String snowstormErrorMessage;
-        try {
-            snowstormErrorMessage = SnowstormConnection.readEntityAsString(response);
-        } catch (final Exception e) {
-            LOG.warn("Could not read response entity: {}", e.getMessage());
+        final String body = SnowstormConnection.readEntityAsStringSafe(response);
+        return formatErrorMessageFromBody(body);
+    }
+
+    /**
+     * Format error message from an already-read response body string (e.g. JSON).
+     *
+     * @param jsonOrMessage the response body or message string (may be null or empty)
+     * @return the formatted message
+     */
+    public static String formatErrorMessageFromBody(final String jsonOrMessage) {
+
+        if (StringUtils.isEmpty(jsonOrMessage)) {
             return "";
         }
-        if (StringUtils.isEmpty(snowstormErrorMessage)) {
-            return "";
-        }
+        String snowstormErrorMessage = jsonOrMessage;
         if (StringUtility.isJson(snowstormErrorMessage)) {
             try {
                 final JsonNode json = ThreadLocalMapper.get().readTree(snowstormErrorMessage);

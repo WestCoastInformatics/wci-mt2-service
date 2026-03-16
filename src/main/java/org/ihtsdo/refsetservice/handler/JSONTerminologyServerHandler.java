@@ -4301,7 +4301,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
     /* see superclass */
     @Override
-    public ResultListMapping getMappings(final String branch, final String mapSetCode, final SearchParameters searchParameters, final String filter,
+    public ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter,
         final boolean showOverriddenEntries, final List<String> conceptCodes) throws Exception {
 
         final File f = new File(handlerProperties.getProperty("dir") + "/Mappings.json");
@@ -4310,8 +4310,9 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             return null;
         }
 
-        // Grab the specified mapSet
-        final MapSet mapSet = getMapSet(branch, mapSetCode);
+        if (mapSet == null) {
+            throw new IllegalArgumentException("MapSet is required for getMappings. No fallback.");
+        }
 
         final Map<String, Mapping> conceptIdToMappingMap = new HashMap<>();
 
@@ -4399,7 +4400,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
     /* see superclass */
     @Override
-    public Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode, final boolean showOverriddenEntries) throws Exception {
+    public Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode, final boolean showOverriddenEntries, final MapSet mapSet)
+        throws Exception {
 
         final File f = new File(handlerProperties.getProperty("dir") + "/Mappings.json");
         if (!f.exists()) {
@@ -4407,8 +4409,9 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             return null;
         }
 
-        // Grab the specified mapSet
-        final MapSet mapSet = getMapSet(branch, mapSetCode);
+        // Grab the specified mapSet (use param if provided and has terminology/version, else from JSON)
+        final MapSet mapSetForLookup = (mapSet != null && mapSet.getFromTerminology() != null && mapSet.getFromVersion() != null)
+            ? mapSet : getMapSet(branch, mapSetCode);
 
         final Mapping mapping = new Mapping();
 
@@ -4425,7 +4428,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             final JsonNode mappingNode = itemIterator.next();
 
             // Only process active mappings from the correct mapset
-            if (!(mappingNode.get("refsetId").asText().equals(mapSet.getRefSetCode()) && mappingNode.get("active").asText().equals("true"))) {
+            if (!(mappingNode.get("refsetId").asText().equals(mapSetForLookup.getRefSetCode()) && mappingNode.get("active").asText().equals("true"))) {
                 continue;
             }
 
@@ -4438,8 +4441,9 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             // mapping
             if (mapping.getCode() == null || mapping.getCode().isEmpty()) {
                 mapping.setCode(mappingNode.get("referencedComponentId").asText());
-                mapping.setName(getConcept(/* branch, */ mapSet.getFromTerminology(), "", mapping.getCode()).getName());
-                mapping.setMapSetId(mapSet.getId());
+                mapping.setName(getConcept(/* branch, */ mapSetForLookup.getFromTerminology(),
+                    mapSetForLookup.getFromVersion() != null ? mapSetForLookup.getFromVersion() : "", mapping.getCode()).getName());
+                mapping.setMapSetId(mapSetForLookup.getId());
                 mapping.setMapEntries(new ArrayList<>());
             }
 
@@ -4560,7 +4564,14 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
         throw new UnsupportedOperationException("Method not implemented");
     }
-    
+
+    /* see superclass */
+    @Override
+    public void cacheConcepts(final Map<String, String> terminologyToVersion) throws Exception {
+
+        // JSON handler does not support concept caching; no-op
+    }
+
     /* see superclass */
     @Override
     public String getName() {
@@ -4586,7 +4597,16 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
     /* see superclass */
     @Override
-    public List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mappings)
+    public List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mappings,
+        final MapSet mapSet) throws Exception {
+
+        // implement with Snowstorm
+        throw new UnsupportedOperationException("Method not implemented");
+    }
+
+    /* see superclass */
+    @Override
+    public File exportMappings(final String branch, final String mapSetCode, final MappingExportRequest mappingExportRequest, final MapSet mapSet)
         throws Exception {
 
         // implement with Snowstorm
@@ -4595,7 +4615,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
     /* see superclass */
     @Override
-    public File exportMappings(final String branch, final String mapSetCode, final MappingExportRequest mappingExportRequest) throws Exception {
+    public List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile, final MapSet mapSet) throws Exception {
 
         // implement with Snowstorm
         throw new UnsupportedOperationException("Method not implemented");
@@ -4603,15 +4623,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
     /* see superclass */
     @Override
-    public List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile) throws Exception {
-
-        // implement with Snowstorm
-        throw new UnsupportedOperationException("Method not implemented");
-    }
-
-    /* see superclass */
-    @Override
-    public String exportMapSet(final User user, final MapProject mapProject, final MapSetExportRequest mapSetExportRequest) throws Exception {
+    public String exportMapSet(final User user, final MapProject mapProject, final MapSetExportRequest mapSetExportRequest, final MapSet mapSet)
+        throws Exception {
 
         // implement with Snowstorm
         throw new UnsupportedOperationException("Method not implemented");

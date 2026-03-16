@@ -10,12 +10,17 @@
 package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.BranchInformation;
+import org.ihtsdo.refsetservice.model.MapSet;
+import org.ihtsdo.refsetservice.model.enums.WorkflowStatus;
+import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.sync.SyncAgent;
 import org.ihtsdo.refsetservice.util.StringUtility;
@@ -290,6 +295,40 @@ public final class BranchService {
 
         return getRefsetBranchPath(branchInformation) + PATH_DELIMITER + EDIT_BRANCH_NAME + branchInformation.getEditBranchId();
     }
+
+    /**
+     * Returns the branch path for a MapSet.
+     * Uses stored branchPath if present; otherwise computes from edition + refSetCode + mapBranchId + editBranchId.
+     *
+     * @param mapSet the map set
+     * @return the branch path, or null if mapSet is null or missing required components (mapBranchId)
+     * @throws Exception the exception
+     */
+    public static String getMapSetBranchPath(final MapSet mapSet) throws Exception {
+
+        if (mapSet == null || mapSet.getRefsetBranchId() == null || mapSet.getRefsetBranchId().isBlank()) {
+            return null;
+        }
+        //final String stored = mapSet.getBranchPath();
+//        if (isValidBranchPath(stored)) {
+//            return stored;
+//        }
+        if (mapSet.getVersionDate() != null) {
+            final Date tmpDate = mapSet.getVersionDate();
+            final String pathDate = "/" + DateUtility.formatDate(tmpDate, DateUtility.DATE_FORMAT_REVERSE, null);
+            final String path = mapSet.getEditionBranch() + pathDate;
+            return path;
+        }
+        final BranchInformation branchInfo = mapSet.toBranchDetails();
+        final String path = Arrays.asList(WorkflowStatus.IN_EDIT, WorkflowStatus.IN_UPGRADE).contains(mapSet.getWorkflowStatus())
+            ? getEditBranchPath(branchInfo) : getRefsetBranchPath(branchInfo);
+        return path;
+    }
+
+//    private static boolean isValidBranchPath(final String path) {
+//
+//        return path != null && !path.isBlank() && !"empty".equals(path) && !"none".equals(path);
+//    }
 
     /**
      * Create the edit branch for a refset.

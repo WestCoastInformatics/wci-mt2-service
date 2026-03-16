@@ -26,6 +26,7 @@ import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.terminologyservice.BranchService;
 import org.ihtsdo.refsetservice.terminologyservice.MapProjectService;
 import org.ihtsdo.refsetservice.terminologyservice.MapSetService;
 import org.ihtsdo.refsetservice.terminologyservice.MappingService;
@@ -121,12 +122,20 @@ public class MappingController extends BaseController {
             final List<String> conceptCodesList = (StringUtils.isBlank(conceptCodes)) ? new ArrayList<>() : List.of(conceptCodes.split(","));
             final String filterString = (StringUtils.isBlank(filter)) ? StringUtils.EMPTY : StringUtils.trim(filter);
 
-            final String branch = MapSetService.resolveBranchFromMapSets(service, mapSetCode);
-            if (branch == null) {
+            final org.ihtsdo.refsetservice.model.MapSet mapSet = MapSetService.findMapSetByRefSetCode(service, mapSetCode);
+            if (mapSet == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
+            String branch = BranchService.getMapSetBranchPath(mapSet);
+            if (StringUtils.isBlank(branch)) {
+                branch = MapSetService.resolveBranchFromMapSets(service, mapSetCode);
+            }
+            if (StringUtils.isBlank(branch) || "empty".equals(branch) || "none".equals(branch)) {
+                throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "map_sets.branchPath is required for map set " + mapSetCode + ". Database is missing required path data.");
+            }
 
-            final ResultListMapping mappings = MappingService.getMappings(branch, mapSetCode, sp, filterString, showOverriddenEntries, conceptCodesList);
+            final ResultListMapping mappings = MappingService.getMappings(branch, mapSet, sp, filterString, showOverriddenEntries, conceptCodesList);
 
             return new ResponseEntity<>(mappings, HttpStatus.OK);
 
@@ -181,11 +190,19 @@ public class MappingController extends BaseController {
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            final String branch = MapSetService.resolveBranchFromMapSets(service, mapSetCode);
-            if (branch == null) {
+            final org.ihtsdo.refsetservice.model.MapSet mapSet = MapSetService.findMapSetByRefSetCode(service, mapSetCode);
+            if (mapSet == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-            final File exportMapPkg = MappingService.exportMappings(branch, mapSetCode, mappingExportRequest);
+            String branch = BranchService.getMapSetBranchPath(mapSet);
+            if (StringUtils.isBlank(branch)) {
+                branch = MapSetService.resolveBranchFromMapSets(service, mapSetCode);
+            }
+            if (StringUtils.isBlank(branch) || "empty".equals(branch) || "none".equals(branch)) {
+                throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "map_sets.branchPath is required for map set " + mapSetCode + ". Database is missing required path data.");
+            }
+            final File exportMapPkg = MappingService.exportMappings(branch, mapSetCode, mappingExportRequest, mapSet);
 
             final Resource file = new UrlResource(exportMapPkg.toURI());
             if (!file.exists() || !file.isReadable()) {
@@ -243,7 +260,7 @@ public class MappingController extends BaseController {
                 LOG.info("Fetched MapProject with ID: {}", mapSet.getMapProject().getId());
 
                 // Import RF2 mappings
-                final List<Mapping> updatedRF2Mappings = MappingService.importMappings(mapProject, decodedBranch, mappingFile);
+                final List<Mapping> updatedRF2Mappings = MappingService.importMappings(mapProject, decodedBranch, mappingFile, mapSet);
                 if (updatedRF2Mappings == null || updatedRF2Mappings.isEmpty())
                     LOG.info("Mapping import wasn't successful for branch: {}", decodedBranch);
                 else
@@ -304,10 +321,14 @@ public class MappingController extends BaseController {
         try (final TerminologyService service = new TerminologyService()) {
 
             final String branch = MapSetService.resolveBranchFromMapSets(service, mapSetCode);
-            if (branch == null) {
+            if (StringUtils.isBlank(branch) || "empty".equals(branch) || "none".equals(branch)) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-            final Mapping mapping = MappingService.getMapping(branch, mapSetCode, conceptCode, showOverriddenEntries);
+            final org.ihtsdo.refsetservice.model.MapSet mapSet = MapSetService.findMapSetByRefSetCode(service, mapSetCode);
+            if (mapSet == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+            final Mapping mapping = MappingService.getMapping(branch, mapSetCode, conceptCode, showOverriddenEntries, mapSet);
 
             return new ResponseEntity<>(mapping, HttpStatus.OK);
 
@@ -350,7 +371,7 @@ public class MappingController extends BaseController {
             }
             final MapProject mapProject = MapProjectService.getMapProject(service, mapSet.getMapProject().getId(), Boolean.FALSE);
             final String branch = MapSetService.resolveBranchFromMapSets(service, mapSetCode);
-            if (branch == null) {
+            if (StringUtils.isBlank(branch) || "empty".equals(branch) || "none".equals(branch)) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
             final List<Mapping> mappings = new ArrayList<>();
@@ -397,7 +418,7 @@ public class MappingController extends BaseController {
             }
             final MapProject mapProject = MapProjectService.getMapProject(service, mapSet.getMapProject().getId(), Boolean.FALSE);
             final String branch = MapSetService.resolveBranchFromMapSets(service, mapSetCode);
-            if (branch == null) {
+            if (StringUtils.isBlank(branch) || "empty".equals(branch) || "none".equals(branch)) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
             final List<Mapping> createdMappings = MappingService.createMappings(mapProject, branch, mapSetCode, mappings);
@@ -447,7 +468,7 @@ public class MappingController extends BaseController {
             }
             final List<Mapping> mappings = new ArrayList<>();
             mappings.add(mapping);
-            MappingService.updateMappings(mapProject, branch, mapSetCode, mappings);
+            MappingService.updateMappings(mapProject, branch, mapSetCode, mappings, mapSet);
 
             return new ResponseEntity<>(HttpStatus.OK);
 
@@ -492,10 +513,10 @@ public class MappingController extends BaseController {
             }
             final MapProject mapProject = MapProjectService.getMapProject(service, mapSet.getMapProject().getId(), Boolean.FALSE);
             final String branch = MapSetService.resolveBranchFromMapSets(service, mapSetCode);
-            if (branch == null) {
+            if (StringUtils.isBlank(branch) || "empty".equals(branch) || "none".equals(branch)) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-            final List<Mapping> updatedMappings = MappingService.updateMappings(mapProject, branch, mapSetCode, mappings);
+            final List<Mapping> updatedMappings = MappingService.updateMappings(mapProject, branch, mapSetCode, mappings, mapSet);
 
             return new ResponseEntity<>(updatedMappings, HttpStatus.OK);
 
