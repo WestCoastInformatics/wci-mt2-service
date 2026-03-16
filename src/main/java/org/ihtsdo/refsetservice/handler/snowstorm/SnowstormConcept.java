@@ -74,6 +74,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.ihtsdo.refsetservice.model.RestException;
 
 /**
  * The Class SnowstormConcept.
@@ -2246,8 +2247,9 @@ public final class SnowstormConcept extends SnowstormAbstract {
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
                 if (response.getStatus() == 404) {
-                    throw new RestException(false, 404, "Concept not found", "No concept found for terminology=" + terminology + ", version=" + version
+                    LOG.warn("No concept found for terminology=" + terminology + ", version=" + version
                         + ", code=" + code);
+                    return null;
                 }
 
                 throw new RestException(false, HttpStatus.BAD_GATEWAY.value(), "Terminology service error",
