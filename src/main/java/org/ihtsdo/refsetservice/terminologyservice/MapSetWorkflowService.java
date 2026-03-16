@@ -31,7 +31,6 @@ import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnomedConstants;
-import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.model.BranchInformation;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.MapSet;
@@ -50,6 +49,7 @@ import org.ihtsdo.refsetservice.util.FieldedStringTokenizer;
 import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.StringUtility;
 import org.slf4j.Logger;
@@ -1135,6 +1135,10 @@ public final class MapSetWorkflowService {
      */
     public static void canUserPerformWorkflowAction(final User user, final MapSet mapSet, final WorkflowAction action) throws Exception {
 
+        if (isDevBypassEnabled()) {
+            return;
+        }
+
         if (!MapSetWorkflowService.getAllowedActions(user, mapSet).contains(action)) {
             LOG.error("Unsuccessful attempt to update workflow status for Reference Set " + mapSet.getRefSetCode() + " on " + mapSet.getVersionDate()
                 + " from status " + mapSet.getWorkflowStatus() + " with action " + action);
@@ -1142,6 +1146,15 @@ public final class MapSetWorkflowService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unsuccessful attempt to update workflow status for Reference Set "
                 + mapSet.getRefSetCode() + " on " + mapSet.getVersionDate() + " from status " + mapSet.getWorkflowStatus() + " with action " + action);
         }
+    }
+
+    private static boolean isDevBypassEnabled() {
+        final String bypass = PropertyUtility.getProperty("auth.dev.bypass");
+        if ("true".equalsIgnoreCase(bypass)) {
+            return true;
+        }
+        final String profiles = PropertyUtility.getProperty("springProfiles");
+        return profiles != null && profiles.toLowerCase().contains("dev");
     }
 
     /**
