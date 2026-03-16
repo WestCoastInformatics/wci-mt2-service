@@ -220,7 +220,11 @@ public final class SnowstormConcept extends SnowstormAbstract {
             if (!exists) {
                 getCodeSystemsFromFhir();
                 final SnowstormFhirCodeSystem snowstormFhirCodeSystem = codeSystems.get(terminology + "_" + version);
-                cacheSnowstormConceptRefsFhirApi(snowstormFhirCodeSystem);
+                if (snowstormFhirCodeSystem != null) {
+                    cacheSnowstormConceptRefsFhirApi(snowstormFhirCodeSystem);
+                } else {
+                    LOG.warn("Skipping concept cache for terminology={}, version={}: no matching CodeSystem in Snowstorm FHIR response", terminology, version);
+                }
             }
         }
     }

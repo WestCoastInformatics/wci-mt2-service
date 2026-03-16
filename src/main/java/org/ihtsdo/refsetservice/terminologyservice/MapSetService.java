@@ -10,16 +10,17 @@
 package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
-
-import javax.persistence.TypedQuery;
 
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.MapSetExportRequest;
+import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.enums.VersionStatus;
@@ -87,13 +88,12 @@ public class MapSetService {
     }
 
     /**
-     * Finds MapSet from map_sets table by refSetCode (for workflow/tracking data).
-     * Uses direct JPA query so it works regardless of search index state.
-     * Returns null if not found.
+     * Finds MapSet by refSetCode (for workflow/tracking data).
+     * Uses search index; when multiple map_sets share the same refSetCode, returns the latest by version date.
      *
      * @param service the terminology service
      * @param refSetCode the ref set code
-     * @return the map set from DB, or null
+     * @return the map set, or null if not found
      * @throws Exception the exception
      */
     public static MapSet findMapSetByRefSetCode(final TerminologyService service, final String refSetCode) throws Exception {
@@ -101,21 +101,22 @@ public class MapSetService {
         if (refSetCode == null || refSetCode.isBlank()) {
             return null;
         }
-        final List<MapSet> results = service.getEntityManager()
-            .createQuery("SELECT m FROM MapSet m WHERE m.refSetCode = :refSetCode", MapSet.class)
-            .setParameter("refSetCode", refSetCode)
-            .setMaxResults(1)
-            .getResultList();
-        return results.isEmpty() ? null : results.get(0);
+        final PfsParameter pfs = new PfsParameter();
+        pfs.setSort("versionDate");
+        pfs.setAscending(false);
+        pfs.setLimit(1);
+        final ResultList<MapSet> results = service.find("refSetCode:" + QueryParserBase.escape(refSetCode), pfs, MapSet.class, null);
+        return results.getItems().isEmpty() ? null : results.getItems().get(0);
     }
 
     /**
      * Finds a map set by branch path (branchPath or fromBranchPath).
      * Used when only branch is known (e.g. import flow).
+     * When multiple match, returns the latest by version date.
      *
      * @param service the terminology service
      * @param branchPath the branch path
-     * @return the first matching map set, or null
+     * @return the matching map set, or null
      * @throws Exception the exception
      */
     public static MapSet findMapSetByBranchPath(final TerminologyService service, final String branchPath) throws Exception {
@@ -123,12 +124,14 @@ public class MapSetService {
         if (branchPath == null || branchPath.isBlank()) {
             return null;
         }
-        final List<MapSet> results = service.getEntityManager()
-            .createQuery("SELECT m FROM MapSet m WHERE m.branchPath = :branchPath OR m.fromBranchPath = :branchPath", MapSet.class)
-            .setParameter("branchPath", branchPath)
-            .setMaxResults(1)
-            .getResultList();
-        return results.isEmpty() ? null : results.get(0);
+        final String escaped = QueryParserBase.escape(branchPath);
+        final String query = "(branchPath:" + escaped + " OR fromBranchPath:" + escaped + ")";
+        final PfsParameter pfs = new PfsParameter();
+        pfs.setSort("versionDate");
+        pfs.setAscending(false);
+        pfs.setLimit(1);
+        final ResultList<MapSet> results = service.find(query, pfs, MapSet.class, null);
+        return results.getItems().isEmpty() ? null : results.getItems().get(0);
     }
 
     /**
@@ -162,7 +165,8 @@ public class MapSetService {
 
     /**
      * Resolves branch path for map set operations from map_sets table.
-     * For a specific map set: uses its branchPath. For general operations: uses branch from first map_sets record.
+     * For a specific map set: uses that map set. For general operations: uses last modified active map set.
+     * Branch path is resolved by BranchService (stored or computed from components).
      *
      * @param service the terminology service
      * @param mapSetCode optional ref set code; if provided, uses that map set's branch
@@ -171,17 +175,60 @@ public class MapSetService {
      */
     public static String resolveBranchFromMapSets(final TerminologyService service, final String mapSetCode) throws Exception {
 
+        final MapSet mapSet;
         if (mapSetCode != null && !mapSetCode.isBlank()) {
-            final MapSet mapSet = findMapSetByRefSetCode(service, mapSetCode);
-            if (mapSet != null && mapSet.getBranchPath() != null) {
-                return mapSet.getBranchPath();
+            mapSet = findMapSetByRefSetCode(service, mapSetCode);
+        } else {
+            final PfsParameter pfs = new PfsParameter();
+            pfs.setSort("modified");
+            pfs.setAscending(false);
+            pfs.setLimit(1);
+            final ResultList<MapSet> results = service.find("active:true", pfs, MapSet.class, null);
+            mapSet = results.getItems().isEmpty() ? null : results.getItems().get(0);
+        }
+        return BranchService.getMapSetBranchPath(mapSet);
+    }
+
+    /**
+     * Returns unique terminology/version pairs from active map sets.
+     *
+     * @param service the terminology service
+     * @return map of terminology to version
+     */
+    public static Map<String, String> getTerminologyVersionsFromMapSets(final TerminologyService service) throws Exception {
+
+        final Map<String, String> terminologyToVersion = new LinkedHashMap<>();
+        final ResultList<MapSet> results = service.find("active:true", null, MapSet.class, null);
+        for (final MapSet m : results.getItems()) {
+            if (m.getFromTerminology() != null && !m.getFromTerminology().isBlank()
+                && m.getFromVersion() != null && !m.getFromVersion().isBlank()) {
+                terminologyToVersion.putIfAbsent(m.getFromTerminology(), m.getFromVersion());
+            }
+            if (m.getToTerminology() != null && !m.getToTerminology().isBlank()
+                && m.getToVersion() != null && !m.getToVersion().isBlank()) {
+                terminologyToVersion.putIfAbsent(m.getToTerminology(), m.getToVersion());
             }
         }
-        final TypedQuery<String> query = service.getEntityManager()
-            .createQuery("SELECT m.branchPath FROM MapSet m WHERE m.branchPath IS NOT NULL ORDER BY m.modified DESC", String.class)
-            .setMaxResults(1);
-        final List<String> results = query.getResultList();
-        return results.isEmpty() ? null : results.get(0);
+        return terminologyToVersion;
+    }
+
+    /**
+     * Caches concepts for terminologies used in active map sets.
+     * Uses the configured terminology handler; may be no-op for handlers that do not support caching.
+     *
+     * @param service the terminology service
+     * @throws Exception the exception
+     */
+    public static void cacheConceptsForActiveMapSets(final TerminologyService service) throws Exception {
+
+        if (terminologyHandler == null) {
+            LOG.warn("Terminology handler not configured; skipping concept cache");
+            return;
+        }
+        final Map<String, String> terminologyToVersion = getTerminologyVersionsFromMapSets(service);
+        if (!terminologyToVersion.isEmpty()) {
+            terminologyHandler.cacheConcepts(terminologyToVersion);
+        }
     }
 
     /**
@@ -203,12 +250,17 @@ public class MapSetService {
      * @param user the user
      * @param mapProject the map project
      * @param mapSetExportRequest the map set export request
+     * @param mapSet the map set (required; paths must come from DB)
      * @return the refset member concepts
      * @throws Exception the exception
      */
-    public static String exportMapSet(final User user, final MapProject mapProject, final MapSetExportRequest mapSetExportRequest) throws Exception {
+    public static String exportMapSet(final User user, final MapProject mapProject, final MapSetExportRequest mapSetExportRequest, final MapSet mapSet)
+        throws Exception {
 
-        return terminologyHandler.exportMapSet(user, mapProject, mapSetExportRequest);
+        if (mapSet == null) {
+            throw new IllegalArgumentException("MapSet is required for export. No fallback.");
+        }
+        return terminologyHandler.exportMapSet(user, mapProject, mapSetExportRequest, mapSet);
     }
 
     /**

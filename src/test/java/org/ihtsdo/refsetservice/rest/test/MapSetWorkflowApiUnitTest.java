@@ -193,7 +193,7 @@ public class MapSetWorkflowApiUnitTest extends BaseTest {
             tempMapSet.setName("MapSet Workflow Test " + uniqueSuffix);
             tempMapSet.setVersionStatus(VersionStatus.IN_DEVELOPMENT);
             tempMapSet.setWorkflowStatus(WorkflowStatus.READY_FOR_EDIT);
-            tempMapSet.setBranchPath("MAIN/MAPSET-WF-TEST/2025-01-01/WCITEST");
+//            tempMapSet.setBranchPath("MAIN/MAPSET-WF-TEST/2025-01-01/WCITEST");
             tempMapSet.setFromBranchPath("MAIN/MAPSET-WF-TEST/2025-01-01");
             tempMapSet.setFromTerminology("MAPSET-WF-TEST");
             tempMapSet.setFromVersion("2025-01-01");

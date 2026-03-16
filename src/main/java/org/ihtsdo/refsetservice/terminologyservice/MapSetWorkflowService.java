@@ -208,8 +208,14 @@ public final class MapSetWorkflowService {
             throw new MissingArgumentException("A Code System must be specified.");
         }
 
-        // setup query
-        final String branchPath = editionShortName.equals("SNOMEDCT") ? "MAIN/" : "MAIN/" + editionShortName;
+        final Edition edition = service.findSingle("shortName:" + editionShortName, Edition.class, null);
+        if (edition == null) {
+            throw new MissingArgumentException("The code system '" + editionShortName + "' could not be found");
+        }
+        if (StringUtils.isBlank(edition.getBranch())) {
+            throw new MissingArgumentException("editions.branch is required for edition " + editionShortName + ". Database is missing required path data.");
+        }
+        final String branchPath = edition.getBranch();
 
         final String query = "workflowStatus: " + WorkflowStatus.IN_PUBLICATION + " AND editionShortName: " + editionShortName;
 
@@ -227,11 +233,6 @@ public final class MapSetWorkflowService {
             throw new MissingArgumentException("The version branch '" + branchPath
                 + "' does not exist. This must be created and populated with the reference sets to be versioned outside of this tool "
                 + "before this publication completion process can be run.");
-        }
-
-        final Edition edition = service.findSingle("shortName:" + editionShortName, Edition.class, null);
-        if (edition == null) {
-            throw new MissingArgumentException("The code system '" + editionShortName + "' could not be found");
         }
 
         final CodeSystem editionCodeSystem = EditionService.getCodeSystem(editionShortName);

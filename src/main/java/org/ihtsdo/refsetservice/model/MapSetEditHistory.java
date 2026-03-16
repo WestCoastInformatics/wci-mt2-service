@@ -79,9 +79,9 @@ public class MapSetEditHistory extends AbstractHasModified implements Comparable
     @FullTextField(analyzer = "standard")
     private WorkflowStatus workflowStatus;
 
-    /** The branch path. */
-    @Column(nullable = false)
-    private String branchPath;
+//    /** The branch path. */
+//    @Column(nullable = false)
+//    private String branchPath;
 
     /** The version. */
     @Column(nullable = false)
@@ -188,7 +188,7 @@ public class MapSetEditHistory extends AbstractHasModified implements Comparable
         this.refSetName = mapSet.getRefSetName();
         this.moduleId = mapSet.getModuleId();
         this.name = mapSet.getName();
-        this.branchPath = mapSet.getBranchPath();
+//        this.branchPath = mapSet.getBranchPath();
         this.fromTerminology = mapSet.getFromTerminology();
         this.fromVersion = mapSet.getFromVersion();
         this.fromBranchPath = mapSet.getFromBranchPath();
@@ -426,26 +426,26 @@ public class MapSetEditHistory extends AbstractHasModified implements Comparable
         this.editBranchId = editBranchId;
     }
 
-    /**
-     * Gets the branch path.
-     *
-     * @return the branch path
-     */
-    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
-    public String getBranchPath() {
-
-        return branchPath;
-    }
-
-    /**
-     * Sets the branch path.
-     *
-     * @param branchPath the new branch path
-     */
-    public void setBranchPath(final String branchPath) {
-
-        this.branchPath = branchPath;
-    }
+//    /**
+//     * Gets the branch path.
+//     *
+//     * @return the branch path
+//     */
+//    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+//    public String getBranchPath() {
+//
+//        return branchPath;
+//    }
+//
+//    /**
+//     * Sets the branch path.
+//     *
+//     * @param branchPath the new branch path
+//     */
+//    public void setBranchPath(final String branchPath) {
+//
+//        this.branchPath = branchPath;
+//    }
 
     /**
      * Returns the user assigned to work on the refset.
