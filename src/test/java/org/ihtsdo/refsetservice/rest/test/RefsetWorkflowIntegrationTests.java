@@ -384,7 +384,7 @@ public class RefsetWorkflowIntegrationTests extends AbstractRefsetTests {
 
             // Merge Edit branch back to Refset branch
             success = BranchService.promoteEditIntoRefsetBranch(refset.toBranchDetails(), "Merging after adding one member to refset");
-            
+
             assertThat(success).isTrue();
 
             // Verify still have the same 6 members in the refset found under the newly create branch

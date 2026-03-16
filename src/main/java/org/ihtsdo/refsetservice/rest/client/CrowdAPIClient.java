@@ -30,6 +30,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -135,7 +136,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         if (response.statusCode() == 200) {
 
             final String jsonString = response.body();
-            final ObjectMapper mapper = new ObjectMapper();
+            final ObjectMapper mapper = ThreadLocalMapper.get();
             final JsonNode root = mapper.readTree(jsonString);
 
             final User user = new User();
@@ -463,7 +464,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         // 404 the user could not be found or the user is not a direct member of the
         // specified group.
 
-        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectMapper mapper = ThreadLocalMapper.get();
         final JsonNode root = mapper.readTree(jsonString);
         final JsonNode groups = root.get("groups");
         if (groups != null && !groups.isEmpty()) {
@@ -608,7 +609,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         }
 
         final String jsonString = get(getBaseUrl() + FIND_USER + urlEncode(email));
-        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectMapper mapper = ThreadLocalMapper.get();
         final JsonNode root = mapper.readTree(jsonString);
         final JsonNode users = root.get("users");
 
@@ -645,7 +646,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         // 200 OK.
         // 404 the group name could not be found
 
-        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectMapper mapper = ThreadLocalMapper.get();
         final JsonNode root = mapper.readTree(jsonString);
         final JsonNode users = root.get("users");
         if (users != null && !users.isEmpty()) {
@@ -714,7 +715,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         final Set<String> groupList = new HashSet<>();
         final String jsonString = get(getBaseUrl() + GET_RT2_ADMIN_GROUPS);
 
-        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectMapper mapper = ThreadLocalMapper.get();
         final JsonNode root = mapper.readTree(jsonString);
         final JsonNode groups = root.get("groups");
         if (groups != null && !groups.isEmpty()) {

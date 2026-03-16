@@ -31,7 +31,6 @@ import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnomedConstants;
-import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
@@ -51,6 +50,7 @@ import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.StringUtility;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -851,7 +851,7 @@ public final class RefsetWorkflowService {
             }
 
             final String resultString = SnowstormConnection.readEntityAsString(response);
-            final ObjectMapper mapper = new ObjectMapper();
+            final ObjectMapper mapper = ThreadLocalMapper.get();
             final JsonNode root = mapper.readTree(resultString);
             final JsonNode conceptNode = root;
 
@@ -1201,7 +1201,7 @@ public final class RefsetWorkflowService {
             return "";
         }
         if (StringUtility.isJson(snowstormErrorMessage)) {
-            final ObjectMapper mapper = new ObjectMapper();
+            final ObjectMapper mapper = ThreadLocalMapper.get();
             try {
                 final JsonNode json = mapper.readTree(snowstormErrorMessage);
                 snowstormErrorMessage = json.has("message") ? json.get("message").asText() : "";

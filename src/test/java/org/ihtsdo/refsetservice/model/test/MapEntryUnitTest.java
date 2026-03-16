@@ -2,9 +2,6 @@ package org.ihtsdo.refsetservice.model.test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.HashSet;
-
-import org.ihtsdo.refsetservice.model.AdditionalMapEntryInfo;
 import org.ihtsdo.refsetservice.model.MapEntry;
 import org.ihtsdo.refsetservice.test.BaseTest;
 import org.ihtsdo.refsetservice.test.EqualsHashcodeTester;

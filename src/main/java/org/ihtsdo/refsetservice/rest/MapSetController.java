@@ -9,13 +9,12 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
@@ -158,13 +157,6 @@ public class MapSetController extends BaseController {
 			@Parameter(hidden = true)
 			@ModelAttribute final SearchParameters searchParameters) throws Exception {
 
-		// #region agent log
-		try {
-			Files.write(Paths.get("debug-ea312a.log"), java.util.Collections.singletonList(
-				"{\"sessionId\":\"ea312a\",\"runId\":\"swagger\",\"hypothesisId\":\"H1\",\"location\":\"MapSetController.getMapSets\",\"message\":\"getMapSets entered\",\"data\":{\"reached\":true},\"timestamp\":" + System.currentTimeMillis() + "}"),
-				java.nio.charset.StandardCharsets.UTF_8, java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
-		} catch (Exception e) { /* ignore */ }
-		// #endregion
 		LOG.info("Search mapsets: {}", searchParameters);
 		// final User authUser = authorizeUser(request);
 
@@ -257,7 +249,7 @@ public class MapSetController extends BaseController {
 		if (!StringUtils.isBlank(mapSetExportRequest.getStartEffectiveTime())) {
 			mapSetExportRequest.setStartEffectiveTime(null);
 		}
-		
+
 		//TODO: Get language + "FSN" or "PT" from UI
 		mapSetExportRequest.setLanguageId("900000000000509007PT"); // English language refset
 

@@ -48,10 +48,11 @@ import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.FieldedStringTokenizer;
 import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
-import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
+import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.StringUtility;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -844,7 +845,7 @@ public final class MapSetWorkflowService {
             }
 
             final String resultString = SnowstormConnection.readEntityAsString(response);
-            final ObjectMapper mapper = new ObjectMapper();
+            final ObjectMapper mapper = ThreadLocalMapper.get();
             final JsonNode root = mapper.readTree(resultString);
             final JsonNode conceptNode = root;
 
@@ -1207,7 +1208,7 @@ public final class MapSetWorkflowService {
             return "";
         }
         if (StringUtility.isJson(snowstormErrorMessage)) {
-            final ObjectMapper mapper = new ObjectMapper();
+            final ObjectMapper mapper = ThreadLocalMapper.get();
             try {
                 final JsonNode json = mapper.readTree(snowstormErrorMessage);
                 snowstormErrorMessage = json.has("message") ? json.get("message").asText() : "";

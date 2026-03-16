@@ -19,7 +19,6 @@ import javax.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
-import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnomedConstants;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.PfsParameter;
@@ -37,6 +36,7 @@ import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.StringUtility;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,11 +56,11 @@ public class EditionService extends BaseService {
 
     /** The Constant MODULE_DEPENDENCY_REFSET_SCT_ID. */
     private static final String MODULE_DEPENDENCY_REFSET_SCT_ID = "900000000000534007";
-	
+
     /** The Constant dependencyModuleNameCache. */
     // Module Id to map of releaseDate to Dependent Module Name
     private static final Map<String, Map<Long, String>> DEPENDENCY_MODULE_CACHE = new HashMap<>();
-    
+
 	/** The terminology handler. */
 	private static TerminologyServerHandler terminologyHandler;
 
@@ -186,7 +186,7 @@ public class EditionService extends BaseService {
 	public static List<Edition> getAffiliateEditionList() throws Exception {
 		return terminologyHandler.getAffiliateEditionList();
 	}
-	
+
     /**
      * Returns the edition dependent version.
      *
@@ -207,7 +207,7 @@ public class EditionService extends BaseService {
 
             final String resultString = SnowstormConnection.readEntityAsString(response);
 
-            final ObjectMapper mapper = new ObjectMapper();
+            final ObjectMapper mapper = ThreadLocalMapper.get();
             final JsonNode codeSystemJsonRootNode = mapper.readTree(resultString);
 
             if (codeSystemJsonRootNode.has("dependantVersionEffectiveTime")) {
@@ -220,7 +220,7 @@ public class EditionService extends BaseService {
 
         return dependentVersion;
     }
-    
+
     /**
      * Returns the edition dependent version.
      *
@@ -243,9 +243,9 @@ public class EditionService extends BaseService {
                 throw new Exception("Unable to get edition code system. Status: " + Integer.toString(response.getStatus()) + ". Error: "
                     + formatErrorMessage(response));
             }
-            
+
             final String resultString = SnowstormConnection.readEntityAsString(response);
-            final ObjectMapper mapper = new ObjectMapper();
+            final ObjectMapper mapper = ThreadLocalMapper.get();
             final JsonNode codeSystemJsonRootNode = mapper.readTree(resultString);
 
             // Map the JSON node to a CodeSystem object
@@ -417,7 +417,7 @@ public class EditionService extends BaseService {
 
                 final String resultString = SnowstormConnection.readEntityAsString(response);
 
-                final ObjectMapper mapper = new ObjectMapper();
+                final ObjectMapper mapper = ThreadLocalMapper.get();
                 final JsonNode root = mapper.readTree(resultString);
 
                 final String dependentModuleVersion = root.get("dependencyRelease").asText();
@@ -460,7 +460,7 @@ public class EditionService extends BaseService {
 
                 final String resultString = SnowstormConnection.readEntityAsString(response);
 
-                final ObjectMapper mapper = new ObjectMapper();
+                final ObjectMapper mapper = ThreadLocalMapper.get();
                 final Iterator<JsonNode> moduleDependencyIterator = mapper.readTree(resultString).get("items").iterator();
 
                 while (moduleDependencyIterator.hasNext()) {
@@ -504,7 +504,7 @@ public class EditionService extends BaseService {
 
         DEPENDENCY_MODULE_CACHE.clear();
     }
-    
+
     /**
      * Format error message.
      *
@@ -524,7 +524,7 @@ public class EditionService extends BaseService {
             return "";
         }
         if (StringUtility.isJson(snowstormErrorMessage)) {
-            final ObjectMapper mapper = new ObjectMapper();
+            final ObjectMapper mapper = ThreadLocalMapper.get();
             try {
                 final JsonNode json = mapper.readTree(snowstormErrorMessage);
                 snowstormErrorMessage = json.has("message") ? json.get("message").asText() : "";
