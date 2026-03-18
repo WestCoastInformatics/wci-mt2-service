@@ -109,12 +109,18 @@ public class MapSetService {
         if (refSetCode == null || refSetCode.isBlank()) {
             return null;
         }
+        //Look for IN DEVELOPMENT version first
+        final ResultList<MapSet> results = service.find("refSetCode:" + QueryParserBase.escape(refSetCode) + " AND versionStatus:" + VersionStatus.IN_DEVELOPMENT.toString(), null, MapSet.class, null);
+        if (!results.getItems().isEmpty()) {
+            return results.getItems().get(0);
+        }
+        //If no IN DEVELOPMENT version, look for latest published version
         final PfsParameter pfs = new PfsParameter();
         pfs.setSort("versionDate");
         pfs.setAscending(false);
         pfs.setLimit(1);
-        final ResultList<MapSet> results = service.find("refSetCode:" + QueryParserBase.escape(refSetCode), pfs, MapSet.class, null);
-        return results.getItems().isEmpty() ? null : results.getItems().get(0);
+        final ResultList<MapSet> results2 = service.find("refSetCode:" + QueryParserBase.escape(refSetCode), pfs, MapSet.class, null);
+        return results2.getItems().isEmpty() ? null : results2.getItems().get(0);
     }
 
     /**
