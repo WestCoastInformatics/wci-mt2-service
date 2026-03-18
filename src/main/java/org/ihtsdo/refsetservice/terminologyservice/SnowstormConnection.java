@@ -29,12 +29,11 @@ import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status.Family;
 
-import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
-import org.jboss.resteasy.plugins.providers.ByteArrayProvider;
-
 import org.ihtsdo.refsetservice.util.LocalException;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
+import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
+import org.jboss.resteasy.plugins.providers.ByteArrayProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;

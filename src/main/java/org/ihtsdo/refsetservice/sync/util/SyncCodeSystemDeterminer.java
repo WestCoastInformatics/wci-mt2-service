@@ -21,6 +21,7 @@ import javax.ws.rs.core.Response;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.sync.SyncCodeSystemAgent;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -325,7 +326,7 @@ public class SyncCodeSystemDeterminer {
 
             final String resultString = SnowstormConnection.readEntityAsString(response);
 
-            final ObjectMapper mapper = new ObjectMapper();
+            final ObjectMapper mapper = ThreadLocalMapper.get();
             final JsonNode organizationJsonRootNode = mapper.readTree(resultString);
 
             return organizationJsonRootNode;

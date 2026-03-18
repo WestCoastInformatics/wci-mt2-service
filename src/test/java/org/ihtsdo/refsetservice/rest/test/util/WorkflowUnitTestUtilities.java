@@ -107,7 +107,7 @@ public class WorkflowUnitTestUtilities {
 			final String content = result.getResponse().getContentAsString();
 			LOG.info(" content = " + content);
 
-            final ObjectMapper mapper = new ObjectMapper();
+            final ObjectMapper mapper = ThreadLocalMapper.get();
             final JsonNode root = mapper.readTree(content);
 
 			assertThat(root).isNotNull();

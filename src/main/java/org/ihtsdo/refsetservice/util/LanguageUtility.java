@@ -109,7 +109,7 @@ public final class LanguageUtility {
 
                 /*-
                  * Previous hard coded map for review if issues arise
-                 * 
+                 *
                 final Map<String, String> languageCodeToCountryCodeMap = Map.ofEntries(Map.entry("113491000052101", "SE"), Map.entry(DEFAULT_LANGUAGE_REFSET, "US"),
                 Map.entry("15551000146102", "NL"), Map.entry("160161000146108", "NL"), Map.entry("188001000202106", "NO"), Map.entry("21000172104", "BE"),
                 Map.entry("21000220103", "IE"), Map.entry("21000234103", "AT"), Map.entry("21000267104", "KR"), Map.entry("231621000210105", "NZ"),
@@ -177,7 +177,7 @@ public final class LanguageUtility {
 
             final String resultString = SnowstormConnection.readEntityAsString(response);
 
-            final ObjectMapper mapper = new ObjectMapper();
+            final ObjectMapper mapper = ThreadLocalMapper.get();
             final JsonNode root = mapper.readTree(resultString);
 
             final Iterator<JsonNode> descriptionIterator = root.get("conceptDescriptions").iterator();
@@ -229,7 +229,7 @@ public final class LanguageUtility {
          * Map.entry("5641000179103", "es"), Map.entry("21000267104", "ko"), Map.entry("701000172104", "nl"), Map.entry("21000220103", "en"),
          * Map.entry("61000202103", "no"), Map.entry("46011000052107", "sv"), Map.entry("64311000052107", "sv"), Map.entry("113491000052101", "sv"),
          * Map.entry("63451000052100", "sv"), Map.entry("83461000052100", "sv"), Map.entry("63461000052102", "sv"), Map.entry("63481000052108", "sv")
-         * 
+         *
          * );
          */
         // Initialize language to code map from properties file

@@ -21,6 +21,7 @@ import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.OrganizationService;
 import org.ihtsdo.refsetservice.util.ResultList;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
@@ -96,7 +97,7 @@ public class UserControllerIntegrationTest extends AbstractRefsetTests {
     @BeforeEach
     public void setUp() {
 
-        objectMapper = new ObjectMapper();
+        objectMapper = ThreadLocalMapper.get();
         JacksonTester.initFields(this, objectMapper);
         baseUrl = "/user";
     }
@@ -278,29 +279,29 @@ public class UserControllerIntegrationTest extends AbstractRefsetTests {
         // find by email
         /*
          * NOT INDEXED IN USER url = baseUrl + "/search";
-         * 
+         *
          * result = mvc.perform(get(url).queryParam("query", "email:" +
          * testUser.getEmail()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn(); content =
          * result.getResponse().getContentAsString(); LOG.info(" content = {}", content); final ResultList<User> emailResultList = new
          * ObjectMapper().readValue(content, (new TypeReference<ResultList<User>>() { }));
-         * 
+         *
          * assertThat(emailResultList).isNotNull(); assertThat(emailResultList.getItems()).isNotNull();
          * assertThat(emailResultList.getItems().size()).isEqualTo(1);
-         * 
+         *
          * final User emailNewUser = emailResultList.getItems().get(0); assertThat(compareUsers(testUser, emailNewUser, true)).isTrue();
          */
 
         // find by name
         /*
          * NOT INDEXED IN USER url = baseUrl + "/search";
-         * 
+         *
          * result = mvc.perform(get(url).queryParam("query", "name:" +
          * testUser.getName()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn(); content =
          * result.getResponse().getContentAsString(); LOG.info(" content = {}", content); final ResultList<User> resultList = new
          * ObjectMapper().readValue(content, (new TypeReference<ResultList<User>>() { }));
-         * 
+         *
          * assertThat(resultList).isNotNull(); assertThat(resultList.getItems()).isNotNull(); assertThat(resultList.getItems().size()).isEqualTo(1);
-         * 
+         *
          * final User newUser = resultList.getItems().get(0); assertThat(compareUsers(testUser, newUser, true)).isTrue(); testUser =
          * resultList.getItems().get(0);
          */
