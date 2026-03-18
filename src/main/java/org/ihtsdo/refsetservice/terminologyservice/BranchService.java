@@ -20,10 +20,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.BranchInformation;
 import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.enums.WorkflowStatus;
-import org.ihtsdo.refsetservice.util.DateUtility;
-import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.sync.SyncAgent;
+import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.StringUtility;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -147,7 +147,7 @@ public final class BranchService {
 
         final long start = System.currentTimeMillis();
         final String url = SnowstormConnection.getBaseUrl() + "branches";
-        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectMapper mapper = ThreadLocalMapper.get();
         final ObjectNode body = mapper.createObjectNode().put("name", branchName).put("parent", parentBranchPath);
 
         LOG.info("createBranch URL: {}; body: {}", url, body);
@@ -477,7 +477,7 @@ public final class BranchService {
             topLevelRefsetBranchPath = BranchService.createBranch(projectBranchPath, topLevelBranchName);
         }
 
-        final String refsetBranchName = getRefsetBranchName(branchInformation.getRefsetId(), branchInformation.getBranchId());
+        final String refsetBranchName = getRefsetBranchName(branchInformation.getRefsetId(), branchInformation.getRefsetBranchId());
         String refsetBranchPath = BranchService.getRefsetBranchPath(branchInformation);
 
         if (BranchService.doesBranchExist(refsetBranchPath)) {
@@ -509,7 +509,7 @@ public final class BranchService {
             return createLocalsetRefsetBranch(branchInformation, projectBranchPath);
         }
 
-        final String branchName = getRefsetBranchName(branchInformation.getRefsetId(), branchInformation.getBranchId());
+        final String branchName = getRefsetBranchName(branchInformation.getRefsetId(), branchInformation.getRefsetBranchId());
         String refsetBranchPath = getRefsetBranchPath(branchInformation);
 
         if (doesBranchExist(refsetBranchPath)) {
@@ -583,7 +583,7 @@ public final class BranchService {
         }
 
         if (StringUtility.isJson(jsonResponse)) {
-            final ObjectMapper mapper = new ObjectMapper();
+            final ObjectMapper mapper = ThreadLocalMapper.get();
             String updatedJsonResponse = null;
 
             try {
@@ -689,7 +689,7 @@ public final class BranchService {
             }
 
             // create the body entity for the update call from the retrieved concept
-            final ObjectMapper mapper = new ObjectMapper();
+            final ObjectMapper mapper = ThreadLocalMapper.get();
             final String resultString = SnowstormConnection.readEntityAsString(response);
             final JsonNode root = mapper.readTree(resultString);
             final String status = root.get("status").asText();
@@ -772,7 +772,7 @@ public final class BranchService {
 
             final String resultString = SnowstormConnection.readEntityAsString(response);
 
-            final ObjectMapper mapper = new ObjectMapper();
+            final ObjectMapper mapper = ThreadLocalMapper.get();
             final JsonNode organizationJsonRootNode = mapper.readTree(resultString);
 
             LOG.info("conflict exists result: " + !organizationJsonRootNode.isEmpty());
@@ -799,7 +799,7 @@ public final class BranchService {
 
             final String resultString = SnowstormConnection.readEntityAsString(response);
 
-            final ObjectMapper mapper = new ObjectMapper();
+            final ObjectMapper mapper = ThreadLocalMapper.get();
             final JsonNode organizationJsonRootNode = mapper.readTree(resultString);
 
             if (!organizationJsonRootNode.has("state")) {
@@ -830,7 +830,7 @@ public final class BranchService {
         // target as the merge-review, and the ID of the above current merge-review
 
         final String mergeUrl = SnowstormConnection.getBaseUrl() + "merges";
-        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectMapper mapper = ThreadLocalMapper.get();
         final ObjectNode body = mapper.createObjectNode();
 
         // Populate body of POST
@@ -877,7 +877,7 @@ public final class BranchService {
         // POST such as: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/merge-reviews
         // with body: { "source":"MAIN/SNOMEDCT-BE", "target":"MAIN/SNOMEDCT-BE/BEREFSETS" }
 
-        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectMapper mapper = ThreadLocalMapper.get();
         final ObjectNode body = mapper.createObjectNode().put("source", sourceBranch).put("target", targetBranch);
         final String reviewUrl = SnowstormConnection.getBaseUrl() + "merge-reviews";
         String jobStatusUrl = null;
@@ -927,7 +927,7 @@ public final class BranchService {
 
         final long start = System.currentTimeMillis();
         final String mergeUrl = SnowstormConnection.getBaseUrl() + "merges";
-        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectMapper mapper = ThreadLocalMapper.get();
         final ObjectNode body = mapper.createObjectNode().put("source", sourceBranchPath).put("target", targetBranchPath);
         boolean jobDone = false;
 
@@ -1072,7 +1072,7 @@ public final class BranchService {
      */
     public static String mergeRebaseReview(final String sourceBranchPath, final String targetBranchPath) throws Exception {
 
-        final ObjectMapper mapper = new ObjectMapper();
+        final ObjectMapper mapper = ThreadLocalMapper.get();
         final ObjectNode body = mapper.createObjectNode().put("source", sourceBranchPath).put("target", targetBranchPath);
         final String reviewUrl = SnowstormConnection.getBaseUrl() + "merge-reviews";
         String jobStatusUrl = null;

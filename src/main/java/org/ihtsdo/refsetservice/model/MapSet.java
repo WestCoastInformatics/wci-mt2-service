@@ -86,10 +86,6 @@ public class MapSet extends AbstractHasModified {
     @Column(nullable = true, length = 256)
     private WorkflowStatus workflowStatus;
 
-//    /** The branch path. */
-//    @Column(nullable = false)
-//    private String branchPath;
-
     /** The version. */
     @Column(nullable = false)
     private String version;
@@ -260,7 +256,6 @@ public class MapSet extends AbstractHasModified {
         this.refSetName = mapSet.getRefSetName();
         this.moduleId = mapSet.getModuleId();
         this.name = mapSet.getName();
-//        this.branchPath = mapSet.getBranchPath();
         this.fromTerminology = mapSet.getFromTerminology();
         this.fromVersion = mapSet.getFromVersion();
         this.fromBranchPath = mapSet.getFromBranchPath();
@@ -506,26 +501,6 @@ public class MapSet extends AbstractHasModified {
 
         this.editBranchId = editBranchId;
     }
-
-//    /**
-//     * Gets the branch path.
-//     *
-//     * @return the branch path
-//     */
-//    public String getBranchPath() {
-//
-//        return branchPath;
-//    }
-//
-//    /**
-//     * Sets the branch path.
-//     *
-//     * @param branchPath the new branch path
-//     */
-//    public void setBranchPath(final String branchPath) {
-//
-//        this.branchPath = branchPath;
-//    }
 
     /**
      * Returns the user assigned to work on the refset.

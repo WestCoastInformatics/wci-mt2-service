@@ -56,6 +56,7 @@ import org.ihtsdo.refsetservice.util.EmailUtility;
 import org.ihtsdo.refsetservice.util.LanguageUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
@@ -210,7 +211,7 @@ public class SyncUtilities {
 
             // get RefSets from edition as long as a) active & b) not a core refset
             final String resultString = SnowstormConnection.readEntityAsString(response);
-            final ObjectMapper mapper = new ObjectMapper();
+            final ObjectMapper mapper = ThreadLocalMapper.get();
 
             final JsonNode root = mapper.readTree(resultString);
             final Iterator<JsonNode> moduleIterator = root.get("items").iterator();
@@ -329,7 +330,7 @@ public class SyncUtilities {
             }
 
             final String resultString = SnowstormConnection.readEntityAsString(response);
-            final ObjectMapper mapper = new ObjectMapper();
+            final ObjectMapper mapper = ThreadLocalMapper.get();
             final JsonNode root = mapper.readTree(resultString);
 
             // get RefSets from CORE as long as active
@@ -384,7 +385,7 @@ public class SyncUtilities {
 
             final String resultString = SnowstormConnection.readEntityAsString(response);
 
-            final ObjectMapper mapper = new ObjectMapper();
+            final ObjectMapper mapper = ThreadLocalMapper.get();
             final JsonNode branchJsonRootNode = mapper.readTree(resultString);
 
             if (!branchJsonRootNode.has("metadata")) {

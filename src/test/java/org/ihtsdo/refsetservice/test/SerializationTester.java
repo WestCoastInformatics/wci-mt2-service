@@ -12,6 +12,7 @@ package org.ihtsdo.refsetservice.test;
 
 import java.lang.reflect.Method;
 
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,13 +27,13 @@ public class SerializationTester extends ProxyTester {
 
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(SerializationTester.class);
-    
+
     /** The Constant OBJECT_MAPPER. */
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final ObjectMapper OBJECT_MAPPER = ThreadLocalMapper.get();
 
     /**
      * Constructs a new getter/setter tester to test objects of a particular class.
-     * 
+     *
      * @param obj Object to test.
      */
     public SerializationTester(final Object obj) {

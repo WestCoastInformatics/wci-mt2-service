@@ -48,6 +48,7 @@ import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.LanguageUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.SearchParameters;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,7 +121,7 @@ public class SnowstormRefset extends SnowstormAbstract {
                 parentConceptId = SnomedConstants.SIMPLE_TYPE_REFERENCE_SET;
             }
 
-            final ObjectMapper mapper = new ObjectMapper();
+            final ObjectMapper mapper = ThreadLocalMapper.get();
 
             final ObjectNode descriptions = mapper.createObjectNode().set("descriptions",
                 mapper.createArrayNode()
@@ -362,7 +363,7 @@ public class SnowstormRefset extends SnowstormAbstract {
             }
 
             final String resultString = SnowstormConnection.readEntityAsString(response);
-            final ObjectMapper mapper = new ObjectMapper();
+            final ObjectMapper mapper = ThreadLocalMapper.get();
             final JsonNode root = mapper.readTree(resultString);
             final JsonNode conceptNode = root;
 
@@ -427,7 +428,7 @@ public class SnowstormRefset extends SnowstormAbstract {
                     throw new Exception(Integer.toString(response.getStatus()));
                 }
 
-                final ObjectMapper mapper = new ObjectMapper();
+                final ObjectMapper mapper = ThreadLocalMapper.get();
                 final JsonNode root = mapper.readTree(resultString);
                 final JsonNode conceptNodeBatch = root.get("items");
 
@@ -538,7 +539,7 @@ public class SnowstormRefset extends SnowstormAbstract {
                 throw new Exception(Integer.toString(response.getStatus()));
             }
 
-            final ObjectMapper mapper = new ObjectMapper();
+            final ObjectMapper mapper = ThreadLocalMapper.get();
             final JsonNode conceptNode = mapper.readTree(resultString);
 
             if (conceptNode.has("releasedEffectiveTime")) {
@@ -579,7 +580,7 @@ public class SnowstormRefset extends SnowstormAbstract {
                 }
 
                 // create the body entity for the update call from the retrieved concept
-                final ObjectMapper mapper = new ObjectMapper();
+                final ObjectMapper mapper = ThreadLocalMapper.get();
                 final String resultString = SnowstormConnection.readEntityAsString(response);
                 final JsonNode conceptNode = mapper.readTree(resultString);
 

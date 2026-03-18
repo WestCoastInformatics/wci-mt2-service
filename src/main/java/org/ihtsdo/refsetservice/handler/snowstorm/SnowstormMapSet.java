@@ -9,7 +9,6 @@
  */
 package org.ihtsdo.refsetservice.handler.snowstorm;
 
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;

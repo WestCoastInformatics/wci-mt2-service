@@ -77,6 +77,7 @@ import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.TaxonomyParameters;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1431,7 +1432,7 @@ public final class RefsetMemberService {
 
                 final String resultString = getMemberSctIds(refset.getRefsetId(), limit, searchAfter, getBranchPath(refset));
                 // LOG.debug("exportRefsetSctidList: resultString" + resultString);
-                final ObjectMapper mapper = new ObjectMapper();
+                final ObjectMapper mapper = ThreadLocalMapper.get();
                 final JsonNode root = mapper.readTree(resultString);
                 final JsonNode items = root.get("items");
                 final Iterator<JsonNode> iterator = items.iterator();
@@ -2461,7 +2462,7 @@ public final class RefsetMemberService {
 
     /**
      * Call the provided Snowstorm URL to get concepts and return a processed result list.
-     * 
+     *
      * @param url The API URL to call
      * @param refset the refset
      * @param lookupParameters the parts of the concept to retrieve
@@ -2971,7 +2972,7 @@ public final class RefsetMemberService {
 
     /**
      * Populate the user permissions properties on a concept.
-     * 
+     *
      * @param service the Terminology Service
      */
     public static void cacheAllMemberAncestors(final TerminologyService service) {

@@ -136,7 +136,6 @@ CREATE TABLE `map_sets` (
   `created` datetime(6) NOT NULL,
   `modified` datetime(6) NOT NULL,
   `modifiedBy` varchar(256) NOT NULL,
-  `branchPath` varchar(255) NOT NULL,
   `fromBranchPath` varchar(255) NOT NULL,
   `fromTerminology` varchar(255) NOT NULL,
   `fromVersion` varchar(255) NOT NULL,
@@ -164,7 +163,6 @@ CREATE TABLE `map_sets` (
   `project_id` varchar(64) DEFAULT NULL,
   `map_project_id` varchar(64) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `UKneur0v3alqt6vuup23cqlhiwt` (`name`),
   KEY `FK_map_sets_project` (`project_id`),
   CONSTRAINT `FK_map_sets_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`)
 );
@@ -197,7 +195,6 @@ CREATE TABLE `mapset_history` (
   `name` varchar(255) NOT NULL,
   `versionStatus` varchar(256) NOT NULL,
   `workflowStatus` varchar(256) DEFAULT NULL,
-  `branchPath` varchar(255) NOT NULL,
   `version` varchar(255) NOT NULL,
   `versionDate` datetime(6) DEFAULT NULL,
   `baseContentVersion` varchar(255) NOT NULL,

@@ -1323,7 +1323,7 @@ public final class AuditEntryHelper {
         return changeString.isEmpty() ? "No changes in additional info" : fieldName + " changes: " + changeString;
     }
 
- 
+
 
     // Map Relation
     /**
@@ -1359,7 +1359,7 @@ public final class AuditEntryHelper {
         log(entry);
         return entry;
     }
-    
+
     /**
      * Complete refset publication entry.
      *
@@ -1377,7 +1377,7 @@ public final class AuditEntryHelper {
         log(entry);
         return entry;
     }
-    
+
     /**
      * Adds the workflow history entry.
      *
@@ -1396,7 +1396,7 @@ public final class AuditEntryHelper {
         log(entry);
         return entry;
     }
-    
+
     /**
      * Update workflow note entry.
      *

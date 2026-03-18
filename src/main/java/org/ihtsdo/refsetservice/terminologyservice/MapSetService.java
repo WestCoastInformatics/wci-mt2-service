@@ -33,6 +33,8 @@ import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.ihtsdo.refsetservice.util.AuditEntryHelper;
+
 /**
  * Service class to handle getting and modifying internal mapset information.
  */
@@ -84,6 +86,12 @@ public class MapSetService {
     public static MapSet getMapSet(final String branch, final String code) throws Exception {
 
         return terminologyHandler.getMapSet(branch, code);
+
+    }
+
+    public static MapSet getMapSet(final TerminologyService service, final User user, final String mapsetInternalId) throws Exception {
+
+        return getMapSetForWorkflow(service, mapsetInternalId);
 
     }
 
@@ -268,16 +276,53 @@ public class MapSetService {
      *
      * @param service the service
      * @param user the user
-     * @param mapSetInternalId the map set internal id
+     * @param refsetInternalId the refset internal id (UUID)
      * @param action the action
      * @param notes the notes
      * @return the refset
      * @throws Exception the exception
      */
-    public static MapSet setWorkflowStatus(final TerminologyService service, final User user, final String mapSetInternalId, final WorkflowAction action,
+    public static MapSet setWorkflowStatus(final TerminologyService service, final User user, final String mapsetInternalId, final WorkflowAction action,
         final String notes) throws Exception {
 
-        return terminologyHandler.setWorkflowStatus(service, user, mapSetInternalId, action, notes);
+        MapSet mapset = MapSetService.getMapSet(service, user, mapsetInternalId);
+        MapSetWorkflowService.canUserPerformWorkflowAction(user, mapset, action);
+        final WorkflowStatus currentStatus = mapset.getWorkflowStatus();
+
+        if (action == WorkflowAction.FINISH_EDIT) {
+            service.add(AuditEntryHelper.addEditingCycleEntry(mapset, true));
+        } else if (action == WorkflowAction.CANCEL_EDIT) {
+            service.add(AuditEntryHelper.addEditingCycleEntry(mapset, false));
+        } else if (action == WorkflowAction.CANCEL_UPGRADE) {
+            RefsetMemberService.REFSETS_UPDATED_MEMBERS.remove(mapsetInternalId);
+        }
+
+        // If starting EDIT on a published map set, create a new version ready to be edited
+        if (action == WorkflowAction.EDIT && (currentStatus == null || currentStatus == WorkflowStatus.PUBLISHED)) {
+
+            final MapSet newMapSetVersion = MapSetService.createNewMapSetVersion(service, user, mapset.getId(), true);
+            // need to commit previous transaction before reading to fetch mapset.
+            service.commitClearBegin();
+            mapset = MapSetService.getMapSet(service, user, newMapSetVersion.getId());
+
+            if (!mapset.isBasedOnLatestVersion()) {
+                RefsetService.REFSETS_TO_SHOW_UPGRADE_WARNING.add(newMapSetVersion.getId());
+                mapset.setUpgradeWarning(true);
+            }
+
+            return mapset;
+        }
+
+        // Make action change to workflow status
+        mapset = MapSetWorkflowService.setWorkflowStatusByAction(service, user, action, mapset, notes);
+
+        // if the status changed return the updated refset else return null
+        if (currentStatus == mapset.getWorkflowStatus()) {
+            LOG.info("setWorkflowStatus: did not update workflow status.");
+            return null;
+        }
+
+        return mapset;
     }
 
     /**

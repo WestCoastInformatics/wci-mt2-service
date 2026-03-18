@@ -46,6 +46,7 @@ import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.LanguageUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -824,7 +825,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
             // get RefSets from edition as long as a) active & b) not a core refset
             final String resultString = SnowstormConnection.readEntityAsString(response);
-            final ObjectMapper mapper = new ObjectMapper();
+            final ObjectMapper mapper = ThreadLocalMapper.get();
 
             final JsonNode root = mapper.readTree(resultString);
 
@@ -908,7 +909,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
             // get RefSets from edition as long as a) active & b) not a core refset
             final String resultString = SnowstormConnection.readEntityAsString(response);
-            final ObjectMapper mapper = new ObjectMapper();
+            final ObjectMapper mapper = ThreadLocalMapper.get();
             final JsonNode root = mapper.readTree(resultString);
 
             return root;
@@ -1000,7 +1001,7 @@ public class SyncRefsetAgent extends SyncAgent {
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
             final String resultString = SnowstormConnection.readEntityAsString(response);
-            final ObjectMapper mapper = new ObjectMapper();
+            final ObjectMapper mapper = ThreadLocalMapper.get();
             final JsonNode conceptNode = mapper.readTree(resultString);
 
             final Iterator<JsonNode> descriptionIterator = conceptNode.get("descriptions").iterator();
@@ -1245,7 +1246,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
                 final String refsetJsonString = getUtilities().getPropertyReader().getRttIdToRefsetJsonMap().get(rttId);
 
-                final ObjectMapper mapper = new ObjectMapper();
+                final ObjectMapper mapper = ThreadLocalMapper.get();
                 final JsonNode refsetJson = mapper.readTree(refsetJsonString);
 
                 final long rttDataRefsetVersion = sdf.parse(refsetJson.get("version").asText()).getTime();
@@ -1358,7 +1359,7 @@ public class SyncRefsetAgent extends SyncAgent {
             try (final Response response = SnowstormConnection.getResponse(genericUrl.replace("{branch}", parentBranchPath))) {
 
                 final String resultString = SnowstormConnection.readEntityAsString(response);
-                final ObjectMapper mapper = new ObjectMapper();
+                final ObjectMapper mapper = ThreadLocalMapper.get();
                 final JsonNode root = mapper.readTree(resultString);
 
                 // get RefSets from edition as long as a) active & b) within
