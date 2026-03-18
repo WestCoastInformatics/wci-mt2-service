@@ -143,7 +143,8 @@ public final class MapSetWorkflowService {
     public static List<String> startMapSetPublications(final TerminologyService service, final String editionShortName, final User authUser) throws Exception {
 
         final List<String> mapSetsNotUpdated = new ArrayList<>();
-        final String query = "workflowStatus: " + WorkflowStatus.READY_FOR_PUBLICATION + " AND editionShortName: " + editionShortName + " AND localSet: false";
+        final String query = "workflowStatus: " + WorkflowStatus.READY_FOR_PUBLICATION; 
+		// + " AND editionShortName: " + editionShortName + " AND localSet: false";
 
         final ResultList<MapSet> results = service.find(query, null, MapSet.class, null);
 
@@ -218,7 +219,8 @@ public final class MapSetWorkflowService {
         }
         final String branchPath = edition.getBranch();
 
-        final String query = "workflowStatus: " + WorkflowStatus.IN_PUBLICATION + " AND editionShortName: " + editionShortName;
+        final String query = "workflowStatus: " + WorkflowStatus.IN_PUBLICATION;
+		// + " AND editionShortName: " + editionShortName;
 
         // Find snowstorm's version date of the latest version of all mapSets in ready_to_published state. Ensure all identical
         final List<String> mapSetsNotUpdated = new ArrayList<>();
@@ -301,11 +303,7 @@ public final class MapSetWorkflowService {
             final MapSet previouslyPublishedVersion =
                 service.findSingle("mapsetId:" + QueryParserBase.escape(mapSet.getRefSetCode()) + " AND latestPublishedVersion: true", MapSet.class, null);
 
-            LOG.info("1 {} ", !mapSet.isLocalSet() && mapSet.getWorkflowStatus() != WorkflowStatus.IN_PUBLICATION);
-            LOG.info("2 {} ", mapSet.isLocalSet() && mapSet.getWorkflowStatus() != WorkflowStatus.READY_FOR_PUBLICATION);
-
-            if (!mapSet.isLocalSet() && mapSet.getWorkflowStatus() != WorkflowStatus.IN_PUBLICATION
-                || (mapSet.isLocalSet() && mapSet.getWorkflowStatus() != WorkflowStatus.READY_FOR_PUBLICATION)) {
+            if (mapSet.getWorkflowStatus() != WorkflowStatus.IN_PUBLICATION) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Reference set is not in the proper status to have publication completed " + mapSet.getRefSetCode());
             }

@@ -477,7 +477,7 @@ public final class BranchService {
             topLevelRefsetBranchPath = BranchService.createBranch(projectBranchPath, topLevelBranchName);
         }
 
-        final String refsetBranchName = getRefsetBranchName(branchInformation.getRefsetId(), branchInformation.getBranchId());
+        final String refsetBranchName = getRefsetBranchName(branchInformation.getRefsetId(), branchInformation.getRefsetBranchId());
         String refsetBranchPath = BranchService.getRefsetBranchPath(branchInformation);
 
         if (BranchService.doesBranchExist(refsetBranchPath)) {
@@ -509,7 +509,7 @@ public final class BranchService {
             return createLocalsetRefsetBranch(branchInformation, projectBranchPath);
         }
 
-        final String branchName = getRefsetBranchName(branchInformation.getRefsetId(), branchInformation.getBranchId());
+        final String branchName = getRefsetBranchName(branchInformation.getRefsetId(), branchInformation.getRefsetBranchId());
         String refsetBranchPath = getRefsetBranchPath(branchInformation);
 
         if (doesBranchExist(refsetBranchPath)) {

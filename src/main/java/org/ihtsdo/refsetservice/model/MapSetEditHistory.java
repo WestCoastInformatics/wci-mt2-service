@@ -79,10 +79,6 @@ public class MapSetEditHistory extends AbstractHasModified implements Comparable
     @FullTextField(analyzer = "standard")
     private WorkflowStatus workflowStatus;
 
-//    /** The branch path. */
-//    @Column(nullable = false)
-//    private String branchPath;
-
     /** The version. */
     @Column(nullable = false)
     private String version;
@@ -93,8 +89,7 @@ public class MapSetEditHistory extends AbstractHasModified implements Comparable
     private Date versionDate;
 
     /**
-     * The last refset published release upon which the refset's content is based
-     * on.
+     * The last refset published release upon which the refset's content is based on.
      */
     @Column(nullable = false, length = 255)
     private String baseContentVersion;
@@ -188,7 +183,6 @@ public class MapSetEditHistory extends AbstractHasModified implements Comparable
         this.refSetName = mapSet.getRefSetName();
         this.moduleId = mapSet.getModuleId();
         this.name = mapSet.getName();
-//        this.branchPath = mapSet.getBranchPath();
         this.fromTerminology = mapSet.getFromTerminology();
         this.fromVersion = mapSet.getFromVersion();
         this.fromBranchPath = mapSet.getFromBranchPath();
@@ -426,27 +420,6 @@ public class MapSetEditHistory extends AbstractHasModified implements Comparable
         this.editBranchId = editBranchId;
     }
 
-//    /**
-//     * Gets the branch path.
-//     *
-//     * @return the branch path
-//     */
-//    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
-//    public String getBranchPath() {
-//
-//        return branchPath;
-//    }
-//
-//    /**
-//     * Sets the branch path.
-//     *
-//     * @param branchPath the new branch path
-//     */
-//    public void setBranchPath(final String branchPath) {
-//
-//        this.branchPath = branchPath;
-//    }
-
     /**
      * Returns the user assigned to work on the refset.
      *
@@ -633,8 +606,7 @@ public class MapSetEditHistory extends AbstractHasModified implements Comparable
     /**
      * Returns the checks for version in development.
      *
-     * @return Does this refset have a version in development (this is only true if
-     *         this is the latest published version)
+     * @return Does this refset have a version in development (this is only true if this is the latest published version)
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public boolean getHasVersionInDevelopment() {
@@ -645,9 +617,7 @@ public class MapSetEditHistory extends AbstractHasModified implements Comparable
     /**
      * Sets the checks for version in development.
      *
-     * @param hasVersionInDevelopment set if this refset has a version in
-     *                                development (this is only true if this is the
-     *                                latest published version)
+     * @param hasVersionInDevelopment set if this refset has a version in development (this is only true if this is the latest published version)
      */
     public void setHasVersionInDevelopment(final boolean hasVersionInDevelopment) {
 
