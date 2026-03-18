@@ -891,8 +891,8 @@ public class SnowstormMapping extends SnowstormAbstract {
         for (final MapEntry mapEntry : submittedMapping.getMapEntries()) {
             mapEntry.setAdvices(MapEntryUtility.fixMapEntryAdvices(mapEntry));
             mapEntry.setRelationCode(MapEntryUtility.calculateMapEntryRelationCode(mapProject, mapEntry));
-            if (StringUtils.isNotBlank(mapProject.getModuleId())) {
-                mapEntry.setModuleId(mapProject.getModuleId()); // Only create entries in the Edition module, never in the International
+            if (StringUtils.isNotBlank(mapSet.getModuleId())) {
+                mapEntry.setModuleId(mapSet.getModuleId()); // Only create entries in the Edition module, never in the International
             }
         }
 
