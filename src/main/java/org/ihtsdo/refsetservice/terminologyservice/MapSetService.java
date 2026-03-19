@@ -372,14 +372,13 @@ public class MapSetService {
         newMapSetVersion.setInternationalContentVersion(mapSet.getInternationalContentVersion());
         newMapSetVersion.setVersion(mapSet.getVersion());
         newMapSetVersion.setProject(mapSet.getProject());
-
-        mapSet.setMapBranchId(mapBranchId);
+        newMapSetVersion.setMapProject(mapSet.getMapProject());
 
         // Persist new version
         service.add(newMapSetVersion);
 
         // Create the Snowstorm branches
-        BranchService.createRefsetBranch(mapSet.toBranchDetails());
+        BranchService.createRefsetBranch(newMapSetVersion.toBranchDetails());
         BranchService.createEditBranch(newMapSetVersion.toBranchDetails(), editBranchId);
 
         // Add a workflow history entry for CREATE
