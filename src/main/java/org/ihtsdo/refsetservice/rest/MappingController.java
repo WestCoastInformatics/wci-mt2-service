@@ -101,10 +101,11 @@ public class MappingController extends BaseController {
     @RecordMetric
     public @ResponseBody ResponseEntity<ResultListMapping> getMappings(@PathVariable(value = "mapSetCode") final String mapSetCode,
         @RequestParam(required = false) final String filter, @RequestParam(required = false, defaultValue = "true") boolean showOverriddenEntries,
-        @RequestParam(required = false) final String conceptCodes,
-        @RequestParam(required = false) final String query, @RequestParam(required = false) final Integer limit, @RequestParam(required = false) final Integer offset,
-        @RequestParam(required = false) final Boolean activeOnly, @RequestParam(required = false) final String sort, @RequestParam(required = false) final Boolean sortAscending,
-        @RequestParam(required = false) final Boolean editing, @RequestParam(required = false) final String searchAfter) throws Exception {
+        @RequestParam(required = false) final String conceptCodes, @RequestParam(required = false) final String query,
+        @RequestParam(required = false) final Integer limit, @RequestParam(required = false) final Integer offset,
+        @RequestParam(required = false) final Boolean activeOnly, @RequestParam(required = false) final String sort,
+        @RequestParam(required = false) final Boolean sortAscending, @RequestParam(required = false) final Boolean editing,
+        @RequestParam(required = false) final String searchAfter) throws Exception {
 
         final SearchParameters sp = new SearchParameters();
         sp.setQuery(query);
@@ -181,11 +182,11 @@ public class MappingController extends BaseController {
         }
 
         if (mappingExportRequest.getConceptCodes() == null || mappingExportRequest.getConceptCodes().isEmpty()) {
-        	throw new RuntimeException("One or more concept selections are required.");
+            throw new RuntimeException("One or more concept selections are required.");
         }
 
         if (mappingExportRequest.getConceptCodes() != null && mappingExportRequest.getConceptCodes().size() > 10000) {
-        	throw new RuntimeException("Maximum concept limit of 10,000 exceeded.");
+            throw new RuntimeException("Maximum concept limit of 10,000 exceeded.");
         }
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -312,8 +313,8 @@ public class MappingController extends BaseController {
     })
     @RecordMetric
     public @ResponseBody ResponseEntity<Mapping> getMapping(@PathVariable final String mapSetCode, @PathVariable final String conceptCode,
-        @RequestParam(required = false, defaultValue = "true") boolean showOverriddenEntries, @Parameter(hidden = true) @ModelAttribute final SearchParameters searchParameters)
-        throws Exception {
+        @RequestParam(required = false, defaultValue = "true") boolean showOverriddenEntries,
+        @Parameter(hidden = true) @ModelAttribute final SearchParameters searchParameters) throws Exception {
 
         LOG.info("Mapping for Mapset: {}, Source Concept Code: {}, Search params: {}", mapSetCode, conceptCode, searchParameters);
         // final User authUser = authorizeUser(request);
@@ -324,7 +325,7 @@ public class MappingController extends BaseController {
             if (StringUtils.isBlank(branch) || "empty".equals(branch) || "none".equals(branch)) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-            final org.ihtsdo.refsetservice.model.MapSet mapSet = MapSetService.findMapSetByRefSetCode(service, mapSetCode);
+            final MapSet mapSet = MapSetService.findMapSetByRefSetCode(service, mapSetCode);
             if (mapSet == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
@@ -342,13 +343,13 @@ public class MappingController extends BaseController {
     /**
      * Creates the mapping.
      *
-     * @param mapSetCode the map set code
+     * @param mapSetInternalId the map set internal id
      * @param mapping the mapping
      * @return the response entity
      * @throws Exception the exception
      */
-    @PostMapping(value = "/mapset/{mapSetCode}", consumes = MediaType.APPLICATION_JSON)
-    @Operation(summary = "Create mapping for the mapSetCode. This call requires authentication with the correct role.", tags = {
+    @PostMapping(value = "/mapset/{mapSetInternalId}", consumes = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Create mapping for the mapSetInternalId. This call requires authentication with the correct role.", tags = {
         "mapset"
     }, responses = {
         @ApiResponse(responseCode = "201", description = "Successfully created the mapping"), @ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -356,27 +357,32 @@ public class MappingController extends BaseController {
         @ApiResponse(responseCode = "417", description = "Failed Expectation")
     })
     @Parameters({
-        @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. &lt;uuid&gt;", required = true),
+        @Parameter(name = "mapSetInternalId", description = "Mapset internal id, e.g. &lt;uuid&gt;", required = true),
         @Parameter(name = "conceptCode", description = "Source concept code identifier, e.g. &lt;uuid&gt;", required = true)
     })
     @RecordMetric
-    public @ResponseBody ResponseEntity<Mapping> createMapping(@PathVariable final String mapSetCode, final Mapping mapping) throws Exception {
+    public @ResponseBody ResponseEntity<Mapping> createMapping(@PathVariable final String mapSetInternalId, final Mapping mapping) throws Exception {
 
-        LOG.info("Create Mapping mapSetCode:{}, mapping:{}", mapSetCode, ModelUtility.toJson(mapping));
+        LOG.info("Create Mapping mapSetInternalId:{}, mapping:{}", mapSetInternalId, ModelUtility.toJson(mapping));
 
         try (final TerminologyService service = new TerminologyService()) {
-            final MapSet mapSet = MapSetService.findMapSetByRefSetCode(service, mapSetCode);
+            // The path parameter is the internal map_set.id (NOT the external refSetCode).
+            final MapSet mapSet;
+            try {
+                mapSet = service.get(mapSetInternalId, MapSet.class);
+            } catch (final Exception e) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
             if (mapSet == null || mapSet.getMapProject() == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-            final MapProject mapProject = MapProjectService.getMapProject(service, mapSet.getMapProject().getId(), Boolean.FALSE);
-            final String branch = MapSetService.resolveBranchFromMapSets(service, mapSetCode);
-            if (StringUtils.isBlank(branch) || "empty".equals(branch) || "none".equals(branch)) {
+            final String branch = BranchService.getMapSetBranchPath(mapSet);
+            if (StringUtils.isBlank(branch)) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
             final List<Mapping> mappings = new ArrayList<>();
             mappings.add(mapping);
-            MappingService.createMappings(mapProject, branch, mapSetCode, mappings);
+            MappingService.createMappings(mapSet.getMapProject(), branch, mapSet.getRefSetCode(), mappings);
             return new ResponseEntity<Mapping>(HttpStatus.CREATED);
 
         } catch (final Exception e) {
@@ -389,13 +395,13 @@ public class MappingController extends BaseController {
     /**
      * Creates the mappings.
      *
-     * @param mapSetCode the map set code
+     * @param mapSetInternalId the map set internal id
      * @param mappings the mappings
      * @return the response entity
      * @throws Exception the exception
      */
-    @PostMapping(value = "/mapset/{mapSetCode}/bulk", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-    @Operation(summary = "Create mapping for the mapSetCode. This call requires authentication with the correct role.", tags = {
+    @PostMapping(value = "/mapset/{mapSetInternalId}/bulk", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Create mapping for the mapSetInternalId. This call requires authentication with the correct role.", tags = {
         "mapset"
     }, responses = {
         @ApiResponse(responseCode = "201", description = "Successfully created the mapping"), @ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -403,25 +409,31 @@ public class MappingController extends BaseController {
         @ApiResponse(responseCode = "417", description = "Failed Expectation")
     })
     @Parameters({
-        @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. &lt;uuid&gt;", required = true),
+        @Parameter(name = "mapSetInternalId", description = "Mapset internal id, e.g. &lt;uuid&gt;", required = true),
         @Parameter(name = "conceptCode", description = "Source concept code identifier, e.g. &lt;uuid&gt;", required = true)
     })
     @RecordMetric
-    public @ResponseBody ResponseEntity<List<Mapping>> createMappings(@PathVariable final String mapSetCode, final List<Mapping> mappings) throws Exception {
+    public @ResponseBody ResponseEntity<List<Mapping>> createMappings(@PathVariable final String mapSetInternalId, final List<Mapping> mappings)
+        throws Exception {
 
-        LOG.info("Create Mapping mapSetCode:{}, mapping:{}", mapSetCode, ModelUtility.toJson(mappings));
+        LOG.info("Create Mapping mapSetInternalId:{}, mapping:{}", mapSetInternalId, ModelUtility.toJson(mappings));
 
         try (final TerminologyService service = new TerminologyService()) {
-            final MapSet mapSet = MapSetService.findMapSetByRefSetCode(service, mapSetCode);
+            // The path parameter is the internal map_set.id (NOT the external refSetCode).
+            final MapSet mapSet;
+            try {
+                mapSet = service.get(mapSetInternalId, MapSet.class);
+            } catch (final Exception e) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
             if (mapSet == null || mapSet.getMapProject() == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-            final MapProject mapProject = MapProjectService.getMapProject(service, mapSet.getMapProject().getId(), Boolean.FALSE);
-            final String branch = MapSetService.resolveBranchFromMapSets(service, mapSetCode);
-            if (StringUtils.isBlank(branch) || "empty".equals(branch) || "none".equals(branch)) {
+            final String branch = BranchService.getMapSetBranchPath(mapSet);
+            if (StringUtils.isBlank(branch)) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-            final List<Mapping> createdMappings = MappingService.createMappings(mapProject, branch, mapSetCode, mappings);
+            final List<Mapping> createdMappings = MappingService.createMappings(mapSet.getMapProject(), branch, mapSet.getRefSetCode(), mappings);
             return new ResponseEntity<>(createdMappings, HttpStatus.CREATED);
 
         } catch (final Exception e) {
@@ -434,13 +446,13 @@ public class MappingController extends BaseController {
     /**
      * Update mapping.
      *
-     * @param mapSetCode the map set code
+     * @param mapSetInternalId the map set internal id
      * @param mapping the mapping
      * @return the response entity
      * @throws Exception the exception
      */
-    @RequestMapping(method = RequestMethod.PUT, value = "/mapset/{mapSetCode}", consumes = MediaType.APPLICATION_JSON)
-    @Operation(summary = "Update mapping for the mapSetCode. This call requires authentication with the correct role.", tags = {
+    @RequestMapping(method = RequestMethod.PUT, value = "/mapset/{mapSetInternalId}", consumes = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Update mapping for the mapSetInternalId. This call requires authentication with the correct role.", tags = {
         "mapset"
     }, responses = {
         @ApiResponse(responseCode = "200", description = "Successfully updated the mapping"), @ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -448,27 +460,33 @@ public class MappingController extends BaseController {
         @ApiResponse(responseCode = "417", description = "Failed Expectation")
     })
     @Parameters({
-        @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. &lt;uuid&gt;", required = true),
+        @Parameter(name = "mapSetInternalId", description = "Mapset internal id, e.g. &lt;uuid&gt;", required = true),
         @Parameter(description = "Mapping object to update", required = true)
     })
     @RecordMetric
-    public @ResponseBody ResponseEntity<Mapping> updateMapping(@PathVariable final String mapSetCode, @RequestBody final Mapping mapping) throws Exception {
+    public @ResponseBody ResponseEntity<Mapping> updateMapping(@PathVariable final String mapSetInternalId, @RequestBody final Mapping mapping)
+        throws Exception {
 
-        LOG.info("Update Mapping mapSetCode:{}, mapping:{}", mapSetCode, ModelUtility.toJson(mapping));
+        LOG.info("Update Mapping mapSetInternalId:{}, mapping:{}", mapSetInternalId, ModelUtility.toJson(mapping));
 
         try (final TerminologyService service = new TerminologyService()) {
-            final MapSet mapSet = MapSetService.findMapSetByRefSetCode(service, mapSetCode);
+            // The path parameter is the internal map_set.id (NOT the external refSetCode).
+            final MapSet mapSet;
+            try {
+                mapSet = service.get(mapSetInternalId, MapSet.class);
+            } catch (final Exception e) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
             if (mapSet == null || mapSet.getMapProject() == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-            final MapProject mapProject = MapProjectService.getMapProject(service, mapSet.getMapProject().getId(), Boolean.FALSE);
-            final String branch = MapSetService.resolveBranchFromMapSets(service, mapSetCode);
-            if (branch == null) {
+            final String branch = BranchService.getMapSetBranchPath(mapSet);
+            if (StringUtils.isBlank(branch)) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
             final List<Mapping> mappings = new ArrayList<>();
             mappings.add(mapping);
-            MappingService.updateMappings(mapProject, branch, mapSetCode, mappings, mapSet);
+            MappingService.updateMappings(mapSet.getMapProject(), branch, mapSet.getRefSetCode(), mappings, mapSet);
 
             return new ResponseEntity<>(HttpStatus.OK);
 
@@ -482,14 +500,14 @@ public class MappingController extends BaseController {
     /**
      * Update mappings.
      *
-     * @param mapSetCode the map set code
+     * @param mapSetInternalId the map set internal id
      * @param mappings the mappings
      * @return the response entity
      * @throws Exception the exception
      */
-    @RequestMapping(method = RequestMethod.PUT, value = "/mapset/{mapSetCode}/bulk", consumes = MediaType.APPLICATION_JSON,
+    @RequestMapping(method = RequestMethod.PUT, value = "/mapset/{mapSetInternalId}/bulk", consumes = MediaType.APPLICATION_JSON,
         produces = MediaType.APPLICATION_JSON)
-    @Operation(summary = "Update mapping for the mapSetCode. This call requires authentication with the correct role.", tags = {
+    @Operation(summary = "Update mapping for the mapSetInternalId. This call requires authentication with the correct role.", tags = {
         "mapset"
     }, responses = {
         @ApiResponse(responseCode = "200", description = "Successfully updated the mapping"), @ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -497,26 +515,30 @@ public class MappingController extends BaseController {
         @ApiResponse(responseCode = "417", description = "Failed Expectation")
     })
     @Parameters({
-        @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. &lt;uuid&gt;", required = true),
+        @Parameter(name = "mapSetInternalId", description = "Mapset internal id, e.g. &lt;uuid&gt;", required = true),
         @Parameter(description = "Mapping object to update", required = true)
     })
     @RecordMetric
-    public @ResponseBody ResponseEntity<List<Mapping>> updateMappings(@PathVariable final String mapSetCode, @RequestBody final List<Mapping> mappings)
+    public @ResponseBody ResponseEntity<List<Mapping>> updateMappings(@PathVariable final String mapSetInternalId, @RequestBody final List<Mapping> mappings)
         throws Exception {
 
-        LOG.info("Update Mapping mapSetCode:{}, mapping:{}", mapSetCode, ModelUtility.toJson(mappings));
+        LOG.info("Update Mapping mapSetInternalId:{}, mapping:{}", mapSetInternalId, ModelUtility.toJson(mappings));
 
         try (final TerminologyService service = new TerminologyService()) {
-            final MapSet mapSet = MapSetService.findMapSetByRefSetCode(service, mapSetCode);
+            final MapSet mapSet;
+            try {
+                mapSet = service.get(mapSetInternalId, MapSet.class);
+            } catch (final Exception e) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
             if (mapSet == null || mapSet.getMapProject() == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-            final MapProject mapProject = MapProjectService.getMapProject(service, mapSet.getMapProject().getId(), Boolean.FALSE);
-            final String branch = MapSetService.resolveBranchFromMapSets(service, mapSetCode);
-            if (StringUtils.isBlank(branch) || "empty".equals(branch) || "none".equals(branch)) {
+            final String branch = BranchService.getMapSetBranchPath(mapSet);
+            if (StringUtils.isBlank(branch)) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-            final List<Mapping> updatedMappings = MappingService.updateMappings(mapProject, branch, mapSetCode, mappings, mapSet);
+            final List<Mapping> updatedMappings = MappingService.updateMappings(mapSet.getMapProject(), branch, mapSet.getRefSetCode(), mappings, mapSet);
 
             return new ResponseEntity<>(updatedMappings, HttpStatus.OK);
 
