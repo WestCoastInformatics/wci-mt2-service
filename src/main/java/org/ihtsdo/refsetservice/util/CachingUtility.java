@@ -115,4 +115,35 @@ public class CachingUtility {
         cacheManager.getCacheNames().forEach(cacheName -> cacheManager.getCache(cacheName).clear());
     }
 
+    /**
+     * Clear a specific Spring cache by name.
+     *
+     * <p>Safe to call even if the cache does not exist.</p>
+     *
+     * @param cacheName the cache name
+     */
+    public static void clearCache(final String cacheName) {
+        if (cacheName == null || cacheManager == null) {
+            return;
+        }
+        final Cache cache = cacheManager.getCache(cacheName);
+        if (cache != null) {
+            cache.clear();
+        }
+    }
+
+    /**
+     * Clear multiple Spring caches by name.
+     *
+     * @param cacheNames cache names
+     */
+    public static void clearCaches(final String... cacheNames) {
+        if (cacheNames == null) {
+            return;
+        }
+        for (final String cacheName : cacheNames) {
+            clearCache(cacheName);
+        }
+    }
+
 }
