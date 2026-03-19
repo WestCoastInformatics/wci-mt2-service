@@ -817,7 +817,8 @@ public class MapSet extends AbstractHasModified {
     // for compile, need to verify if still needed for MapSetWorkflow
     public boolean isLocalSet() {
 
-        return true;
+        // all map sets are in the terminology server, so return false
+        return false;
     }
 
     /**

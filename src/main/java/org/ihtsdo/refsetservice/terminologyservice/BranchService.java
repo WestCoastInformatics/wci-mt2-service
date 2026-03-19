@@ -22,6 +22,7 @@ import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.enums.WorkflowStatus;
 import org.ihtsdo.refsetservice.sync.SyncAgent;
 import org.ihtsdo.refsetservice.util.DateUtility;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.StringUtility;
 import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
@@ -61,6 +62,10 @@ public final class BranchService {
 
     /** The Constant PATH_DELIMITER. */
     private static final String PATH_DELIMITER = "/";
+
+    /** The app url root. */
+    private static final boolean USE_MANAGE_SERVICE_INITIALS =
+        "true".equals(PropertyUtility.getProperties().getProperty("mapset.use.manage.service.initials"));
 
     /**
      * Merge the project branch into the edition branch.
@@ -411,9 +416,11 @@ public final class BranchService {
             return "WCI" + PROJECT_BRANCH_NAME;
         }
 
-        final int initialsLocationIndex = editionBranchPath.lastIndexOf("-");
-        if (initialsLocationIndex > 0) {
-            return editionBranchPath.substring(initialsLocationIndex + 1, editionBranchPath.length()) + PROJECT_BRANCH_NAME;
+        if (USE_MANAGE_SERVICE_INITIALS) {
+            final int initialsLocationIndex = editionBranchPath.lastIndexOf("-");
+            if (initialsLocationIndex > 0) {
+                return editionBranchPath.substring(initialsLocationIndex + 1, editionBranchPath.length()) + PROJECT_BRANCH_NAME;
+            }
         }
 
         return PROJECT_BRANCH_NAME;
