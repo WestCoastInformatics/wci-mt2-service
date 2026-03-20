@@ -499,6 +499,12 @@ public final class RefsetWorkflowService {
 
         }
 
+        if (nextStatus == null) {
+            LOG.warn(
+                "Workflow action requested but no permutation: refsetId={}, refsetDbId={}, workflowStatus={}, action={}, user={}, rolesTried={}, file={}",
+                refset.getRefsetId(), refset.getId(), refset.getWorkflowStatus(), action, user.getUserName(), roles, WORKFLOW_PERMUTATIONS_FILE_NAME);
+        }
+
         if (Arrays.asList(WorkflowAction.EDIT, WorkflowAction.UPGRADE, WorkflowAction.REVIEW).contains(action)) {
 
             assignedUser = user.getUserName();
