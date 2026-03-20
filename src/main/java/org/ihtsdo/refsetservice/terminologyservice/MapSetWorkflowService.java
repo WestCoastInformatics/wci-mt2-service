@@ -143,7 +143,7 @@ public final class MapSetWorkflowService {
     public static List<String> startMapSetPublications(final TerminologyService service, final String editionShortName, final User authUser) throws Exception {
 
         final List<String> mapSetsNotUpdated = new ArrayList<>();
-        final String query = "workflowStatus: " + WorkflowStatus.READY_FOR_PUBLICATION; 
+        final String query = "workflowStatus: " + WorkflowStatus.READY_FOR_PUBLICATION;
 		// + " AND editionShortName: " + editionShortName + " AND localSet: false";
 
         final ResultList<MapSet> results = service.find(query, null, MapSet.class, null);
@@ -301,7 +301,7 @@ public final class MapSetWorkflowService {
 
             // Update the previously published version to no long be latest
             final MapSet previouslyPublishedVersion =
-                service.findSingle("mapsetId:" + QueryParserBase.escape(mapSet.getRefSetCode()) + " AND latestPublishedVersion: true", MapSet.class, null);
+                service.findSingle("refSetCode:" + QueryParserBase.escape(mapSet.getRefSetCode()) + " AND latestPublishedVersion: true", MapSet.class, null);
 
             if (mapSet.getWorkflowStatus() != WorkflowStatus.IN_PUBLICATION) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -390,9 +390,9 @@ public final class MapSetWorkflowService {
 
         final List<String> mapSetsNotUpdated = new ArrayList<>();
 
-        final ResultList<MapSet> results =
-            service.find("mapsetId:(" + mapSetIds.replace(",", " OR ") + ") AND versionStatus: (" + VersionStatus.IN_DEVELOPMENT.toString() + ")",
-                new PfsParameter(), MapSet.class, null);
+        final String query = "refSetCode:(" + mapSetIds.replace(",", " OR ") + ") AND versionStatus: (" + VersionStatus.IN_DEVELOPMENT.name() + ")";
+
+        final ResultList<MapSet> results = service.find(query, new PfsParameter(), MapSet.class, null);
 
         for (final MapSet mapSet : results.getItems()) {
 
@@ -706,7 +706,7 @@ public final class MapSetWorkflowService {
         pfs.setLimit(1);
 
         final ResultList<MapSetWorkflowHistory> results =
-            service.find("mapsetId:" + QueryParserBase.escape(mapSet.getId()) + "", pfs, MapSetWorkflowHistory.class, null);
+            service.find("mapSetId:" + QueryParserBase.escape(mapSet.getId()) + "", pfs, MapSetWorkflowHistory.class, null);
 
         if (results.getItems().isEmpty()) {
 
@@ -752,7 +752,7 @@ public final class MapSetWorkflowService {
         }
 
         final ResultList<MapSetWorkflowHistory> results =
-            service.find("mapsetId:" + QueryParserBase.escape(mapSet.getId()) + query, pfs, MapSetWorkflowHistory.class, null);
+            service.find("mapSetId:" + QueryParserBase.escape(mapSet.getId()) + query, pfs, MapSetWorkflowHistory.class, null);
 
         // LOG.info("getWorkflowHistory results: " + ModelUtility.toJson(results));
 
