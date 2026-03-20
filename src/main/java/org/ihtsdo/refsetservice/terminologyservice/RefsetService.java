@@ -131,7 +131,7 @@ public class RefsetService {
 
     /** The Constant AND_SUFFIX. */
     private static final String AND_SUFFIX = " AND ";
-    
+
     /** The Constant rttIntensionalRefsets. */
     private static final Set<String> rttIntensionalRefsets = new HashSet<>();
 
@@ -1096,7 +1096,7 @@ public class RefsetService {
 
         } else if (versionDate != null && versionDate.equalsIgnoreCase(VersionStatus.IN_DEVELOPMENT.getLabel())) {
 
-            query = "versionStatus: " + VersionStatus.IN_DEVELOPMENT;
+            query = "versionStatus: " + VersionStatus.IN_DEVELOPMENT.name();
         }
 
         Refset refset = service.findSingle(query + " AND refsetId:" + refsetId, Refset.class, null);
@@ -1534,7 +1534,7 @@ public class RefsetService {
                     // published version
                     if (showInDevelopment) {
                         projectFilter += " AND ((latestPublishedVersion: true AND hasVersionInDevelopment: false) OR versionStatus: ("
-                            + VersionStatus.IN_DEVELOPMENT.toString() + "))";
+                            + VersionStatus.IN_DEVELOPMENT.getLabel() + "))";
                     } else {
                         projectFilter += " AND latestPublishedVersion: true";
                     }
@@ -1631,7 +1631,7 @@ public class RefsetService {
             return BRANCH_SEARCH_CACHE;
         }
 
-        final ResultList<Refset> results = service.find("versionStatus: " + VersionStatus.IN_DEVELOPMENT.toString(), new PfsParameter(), Refset.class, null);
+        final ResultList<Refset> results = service.find("versionStatus: " + VersionStatus.IN_DEVELOPMENT.getLabel(), new PfsParameter(), Refset.class, null);
 
         for (final Refset refset : results.getItems()) {
 
@@ -1662,7 +1662,7 @@ public class RefsetService {
         final Refset refset = getRefset(service, user, refsetInternalId);
 
         final ResultList<Refset> results =
-            service.find("versionStatus: (" + VersionStatus.IN_DEVELOPMENT.toString() + ") AND refsetId: " + QueryParserBase.escape(refset.getRefsetId()), null,
+            service.find("versionStatus: (" + VersionStatus.IN_DEVELOPMENT.getLabel() + ") AND refsetId: " + QueryParserBase.escape(refset.getRefsetId()), null,
                 Refset.class, null);
 
         if (!results.getItems().isEmpty()) {
@@ -1686,7 +1686,7 @@ public class RefsetService {
         newRefsetVersion.setInternationalContentVersion(refset.getInternationalContentVersion());
 
         refset.setRefsetBranchId(refsetBranchId);
-        
+
         // Add an object
         service.add(newRefsetVersion);
         newInternalRefsetId = newRefsetVersion.getId();
@@ -1779,7 +1779,7 @@ public class RefsetService {
         }
 
         final ResultList<Refset> results = service.find(
-            "(latestPublishedVersion: true AND hasVersionInDevelopment: false) OR (versionStatus: " + VersionStatus.IN_DEVELOPMENT.toString() + ")",
+            "(latestPublishedVersion: true AND hasVersionInDevelopment: false) OR (versionStatus: " + VersionStatus.IN_DEVELOPMENT.getLabel() + ")",
             new PfsParameter(), Refset.class, null);
 
         for (final Refset refset : results.getItems()) {
@@ -1865,7 +1865,7 @@ public class RefsetService {
 
         refset.setDescriptions(refsetConceptList.get(0).getDescriptions());
     }
-    
+
     /**
      * Get a refset from the internal refset ID.
      *
@@ -3001,7 +3001,7 @@ public class RefsetService {
         return terminologyHandler.identifyRefsetName(dbRefset);
 
     }
-    
+
     /**
      * Returns the rtt intensional refsets.
      *
