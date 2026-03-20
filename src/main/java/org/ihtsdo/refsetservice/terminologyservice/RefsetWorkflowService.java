@@ -403,7 +403,7 @@ public final class RefsetWorkflowService {
         final List<String> refsetsNotUpdated = new ArrayList<>();
 
         final ResultList<Refset> results =
-            service.find("refsetId:(" + refsetIds.replace(",", " OR ") + ") AND versionStatus: (" + VersionStatus.IN_DEVELOPMENT.toString() + ")",
+            service.find("refsetId:(" + refsetIds.replace(",", " OR ") + ") AND versionStatus: (" + VersionStatus.IN_DEVELOPMENT.name() + ")",
                 new PfsParameter(), Refset.class, null);
 
         for (final Refset refset : results.getItems()) {
