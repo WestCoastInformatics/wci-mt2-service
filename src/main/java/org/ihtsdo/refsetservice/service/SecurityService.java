@@ -23,6 +23,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.apache.commons.lang3.StringUtils;
+import org.ihtsdo.refsetservice.handler.EntraIDSecurityServiceHandler;
 import org.ihtsdo.refsetservice.handler.SecurityServiceHandler;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.RestException;
@@ -64,6 +65,9 @@ public class SecurityService implements AutoCloseable {
 
     /** The session key for the list of user projects. */
     public static final String SESSION_USER_PROJECTS = "RT2_USER_PROJECTS";
+
+    /** Session attribute for OAuth2 state when Entra login is started via {@code /authenticate/login}. */
+    public static final String SESSION_ENTRA_OAUTH_STATE_KEY = "ENTRA_OAUTH_STATE";
 
     /** The handler. */
     public static final String GUEST_USERNAME = "nonLoggedInUser";
@@ -420,19 +424,7 @@ public class SecurityService implements AutoCloseable {
             throw new LocalException("Invalid userName: null");
         }
 
-        final Properties config = PropertyUtility.getProperties();
-
-        if (handler == null) {
-
-            timeout = (StringUtils.isNotBlank(config.getProperty("spring.session.timeout.seconds")))
-                ? Integer.valueOf(config.getProperty("spring.session.timeout.seconds")) : 900000;
-
-            final String handlerName = (StringUtils.isNotBlank(config.getProperty("security.handler"))) ? config.getProperty("security.handler")
-                : "org.ihtsdo.refsetservice.handler.ImsSecurityServiceHandler";
-
-            handler = HandlerUtility.newStandardHandlerInstanceWithConfiguration("security.handler", handlerName, SecurityServiceHandler.class);
-
-        }
+        initializeHandlerIfNeeded();
 
         //
         // Call the security service
@@ -442,6 +434,60 @@ public class SecurityService implements AutoCloseable {
             LOG.info("Authenticated user is {}", authUser);
             return authHelper(service, authUser);
         }
+    }
+
+    /**
+     * Completes login using an Entra-issued JWT (for example after OAuth2 authorization code exchange). Loads the configured {@link SecurityServiceHandler};
+     * if it is {@link EntraIDSecurityServiceHandler}, validates the token and builds a user, then runs {@link #authHelper(TerminologyService, User)} so DB state and
+     * the application {@code authToken} match the normal {@link #authenticate(String)} path.
+     *
+     * @param entraJwt the access or id token string (no {@code Bearer } prefix)
+     * @return the persisted MT2 user with {@link User#getAuthToken()} set for API calls
+     * @throws LocalException if {@code entraJwt} is blank
+     * @throws RestException if {@code security.handler} is not EntraID (HTTP 503) or Entra validation / auth rules fail
+     * @throws Exception for database or other failures from {@link TerminologyService} / {@link #authHelper(TerminologyService, User)}
+     */
+    public User authenticateWithEntraBearerToken(final String entraJwt) throws Exception {
+
+        if (StringUtils.isBlank(entraJwt)) {
+            throw new LocalException("Invalid Entra token: blank");
+        }
+
+        initializeHandlerIfNeeded();
+
+        if (!(handler instanceof EntraIDSecurityServiceHandler)) {
+            throw new RestException(false, 503, "Service Unavailable",
+                "Entra OAuth callback requires security.handler=ENTRAID.");
+        }
+
+        try (final TerminologyService service = new TerminologyService()) {
+            final User authUser = ((EntraIDSecurityServiceHandler) handler).authenticateWithBearerToken(entraJwt);
+            LOG.info("Authenticated user from Entra bearer token is {}", authUser);
+            return authHelper(service, authUser);
+        }
+    }
+
+    /**
+     * Lazily constructs the static {@link #handler} from {@code security.handler} and the corresponding {@code security.handler.*} prefixed properties, and sets
+     * {@link #timeout} from {@code spring.session.timeout.seconds}. No-op when {@code handler} is already set.
+     *
+     * @throws Exception if the handler class cannot be loaded or configured
+     */
+    private static void initializeHandlerIfNeeded() throws Exception {
+
+        if (handler != null) {
+            return;
+        }
+
+        final Properties config = PropertyUtility.getProperties();
+
+        timeout = (StringUtils.isNotBlank(config.getProperty("spring.session.timeout.seconds")))
+            ? Integer.valueOf(config.getProperty("spring.session.timeout.seconds")) : 900000;
+
+        final String handlerName = (StringUtils.isNotBlank(config.getProperty("security.handler"))) ? config.getProperty("security.handler")
+            : "org.ihtsdo.refsetservice.handler.ImsSecurityServiceHandler";
+
+        handler = HandlerUtility.newStandardHandlerInstanceWithConfiguration("security.handler", handlerName, SecurityServiceHandler.class);
     }
 
     /**
@@ -673,20 +719,7 @@ public class SecurityService implements AutoCloseable {
      */
     private static void setHandler() throws Exception {
 
-        if (handler != null) {
-            return;
-        }
-
-        final Properties config = PropertyUtility.getProperties();
-
-        timeout = (StringUtils.isNotBlank(config.getProperty("spring.session.timeout.seconds")))
-            ? Integer.valueOf(config.getProperty("spring.session.timeout.seconds")) : 900000;
-
-        final String handlerName = (StringUtils.isNotBlank(config.getProperty("security.handler"))) ? config.getProperty("security.handler")
-            : "org.ihtsdo.refsetservice.handler.ImsSecurityServiceHandler";
-
-        handler = HandlerUtility.newStandardHandlerInstanceWithConfiguration("security.handler", handlerName, SecurityServiceHandler.class);
-
+        initializeHandlerIfNeeded();
     }
 
     /**
