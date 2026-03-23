@@ -46,7 +46,17 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
     /** The handler-scoped properties (security.handler.ENTRAID.*). */
     private Properties properties;
 
-    /* see superclass */
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Reads the JWT from the current request {@code Authorization: Bearer} header (path {@code userName} is not used for identity; claims define the user).
+     * Delegates to {@link #authenticateWithBearerToken(String)}.
+     * </p>
+     *
+     * @param userName path segment from REST (ignored for Entra; identity comes from token claims)
+     * @return authenticated user from token and configuration
+     * @throws Exception if the bearer token is missing or invalid
+     */
     @Override
     public User authenticate(final String userName) throws Exception {
 
@@ -61,37 +71,55 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
 
         LOG.debug("EntraID authenticate: bearer token present, length={} chars (token value not logged)", token.length());
 
+        return authenticateWithBearerToken(token);
+    }
+
+    /**
+     * Validates an Entra-issued JWT string and builds the authenticated user (used by REST and OAuth callback).
+     *
+     * @param token the raw JWT (access or id token), without "Bearer " prefix
+     * @return the user from token claims and property-based bootstrap roles
+     * @throws Exception if validation fails
+     */
+    public User authenticateWithBearerToken(final String token) throws Exception {
+
+        if (StringUtils.isBlank(token)) {
+            throw new RestException(false, 401, "Unauthorized", "Missing or invalid EntraID bearer token.");
+        }
+
         final String jwksEndpoint = getRequiredProperty("jwks.endpoint");
         final String authority = getRequiredProperty("authority");
         final String clientId = getRequiredProperty("client.id");
 
-        LOG.debug("EntraID authenticate: config — jwks.endpoint={}, authority={}, client.id (expected audience)={}", jwksEndpoint, authority,
-            clientId);
+        LOG.debug("EntraID authenticateWithBearerToken: config — jwks.endpoint={}, authority={}, client.id (expected audience)={}", jwksEndpoint,
+            authority, clientId);
 
         try {
             logUnverifiedJwtSummary("before signature verify", token);
 
             final DecodedJWT decodedJwt = validateToken(token, jwksEndpoint, authority, clientId);
 
-            LOG.debug("EntraID authenticate: JWT signature and issuer/audience verification succeeded");
+            LOG.debug("EntraID authenticateWithBearerToken: JWT signature and issuer/audience verification succeeded");
 
             final String identifierClaim = properties != null && StringUtils.isNotBlank(properties.getProperty("user.identifier.claim"))
                 ? properties.getProperty("user.identifier.claim")
                 : "email";
 
-            LOG.debug("EntraID authenticate: using identifier claim name={}", identifierClaim);
+            LOG.debug("EntraID authenticateWithBearerToken: using identifier claim name={}", identifierClaim);
 
             final String identifier = decodedJwt.getClaim(identifierClaim).asString();
             if (StringUtils.isBlank(identifier)) {
-                LOG.warn("EntraID authenticate: claim '{}' missing or blank on verified token (available claims logged at DEBUG)", identifierClaim);
+                LOG.warn("EntraID authenticateWithBearerToken: claim '{}' missing or blank on verified token (available claims logged at DEBUG)",
+                    identifierClaim);
                 logClaimKeysAtDebug(decodedJwt);
                 throw new RestException(false, 401, "Unauthorized", "Token missing required claim: " + identifierClaim);
             }
 
-            LOG.debug("EntraID authenticate: resolved identifier from claim '{}' = {}", identifierClaim, identifier);
+            LOG.debug("EntraID authenticateWithBearerToken: resolved identifier from claim '{}' = {}", identifierClaim, identifier);
 
             final String name = decodedJwt.getClaim("name").asString();
-            LOG.debug("EntraID authenticate: name claim = {}", StringUtils.isBlank(name) ? "(absent or blank, will fall back to identifier)" : name);
+            LOG.debug("EntraID authenticateWithBearerToken: name claim = {}",
+                StringUtils.isBlank(name) ? "(absent or blank, will fall back to identifier)" : name);
 
             final User user = new User();
             user.setUserName(identifier);
@@ -103,20 +131,21 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
 
             user.setModifiedBy(user.getUserName());
 
-            LOG.info("EntraID authenticate: success for userName={}, email={}, roles={}", user.getUserName(), user.getEmail(), user.getRoles());
-            LOG.debug("EntraID authenticate: full user object: {}", user);
+            LOG.info("EntraID authenticateWithBearerToken: success for userName={}, email={}, roles={}", user.getUserName(), user.getEmail(),
+                user.getRoles());
+            LOG.debug("EntraID authenticateWithBearerToken: full user object: {}", user);
             return user;
 
         } catch (final RestException e) {
             if (e.getError() != null) {
-                LOG.warn("EntraID authenticate: RestException httpStatus={} error={} message={}", e.getError().getStatus(), e.getError().getError(),
-                    e.getError().getMessage());
+                LOG.warn("EntraID authenticateWithBearerToken: RestException httpStatus={} error={} message={}", e.getError().getStatus(),
+                    e.getError().getError(), e.getError().getMessage());
             } else {
-                LOG.warn("EntraID authenticate: RestException with null error payload: {}", e.getMessage());
+                LOG.warn("EntraID authenticateWithBearerToken: RestException with null error payload: {}", e.getMessage());
             }
             throw e;
         } catch (final Exception e) {
-            LOG.error("EntraID authenticate: unexpected error during token validation or user build — {}", e.getMessage(), e);
+            LOG.error("EntraID authenticateWithBearerToken: unexpected error during token validation or user build — {}", e.getMessage(), e);
             throw new RestException(false, 401, "Unauthorized", "Unable to validate EntraID token.");
         }
     }
@@ -227,6 +256,11 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
         }
     }
 
+    /**
+     * Logs the set of JWT claim names at DEBUG when the required identifier claim is missing, to simplify misconfiguration diagnosis.
+     *
+     * @param decodedJwt verified or unverified decoded JWT whose claim map is logged (values are not logged)
+     */
     private void logClaimKeysAtDebug(final DecodedJWT decodedJwt) {
 
         if (!LOG.isDebugEnabled()) {
