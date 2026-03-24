@@ -151,7 +151,7 @@ public final class BranchService {
         }
 
         final long start = System.currentTimeMillis();
-        final String url = SnowstormConnection.getBaseUrl() + "branches";
+        final String url = SnowstormConnection.getRestBaseUrl() + "branches";
         final ObjectMapper mapper = ThreadLocalMapper.get();
         final ObjectNode body = mapper.createObjectNode().put("name", branchName).put("parent", parentBranchPath);
 
@@ -192,7 +192,7 @@ public final class BranchService {
     public static boolean deleteBranch(final String branchPath) throws Exception {
 
         final long start = System.currentTimeMillis();
-        final String url = SnowstormConnection.getBaseUrl() + "admin/" + branchPath + "/actions/hard-delete";
+        final String url = SnowstormConnection.getRestBaseUrl() + "admin/" + branchPath + "/actions/hard-delete";
 
         LOG.info("deleteBranch URL: {}", url);
 
@@ -224,7 +224,7 @@ public final class BranchService {
     public static boolean doesBranchExist(final String branchPath) throws Exception {
 
         final long start = System.currentTimeMillis();
-        final String url = SnowstormConnection.getBaseUrl() + "branches/" + branchPath;
+        final String url = SnowstormConnection.getRestBaseUrl() + "branches/" + branchPath;
 
         LOG.info("doesBranchExist URL: " + url);
 
@@ -682,7 +682,7 @@ public final class BranchService {
 
         // GET: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/merge-reviews/reviewid
         // If CURRENT, results are available
-        final String reviewUrl = SnowstormConnection.getBaseUrl() + "merge-reviews/" + reviewId;
+        final String reviewUrl = SnowstormConnection.getRestBaseUrl() + "merge-reviews/" + reviewId;
 
         LOG.info("merge polling change review URL: " + reviewUrl);
 
@@ -771,7 +771,7 @@ public final class BranchService {
     private static boolean conflictsExist(final String reviewId) throws Exception {
 
         // https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/merge-reviews/asdf/details
-        final String url = SnowstormConnection.getBaseUrl() + "merge-reviews/" + reviewId + "/details";
+        final String url = SnowstormConnection.getRestBaseUrl() + "merge-reviews/" + reviewId + "/details";
 
         LOG.info("conflictsExist url: " + url);
 
@@ -798,7 +798,7 @@ public final class BranchService {
     private static String determineBranchStatus(final String branch) throws Exception {
 
         // https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/branches/MAIN/SNOMEDCT-BE?includeInheritedMetadata=true
-        final String url = SnowstormConnection.getBaseUrl() + "branches/" + branch + "?includeInheritedMetadata=true";
+        final String url = SnowstormConnection.getRestBaseUrl() + "branches/" + branch + "?includeInheritedMetadata=true";
 
         LOG.info("branch merge necessitated status url: " + url);
 
@@ -836,7 +836,7 @@ public final class BranchService {
         // Then finally we call: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/mergeBranch with the same source and
         // target as the merge-review, and the ID of the above current merge-review
 
-        final String mergeUrl = SnowstormConnection.getBaseUrl() + "merges";
+        final String mergeUrl = SnowstormConnection.getRestBaseUrl() + "merges";
         final ObjectMapper mapper = ThreadLocalMapper.get();
         final ObjectNode body = mapper.createObjectNode();
 
@@ -886,7 +886,7 @@ public final class BranchService {
 
         final ObjectMapper mapper = ThreadLocalMapper.get();
         final ObjectNode body = mapper.createObjectNode().put("source", sourceBranch).put("target", targetBranch);
-        final String reviewUrl = SnowstormConnection.getBaseUrl() + "merge-reviews";
+        final String reviewUrl = SnowstormConnection.getRestBaseUrl() + "merge-reviews";
         String jobStatusUrl = null;
         String reviewId = "";
 
@@ -933,7 +933,7 @@ public final class BranchService {
          */
 
         final long start = System.currentTimeMillis();
-        final String mergeUrl = SnowstormConnection.getBaseUrl() + "merges";
+        final String mergeUrl = SnowstormConnection.getRestBaseUrl() + "merges";
         final ObjectMapper mapper = ThreadLocalMapper.get();
         final ObjectNode body = mapper.createObjectNode().put("source", sourceBranchPath).put("target", targetBranchPath);
         boolean jobDone = false;
@@ -1032,7 +1032,7 @@ public final class BranchService {
 
                             // final check that the promotion has finished.
                             boolean stateGood = false;
-                            final String stateUrl = SnowstormConnection.getBaseUrl() + "branches/" + targetBranchPath;
+                            final String stateUrl = SnowstormConnection.getRestBaseUrl() + "branches/" + targetBranchPath;
                             LOG.debug("Promoted branch state info at {}", stateUrl);
 
                             while (!stateGood) {
@@ -1081,7 +1081,7 @@ public final class BranchService {
 
         final ObjectMapper mapper = ThreadLocalMapper.get();
         final ObjectNode body = mapper.createObjectNode().put("source", sourceBranchPath).put("target", targetBranchPath);
-        final String reviewUrl = SnowstormConnection.getBaseUrl() + "merge-reviews";
+        final String reviewUrl = SnowstormConnection.getRestBaseUrl() + "merge-reviews";
         String jobStatusUrl = null;
         boolean jobDone = false;
         String reviewId = "";

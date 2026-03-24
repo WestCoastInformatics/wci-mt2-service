@@ -831,7 +831,7 @@ public final class MapSetWorkflowService {
         }
 
         final long start = System.currentTimeMillis();
-        final String url = SnowstormConnection.getBaseUrl() + "browser/" + tempBranchPath + "/" + "concepts/";
+        final String url = SnowstormConnection.getRestBaseUrl() + "browser/" + tempBranchPath + "/" + "concepts/";
 
         LOG.info("getNewRefsetId URL: " + url);
 

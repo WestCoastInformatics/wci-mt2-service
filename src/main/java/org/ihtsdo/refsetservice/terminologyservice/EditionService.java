@@ -200,7 +200,7 @@ public class EditionService extends BaseService {
 
         String dependentVersion = "";
 
-        final String url = SnowstormConnection.getBaseUrl() + "codesystems/" + shortName;
+        final String url = SnowstormConnection.getRestBaseUrl() + "codesystems/" + shortName;
         LOG.info("getEditionDependentVersion url: " + url);
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
@@ -233,7 +233,7 @@ public class EditionService extends BaseService {
     public static CodeSystem getCodeSystem(final String shortName) throws Exception {
 
         CodeSystem codeSystem = null;
-        final String url = SnowstormConnection.getBaseUrl() + "codesystems/" + shortName;
+        final String url = SnowstormConnection.getRestBaseUrl() + "codesystems/" + shortName;
         LOG.info("getCodeSystem url: {}", url);
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
@@ -410,7 +410,7 @@ public class EditionService extends BaseService {
             // SnowstormConnection.checkConnection();
 
             // https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/branches/MAIN/SNOMEDCT-NL/NLREFSETS/metadata?includeInheritedMetadata=true
-            String url = SnowstormConnection.getBaseUrl() + "branches/" + branchPath + "/metadata?includeInheritedMetadata=true";
+            String url = SnowstormConnection.getRestBaseUrl() + "branches/" + branchPath + "/metadata?includeInheritedMetadata=true";
             LOG.info("getRefsetDependencyModule url: " + url);
 
             try (final Response response = SnowstormConnection.getResponse(url)) {
@@ -452,7 +452,7 @@ public class EditionService extends BaseService {
 
             // Get refset members of moduleDependcy refset for refset's moduleId
             // https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/MAIN/SNOMEDCT-US/2023-03-01/members?referenceSet=900000000000534007&module=731000124108&offset=0&limit=50
-            String url = SnowstormConnection.getBaseUrl() + refset.getBranchPath() + "/members?referenceSet=" + MODULE_DEPENDENCY_REFSET_SCT_ID + "&module="
+            String url = SnowstormConnection.getRestBaseUrl() + refset.getBranchPath() + "/members?referenceSet=" + MODULE_DEPENDENCY_REFSET_SCT_ID + "&module="
                 + refset.getModuleId();
             LOG.info("getRefsetDependencyModule url: " + url);
 
