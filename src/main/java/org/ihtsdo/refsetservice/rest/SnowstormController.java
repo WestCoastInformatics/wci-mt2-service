@@ -56,7 +56,7 @@ public class SnowstormController extends BaseController {
 			final String url = request.getRequestURI().replace("/refsetservice/snowstorm/", "");
 			final String query = request.getQueryString();
 
-			final String fullUrl = SnowstormConnection.getBaseUrl() + url + "?" + query;
+			final String fullUrl = SnowstormConnection.getRestBaseUrl() + url + "?" + query;
 
 			LOG.info("Snowstorm full url: {}", fullUrl);
 
@@ -91,7 +91,7 @@ public class SnowstormController extends BaseController {
 		final String query = request.getQueryString();
 		try (final BufferedReader in = request.getReader()) {
 			final String body = in.lines().collect(Collectors.joining(System.lineSeparator()));
-			final String fullUrl = SnowstormConnection.getBaseUrl() + url + "?" + query;
+			final String fullUrl = SnowstormConnection.getRestBaseUrl() + url + "?" + query;
 
 			LOG.info("full url: {}", fullUrl);
 			LOG.info("body: {}", body);

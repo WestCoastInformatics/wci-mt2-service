@@ -64,7 +64,7 @@ public class SnowstormExport extends SnowstormAbstract {
         }
 
         // Call Snowstorm to create RF2 file
-        final String snowstormExportApiUrl = SnowstormConnection.getBaseUrl() + "exports";
+        final String snowstormExportApiUrl = SnowstormConnection.getRestBaseUrl() + "exports";
         LOG.debug("Snowstorm Export API URL: {}", snowstormExportApiUrl);
         LOG.debug("Request body: {}", entityString);
 

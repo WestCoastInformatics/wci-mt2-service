@@ -62,7 +62,7 @@ public class SnowstormDescription extends SnowstormAbstract {
         }
 
         // Create Snowstorm URL
-        final String fullSnowstormUrl = SnowstormConnection.getBaseUrl() + RefsetMemberService.getBranchPath(refset) + "/descriptions?limit="
+        final String fullSnowstormUrl = SnowstormConnection.getRestBaseUrl() + RefsetMemberService.getBranchPath(refset) + "/descriptions?limit="
             + ELASTICSEARCH_MAX_RECORD_LENGTH + "&conceptIds=" + conceptsToProcess.stream().map(Concept::getCode).collect(Collectors.joining(","));
 
         // Call Snowstorm
@@ -177,7 +177,7 @@ public class SnowstormDescription extends SnowstormAbstract {
         }
 
         // Create Snowstorm URL
-        final String fullSnowstormUrl = SnowstormConnection.getBaseUrl() + branchPath + "/descriptions?limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH
+        final String fullSnowstormUrl = SnowstormConnection.getRestBaseUrl() + branchPath + "/descriptions?limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH
             + "&conceptIds=" + conceptsToProcess.stream().map(Concept::getCode).collect(Collectors.joining(","));
 
         // Call Snowstorm
@@ -285,7 +285,7 @@ public class SnowstormDescription extends SnowstormAbstract {
         for (final List<String> batch : conceptIdBatches) {
 
             // Create Snowstorm URL
-            final String fullSnowstormUrl = SnowstormConnection.getBaseUrl() + edition.getBranch() + "/descriptions?limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH
+            final String fullSnowstormUrl = SnowstormConnection.getRestBaseUrl() + edition.getBranch() + "/descriptions?limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH
                 + "&conceptIds=" + batch.stream().collect(Collectors.joining(","));
 
             // Call Snowstorm

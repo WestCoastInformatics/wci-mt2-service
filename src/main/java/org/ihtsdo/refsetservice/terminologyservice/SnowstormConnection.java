@@ -15,6 +15,8 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -46,7 +48,6 @@ import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 public final class SnowstormConnection {
 
     /** The Constant LOG. */
-    @SuppressWarnings("unused")
     private static final Logger LOG = LoggerFactory.getLogger(SnowstormConnection.class);
 
     /** The authentication url. */
@@ -58,8 +59,14 @@ public final class SnowstormConnection {
     /** The password. */
     private static String password;
 
-    /** The snowstorm url. */
-    private static String baseUrl;
+    /** Snowstorm REST API base URL. */
+    private static String restBaseUrl;
+
+    /** Optional FHIR base; when unset or none, {@link #getFhirBaseUrl()} uses {@link #getRestBaseUrl()}. */
+    private static String fhirBaseUrl;
+
+    /** How this deployment authenticates to Snowstorm (mutually exclusive). */
+    private static SnowstormAuthMode authMode;
 
     /** The accept. */
     private static final String ACCEPT = MediaType.APPLICATION_JSON;
@@ -76,12 +83,117 @@ public final class SnowstormConnection {
     /** Cached RESTEasy client – created once, reused for all Snowstorm calls. */
     private static volatile Client sharedClient;
 
+    /**
+     * The Enum SnowstormAuthMode.
+     */
+    private enum SnowstormAuthMode {
+
+        /** The none. */
+        NONE,
+        /** The cookie. */
+        COOKIE,
+        /** The basic. */
+        BASIC
+    }
+
     /** Static initialization. */
     static {
-        baseUrl = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.baseUrl");
+        restBaseUrl = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.restBaseUrl");
+        fhirBaseUrl = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.fhirBaseUrl");
         authUrl = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.authUrl");
         userName = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.username");
         password = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.password");
+        final String authTypeProperty = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.authType");
+        try {
+            authMode = resolveSnowstormAuthMode(authTypeProperty, authUrl);
+        } catch (final IllegalArgumentException e) {
+            LOG.error("Invalid Snowstorm auth configuration: {}", e.getMessage());
+            throw new ExceptionInInitializerError(e);
+        }
+    }
+
+    /**
+     * Resolve snowstorm auth mode.
+     *
+     * @param authTypeProperty the auth type property
+     * @param authUrlProperty the auth url property
+     * @return the snowstorm auth mode
+     */
+    private static SnowstormAuthMode resolveSnowstormAuthMode(final String authTypeProperty, final String authUrlProperty) {
+
+        final String configValue = authTypeProperty == null ? "" : authTypeProperty.trim();
+        if (!configValue.isEmpty()) {
+            switch (configValue.toLowerCase()) {
+                case "none":
+                    return SnowstormAuthMode.NONE;
+                case "cookie":
+                    return SnowstormAuthMode.COOKIE;
+                case "basic":
+                    return SnowstormAuthMode.BASIC;
+                default:
+                    throw new IllegalArgumentException(
+                        "Invalid terminology.handler.SNOMED_SNOWSTORM.authType: \"" + authTypeProperty + "\". Expected cookie, basic, or none.");
+            }
+        }
+        if (isAuthUrlUnsetOrDisabled(authUrlProperty)) {
+            return SnowstormAuthMode.NONE;
+        }
+        return SnowstormAuthMode.COOKIE;
+    }
+
+    /**
+     * Checks if is auth url unset or disabled.
+     *
+     * @param url the url
+     * @return true, if is auth url unset or disabled
+     */
+    private static boolean isAuthUrlUnsetOrDisabled(final String url) {
+
+        if (url == null) {
+            return true;
+        }
+        final String trimmed = url.trim();
+        if (trimmed.isEmpty()) {
+            return true;
+        }
+        return "none".equalsIgnoreCase(trimmed);
+    }
+
+    /**
+     * Snowstorm basic authorization header.
+     *
+     * @return {@code Authorization: Basic …} value when auth mode is basic; otherwise {@code null}
+     * @throws LocalException when basic mode is on but username or password is missing
+     */
+    private static String snowstormBasicAuthorizationHeader() throws LocalException {
+
+        if (authMode != SnowstormAuthMode.BASIC) {
+            return null;
+        }
+        if (userName == null || userName.isBlank() || password == null || password.isBlank()) {
+            throw new LocalException("Snowstorm basic auth is enabled but username or password is missing or blank.");
+        }
+        final String credentials = userName + ":" + password;
+        final String encoded = Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+        return "Basic " + encoded;
+    }
+
+    /**
+     * Apply snowstorm auth headers.
+     *
+     * @param builder the builder
+     * @param sessionCookie the session cookie
+     * @throws Exception the exception
+     */
+    private static void applySnowstormAuthHeaders(final Builder builder, final String sessionCookie) throws Exception {
+
+        final String basicHeader = snowstormBasicAuthorizationHeader();
+        if (basicHeader != null) {
+            builder.header(HttpHeaders.AUTHORIZATION, basicHeader);
+        }
+        if (sessionCookie != null && !sessionCookie.isEmpty()) {
+            builder.header("Cookie", sessionCookie);
+        }
     }
 
     /**
@@ -93,13 +205,27 @@ public final class SnowstormConnection {
     }
 
     /**
-     * Returns the base url.
+     * Returns the Snowstorm REST API base URL.
      *
-     * @return the base url
+     * @return the REST base url
      */
-    public static String getBaseUrl() {
+    public static String getRestBaseUrl() {
 
-        return baseUrl;
+        return restBaseUrl;
+    }
+
+    /**
+     * Returns the base URL used for FHIR operations ({@code fhir/CodeSystem}, {@code fhir/ValueSet}, etc.). When not configured, this is the same as the REST
+     * base URL.
+     *
+     * @return the FHIR base url
+     */
+    public static String getFhirBaseUrl() {
+
+        if (fhirBaseUrl == null || fhirBaseUrl.isBlank() || "none".equalsIgnoreCase(fhirBaseUrl.trim())) {
+            return restBaseUrl;
+        }
+        return fhirBaseUrl;
     }
 
     /**
@@ -114,7 +240,10 @@ public final class SnowstormConnection {
 
         final Client client = getClient();
         final WebTarget target = client.target(url);
-        String cookie = getGenericUserCookie(false);
+        String cookie = "";
+        if (authMode == SnowstormAuthMode.COOKIE) {
+            cookie = getGenericUserCookie(false);
+        }
         Response response = null;
         boolean firstRun = true;
         boolean run = true;
@@ -123,13 +252,11 @@ public final class SnowstormConnection {
             run = false;
 
             final Builder builder = target.request(ACCEPT).header(HttpHeaders.ACCEPT_LANGUAGE, language);
-            if (cookie != null && !cookie.isEmpty()) {
-                builder.header("Cookie", cookie);
-            }
+            applySnowstormAuthHeaders(builder, cookie);
 
             response = builder.get();
 
-            if (firstRun && response.getStatus() == Response.Status.FORBIDDEN.getStatusCode()) {
+            if (firstRun && authMode == SnowstormAuthMode.COOKIE && response.getStatus() == Response.Status.FORBIDDEN.getStatusCode()) {
                 run = true;
                 firstRun = false;
                 cookie = getGenericUserCookie(true);
@@ -154,8 +281,8 @@ public final class SnowstormConnection {
     }
 
     /**
-     * Downloads a file from the given URL. Uses Java HttpClient to bypass RESTEasy, which fails on
-     * binary responses when the server omits Content-Type or returns a generic type.
+     * Downloads a file from the given URL. Uses Java HttpClient to bypass RESTEasy, which fails on binary responses when the server omits Content-Type or
+     * returns a generic type.
      *
      * @param url The Snowstorm archive URL to download
      * @return The file content as an InputStream
@@ -163,11 +290,16 @@ public final class SnowstormConnection {
      */
     public static InputStream getFileDownload(final String url) throws Exception {
 
-        final String cookie = getGenericUserCookie(false);
-        final HttpRequest.Builder requestBuilder = HttpRequest.newBuilder().uri(URI.create(url)).header("Accept", "application/zip")
-            .header(HttpHeaders.ACCEPT_LANGUAGE, DEFAULT_ACCECPT_LANGUAGES);
-        if (cookie != null && !cookie.isEmpty()) {
-            requestBuilder.header("Cookie", cookie);
+        final HttpRequest.Builder requestBuilder =
+            HttpRequest.newBuilder().uri(URI.create(url)).header("Accept", "application/zip").header(HttpHeaders.ACCEPT_LANGUAGE, DEFAULT_ACCECPT_LANGUAGES);
+        final String basicHeader = snowstormBasicAuthorizationHeader();
+        if (basicHeader != null) {
+            requestBuilder.header(HttpHeaders.AUTHORIZATION, basicHeader);
+        } else if (authMode == SnowstormAuthMode.COOKIE) {
+            final String cookie = getGenericUserCookie(false);
+            if (!cookie.isEmpty()) {
+                requestBuilder.header("Cookie", cookie);
+            }
         }
         final HttpRequest request = requestBuilder.GET().build();
 
@@ -197,10 +329,8 @@ public final class SnowstormConnection {
         final WebTarget target = client.target(url);
         final Builder builder = target.request(MediaType.APPLICATION_JSON).header(HttpHeaders.ACCEPT_LANGUAGE, DEFAULT_ACCECPT_LANGUAGES);
 
-        final String cookie = getGenericUserCookie(false);
-        if (cookie != null && !cookie.isEmpty()) {
-            builder.header("Cookie", cookie);
-        }
+        final String cookie = authMode == SnowstormAuthMode.COOKIE ? getGenericUserCookie(false) : "";
+        applySnowstormAuthHeaders(builder, cookie);
 
         // Convert the JSON string to a Map so JacksonJsonProvider can serialize it as JSON
         final Map<String, Object> entityMap = jsonToMap(entity);
@@ -225,10 +355,8 @@ public final class SnowstormConnection {
         final WebTarget target = client.target(url);
         final Builder builder = target.request(MediaType.APPLICATION_JSON).header(HttpHeaders.ACCEPT_LANGUAGE, DEFAULT_ACCECPT_LANGUAGES);
 
-        final String cookie = getGenericUserCookie(false);
-        if (cookie != null && !cookie.isEmpty()) {
-            builder.header("Cookie", cookie);
-        }
+        final String cookie = authMode == SnowstormAuthMode.COOKIE ? getGenericUserCookie(false) : "";
+        applySnowstormAuthHeaders(builder, cookie);
 
         final Response response = builder.put(Entity.entity(entity, MediaType.APPLICATION_JSON));
 
@@ -249,10 +377,8 @@ public final class SnowstormConnection {
         final WebTarget target = client.target(url);
         final Builder builder = target.request(ACCEPT).header(HttpHeaders.ACCEPT_LANGUAGE, DEFAULT_ACCECPT_LANGUAGES);
 
-        final String cookie = getGenericUserCookie(false);
-        if (cookie != null && !cookie.isEmpty()) {
-            builder.header("Cookie", cookie);
-        }
+        final String cookie = authMode == SnowstormAuthMode.COOKIE ? getGenericUserCookie(false) : "";
+        applySnowstormAuthHeaders(builder, cookie);
 
         Response response;
 
@@ -276,8 +402,10 @@ public final class SnowstormConnection {
      */
     public static String getGenericUserCookie(final boolean forceReload) throws Exception {
 
-        // if there is no auth configured then skip this
-        if ("none".equals(authUrl)) {
+        if (authMode != SnowstormAuthMode.COOKIE) {
+            return "";
+        }
+        if (isAuthUrlUnsetOrDisabled(authUrl)) {
             return "";
         }
 
@@ -338,22 +466,27 @@ public final class SnowstormConnection {
     }
 
     /**
-     * Creates a RESTEasy client with all providers needed for Snowstorm API (DELETE with body, JSON,
-     * binary). Uses ResteasyClientBuilderImpl to ensure RESTEasy is used (not Jersey) when both are
-     * on the classpath.
+     * Creates a RESTEasy client with all providers needed for Snowstorm API (DELETE with body, JSON, binary). Uses ResteasyClientBuilderImpl to ensure RESTEasy
+     * is used (not Jersey) when both are on the classpath.
+     *
+     * @param client the client
+     * @return the client
      */
     public static Client configClient(final Client client) {
+
         client.register(ByteArrayProvider.class);
         client.register(JacksonJsonProvider.class);
         return client;
     }
 
     /**
-     * Returns the shared RESTEasy client for Snowstorm calls. Created once, reused for all requests.
-     * Uses ResteasyClientBuilderImpl to ensure RESTEasy (with DELETE+body support) is used when
-     * Jersey is also on the classpath.
+     * Returns the shared RESTEasy client for Snowstorm calls. Created once, reused for all requests. Uses ResteasyClientBuilderImpl to ensure RESTEasy (with
+     * DELETE+body support) is used when Jersey is also on the classpath.
+     *
+     * @return the client
      */
     public static Client getClient() {
+
         if (sharedClient == null) {
             synchronized (SnowstormConnection.class) {
                 if (sharedClient == null) {
@@ -395,8 +528,7 @@ public final class SnowstormConnection {
     }
 
     /**
-     * Tries to read the response entity as a String without throwing.
-     * Use when handling error responses (e.g. 4xx) where the body may be closed or empty.
+     * Tries to read the response entity as a String without throwing. Use when handling error responses (e.g. 4xx) where the body may be closed or empty.
      *
      * @param response the response to read
      * @return the response body as a string, or null if the body could not be read

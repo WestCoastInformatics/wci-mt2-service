@@ -198,7 +198,7 @@ public class SyncUtilities {
         // https://uat-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/MAIN%2FSNOMEDCT-NCP/concepts/900000000000443000/descendants?stated=false&offset=0&limit=50
         final Set<String> editionModules = new HashSet<>();
 
-        final String url = SnowstormConnection.getBaseUrl() + "{branch}/concepts/" + MODULED_ID_CONCEPT + "/descendants?stated=false&page=0&size=100";
+        final String url = SnowstormConnection.getRestBaseUrl() + "{branch}/concepts/" + MODULED_ID_CONCEPT + "/descendants?stated=false&page=0&size=100";
         LOG.info("getRefsetMembers URL: " + url.replace("{branch}", editionBranch));
 
         try (final Response response = SnowstormConnection.getResponse(url.replace("{branch}", editionBranch))) {
@@ -320,7 +320,7 @@ public class SyncUtilities {
 
         // Search for optional language refsets associated with the branch metadata
         // https://dev-integration-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/branches/MAIN%2FSNOMEDCT-BE?includeInheritedMetadata=false
-        final String url = SnowstormConnection.getBaseUrl() + "branches/" + branch + "?includeInheritedMetadata=false";
+        final String url = SnowstormConnection.getRestBaseUrl() + "branches/" + branch + "?includeInheritedMetadata=false";
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
@@ -377,7 +377,7 @@ public class SyncUtilities {
         final Set<String> extendedModules = new HashSet<>();
 
         // https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/branches/MAIN/SNOMEDCT-BE?includeInheritedMetadata=true
-        final String url = SnowstormConnection.getBaseUrl() + "branches/" + branch + "?includeInheritedMetadata=true";
+        final String url = SnowstormConnection.getRestBaseUrl() + "branches/" + branch + "?includeInheritedMetadata=true";
 
         LOG.info("branch merge necessitated status url: " + url);
 

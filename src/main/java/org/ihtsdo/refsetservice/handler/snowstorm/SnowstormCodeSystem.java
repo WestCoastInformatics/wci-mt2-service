@@ -34,7 +34,7 @@ public class SnowstormCodeSystem extends SnowstormAbstract {
     public static List<Edition> getAffiliateEditionList() throws Exception {
 
         final List<Edition> editionList = new ArrayList<>();
-        final String url = SnowstormConnection.getBaseUrl() + "codesystems";
+        final String url = SnowstormConnection.getRestBaseUrl() + "codesystems";
         LOG.info("getSnowstormCodeSystems url: " + url);
 
         try (final Response response = SnowstormConnection.getResponse(url)) {

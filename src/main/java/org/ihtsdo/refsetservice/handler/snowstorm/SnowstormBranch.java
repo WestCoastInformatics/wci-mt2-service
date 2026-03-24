@@ -50,7 +50,7 @@ public final class SnowstormBranch extends SnowstormAbstract {
 
         final long start = System.currentTimeMillis();
         String refsetBranchPath = null;
-        final String url = SnowstormConnection.getBaseUrl() + "branches";
+        final String url = SnowstormConnection.getRestBaseUrl() + "branches";
         final ObjectNode body = ThreadLocalMapper.get().createObjectNode().put("name", branchName).put("parent", parentBranchPath);
 
         LOG.debug("createBranch URL: " + url + " ; body: " + body.toString());
@@ -88,7 +88,7 @@ public final class SnowstormBranch extends SnowstormAbstract {
     public static boolean deleteBranch(final String branchPath) throws Exception {
 
         final long start = System.currentTimeMillis();
-        final String url = SnowstormConnection.getBaseUrl() + "admin/" + branchPath + "/actions/hard-delete";
+        final String url = SnowstormConnection.getRestBaseUrl() + "admin/" + branchPath + "/actions/hard-delete";
 
         LOG.debug("deleteBranch URL: " + url);
 
@@ -118,7 +118,7 @@ public final class SnowstormBranch extends SnowstormAbstract {
     public static boolean doesBranchExist(final String branchPath) throws Exception {
 
         final long start = System.currentTimeMillis();
-        final String url = SnowstormConnection.getBaseUrl() + "branches/" + branchPath;
+        final String url = SnowstormConnection.getRestBaseUrl() + "branches/" + branchPath;
 
         LOG.debug("doesBranchExist URL: " + url);
 
@@ -147,7 +147,7 @@ public final class SnowstormBranch extends SnowstormAbstract {
      */
     public static List<String> getBranchChildren(final String branchPath) throws Exception {
 
-        final String url = SnowstormConnection.getBaseUrl() + "branches/" + branchPath + "children?immediateChildren=true&page=0&size=9000";
+        final String url = SnowstormConnection.getRestBaseUrl() + "branches/" + branchPath + "children?immediateChildren=true&page=0&size=9000";
         final List<String> childBranchPaths = new ArrayList<>();
 
         LOG.debug("getBranchChildren URL: " + url);
@@ -189,7 +189,7 @@ public final class SnowstormBranch extends SnowstormAbstract {
     public static void mergeBranch(final String sourceBranchPath, final String targetBranchPath, final String comment, final boolean rebase) throws Exception {
 
         final long start = System.currentTimeMillis();
-        final String mergeUrl = SnowstormConnection.getBaseUrl() + "merges";
+        final String mergeUrl = SnowstormConnection.getRestBaseUrl() + "merges";
         final ObjectNode body = ThreadLocalMapper.get().createObjectNode().put("source", sourceBranchPath).put("target", targetBranchPath);
         boolean jobDone = false;
 
@@ -279,7 +279,7 @@ public final class SnowstormBranch extends SnowstormAbstract {
 
                             // final check that the promotion has finished.
                             boolean stateGood = false;
-                            final String stateUrl = SnowstormConnection.getBaseUrl() + "branches/" + targetBranchPath;
+                            final String stateUrl = SnowstormConnection.getRestBaseUrl() + "branches/" + targetBranchPath;
                             LOG.debug("Promoted branch state info at " + stateUrl);
 
                             while (!stateGood) {
@@ -327,7 +327,7 @@ public final class SnowstormBranch extends SnowstormAbstract {
     public static String mergeRebaseReview(final String sourceBranchPath, final String targetBranchPath) throws Exception {
 
         final ObjectNode body = ThreadLocalMapper.get().createObjectNode().put("source", sourceBranchPath).put("target", targetBranchPath);
-        final String reviewUrl = SnowstormConnection.getBaseUrl() + "merge-reviews";
+        final String reviewUrl = SnowstormConnection.getRestBaseUrl() + "merge-reviews";
         String jobStatusUrl = null;
         boolean jobDone = false;
         String reviewId = "";
@@ -405,7 +405,7 @@ public final class SnowstormBranch extends SnowstormAbstract {
      */
     public static List<String> getBranchVersions(final String editionPath) throws Exception {
 
-        final String url = SnowstormConnection.getBaseUrl() + "branches/" + editionPath + "/children?immediateChildren=true";
+        final String url = SnowstormConnection.getRestBaseUrl() + "branches/" + editionPath + "/children?immediateChildren=true";
         final List<String> branchCache = RefsetService.getCacheForBranchVersions(editionPath);
 
         // check if the concept call has been cached

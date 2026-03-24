@@ -806,7 +806,7 @@ public class SyncRefsetAgent extends SyncAgent {
      */
     private String determineRefsetsBranch(final Edition edition) throws Exception {
 
-        final String url = SnowstormConnection.getBaseUrl() + "branches/{branch}/children?immediateChildren=true&page=0&size=100";
+        final String url = SnowstormConnection.getRestBaseUrl() + "branches/{branch}/children?immediateChildren=true&page=0&size=100";
         LOG.info("getRefsetMembers URL: " + url.replace("{branch}", edition.getBranch()));
 
         try (final Response response = SnowstormConnection.getResponse(url.replace("{branch}", edition.getBranch()))) {
@@ -888,7 +888,7 @@ public class SyncRefsetAgent extends SyncAgent {
     private JsonNode getTermserverRefsetVersionMembers(final String branch, final String moduleId) throws Exception {
 
         // Process edition
-        final String url = SnowstormConnection.getBaseUrl() + "browser/{branch}/members?active=true&module=" + moduleId + "&referenceSet=%3C"
+        final String url = SnowstormConnection.getRestBaseUrl() + "browser/{branch}/members?active=true&module=" + moduleId + "&referenceSet=%3C"
             + RefsetService.SIMPLE_TYPE_REFERENCE_SET;
 
         try (final Response response = SnowstormConnection.getResponse(url.replace("{branch}", branch))) {
@@ -996,7 +996,7 @@ public class SyncRefsetAgent extends SyncAgent {
      */
     private String lookupRefsetName(final String refsetId, final Edition edition, final String branchPath) throws Exception {
 
-        final String url = SnowstormConnection.getBaseUrl() + "browser/" + branchPath + "/concepts/" + refsetId;
+        final String url = SnowstormConnection.getRestBaseUrl() + "browser/" + branchPath + "/concepts/" + refsetId;
 
         try (final Response response = SnowstormConnection.getResponse(url)) {
 
@@ -1351,7 +1351,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
             LOG.info("Identifying CodeSystem branches for: " + editionName);
 
-            final String genericUrl = SnowstormConnection.getBaseUrl() + "branches/{branch}/children";
+            final String genericUrl = SnowstormConnection.getRestBaseUrl() + "branches/{branch}/children";
 
             final SortedMap<Long, String> versionToBranchMap = new TreeMap<>();
             LOG.info(" Branch children Url: " + genericUrl.replace("{branch}", parentBranchPath));
