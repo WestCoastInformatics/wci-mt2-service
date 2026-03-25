@@ -83,6 +83,9 @@ public final class SnowstormConnection {
     /** Cached RESTEasy client – created once, reused for all Snowstorm calls. */
     private static volatile Client sharedClient;
 
+    /** Max redirects for Snowstorm GET; RESTEasy does not follow 3xx by default (merge job polls would loop forever on 307). */
+    private static final int SNOWSTORM_GET_MAX_REDIRECTS = 16;
+
     /**
      * The Enum SnowstormAuthMode.
      */
@@ -239,33 +242,55 @@ public final class SnowstormConnection {
     public static Response getResponse(final String url, final String language) throws Exception {
 
         final Client client = getClient();
-        final WebTarget target = client.target(url);
         String cookie = "";
         if (authMode == SnowstormAuthMode.COOKIE) {
             cookie = getGenericUserCookie(false);
         }
-        Response response = null;
         boolean firstRun = true;
-        boolean run = true;
+        String currentUrl = url;
 
-        while (run) {
-            run = false;
+        for (int redirectHop = 0; redirectHop < SNOWSTORM_GET_MAX_REDIRECTS; redirectHop++) {
+            Response response = null;
+            boolean authRetry = true;
+            while (authRetry) {
+                authRetry = false;
+                final WebTarget target = client.target(currentUrl);
+                final Builder builder = target.request(ACCEPT).header(HttpHeaders.ACCEPT_LANGUAGE, language);
+                applySnowstormAuthHeaders(builder, cookie);
 
-            final Builder builder = target.request(ACCEPT).header(HttpHeaders.ACCEPT_LANGUAGE, language);
-            applySnowstormAuthHeaders(builder, cookie);
+                response = builder.get();
 
-            response = builder.get();
-
-            if (firstRun && authMode == SnowstormAuthMode.COOKIE && response.getStatus() == Response.Status.FORBIDDEN.getStatusCode()) {
-                run = true;
-                firstRun = false;
-                cookie = getGenericUserCookie(true);
-                // close the response because we're going to make another
-                response.close();
+                if (firstRun && authMode == SnowstormAuthMode.COOKIE && response.getStatus() == Response.Status.FORBIDDEN.getStatusCode()) {
+                    authRetry = true;
+                    firstRun = false;
+                    cookie = getGenericUserCookie(true);
+                    response.close();
+                }
             }
+
+            final int status = response.getStatus();
+            if (isRedirectingStatus(status)) {
+                final URI location = response.getLocation();
+                if (location == null) {
+                    LOG.warn("Snowstorm GET returned {} without Location for {}", status, currentUrl);
+                    return response;
+                }
+                final URI resolved = URI.create(currentUrl).resolve(location);
+                LOG.debug("Snowstorm GET {} — following redirect from {} to {}", status, currentUrl, resolved);
+                response.close();
+                currentUrl = resolved.toString();
+                continue;
+            }
+
+            return response;
         }
 
-        return response;
+        throw new LocalException("Exceeded " + SNOWSTORM_GET_MAX_REDIRECTS + " redirects for Snowstorm GET starting at " + url);
+    }
+
+    private static boolean isRedirectingStatus(final int status) {
+
+        return status == 301 || status == 302 || status == 303 || status == 307 || status == 308;
     }
 
     /**
