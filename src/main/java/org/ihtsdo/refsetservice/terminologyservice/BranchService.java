@@ -698,6 +698,7 @@ public final class BranchService {
             // create the body entity for the update call from the retrieved concept
             final ObjectMapper mapper = ThreadLocalMapper.get();
             final String resultString = SnowstormConnection.readEntityAsString(response);
+            logResponseBodyBeforeJsonParse("mergePollingChangeReview", response.getStatus(), resultString);
             final JsonNode root = mapper.readTree(resultString);
             final String status = root.get("status").asText();
 
@@ -979,6 +980,7 @@ public final class BranchService {
                 try (final Response mergeInfoResponse = SnowstormConnection.getResponse(jobStatusUrl)) {
 
                     final String resultString = SnowstormConnection.readEntityAsString(mergeInfoResponse);
+                    logResponseBodyBeforeJsonParse("mergeBranch merge job poll", mergeInfoResponse.getStatus(), resultString);
                     final JsonNode root = mapper.readTree(resultString);
                     final String status = root.get("status").asText();
 
@@ -1117,6 +1119,7 @@ public final class BranchService {
                 }
 
                 final String resultString = SnowstormConnection.readEntityAsString(response);
+                logResponseBodyBeforeJsonParse("mergeRebaseReview job poll", response.getStatus(), resultString);
                 final JsonNode root = mapper.readTree(resultString);
                 final String status = root.get("status").asText();
                 LOG.info("merge review status: {}, source:{}, target:{}", status, sourceBranchPath, targetBranchPath);
@@ -1212,5 +1215,22 @@ public final class BranchService {
         }
 
         return refsetBranchPath;
+    }
+
+    private static void logResponseBodyBeforeJsonParse(final String context, final int httpStatus, final String body) {
+
+        if (!LOG.isDebugEnabled()) {
+            return;
+        }
+        if (body == null) {
+            LOG.debug("{}: httpStatus={}, rawResponse=null", context, httpStatus);
+            return;
+        }
+        final int maxLen = 8192;
+        if (body.length() <= maxLen) {
+            LOG.debug("{}: httpStatus={}, rawResponse={}", context, httpStatus, body);
+        } else {
+            LOG.debug("{}: httpStatus={}, rawResponse={}... (truncated, {} chars total)", context, httpStatus, body.substring(0, maxLen), body.length());
+        }
     }
 }
