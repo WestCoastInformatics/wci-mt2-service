@@ -279,7 +279,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
         while (!done) {
 
-            final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/concepts?activeFilter=true&termActive=true&limit="
+            final String targetUri = SnowstormConnection.getRestBaseUrl() + branch + "/concepts?activeFilter=true&termActive=true&limit="
                 + ELASTICSEARCH_MAX_RECORD_LENGTH + (StringUtils.isNotEmpty(searchAfter) ? "&searchAfter=" + searchAfter : "");
 
             LOG.info("cacheConcepts url: {}", targetUri);
@@ -349,7 +349,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
         final String branch = "MAIN/" + terminology + "/" + version;
         final String targetUri =
-            SnowstormConnection.getBaseUrl().concat(branch).concat("/concepts?activeFilter=true&includeLeafFlag=false&form=inferred&conceptIds=").concat(code);
+            SnowstormConnection.getRestBaseUrl().concat(branch).concat("/concepts?activeFilter=true&includeLeafFlag=false&form=inferred&conceptIds=").concat(code);
         LOG.info("getSnowstormConcept url: {}", targetUri);
 
         try (final Response response = SnowstormConnection.getResponse(targetUri)) {
@@ -390,7 +390,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
     public static Map<String, String> getModuleNames(final Edition edition) throws Exception {
 
         // Create Snowstorm URL
-        final String conceptSearchUrl = SnowstormConnection.getBaseUrl() + edition.getBranch() + "/concepts/search";
+        final String conceptSearchUrl = SnowstormConnection.getRestBaseUrl() + edition.getBranch() + "/concepts/search";
         final String bodyBase = "{\"limit\": 1000, ";
         String bodyConceptIds = "\"conceptIds\":[";
 
@@ -507,7 +507,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
         }
         modules.append(RefsetService.SNOMED_CORE_MODULE_ID);
 
-        final String url = SnowstormConnection.getBaseUrl() + branch + "/" + "concepts?ecl=" + ecl + "&limit=1000&module=" + modules.toString();
+        final String url = SnowstormConnection.getRestBaseUrl() + branch + "/" + "concepts?ecl=" + ecl + "&limit=1000&module=" + modules.toString();
 
         LOG.debug("getRefsetConcepts URL: " + url);
 
@@ -516,7 +516,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
         if (!areParentConcepts) {
 
             // get all the existing refsets for latest branch version
-            final String query = "(latestPublishedVersion: true AND hasVersionInDevelopment: false) OR versionStatus: (" + VersionStatus.IN_DEVELOPMENT + ")";
+            final String query = "(latestPublishedVersion: true AND hasVersionInDevelopment: false) OR versionStatus: (" + VersionStatus.IN_DEVELOPMENT.name() + ")";
             final ResultList<Refset> refsets = service.find(query, null, Refset.class, null);
 
             for (final Refset refset : refsets.getItems()) {
@@ -584,7 +584,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
         // first retrieve the concept so all fields will be present for the update
         final String refsetId = refset.getRefsetId();
         final String branch = refset.getBranchPath();
-        final String url = SnowstormConnection.getBaseUrl() + "browser/" + branch + "/" + "concepts/" + refsetId;
+        final String url = SnowstormConnection.getRestBaseUrl() + "browser/" + branch + "/" + "concepts/" + refsetId;
         ObjectNode memberBody = null;
 
         LOG.debug("updateRefsetConcept URL: " + url);
@@ -700,7 +700,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
         // Create Snowstorm URL
         final String url =
-            SnowstormConnection.getBaseUrl() + RefsetMemberService.getBranchPath(refset) + "/concepts?limit=3000&includeLeafFlag=true&form=inferred";
+            SnowstormConnection.getRestBaseUrl() + RefsetMemberService.getBranchPath(refset) + "/concepts?limit=3000&includeLeafFlag=true&form=inferred";
 
         boolean firstTime = true;
 
@@ -794,7 +794,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
         }
 
         // Create Snowstorm URL
-        final String url = SnowstormConnection.getBaseUrl() + "browser/" + branchPath + "/concepts/ancestor-paths?conceptIds=" + conceptId;
+        final String url = SnowstormConnection.getRestBaseUrl() + "browser/" + branchPath + "/concepts/ancestor-paths?conceptIds=" + conceptId;
 
         // Call Snowstorm
         LOG.debug("Get Concept Ancestors URL: " + url);
@@ -872,7 +872,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
         }
 
         // Create Snowstorm URL
-        String url = SnowstormConnection.getBaseUrl() + RefsetMemberService.getBranchPath(refset) + "/concepts?&offset=0&limit=" + limit;
+        String url = SnowstormConnection.getRestBaseUrl() + RefsetMemberService.getBranchPath(refset) + "/concepts?&offset=0&limit=" + limit;
 
         // if this search is for editing then get the concept leaf information
         if (searchParameters.getEditing()) {
@@ -885,7 +885,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
         // if the query is not an ID then see if it passes ECL syntax
         if (!limitToNonMembers && searchParameters.getQuery() != null && !searchParameters.getQuery().matches("\\d*")) {
 
-            final String eclUrl = SnowstormConnection.getBaseUrl() + "util/ecl-string-to-model";
+            final String eclUrl = SnowstormConnection.getRestBaseUrl() + "util/ecl-string-to-model";
             final String body = StringUtility.encodeValue(searchParameters.getQuery());
 
             LOG.debug("searchConcepts ECL Parse URL: " + eclUrl + "; body: " + body);
@@ -1098,7 +1098,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
         // 3 Snowstorm calls: 1) on concept, 2) parents, and 3) children
         try {
 
-            final String url = SnowstormConnection.getBaseUrl() + "browser/" + RefsetMemberService.getBranchPath(refset) + "/" + "concepts/" + conceptId;
+            final String url = SnowstormConnection.getRestBaseUrl() + "browser/" + RefsetMemberService.getBranchPath(refset) + "/" + "concepts/" + conceptId;
 
             LOG.debug("Get Concept Details URL: " + url);
 
@@ -1146,7 +1146,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
         try {
 
-            final String url = SnowstormConnection.getBaseUrl() + "browser/" + RefsetMemberService.getBranchPath(refset) + "/" + "concepts/" + conceptId
+            final String url = SnowstormConnection.getRestBaseUrl() + "browser/" + RefsetMemberService.getBranchPath(refset) + "/" + "concepts/" + conceptId
                 + "/parents?form=inferred";
 
             LOG.debug("Get Parents URL: " + url);
@@ -1185,7 +1185,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
         try {
 
             final String branchPath = RefsetMemberService.getBranchPath(refset);
-            final String url = SnowstormConnection.getBaseUrl() + "browser/" + branchPath + "/" + "concepts/" + conceptId + "/children?form=inferred";
+            final String url = SnowstormConnection.getRestBaseUrl() + "browser/" + branchPath + "/" + "concepts/" + conceptId + "/children?form=inferred";
 
             LOG.debug("Get Children URL: " + url);
             final ConceptLookupParameters lookupParameters = new ConceptLookupParameters();
@@ -1252,7 +1252,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
     public static List<String> getConceptIdsFromEcl(final String branch, final String ecl) throws Exception {
 
         final List<String> concepts = new ArrayList<>();
-        final String url = SnowstormConnection.getBaseUrl() + branch + "/" + "concepts?ecl=" + StringUtility.encodeValue(ecl) + "&limit="
+        final String url = SnowstormConnection.getRestBaseUrl() + branch + "/" + "concepts?ecl=" + StringUtility.encodeValue(ecl) + "&limit="
             + RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH;
         boolean keepSearching = true;
         int total = 0;
@@ -1371,14 +1371,14 @@ public final class SnowstormConcept extends SnowstormAbstract {
         final List<String> nonDefaultPreferredTerms = RefsetMemberService.identifyNonDefaultPreferredTerms(upgradeRefset.getEdition());
         @SuppressWarnings("unused")
         int replacementCount = 0;
-        final String conceptSearchUrl = SnowstormConnection.getBaseUrl() + branchPath + "/concepts/search";
+        final String conceptSearchUrl = SnowstormConnection.getRestBaseUrl() + branchPath + "/concepts/search";
         final String bodyBase =
             "{\"limit\": " + RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH + ", \"eclFilter\": \"^" + upgradeRefset.getRefsetId() + "\", ";
 
         // when searching for members we only want concepts whose membership is
         // active
         // (though the concept itself can be inactive)
-        final String url = SnowstormConnection.getBaseUrl() + branchPath + "/members?referenceSet=" + refsetId + "&active=true&offset=0&limit="
+        final String url = SnowstormConnection.getRestBaseUrl() + branchPath + "/members?referenceSet=" + refsetId + "&active=true&offset=0&limit="
             + RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH;
 
         // use members call to get members
@@ -1445,7 +1445,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
         }
 
         inactiveConceptIds = StringUtils.removeEnd(inactiveConceptIds, ", ");
-        final String conceptDetailsBaseUrl = SnowstormConnection.getBaseUrl() + "browser/" + branchPath + "/concepts?conceptIds=";
+        final String conceptDetailsBaseUrl = SnowstormConnection.getRestBaseUrl() + "browser/" + branchPath + "/concepts?conceptIds=";
         boolean searchAgain = true;
         int searchIndex = 0;
 
@@ -1838,7 +1838,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                         // when searching for members we only want concepts whose membership
                         // is active
                         // (though the concept itself can be inactive)
-                        final String url = SnowstormConnection.getBaseUrl() + refset.getBranchPath() + "/members?referenceSet=" + refset.getRefsetId()
+                        final String url = SnowstormConnection.getRestBaseUrl() + refset.getBranchPath() + "/members?referenceSet=" + refset.getRefsetId()
                             + "&active=true&referencedComponentId=" + conceptIdToChange;
 
                         LOG.debug("modifyUpgradeConcept Member list URL: " + url);
@@ -2237,7 +2237,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
         // endpoint
         // <host>/fhir/CodeSystem/$lookup?code=K03&system=https%3A%2F%2Ffat.terminologi.ehelse.no%2Findex.html%23%2Ficd10no&_format=json
         final String encodedSystem = URLEncoder.encode(codeSystem.getUrl(), StandardCharsets.UTF_8);
-        final String targetUri = SnowstormConnection.getBaseUrl() + "fhir/CodeSystem/$lookup?code=" + code + "&system=" + encodedSystem + "&_format=json";
+        final String targetUri = SnowstormConnection.getFhirBaseUrl() + "fhir/CodeSystem/$lookup?code=" + code + "&system=" + encodedSystem + "&_format=json";
 
         LOG.info("getConceptCodeFhir url: {}", targetUri);
 
@@ -2418,7 +2418,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
         // Build the FHIR lookup URL to check for children
         final String encodedSystem = URLEncoder.encode(codeSystem.getUrl(), StandardCharsets.UTF_8);
         final String targetUri =
-            SnowstormConnection.getBaseUrl() + "fhir/CodeSystem/$lookup?code=" + conceptRef.getCode() + "&system=" + encodedSystem + "&_format=json";
+            SnowstormConnection.getFhirBaseUrl() + "fhir/CodeSystem/$lookup?code=" + conceptRef.getCode() + "&system=" + encodedSystem + "&_format=json";
         LOG.debug("checkConceptHasChildren url: {}", targetUri);
 
         try (final Response response = SnowstormConnection.getResponse(targetUri)) {
@@ -2498,7 +2498,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
         while (moreToFetch) {
 
-            final String targetUri = SnowstormConnection.getBaseUrl().concat("fhir/ValueSet/$expand?").concat("offset=").concat(String.valueOf(offset))
+            final String targetUri = SnowstormConnection.getFhirBaseUrl().concat("fhir/ValueSet/$expand?").concat("offset=").concat(String.valueOf(offset))
                 .concat("&count=").concat(String.valueOf(fetchSize)).concat("&url=").concat(encodedUrl).concat("&_format=json");
 
             LOG.info("getFhirConceptByName url: {}", targetUri);
@@ -2576,7 +2576,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
         while (moreToFetch) {
 
-            final String targetUri = SnowstormConnection.getBaseUrl() + "fhir/ValueSet/$expand?filter=" + URLEncoder.encode(name, StandardCharsets.UTF_8)
+            final String targetUri = SnowstormConnection.getFhirBaseUrl() + "fhir/ValueSet/$expand?filter=" + URLEncoder.encode(name, StandardCharsets.UTF_8)
                 + "&offset=" + offset + "&count=" + fetchSize + "&url=" + encodedUrl + "&_format=json";
 
             LOG.info("getFhirConceptByName url: " + targetUri);
@@ -2688,7 +2688,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
     private static String getCodeSystemsFromFhirApi() throws Exception {
 
         // https://host:port/fhir/CodeSystem
-        final String targetUri = SnowstormConnection.getBaseUrl() + "fhir/CodeSystem?_format=json";
+        final String targetUri = SnowstormConnection.getFhirBaseUrl() + "fhir/CodeSystem?_format=json";
         String resultString = "";
 
         LOG.info("getCodeSystemsFromApi url: {}", targetUri);

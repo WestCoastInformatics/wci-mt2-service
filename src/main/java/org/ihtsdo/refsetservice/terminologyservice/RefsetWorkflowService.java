@@ -403,7 +403,7 @@ public final class RefsetWorkflowService {
         final List<String> refsetsNotUpdated = new ArrayList<>();
 
         final ResultList<Refset> results =
-            service.find("refsetId:(" + refsetIds.replace(",", " OR ") + ") AND versionStatus: (" + VersionStatus.IN_DEVELOPMENT.toString() + ")",
+            service.find("refsetId:(" + refsetIds.replace(",", " OR ") + ") AND versionStatus: (" + VersionStatus.IN_DEVELOPMENT.name() + ")",
                 new PfsParameter(), Refset.class, null);
 
         for (final Refset refset : results.getItems()) {
@@ -497,6 +497,12 @@ public final class RefsetWorkflowService {
 
             }
 
+        }
+
+        if (nextStatus == null) {
+            LOG.warn(
+                "Workflow action requested but no permutation: refsetId={}, refsetDbId={}, workflowStatus={}, action={}, user={}, rolesTried={}, file={}",
+                refset.getRefsetId(), refset.getId(), refset.getWorkflowStatus(), action, user.getUserName(), roles, WORKFLOW_PERMUTATIONS_FILE_NAME);
         }
 
         if (Arrays.asList(WorkflowAction.EDIT, WorkflowAction.UPGRADE, WorkflowAction.REVIEW).contains(action)) {
@@ -833,7 +839,7 @@ public final class RefsetWorkflowService {
         }
 
         final long start = System.currentTimeMillis();
-        final String url = SnowstormConnection.getBaseUrl() + "browser/" + tempBranchPath + "/" + "concepts/";
+        final String url = SnowstormConnection.getRestBaseUrl() + "browser/" + tempBranchPath + "/" + "concepts/";
 
         LOG.info("getNewRefsetId URL: " + url);
 

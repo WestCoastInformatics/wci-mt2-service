@@ -153,7 +153,7 @@ public class SnowstormRefset extends SnowstormAbstract {
             body.setAll(classAxioms);
             body.setAll(descriptions);
 
-            final String url = SnowstormConnection.getBaseUrl() + "browser/" + refsetBranch + "/" + "concepts/";
+            final String url = SnowstormConnection.getRestBaseUrl() + "browser/" + refsetBranch + "/" + "concepts/";
 
             LOG.debug("createRefset URL: {}", url);
             LOG.debug("createRefset URL body: {}", body.toString());
@@ -345,7 +345,7 @@ public class SnowstormRefset extends SnowstormAbstract {
         }
 
         final long start = System.currentTimeMillis();
-        final String url = SnowstormConnection.getBaseUrl() + "browser/" + tempBranchPath + "/" + "concepts/";
+        final String url = SnowstormConnection.getRestBaseUrl() + "browser/" + tempBranchPath + "/" + "concepts/";
 
         LOG.info("getNewRefsetId URL: " + url);
 
@@ -408,7 +408,7 @@ public class SnowstormRefset extends SnowstormAbstract {
 
         while (hasMorePages) {
 
-            final String url = SnowstormConnection.getBaseUrl() + branch + "/members?referenceSet=" + refsetId + searchAfter + "&limit=" + limit;
+            final String url = SnowstormConnection.getRestBaseUrl() + branch + "/members?referenceSet=" + refsetId + searchAfter + "&limit=" + limit;
             LOG.debug("getRefsetMembers URL: " + url);
 
             try (final Response response = SnowstormConnection.getResponse(url, acceptLanguage)) {
@@ -513,7 +513,7 @@ public class SnowstormRefset extends SnowstormAbstract {
      */
     public static Long getRefsetConceptReleaseDate(final String refsetId, final String branch) throws Exception {
 
-        final String url = SnowstormConnection.getBaseUrl() + "browser/" + branch + "/" + "concepts/" + refsetId;
+        final String url = SnowstormConnection.getRestBaseUrl() + "browser/" + branch + "/" + "concepts/" + refsetId;
         final SimpleDateFormat simpleDateFormat = new SimpleDateFormat(RefsetMemberService.DATE_FORMAT);
 
         LOG.debug("Get Concept Details URL: " + url);
@@ -566,7 +566,7 @@ public class SnowstormRefset extends SnowstormAbstract {
 
         if (dbRefset.getDescriptions().isEmpty()) {
             // Must look at edition branch to determine descriptions
-            final String url = SnowstormConnection.getBaseUrl() + "browser/" + dbRefset.getEditionBranch() + "/" + "concepts/" + dbRefset.getRefsetId();
+            final String url = SnowstormConnection.getRestBaseUrl() + "browser/" + dbRefset.getEditionBranch() + "/" + "concepts/" + dbRefset.getRefsetId();
 
             LOG.debug("identifyRefsetName URL: {}", url);
 

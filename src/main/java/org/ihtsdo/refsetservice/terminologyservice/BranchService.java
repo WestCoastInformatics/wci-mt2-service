@@ -64,8 +64,7 @@ public final class BranchService {
     private static final String PATH_DELIMITER = "/";
 
     /** The app url root. */
-    private static final boolean USE_MANAGE_SERVICE_INITIALS =
-        "true".equals(PropertyUtility.getProperties().getProperty("mapset.use.manage.service.initials"));
+    private static final boolean USE_MANAGE_SERVICE_INITIALS = "true".equals(PropertyUtility.getProperties().getProperty("mapset.use.manage.service.initials"));
 
     /**
      * Merge the project branch into the edition branch.
@@ -89,15 +88,12 @@ public final class BranchService {
     /**
      * Merge the refset branch into the project branch. Never for localsets
      *
-     * @param editionBranchPath the branch path of the edition the refset belongs to
-     * @param refsetId the refset ID
-     * @param branchId the ID for the refset branch
+     * @param branchInformation the branch information
      * @param comment the merge comment
      * @return were the branches merged
      * @throws Exception the exception
      */
-    public static boolean promoteRefsetToProjectBranch(final BranchInformation branchInformation, final String comment)
-        throws Exception {
+    public static boolean promoteRefsetToProjectBranch(final BranchInformation branchInformation, final String comment) throws Exception {
 
         final String projectBranchPath = getProjectBranchPath(branchInformation.getEditionBranch());
         final String refsetBranchPath = getRefsetBranchPath(branchInformation);
@@ -112,12 +108,8 @@ public final class BranchService {
     /**
      * Merge the edit branch into the refset branch.
      *
-     * @param editionBranchPath the branch path of the edition the refset belongs to
-     * @param refsetId the refset ID
-     * @param editBranchId the ID for the edit branch
-     * @param refsetBranchId the ID for the refset branch
+     * @param branchInformation the branch information
      * @param comment the merge comment
-     * @param localset is the refset a localset
      * @return were the branches merged
      * @throws Exception the exception
      */
@@ -151,7 +143,7 @@ public final class BranchService {
         }
 
         final long start = System.currentTimeMillis();
-        final String url = SnowstormConnection.getBaseUrl() + "branches";
+        final String url = SnowstormConnection.getRestBaseUrl() + "branches";
         final ObjectMapper mapper = ThreadLocalMapper.get();
         final ObjectNode body = mapper.createObjectNode().put("name", branchName).put("parent", parentBranchPath);
 
@@ -192,7 +184,7 @@ public final class BranchService {
     public static boolean deleteBranch(final String branchPath) throws Exception {
 
         final long start = System.currentTimeMillis();
-        final String url = SnowstormConnection.getBaseUrl() + "admin/" + branchPath + "/actions/hard-delete";
+        final String url = SnowstormConnection.getRestBaseUrl() + "admin/" + branchPath + "/actions/hard-delete";
 
         LOG.info("deleteBranch URL: {}", url);
 
@@ -206,7 +198,7 @@ public final class BranchService {
 
             } else {
 
-                LOG.error("Could not delete branch {} Message: {}", branchPath , formatErrorMessage(response));
+                LOG.error("Could not delete branch {} Message: {}", branchPath, formatErrorMessage(response));
                 return false;
             }
 
@@ -224,7 +216,7 @@ public final class BranchService {
     public static boolean doesBranchExist(final String branchPath) throws Exception {
 
         final long start = System.currentTimeMillis();
-        final String url = SnowstormConnection.getBaseUrl() + "branches/" + branchPath;
+        final String url = SnowstormConnection.getRestBaseUrl() + "branches/" + branchPath;
 
         LOG.info("doesBranchExist URL: " + url);
 
@@ -271,7 +263,7 @@ public final class BranchService {
     /**
      * Get the refset branch path for a refset.
      *
-     * @param branch the branch
+     * @param branchInformation the branch information
      * @return the branch path of the refset branch
      * @throws Exception the exception
      */
@@ -292,7 +284,7 @@ public final class BranchService {
     /**
      * Get the edit branch path for a refset.
      *
-     * @param branch the branch
+     * @param branchInformation the branch information
      * @return the branch path of the edit branch
      * @throws Exception the exception
      */
@@ -302,8 +294,7 @@ public final class BranchService {
     }
 
     /**
-     * Returns the branch path for a MapSet.
-     * Uses stored branchPath if present; otherwise computes from edition + refSetCode + mapBranchId + editBranchId.
+     * Returns the branch path for a MapSet. Uses stored branchPath if present; otherwise computes from edition + refSetCode + mapBranchId + editBranchId.
      *
      * @param mapSet the map set
      * @return the branch path, or null if mapSet is null or missing required components (mapBranchId)
@@ -314,10 +305,10 @@ public final class BranchService {
         if (mapSet == null || mapSet.getRefsetBranchId() == null || mapSet.getRefsetBranchId().isBlank()) {
             return null;
         }
-        //final String stored = mapSet.getBranchPath();
-//        if (isValidBranchPath(stored)) {
-//            return stored;
-//        }
+        // final String stored = mapSet.getBranchPath();
+        // if (isValidBranchPath(stored)) {
+        // return stored;
+        // }
         if (mapSet.getVersionDate() != null) {
             final Date tmpDate = mapSet.getVersionDate();
             final String pathDate = "/" + DateUtility.formatDate(tmpDate, DateUtility.DATE_FORMAT_REVERSE, null);
@@ -330,17 +321,15 @@ public final class BranchService {
         return path;
     }
 
-//    private static boolean isValidBranchPath(final String path) {
-//
-//        return path != null && !path.isBlank() && !"empty".equals(path) && !"none".equals(path);
-//    }
+    // private static boolean isValidBranchPath(final String path) {
+    //
+    // return path != null && !path.isBlank() && !"empty".equals(path) && !"none".equals(path);
+    // }
 
     /**
      * Create the edit branch for a refset.
      *
-     * @param service the Terminology Service
-     * @param user the user
-     * @param branch the refset
+     * @param branchInformation the branch information
      * @param editBranchId the ID for the edit branch
      * @return the branch path of the new edit branch
      * @throws Exception the exception
@@ -359,7 +348,7 @@ public final class BranchService {
     /**
      * Create the compare branch for a refset.
      *
-     * @param branch the branch
+     * @param branchInformation the branch information
      * @return the branch path of the new edit branch
      * @throws Exception the exception
      */
@@ -445,7 +434,6 @@ public final class BranchService {
      * @param refsetId the refset ID
      * @param branchId the ID for the refset branch
      * @return the branch path of the refset branch
-     * @throws Exception the exception
      */
     private static String getRefsetBranchName(final String refsetId, final String branchId) {
 
@@ -466,7 +454,7 @@ public final class BranchService {
     /**
      * Create the top level localset refset branch for an IN DEVELOPMENT version.
      *
-     * @param branch the branch
+     * @param branchInformation the branch information
      * @param projectBranchPath the project branch path
      * @return the branch path of the new refset branch
      * @throws Exception the exception
@@ -503,7 +491,7 @@ public final class BranchService {
     /**
      * Create the refset branch for an IN DEVELOPMENT version.
      *
-     * @param branch the branch
+     * @param branchInformation the branch information
      * @return the branch path of the new refset branch
      * @throws Exception the exception
      */
@@ -536,7 +524,7 @@ public final class BranchService {
     /**
      * Creates the refset snapshot branch.
      *
-     * @param branch the refset
+     * @param branchInformation the branch information
      * @return the string
      * @throws Exception the exception
      */
@@ -682,22 +670,26 @@ public final class BranchService {
 
         // GET: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/merge-reviews/reviewid
         // If CURRENT, results are available
-        final String reviewUrl = SnowstormConnection.getBaseUrl() + "merge-reviews/" + reviewId;
+        final String reviewUrl = SnowstormConnection.getRestBaseUrl() + "merge-reviews/" + reviewId;
 
         LOG.info("merge polling change review URL: " + reviewUrl);
 
         try (final Response response = SnowstormConnection.getResponse(reviewUrl)) {
 
-            // Only process payload if Rest call is successful
-            if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-
+            final int httpStatus = response.getStatus();
+            if (!isHttpSuccessOrClientError(httpStatus)) {
+                LOG.warn("merge polling change review: HTTP {} for reviewId {}; will retry", httpStatus, reviewId);
+                return false;
+            }
+            if (httpStatus >= 400) {
                 throw new Exception("Could not review branch change report for " + reviewId + "  merge from source: " + sourceBranch + " to target: "
-                    + targetBranch + ". Status: " + Integer.toString(response.getStatus()) + ". Error: " + response.getStatusInfo().getReasonPhrase());
+                    + targetBranch + ". Status: " + httpStatus + ". " + formatErrorMessage(response));
             }
 
             // create the body entity for the update call from the retrieved concept
             final ObjectMapper mapper = ThreadLocalMapper.get();
             final String resultString = SnowstormConnection.readEntityAsString(response);
+            logResponseBodyBeforeJsonParse("mergePollingChangeReview", response.getStatus(), resultString);
             final JsonNode root = mapper.readTree(resultString);
             final String status = root.get("status").asText();
 
@@ -771,7 +763,7 @@ public final class BranchService {
     private static boolean conflictsExist(final String reviewId) throws Exception {
 
         // https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/merge-reviews/asdf/details
-        final String url = SnowstormConnection.getBaseUrl() + "merge-reviews/" + reviewId + "/details";
+        final String url = SnowstormConnection.getRestBaseUrl() + "merge-reviews/" + reviewId + "/details";
 
         LOG.info("conflictsExist url: " + url);
 
@@ -798,7 +790,7 @@ public final class BranchService {
     private static String determineBranchStatus(final String branch) throws Exception {
 
         // https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/branches/MAIN/SNOMEDCT-BE?includeInheritedMetadata=true
-        final String url = SnowstormConnection.getBaseUrl() + "branches/" + branch + "?includeInheritedMetadata=true";
+        final String url = SnowstormConnection.getRestBaseUrl() + "branches/" + branch + "?includeInheritedMetadata=true";
 
         LOG.info("branch merge necessitated status url: " + url);
 
@@ -836,7 +828,7 @@ public final class BranchService {
         // Then finally we call: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/mergeBranch with the same source and
         // target as the merge-review, and the ID of the above current merge-review
 
-        final String mergeUrl = SnowstormConnection.getBaseUrl() + "merges";
+        final String mergeUrl = SnowstormConnection.getRestBaseUrl() + "merges";
         final ObjectMapper mapper = ThreadLocalMapper.get();
         final ObjectNode body = mapper.createObjectNode();
 
@@ -852,7 +844,7 @@ public final class BranchService {
         }
 
         // Post Call to snowstorm
-        LOG.info("perform branch merge URL: {}; body: {}", mergeUrl , body);
+        LOG.info("perform branch merge URL: {}; body: {}", mergeUrl, body);
 
         try (final Response response = SnowstormConnection.postResponse(mergeUrl, body.toString())) {
 
@@ -886,11 +878,11 @@ public final class BranchService {
 
         final ObjectMapper mapper = ThreadLocalMapper.get();
         final ObjectNode body = mapper.createObjectNode().put("source", sourceBranch).put("target", targetBranch);
-        final String reviewUrl = SnowstormConnection.getBaseUrl() + "merge-reviews";
+        final String reviewUrl = SnowstormConnection.getRestBaseUrl() + "merge-reviews";
         String jobStatusUrl = null;
         String reviewId = "";
 
-        LOG.info("create merge review request URL: {}; body: {}" , reviewUrl , body);
+        LOG.info("create merge review request URL: {}; body: {}", reviewUrl, body);
 
         try (final Response response = SnowstormConnection.postResponse(reviewUrl, body.toString())) {
 
@@ -933,7 +925,7 @@ public final class BranchService {
          */
 
         final long start = System.currentTimeMillis();
-        final String mergeUrl = SnowstormConnection.getBaseUrl() + "merges";
+        final String mergeUrl = SnowstormConnection.getRestBaseUrl() + "merges";
         final ObjectMapper mapper = ThreadLocalMapper.get();
         final ObjectNode body = mapper.createObjectNode().put("source", sourceBranchPath).put("target", targetBranchPath);
         boolean jobDone = false;
@@ -978,7 +970,21 @@ public final class BranchService {
 
                 try (final Response mergeInfoResponse = SnowstormConnection.getResponse(jobStatusUrl)) {
 
+                    final int httpStatus = mergeInfoResponse.getStatus();
+                    if (!isHttpSuccessOrClientError(httpStatus)) {
+                        LOG.warn("mergeBranch merge job poll: HTTP {} for {} -> {}; retrying after delay", httpStatus, sourceBranchPath, targetBranchPath);
+                        sleepPollInterval();
+                        continue;
+                    }
+                    if (httpStatus >= 400) {
+                        final String error = "Could not merge branch " + sourceBranchPath + " into branch " + targetBranchPath + " (merge job poll). HTTP "
+                            + httpStatus + ". " + formatErrorMessage(mergeInfoResponse);
+                        LOG.error(error);
+                        throw new Exception(error);
+                    }
+
                     final String resultString = SnowstormConnection.readEntityAsString(mergeInfoResponse);
+                    logResponseBodyBeforeJsonParse("mergeBranch merge job poll", mergeInfoResponse.getStatus(), resultString);
                     final JsonNode root = mapper.readTree(resultString);
                     final String status = root.get("status").asText();
 
@@ -1032,12 +1038,25 @@ public final class BranchService {
 
                             // final check that the promotion has finished.
                             boolean stateGood = false;
-                            final String stateUrl = SnowstormConnection.getBaseUrl() + "branches/" + targetBranchPath;
+                            final String stateUrl = SnowstormConnection.getRestBaseUrl() + "branches/" + targetBranchPath;
                             LOG.debug("Promoted branch state info at {}", stateUrl);
 
                             while (!stateGood) {
 
                                 try (final Response stateResponse = SnowstormConnection.getResponse(stateUrl)) {
+
+                                    final int stateHttpStatus = stateResponse.getStatus();
+                                    if (!isHttpSuccessOrClientError(stateHttpStatus)) {
+                                        LOG.warn("Promoted branch state poll: HTTP {} for {}; retrying after delay", stateHttpStatus, targetBranchPath);
+                                        sleepPollInterval();
+                                        continue;
+                                    }
+                                    if (stateHttpStatus >= 400) {
+                                        final String err = "Could not read promoted branch state for " + targetBranchPath + ". HTTP " + stateHttpStatus + ". "
+                                            + formatErrorMessage(stateResponse);
+                                        LOG.error(err);
+                                        throw new Exception(err);
+                                    }
 
                                     final String stateResultString = SnowstormConnection.readEntityAsString(stateResponse);
                                     final JsonNode stateRoot = mapper.readTree(stateResultString);
@@ -1062,7 +1081,7 @@ public final class BranchService {
                             }
                         }
 
-                        LOG.info("Merged branch {} into branch {}. Time: {}", sourceBranchPath , targetBranchPath , (System.currentTimeMillis() - start));
+                        LOG.info("Merged branch {} into branch {}. Time: {}", sourceBranchPath, targetBranchPath, (System.currentTimeMillis() - start));
                     }
                 }
             }
@@ -1081,7 +1100,7 @@ public final class BranchService {
 
         final ObjectMapper mapper = ThreadLocalMapper.get();
         final ObjectNode body = mapper.createObjectNode().put("source", sourceBranchPath).put("target", targetBranchPath);
-        final String reviewUrl = SnowstormConnection.getBaseUrl() + "merge-reviews";
+        final String reviewUrl = SnowstormConnection.getRestBaseUrl() + "merge-reviews";
         String jobStatusUrl = null;
         boolean jobDone = false;
         String reviewId = "";
@@ -1109,14 +1128,21 @@ public final class BranchService {
 
             try (final Response response = SnowstormConnection.getResponse(jobStatusUrl)) {
 
-                String error = "Could not review merge branch " + sourceBranchPath + " into branch " + targetBranchPath + ". ";
-
-                // Only process payload if Rest call is successful
-                if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-                    LOG.error("{} Status: {}. Message: {}", error , response.getStatus(), formatErrorMessage(response));
+                final String errorPrefix = "Could not review merge branch " + sourceBranchPath + " into branch " + targetBranchPath + ". ";
+                final int httpStatus = response.getStatus();
+                if (!isHttpSuccessOrClientError(httpStatus)) {
+                    LOG.warn("mergeRebaseReview job poll: HTTP {}; retrying after delay", httpStatus);
+                    sleepPollInterval();
+                    continue;
+                }
+                if (httpStatus >= 400) {
+                    final String error = errorPrefix + "HTTP " + httpStatus + ". " + formatErrorMessage(response);
+                    LOG.error(error);
+                    throw new Exception(error);
                 }
 
                 final String resultString = SnowstormConnection.readEntityAsString(response);
+                logResponseBodyBeforeJsonParse("mergeRebaseReview job poll", response.getStatus(), resultString);
                 final JsonNode root = mapper.readTree(resultString);
                 final String status = root.get("status").asText();
                 LOG.info("merge review status: {}, source:{}, target:{}", status, sourceBranchPath, targetBranchPath);
@@ -1133,7 +1159,7 @@ public final class BranchService {
 
                 } else if ("failed".equalsIgnoreCase(status)) {
 
-                    error += "Job failed with: " + root.get("message").asText();
+                    final String error = errorPrefix + "Job failed with: " + root.get("message").asText();
                     LOG.error(error);
                     throw new Exception(error);
 
@@ -1154,7 +1180,7 @@ public final class BranchService {
     /**
      * Rebase edit branch contents.
      *
-     * @param branch the refset
+     * @param branchInformation the branch information
      * @return the string
      * @throws Exception the exception
      */
@@ -1184,7 +1210,7 @@ public final class BranchService {
     /**
      * Rebase refset branch contents.
      *
-     * @param branch the refset
+     * @param branchInformation the branch information
      * @return the string
      * @throws Exception the exception
      */
@@ -1212,5 +1238,52 @@ public final class BranchService {
         }
 
         return refsetBranchPath;
+    }
+
+    /**
+     * Log response body before json parse.
+     *
+     * @param context the context
+     * @param httpStatus the http status
+     * @param body the body
+     */
+    private static void logResponseBodyBeforeJsonParse(final String context, final int httpStatus, final String body) {
+
+        if (!LOG.isDebugEnabled()) {
+            return;
+        }
+        if (body == null) {
+            LOG.debug("{}: httpStatus={}, rawResponse=null", context, httpStatus);
+            return;
+        }
+        final int maxLen = 8192;
+        if (body.length() <= maxLen) {
+            LOG.debug("{}: httpStatus={}, rawResponse={}", context, httpStatus, body);
+        } else {
+            LOG.debug("{}: httpStatus={}, rawResponse={}... (truncated, {} chars total)", context, httpStatus, body.substring(0, maxLen), body.length());
+        }
+    }
+
+    /**
+     * HTTP 2xx (final success) or 4xx (client error — inspect body, do not spin on redirects/server errors here).
+     *
+     * @param statusCode the status code
+     * @return true, if is http success or client error
+     */
+    private static boolean isHttpSuccessOrClientError(final int statusCode) {
+
+        return statusCode >= 200 && statusCode < 300 || statusCode >= 400 && statusCode < 500;
+    }
+
+    /**
+     * Sleep poll interval.
+     */
+    private static void sleepPollInterval() {
+
+        try {
+            Thread.sleep(1_000);
+        } catch (final InterruptedException ex) {
+            Thread.currentThread().interrupt();
+        }
     }
 }

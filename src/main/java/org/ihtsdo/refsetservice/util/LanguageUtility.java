@@ -168,7 +168,7 @@ public final class LanguageUtility {
 
         // Identify the language based on language refset name
         // e.g. https://snowstorm.ihtsdotools.org/snowstorm/snomed-ct/MAIN%2FSNOMEDCT-BE/concepts/48979004
-        final String conceptLookupUrl = SnowstormConnection.getBaseUrl() + branchPath + "/concepts/" + languageRefsetSctId + "/descriptions/";
+        final String conceptLookupUrl = SnowstormConnection.getRestBaseUrl() + branchPath + "/concepts/" + languageRefsetSctId + "/descriptions/";
         LOG.info("getSnowstormConcept url: " + conceptLookupUrl);
 
         boolean matchedEnglish = false;

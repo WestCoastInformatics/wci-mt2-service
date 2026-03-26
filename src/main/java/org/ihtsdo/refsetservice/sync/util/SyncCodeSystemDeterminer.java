@@ -319,7 +319,7 @@ public class SyncCodeSystemDeterminer {
      */
     private JsonNode getSnowstormCodeSystems() throws Exception {
 
-        final String url = SnowstormConnection.getBaseUrl() + "codesystems";
+        final String url = SnowstormConnection.getRestBaseUrl() + "codesystems";
         LOG.info("getSnowstormCodeSystems url: " + url);
 
         try (final Response response = SnowstormConnection.getResponse(url)) {

@@ -110,7 +110,7 @@ public class MapSetService {
             return null;
         }
         //Look for IN DEVELOPMENT version first
-        final ResultList<MapSet> results = service.find("refSetCode:" + QueryParserBase.escape(refSetCode) + " AND versionStatus:" + VersionStatus.IN_DEVELOPMENT.toString(), null, MapSet.class, null);
+        final ResultList<MapSet> results = service.find("refSetCode:" + QueryParserBase.escape(refSetCode) + " AND versionStatus:" + VersionStatus.IN_DEVELOPMENT.name(), null, MapSet.class, null);
         if (!results.getItems().isEmpty()) {
             return results.getItems().get(0);
         }
@@ -349,7 +349,7 @@ public class MapSetService {
 
         // Check no existing IN_DEVELOPMENT version
         final ResultList<MapSet> results =
-            service.find("versionStatus: (" + VersionStatus.IN_DEVELOPMENT.toString() + ") AND refSetCode: " + QueryParserBase.escape(mapSet.getRefSetCode()),
+            service.find("versionStatus: (" + VersionStatus.IN_DEVELOPMENT.name() + ") AND refSetCode: " + QueryParserBase.escape(mapSet.getRefSetCode()),
                 null, MapSet.class, null);
 
         if (!results.getItems().isEmpty()) {
