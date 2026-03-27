@@ -46,7 +46,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
 /**
  * Controller for authentication and user end points.
- * 
+ *
  * @author Nuno
  *
  */
@@ -123,6 +123,9 @@ public class SecurityController extends BaseController {
         @RequestParam(name = "error", required = false) final String error,
         @RequestParam(name = "error_description", required = false) final String errorDescription, @RequestParam(required = false) final String state,
         final HttpServletRequest httpRequest) throws Exception {
+
+        LOG.info("Callback hit: raw query={}, code={}, error={}, state={}",
+            httpRequest.getQueryString(), code, error, state);
 
         final String postLogin = resolvePostLoginRedirectUrl();
         if (!"ENTRAID".equalsIgnoreCase(StringUtils.trimToEmpty(PropertyUtility.getProperty("security.handler")))) {
