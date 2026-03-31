@@ -4401,7 +4401,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
     /* see superclass */
     @Override
-    public Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode, final boolean showOverriddenEntries, final MapSet mapSet)
+    public Mapping getMapping(final String branch, final String conceptCode, final boolean showOverriddenEntries, final MapSet mapSet)
         throws Exception {
 
         final File f = new File(handlerProperties.getProperty("dir") + "/Mappings.json");
@@ -4412,7 +4412,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
         // Grab the specified mapSet (use param if provided and has terminology/version, else from JSON)
         final MapSet mapSetForLookup = (mapSet != null && mapSet.getFromTerminology() != null && mapSet.getFromVersion() != null)
-            ? mapSet : getMapSet(branch, mapSetCode);
+            ? mapSet : getMapSet(branch, mapSet.getRefSetCode());
 
         final Mapping mapping = new Mapping();
 

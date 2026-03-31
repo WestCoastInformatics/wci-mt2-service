@@ -388,7 +388,7 @@ public class MapSetController extends BaseController {
         final User authUser = authorizeUser(request);
         try (final TerminologyService service = new TerminologyService()) {
 
-            final MapSet mapSet = MapSetService.getMapSetForWorkflow(service, mapSetInternalId);
+            final MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
             final ResultList<MapSetWorkflowHistory> results = MapSetWorkflowService.getWorkflowHistory(service, mapSet, searchParameters);
 
             return new ResponseEntity<>(results, HttpStatus.OK);
@@ -427,7 +427,7 @@ public class MapSetController extends BaseController {
 
             LOG.info("getWorkflowStatus: mapSetInternalId: {}", mapSetInternalId);
 
-            final MapSet mapSet = MapSetService.getMapSetForWorkflow(service, mapSetInternalId);
+            final MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
 
             if (mapSet == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -529,7 +529,7 @@ public class MapSetController extends BaseController {
 
             service.setModifiedBy(authUser.getUserName());
 
-            final MapSet mapSet = MapSetService.getMapSetForWorkflow(service, mapSetInternalId);
+            final MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
             MapSetWorkflowService.updateWorkflowNote(service, authUser, mapSet, notes);
 
             final ResultList<MapSetWorkflowHistory> results = MapSetWorkflowService.getWorkflowHistory(service, mapSet, new SearchParameters());

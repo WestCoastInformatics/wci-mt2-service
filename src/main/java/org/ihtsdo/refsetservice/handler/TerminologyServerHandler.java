@@ -593,13 +593,13 @@ public interface TerminologyServerHandler extends Configurable {
      * Returns the mapping.
      *
      * @param branch the branch
-     * @param mapSetCode the map set code
      * @param conceptCode the concept code
      * @param showOverriddenEntries the show overridden entries
+     * @param mapSet the map set
      * @return the mapping
      * @throws Exception the exception
      */
-    public Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode, final boolean showOverriddenEntries, final MapSet mapSet)
+    public Mapping getMapping(final String branch, final String conceptCode, final boolean showOverriddenEntries, final MapSet mapSet)
         throws Exception;
 
     /**
@@ -611,7 +611,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @return the concept
      * @throws Exception the exception
      */
-    public Concept getConcept(/* final String branch, */ final String terminology, final String version, final String code) throws Exception;
+    public Concept getConcept(final String terminology, final String version, final String code) throws Exception;
 
     /**
      * Creates the mappings.
@@ -633,6 +633,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @param branch the branch
      * @param mapSetCode the map set code
      * @param mapping the mapping
+     * @param mapSet the map set
      * @return the list
      * @throws Exception the exception
      */
@@ -645,6 +646,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @param branch the branch
      * @param mapSetCode the map set code
      * @param mappingExportRequest the mapping export request
+     * @param mapSet the map set
      * @return the paths
      * @throws Exception the exception
      */
@@ -656,6 +658,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @param mapProject the map project
      * @param branch the branch
      * @param mappingFile the mappingFile
+     * @param mapSet the map set
      * @return the list
      * @throws Exception the exception
      */
@@ -729,7 +732,6 @@ public interface TerminologyServerHandler extends Configurable {
      * Removes the map set edit history.
      *
      * @param service the service
-     * @param user the user
      * @param refsetCode the refset code
      * @throws Exception the exception
      */

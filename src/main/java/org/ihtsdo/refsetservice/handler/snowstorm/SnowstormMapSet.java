@@ -93,7 +93,7 @@ public class SnowstormMapSet extends SnowstormAbstract {
     public static MapSet setWorkflowStatus(final TerminologyService service, final User user, final String mapSetInternalId, final WorkflowAction action,
         final String notes) throws Exception {
 
-        MapSet mapSet = MapSetService.getMapSetForWorkflow(service, mapSetInternalId);
+        MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
         MapSetWorkflowService.canUserPerformWorkflowAction(user, mapSet, action);
         final WorkflowStatus currentStatus = mapSet.getWorkflowStatus();
 
