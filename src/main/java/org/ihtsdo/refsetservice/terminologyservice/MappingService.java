@@ -92,16 +92,16 @@ public final class MappingService {
      * Returns the mapping.
      *
      * @param branch the branch
-     * @param mapSetCode the map set code
      * @param conceptCode the concept code
      * @param showOverriddenEntries the show overridden entries
+     * @param mapSet the map set
      * @return the mapping
      * @throws Exception the exception
      */
-    public static Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode, final boolean showOverriddenEntries,
+    public static Mapping getMapping(final String branch, final String conceptCode, final boolean showOverriddenEntries,
         final MapSet mapSet) throws Exception {
 
-        return terminologyHandler.getMapping(branch, mapSetCode, conceptCode, showOverriddenEntries, mapSet);
+        return terminologyHandler.getMapping(branch, conceptCode, showOverriddenEntries, mapSet);
     }
 
     /**
@@ -127,6 +127,7 @@ public final class MappingService {
      * @param branch the branch
      * @param mapSetCode the map set code
      * @param mapping the mapping
+     * @param mapSet the map set
      * @return the list
      * @throws Exception the exception
      */
@@ -139,11 +140,10 @@ public final class MappingService {
     /**
      * Export mappings.
      *
-     * @param mapProject the map project
      * @param branch the branch
      * @param mapSetCode the map set code
-     * @param conceptCodes the concept codes
-     * @param includedColumnsList the included columns list
+     * @param mappingExportRequest the mapping export request
+     * @param mapSet the map set
      * @return the file
      * @throws Exception the exception
      */
@@ -163,6 +163,7 @@ public final class MappingService {
      * @param mapProject the map project
      * @param branch the branch
      * @param mappingFile the RF2 file
+     * @param mapSet the map set
      * @return the imported mappings
      * @throws Exception the exception
      */

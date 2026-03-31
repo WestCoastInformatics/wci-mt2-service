@@ -76,22 +76,17 @@ public class MapSetService {
     }
 
     /**
-     * Returns the map set.
+     * Gets the map set.
      *
-     * @param branch the branch
-     * @param code the code
+     * @param service the service
+     * @param user the user
+     * @param mapsetInternalId the mapset internal id
      * @return the map set
      * @throws Exception the exception
      */
-    public static MapSet getMapSet(final String branch, final String code) throws Exception {
-
-        return terminologyHandler.getMapSet(branch, code);
-
-    }
-
     public static MapSet getMapSet(final TerminologyService service, final User user, final String mapsetInternalId) throws Exception {
 
-        return getMapSetForWorkflow(service, mapsetInternalId);
+        return getMapSet(service, mapsetInternalId);
 
     }
 
@@ -157,7 +152,7 @@ public class MapSetService {
      * @return the map set from DB
      * @throws Exception if not found
      */
-    public static MapSet getMapSetForWorkflow(final TerminologyService service, final String mapSetInternalId) throws Exception {
+    public static MapSet getMapSet(final TerminologyService service, final String mapSetInternalId) throws Exception {
 
         if (mapSetInternalId == null || mapSetInternalId.isBlank()) {
             throw new Exception("MapSet identifier is required");
@@ -208,6 +203,7 @@ public class MapSetService {
      *
      * @param service the terminology service
      * @return map of terminology to version
+     * @throws Exception the exception
      */
     public static Map<String, String> getTerminologyVersionsFromMapSets(final TerminologyService service) throws Exception {
 
@@ -282,7 +278,7 @@ public class MapSetService {
      *
      * @param service the service
      * @param user the user
-     * @param refsetInternalId the refset internal id (UUID)
+     * @param mapsetInternalId the mapset internal id
      * @param action the action
      * @param notes the notes
      * @return the refset
@@ -345,7 +341,7 @@ public class MapSetService {
         throws Exception {
 
         MapSet oldLatestVersionMapSet = null;
-        final MapSet mapSet = getMapSetForWorkflow(service, mapSetInternalId);
+        final MapSet mapSet = getMapSet(service, mapSetInternalId);
 
         // Check no existing IN_DEVELOPMENT version
         final ResultList<MapSet> results =

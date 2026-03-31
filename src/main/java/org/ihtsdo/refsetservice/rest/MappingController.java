@@ -54,6 +54,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -73,15 +74,22 @@ public class MappingController extends BaseController {
     /**
      * Gets the mappings.
      *
-     * @param mapSetCode the map set code
+     * @param mapSetInternalId the map set internal id
      * @param filter the filter
      * @param showOverriddenEntries the show overridden entries
      * @param conceptCodes the concept codes
-     * @param searchParameters the search parameters
+     * @param query the query
+     * @param limit the limit
+     * @param offset the offset
+     * @param activeOnly the active only
+     * @param sort the sort
+     * @param sortAscending the sort ascending
+     * @param editing the editing
+     * @param searchAfter the search after
      * @return the mappings
      * @throws Exception the exception
      */
-    @RequestMapping(method = RequestMethod.GET, value = "/mapset/{mapSetCode}/mappings", produces = MediaType.APPLICATION_JSON)
+    @RequestMapping(method = RequestMethod.GET, value = "/mapset/{mapSetInternalId}/mappings", produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Get map set. This call requires authentication with the correct role.", tags = {
         "mapset"
     }, responses = {
@@ -90,7 +98,7 @@ public class MappingController extends BaseController {
         @ApiResponse(responseCode = "404", description = "Resource not found"), @ApiResponse(responseCode = "417", description = "Failed Expectation")
     })
     @Parameters({
-        @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. 447562003", required = true),
+        @Parameter(name = "mapSetInternalId", description = "Mapset internal id, e.g. &lt;uuid&gt;", required = true),
         @Parameter(name = "filter", description = "Text to search, e.g. Brain", required = false),
         @Parameter(name = "showOverriddenEntries", description = "Show underlying entries that have been overridden by this extension", required = false),
         @Parameter(name = "conceptCodes", description = "Comma delimited list of concept codes, e.g. 880057004,880057005", required = false),
@@ -104,7 +112,7 @@ public class MappingController extends BaseController {
         @Parameter(name = "searchAfter", description = "Search after cursor", required = false)
     })
     @RecordMetric
-    public @ResponseBody ResponseEntity<ResultListMapping> getMappings(@PathVariable(value = "mapSetCode") final String mapSetCode,
+    public @ResponseBody ResponseEntity<ResultListMapping> getMappings(@PathVariable(value = "mapSetInternalId") final String mapSetInternalId,
         @RequestParam(required = false) final String filter, @RequestParam(required = false, defaultValue = "true") boolean showOverriddenEntries,
         @RequestParam(required = false) final String conceptCodes, @RequestParam(required = false) final String query,
         @RequestParam(required = false) final Integer limit, @RequestParam(required = false) final Integer offset,
@@ -121,24 +129,24 @@ public class MappingController extends BaseController {
         sp.setSortAscending(sortAscending);
         sp.setEditing(Boolean.TRUE.equals(editing));
         sp.setSearchAfter(searchAfter);
-        LOG.info("Mappings for a Mapset {}: {}", mapSetCode, sp);
+        LOG.info("Mappings for a Mapset {}: {}", mapSetInternalId, sp);
         // final User authUser = authorizeUser(request);
 
         try (final TerminologyService service = new TerminologyService()) {
             final List<String> conceptCodesList = parseConceptCodes(conceptCodes);
             final String filterString = (StringUtils.isBlank(filter)) ? StringUtils.EMPTY : StringUtils.trim(filter);
 
-            final org.ihtsdo.refsetservice.model.MapSet mapSet = MapSetService.findMapSetByRefSetCode(service, mapSetCode);
+            final MapSet mapSet = service.get(mapSetInternalId, MapSet.class);
             if (mapSet == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
             String branch = BranchService.getMapSetBranchPath(mapSet);
             if (StringUtils.isBlank(branch)) {
-                branch = MapSetService.resolveBranchFromMapSets(service, mapSetCode);
+                branch = MapSetService.resolveBranchFromMapSets(service, mapSetInternalId);
             }
             if (StringUtils.isBlank(branch) || "empty".equals(branch) || "none".equals(branch)) {
-                throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "map_sets.branchPath is required for map set " + mapSetCode + ". Database is missing required path data.");
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "map_sets.branchPath is required for map set " + mapSetInternalId + ". Database is missing required path data.");
             }
 
             final ResultListMapping mappings = MappingService.getMappings(branch, mapSet, sp, filterString, showOverriddenEntries, conceptCodesList);
@@ -157,6 +165,12 @@ public class MappingController extends BaseController {
         }
     }
 
+    /**
+     * Parses the concept codes.
+     *
+     * @param conceptCodes the concept codes
+     * @return the list
+     */
     private static List<String> parseConceptCodes(final String conceptCodes) {
 
         if (StringUtils.isBlank(conceptCodes)) {
@@ -174,6 +188,12 @@ public class MappingController extends BaseController {
         return codes;
     }
 
+    /**
+     * Reorder mappings by concept codes.
+     *
+     * @param mappings the mappings
+     * @param conceptCodesList the concept codes list
+     */
     private static void reorderMappingsByConceptCodes(final ResultListMapping mappings, final List<String> conceptCodesList) {
 
         if (mappings == null || mappings.getItems().isEmpty()) {
@@ -353,14 +373,14 @@ public class MappingController extends BaseController {
     /**
      * Gets the mapping.
      *
-     * @param mapSetCode the map set code
+     * @param mapSetInternalId the map set internal id
      * @param conceptCode the concept code
      * @param showOverriddenEntries the show overridden entries
      * @param searchParameters the search parameters
      * @return the mapping
      * @throws Exception the exception
      */
-    @RequestMapping(method = RequestMethod.GET, value = "/mapset/{mapSetCode}/mappings/{conceptCode}", produces = MediaType.APPLICATION_JSON)
+    @RequestMapping(method = RequestMethod.GET, value = "/mapset/{mapSetInternalId}/mappings/{conceptCode}", produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Get mapping. This call requires authentication with the correct role.", tags = {
         "mapset"
     }, responses = {
@@ -369,7 +389,7 @@ public class MappingController extends BaseController {
         @ApiResponse(responseCode = "404", description = "Resource not found"), @ApiResponse(responseCode = "417", description = "Failed Expectation")
     })
     @Parameters({
-        @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. 447562003", required = true),
+        @Parameter(name = "mapSetInternalId", description = "Mapset internal id, e.g. &lt;uuid&gt;", required = true),
         @Parameter(name = "conceptCode", description = "Source concept code identifier, e.g. 880057004", required = true),
         @Parameter(name = "showOverriddenEntries", description = "Show underlying entries that have been overridden by this extension", required = false),
         @Parameter(name = "query", description = "The search query", required = false),
@@ -382,24 +402,24 @@ public class MappingController extends BaseController {
         @Parameter(name = "searchAfter", description = "Search after cursor", required = false)
     })
     @RecordMetric
-    public @ResponseBody ResponseEntity<Mapping> getMapping(@PathVariable final String mapSetCode, @PathVariable final String conceptCode,
+    public @ResponseBody ResponseEntity<Mapping> getMapping(@PathVariable final String mapSetInternalId, @PathVariable final String conceptCode,
         @RequestParam(required = false, defaultValue = "true") boolean showOverriddenEntries,
         @Parameter(hidden = true) @ModelAttribute final SearchParameters searchParameters) throws Exception {
 
-        LOG.info("Mapping for Mapset: {}, Source Concept Code: {}, Search params: {}", mapSetCode, conceptCode, searchParameters);
+        LOG.info("Mapping for Mapset: {}, Source Concept Code: {}, Search params: {}", mapSetInternalId, conceptCode, searchParameters);
         // final User authUser = authorizeUser(request);
 
         try (final TerminologyService service = new TerminologyService()) {
 
-            final String branch = MapSetService.resolveBranchFromMapSets(service, mapSetCode);
+            final String branch = MapSetService.resolveBranchFromMapSets(service, mapSetInternalId);
             if (StringUtils.isBlank(branch) || "empty".equals(branch) || "none".equals(branch)) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-            final MapSet mapSet = MapSetService.findMapSetByRefSetCode(service, mapSetCode);
+            final MapSet mapSet = service.get(mapSetInternalId, MapSet.class);
             if (mapSet == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-            final Mapping mapping = MappingService.getMapping(branch, mapSetCode, conceptCode, showOverriddenEntries, mapSet);
+            final Mapping mapping = MappingService.getMapping(branch, conceptCode, showOverriddenEntries, mapSet);
 
             return new ResponseEntity<>(mapping, HttpStatus.OK);
 

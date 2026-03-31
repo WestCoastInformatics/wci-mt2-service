@@ -647,7 +647,6 @@ public class SnowstormMapping extends SnowstormAbstract {
      * Gets the mapping.
      *
      * @param branch the branch
-     * @param mapSetCode the map set code
      * @param conceptCode the concept code
      * @param moduleId the module id
      * @param activeOnly the active only
@@ -656,7 +655,7 @@ public class SnowstormMapping extends SnowstormAbstract {
      * @return the mapping
      * @throws Exception the exception
      */
-    public static Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode, final String moduleId, final boolean activeOnly,
+    public static Mapping getMapping(final String branch, final String conceptCode, final String moduleId, final boolean activeOnly,
         final boolean showOverriddenEntries, final boolean includeDescriptions, final MapSet dbMapSet) throws Exception {
 
         // Connect to snowstorm
@@ -664,7 +663,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         String searchAfter = null;
         int limit = 50;
 
-        final String targetUri = SnowstormConnection.getRestBaseUrl() + branch + "/members?referenceSet=" + mapSetCode + "&referencedComponentId=" + conceptCode
+        final String targetUri = SnowstormConnection.getRestBaseUrl() + branch + "/members?referenceSet=" + dbMapSet.getRefSetCode() + "&referencedComponentId=" + conceptCode
             + (moduleId != null ? "&module=" + moduleId : "") + (activeOnly == false ? "" : "&active=true") + "&limit=" + limit
             + (searchAfter != null ? "&searchAfter=" + searchAfter : "");
         LOG.info("getSnowstormMapping url: " + targetUri);
@@ -684,7 +683,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         final JsonNode mappingsBatch = data.get("items");
 
         // Grab the specified mapSet (from Snowstorm for refset metadata; from DB for terminology/version)
-        final MapSet mapSet = getMapSet(branch, mapSetCode);
+        final MapSet mapSet = getMapSet(branch, dbMapSet.getRefSetCode());
         final MapSet mapSetForConcept = (dbMapSet != null && StringUtils.isNotBlank(dbMapSet.getFromTerminology()) && StringUtils.isNotBlank(dbMapSet.getFromVersion()))
             ? dbMapSet : mapSet;
         final Mapping mapping = new Mapping();
@@ -701,7 +700,7 @@ public class SnowstormMapping extends SnowstormAbstract {
             if (mapping.getCode() == null || mapping.getCode().isEmpty()) {
                 mapping.setCode(mappingNode.get("referencedComponentId").asText());
                 if (StringUtils.isBlank(mapSetForConcept.getFromTerminology()) || StringUtils.isBlank(mapSetForConcept.getFromVersion())) {
-                    throw new LocalException("MapSet from database with fromTerminology and fromVersion is required for getMapping. mapSetCode: " + mapSetCode);
+                    throw new LocalException("MapSet from database with fromTerminology and fromVersion is required for getMapping. mapSetCode: " + mapSet);
                 }
                 mapping.setName(SnowstormConcept.getConcept(mapSetForConcept.getFromTerminology(), mapSetForConcept.getFromVersion(), mapping.getCode()).getName());
                 mapping.setMapSetId(mapSet.getId());
@@ -906,12 +905,12 @@ public class SnowstormMapping extends SnowstormAbstract {
         // get all the map entries for the existing active mapping already in snowstorm
         // This is the current mapping that has precedence, so may be International or
         // Norwegian
-        final Mapping existingActiveMapping = getMapping(branch, mapSetCode, submittedMapping.getCode(), null, true, false, false, mapSet);
+        final Mapping existingActiveMapping = getMapping(branch, submittedMapping.getCode(), null, true, false, false, mapSet);
 
         // also get the map entries for the active International mapping in snowstorm
         // (this may the same or different than the above).
         final Mapping existingActiveInternationalMapping =
-            getMapping(branch, mapSetCode, submittedMapping.getCode(), SnomedConstants.SNOMEDCT_TO_ICD10_MAPPING_MODULE, true, false, false, mapSet);
+            getMapping(branch, submittedMapping.getCode(), SnomedConstants.SNOMEDCT_TO_ICD10_MAPPING_MODULE, true, false, false, mapSet);
 
         // If map content is identical to the existing active map, do nothing.
         if (MapEntryUtility.areMapsEquivalent(submittedMapping, existingActiveMapping)) {
@@ -1027,7 +1026,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         // entry if needed.
         // If not, create a new entry.
         final Mapping existingInactiveNorwegianMapping =
-            getMapping(branch, mapSetCode, submittedMapping.getCode(), mapProject.getModuleId(), false, false, false, mapSet);
+            getMapping(branch, submittedMapping.getCode(), mapProject.getModuleId(), false, false, false, mapSet);
 
         for (final MapEntry submittedMapEntry : mapEntryAddList) {
             boolean matchFound = false;
