@@ -465,7 +465,7 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
     public Mapping getMapping(final String branch, final String conceptCode, final boolean showOverriddenEntries, final MapSet mapSet)
         throws Exception {
 
-        return SnowstormMapping.getMapping(branch, conceptCode, null, true, showOverriddenEntries, true, mapSet);
+        return SnowstormMapping.getMapping(branch, mapSet.getRefSetCode(), conceptCode, null, true, showOverriddenEntries, true, mapSet);
 
     }
 
