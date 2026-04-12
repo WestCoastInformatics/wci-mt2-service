@@ -218,6 +218,16 @@ public final class SnowstormConnection {
     }
 
     /**
+     * Same as {@link #getRestBaseUrl()}; kept for call sites that use the older name.
+     *
+     * @return the REST base url
+     */
+    public static String getBaseUrl() {
+
+        return restBaseUrl;
+    }
+
+    /**
      * Returns the base URL used for FHIR operations ({@code fhir/CodeSystem}, {@code fhir/ValueSet}, etc.). When not configured, this is the same as the REST
      * base URL.
      *
