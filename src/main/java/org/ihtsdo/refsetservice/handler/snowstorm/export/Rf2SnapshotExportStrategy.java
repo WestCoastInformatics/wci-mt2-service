@@ -94,8 +94,8 @@ public class Rf2SnapshotExportStrategy extends AbstractMapSetExportStrategy {
             if (!S3ConnectionWrapper.isInS3Cache(awsVersionedPath, snowGeneratedFileName)) {
 
                 final Set<String> moduleIds = new HashSet<>();
-                if (mapProject.getModuleId() != null) {
-                    moduleIds.add(mapProject.getModuleId());
+                if (mapSet.getModuleId() != null) {
+                    moduleIds.add(mapSet.getModuleId());
                 }
                 moduleIds.add(SnomedConstants.SNOMEDCT_TO_ICD10_MAPPING_MODULE);
 

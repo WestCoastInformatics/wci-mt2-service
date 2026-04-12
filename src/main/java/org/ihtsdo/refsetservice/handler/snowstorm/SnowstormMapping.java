@@ -1102,7 +1102,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         // entry if needed.
         // If not, create a new entry.
         final Mapping existingInactiveNorwegianMapping =
-            getMapping(branch, mapSetCode, submittedMapping.getCode(), mapProject.getModuleId(), false, false, false, mapSet);
+            getMapping(branch, mapSetCode, submittedMapping.getCode(), mapSet.getModuleId(), false, false, false, mapSet);
 
         for (final MapEntry submittedMapEntry : mapEntryAddList) {
             boolean matchFound = false;
@@ -1444,7 +1444,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         }
         mapEntryJson.append("\"active\": ").append(mapEntry.isActive()).append(",");
         // Module id: MapProject (project default) -> MapEntry (from client/existing) -> MapSet (refset module from DB/Snowstorm)
-        final String moduleId = StringUtils.isNotBlank(mapProject.getModuleId()) ? mapProject.getModuleId()
+        final String moduleId = StringUtils.isNotBlank(mapSet.getModuleId()) ? mapSet.getModuleId()
             : StringUtils.isNotBlank(mapEntry.getModuleId()) ? mapEntry.getModuleId()
                 : (mapSet != null && StringUtils.isNotBlank(mapSet.getModuleId())) ? mapSet.getModuleId() : null;
         if (StringUtils.isBlank(moduleId)) {

@@ -105,8 +105,8 @@ public class SctIdExportStrategy extends AbstractMapSetExportStrategy {
                 LOG.info("RF2 snapshot file not found in S3, generating it first...");
 
                 final Set<String> moduleIds = new HashSet<>();
-                if (mapProject.getModuleId() != null) {
-                    moduleIds.add(mapProject.getModuleId());
+                if (mapSet.getModuleId() != null) {
+                    moduleIds.add(mapSet.getModuleId());
                 }
                 moduleIds.add(SnomedConstants.SNOMEDCT_TO_ICD10_MAPPING_MODULE);
 
