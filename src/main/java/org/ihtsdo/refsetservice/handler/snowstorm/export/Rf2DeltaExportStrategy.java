@@ -119,8 +119,8 @@ public class Rf2DeltaExportStrategy extends AbstractMapSetExportStrategy {
                 LOG.info("versionsInScope: {}", versionsInScope);
 
                 final Set<String> moduleIds = new HashSet<>();
-                if (mapProject.getModuleId() != null) {
-                    moduleIds.add(mapProject.getModuleId());
+                if (mapSet.getModuleId() != null) {
+                    moduleIds.add(mapSet.getModuleId());
                 }
                 moduleIds.add(SnomedConstants.SNOMEDCT_TO_ICD10_MAPPING_MODULE);
 
