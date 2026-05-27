@@ -16,6 +16,7 @@ import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -407,14 +408,23 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         List<String> invalidConceptIds = new ArrayList<>();
 
-        for (String conceptId : noMapConceptIds) {
-            final Concept concept = SnowstormConcept.getConcept(fromTerminology, mapSet.getFromVersion(), conceptId);
+        for (final String conceptId : noMapConceptIds) {
+            conceptsToLookup.get(fromTerminology).add(conceptId);
+        }
+
+        // get a list of codes to get concepts - use versions from mapSet (DB)
+        final Map<String, String> terminologyToVersion = new HashMap<>();
+        terminologyToVersion.put(mapSet.getFromTerminology(), mapSet.getFromVersion());
+        terminologyToVersion.put(mapSet.getToTerminology(), mapSet.getToVersion());
+        final Map<String, Map<String, Concept>> terminologyConceptMap = getConcepts(branch, conceptsToLookup, terminologyToVersion);
+
+        for (final String conceptId : noMapConceptIds) {
+            final Concept concept = terminologyConceptMap.get(fromTerminology).get(conceptId);
             if (concept == null) {
                 invalidConceptIds.add(conceptId);
             } else {
                 final Mapping mapping = new Mapping();
                 mapping.setCode(conceptId);
-                conceptsToLookup.get(fromTerminology).add(mapping.getCode());
                 mapping.setMapSetId(mapSet.getId());
                 mapping.setMapEntries(new ArrayList<>());
 
@@ -424,6 +434,7 @@ public class SnowstormMapping extends SnowstormAbstract {
                 mapEntry.setGroup(1);
                 mapEntry.setAdvices(new HashSet<>());
                 mapEntry.setRelation("");
+                mapEntry.setRelationCode("");
                 mapEntry.setToCode("");
                 mapEntry.setToName("");
                 mapping.getMapEntries().add(mapEntry);
@@ -431,49 +442,10 @@ public class SnowstormMapping extends SnowstormAbstract {
             }
         }
 
-        // get a list of codes to get concepts - use versions from mapSet (DB)
-        final Map<String, String> terminologyToVersion = new HashMap<>();
-        terminologyToVersion.put(mapSet.getFromTerminology(), mapSet.getFromVersion());
-        terminologyToVersion.put(mapSet.getToTerminology(), mapSet.getToVersion());
-        final Map<String, Map<String, Concept>> terminologyConceptMap = getConcepts(branch, conceptsToLookup, terminologyToVersion);
+        populateMappingsNamesFromConceptMap(conceptIdToMappingMap.values(), fromTerminology, toTerminology, terminologyConceptMap);
         final List<String> conceptIds = new ArrayList<>();
-
-        // add names to mappings and to map entries
         for (final Mapping mapping : conceptIdToMappingMap.values()) {
-
-            final Concept concept = terminologyConceptMap.get(fromTerminology).get(mapping.getCode());
-
-            if (concept != null) {
-                mapping.setName(concept.getName());
-            } else if (mapping.getCode() == null || mapping.getCode().equals("")) {
-                mapping.setName("");
-            } else {
-                LOG.error("Concept not found: terminology:{}, code:{}", fromTerminology, mapping.getCode());
-                mapping.setName(mapping.getCode() + " CONCEPT NOT FOUND");
-            }
             conceptIds.add(mapping.getCode());
-
-            for (final MapEntry entry : mapping.getMapEntries()) {
-
-                final Concept relationConcept = terminologyConceptMap.get(fromTerminology).get(entry.getRelationCode());
-                if (relationConcept != null) {
-                    entry.setRelation(relationConcept.getName());
-                } else if (entry.getRelationCode() == null || entry.getRelationCode().equals("")) {
-                    entry.setRelation("");
-                } else {
-                    entry.setRelation(entry.getRelationCode() + " CONCEPT NOT FOUND");
-                }
-
-                final Concept toConcept = terminologyConceptMap.get(toTerminology).get(entry.getToCode());
-                if (toConcept != null) {
-                    entry.setToName(toConcept.getName());
-                } else if (entry.getToCode() == null || entry.getToCode().equals("")) {
-                    entry.setToName("");
-                } else {
-                    entry.setToName(entry.getToCode() + " CONCEPT NOT FOUND");
-                }
-
-            }
         }
 
         // Handle edition-precedence in the map entries
@@ -547,6 +519,7 @@ public class SnowstormMapping extends SnowstormAbstract {
             mapEntry.setGroup(1);
             mapEntry.setAdvices(new HashSet<>());
             mapEntry.setRelation("");
+            mapEntry.setRelationCode("");
             mapEntry.setToCode("");
             mapEntry.setToName("");
         } else {
@@ -563,24 +536,19 @@ public class SnowstormMapping extends SnowstormAbstract {
             }
             mapEntry.setAdvices(advices);
 
-            final Concept relationConcept =
-                SnowstormConcept.getConcept(mapSet.getFromTerminology(), mapSet.getFromVersion(), additionalFields.get("mapCategoryId").asText());
-            if (relationConcept != null) {
-                mapEntry.setRelation(relationConcept.getName());
-                mapEntry.setRelationCode(relationConcept.getCode());
+            if (additionalFields.hasNonNull("mapCategoryId")) {
+                mapEntry.setRelationCode(additionalFields.get("mapCategoryId").asText());
             } else {
-                mapEntry.setRelation(mapEntry.getToCode() + " CONCEPT NOT FOUND");
+                mapEntry.setRelationCode("");
             }
+            mapEntry.setRelation("");
 
-            mapEntry.setToCode(additionalFields.get("mapTarget").asText());
-
-            final Concept toConcept = SnowstormConcept.getConcept(mapSet.getToTerminology(), mapSet.getToVersion(), additionalFields.get("mapTarget").asText());
-
-            if (toConcept != null) {
-                mapEntry.setToName(toConcept.getName());
+            if (additionalFields.hasNonNull("mapTarget")) {
+                mapEntry.setToCode(additionalFields.get("mapTarget").asText());
             } else {
-                mapEntry.setToName(mapEntry.getToCode() + " CONCEPT NOT FOUND");
+                mapEntry.setToCode("");
             }
+            mapEntry.setToName("");
         }
 
         return mapEntry;
@@ -778,7 +746,6 @@ public class SnowstormMapping extends SnowstormAbstract {
                 if (StringUtils.isBlank(mapSetForConcept.getFromTerminology()) || StringUtils.isBlank(mapSetForConcept.getFromVersion())) {
                     throw new LocalException("MapSet from database with fromTerminology and fromVersion is required for getMapping. mapSetCode: " + mapSetCode);
                 }
-                mapping.setName(SnowstormConcept.getConcept(mapSetForConcept.getFromTerminology(), mapSetForConcept.getFromVersion(), mapping.getCode()).getName());
                 mapping.setMapSetId(mapSet.getId());
                 mapping.setMapEntries(new ArrayList<>());
             }
@@ -795,6 +762,8 @@ public class SnowstormMapping extends SnowstormAbstract {
         if (!showOverriddenEntries) {
             handleEditionPrecedence(mapping);
         }
+
+        populateMappingNamesFromConcepts(branch, mapSetForConcept, mapping);
 
         // Sort all of the map entries in Group/Priority order
 
@@ -902,6 +871,8 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         // Handle edition-precedence in the map entries
         handleEditionPrecedence(newMapping);
+
+        populateMappingNamesFromConcepts(branch, mapSet, newMapping);
 
         // Sort all of the map entries in Group/Priority order
         MapEntryUtility.sortMapEntries(newMapping);
@@ -1260,6 +1231,8 @@ public class SnowstormMapping extends SnowstormAbstract {
         submittedMapping.getMapEntries().clear();
         submittedMapping.getMapEntries().addAll(updatedMapEntries);
 
+        populateMappingNamesFromConcepts(branch, mapSet, submittedMapping);
+
         final User authUser = new User();
         authUser.setUserName("admin");
         addAuditEntries(authUser, auditEntries);
@@ -1271,6 +1244,112 @@ public class SnowstormMapping extends SnowstormAbstract {
         MapEntryUtility.sortMapEntries(submittedMapping);
 
         return submittedMapping;
+    }
+
+    /**
+     * Fetches concepts from Snowstorm and populates mapping source and map entry display names.
+     *
+     * @param branch the branch
+     * @param mapSet the map set
+     * @param mapping the mapping
+     * @throws Exception the exception
+     */
+    private static void populateMappingNamesFromConcepts(final String branch, final MapSet mapSet, final Mapping mapping) throws Exception {
+
+        if (mapping == null || mapSet == null) {
+            return;
+        }
+
+        final Map<String, Set<String>> conceptsToLookup = new HashMap<>();
+        conceptsToLookup.put(mapSet.getFromTerminology(), new HashSet<>());
+        conceptsToLookup.put(mapSet.getToTerminology(), new HashSet<>());
+
+        if (StringUtils.isNotBlank(mapping.getCode())) {
+            conceptsToLookup.get(mapSet.getFromTerminology()).add(mapping.getCode());
+        }
+
+        if (mapping.getMapEntries() != null) {
+            for (final MapEntry entry : mapping.getMapEntries()) {
+                if (StringUtils.isNotBlank(entry.getRelationCode())) {
+                    conceptsToLookup.get(mapSet.getFromTerminology()).add(entry.getRelationCode());
+                }
+                if (StringUtils.isNotBlank(entry.getToCode())) {
+                    conceptsToLookup.get(mapSet.getToTerminology()).add(entry.getToCode());
+                }
+            }
+        }
+
+        final Map<String, String> terminologyToVersion = new HashMap<>();
+        terminologyToVersion.put(mapSet.getFromTerminology(), mapSet.getFromVersion());
+        terminologyToVersion.put(mapSet.getToTerminology(), mapSet.getToVersion());
+        final Map<String, Map<String, Concept>> terminologyConceptMap = getConcepts(branch, conceptsToLookup, terminologyToVersion);
+        populateMappingNamesFromConceptMap(mapping, mapSet.getFromTerminology(), mapSet.getToTerminology(), terminologyConceptMap);
+    }
+
+    /**
+     * Populates mapping source and map entry display names from pre-fetched concepts.
+     *
+     * @param mappings the mappings
+     * @param fromTerminology the from terminology
+     * @param toTerminology the to terminology
+     * @param terminologyConceptMap the terminology concept map
+     */
+    private static void populateMappingsNamesFromConceptMap(final Collection<Mapping> mappings, final String fromTerminology, final String toTerminology,
+        final Map<String, Map<String, Concept>> terminologyConceptMap) {
+
+        for (final Mapping mapping : mappings) {
+            populateMappingNamesFromConceptMap(mapping, fromTerminology, toTerminology, terminologyConceptMap);
+        }
+    }
+
+    /**
+     * Populates a single mapping's source and map entry display names from pre-fetched concepts.
+     *
+     * @param mapping the mapping
+     * @param fromTerminology the from terminology
+     * @param toTerminology the to terminology
+     * @param terminologyConceptMap the terminology concept map
+     */
+    private static void populateMappingNamesFromConceptMap(final Mapping mapping, final String fromTerminology, final String toTerminology,
+        final Map<String, Map<String, Concept>> terminologyConceptMap) {
+
+        if (mapping == null) {
+            return;
+        }
+
+        final Concept concept = terminologyConceptMap.get(fromTerminology).get(mapping.getCode());
+        if (concept != null) {
+            mapping.setName(concept.getName());
+        } else if (mapping.getCode() == null || mapping.getCode().equals("")) {
+            mapping.setName("");
+        } else {
+            LOG.error("Concept not found: terminology:{}, code:{}", fromTerminology, mapping.getCode());
+            mapping.setName(mapping.getCode() + " CONCEPT NOT FOUND");
+        }
+
+        if (mapping.getMapEntries() == null) {
+            return;
+        }
+
+        for (final MapEntry entry : mapping.getMapEntries()) {
+            final Concept relationConcept = terminologyConceptMap.get(fromTerminology).get(entry.getRelationCode());
+            if (relationConcept != null) {
+                entry.setRelation(relationConcept.getName());
+            } else if (entry.getRelationCode() == null || entry.getRelationCode().equals("")) {
+                entry.setRelation("");
+            } else {
+                entry.setRelation(entry.getRelationCode() + " CONCEPT NOT FOUND");
+            }
+
+            final Concept toConcept = terminologyConceptMap.get(toTerminology).get(entry.getToCode());
+            if (toConcept != null) {
+                entry.setToName(toConcept.getName());
+            } else if (entry.getToCode() == null || entry.getToCode().equals("")) {
+                entry.setToName("");
+            } else {
+                entry.setToName(entry.getToCode() + " CONCEPT NOT FOUND");
+            }
+        }
     }
 
     /**
