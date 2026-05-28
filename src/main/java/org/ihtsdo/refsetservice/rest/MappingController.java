@@ -130,16 +130,14 @@ public class MappingController extends BaseController {
         sp.setEditing(Boolean.TRUE.equals(editing));
         sp.setSearchAfter(searchAfter);
         LOG.info("Mappings for a Mapset {}: {}", mapSetInternalId, sp);
+        final long controllerStartMs = System.currentTimeMillis();
         // final User authUser = authorizeUser(request);
 
         try (final TerminologyService service = new TerminologyService()) {
             final List<String> conceptCodesList = parseConceptCodes(conceptCodes);
             final String filterString = (StringUtils.isBlank(filter)) ? StringUtils.EMPTY : StringUtils.trim(filter);
 
-            final MapSet mapSet = service.get(mapSetInternalId, MapSet.class);
-            if (mapSet == null) {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
+            final MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
             String branch = BranchService.getMapSetBranchPath(mapSet);
             if (StringUtils.isBlank(branch)) {
                 branch = MapSetService.resolveBranchFromMapSets(service, mapSetInternalId);
@@ -156,6 +154,8 @@ public class MappingController extends BaseController {
                 reorderMappingsByConceptCodes(mappings, conceptCodesList);
             }
 
+            LOG.info("getMappings HTTP done mapSet={} {}ms items={} total={}", mapSetInternalId, System.currentTimeMillis() - controllerStartMs,
+                mappings.getItems().size(), mappings.getTotal());
             return new ResponseEntity<>(mappings, HttpStatus.OK);
 
         } catch (final Exception e) {
@@ -415,10 +415,7 @@ public class MappingController extends BaseController {
             if (StringUtils.isBlank(branch) || "empty".equals(branch) || "none".equals(branch)) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-            final MapSet mapSet = service.get(mapSetInternalId, MapSet.class);
-            if (mapSet == null) {
-                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-            }
+            final MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
             final Mapping mapping = MappingService.getMapping(branch, conceptCode, showOverriddenEntries, mapSet);
 
             return new ResponseEntity<>(mapping, HttpStatus.OK);
@@ -456,14 +453,13 @@ public class MappingController extends BaseController {
         LOG.info("Create Mapping mapSetInternalId:{}, mapping:{}", mapSetInternalId, ModelUtility.toJson(mapping));
 
         try (final TerminologyService service = new TerminologyService()) {
-            // The path parameter is the internal map_set.id (NOT the external refSetCode).
             final MapSet mapSet;
             try {
-                mapSet = service.get(mapSetInternalId, MapSet.class);
+                mapSet = MapSetService.getMapSet(service, mapSetInternalId);
             } catch (final Exception e) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-            if (mapSet == null || mapSet.getMapProject() == null) {
+            if (mapSet.getMapProject() == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
             final String branch = BranchService.getMapSetBranchPath(mapSet);
@@ -509,14 +505,13 @@ public class MappingController extends BaseController {
         LOG.info("Create Mapping mapSetInternalId:{}, mapping:{}", mapSetInternalId, ModelUtility.toJson(mappings));
 
         try (final TerminologyService service = new TerminologyService()) {
-            // The path parameter is the internal map_set.id (NOT the external refSetCode).
             final MapSet mapSet;
             try {
-                mapSet = service.get(mapSetInternalId, MapSet.class);
+                mapSet = MapSetService.getMapSet(service, mapSetInternalId);
             } catch (final Exception e) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-            if (mapSet == null || mapSet.getMapProject() == null) {
+            if (mapSet.getMapProject() == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
             final String branch = BranchService.getMapSetBranchPath(mapSet);
@@ -560,14 +555,13 @@ public class MappingController extends BaseController {
         LOG.info("Update Mapping mapSetInternalId:{}, mapping:{}", mapSetInternalId, ModelUtility.toJson(mapping));
 
         try (final TerminologyService service = new TerminologyService()) {
-            // The path parameter is the internal map_set.id (NOT the external refSetCode).
             final MapSet mapSet;
             try {
-                mapSet = service.get(mapSetInternalId, MapSet.class);
+                mapSet = MapSetService.getMapSet(service, mapSetInternalId);
             } catch (final Exception e) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-            if (mapSet == null || mapSet.getMapProject() == null) {
+            if (mapSet.getMapProject() == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
             final String branch = BranchService.getMapSetBranchPath(mapSet);
@@ -617,11 +611,11 @@ public class MappingController extends BaseController {
         try (final TerminologyService service = new TerminologyService()) {
             final MapSet mapSet;
             try {
-                mapSet = service.get(mapSetInternalId, MapSet.class);
+                mapSet = MapSetService.getMapSet(service, mapSetInternalId);
             } catch (final Exception e) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-            if (mapSet == null || mapSet.getMapProject() == null) {
+            if (mapSet.getMapProject() == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
             final String branch = BranchService.getMapSetBranchPath(mapSet);
