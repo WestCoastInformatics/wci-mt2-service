@@ -288,6 +288,7 @@ public class SnowstormDescription extends SnowstormAbstract {
             final String fullSnowstormUrl = SnowstormConnection.getRestBaseUrl() + edition.getBranch() + "/descriptions?limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH
                 + "&conceptIds=" + batch.stream().collect(Collectors.joining(","));
 
+            LOG.info("getDescriptions batch conceptIds={}", batch.size());
             // Call Snowstorm
             try (final Response response = SnowstormConnection.getResponse(fullSnowstormUrl)) {
 
@@ -326,8 +327,10 @@ public class SnowstormDescription extends SnowstormAbstract {
                 // Populate concept with description-based data
                 for (final String conceptId : batch) {
 
-                    final List<Description> descriptions =
-                        populateDescriptions(conceptDescriptionNodes.get(conceptId), edition.getDefaultLanguageRefsets(), nonDefaultPreferredTerms);
+                    final Set<JsonNode> descriptionNodes = conceptDescriptionNodes.get(conceptId);
+                    final List<Description> descriptions = descriptionNodes != null
+                        ? populateDescriptions(descriptionNodes, edition.getDefaultLanguageRefsets(), nonDefaultPreferredTerms)
+                        : new ArrayList<>();
                     conceptDescriptions.put(conceptId, descriptions);
 
                 }
