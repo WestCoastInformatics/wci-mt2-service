@@ -262,26 +262,49 @@ public class SnowstormMapping extends SnowstormAbstract {
     public static ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter,
         final boolean showOverriddenEntries, final List<String> conceptCodes) throws Exception {
 
+        final long requestStartMs = System.currentTimeMillis();
         if (mapSet == null || StringUtils.isBlank(mapSet.getRefSetCode())) {
             throw new LocalException("Map set code is required.");
         }
 
+        LOG.info("getMappings start mapSet={} refSet={} branch={} filter='{}' limit={} offset={} searchAfter={} conceptCodes={}",
+            mapSet.getId(), mapSet.getRefSetCode(), branch, filter,
+            searchParameters != null ? searchParameters.getLimit() : null,
+            searchParameters != null ? searchParameters.getOffset() : null,
+            searchParameters != null ? searchParameters.getSearchAfter() : null,
+            conceptCodes != null ? conceptCodes.size() : 0);
+
+        final boolean explicitConceptCodes = conceptCodes != null && !conceptCodes.isEmpty();
+
         final LinkedHashSet<String> filteredConceptSet = new LinkedHashSet<>();
-        if (StringUtils.isNotBlank(filter)) {
+        int filterMatchTotal = -1;
+        String filterMatchSearchAfter = null;
+
+        if (explicitConceptCodes) {
+            filteredConceptSet.addAll(conceptCodes);
+        } else if (StringUtils.isNotBlank(filter)) {
             final String trimmedFilter = filter.trim();
-            filteredConceptSet.addAll(searchConcepts(branch, mapSet.getRefSetCode(), trimmedFilter));
-            filteredConceptSet.addAll(searchReferencedComponentsByMapTarget(branch, mapSet.getRefSetCode(), trimmedFilter));
+            final long conceptSearchStartMs = System.currentTimeMillis();
+            final ConceptSearchPage conceptPage = searchConceptsPage(branch, mapSet.getRefSetCode(), trimmedFilter, searchParameters);
+            LOG.info("getMappings phase=conceptSearch {}ms filter='{}' pageIds={} totalMatches={}",
+                System.currentTimeMillis() - conceptSearchStartMs, trimmedFilter, conceptPage.conceptIds.size(), conceptPage.total);
+            filteredConceptSet.addAll(conceptPage.conceptIds);
+            filterMatchTotal = conceptPage.total;
+            filterMatchSearchAfter = conceptPage.searchAfter;
+
+            if (looksLikeMapTargetFilter(trimmedFilter)) {
+                final int pageLimit = searchParameters.getLimit() != null && searchParameters.getLimit() > 0 ? searchParameters.getLimit() : 100;
+                final int pageOffset = searchParameters.getOffset() != null && searchParameters.getOffset() > 0 ? searchParameters.getOffset() : 0;
+                filteredConceptSet.addAll(searchReferencedComponentsByMapTargetPage(branch, mapSet.getRefSetCode(), trimmedFilter, pageLimit, pageOffset));
+            }
             // Term search does not match raw SNOMED concept identifiers; allow filter to double as a source concept id.
             if (trimmedFilter.matches("[0-9]{6,18}")) {
                 filteredConceptSet.add(trimmedFilter);
             }
         }
 
-        if (conceptCodes != null && !conceptCodes.isEmpty()) {
-            filteredConceptSet.addAll(conceptCodes);
-        }
-
         final List<String> filteredConceptList = new ArrayList<>(filteredConceptSet);
+        final boolean paginatedTextFilter = filterMatchTotal >= 0;
 
         final StringBuilder requestBody = new StringBuilder();
         requestBody.append("{");
@@ -291,8 +314,8 @@ public class SnowstormMapping extends SnowstormAbstract {
             requestBody.append(",").append("\"referencedComponentIds\": [").append(String.join(",", filteredConceptList)).append("]");
         }
 
-        // Keep track of the concepts that were requested
-        final Set<String> requestedConcepts = new HashSet<>(filteredConceptList);
+        // Explicit conceptCodes only (e.g. batch edit return). Text filter matches must not create empty-map placeholders.
+        final Set<String> requestedConcepts = explicitConceptCodes ? new HashSet<>(conceptCodes) : new HashSet<>();
 
         // if (searchParameters.getLimit() != null) {
         // requestBody.append(",").append("\"limit\":
@@ -324,11 +347,18 @@ public class SnowstormMapping extends SnowstormAbstract {
         int offset = 0;
         String searchAfter = null;
 
+        // Concept search already applied limit/offset; member search is scoped to this page's concept ids only.
+        final SearchParameters memberSearchPaging = new SearchParameters(searchParameters);
+        if (paginatedTextFilter) {
+            memberSearchPaging.setOffset(0);
+            memberSearchPaging.setSearchAfter(null);
+        }
+
+        final long memberSearchStartMs = System.currentTimeMillis();
         while (!done) {
 
-            final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/search?" + SnowstormApiPaging.getPagingQueryString(searchParameters);
-            LOG.debug("getSnowstormMappings url: {}", targetUri);
-            LOG.debug("request body: {}", requestBody);
+            final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/search?" + SnowstormApiPaging.getPagingQueryString(memberSearchPaging);
+            LOG.info("getMappings phase=memberSearch request referencedComponentIds={}", filteredConceptList.size());
 
             try (final Response response = SnowstormConnection.postResponse(targetUri, requestBody.toString())) {
 
@@ -394,51 +424,64 @@ public class SnowstormMapping extends SnowstormAbstract {
 
             }
 
-            i++;
-            searchParameters.setOffset(i * searchParameters.getLimit());
-            if (searchParameters.getOffset() >= searchParameters.getLimit()) {
+            if (paginatedTextFilter) {
                 done = true;
+            } else {
+                i++;
+                memberSearchPaging.setOffset(i * memberSearchPaging.getLimit());
+                if (memberSearchPaging.getOffset() >= memberSearchPaging.getLimit()) {
+                    done = true;
+                }
             }
         }
+        LOG.info("getMappings phase=memberSearch {}ms mappingConcepts={}", System.currentTimeMillis() - memberSearchStartMs, conceptIdToMappingMap.size());
 
-        // Identify concepts that were requested where no mappings were found
-        // Check all concepts.  If they are invalid, add them to the invalid list.  If they are valid, create an empty Group 1, Priority 1 map object for them.
-        Set<String> noMapConceptIds = new HashSet<>(requestedConcepts);
-        noMapConceptIds.removeAll(conceptIdToMappingMap.keySet());
+        final List<String> invalidConceptIds = new ArrayList<>();
+        Set<String> noMapConceptIds = new HashSet<>();
 
-        List<String> invalidConceptIds = new ArrayList<>();
+        if (explicitConceptCodes) {
+            // Identify concepts that were requested where no mappings were found
+            // Check all concepts.  If they are invalid, add them to the invalid list.  If they are valid, create an empty Group 1, Priority 1 map object for them.
+            noMapConceptIds = new HashSet<>(requestedConcepts);
+            noMapConceptIds.removeAll(conceptIdToMappingMap.keySet());
 
-        for (final String conceptId : noMapConceptIds) {
-            conceptsToLookup.get(fromTerminology).add(conceptId);
+            for (final String conceptId : noMapConceptIds) {
+                conceptsToLookup.get(fromTerminology).add(conceptId);
+            }
         }
 
         // get a list of codes to get concepts - use versions from mapSet (DB)
         final Map<String, String> terminologyToVersion = new HashMap<>();
         terminologyToVersion.put(mapSet.getFromTerminology(), mapSet.getFromVersion());
         terminologyToVersion.put(mapSet.getToTerminology(), mapSet.getToVersion());
+        final long getConceptsStartMs = System.currentTimeMillis();
         final Map<String, Map<String, Concept>> terminologyConceptMap = getConcepts(branch, conceptsToLookup, terminologyToVersion);
+        LOG.info("getMappings phase=getConcepts {}ms fromCodes={} toCodes={}", System.currentTimeMillis() - getConceptsStartMs,
+            conceptsToLookup.get(fromTerminology).size(), conceptsToLookup.get(toTerminology).size());
 
-        for (final String conceptId : noMapConceptIds) {
-            final Concept concept = terminologyConceptMap.get(fromTerminology).get(conceptId);
-            if (concept == null) {
-                invalidConceptIds.add(conceptId);
-            } else {
-                final Mapping mapping = new Mapping();
-                mapping.setCode(conceptId);
-                mapping.setMapSetId(mapSet.getId());
-                mapping.setMapEntries(new ArrayList<>());
+        if (explicitConceptCodes) {
+            for (final String conceptId : noMapConceptIds) {
+                final Concept concept = terminologyConceptMap.get(fromTerminology).get(conceptId);
+                if (concept == null) {
+                    invalidConceptIds.add(conceptId);
+                } else {
+                    final Mapping mapping = new Mapping();
+                    mapping.setCode(conceptId);
+                    mapping.setMapSetId(mapSet.getId());
+                    mapping.setMapEntries(new ArrayList<>());
 
-                MapEntry mapEntry = new MapEntry();
-                mapEntry.setRule("");
-                mapEntry.setPriority(1);
-                mapEntry.setGroup(1);
-                mapEntry.setAdvices(new HashSet<>());
-                mapEntry.setRelation("");
-                mapEntry.setRelationCode("");
-                mapEntry.setToCode("");
-                mapEntry.setToName("");
-                mapping.getMapEntries().add(mapEntry);
-                conceptIdToMappingMap.put(conceptId, mapping);
+                    MapEntry mapEntry = new MapEntry();
+                    mapEntry.setRule("");
+                    mapEntry.setPriority(1);
+                    mapEntry.setGroup(1);
+                    mapEntry.setAdvices(new HashSet<>());
+                    mapEntry.setRelation("");
+                    mapEntry.setRelationCode("");
+                    mapEntry.setToCode("");
+                    mapEntry.setToName("");
+                    mapping.getMapEntries().add(mapEntry);
+                    conceptIdToMappingMap.put(conceptId, mapping);
+                }
             }
         }
 
@@ -464,8 +507,10 @@ public class SnowstormMapping extends SnowstormAbstract {
         edition.getDefaultLanguageRefsets().add("900000000000509007");
         edition.setShortName("SNOMEDCT-NO");
         edition.setBranch(branch);
-        
+
+        final long descriptionsStartMs = System.currentTimeMillis();
         final Map<String, List<Description>> descriptions = SnowstormDescription.getDescriptions(edition, conceptIds);
+        LOG.info("getMappings phase=descriptions {}ms conceptCount={}", System.currentTimeMillis() - descriptionsStartMs, conceptIds.size());
 
         // Sort all of the map entries in Group/Priority order
         for (final Mapping mapping : conceptIdToMappingMap.values()) {
@@ -475,18 +520,37 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         // Once the file is completed parsed, return mappings as list
         final ResultListMapping mappings = new ResultListMapping();
-        mappings.getItems().addAll(conceptIdToMappingMap.values());
-        mappings.setTotal(total);
-        mappings.setTotalKnown(total > 0);
-        mappings.setLimit(limit);
-        mappings.setOffset(offset);
-        mappings.setSearchAfter(searchAfter);
+        if (paginatedTextFilter) {
+            for (final String conceptId : filteredConceptList) {
+                final Mapping mapping = conceptIdToMappingMap.get(conceptId);
+                if (mapping != null) {
+                    mappings.getItems().add(mapping);
+                }
+            }
+        } else {
+            mappings.getItems().addAll(conceptIdToMappingMap.values());
+        }
+        if (filterMatchTotal >= 0) {
+            mappings.setTotal(filterMatchTotal);
+            mappings.setTotalKnown(true);
+            if (StringUtils.isNotBlank(filterMatchSearchAfter)) {
+                mappings.setSearchAfter(filterMatchSearchAfter);
+            }
+        } else {
+            mappings.setTotal(total);
+            mappings.setTotalKnown(total > 0);
+            mappings.setSearchAfter(searchAfter);
+        }
+        mappings.setLimit(searchParameters.getLimit() != null ? searchParameters.getLimit() : limit);
+        mappings.setOffset(searchParameters.getOffset() != null ? searchParameters.getOffset() : offset);
 
         // Add the invalid concept ids to the result list
         if(!invalidConceptIds.isEmpty()) {
             mappings.setInvalidConceptIds(invalidConceptIds);
         }
 
+        LOG.info("getMappings complete {}ms items={} total={}", System.currentTimeMillis() - requestStartMs, mappings.getItems().size(),
+            mappings.getTotal());
         return mappings;
 
     }
@@ -552,6 +616,220 @@ public class SnowstormMapping extends SnowstormAbstract {
         }
 
         return mapEntry;
+    }
+
+    /**
+     * One page of concept ids from a term search within a map set (ECL).
+     */
+    private static final class ConceptSearchPage {
+
+        private final List<String> conceptIds;
+        private final int total;
+        private final String searchAfter;
+
+        private ConceptSearchPage(final List<String> conceptIds, final int total, final String searchAfter) {
+
+            this.conceptIds = conceptIds;
+            this.total = total;
+            this.searchAfter = searchAfter;
+        }
+    }
+
+    /**
+     * True when the filter is likely a map target code (e.g. ICD-10) rather than a SNOMED term.
+     *
+     * @param filter the filter
+     * @return true if map target member search should run
+     */
+    private static boolean looksLikeMapTargetFilter(final String filter) {
+
+        return filter.matches(".*[0-9].*") && (filter.contains(".") || filter.length() <= 10);
+    }
+
+    /**
+     * Term search for concepts in a map set, returning a single page and total hit count.
+     *
+     * @param branch the branch
+     * @param mapSetCode the map set code
+     * @param searchString the search string
+     * @param searchParameters paging (limit, offset, searchAfter)
+     * @return one page of matching concept ids
+     * @throws Exception the exception
+     */
+    private static ConceptSearchPage searchConceptsPage(final String branch, final String mapSetCode, final String searchString,
+        final SearchParameters searchParameters) throws Exception {
+
+        final int pageLimit = searchParameters.getLimit() != null && searchParameters.getLimit() > 0 ? searchParameters.getLimit() : 100;
+        final int pageOffset = searchParameters.getOffset() != null && searchParameters.getOffset() > 0 ? searchParameters.getOffset() : 0;
+
+        LOG.info("searchConceptsPage filter='{}' limit={} offset={} searchAfter={}", searchString, pageLimit, pageOffset,
+            searchParameters.getSearchAfter());
+
+        if (StringUtils.isNotBlank(searchParameters.getSearchAfter())) {
+            return fetchConceptSearchPageBatch(branch, mapSetCode, searchString, pageLimit, searchParameters.getSearchAfter());
+        }
+
+        if (pageOffset == 0) {
+            return fetchConceptSearchPageBatch(branch, mapSetCode, searchString, pageLimit, "");
+        }
+
+        LOG.info("searchConceptsPage skipping {} rows via searchAfter batches", pageOffset);
+        int remainingSkip = pageOffset;
+        String searchAfter = "";
+        int total = -1;
+        final List<String> pageIds = new ArrayList<>();
+
+        while (pageIds.size() < pageLimit) {
+            final int fetchLimit = remainingSkip > 0 ? Math.min(Math.max(remainingSkip, pageLimit), 5000) : pageLimit - pageIds.size();
+            final ConceptSearchPage batch = fetchConceptSearchPageBatch(branch, mapSetCode, searchString, fetchLimit, searchAfter);
+            if (total < 0) {
+                total = batch.total;
+            }
+
+            List<String> batchIds = batch.conceptIds;
+            if (batchIds.isEmpty()) {
+                return new ConceptSearchPage(pageIds, total >= 0 ? total : 0, null);
+            }
+
+            if (remainingSkip > 0) {
+                if (batchIds.size() <= remainingSkip) {
+                    remainingSkip -= batchIds.size();
+                    searchAfter = StringUtils.defaultString(batch.searchAfter);
+                    if (remainingSkip > 0) {
+                        if (StringUtils.isBlank(searchAfter)) {
+                            return new ConceptSearchPage(pageIds, total, null);
+                        }
+                        continue;
+                    }
+                    if (StringUtils.isBlank(searchAfter)) {
+                        return new ConceptSearchPage(pageIds, total, null);
+                    }
+                    continue;
+                }
+                batchIds = batchIds.subList(remainingSkip, batchIds.size());
+                remainingSkip = 0;
+            }
+
+            final int take = Math.min(pageLimit - pageIds.size(), batchIds.size());
+            pageIds.addAll(batchIds.subList(0, take));
+            searchAfter = batch.searchAfter;
+
+            if (pageIds.size() < pageLimit && StringUtils.isNotBlank(searchAfter)) {
+                continue;
+            }
+            break;
+        }
+
+        return new ConceptSearchPage(pageIds, total, searchAfter);
+    }
+
+    /**
+     * One batch of concept ids matching term search within a map set (ECL ^refset).
+     * Uses POST /concepts/search with returnIdOnly (faster than GET /concepts on this Snowstorm for ECL+term).
+     */
+    private static ConceptSearchPage fetchConceptSearchPageBatch(final String branch, final String mapSetCode, final String searchString, final int pageLimit,
+        final String searchAfter) throws Exception {
+
+        final long batchStartMs = System.currentTimeMillis();
+        final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/concepts/search";
+
+        final ObjectNode requestBody = ThreadLocalMapper.get().createObjectNode();
+        requestBody.put("termFilter", searchString);
+        requestBody.put("eclFilter", "^" + mapSetCode);
+        requestBody.put("limit", pageLimit);
+        requestBody.put("termActive", true);
+        requestBody.put("returnIdOnly", true);
+        if (StringUtils.isNotBlank(searchAfter)) {
+            requestBody.put("searchAfter", searchAfter);
+        }
+
+        LOG.info("fetchConceptSearchPageBatch POST {} limit={} searchAfter={}", targetUri, pageLimit, searchAfter);
+
+        try (final Response response = SnowstormConnection.postResponse(targetUri, requestBody.toString())) {
+
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                throw new Exception(
+                    "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
+            }
+
+            final JsonNode data = ThreadLocalMapper.get().readTree(SnowstormConnection.readEntityAsString(response));
+            final List<String> conceptIds = new ArrayList<>();
+            final JsonNode conceptNodeBatch = data.get("items");
+            if (conceptNodeBatch != null && conceptNodeBatch.isArray()) {
+                for (final JsonNode conceptNode : conceptNodeBatch) {
+                    if (conceptNode.isTextual()) {
+                        conceptIds.add(conceptNode.asText());
+                    } else if (conceptNode.hasNonNull("id")) {
+                        conceptIds.add(conceptNode.get("id").asText());
+                    } else if (conceptNode.hasNonNull("conceptId")) {
+                        conceptIds.add(conceptNode.get("conceptId").asText());
+                    }
+                }
+            }
+
+            int total = conceptIds.size();
+            if (data.has("total") && !data.get("total").isNull()) {
+                total = data.get("total").asInt();
+            }
+
+            String nextSearchAfter = null;
+            if (data.has("searchAfter") && !data.get("searchAfter").isNull()) {
+                nextSearchAfter = data.get("searchAfter").asText();
+            }
+
+            LOG.info("fetchConceptSearchPageBatch {}ms ids={} total={}", System.currentTimeMillis() - batchStartMs, conceptIds.size(), total);
+            return new ConceptSearchPage(conceptIds, total, nextSearchAfter);
+        }
+    }
+
+    /**
+     * One page of source concept ids whose map target field matches the filter.
+     *
+     * @param branch the branch
+     * @param mapSetCode the map set code
+     * @param mapTargetFilter the map target filter
+     * @param limit the limit
+     * @param offset the offset
+     * @return referenced component ids for this page
+     * @throws Exception the exception
+     */
+    private static List<String> searchReferencedComponentsByMapTargetPage(final String branch, final String mapSetCode, final String mapTargetFilter,
+        final int limit, final int offset) throws Exception {
+
+        if (StringUtils.isBlank(mapTargetFilter)) {
+            return new ArrayList<>();
+        }
+
+        final ObjectNode requestBody = ThreadLocalMapper.get().createObjectNode();
+        requestBody.put("active", true);
+        requestBody.put("referenceSet", mapSetCode);
+        final ObjectNode additionalFields = ThreadLocalMapper.get().createObjectNode();
+        additionalFields.put("mapTarget", mapTargetFilter);
+        requestBody.set("additionalFields", additionalFields);
+
+        final LinkedHashSet<String> referencedComponentIds = new LinkedHashSet<>();
+        final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/search?limit=" + limit + "&offset=" + offset;
+
+        try (final Response response = SnowstormConnection.postResponse(targetUri, requestBody.toString())) {
+
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                LOG.warn("mapTarget member search was not successful for map set {} and filter '{}'. Status: {}", mapSetCode, mapTargetFilter,
+                    response.getStatus());
+                return new ArrayList<>();
+            }
+
+            final JsonNode data = ThreadLocalMapper.get().readTree(SnowstormConnection.readEntityAsString(response));
+            final JsonNode items = data.get("items");
+            if (items != null && items.isArray()) {
+                for (final JsonNode item : items) {
+                    if (item != null && item.hasNonNull("referencedComponentId")) {
+                        referencedComponentIds.add(item.get("referencedComponentId").asText());
+                    }
+                }
+            }
+        }
+
+        return new ArrayList<>(referencedComponentIds);
     }
 
     /**

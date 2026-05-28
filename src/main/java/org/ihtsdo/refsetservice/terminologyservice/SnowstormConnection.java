@@ -251,6 +251,7 @@ public final class SnowstormConnection {
      */
     public static Response getResponse(final String url, final String language) throws Exception {
 
+        final long requestStartMs = System.currentTimeMillis();
         final Client client = getClient();
         String cookie = "";
         if (authMode == SnowstormAuthMode.COOKIE) {
@@ -283,15 +284,17 @@ public final class SnowstormConnection {
                 final URI location = response.getLocation();
                 if (location == null) {
                     LOG.warn("Snowstorm GET returned {} without Location for {}", status, currentUrl);
+                    logSnowstormHttpComplete("GET", currentUrl, null, requestStartMs, status);
                     return response;
                 }
                 final URI resolved = URI.create(currentUrl).resolve(location);
-                LOG.debug("Snowstorm GET {} — following redirect from {} to {}", status, currentUrl, resolved);
+                LOG.info("Snowstorm GET redirect {} -> {} (hop {})", currentUrl, resolved, redirectHop + 1);
                 response.close();
                 currentUrl = resolved.toString();
                 continue;
             }
 
+            logSnowstormHttpComplete("GET", currentUrl, null, requestStartMs, status);
             return response;
         }
 
@@ -360,6 +363,7 @@ public final class SnowstormConnection {
      */
     public static Response postResponse(final String url, final String entity) throws Exception {
 
+        final long requestStartMs = System.currentTimeMillis();
         final Client client = getClient();
         final WebTarget target = client.target(url);
         final Builder builder = target.request(MediaType.APPLICATION_JSON).header(HttpHeaders.ACCEPT_LANGUAGE, DEFAULT_ACCECPT_LANGUAGES);
@@ -373,6 +377,7 @@ public final class SnowstormConnection {
         // Send Map so JacksonJsonProvider can write application/json correctly
         final Response response = builder.post(Entity.entity(entityMap, MediaType.APPLICATION_JSON));
 
+        logSnowstormHttpComplete("POST", url, entity, requestStartMs, response.getStatus());
         return response;
     }
 
@@ -554,12 +559,70 @@ public final class SnowstormConnection {
      */
     public static String readEntityAsString(Response response) throws Exception {
 
+        final long readStartMs = System.currentTimeMillis();
         try {
-            return response.readEntity(String.class);
+            final String body = response.readEntity(String.class);
+            final long readMs = System.currentTimeMillis() - readStartMs;
+            if (readMs > 100) {
+                LOG.info("Snowstorm response body read {}ms ({} chars)", readMs, body != null ? body.length() : 0);
+            }
+            return body;
         } catch (Exception e) {
             LOG.error("Could not read response entity: {}", e.getMessage());
             throw new LocalException("Could not read response entity: " + e.getMessage());
         }
+    }
+
+    /**
+     * Logs Snowstorm HTTP round-trip timing (status available when the client returns; body read is logged separately if slow).
+     *
+     * @param method HTTP method
+     * @param url request URL
+     * @param requestBody optional POST body
+     * @param requestStartMs start timestamp
+     * @param status HTTP status
+     */
+    private static void logSnowstormHttpComplete(final String method, final String url, final String requestBody, final long requestStartMs, final int status) {
+
+        final long elapsedMs = System.currentTimeMillis() - requestStartMs;
+        final String path = summarizeSnowstormPath(url);
+        if (requestBody == null) {
+            LOG.info("Snowstorm {} {}ms status={} path={}", method, elapsedMs, status, path);
+            return;
+        }
+        if (requestBody.length() > 500) {
+            LOG.info("Snowstorm {} {}ms status={} path={} bodyChars={} bodyPreview={}", method, elapsedMs, status, path, requestBody.length(),
+                abbreviateForLog(requestBody, 200));
+        } else {
+            LOG.info("Snowstorm {} {}ms status={} path={} body={}", method, elapsedMs, status, path, requestBody);
+        }
+    }
+
+    private static String summarizeSnowstormPath(final String url) {
+
+        if (url == null) {
+            return "";
+        }
+        final String base = restBaseUrl != null ? restBaseUrl : "";
+        if (!base.isEmpty() && url.startsWith(base)) {
+            return url.substring(base.length());
+        }
+        final int branchIdx = url.indexOf("/MAIN/");
+        if (branchIdx >= 0) {
+            return url.substring(branchIdx);
+        }
+        return abbreviateForLog(url, 120);
+    }
+
+    private static String abbreviateForLog(final String value, final int maxLen) {
+
+        if (value == null) {
+            return "";
+        }
+        if (value.length() <= maxLen) {
+            return value;
+        }
+        return value.substring(0, maxLen) + "...";
     }
 
     /**
