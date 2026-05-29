@@ -83,12 +83,6 @@ public final class SnowstormConcept extends SnowstormAbstract {
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(SnowstormConcept.class);
 
-    /** The Constant icpc2noCodeToName. */
-    private static final Map<String, String> icpc2noCodeToName = new HashMap<>();
-
-    /** The Constant ICD10NO_NULL_20240723. */
-    private static final String ICD10NO_NULL_20240723 = "icd10no_null_20240723";
-
     /** The code systems. */
     private static Map<String, SnowstormFhirCodeSystem> codeSystems = new HashMap<>();
 
@@ -122,15 +116,6 @@ public final class SnowstormConcept extends SnowstormAbstract {
         }
 
         if (!terminology.trim().toUpperCase().startsWith("SNOMEDCT")) {
-
-            if ("ICPC2NO".equals(terminology)) {
-                final Concept concept = new Concept();
-                concept.setId(code);
-                concept.setName(getICPC2NOName(code));
-                concept.setTerminology(terminology);
-                concept.setVersion(version);
-                return concept;
-            }
 
             return getConceptByCodeFhirApi(terminology, version, code);
         }
@@ -330,19 +315,8 @@ public final class SnowstormConcept extends SnowstormAbstract {
      */
     private static Concept getConceptFromSnowstorm(final String terminology, final String version, final String code) throws Exception {
 
-        if ("ICD-10-NO".equals(terminology)) {
+        if (!terminology.trim().toUpperCase().startsWith("SNOMEDCT")) {
             return getConceptByCodeFhirApi(terminology, version, code);
-
-        } else if ("ICPC2NO".equals(terminology)) {
-
-            // TEMPORARY
-            final Concept concept = new Concept();
-            concept.setId(code);
-            concept.setName(getICPC2NOName(code));
-            concept.setTerminology(terminology);
-            concept.setVersion(version);
-            return concept;
-            // TEMPORARY
         }
 
         // Connect to snowstorm
@@ -2012,59 +1986,59 @@ public final class SnowstormConcept extends SnowstormAbstract {
     // }
     // }
 
-    /**
-     * Gets the ICPC 2 NO name.
-     *
-     * @param code the code
-     * @return the ICPC 2 NO name
-     * @throws Exception the exception
-     */
-    // TEMPORARY//
-    private static String getICPC2NOName(String code) throws Exception {
+    // /**
+    //  * Gets the ICPC 2 NO name.
+    //  *
+    //  * @param code the code
+    //  * @return the ICPC 2 NO name
+    //  * @throws Exception the exception
+    //  */
+    // // TEMPORARY//
+    // private static String getICPC2NOName(String code) throws Exception {
 
-        if (icpc2noCodeToName.isEmpty()) {
-            cacheICPC2NONames();
-        }
-        String ICPC2NOName = icpc2noCodeToName.get(code);
-        if (ICPC2NOName == null || ICPC2NOName.isBlank()) {
-            ICPC2NOName = code + " CONCEPT NOT FOUND";
-        }
-        return ICPC2NOName;
-    }
+    //     if (icpc2noCodeToName.isEmpty()) {
+    //         cacheICPC2NONames();
+    //     }
+    //     String ICPC2NOName = icpc2noCodeToName.get(code);
+    //     if (ICPC2NOName == null || ICPC2NOName.isBlank()) {
+    //         ICPC2NOName = code + " CONCEPT NOT FOUND";
+    //     }
+    //     return ICPC2NOName;
+    // }
 
-    /**
-     * Cache ICPC 2 NO names.
-     *
-     * @throws Exception the exception
-     */
-    // TEMPORARY//
-    private static void cacheICPC2NONames() throws Exception {
+    // /**
+    //  * Cache ICPC 2 NO names.
+    //  *
+    //  * @throws Exception the exception
+    //  */
+    // // TEMPORARY//
+    // private static void cacheICPC2NONames() throws Exception {
 
-        String dataDir = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.dir");
+    //     String dataDir = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.dir");
 
-        final File f = new File(dataDir + "/ICPC2NO_concepts.txt");
-        if (!f.exists()) {
-            LOG.error("ICPC2NO file doesn't exist: " + f.getPath());
-            return;
-        }
+    //     final File f = new File(dataDir + "/ICPC2NO_concepts.txt");
+    //     if (!f.exists()) {
+    //         LOG.error("ICPC2NO file doesn't exist: " + f.getPath());
+    //         return;
+    //     }
 
-        try (BufferedReader br = new BufferedReader(new FileReader(f.getPath()))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] parts = line.split("\\|", 2); // Split the line into two parts
-                                                       // at the first occurrence of '|'
-                if (parts.length >= 2) {
-                    String key = parts[0].trim();
-                    String value = parts[1].trim();
-                    icpc2noCodeToName.put(key, value);
-                } else {
-                    System.out.println("Ignoring malformed line: " + line);
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+    //     try (BufferedReader br = new BufferedReader(new FileReader(f.getPath()))) {
+    //         String line;
+    //         while ((line = br.readLine()) != null) {
+    //             String[] parts = line.split("\\|", 2); // Split the line into two parts
+    //                                                    // at the first occurrence of '|'
+    //             if (parts.length >= 2) {
+    //                 String key = parts[0].trim();
+    //                 String value = parts[1].trim();
+    //                 icpc2noCodeToName.put(key, value);
+    //             } else {
+    //                 System.out.println("Ignoring malformed line: " + line);
+    //             }
+    //         }
+    //     } catch (IOException e) {
+    //         e.printStackTrace();
+    //     }
+    // }
 
     /**
      * Gets the concept by code fhir api.
