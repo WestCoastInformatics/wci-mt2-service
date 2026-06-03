@@ -278,6 +278,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         final LinkedHashSet<String> filteredConceptSet = new LinkedHashSet<>();
         int filterMatchTotal = -1;
+        boolean filterMatchTotalKnown = true;
         String filterMatchSearchAfter = null;
 
         if (explicitConceptCodes) {
@@ -295,7 +296,17 @@ public class SnowstormMapping extends SnowstormAbstract {
             if (looksLikeMapTargetFilter(trimmedFilter)) {
                 final int pageLimit = searchParameters.getLimit() != null && searchParameters.getLimit() > 0 ? searchParameters.getLimit() : 100;
                 final int pageOffset = searchParameters.getOffset() != null && searchParameters.getOffset() > 0 ? searchParameters.getOffset() : 0;
-                filteredConceptSet.addAll(searchReferencedComponentsByMapTargetPage(branch, mapSet.getRefSetCode(), trimmedFilter, pageLimit, pageOffset));
+                final ConceptSearchPage mapTargetPage =
+                    searchReferencedComponentsByMapTargetPage(branch, mapSet.getRefSetCode(), trimmedFilter, pageLimit, pageOffset);
+                filteredConceptSet.addAll(mapTargetPage.conceptIds);
+                if (conceptPage.total == 0 && mapTargetPage.total > 0) {
+                    filterMatchTotal = mapTargetPage.total;
+                    filterMatchSearchAfter = null;
+                } else if (conceptPage.total == 0 && !mapTargetPage.conceptIds.isEmpty() && mapTargetPage.total == 0) {
+                    filterMatchTotal = mapTargetPage.conceptIds.size();
+                    filterMatchTotalKnown = false;
+                    filterMatchSearchAfter = null;
+                }
             }
             // Term search does not match raw SNOMED concept identifiers; allow filter to double as a source concept id.
             if (trimmedFilter.matches("[0-9]{6,18}")) {
@@ -532,7 +543,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         }
         if (filterMatchTotal >= 0) {
             mappings.setTotal(filterMatchTotal);
-            mappings.setTotalKnown(true);
+            mappings.setTotalKnown(filterMatchTotalKnown);
             if (StringUtils.isNotBlank(filterMatchSearchAfter)) {
                 mappings.setSearchAfter(filterMatchSearchAfter);
             }
@@ -790,14 +801,14 @@ public class SnowstormMapping extends SnowstormAbstract {
      * @param mapTargetFilter the map target filter
      * @param limit the limit
      * @param offset the offset
-     * @return referenced component ids for this page
+     * @return referenced component ids for this page and Snowstorm hit count
      * @throws Exception the exception
      */
-    private static List<String> searchReferencedComponentsByMapTargetPage(final String branch, final String mapSetCode, final String mapTargetFilter,
+    private static ConceptSearchPage searchReferencedComponentsByMapTargetPage(final String branch, final String mapSetCode, final String mapTargetFilter,
         final int limit, final int offset) throws Exception {
 
         if (StringUtils.isBlank(mapTargetFilter)) {
-            return new ArrayList<>();
+            return new ConceptSearchPage(new ArrayList<>(), 0, null);
         }
 
         final ObjectNode requestBody = ThreadLocalMapper.get().createObjectNode();
@@ -808,6 +819,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         requestBody.set("additionalFields", additionalFields);
 
         final LinkedHashSet<String> referencedComponentIds = new LinkedHashSet<>();
+        int total = 0;
         final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/search?limit=" + limit + "&offset=" + offset;
 
         try (final Response response = SnowstormConnection.postResponse(targetUri, requestBody.toString())) {
@@ -815,10 +827,13 @@ public class SnowstormMapping extends SnowstormAbstract {
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
                 LOG.warn("mapTarget member search was not successful for map set {} and filter '{}'. Status: {}", mapSetCode, mapTargetFilter,
                     response.getStatus());
-                return new ArrayList<>();
+                return new ConceptSearchPage(new ArrayList<>(), 0, null);
             }
 
             final JsonNode data = ThreadLocalMapper.get().readTree(SnowstormConnection.readEntityAsString(response));
+            if (data.has("total") && !data.get("total").isNull()) {
+                total = data.get("total").asInt();
+            }
             final JsonNode items = data.get("items");
             if (items != null && items.isArray()) {
                 for (final JsonNode item : items) {
@@ -829,7 +844,7 @@ public class SnowstormMapping extends SnowstormAbstract {
             }
         }
 
-        return new ArrayList<>(referencedComponentIds);
+        return new ConceptSearchPage(new ArrayList<>(referencedComponentIds), total, null);
     }
 
     /**
