@@ -385,7 +385,7 @@ public class MapSetController extends BaseController {
 
         checkBinding(bindingResult);
 
-        final User authUser = authorizeUser(request);
+        //final User authUser = authorizeUser(request);
         try (final TerminologyService service = new TerminologyService()) {
 
             final MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
@@ -561,7 +561,7 @@ public class MapSetController extends BaseController {
         user.setName("WCITEST");
         user.setUserName("WCITEST");
         return user;
-    }    
+    }
 
     /**
      * Start the publication of all Ready for Publication refsets in a code system by promoting them to the REFSETS branch. This call requires authentication
