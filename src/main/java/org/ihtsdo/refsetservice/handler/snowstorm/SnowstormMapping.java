@@ -277,45 +277,29 @@ public class SnowstormMapping extends SnowstormAbstract {
         final boolean explicitConceptCodes = conceptCodes != null && !conceptCodes.isEmpty();
 
         final LinkedHashSet<String> filteredConceptSet = new LinkedHashSet<>();
-        int filterMatchTotal = -1;
-        boolean filterMatchTotalKnown = true;
-        String filterMatchSearchAfter = null;
 
         if (explicitConceptCodes) {
             filteredConceptSet.addAll(conceptCodes);
         } else if (StringUtils.isNotBlank(filter)) {
             final String trimmedFilter = filter.trim();
             final long conceptSearchStartMs = System.currentTimeMillis();
-            final ConceptSearchPage conceptPage = searchConceptsPage(branch, mapSet.getRefSetCode(), trimmedFilter, searchParameters);
-            LOG.info("getMappings phase=conceptSearch {}ms filter='{}' pageIds={} totalMatches={}",
-                System.currentTimeMillis() - conceptSearchStartMs, trimmedFilter, conceptPage.conceptIds.size(), conceptPage.total);
-            filteredConceptSet.addAll(conceptPage.conceptIds);
-            filterMatchTotal = conceptPage.total;
-            filterMatchSearchAfter = conceptPage.searchAfter;
-
-            if (looksLikeMapTargetFilter(trimmedFilter)) {
-                final int pageLimit = searchParameters.getLimit() != null && searchParameters.getLimit() > 0 ? searchParameters.getLimit() : 100;
-                final int pageOffset = searchParameters.getOffset() != null && searchParameters.getOffset() > 0 ? searchParameters.getOffset() : 0;
-                final ConceptSearchPage mapTargetPage =
-                    searchReferencedComponentsByMapTargetPage(branch, mapSet.getRefSetCode(), trimmedFilter, pageLimit, pageOffset);
-                filteredConceptSet.addAll(mapTargetPage.conceptIds);
-                if (conceptPage.total == 0 && mapTargetPage.total > 0) {
-                    filterMatchTotal = mapTargetPage.total;
-                    filterMatchSearchAfter = null;
-                } else if (conceptPage.total == 0 && !mapTargetPage.conceptIds.isEmpty() && mapTargetPage.total == 0) {
-                    filterMatchTotal = mapTargetPage.conceptIds.size();
-                    filterMatchTotalKnown = false;
-                    filterMatchSearchAfter = null;
-                }
-            }
-            // Term search does not match raw SNOMED concept identifiers; allow filter to double as a source concept id.
-            if (trimmedFilter.matches("[0-9]{6,18}")) {
-                filteredConceptSet.add(trimmedFilter);
-            }
+            filteredConceptSet.addAll(resolveFilteredConceptIds(branch, mapSet.getRefSetCode(), trimmedFilter));
+            LOG.info("getMappings phase=conceptSearch {}ms filter='{}' matchingConcepts={}",
+                System.currentTimeMillis() - conceptSearchStartMs, trimmedFilter, filteredConceptSet.size());
         }
 
         final List<String> filteredConceptList = new ArrayList<>(filteredConceptSet);
-        final boolean paginatedTextFilter = filterMatchTotal >= 0;
+        final boolean scopedTextFilter = !explicitConceptCodes && StringUtils.isNotBlank(filter);
+
+        if (scopedTextFilter && filteredConceptList.isEmpty()) {
+            final ResultListMapping empty = new ResultListMapping();
+            empty.setTotal(0);
+            empty.setTotalKnown(true);
+            empty.setLimit(searchParameters.getLimit() != null ? searchParameters.getLimit() : 0);
+            empty.setOffset(searchParameters.getOffset() != null ? searchParameters.getOffset() : 0);
+            LOG.info("getMappings complete {}ms items=0 total=0 (no concepts matched filter)", System.currentTimeMillis() - requestStartMs);
+            return empty;
+        }
 
         final StringBuilder requestBody = new StringBuilder();
         requestBody.append("{");
@@ -358,12 +342,8 @@ public class SnowstormMapping extends SnowstormAbstract {
         int offset = 0;
         String searchAfter = null;
 
-        // Concept search already applied limit/offset; member search is scoped to this page's concept ids only.
+        // Text filter: resolve all matching source concepts, then page map entries via member search.
         final SearchParameters memberSearchPaging = new SearchParameters(searchParameters);
-        if (paginatedTextFilter) {
-            memberSearchPaging.setOffset(0);
-            memberSearchPaging.setSearchAfter(null);
-        }
 
         final long memberSearchStartMs = System.currentTimeMillis();
         while (!done) {
@@ -379,11 +359,6 @@ public class SnowstormMapping extends SnowstormAbstract {
                 }
 
                 final JsonNode data = ThreadLocalMapper.get().readTree(SnowstormConnection.readEntityAsString(response));
-                final JsonNode mappingsBatch = data.get("items");
-                if (mappingsBatch.isArray() && mappingsBatch.isEmpty()) {
-                    done = true;
-                    continue;
-                }
 
                 if (searchParameters != null) {
                     if (data.has("total")) {
@@ -398,6 +373,12 @@ public class SnowstormMapping extends SnowstormAbstract {
                     if (data.has("searchAfter")) {
                         searchAfter = data.get("searchAfter").asText();
                     }
+                }
+
+                final JsonNode mappingsBatch = data.get("items");
+                if (mappingsBatch == null || !mappingsBatch.isArray() || mappingsBatch.isEmpty()) {
+                    done = true;
+                    continue;
                 }
 
                 final Iterator<JsonNode> itemIterator = mappingsBatch.iterator();
@@ -435,7 +416,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
             }
 
-            if (paginatedTextFilter) {
+            if (scopedTextFilter) {
                 done = true;
             } else {
                 i++;
@@ -529,27 +510,12 @@ public class SnowstormMapping extends SnowstormAbstract {
             mapping.setDescriptions(descriptions.get(mapping.getCode()));
         }
 
-        // Once the file is completed parsed, return mappings as list
+        // Once the file is completed parsed, return mappings as list (member encounter order)
         final ResultListMapping mappings = new ResultListMapping();
-        if (paginatedTextFilter) {
-            for (final String conceptId : filteredConceptList) {
-                final Mapping mapping = conceptIdToMappingMap.get(conceptId);
-                if (mapping != null) {
-                    mappings.getItems().add(mapping);
-                }
-            }
-        } else {
-            mappings.getItems().addAll(conceptIdToMappingMap.values());
-        }
-        if (filterMatchTotal >= 0) {
-            mappings.setTotal(filterMatchTotal);
-            mappings.setTotalKnown(filterMatchTotalKnown);
-            if (StringUtils.isNotBlank(filterMatchSearchAfter)) {
-                mappings.setSearchAfter(filterMatchSearchAfter);
-            }
-        } else {
-            mappings.setTotal(total);
-            mappings.setTotalKnown(total > 0);
+        mappings.getItems().addAll(conceptIdToMappingMap.values());
+        mappings.setTotal(total);
+        mappings.setTotalKnown(total > 0);
+        if (StringUtils.isNotBlank(searchAfter)) {
             mappings.setSearchAfter(searchAfter);
         }
         mappings.setLimit(searchParameters.getLimit() != null ? searchParameters.getLimit() : limit);
@@ -560,8 +526,14 @@ public class SnowstormMapping extends SnowstormAbstract {
             mappings.setInvalidConceptIds(invalidConceptIds);
         }
 
-        LOG.info("getMappings complete {}ms items={} total={}", System.currentTimeMillis() - requestStartMs, mappings.getItems().size(),
-            mappings.getTotal());
+        int mapEntriesOnPage = 0;
+        for (final Mapping mapping : mappings.getItems()) {
+            if (mapping.getMapEntries() != null) {
+                mapEntriesOnPage += mapping.getMapEntries().size();
+            }
+        }
+        LOG.info("getMappings complete {}ms items={} mapEntriesOnPage={} total={}", System.currentTimeMillis() - requestStartMs, mappings.getItems().size(),
+            mapEntriesOnPage, mappings.getTotal());
         return mappings;
 
     }
@@ -845,6 +817,28 @@ public class SnowstormMapping extends SnowstormAbstract {
         }
 
         return new ConceptSearchPage(new ArrayList<>(referencedComponentIds), total, null);
+    }
+
+    /**
+     * Resolves all source concept ids matching a map set text filter (term search, optional map target, optional concept id).
+     *
+     * @param branch the branch
+     * @param mapSetCode the map set code
+     * @param trimmedFilter the trimmed filter
+     * @return distinct concept ids in stable encounter order
+     * @throws Exception the exception
+     */
+    private static LinkedHashSet<String> resolveFilteredConceptIds(final String branch, final String mapSetCode, final String trimmedFilter) throws Exception {
+
+        final LinkedHashSet<String> conceptIds = new LinkedHashSet<>();
+        conceptIds.addAll(searchConcepts(branch, mapSetCode, trimmedFilter));
+        if (looksLikeMapTargetFilter(trimmedFilter)) {
+            conceptIds.addAll(searchReferencedComponentsByMapTarget(branch, mapSetCode, trimmedFilter));
+        }
+        if (trimmedFilter.matches("[0-9]{6,18}")) {
+            conceptIds.add(trimmedFilter);
+        }
+        return conceptIds;
     }
 
     /**
