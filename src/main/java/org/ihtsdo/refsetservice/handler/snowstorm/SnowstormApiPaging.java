@@ -1,5 +1,6 @@
 package org.ihtsdo.refsetservice.handler.snowstorm;
 
+import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,10 +43,10 @@ public class SnowstormApiPaging {
             pagingQueryString.append("&active=true");
         }
 
-        if (searchParameters.getSortAscending() != null) {
-            pagingQueryString.append("&sortOrder=").append((searchParameters.getSortAscending()) ? "asc" : "desc");
-        } else {
-            pagingQueryString.append("&sortOrder=asc");
+        // Snowstorm requires sortBy and sortOrder to both be present or both absent.
+        if (searchParameters.getSortAscending() != null && StringUtils.isNotBlank(searchParameters.getSort())) {
+            pagingQueryString.append("&sortBy=").append(searchParameters.getSort());
+            pagingQueryString.append("&sortOrder=").append(searchParameters.getSortAscending() ? "asc" : "desc");
         }
 
         if (pagingQueryString.toString().startsWith("&")) {
