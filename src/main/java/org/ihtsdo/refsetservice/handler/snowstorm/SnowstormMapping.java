@@ -348,7 +348,8 @@ public class SnowstormMapping extends SnowstormAbstract {
         final long memberSearchStartMs = System.currentTimeMillis();
         while (!done) {
 
-            final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/search?" + SnowstormApiPaging.getPagingQueryString(memberSearchPaging);
+            final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/search?"
+                + SnowstormApiPaging.getMemberSearchPagingQueryString(memberSearchPaging);
             LOG.info("getMappings phase=memberSearch request referencedComponentIds={}", filteredConceptList.size());
 
             try (final Response response = SnowstormConnection.postResponse(targetUri, requestBody.toString())) {
@@ -792,7 +793,9 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         final LinkedHashSet<String> referencedComponentIds = new LinkedHashSet<>();
         int total = 0;
-        final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/search?limit=" + limit + "&offset=" + offset;
+        final SearchParameters mapTargetPaging = new SearchParameters(null, limit, offset);
+        final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/search?"
+            + SnowstormApiPaging.getMemberSearchPagingQueryString(mapTargetPaging);
 
         try (final Response response = SnowstormConnection.postResponse(targetUri, requestBody.toString())) {
 
@@ -939,7 +942,9 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         while (!done) {
 
-            final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/search?limit=" + pageLimit + "&offset=" + offset;
+            final SearchParameters mapTargetPagePaging = new SearchParameters(null, pageLimit, offset);
+            final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/search?"
+                + SnowstormApiPaging.getMemberSearchPagingQueryString(mapTargetPagePaging);
 
             try (final Response response = SnowstormConnection.postResponse(targetUri, requestBody.toString())) {
 
@@ -996,7 +1001,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members?referenceSet=" + mapSetCode + "&referencedComponentId=" + conceptCode
             + (moduleId != null ? "&module=" + moduleId : "") + (activeOnly == false ? "" : "&active=true") + "&limit=" + limit
-            + (searchAfter != null ? "&searchAfter=" + searchAfter : "");
+            + (searchAfter != null ? "&searchAfter=" + searchAfter : "") + "&" + SnowstormApiPaging.getMemberSortQueryString();
         LOG.info("getSnowstormMapping url: " + targetUri);
 
         final WebTarget target = client.target(targetUri);

@@ -42,6 +42,7 @@ import javax.ws.rs.core.Response.Status.Family;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnomedConstants;
+import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormApiPaging;
 import org.ihtsdo.refsetservice.model.BranchInformation;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.DefinitionClause;
@@ -1404,7 +1405,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
     @Override
     public String getMemberSctIds(final String refsetId, final int limit, final String searchAfter, final String branchPath) throws Exception {
 
-        final String pagingParams = "&limit=" + limit + "&searchAfter=" + searchAfter;
+        final String pagingParams = "&limit=" + limit + "&searchAfter=" + searchAfter + "&" + SnowstormApiPaging.getMemberSortQueryString();
 
         final String url = SnowstormConnection.getRestBaseUrl() + "" + branchPath + "/members?referenceSet=" + refsetId + "&" + pagingParams;
 
@@ -1922,7 +1923,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         // active
         // (though the concept itself can be inactive)
         final String url = SnowstormConnection.getRestBaseUrl() + RefsetMemberService.getBranchPath(refset) + "/members?referenceSet=" + refset.getRefsetId()
-            + "&active=true&offset=0&limit=1";
+            + "&active=true&offset=0&limit=1&" + SnowstormApiPaging.getMemberSortQueryString();
 
         LOG.debug("Get Refset Member Count URL: " + url);
 
@@ -2000,7 +2001,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 // active
                 // (though the concept itself can be inactive)
                 final String url = SnowstormConnection.getRestBaseUrl() + RefsetMemberService.getBranchPath(refset) + "/members?referenceSet=" + refsetId
-                    + "&active=true&offset=0&limit=" + RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH;
+                    + "&active=true&offset=0&limit=" + RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH + "&"
+                    + SnowstormApiPaging.getMemberSortQueryString();
 
                 while (hasMorePages) {
 
@@ -2282,7 +2284,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
     public void populateMembershipInformation(final Refset refset, final List<Concept> concepts) throws Exception {
 
         final String baseUrl = SnowstormConnection.getRestBaseUrl() + RefsetMemberService.getBranchPath(refset) + "/members?referenceSet=" + refset.getRefsetId()
-            + "&active=true&limit=" + RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH + "&offset=0&referencedComponentId=";
+            + "&active=true&limit=" + RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH + "&offset=0&"
+            + SnowstormApiPaging.getMemberSortQueryString() + "&referencedComponentId=";
         final List<Concept> conceptsToProcess = new ArrayList<>();
         String conceptIds = "";
         int snowstormCallCount = 0;
@@ -2378,7 +2381,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
         while (hasMorePages) {
 
-            final String url = SnowstormConnection.getRestBaseUrl() + branch + "/members?referenceSet=" + refsetId + searchAfter + "&limit=" + limit;
+            final String url = SnowstormConnection.getRestBaseUrl() + branch + "/members?referenceSet=" + refsetId + searchAfter + "&limit=" + limit + "&"
+                + SnowstormApiPaging.getMemberSortQueryString();
             LOG.debug("getRefsetMembers URL: " + url);
 
             try (final Response response = SnowstormConnection.getResponse(url, acceptLanguage)) {
@@ -2545,7 +2549,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             }
 
             final String url = SnowstormConnection.getRestBaseUrl() + RefsetService.getBranchPath(refset) + "/members?referenceSet=" + refset.getRefsetId()
-                + "&referencedComponentId=" + referencedComponentId;
+                + "&referencedComponentId=" + referencedComponentId + "&" + SnowstormApiPaging.getMemberSortQueryString();
 
             LOG.debug("Get Membership History URL: " + url);
 
@@ -2664,7 +2668,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         }
 
         final String memberCountUrl = SnowstormConnection.getRestBaseUrl() + RefsetMemberService.getBranchPath(refset) + "/members?referenceSet="
-            + refset.getRefsetId() + "&active=true&limit=1";
+            + refset.getRefsetId() + "&active=true&limit=1&" + SnowstormApiPaging.getMemberSortQueryString();
 
         // See how many members the refset has - if it is more than 100k we can not
         // cache the ancestors
@@ -2800,8 +2804,9 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         // active
         // (though the concept itself can be inactive)
         final String conceptSearchUrl = SnowstormConnection.getRestBaseUrl() + branchPath + "/concepts/search";
-        final String memberSearchUrl =
-            SnowstormConnection.getRestBaseUrl() + branchPath + "/members/search?limit=" + RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH;
+        final String memberSearchUrl = SnowstormConnection.getRestBaseUrl() + branchPath + "/members/search?"
+            + SnowstormApiPaging.getMemberSearchPagingQueryString(
+                new SearchParameters(null, RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH, null));
         final String bodyBase = "{\"limit\": " + RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH + ", ";
         final String memberSearchBodyBase = "{\"referenceSet\":\"" + refsetId + "\", \"referencedComponentIds\":[";
         final List<String> permanentFullConceptList = new ArrayList<>(conceptIds);
@@ -3178,7 +3183,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         // active
         // (though the concept itself can be inactive)
         final String memberSearchUrlBase = SnowstormConnection.getRestBaseUrl() + branchPath + "/members?referenceSet=" + refset.getRefsetId()
-            + "&offset=0&active=true" + "&limit=" + RefsetMemberService.URL_MAX_CHAR_LENGTH + "&referencedComponentId=";
+            + "&offset=0&active=true" + "&limit=" + RefsetMemberService.URL_MAX_CHAR_LENGTH + "&" + SnowstormApiPaging.getMemberSortQueryString()
+            + "&referencedComponentId=";
         final ArrayNode memberDeleteArray = mapper.createArrayNode();
         final ArrayNode memberUpdateArray = mapper.createArrayNode();
         final List<String> permanentFullConceptList = Arrays.asList(conceptIds.split(","));
@@ -3594,7 +3600,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         // active
         // (though the concept itself can be inactive)
         final String url = SnowstormConnection.getRestBaseUrl() + branchPath + "/members?referenceSet=" + refsetId + "&active=true&offset=0&limit="
-            + RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH;
+            + RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH + "&" + SnowstormApiPaging.getMemberSortQueryString();
 
         // use members call to get members
         while (hasMorePages) {
@@ -4043,7 +4049,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                         // is active
                         // (though the concept itself can be inactive)
                         final String url = SnowstormConnection.getRestBaseUrl() + refset.getBranchPath() + "/members?referenceSet=" + refset.getRefsetId()
-                            + "&active=true&referencedComponentId=" + conceptIdToChange;
+                            + "&active=true&referencedComponentId=" + conceptIdToChange + "&" + SnowstormApiPaging.getMemberSortQueryString();
 
                         LOG.debug("modifyUpgradeConcept Member list URL: " + url);
 

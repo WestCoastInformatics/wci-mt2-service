@@ -1353,7 +1353,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
         // active
         // (though the concept itself can be inactive)
         final String url = SnowstormConnection.getRestBaseUrl() + branchPath + "/members?referenceSet=" + refsetId + "&active=true&offset=0&limit="
-            + RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH;
+            + RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH + "&" + SnowstormApiPaging.getMemberSortQueryString();
 
         // use members call to get members
         while (hasMorePages) {
@@ -1813,7 +1813,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                         // is active
                         // (though the concept itself can be inactive)
                         final String url = SnowstormConnection.getRestBaseUrl() + refset.getBranchPath() + "/members?referenceSet=" + refset.getRefsetId()
-                            + "&active=true&referencedComponentId=" + conceptIdToChange;
+                            + "&active=true&referencedComponentId=" + conceptIdToChange + "&" + SnowstormApiPaging.getMemberSortQueryString();
 
                         LOG.debug("modifyUpgradeConcept Member list URL: " + url);
 
