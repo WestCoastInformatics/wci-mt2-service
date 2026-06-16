@@ -43,9 +43,9 @@ public class SnowstormApiPaging {
             pagingQueryString.append("&active=true");
         }
 
-        // Snowstorm requires sortBy and sortOrder to both be present or both absent.
+        // Snowstorm requires sortField and sortOrder to both be present or both absent.
         if (searchParameters.getSortAscending() != null && StringUtils.isNotBlank(searchParameters.getSort())) {
-            pagingQueryString.append("&sortBy=").append(searchParameters.getSort());
+            pagingQueryString.append("&sortField=").append(searchParameters.getSort());
             pagingQueryString.append("&sortOrder=").append(searchParameters.getSortAscending() ? "asc" : "desc");
         }
 
