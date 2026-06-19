@@ -37,7 +37,7 @@ version = "1.0.3"
 ext {
 
 	// always use "-SNAPSHOT" for versionTag except for release commits
-	versionTag = "-SNAPSHOT"
+	versionTag = ""
 	versionNumber = version
 
 	if (!project.hasProperty("debAppName")) {
