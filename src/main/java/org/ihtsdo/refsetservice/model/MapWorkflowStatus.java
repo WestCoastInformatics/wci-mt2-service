@@ -1,43 +1,38 @@
 package org.ihtsdo.refsetservice.model;
 
-/**
- * Enum for workflow status values. Comprehensive for all workflow paths.
- *
- * NOTE: Workflow status names may not be initial substrings of any other
- * workflow status. For instance, REVIEW and REVIEW_NEW cannot both be
- * specified, since REVIEW_NEW begins with REVIEW. Other substring matches are
- * allowed, e.g. NEW and REVIEW_NEW can both be values.
- *
- * NOTE: Workflow statuses must be in ascending order, as defined by the
- * workflow diagrams. For instance, NEW must appear before EDITING_IN_PROGRESS.
- * The top three statuses MUST be READY_FOR_PUBLICATION, PUBLISHED, and
- * REVISION, in that order
- */
+import java.util.Arrays;
+import java.util.List;
 
+/**
+ * Workflow phase for a single source-concept mapping.
+ *
+ * <p>Phase only — who owns the mapping is stored in {@code assigned_user}, not in the status name.
+ * Publication is handled at mapset level, not per mapping.
+ *
+ * <p>Workflow status names may not be initial substrings of any other workflow status.
+ *
+ * <p>Constants must appear in ascending workflow order (e.g. {@code NEW} before
+ * {@code EDITING_IN_PROGRESS}). {@code READY_FOR_PUBLICATION} and {@code REVISION} are terminal phases.
+ */
 public enum MapWorkflowStatus {
+
   /** New, unedited specialist record */
-  NEW, // (can transition to EDITING_IN_PROGRESS, EDITING_DONE)
+  NEW,
 
   /** Editing in progress by a specialist */
-  EDITING_IN_PROGRESS, // (can transition to EDITING_DONE)
+  EDITING_IN_PROGRESS,
 
   /** Editing completed by a specialist */
-  EDITING_DONE, // (can transition to CONFILCT_DETECTED, CONSENSUS_NEEDED, or
-                // REVIEW_NEEDED)
+  EDITING_DONE,
 
   /** Conflict has been detected. */
-  CONFLICT_DETECTED, // (can transition to CONFLICT_NEW)
-
-  /** Conflict has been claimed by a lead, but has not been edited */
-  CONFLICT_NEW, // (can transition to CONFLICT_IN_PROGRESS,
-                // READY_FOR_PUBLICATION)
+  CONFLICT_DETECTED,
 
   /** Conflict resolution by a lead is in progress */
-  CONFLICT_IN_PROGRESS, // (can transition to CONFLICT_RESOLVED)
+  CONFLICT_IN_PROGRESS,
 
   /**
-   * Conflict resolution by a lead is resolved, but not released (can transition
-   * to READY_FOR_PUBLICATION)
+   * Conflict resolution by a lead is resolved, but not released.
    */
   CONFLICT_RESOLVED,
 
@@ -47,16 +42,13 @@ public enum MapWorkflowStatus {
   CONFLICT_FINISHED,
 
   /** Pre-publication state for review by lead */
-  REVIEW_NEEDED, // (can transition to REVIEW_NEW, REVIEW_IN_PROGRESS)
+  REVIEW_NEEDED,
 
-  /** Review has been claimed by a lead, but has not been edited */
-  REVIEW_NEW, // (can transition to REVIEW_IN_PROGRESS, READY_FOR_PUBLICATION)
-
-  /** Review claimed */
-  REVIEW_IN_PROGRESS, // (can transition to REVIEW_RESOLVED)
+  /** Review in progress */
+  REVIEW_IN_PROGRESS,
 
   /**
-   * Review resolved, but not released (can transition to READY_FOR_PUBLICATION)
+   * Review resolved, but not released.
    */
   REVIEW_RESOLVED,
 
@@ -66,35 +58,52 @@ public enum MapWorkflowStatus {
   REVIEW_FINISHED,
 
   /** Pre-publication state for qa */
-  QA_NEEDED, // (can transition to QA_NEW, QA_IN_PROGRESS)
+  QA_NEEDED,
 
-  /** QA has been claimed, but has not been edited */
-  QA_NEW, // (can transition to QA_IN_PROGRESS, READY_FOR_PUBLICATION)
+  /** QA in progress */
+  QA_IN_PROGRESS,
 
-  /** QA claimed */
-  QA_IN_PROGRESS, // (can transition to QA_RESOLVED)
-
-  /** QA resolved, but not released (can transition to READY_FOR_PUBLICATION) */
+  /** QA resolved, but not released */
   QA_RESOLVED,
 
   /** The consensus needed. */
-  CONSENSUS_NEEDED, // (can transition to CONSENSUS_IN_PROGRESS)
+  CONSENSUS_NEEDED,
 
   /** The consensus begun, with no editing */
-  CONSENSUS_NEW, // (can transition to CONSENSUS_IN_PROGRESS,
-                 // READY_FOR_PUBLICATION)
+  CONSENSUS_NEW,
 
-  /** The consensus resolved. */
-  CONSENSUS_IN_PROGRESS, // (can transition to READY_FOR_PUBLICATION)
+  /** The consensus in progress. */
+  CONSENSUS_IN_PROGRESS,
 
-  /** The ready for publication. */
-  READY_FOR_PUBLICATION, // (can transition to PUBLISHED, REVISION)
+  /** Ready for publication this cycle. */
+  READY_FOR_PUBLICATION,
 
-  /** The published. */
-  PUBLISHED, // (can transition to REVISION)
+  /** Sent back from publication QA; re-enters edit or review */
+  REVISION;
 
-  /** User or QA specified review */
-  REVISION; // (can transition to REVIEW_NEEDED or to previous state of
-            // READY_FOR_PUBLICATION/PUBLISHED)
+  /**
+   * From string.
+   *
+   * @param text the text
+   * @return the map workflow status
+   */
+  public static MapWorkflowStatus fromString(final String text) {
 
+    for (final MapWorkflowStatus status : MapWorkflowStatus.values()) {
+      if (status.toString().equalsIgnoreCase(text)) {
+        return status;
+      }
+    }
+    throw new IllegalArgumentException("Unknown MapWorkflowStatus: " + text);
+  }
+
+  /**
+   * Returns the values.
+   *
+   * @return the values
+   */
+  public static List<MapWorkflowStatus> getValues() {
+
+    return Arrays.asList(MapWorkflowStatus.values());
+  }
 }
