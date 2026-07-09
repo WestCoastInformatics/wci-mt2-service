@@ -1,0 +1,49 @@
+#
+# Per-mapping workflow transitions (one row = one allowed transition).
+#
+# Format:  ROLE, CURRENT_STATUS, ACTION, RESULT_STATUS
+#
+#   ROLE            Map project role: SPECIALIST, LEAD, or ADMIN
+#   CURRENT_STATUS  MapWorkflowStatus phase before the action (who owns it is in assigned_user, not the status name)
+#   ACTION          MappingWorkflowAction taken by that role
+#   RESULT_STATUS   MapWorkflowStatus phase after a successful transition
+#
+# Phase glossary (simple path):
+#   NEW                  In scope; unassigned; not edited this mapset version
+#   EDITING_IN_PROGRESS  Assigned to a specialist; actively being edited
+#   EDITING_DONE         Specialist submitted; awaiting lead approval
+#   READY_FOR_PUBLICATION  Mapping accepted; no further mapping work this cycle
+#
+# Loaded at startup by MappingWorkflowService.resolveTransition(role, status, action).
+# No matching row => transition is not allowed (returns null).
+#
+
+##################
+# SPECIALIST — assign, release, and finish editing
+##################
+
+# Specialist self-assigns an unassigned mapping from the queue
+SPECIALIST,NEW,ASSIGN,EDITING_IN_PROGRESS
+
+# Specialist gives up the assignment without submitting (clears assigned_user)
+SPECIALIST,EDITING_IN_PROGRESS,RELEASE,NEW
+
+# Specialist submits completed mapping (clears assigned_user; may trigger review/conflict routing later)
+SPECIALIST,EDITING_IN_PROGRESS,FINISH_EDITING,EDITING_DONE
+
+##################
+# LEAD — approve finished work for publication readiness
+##################
+
+# Lead accepts specialist work; mapping is ready when the mapset publishes
+LEAD,EDITING_DONE,APPROVE_FOR_PUBLICATION,READY_FOR_PUBLICATION
+
+##################
+# ADMIN — override assignment without changing phase (except force-release)
+##################
+
+# Admin clears assignment and returns concept to the queue
+ADMIN,EDITING_IN_PROGRESS,FORCE_RELEASE,NEW
+
+# Admin assigns the mapping to another user; phase stays in progress
+ADMIN,EDITING_IN_PROGRESS,REASSIGN,EDITING_IN_PROGRESS
