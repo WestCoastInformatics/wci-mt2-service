@@ -46,6 +46,8 @@
     <class>org.ihtsdo.refsetservice.model.MapSet</class>
     <class>org.ihtsdo.refsetservice.model.MapSetEditHistory</class>
     <class>org.ihtsdo.refsetservice.model.MapSetWorkflowHistory</class>
+    <class>org.ihtsdo.refsetservice.model.MappingWorkflow</class>
+    <class>org.ihtsdo.refsetservice.model.MappingWorkflowHistory</class>
     <class>org.ihtsdo.refsetservice.model.RefsetWorkflowHistory</class>
     <class>org.ihtsdo.refsetservice.model.MapAgeRange</class>
     <class>org.ihtsdo.refsetservice.model.MapProject</class>
