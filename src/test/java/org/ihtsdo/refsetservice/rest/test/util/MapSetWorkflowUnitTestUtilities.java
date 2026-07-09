@@ -139,12 +139,12 @@ public class MapSetWorkflowUnitTestUtilities {
     public void updateWorkflowNote(final MapSet mapSet, final String note) throws Exception {
 
         final String url = baseUrl + "/" + mapSet.getId() + "/workflowNote";
-        final String jsonBody = new ObjectMapper().writeValueAsString(note != null ? note : "");
+        final String body = note != null ? note : "";
 
         Exception lastException = null;
         for (int attempt = 0; attempt < WORKFLOW_NOTE_RETRY_COUNT; attempt++) {
             try {
-                mvc.perform(put(url).content(jsonBody).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
+                mvc.perform(put(url).content(body).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk())
                     .andReturn();
                 return;
             } catch (final Exception e) {
@@ -171,7 +171,7 @@ public class MapSetWorkflowUnitTestUtilities {
 
         final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         final String content = result.getResponse().getContentAsString();
-        final ResultList<MapSetWorkflowHistory> resultList = new ObjectMapper().readValue(content, new TypeReference<ResultList<MapSetWorkflowHistory>>() {
+        final ResultList<MapSetWorkflowHistory> resultList = MAPPER.readValue(content, new TypeReference<ResultList<MapSetWorkflowHistory>>() {
         });
         assertThat(resultList).isNotNull();
 
