@@ -98,7 +98,8 @@ public final class MappingWorkflowService {
         MappingWorkflowAction.FORCE_RELEASE,
         MappingWorkflowAction.ACCEPT_REVIEW,
         MappingWorkflowAction.REJECT_REVIEW,
-        MappingWorkflowAction.REQUEST_REVISION
+        MappingWorkflowAction.REQUEST_REVISION,
+        MappingWorkflowAction.RESOLVE_CONFLICT
     );
 
     /** Delegates per-concept Snowstorm branch operations (overridable in unit tests). */
@@ -195,6 +196,12 @@ public final class MappingWorkflowService {
 
         service.update(workflow);
         addWorkflowHistory(service, user, action, workflow, notes);
+
+        if (mapProject.getWorkflowType() == WorkflowType.CONFLICT_PROJECT && action == MappingWorkflowAction.FINISH_EDITING) {
+            applyConflictJoinAfterFinish(service, mapSet, workflow);
+        }
+
+        syncConflictSiblingIfNeeded(service, user, action, workflow, mapSet, mapProject, notes);
 
         return workflow;
     }
@@ -420,7 +427,7 @@ public final class MappingWorkflowService {
             workflow.setAssignedUser(user.getUserName());
             workflow.setAssignedAt(assignedAt);
             workflow.setLeaseExpiresAt(new Date(assignedAt.getTime() + getLeaseDurationMs()));
-        } else if (action == MappingWorkflowAction.START_REVIEW) {
+        } else if (action == MappingWorkflowAction.START_REVIEW || action == MappingWorkflowAction.START_CONFLICT_RESOLUTION) {
             final Date assignedAt = new Date();
             workflow.setAssignedUser(user.getUserName());
             workflow.setAssignedAt(assignedAt);
@@ -475,12 +482,15 @@ public final class MappingWorkflowService {
                 return workflow.getWorkflowStatus() == MapWorkflowStatus.NEW && workflow.getAssignedUser() == null;
             case START_REVIEW:
                 return workflow.getWorkflowStatus() == MapWorkflowStatus.REVIEW_NEEDED && workflow.getAssignedUser() == null;
+            case START_CONFLICT_RESOLUTION:
+                return workflow.getWorkflowStatus() == MapWorkflowStatus.CONFLICT_DETECTED && workflow.getAssignedUser() == null;
             case RELEASE:
             case FINISH_EDITING:
                 return user.getUserName().equals(workflow.getAssignedUser());
             case ACCEPT_REVIEW:
             case REJECT_REVIEW:
             case REQUEST_REVISION:
+            case RESOLVE_CONFLICT:
                 return user.getUserName().equals(workflow.getAssignedUser());
             default:
                 return true;
@@ -552,18 +562,50 @@ public final class MappingWorkflowService {
 
         @SuppressWarnings("unchecked")
         final List<MappingWorkflow> results = service.getEntityManager()
-            .createQuery("from MappingWorkflow mw where mw.mapSet.id = :mapSetId and mw.sourceConceptCode = :sourceConceptCode and mw.active = true",
+            .createQuery("from MappingWorkflow mw where mw.mapSet.id = :mapSetId and mw.sourceConceptCode = :sourceConceptCode"
+                + " and mw.specialistSlot = 1 and mw.active = true",
                 MappingWorkflow.class)
             .setParameter("mapSetId", mapSet.getId())
             .setParameter("sourceConceptCode", sourceConceptCode)
-            .setMaxResults(2)
+            .setMaxResults(1)
             .getResultList();
 
         if (results.isEmpty()) {
             return null;
         }
-        if (results.size() > 1) {
-            throw new Exception("More than one mapping workflow row for map set " + mapSet.getId() + " and concept " + sourceConceptCode);
+        return results.get(0);
+    }
+
+    /**
+     * Find the mapping workflow row for a source concept and specialist slot.
+     *
+     * @param service the terminology service
+     * @param mapSet the map set
+     * @param sourceConceptCode the source concept code
+     * @param specialistSlot the specialist slot (1 or 2)
+     * @return the workflow row, or null if none exists
+     * @throws Exception the exception
+     */
+    public static MappingWorkflow findWorkflowForConceptAndSlot(final TerminologyService service, final MapSet mapSet,
+        final String sourceConceptCode, final int specialistSlot) throws Exception {
+
+        if (mapSet == null || StringUtils.isBlank(sourceConceptCode) || specialistSlot < 1) {
+            return null;
+        }
+
+        @SuppressWarnings("unchecked")
+        final List<MappingWorkflow> results = service.getEntityManager()
+            .createQuery("from MappingWorkflow mw where mw.mapSet.id = :mapSetId and mw.sourceConceptCode = :sourceConceptCode"
+                + " and mw.specialistSlot = :specialistSlot and mw.active = true",
+                MappingWorkflow.class)
+            .setParameter("mapSetId", mapSet.getId())
+            .setParameter("sourceConceptCode", sourceConceptCode)
+            .setParameter("specialistSlot", specialistSlot)
+            .setMaxResults(1)
+            .getResultList();
+
+        if (results.isEmpty()) {
+            return null;
         }
         return results.get(0);
     }
@@ -697,6 +739,84 @@ public final class MappingWorkflowService {
 
         final String enabled = PropertyUtility.getProperty(CONCEPT_BRANCH_ENABLED_PROPERTY);
         return !"false".equalsIgnoreCase(enabled);
+    }
+
+    private static void applyConflictJoinAfterFinish(final TerminologyService service, final MapSet mapSet, final MappingWorkflow workflow)
+        throws Exception {
+
+        if (workflow.getWorkflowStatus() != MapWorkflowStatus.EDITING_DONE) {
+            return;
+        }
+
+        final MappingWorkflow sibling = findSiblingWorkflow(service, mapSet, workflow);
+        if (sibling == null || sibling.getWorkflowStatus() != MapWorkflowStatus.EDITING_DONE) {
+            return;
+        }
+
+        final MappingWorkflow slot1Workflow = workflow.getSpecialistSlot() == 1 ? workflow : sibling;
+        final MappingWorkflow slot2Workflow = workflow.getSpecialistSlot() == 2 ? workflow : sibling;
+        final String slot1Key = getFinishComparisonKey(service, slot1Workflow);
+        final String slot2Key = getFinishComparisonKey(service, slot2Workflow);
+        final MapWorkflowStatus joinStatus = slot1Key.equals(slot2Key) ? MapWorkflowStatus.REVIEW_NEEDED : MapWorkflowStatus.CONFLICT_DETECTED;
+
+        workflow.setWorkflowStatus(joinStatus);
+        workflow.setAssignedUser(null);
+        workflow.setAssignedAt(null);
+        workflow.setLeaseExpiresAt(null);
+        sibling.setWorkflowStatus(joinStatus);
+        sibling.setAssignedUser(null);
+        sibling.setAssignedAt(null);
+        sibling.setLeaseExpiresAt(null);
+        service.update(workflow);
+        service.update(sibling);
+    }
+
+    private static void syncConflictSiblingIfNeeded(final TerminologyService service, final User user, final MappingWorkflowAction action,
+        final MappingWorkflow workflow, final MapSet mapSet, final MapProject mapProject, final String notes) throws Exception {
+
+        if (mapProject == null || mapProject.getWorkflowType() != WorkflowType.CONFLICT_PROJECT) {
+            return;
+        }
+        if (action != MappingWorkflowAction.START_CONFLICT_RESOLUTION && action != MappingWorkflowAction.RESOLVE_CONFLICT) {
+            return;
+        }
+
+        final MappingWorkflow sibling = findSiblingWorkflow(service, mapSet, workflow);
+        if (sibling == null) {
+            return;
+        }
+
+        sibling.setWorkflowStatus(workflow.getWorkflowStatus());
+        sibling.setAssignedUser(workflow.getAssignedUser());
+        sibling.setAssignedAt(workflow.getAssignedAt());
+        sibling.setLeaseExpiresAt(workflow.getLeaseExpiresAt());
+        service.update(sibling);
+        addWorkflowHistory(service, user, action, sibling, notes);
+    }
+
+    private static MappingWorkflow findSiblingWorkflow(final TerminologyService service, final MapSet mapSet, final MappingWorkflow workflow)
+        throws Exception {
+
+        if (workflow == null || workflow.getSpecialistSlot() != 1 && workflow.getSpecialistSlot() != 2) {
+            return null;
+        }
+        final int siblingSlot = workflow.getSpecialistSlot() == 1 ? 2 : 1;
+        return findWorkflowForConceptAndSlot(service, mapSet, workflow.getSourceConceptCode(), siblingSlot);
+    }
+
+    private static String getFinishComparisonKey(final TerminologyService service, final MappingWorkflow workflow) throws Exception {
+
+        final SearchParameters searchParameters = new SearchParameters();
+        searchParameters.setSort("modified");
+        searchParameters.setSortAscending(false);
+        searchParameters.setLimit(50);
+        final ResultList<MappingWorkflowHistory> history = getWorkflowHistory(service, workflow, searchParameters);
+        for (final MappingWorkflowHistory row : history.getItems()) {
+            if (row.getWorkflowAction() == MappingWorkflowAction.FINISH_EDITING) {
+                return StringUtils.defaultString(row.getNotes());
+            }
+        }
+        return "";
     }
 
     /**

@@ -45,7 +45,13 @@ public enum MappingWorkflowAction {
     REJECT_REVIEW,
 
     /** Lead requests specialist revision after review. */
-    REQUEST_REVISION;
+    REQUEST_REVISION,
+
+    /** Lead starts conflict resolution for disagreeing specialist results. */
+    START_CONFLICT_RESOLUTION,
+
+    /** Lead resolves a mapping conflict. */
+    RESOLVE_CONFLICT;
 
     /**
      * From string.

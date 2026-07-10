@@ -69,3 +69,13 @@ LEAD,REVIEW_IN_PROGRESS,REQUEST_REVISION,EDITING_IN_PROGRESS
 
 # Lead approves reviewed mapping for publication readiness
 LEAD,REVIEW_RESOLVED,APPROVE_FOR_PUBLICATION,READY_FOR_PUBLICATION
+
+##################
+# CONFLICT PROJECT — lead conflict resolution after both slots finish
+##################
+
+# Lead picks up a mapping with detected conflict
+LEAD,CONFLICT_DETECTED,START_CONFLICT_RESOLUTION,CONFLICT_IN_PROGRESS
+
+# Lead resolves conflict; mapping is ready for publication
+LEAD,CONFLICT_IN_PROGRESS,RESOLVE_CONFLICT,READY_FOR_PUBLICATION

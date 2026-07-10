@@ -64,6 +64,8 @@ public final class MappingWorkflowTestFixtures {
 
         private MappingWorkflow workflow;
 
+        private MappingWorkflow workflowSlot2;
+
         private MapUser specialistMapUser;
 
         private MapUser otherSpecialistMapUser;
@@ -140,6 +142,17 @@ public final class MappingWorkflowTestFixtures {
         }
 
         /**
+         * Create a CONFLICT_PROJECT fixture with mapset in edit and two specialist slots.
+         *
+         * @return the context
+         * @throws Exception the exception
+         */
+        public static Context createConflictProjectInEdit() throws Exception {
+
+            return createInEdit(WorkflowType.CONFLICT_PROJECT);
+        }
+
+        /**
          * Create a fixture with mapset not in edit.
          *
          * @return the context
@@ -174,6 +187,11 @@ public final class MappingWorkflowTestFixtures {
         public MappingWorkflow getWorkflow() {
 
             return workflow;
+        }
+
+        public MappingWorkflow getWorkflowSlot2() {
+
+            return workflowSlot2;
         }
 
         public User getSpecialistUser() {
@@ -223,6 +241,13 @@ public final class MappingWorkflowTestFixtures {
             return workflow;
         }
 
+        public MappingWorkflow reloadWorkflowSlot2() throws Exception {
+
+            service.getEntityManager().clear();
+            workflowSlot2 = service.get(workflowSlot2.getId(), MappingWorkflow.class);
+            return workflowSlot2;
+        }
+
         public MapSet reloadMapSet() throws Exception {
 
             service.getEntityManager().clear();
@@ -263,6 +288,33 @@ public final class MappingWorkflowTestFixtures {
             reloadWorkflow();
         }
 
+        public void setWorkflowSlot2AssignedTo(final String userName) throws Exception {
+
+            setWorkflowSlot2AssignedTo(userName, MapWorkflowStatus.EDITING_IN_PROGRESS);
+        }
+
+        public void setWorkflowSlot2AssignedTo(final String userName, final MapWorkflowStatus status) throws Exception {
+
+            workflowSlot2.setWorkflowStatus(status);
+            workflowSlot2.setAssignedUser(userName);
+            workflowSlot2.setAssignedAt(new Date());
+            workflowSlot2.setLeaseExpiresAt(new Date(System.currentTimeMillis() + 3600000L));
+            service.update(workflowSlot2);
+            reloadWorkflowSlot2();
+        }
+
+        public void setWorkflowSlot2Status(final MapWorkflowStatus status) throws Exception {
+
+            workflowSlot2.setWorkflowStatus(status);
+            if (status != MapWorkflowStatus.EDITING_IN_PROGRESS) {
+                workflowSlot2.setAssignedUser(null);
+                workflowSlot2.setAssignedAt(null);
+                workflowSlot2.setLeaseExpiresAt(null);
+            }
+            service.update(workflowSlot2);
+            reloadWorkflowSlot2();
+        }
+
         public void setWorkflowStatus(final MapWorkflowStatus status) throws Exception {
 
             workflow.setWorkflowStatus(status);
@@ -283,6 +335,12 @@ public final class MappingWorkflowTestFixtures {
                     service.remove(row);
                 }
                 service.remove(workflow);
+            }
+            if (workflowSlot2 != null && workflowSlot2.getId() != null) {
+                for (final MappingWorkflowHistory row : MappingWorkflowService.getWorkflowHistory(service, workflowSlot2, new SearchParameters()).getItems()) {
+                    service.remove(row);
+                }
+                service.remove(workflowSlot2);
             }
             if (mapSet != null && mapSet.getId() != null) {
                 final Project project = mapSet.getProject();
@@ -408,6 +466,16 @@ public final class MappingWorkflowTestFixtures {
             workflow.setMapSet(mapSet);
             workflow.setMapProject(mapProject);
             service.add(workflow);
+
+            if (workflowType == WorkflowType.CONFLICT_PROJECT) {
+                workflowSlot2 = new MappingWorkflow();
+                workflowSlot2.setSourceConceptCode(SOURCE_CONCEPT_CODE);
+                workflowSlot2.setWorkflowStatus(MapWorkflowStatus.NEW);
+                workflowSlot2.setSpecialistSlot(2);
+                workflowSlot2.setMapSet(mapSet);
+                workflowSlot2.setMapProject(mapProject);
+                service.add(workflowSlot2);
+            }
         }
 
         private MapUser persistMapUser(final String userName, final MapUserRole role) throws Exception {
