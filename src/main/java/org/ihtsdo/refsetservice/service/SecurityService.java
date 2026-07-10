@@ -63,6 +63,9 @@ public class SecurityService implements AutoCloseable {
     /** The session key for the user object. */
     public static final String SESSION_USER_OBJECT_KEY = "RT2_USER_OBJECT";
 
+    /** Request attribute used by API tests to supply the acting user. */
+    public static final String TEST_SESSION_USER_ATTRIBUTE = "RT2_TEST_SESSION_USER";
+
     /** The session key for the list of user projects. */
     public static final String SESSION_USER_PROJECTS = "RT2_USER_PROJECTS";
 
@@ -121,7 +124,8 @@ public class SecurityService implements AutoCloseable {
         final String profiles = PropertyUtility.getProperty("springProfiles");
         final String authDevBypass = PropertyUtility.getProperty("auth.dev.bypass");
         final boolean devBypass = "true".equalsIgnoreCase(authDevBypass)
-            || (profiles != null && (profiles.toLowerCase().contains("test") || profiles.toLowerCase().contains("dev")));
+            || (!"false".equalsIgnoreCase(authDevBypass)
+                && profiles != null && (profiles.toLowerCase().contains("test") || profiles.toLowerCase().contains("dev")));
         if (devBypass) {
 
             final User devUser = new User("devUser", "Dev User", "", "", "", new HashSet<>());
@@ -247,15 +251,12 @@ public class SecurityService implements AutoCloseable {
             return null;
         }
 
-        final HttpSession session = requestAttributes.getRequest().getSession();
-
+        final HttpSession session = requestAttributes.getRequest().getSession(false);
         if (session == null) {
-
             return null;
         }
 
-        final Object object = session.getAttribute(attributeName);
-        return object;
+        return session.getAttribute(attributeName);
     }
 
     /**

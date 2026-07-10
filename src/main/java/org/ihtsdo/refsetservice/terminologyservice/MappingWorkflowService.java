@@ -23,9 +23,11 @@ import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
+import org.hibernate.Hibernate;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.MapUser;
+import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MapWorkflowStatus;
 import org.ihtsdo.refsetservice.model.MappingWorkflow;
 import org.ihtsdo.refsetservice.model.MappingWorkflowHistory;
@@ -64,6 +66,17 @@ public final class MappingWorkflowService {
     /** Property key for assignment lease duration. */
     private static final String LEASE_DURATION_PROPERTY = "mapping.workflow.lease.duration.ms";
 
+    /** Property key to enable Snowstorm concept sub-branch side effects. */
+    private static final String CONCEPT_BRANCH_ENABLED_PROPERTY = "mapping.workflow.concept.branch.enabled";
+
+    /** Actions that create, merge, or delete per-concept Snowstorm branches. */
+    private static final List<MappingWorkflowAction> CONCEPT_BRANCH_ACTIONS = Arrays.asList(
+        MappingWorkflowAction.ASSIGN,
+        MappingWorkflowAction.FINISH_EDITING,
+        MappingWorkflowAction.RELEASE,
+        MappingWorkflowAction.FORCE_RELEASE
+    );
+
     /** Map&lt;role, Map&lt;currentStatus, Map&lt;action, resultingStatus&gt;&gt;&gt;. */
     private static final Map<MappingWorkflowRole, Map<MapWorkflowStatus, Map<MappingWorkflowAction, MapWorkflowStatus>>> WORKFLOW_PERMUTATIONS =
         new HashMap<>();
@@ -83,6 +96,9 @@ public final class MappingWorkflowService {
         MappingWorkflowAction.FINISH_EDITING,
         MappingWorkflowAction.FORCE_RELEASE
     );
+
+    /** Delegates per-concept Snowstorm branch operations (overridable in unit tests). */
+    private static ConceptBranchOperations conceptBranchOperations = new DefaultConceptBranchOperations();
 
     static {
         try {
@@ -165,6 +181,8 @@ public final class MappingWorkflowService {
                 workflow.getId(), workflow.getSourceConceptCode(), workflow.getWorkflowStatus(), action, user.getUserName(), roles);
             throw unauthorized(workflow, action);
         }
+
+        applyConceptBranchSideEffects(action, mapSet, workflow);
 
         applyAssignmentSideEffects(user, workflow, action, assignToUser);
         workflow.setWorkflowStatus(nextStatus);
@@ -481,5 +499,225 @@ public final class MappingWorkflowService {
         return new ResponseStatusException(HttpStatus.UNAUTHORIZED,
             "Unsuccessful attempt to update mapping workflow for concept " + workflow.getSourceConceptCode()
                 + " from status " + workflow.getWorkflowStatus() + " with action " + action);
+    }
+
+    /**
+     * Find the mapping workflow row for a source concept on a map set (specialist slot 1).
+     *
+     * @param service the terminology service
+     * @param mapSet the map set
+     * @param sourceConceptCode the source concept code
+     * @return the workflow row, or null if none exists
+     * @throws Exception the exception
+     */
+    public static MappingWorkflow findWorkflowForConcept(final TerminologyService service, final MapSet mapSet, final String sourceConceptCode)
+        throws Exception {
+
+        if (mapSet == null || StringUtils.isBlank(sourceConceptCode)) {
+            return null;
+        }
+
+        @SuppressWarnings("unchecked")
+        final List<MappingWorkflow> results = service.getEntityManager()
+            .createQuery("from MappingWorkflow mw where mw.mapSet.id = :mapSetId and mw.sourceConceptCode = :sourceConceptCode and mw.active = true",
+                MappingWorkflow.class)
+            .setParameter("mapSetId", mapSet.getId())
+            .setParameter("sourceConceptCode", sourceConceptCode)
+            .setMaxResults(2)
+            .getResultList();
+
+        if (results.isEmpty()) {
+            return null;
+        }
+        if (results.size() > 1) {
+            throw new Exception("More than one mapping workflow row for map set " + mapSet.getId() + " and concept " + sourceConceptCode);
+        }
+        return results.get(0);
+    }
+
+    /**
+     * Load the map project for a map set via primary key lookup.
+     *
+     * @param service the terminology service
+     * @param mapSet the map set
+     * @return the map project with membership collections initialized
+     * @throws Exception the exception
+     */
+    public static MapProject loadMapProject(final TerminologyService service, final MapSet mapSet) throws Exception {
+
+        if (mapSet == null || mapSet.getMapProject() == null || StringUtils.isBlank(mapSet.getMapProject().getId())) {
+            return null;
+        }
+        return prepareMapProject(service.get(mapSet.getMapProject().getId(), MapProject.class));
+    }
+
+    /**
+     * Initialize lazy map-project membership collections needed for role resolution.
+     *
+     * @param mapProject the map project
+     * @return the same map project instance with collections initialized
+     */
+    public static MapProject prepareMapProject(final MapProject mapProject) {
+
+        if (mapProject != null) {
+            Hibernate.initialize(mapProject.getMapSpecialists());
+            Hibernate.initialize(mapProject.getMapLeads());
+        }
+        return mapProject;
+    }
+
+    /**
+     * Verify the user may edit mapping data for a source concept.
+     *
+     * @param user the acting user
+     * @param workflow the mapping workflow row
+     * @param mapSet the map set
+     * @throws Exception the exception
+     */
+    public static void canUserEditMapping(final User user, final MappingWorkflow workflow, final MapSet mapSet) throws Exception {
+
+        if (!isMapsetInEdit(mapSet)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                "Reference Set is not in edit; user does not have permission to edit this mapping.");
+        }
+
+        if (workflow == null || workflow.getWorkflowStatus() != MapWorkflowStatus.EDITING_IN_PROGRESS) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                "Mapping is not assigned for editing; user does not have permission to edit this mapping.");
+        }
+
+        if (workflow.getAssignedUser() == null || !workflow.getAssignedUser().equals(user.getUserName())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+                "Mapping assignment does not match the acting user; user does not have permission to edit this mapping.");
+        }
+    }
+
+    /**
+     * Enforce edit permission for each mapping in an update payload.
+     *
+     * @param user the acting user
+     * @param mapSet the map set
+     * @param mappings the mappings to update
+     * @param service the terminology service
+     * @throws Exception the exception
+     */
+    public static void canUserEditMappings(final User user, final MapSet mapSet, final List<Mapping> mappings, final TerminologyService service)
+        throws Exception {
+
+        if (mappings == null) {
+            return;
+        }
+
+        for (final Mapping mapping : mappings) {
+            if (mapping == null || StringUtils.isBlank(mapping.getCode())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mapping source concept code is required.");
+            }
+            final MappingWorkflow workflow = findWorkflowForConcept(service, mapSet, mapping.getCode());
+            canUserEditMapping(user, workflow, mapSet);
+        }
+    }
+
+    /**
+     * Replace concept-branch operations (for unit tests only).
+     *
+     * @param operations the operations delegate, or null to restore the default
+     */
+    static void setConceptBranchOperationsForTests(final ConceptBranchOperations operations) {
+
+        conceptBranchOperations = operations != null ? operations : new DefaultConceptBranchOperations();
+    }
+
+    private static void applyConceptBranchSideEffects(final MappingWorkflowAction action, final MapSet mapSet, final MappingWorkflow workflow)
+        throws Exception {
+
+        if (!isConceptBranchSideEffectsEnabled() || !CONCEPT_BRANCH_ACTIONS.contains(action)) {
+            return;
+        }
+
+        final String conceptCode = workflow.getSourceConceptCode();
+        try {
+            switch (action) {
+                case ASSIGN:
+                    conceptBranchOperations.createConceptBranch(mapSet, conceptCode);
+                    break;
+                case FINISH_EDITING:
+                    conceptBranchOperations.mergeConceptToEdit(mapSet, conceptCode);
+                    break;
+                case RELEASE:
+                case FORCE_RELEASE:
+                    conceptBranchOperations.deleteConceptBranch(mapSet, conceptCode);
+                    break;
+                default:
+                    break;
+            }
+        } catch (final Exception e) {
+            LOG.error("Concept branch side effect failed for concept {} with action {}", conceptCode, action, e);
+            if (action == MappingWorkflowAction.RELEASE || action == MappingWorkflowAction.FORCE_RELEASE) {
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Failed to delete concept branch for " + conceptCode + ": " + e.getMessage(), e);
+            }
+            throw e;
+        }
+    }
+
+    private static boolean isConceptBranchSideEffectsEnabled() {
+
+        final String enabled = PropertyUtility.getProperty(CONCEPT_BRANCH_ENABLED_PROPERTY);
+        return !"false".equalsIgnoreCase(enabled);
+    }
+
+    /**
+     * Per-concept Snowstorm branch side effects.
+     */
+    interface ConceptBranchOperations {
+
+        /**
+         * Create a concept sub-branch under the mapset edit branch.
+         *
+         * @param mapSet the map set
+         * @param conceptCode the source concept code
+         * @return the concept branch path
+         * @throws Exception the exception
+         */
+        String createConceptBranch(MapSet mapSet, String conceptCode) throws Exception;
+
+        /**
+         * Merge a concept sub-branch into the shared edit branch.
+         *
+         * @param mapSet the map set
+         * @param conceptCode the source concept code
+         * @throws Exception the exception
+         */
+        void mergeConceptToEdit(MapSet mapSet, String conceptCode) throws Exception;
+
+        /**
+         * Delete a concept sub-branch.
+         *
+         * @param mapSet the map set
+         * @param conceptCode the source concept code
+         * @throws Exception the exception
+         */
+        void deleteConceptBranch(MapSet mapSet, String conceptCode) throws Exception;
+    }
+
+    private static final class DefaultConceptBranchOperations implements ConceptBranchOperations {
+
+        @Override
+        public String createConceptBranch(final MapSet mapSet, final String conceptCode) throws Exception {
+
+            return BranchService.createConceptBranch(mapSet, conceptCode);
+        }
+
+        @Override
+        public void mergeConceptToEdit(final MapSet mapSet, final String conceptCode) throws Exception {
+
+            BranchService.mergeConceptToEdit(mapSet, conceptCode);
+        }
+
+        @Override
+        public void deleteConceptBranch(final MapSet mapSet, final String conceptCode) throws Exception {
+
+            BranchService.deleteConceptBranch(mapSet, conceptCode);
+        }
     }
 }

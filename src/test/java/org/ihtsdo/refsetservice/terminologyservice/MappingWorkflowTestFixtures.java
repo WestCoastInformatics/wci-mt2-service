@@ -195,12 +195,14 @@ public final class MappingWorkflowTestFixtures {
 
         public MappingWorkflow reloadWorkflow() throws Exception {
 
+            service.getEntityManager().clear();
             workflow = service.get(workflow.getId(), MappingWorkflow.class);
             return workflow;
         }
 
         public MapSet reloadMapSet() throws Exception {
 
+            service.getEntityManager().clear();
             mapSet = service.get(mapSet.getId(), MapSet.class);
             return mapSet;
         }
@@ -367,6 +369,8 @@ public final class MappingWorkflowTestFixtures {
             mapSet.setInternationalContentVersion("2025-01-01 SNOMED CT core");
             mapSet.setProject(project);
             mapSet.setMapProject(mapProject);
+            mapSet.setMapBranchId("mw-branch-" + instanceId);
+            mapSet.setEditBranchId("EDIT-" + instanceId);
             service.add(mapSet);
 
             workflow = new MappingWorkflow();
