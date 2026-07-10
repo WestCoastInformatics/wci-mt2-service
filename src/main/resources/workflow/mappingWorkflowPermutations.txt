@@ -47,3 +47,6 @@ ADMIN,EDITING_IN_PROGRESS,FORCE_RELEASE,NEW
 
 # Admin assigns the mapping to another user; phase stays in progress
 ADMIN,EDITING_IN_PROGRESS,REASSIGN,EDITING_IN_PROGRESS
+
+# Lead reassigns the mapping to another specialist
+LEAD,EDITING_IN_PROGRESS,REASSIGN,EDITING_IN_PROGRESS

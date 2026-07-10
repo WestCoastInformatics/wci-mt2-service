@@ -17,14 +17,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.StringReader;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.MapWorkflowStatus;
 import org.ihtsdo.refsetservice.model.enums.MappingWorkflowAction;
+import org.ihtsdo.refsetservice.model.enums.MappingWorkflowRole;
 import org.ihtsdo.refsetservice.util.FieldedStringTokenizer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,10 +36,8 @@ public class MappingWorkflowPermutationTest {
 
     private static final String WORKFLOW_PERMUTATIONS_FILE_NAME = "workflow/mappingWorkflowPermutations.txt";
 
-    private static final List<String> ROLES = Arrays.asList("SPECIALIST", "LEAD", "ADMIN");
-
     /** Expected rows from the permutations file: role -> status -> action -> result. */
-    private Map<String, Map<MapWorkflowStatus, Map<MappingWorkflowAction, MapWorkflowStatus>>> permissiblePaths;
+    private Map<MappingWorkflowRole, Map<MapWorkflowStatus, Map<MappingWorkflowAction, MapWorkflowStatus>>> permissiblePaths;
 
     /**
      * Reload permutations from the classpath file before each test.
@@ -60,7 +57,7 @@ public class MappingWorkflowPermutationTest {
     @Test
     public void testAllRolesAndInitialStates() {
 
-        for (final String role : ROLES) {
+        for (final MappingWorkflowRole role : MappingWorkflowRole.values()) {
             for (final MapWorkflowStatus status : MapWorkflowStatus.values()) {
                 for (final MappingWorkflowAction action : MappingWorkflowAction.values()) {
                     final MapWorkflowStatus expected = getExpectedResult(role, status, action);
@@ -79,13 +76,13 @@ public class MappingWorkflowPermutationTest {
     public void testSimplePathRowsPresent() {
 
         assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS,
-            MappingWorkflowService.resolveTransition("SPECIALIST", MapWorkflowStatus.NEW, MappingWorkflowAction.ASSIGN));
+            MappingWorkflowService.resolveTransition(MappingWorkflowRole.SPECIALIST, MapWorkflowStatus.NEW, MappingWorkflowAction.ASSIGN));
         assertEquals(MapWorkflowStatus.NEW,
-            MappingWorkflowService.resolveTransition("SPECIALIST", MapWorkflowStatus.EDITING_IN_PROGRESS, MappingWorkflowAction.RELEASE));
+            MappingWorkflowService.resolveTransition(MappingWorkflowRole.SPECIALIST, MapWorkflowStatus.EDITING_IN_PROGRESS, MappingWorkflowAction.RELEASE));
         assertEquals(MapWorkflowStatus.EDITING_DONE,
-            MappingWorkflowService.resolveTransition("SPECIALIST", MapWorkflowStatus.EDITING_IN_PROGRESS, MappingWorkflowAction.FINISH_EDITING));
+            MappingWorkflowService.resolveTransition(MappingWorkflowRole.SPECIALIST, MapWorkflowStatus.EDITING_IN_PROGRESS, MappingWorkflowAction.FINISH_EDITING));
         assertEquals(MapWorkflowStatus.READY_FOR_PUBLICATION,
-            MappingWorkflowService.resolveTransition("LEAD", MapWorkflowStatus.EDITING_DONE, MappingWorkflowAction.APPROVE_FOR_PUBLICATION));
+            MappingWorkflowService.resolveTransition(MappingWorkflowRole.LEAD, MapWorkflowStatus.EDITING_DONE, MappingWorkflowAction.APPROVE_FOR_PUBLICATION));
     }
 
     @Test
@@ -96,7 +93,7 @@ public class MappingWorkflowPermutationTest {
         assertTrue(thrown.getMessage().contains("does not have 4 items"));
     }
 
-    private MapWorkflowStatus getExpectedResult(final String role, final MapWorkflowStatus status, final MappingWorkflowAction action) {
+    private MapWorkflowStatus getExpectedResult(final MappingWorkflowRole role, final MapWorkflowStatus status, final MappingWorkflowAction action) {
 
         if (!permissiblePaths.containsKey(role) || !permissiblePaths.get(role).containsKey(status)) {
             return null;
@@ -104,10 +101,10 @@ public class MappingWorkflowPermutationTest {
         return permissiblePaths.get(role).get(status).get(action);
     }
 
-    private static Map<String, Map<MapWorkflowStatus, Map<MappingWorkflowAction, MapWorkflowStatus>>> readPermutationsFromClasspath()
+    private static Map<MappingWorkflowRole, Map<MapWorkflowStatus, Map<MappingWorkflowAction, MapWorkflowStatus>>> readPermutationsFromClasspath()
         throws Exception {
 
-        final Map<String, Map<MapWorkflowStatus, Map<MappingWorkflowAction, MapWorkflowStatus>>> paths = new HashMap<>();
+        final Map<MappingWorkflowRole, Map<MapWorkflowStatus, Map<MappingWorkflowAction, MapWorkflowStatus>>> paths = new HashMap<>();
 
         try (final BufferedReader bufferedReader = new BufferedReader(
             new InputStreamReader(new ClassPathResource(WORKFLOW_PERMUTATIONS_FILE_NAME).getInputStream()))) {
@@ -120,7 +117,7 @@ public class MappingWorkflowPermutationTest {
                 }
 
                 final String[] tokens = FieldedStringTokenizer.split(line, ",");
-                final String role = tokens[0].toUpperCase().strip();
+                final MappingWorkflowRole role = MappingWorkflowRole.fromString(tokens[0].toUpperCase().strip());
                 final MapWorkflowStatus currentStatus = MapWorkflowStatus.fromString(tokens[1].toUpperCase().strip());
                 final MappingWorkflowAction workflowAction = MappingWorkflowAction.fromString(tokens[2].toUpperCase().strip());
                 final MapWorkflowStatus resultingStatus = MapWorkflowStatus.fromString(tokens[3].toUpperCase().strip());
