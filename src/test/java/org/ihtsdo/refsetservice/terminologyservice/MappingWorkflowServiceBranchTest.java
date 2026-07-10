@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.ihtsdo.refsetservice.model.MapWorkflowStatus;
 import org.ihtsdo.refsetservice.model.MappingWorkflow;
 import org.ihtsdo.refsetservice.model.enums.MappingWorkflowAction;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,10 +23,7 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @SpringBootTest
 @ActiveProfiles("test")
-@TestPropertySource(properties = {
-    "auth.dev.bypass=false",
-    "mapping.workflow.concept.branch.enabled=true"
-})
+@TestPropertySource(properties = "auth.dev.bypass=false")
 public class MappingWorkflowServiceBranchTest {
 
     private final RecordingConceptBranchOperations branchOperations = new RecordingConceptBranchOperations();
@@ -33,12 +31,14 @@ public class MappingWorkflowServiceBranchTest {
     @BeforeEach
     public void setup() {
 
+        PropertyUtility.setProperty("mapping.workflow.concept.branch.enabled", "true");
         MappingWorkflowService.setConceptBranchOperationsForTests(branchOperations);
     }
 
     @AfterEach
     public void teardown() {
 
+        PropertyUtility.setProperty("mapping.workflow.concept.branch.enabled", "false");
         MappingWorkflowService.setConceptBranchOperationsForTests(null);
     }
 

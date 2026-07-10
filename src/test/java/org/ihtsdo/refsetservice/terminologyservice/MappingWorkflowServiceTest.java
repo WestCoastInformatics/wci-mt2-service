@@ -13,6 +13,8 @@ import org.ihtsdo.refsetservice.model.MappingWorkflow;
 import org.ihtsdo.refsetservice.model.MappingWorkflowHistory;
 import org.ihtsdo.refsetservice.model.enums.MappingWorkflowAction;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
@@ -25,8 +27,17 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @SpringBootTest
 @ActiveProfiles("test")
-@TestPropertySource(properties = "auth.dev.bypass=false")
+@TestPropertySource(properties = {
+    "auth.dev.bypass=false",
+    "mapping.workflow.concept.branch.enabled=false"
+})
 public class MappingWorkflowServiceTest {
+
+    @BeforeEach
+    public void disableConceptBranchSideEffects() {
+
+        PropertyUtility.setProperty("mapping.workflow.concept.branch.enabled", "false");
+    }
 
     @Test
     public void assign_fromNew_bySpecialist() throws Exception {

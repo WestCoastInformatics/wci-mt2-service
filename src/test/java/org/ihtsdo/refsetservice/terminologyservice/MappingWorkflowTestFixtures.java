@@ -107,13 +107,36 @@ public final class MappingWorkflowTestFixtures {
          */
         public static Context createInEdit() throws Exception {
 
+            return createInEdit(WorkflowType.SIMPLE_PATH);
+        }
+
+        /**
+         * Create a fresh in-edit fixture for the given workflow type.
+         *
+         * @param workflowType the map project workflow type
+         * @return the context
+         * @throws Exception the exception
+         */
+        public static Context createInEdit(final WorkflowType workflowType) throws Exception {
+
             final TerminologyService terminologyService = new TerminologyService();
             terminologyService.setModifiedBy("test");
             terminologyService.setModifiedFlag(true);
 
             final Context context = new Context(terminologyService);
-            context.persistFixture(true);
+            context.persistFixture(true, workflowType);
             return context;
+        }
+
+        /**
+         * Create a REVIEW_PROJECT fixture with mapset in edit.
+         *
+         * @return the context
+         * @throws Exception the exception
+         */
+        public static Context createReviewProjectInEdit() throws Exception {
+
+            return createInEdit(WorkflowType.REVIEW_PROJECT);
         }
 
         /**
@@ -129,7 +152,7 @@ public final class MappingWorkflowTestFixtures {
             terminologyService.setModifiedFlag(true);
 
             final Context context = new Context(terminologyService);
-            context.persistFixture(false);
+            context.persistFixture(false, WorkflowType.SIMPLE_PATH);
             return context;
         }
 
@@ -227,7 +250,12 @@ public final class MappingWorkflowTestFixtures {
 
         public void setWorkflowAssignedTo(final String userName) throws Exception {
 
-            workflow.setWorkflowStatus(MapWorkflowStatus.EDITING_IN_PROGRESS);
+            setWorkflowAssignedTo(userName, MapWorkflowStatus.EDITING_IN_PROGRESS);
+        }
+
+        public void setWorkflowAssignedTo(final String userName, final MapWorkflowStatus status) throws Exception {
+
+            workflow.setWorkflowStatus(status);
             workflow.setAssignedUser(userName);
             workflow.setAssignedAt(new Date());
             workflow.setLeaseExpiresAt(new Date(System.currentTimeMillis() + 3600000L));
@@ -288,7 +316,7 @@ public final class MappingWorkflowTestFixtures {
             }
         }
 
-        private void persistFixture(final boolean mapsetInEdit) throws Exception {
+        private void persistFixture(final boolean mapsetInEdit, final WorkflowType workflowType) throws Exception {
 
             final Organization organization = new Organization();
             organization.setName("MW Org " + System.currentTimeMillis());
@@ -338,7 +366,7 @@ public final class MappingWorkflowTestFixtures {
             mapProject.setMapNotesPublic(false);
             mapProject.setReverseMapPattern(false);
             mapProject.setEdition(edition);
-            mapProject.setWorkflowType(WorkflowType.SIMPLE_PATH);
+            mapProject.setWorkflowType(workflowType);
 
             final Set<MapUser> specialists = new HashSet<>();
             specialists.add(specialistMapUser);

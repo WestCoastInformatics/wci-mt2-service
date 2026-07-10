@@ -37,6 +37,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
     "auth.dev.bypass=false",
+    "mapping.workflow.concept.branch.enabled=false",
     "terminology.handler=MAPPING_WORKFLOW_TEST",
     "terminology.handler.MAPPING_WORKFLOW_TEST.class=org.ihtsdo.refsetservice.rest.test.util.MappingWorkflowTestHandler"
 })

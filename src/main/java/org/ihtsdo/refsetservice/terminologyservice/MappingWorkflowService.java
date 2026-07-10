@@ -24,6 +24,7 @@ import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.hibernate.Hibernate;
+import org.ihtsdo.refsetservice.helpers.WorkflowType;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.MapUser;
@@ -94,7 +95,10 @@ public final class MappingWorkflowService {
     private static final List<MappingWorkflowAction> CLEAR_ASSIGNMENT_ACTIONS = Arrays.asList(
         MappingWorkflowAction.RELEASE,
         MappingWorkflowAction.FINISH_EDITING,
-        MappingWorkflowAction.FORCE_RELEASE
+        MappingWorkflowAction.FORCE_RELEASE,
+        MappingWorkflowAction.ACCEPT_REVIEW,
+        MappingWorkflowAction.REJECT_REVIEW,
+        MappingWorkflowAction.REQUEST_REVISION
     );
 
     /** Delegates per-concept Snowstorm branch operations (overridable in unit tests). */
@@ -181,6 +185,8 @@ public final class MappingWorkflowService {
                 workflow.getId(), workflow.getSourceConceptCode(), workflow.getWorkflowStatus(), action, user.getUserName(), roles);
             throw unauthorized(workflow, action);
         }
+
+        nextStatus = adjustResultStatusForWorkflowType(mapProject, action, nextStatus);
 
         applyConceptBranchSideEffects(action, mapSet, workflow);
 
@@ -373,7 +379,8 @@ public final class MappingWorkflowService {
      */
     static void loadPermutations(final Reader reader, final String fileName) throws Exception {
 
-        WORKFLOW_PERMUTATIONS.clear();
+        final Map<MappingWorkflowRole, Map<MapWorkflowStatus, Map<MappingWorkflowAction, MapWorkflowStatus>>> loaded =
+            new HashMap<>();
 
         try (final BufferedReader bufferedReader = reader instanceof BufferedReader ? (BufferedReader) reader : new BufferedReader(reader)) {
 
@@ -395,17 +402,25 @@ public final class MappingWorkflowService {
                 final MappingWorkflowAction workflowAction = MappingWorkflowAction.fromString(tokens[2].toUpperCase().strip());
                 final MapWorkflowStatus resultingStatus = MapWorkflowStatus.fromString(tokens[3].toUpperCase().strip());
 
-                WORKFLOW_PERMUTATIONS.computeIfAbsent(role, key -> new HashMap<>())
+                loaded.computeIfAbsent(role, key -> new HashMap<>())
                     .computeIfAbsent(currentStatus, key -> new HashMap<>())
                     .put(workflowAction, resultingStatus);
             }
         }
+
+        WORKFLOW_PERMUTATIONS.clear();
+        WORKFLOW_PERMUTATIONS.putAll(loaded);
     }
 
     private static void applyAssignmentSideEffects(final User user, final MappingWorkflow workflow, final MappingWorkflowAction action,
         final String assignToUser) {
 
         if (action == MappingWorkflowAction.ASSIGN) {
+            final Date assignedAt = new Date();
+            workflow.setAssignedUser(user.getUserName());
+            workflow.setAssignedAt(assignedAt);
+            workflow.setLeaseExpiresAt(new Date(assignedAt.getTime() + getLeaseDurationMs()));
+        } else if (action == MappingWorkflowAction.START_REVIEW) {
             final Date assignedAt = new Date();
             workflow.setAssignedUser(user.getUserName());
             workflow.setAssignedAt(assignedAt);
@@ -458,12 +473,30 @@ public final class MappingWorkflowService {
         switch (action) {
             case ASSIGN:
                 return workflow.getWorkflowStatus() == MapWorkflowStatus.NEW && workflow.getAssignedUser() == null;
+            case START_REVIEW:
+                return workflow.getWorkflowStatus() == MapWorkflowStatus.REVIEW_NEEDED && workflow.getAssignedUser() == null;
             case RELEASE:
             case FINISH_EDITING:
+                return user.getUserName().equals(workflow.getAssignedUser());
+            case ACCEPT_REVIEW:
+            case REJECT_REVIEW:
+            case REQUEST_REVISION:
                 return user.getUserName().equals(workflow.getAssignedUser());
             default:
                 return true;
         }
+    }
+
+    private static MapWorkflowStatus adjustResultStatusForWorkflowType(final MapProject mapProject, final MappingWorkflowAction action,
+        final MapWorkflowStatus nextStatus) {
+
+        if (mapProject == null || mapProject.getWorkflowType() != WorkflowType.REVIEW_PROJECT) {
+            return nextStatus;
+        }
+        if (action == MappingWorkflowAction.FINISH_EDITING && nextStatus == MapWorkflowStatus.EDITING_DONE) {
+            return MapWorkflowStatus.REVIEW_NEEDED;
+        }
+        return nextStatus;
     }
 
     private static boolean isMapsetInEdit(final MapSet mapSet) {

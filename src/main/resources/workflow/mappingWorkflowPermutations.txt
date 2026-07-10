@@ -50,3 +50,22 @@ ADMIN,EDITING_IN_PROGRESS,REASSIGN,EDITING_IN_PROGRESS
 
 # Lead reassigns the mapping to another specialist
 LEAD,EDITING_IN_PROGRESS,REASSIGN,EDITING_IN_PROGRESS
+
+##################
+# REVIEW PROJECT — lead review after specialist finish
+##################
+
+# Lead picks up a mapping awaiting review
+LEAD,REVIEW_NEEDED,START_REVIEW,REVIEW_IN_PROGRESS
+
+# Lead accepts review
+LEAD,REVIEW_IN_PROGRESS,ACCEPT_REVIEW,REVIEW_RESOLVED
+
+# Lead rejects review; mapping returns to the queue (assignment cleared)
+LEAD,REVIEW_IN_PROGRESS,REJECT_REVIEW,NEW
+
+# Lead sends mapping back for specialist revision
+LEAD,REVIEW_IN_PROGRESS,REQUEST_REVISION,EDITING_IN_PROGRESS
+
+# Lead approves reviewed mapping for publication readiness
+LEAD,REVIEW_RESOLVED,APPROVE_FOR_PUBLICATION,READY_FOR_PUBLICATION

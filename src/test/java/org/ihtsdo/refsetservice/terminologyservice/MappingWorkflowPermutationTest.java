@@ -86,6 +86,19 @@ public class MappingWorkflowPermutationTest {
     }
 
     @Test
+    public void testReviewProjectRowsPresent() {
+
+        assertEquals(MapWorkflowStatus.REVIEW_IN_PROGRESS,
+            MappingWorkflowService.resolveTransition(MappingWorkflowRole.LEAD, MapWorkflowStatus.REVIEW_NEEDED, MappingWorkflowAction.START_REVIEW));
+        assertEquals(MapWorkflowStatus.REVIEW_RESOLVED,
+            MappingWorkflowService.resolveTransition(MappingWorkflowRole.LEAD, MapWorkflowStatus.REVIEW_IN_PROGRESS, MappingWorkflowAction.ACCEPT_REVIEW));
+        assertEquals(MapWorkflowStatus.NEW,
+            MappingWorkflowService.resolveTransition(MappingWorkflowRole.LEAD, MapWorkflowStatus.REVIEW_IN_PROGRESS, MappingWorkflowAction.REJECT_REVIEW));
+        assertEquals(MapWorkflowStatus.READY_FOR_PUBLICATION,
+            MappingWorkflowService.resolveTransition(MappingWorkflowRole.LEAD, MapWorkflowStatus.REVIEW_RESOLVED, MappingWorkflowAction.APPROVE_FOR_PUBLICATION));
+    }
+
+    @Test
     public void testMalformedFileFailsFast() throws Exception {
 
         final Exception thrown = assertThrows(Exception.class, () -> MappingWorkflowService.loadPermutations(

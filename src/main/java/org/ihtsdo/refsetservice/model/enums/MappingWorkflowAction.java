@@ -33,7 +33,19 @@ public enum MappingWorkflowAction {
     REASSIGN,
 
     /** Lead or admin approves mapping for publication readiness. */
-    APPROVE_FOR_PUBLICATION;
+    APPROVE_FOR_PUBLICATION,
+
+    /** Lead starts review of a mapping awaiting review. */
+    START_REVIEW,
+
+    /** Lead accepts review and marks mapping resolved. */
+    ACCEPT_REVIEW,
+
+    /** Lead rejects review and returns mapping to the queue. */
+    REJECT_REVIEW,
+
+    /** Lead requests specialist revision after review. */
+    REQUEST_REVISION;
 
     /**
      * From string.
