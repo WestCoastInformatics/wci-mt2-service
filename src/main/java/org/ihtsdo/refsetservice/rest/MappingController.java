@@ -663,14 +663,16 @@ public class MappingController extends BaseController {
     public @ResponseBody ResponseEntity<MappingWorkflow> getMappingWorkflowStatus(@PathVariable final String mapSetInternalId,
         @PathVariable final String conceptCode, final HttpServletRequest request) throws Exception {
 
-        requireSessionUser(request);
+        final User user = requireSessionUser(request);
 
         try (final TerminologyService service = new TerminologyService()) {
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
             final MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
-            final MappingWorkflow workflow = MappingWorkflowService.findWorkflowForConcept(service, mapSet, conceptCode);
-            if (workflow == null) {
+            if (mapSet.getMapProject() == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
+            final MappingWorkflow workflow = MappingWorkflowService.ensureWorkflowForConcept(service, mapSet, conceptCode);
             return new ResponseEntity<>(workflow, HttpStatus.OK);
         } catch (final Exception e) {
             rethrowHandled(e);
@@ -716,7 +718,7 @@ public class MappingController extends BaseController {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
 
-            final MappingWorkflow workflow = MappingWorkflowService.findWorkflowForConcept(service, mapSet, conceptCode);
+            final MappingWorkflow workflow = MappingWorkflowService.ensureWorkflowForConcept(service, mapSet, conceptCode);
             if (workflow == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
@@ -748,14 +750,16 @@ public class MappingController extends BaseController {
     public @ResponseBody ResponseEntity<ResultList<MappingWorkflowHistory>> getMappingWorkflowHistory(@PathVariable final String mapSetInternalId,
         @PathVariable final String conceptCode, @ModelAttribute final SearchParameters searchParameters, final HttpServletRequest request) throws Exception {
 
-        requireSessionUser(request);
+        final User user = requireSessionUser(request);
 
         try (final TerminologyService service = new TerminologyService()) {
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
             final MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
-            final MappingWorkflow workflow = MappingWorkflowService.findWorkflowForConcept(service, mapSet, conceptCode);
-            if (workflow == null) {
+            if (mapSet.getMapProject() == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
+            final MappingWorkflow workflow = MappingWorkflowService.ensureWorkflowForConcept(service, mapSet, conceptCode);
             final ResultList<MappingWorkflowHistory> history = MappingWorkflowService.getWorkflowHistory(service, workflow, searchParameters);
             return new ResponseEntity<>(history, HttpStatus.OK);
         } catch (final Exception e) {

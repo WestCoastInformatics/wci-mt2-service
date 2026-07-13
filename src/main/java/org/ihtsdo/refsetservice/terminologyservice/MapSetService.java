@@ -15,6 +15,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import javax.persistence.EntityManager;
+import javax.persistence.EntityTransaction;
+
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
 import org.ihtsdo.refsetservice.model.MapProject;
@@ -157,11 +160,12 @@ public class MapSetService {
         if (mapSetInternalId == null || mapSetInternalId.isBlank()) {
             throw new Exception("MapSet identifier is required");
         }
+        TerminologyService.ensureFactoryForClassLoader(MapSet.class);
         MapSet mapSet = null;
         try {
-            mapSet = service.get(mapSetInternalId, MapSet.class);
+            mapSet = findMapSetById(service, mapSetInternalId);
         } catch (final Exception e) {
-            // id lookup failed, try refSetCode
+            LOG.debug("MapSet id lookup failed for {}: {}", mapSetInternalId, e.getMessage());
         }
         if (mapSet == null) {
             mapSet = findMapSetByRefSetCode(service, mapSetInternalId);
@@ -170,6 +174,23 @@ public class MapSetService {
             throw new Exception("Unable to retrieve map set " + mapSetInternalId);
         }
         return mapSet;
+    }
+
+    private static MapSet findMapSetById(final TerminologyService service, final String mapSetInternalId) throws Exception {
+
+        final EntityManager manager = service.getEntityManager();
+        final EntityTransaction transaction = manager.getTransaction();
+        final boolean startedHere = !transaction.isActive();
+        if (startedHere) {
+            transaction.begin();
+        }
+        try {
+            return manager.find(MapSet.class, mapSetInternalId);
+        } finally {
+            if (startedHere && transaction.isActive()) {
+                transaction.commit();
+            }
+        }
     }
 
     /**

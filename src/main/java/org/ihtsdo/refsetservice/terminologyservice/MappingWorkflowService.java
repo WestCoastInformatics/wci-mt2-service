@@ -37,6 +37,7 @@ import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.enums.MappingWorkflowAction;
 import org.ihtsdo.refsetservice.model.enums.MappingWorkflowRole;
 import org.ihtsdo.refsetservice.model.enums.VersionStatus;
+import org.ihtsdo.refsetservice.model.enums.WorkflowAction;
 import org.ihtsdo.refsetservice.model.enums.WorkflowStatus;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.FieldedStringTokenizer;
@@ -89,6 +90,19 @@ public final class MappingWorkflowService {
         MappingWorkflowAction.FINISH_EDITING,
         MappingWorkflowAction.FORCE_RELEASE,
         MappingWorkflowAction.REASSIGN
+    );
+
+    /** Mapping phases that block mapset FINISH_EDIT and REQUEST_PUBLICATION. */
+    private static final List<MapWorkflowStatus> MAPSET_GATE_BLOCKING_STATUSES = Arrays.asList(
+        MapWorkflowStatus.EDITING_IN_PROGRESS,
+        MapWorkflowStatus.REVIEW_IN_PROGRESS,
+        MapWorkflowStatus.CONFLICT_IN_PROGRESS
+    );
+
+    /** Mapset actions gated on per-mapping workflow summary. */
+    private static final List<WorkflowAction> MAPSET_GATE_ACTIONS = Arrays.asList(
+        WorkflowAction.FINISH_EDIT,
+        WorkflowAction.REQUEST_PUBLICATION
     );
 
     /** Actions that clear assignment fields on success. */
@@ -608,6 +622,131 @@ public final class MappingWorkflowService {
             return null;
         }
         return results.get(0);
+    }
+
+    /**
+     * Ensure a mapping workflow row exists for a source concept (lazy init).
+     *
+     * @param service the terminology service
+     * @param mapSet the map set
+     * @param sourceConceptCode the source concept code
+     * @return the existing or newly created workflow row for specialist slot 1
+     * @throws Exception the exception
+     */
+    public static MappingWorkflow ensureWorkflowForConcept(final TerminologyService service, final MapSet mapSet, final String sourceConceptCode)
+        throws Exception {
+
+        return ensureWorkflowForConcept(service, mapSet, sourceConceptCode, 1);
+    }
+
+    /**
+     * Ensure a mapping workflow row exists for a source concept and specialist slot (lazy init).
+     *
+     * @param service the terminology service
+     * @param mapSet the map set
+     * @param sourceConceptCode the source concept code
+     * @param specialistSlot the specialist slot (1 or 2)
+     * @return the existing or newly created workflow row
+     * @throws Exception the exception
+     */
+    public static MappingWorkflow ensureWorkflowForConcept(final TerminologyService service, final MapSet mapSet, final String sourceConceptCode,
+        final int specialistSlot) throws Exception {
+
+        final MappingWorkflow existing = findWorkflowForConceptAndSlot(service, mapSet, sourceConceptCode, specialistSlot);
+        if (existing != null) {
+            return existing;
+        }
+
+        final MapProject mapProject = loadMapProject(service, mapSet);
+        final MappingWorkflow workflow = new MappingWorkflow();
+        workflow.setSourceConceptCode(sourceConceptCode);
+        workflow.setWorkflowStatus(MapWorkflowStatus.NEW);
+        workflow.setSpecialistSlot(specialistSlot);
+        workflow.setMapSet(mapSet);
+        workflow.setMapProject(mapProject);
+        return service.add(workflow);
+    }
+
+    /**
+     * Count active mapping workflow rows for a map set, concept, and specialist slot.
+     *
+     * @param service the terminology service
+     * @param mapSet the map set
+     * @param sourceConceptCode the source concept code
+     * @param specialistSlot the specialist slot
+     * @return the row count
+     * @throws Exception the exception
+     */
+    public static int countWorkflowRows(final TerminologyService service, final MapSet mapSet, final String sourceConceptCode, final int specialistSlot)
+        throws Exception {
+
+        if (mapSet == null || StringUtils.isBlank(sourceConceptCode) || specialistSlot < 1) {
+            return 0;
+        }
+
+        final Long count = service.getEntityManager()
+            .createQuery("select count(mw) from MappingWorkflow mw where mw.mapSet.id = :mapSetId and mw.sourceConceptCode = :sourceConceptCode"
+                + " and mw.specialistSlot = :specialistSlot and mw.active = true", Long.class)
+            .setParameter("mapSetId", mapSet.getId())
+            .setParameter("sourceConceptCode", sourceConceptCode)
+            .setParameter("specialistSlot", specialistSlot)
+            .getSingleResult();
+        return count == null ? 0 : count.intValue();
+    }
+
+    /**
+     * Verify no per-mapping workflow rows block the requested mapset transition.
+     *
+     * @param service the terminology service
+     * @param mapSet the map set
+     * @param action the mapset workflow action
+     * @throws Exception the exception
+     */
+    public static void assertMapsetTransitionAllowed(final TerminologyService service, final MapSet mapSet, final WorkflowAction action) throws Exception {
+
+        if (mapSet == null || mapSet.getMapProject() == null || action == null || !MAPSET_GATE_ACTIONS.contains(action)) {
+            return;
+        }
+
+        final List<MappingWorkflow> blockingMappings = findBlockingMappings(service, mapSet);
+        if (blockingMappings.isEmpty()) {
+            return;
+        }
+
+        final StringBuilder message = new StringBuilder("Mapset transition blocked by mapping(s) in progress: ");
+        for (int index = 0; index < blockingMappings.size(); index++) {
+            if (index > 0) {
+                message.append(", ");
+            }
+            final MappingWorkflow workflow = blockingMappings.get(index);
+            message.append(workflow.getSourceConceptCode()).append(" (").append(workflow.getWorkflowStatus()).append(")");
+        }
+        throw new ResponseStatusException(HttpStatus.CONFLICT, message.toString());
+    }
+
+    /**
+     * Find mapping workflow rows that block mapset finish or publication requests.
+     *
+     * @param service the terminology service
+     * @param mapSet the map set
+     * @return blocking mapping workflow rows
+     * @throws Exception the exception
+     */
+    public static List<MappingWorkflow> findBlockingMappings(final TerminologyService service, final MapSet mapSet) throws Exception {
+
+        if (mapSet == null || StringUtils.isBlank(mapSet.getId())) {
+            return List.of();
+        }
+
+        @SuppressWarnings("unchecked")
+        final List<MappingWorkflow> results = service.getEntityManager()
+            .createQuery("from MappingWorkflow mw where mw.mapSet.id = :mapSetId and mw.active = true"
+                + " and mw.workflowStatus in :blockingStatuses",
+                MappingWorkflow.class)
+            .setParameter("mapSetId", mapSet.getId())
+            .setParameter("blockingStatuses", MAPSET_GATE_BLOCKING_STATUSES)
+            .getResultList();
+        return results;
     }
 
     /**

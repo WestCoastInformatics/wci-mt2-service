@@ -71,11 +71,40 @@ public class TerminologyService implements RootService {
 	/** The reindex. */
 	private static boolean reindex = true;
 
+	/**
+	 * Skip the one-time startup reindex (e.g. after it already ran before Spring Boot started).
+	 */
+	public static void disableStartupReindex() {
+
+		reindex = false;
+	}
+
+	/**
+	 * Ensure the static entity manager factory matches the class loader of the anchor type.
+	 *
+	 * @param anchorClass class whose class loader should be used for the factory
+	 * @throws Exception the exception
+	 */
+	public static void ensureFactoryForClassLoader(final Class<?> anchorClass) throws Exception {
+
+		final ClassLoader anchorClassLoader = anchorClass.getClassLoader();
+		if (factory == null || !factory.isOpen() || factoryClassLoader != anchorClassLoader) {
+			if (factory != null && factory.isOpen()) {
+				factory.close();
+			}
+			factory = Persistence.createEntityManagerFactory("refsetservice-ds", PropertyUtility.getJpaProperties());
+			factoryClassLoader = anchorClassLoader;
+		}
+	}
+
 	/** The search handler. */
 	private static Map<String, SearchHandler> searchHandlerMap = new HashMap<>();
 
 	/** The factory. */
 	private static EntityManagerFactory factory = null;
+
+	/** The class loader used to create the factory. */
+	private static ClassLoader factoryClassLoader = null;
 
 	/** The manager. */
 	private EntityManager manager;
@@ -112,12 +141,8 @@ public class TerminologyService implements RootService {
 			properties = PropertyUtility.getProperties();
 		}
 
-		// created once or if the factory has closed
-		if (factory == null || !factory.isOpen()) {
-
-			LOG.debug("Setting root service entity manager factory. ", properties);
-			factory = Persistence.createEntityManagerFactory("refsetservice-ds", PropertyUtility.getJpaProperties());
-		}
+		// created once or if the factory has closed or the class loader changed (devtools restart)
+		ensureFactoryForClassLoader(getClass());
 
 		if (searchHandlerMap == null) {
 			searchHandlerMap = new HashMap<>();

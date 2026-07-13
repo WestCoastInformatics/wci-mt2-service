@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.util.UrlPathHelper;
 
@@ -45,6 +46,16 @@ public class WebConfiguration implements WebMvcConfigurer {
                 .exposedHeaders(HttpHeaders.CONTENT_DISPOSITION, HttpHeaders.CONTENT_TYPE, HttpHeaders.CONTENT_LENGTH)
                 .allowCredentials(true)
                 .maxAge(3600);
+    }
+
+    /* see superclass */
+    @Override
+    public void addViewControllers(final ViewControllerRegistry registry) {
+
+        // Legacy Springfox path used by older bookmarks and docs.
+        registry.addRedirectViewController("/swagger", "/swagger-ui/index.html");
+        registry.addRedirectViewController("/swagger/", "/swagger-ui/index.html");
+        registry.addRedirectViewController("/swagger/index.html", "/swagger-ui/index.html");
     }
 
     /* see superclass */

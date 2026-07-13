@@ -101,18 +101,24 @@ public final class SnowstormConnection {
 
     /** Static initialization. */
     static {
+        loadConfigurationFromProperties();
+    }
+
+    /**
+     * Reload Snowstorm connection settings from {@link PropertyUtility}. Used by integration tests that inject
+     * credentials after the JVM starts.
+     */
+    public static void loadConfigurationFromProperties() {
+
         restBaseUrl = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.restBaseUrl");
         fhirBaseUrl = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.fhirBaseUrl");
         authUrl = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.authUrl");
         userName = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.username");
         password = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.password");
         final String authTypeProperty = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.authType");
-        try {
-            authMode = resolveSnowstormAuthMode(authTypeProperty, authUrl);
-        } catch (final IllegalArgumentException e) {
-            LOG.error("Invalid Snowstorm auth configuration: {}", e.getMessage());
-            throw new ExceptionInInitializerError(e);
-        }
+        authMode = resolveSnowstormAuthMode(authTypeProperty, authUrl);
+        genericUserCookie = null;
+        genericUserCookieExpirationDate = null;
     }
 
     /**

@@ -73,7 +73,25 @@ public class MappingWorkflowUnitTestUtilities {
     public MappingWorkflow updateWorkflow(final String mapSetId, final String conceptCode, final MappingWorkflowAction action, final String note,
         final User asUser) throws Exception {
 
-        final String url = workflowStatusUrl(mapSetId, conceptCode, action, note, null);
+        return updateWorkflow(mapSetId, conceptCode, action, note, asUser, null);
+    }
+
+    /**
+     * Advance mapping workflow via API, optionally targeting another user (REASSIGN).
+     *
+     * @param mapSetId the map set id
+     * @param conceptCode the source concept code
+     * @param action the action
+     * @param note the note
+     * @param asUser the acting user
+     * @param assignToUser target user for REASSIGN, or null
+     * @return the updated mapping workflow
+     * @throws Exception the exception
+     */
+    public MappingWorkflow updateWorkflow(final String mapSetId, final String conceptCode, final MappingWorkflowAction action, final String note,
+        final User asUser, final String assignToUser) throws Exception {
+
+        final String url = workflowStatusUrl(mapSetId, conceptCode, action, note, assignToUser);
         final MvcResult result = mvc.perform(withUser(post(url), asUser).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk()).andReturn();
         return MAPPER.readValue(result.getResponse().getContentAsString(), MappingWorkflow.class);

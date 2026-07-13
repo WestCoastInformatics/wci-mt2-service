@@ -296,6 +296,32 @@ test {
    exclude "**/*IntegrationTest*"
 }
 
+// Live / external-system tests. Not part of default ./gradlew test.
+// Example: source .work/mt2-dev/.env-local && export SNOMED_SNOWSTORM_REST_BASE_URL=$SNOMED_SNOWSTORM_BASE_URL
+//          ./gradlew integrationTest --tests org.ihtsdo.refsetservice.rest.test.MappingWorkflowSnowstormIntegrationTest
+task integrationTest(type: Test) {
+   description = "Runs *IntegrationTest* classes (e.g. live Snowstorm). Not part of default test."
+   group = "verification"
+   testClassesDirs = sourceSets.test.output.classesDirs
+   classpath = sourceSets.test.runtimeClasspath
+   systemProperty "spring.profiles.active", "test"
+   useJUnitPlatform()
+   include "**/*IntegrationTest*"
+   shouldRunAfter test
+   testLogging {
+      events "passed", "skipped", "failed"
+      exceptionFormat "full"
+      showCauses true
+      showStackTraces true
+   }
+}
+
+bootRun {
+   classpath = sourceSets.main.runtimeClasspath.filter {
+      !it.name.contains("spring-boot-devtools")
+   }
+}
+
 // ./gradlew reindex
 task reindex(type: JavaExec) {
 

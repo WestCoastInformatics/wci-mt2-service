@@ -1,7 +1,9 @@
 package org.ihtsdo.refsetservice.terminologyservice;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -10,6 +12,7 @@ import org.ihtsdo.refsetservice.helpers.WorkflowType;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
+import org.ihtsdo.refsetservice.model.MapSetWorkflowHistory;
 import org.ihtsdo.refsetservice.model.MapUser;
 import org.ihtsdo.refsetservice.model.MapWorkflowStatus;
 import org.ihtsdo.refsetservice.model.MappingWorkflow;
@@ -85,6 +88,8 @@ public final class MappingWorkflowTestFixtures {
         private User adminUser;
 
         private User viewerUser;
+
+        private final List<MappingWorkflow> extraWorkflows = new ArrayList<>();
 
         private Context(final TerminologyService service) {
 
@@ -327,6 +332,31 @@ public final class MappingWorkflowTestFixtures {
             reloadWorkflow();
         }
 
+        public void removePrimaryWorkflow() throws Exception {
+
+            if (workflow == null || workflow.getId() == null) {
+                return;
+            }
+            for (final MappingWorkflowHistory row : MappingWorkflowService.getWorkflowHistory(service, workflow, new SearchParameters()).getItems()) {
+                service.remove(row);
+            }
+            service.remove(workflow);
+            workflow = null;
+        }
+
+        public MappingWorkflow addWorkflowForConcept(final String sourceConceptCode, final MapWorkflowStatus status) throws Exception {
+
+            final MappingWorkflow row = new MappingWorkflow();
+            row.setSourceConceptCode(sourceConceptCode);
+            row.setWorkflowStatus(status);
+            row.setSpecialistSlot(1);
+            row.setMapSet(mapSet);
+            row.setMapProject(mapProject);
+            service.add(row);
+            extraWorkflows.add(row);
+            return row;
+        }
+
         @Override
         public void close() throws Exception {
 
@@ -342,7 +372,20 @@ public final class MappingWorkflowTestFixtures {
                 }
                 service.remove(workflowSlot2);
             }
+            for (final MappingWorkflow extraWorkflow : extraWorkflows) {
+                if (extraWorkflow != null && extraWorkflow.getId() != null) {
+                    for (final MappingWorkflowHistory row : MappingWorkflowService.getWorkflowHistory(service, extraWorkflow, new SearchParameters())
+                        .getItems()) {
+                        service.remove(row);
+                    }
+                    service.remove(extraWorkflow);
+                }
+            }
+            extraWorkflows.clear();
             if (mapSet != null && mapSet.getId() != null) {
+                for (final MapSetWorkflowHistory row : MapSetWorkflowService.getWorkflowHistory(service, mapSet, new SearchParameters()).getItems()) {
+                    service.remove(row);
+                }
                 final Project project = mapSet.getProject();
                 service.remove(mapSet);
                 if (mapProject != null && mapProject.getId() != null) {
