@@ -11,8 +11,6 @@ package org.ihtsdo.refsetservice;
 
 import javax.persistence.PersistenceException;
 
-import org.ihtsdo.refsetservice.service.TerminologyService;
-import org.ihtsdo.refsetservice.terminologyservice.MapSetService;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,22 +82,6 @@ public class Application extends SpringBootServletInitializer {
             setSystemProperties();
 
             SpringApplication.run(Application.class, args);
-
-            try (final TerminologyService service = new TerminologyService()) {
-                // just kicking off the lucene reindexing
-
-                // also delete user sessions on application startup
-                service.clearUserSessions();
-
-                // cache concepts at startup (skip when cache.terminology.prewarm.enabled=false for faster restart with persisted cache)
-                final String cacheConceptsEnabled = PropertyUtility.getProperty("cache.terminology.prewarm.enabled");
-                final boolean shouldCacheConcepts = cacheConceptsEnabled == null || "true".equalsIgnoreCase(cacheConceptsEnabled);
-                if (shouldCacheConcepts) {
-                    MapSetService.cacheConceptsForActiveMapSets(service);
-                } else {
-                    LOG.info("Concept caching skipped (cache.terminology.prewarm.enabled=false)");
-                }
-            }
 
         } catch (final PersistenceException e) {
 

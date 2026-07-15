@@ -282,14 +282,11 @@ public class Edition extends AbstractHasModified {
     @JsonGetter()
     public String getAbbreviation() {
 
-        String abbreviation = "main";
-
-        if (!shortName.equals("SNOMEDCT")) {
-
-            abbreviation = shortName.replaceFirst("SNOMEDCT-?", "").toLowerCase();
+        if (shortName == null || shortName.equals("SNOMEDCT")) {
+            return "main";
         }
 
-        return abbreviation;
+        return shortName.replaceFirst("SNOMEDCT-?", "").toLowerCase();
     }
 
     /**

@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
@@ -29,16 +31,24 @@ import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingExportRequest;
+import org.ihtsdo.refsetservice.model.MappingWorkflow;
+import org.ihtsdo.refsetservice.model.MappingWorkflowHistory;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
+import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.model.enums.MappingWorkflowAction;
+import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.BranchService;
 import org.ihtsdo.refsetservice.terminologyservice.MapProjectService;
 import org.ihtsdo.refsetservice.terminologyservice.MapSetService;
 import org.ihtsdo.refsetservice.terminologyservice.MappingService;
+import org.ihtsdo.refsetservice.terminologyservice.MappingWorkflowService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
+import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -549,8 +559,8 @@ public class MappingController extends BaseController {
         @Parameter(description = "Mapping object to update", required = true)
     })
     @RecordMetric
-    public @ResponseBody ResponseEntity<Mapping> updateMapping(@PathVariable final String mapSetInternalId, @RequestBody final Mapping mapping)
-        throws Exception {
+    public @ResponseBody ResponseEntity<Mapping> updateMapping(@PathVariable final String mapSetInternalId, @RequestBody final Mapping mapping,
+        final HttpServletRequest request) throws Exception {
 
         LOG.info("Update Mapping mapSetInternalId:{}, mapping:{}", mapSetInternalId, ModelUtility.toJson(mapping));
 
@@ -570,13 +580,15 @@ public class MappingController extends BaseController {
             }
             final List<Mapping> mappings = new ArrayList<>();
             mappings.add(mapping);
+            final User user = requireSessionUser(request);
+            MappingWorkflowService.canUserEditMappings(user, mapSet, mappings, service);
             MappingService.updateMappings(mapSet.getMapProject(), branch, mapSet.getRefSetCode(), mappings, mapSet);
 
-            return new ResponseEntity<>(HttpStatus.OK);
+            return new ResponseEntity<>(mapping, HttpStatus.OK);
 
         } catch (final Exception e) {
 
-            handleException(e);
+            rethrowHandled(e);
             return null;
         }
     }
@@ -603,8 +615,8 @@ public class MappingController extends BaseController {
         @Parameter(description = "Mapping object to update", required = true)
     })
     @RecordMetric
-    public @ResponseBody ResponseEntity<List<Mapping>> updateMappings(@PathVariable final String mapSetInternalId, @RequestBody final List<Mapping> mappings)
-        throws Exception {
+    public @ResponseBody ResponseEntity<List<Mapping>> updateMappings(@PathVariable final String mapSetInternalId, @RequestBody final List<Mapping> mappings,
+        final HttpServletRequest request) throws Exception {
 
         LOG.info("Update Mapping mapSetInternalId:{}, mapping:{}", mapSetInternalId, ModelUtility.toJson(mappings));
 
@@ -622,15 +634,197 @@ public class MappingController extends BaseController {
             if (StringUtils.isBlank(branch)) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
+            final User user = requireSessionUser(request);
+            MappingWorkflowService.canUserEditMappings(user, mapSet, mappings, service);
             final List<Mapping> updatedMappings = MappingService.updateMappings(mapSet.getMapProject(), branch, mapSet.getRefSetCode(), mappings, mapSet);
 
             return new ResponseEntity<>(updatedMappings, HttpStatus.OK);
 
         } catch (final Exception e) {
 
-            handleException(e);
+            rethrowHandled(e);
             return null;
         }
+    }
+
+    /**
+     * Get the per-concept mapping workflow state.
+     *
+     * @param mapSetInternalId the map set internal id
+     * @param conceptCode the source concept code
+     * @return the mapping workflow row
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/mapset/{mapSetInternalId}/mappings/{conceptCode}/workflowStatus",
+        produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Get per-concept mapping workflow state.", tags = {
+        "mapset"
+    })
+    public @ResponseBody ResponseEntity<MappingWorkflow> getMappingWorkflowStatus(@PathVariable final String mapSetInternalId,
+        @PathVariable final String conceptCode, final HttpServletRequest request) throws Exception {
+
+        final User user = requireSessionUser(request);
+
+        try (final TerminologyService service = new TerminologyService()) {
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
+            final MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
+            if (mapSet.getMapProject() == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+            final MappingWorkflow workflow = MappingWorkflowService.ensureWorkflowForConcept(service, mapSet, conceptCode);
+            return new ResponseEntity<>(workflow, HttpStatus.OK);
+        } catch (final Exception e) {
+            rethrowHandled(e);
+            return null;
+        }
+    }
+
+    /**
+     * Change per-concept mapping workflow state.
+     *
+     * @param mapSetInternalId the map set internal id
+     * @param conceptCode the source concept code
+     * @param action the workflow action
+     * @param notes transition notes
+     * @param assignToUser target user for REASSIGN
+     * @return the updated mapping workflow row
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.POST, value = "/mapset/{mapSetInternalId}/mappings/{conceptCode}/workflowStatus",
+        produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Change per-concept mapping workflow state.", tags = {
+        "mapset"
+    })
+    public @ResponseBody ResponseEntity<MappingWorkflow> setMappingWorkflowStatus(@PathVariable final String mapSetInternalId,
+        @PathVariable final String conceptCode, @RequestParam final MappingWorkflowAction action,
+        @RequestParam(required = false) final String notes, @RequestParam(required = false) final String assignToUser,
+        final HttpServletRequest request) throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+            final User user = requireSessionUser(request);
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
+
+            final MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
+            if (mapSet.getMapProject() == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+
+            final MapProject mapProject = MappingWorkflowService.loadMapProject(service, mapSet);
+            if (mapProject == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+
+            final MappingWorkflow workflow = MappingWorkflowService.ensureWorkflowForConcept(service, mapSet, conceptCode);
+            if (workflow == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+
+            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(
+                service, user, action, workflow, mapSet, mapProject, notes, assignToUser);
+            service.commit();
+            return new ResponseEntity<>(updated, HttpStatus.OK);
+        } catch (final Exception e) {
+            rethrowHandled(e);
+            return null;
+        }
+    }
+
+    /**
+     * Get per-concept mapping workflow history.
+     *
+     * @param mapSetInternalId the map set internal id
+     * @param conceptCode the source concept code
+     * @param searchParameters optional paging/sorting
+     * @return the workflow history rows
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/mapset/{mapSetInternalId}/mappings/{conceptCode}/workflowHistory",
+        produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Get per-concept mapping workflow history.", tags = {
+        "mapset"
+    })
+    public @ResponseBody ResponseEntity<ResultList<MappingWorkflowHistory>> getMappingWorkflowHistory(@PathVariable final String mapSetInternalId,
+        @PathVariable final String conceptCode, @ModelAttribute final SearchParameters searchParameters, final HttpServletRequest request) throws Exception {
+
+        final User user = requireSessionUser(request);
+
+        try (final TerminologyService service = new TerminologyService()) {
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
+            final MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
+            if (mapSet.getMapProject() == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+            final MappingWorkflow workflow = MappingWorkflowService.ensureWorkflowForConcept(service, mapSet, conceptCode);
+            final ResultList<MappingWorkflowHistory> history = MappingWorkflowService.getWorkflowHistory(service, workflow, searchParameters);
+            return new ResponseEntity<>(history, HttpStatus.OK);
+        } catch (final Exception e) {
+            rethrowHandled(e);
+            return null;
+        }
+    }
+
+    /**
+     * Returns the authenticated user from the HTTP session.
+     *
+     * @return the session user
+     * @throws ResponseStatusException when no authenticated user is present
+     */
+    private User requireSessionUser(final HttpServletRequest httpServletRequest) throws Exception {
+
+        final Object testSessionUser = httpServletRequest.getAttribute(SecurityService.TEST_SESSION_USER_ATTRIBUTE);
+        if (testSessionUser instanceof User) {
+            final User user = (User) testSessionUser;
+            if (!SecurityService.GUEST_USERNAME.equals(user.getUserName())) {
+                return user;
+            }
+        }
+
+        final HttpSession session = httpServletRequest.getSession(false);
+        if (session != null) {
+            final Object sessionUser = session.getAttribute(SecurityService.SESSION_USER_OBJECT_KEY);
+            if (sessionUser instanceof User) {
+                final User user = (User) sessionUser;
+                if (!SecurityService.GUEST_USERNAME.equals(user.getUserName())) {
+                    return user;
+                }
+            }
+        }
+
+        final User user = SecurityService.getUserFromSession();
+        if (user == null || SecurityService.GUEST_USERNAME.equals(user.getUserName())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
+        }
+        return user;
+    }
+
+    /**
+     * Rethrow {@link ResponseStatusException}; otherwise delegate to {@link #handleException(Exception)}.
+     *
+     * @param exception the exception
+     * @throws Exception the exception
+     */
+    private void rethrowHandled(final Exception exception) throws Exception {
+
+        final ResponseStatusException responseStatusException = findResponseStatusException(exception);
+        if (responseStatusException != null) {
+            throw responseStatusException;
+        }
+        handleException(exception);
+    }
+
+    private ResponseStatusException findResponseStatusException(final Throwable exception) {
+
+        for (Throwable current = exception; current != null; current = current.getCause()) {
+            if (current instanceof ResponseStatusException) {
+                return (ResponseStatusException) current;
+            }
+        }
+        return null;
     }
 
 }

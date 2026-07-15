@@ -346,6 +346,77 @@ public final class BranchService {
     }
 
     /**
+     * Returns the per-concept branch path under the mapset edit branch.
+     *
+     * @param mapSet the map set
+     * @param conceptCode the source concept code
+     * @return the concept branch path
+     * @throws Exception the exception
+     */
+    public static String getConceptBranchPath(final MapSet mapSet, final String conceptCode) throws Exception {
+
+        if (mapSet == null || StringUtils.isBlank(conceptCode)) {
+            throw new IllegalArgumentException("MapSet and concept code are required");
+        }
+        return getEditBranchPath(mapSet.toBranchDetails()) + PATH_DELIMITER + conceptCode;
+    }
+
+    /**
+     * Create a per-concept sub-branch under the mapset edit branch.
+     *
+     * @param mapSet the map set
+     * @param conceptCode the source concept code used as the branch name
+     * @return the concept branch path
+     * @throws Exception the exception
+     */
+    public static String createConceptBranch(final MapSet mapSet, final String conceptCode) throws Exception {
+
+        final String editBranchPath = getEditBranchPath(mapSet.toBranchDetails());
+        return createBranch(editBranchPath, conceptCode);
+    }
+
+    /**
+     * Merge a per-concept sub-branch into the shared edit branch and remove the sub-branch.
+     *
+     * @param mapSet the map set
+     * @param conceptCode the source concept code
+     * @throws Exception the exception
+     */
+    public static void mergeConceptToEdit(final MapSet mapSet, final String conceptCode) throws Exception {
+
+        final String conceptBranchPath = getConceptBranchPath(mapSet, conceptCode);
+        final String editBranchPath = getEditBranchPath(mapSet.toBranchDetails());
+
+        if (!doesBranchExist(conceptBranchPath)) {
+            throw new Exception("Concept branch does not exist: " + conceptBranchPath);
+        }
+
+        mergeBranch(conceptBranchPath, editBranchPath, "Merge mapping edits for concept " + conceptCode, false);
+
+        if (doesBranchExist(conceptBranchPath)) {
+            deleteBranch(conceptBranchPath);
+        }
+    }
+
+    /**
+     * Delete a per-concept sub-branch if it exists.
+     *
+     * @param mapSet the map set
+     * @param conceptCode the source concept code
+     * @throws Exception the exception
+     */
+    public static void deleteConceptBranch(final MapSet mapSet, final String conceptCode) throws Exception {
+
+        final String conceptBranchPath = getConceptBranchPath(mapSet, conceptCode);
+        if (!doesBranchExist(conceptBranchPath)) {
+            return;
+        }
+        if (!deleteBranch(conceptBranchPath)) {
+            throw new Exception("Could not delete concept branch " + conceptBranchPath);
+        }
+    }
+
+    /**
      * Create the compare branch for a refset.
      *
      * @param branchInformation the branch information

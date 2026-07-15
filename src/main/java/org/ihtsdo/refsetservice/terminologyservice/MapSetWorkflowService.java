@@ -80,6 +80,9 @@ public final class MapSetWorkflowService {
     // Map<user, Map<currentStatus, Map<action, resultingState>>>
     private static final Map<String, Map<WorkflowStatus, Map<WorkflowAction, WorkflowStatus>>> WORKFLOW_PERMUTATIONS = new HashMap<>();
 
+    /** Delegates edit-branch promotion (overridable in unit tests). */
+    private static EditPromotionOperations editPromotionOperations = new DefaultEditPromotionOperations();
+
     static {
         try {
             // read in the actions by user and step
@@ -455,6 +458,8 @@ public final class MapSetWorkflowService {
 
         canUserPerformWorkflowAction(user, mapSet, action);
 
+        MappingWorkflowService.assertMapsetTransitionAllowed(service, mapSet, action);
+
         final WorkflowStatus currentStatus = mapSet.getWorkflowStatus();
         boolean restoreHistory = false;
         final List<String> roles = MapSetService.setRoles(user, mapSet.getProject(), new ArrayList<>());
@@ -504,7 +509,7 @@ public final class MapSetWorkflowService {
             && Arrays.asList(WorkflowAction.FINISH_EDIT, WorkflowAction.REQUEST_REVIEW, WorkflowAction.REQUEST_PUBLICATION).contains(action))
             || (currentStatus.equals(WorkflowStatus.IN_UPGRADE) && Arrays.asList(WorkflowAction.FINISH_UPGRADE).contains(action))) {
 
-            final boolean success = BranchService.promoteEditIntoRefsetBranch(mapSet.toBranchDetails(), notes);
+            final boolean success = editPromotionOperations.promoteEditIntoRefsetBranch(mapSet.toBranchDetails(), notes);
 
             if (success) {
 
@@ -1243,5 +1248,40 @@ public final class MapSetWorkflowService {
         }
 
         return moduleName;
+    }
+
+    /**
+     * Replace edit-branch promotion operations (for unit tests only).
+     *
+     * @param operations the operations delegate, or null to restore the default
+     */
+    static void setEditPromotionOperationsForTests(final EditPromotionOperations operations) {
+
+        editPromotionOperations = operations != null ? operations : new DefaultEditPromotionOperations();
+    }
+
+    /**
+     * Edit-branch promotion side effects for mapset workflow transitions.
+     */
+    interface EditPromotionOperations {
+
+        /**
+         * Promote the edit branch into the refset branch.
+         *
+         * @param branchInformation the branch information
+         * @param comment the merge comment
+         * @return true if promotion succeeded
+         * @throws Exception the exception
+         */
+        boolean promoteEditIntoRefsetBranch(BranchInformation branchInformation, String comment) throws Exception;
+    }
+
+    private static final class DefaultEditPromotionOperations implements EditPromotionOperations {
+
+        @Override
+        public boolean promoteEditIntoRefsetBranch(final BranchInformation branchInformation, final String comment) throws Exception {
+
+            return BranchService.promoteEditIntoRefsetBranch(branchInformation, comment);
+        }
     }
 }

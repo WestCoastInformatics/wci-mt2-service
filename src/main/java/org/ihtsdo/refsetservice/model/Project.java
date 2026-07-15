@@ -474,7 +474,7 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
      */
     public void setLockStatus(final Boolean lockStatus) {
 
-        this.lockStatus = lockStatus;
+        this.lockStatus = lockStatus != null && lockStatus;
     }
 
     /* see superclass */

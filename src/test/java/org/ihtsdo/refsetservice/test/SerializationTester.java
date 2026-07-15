@@ -12,13 +12,15 @@ package org.ihtsdo.refsetservice.test;
 
 import java.lang.reflect.Method;
 
+import org.ihtsdo.refsetservice.model.enums.VersionStatus;
+import org.ihtsdo.refsetservice.rest.test.util.VersionStatusDeserializer;
 import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 
 /**
  * Automates JUnit testing XML/JSON Serialization.
@@ -27,9 +29,6 @@ public class SerializationTester extends ProxyTester {
 
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(SerializationTester.class);
-
-    /** The Constant OBJECT_MAPPER. */
-    private static final ObjectMapper OBJECT_MAPPER = ThreadLocalMapper.get();
 
     /**
      * Constructs a new getter/setter tester to test objects of a particular class.
@@ -51,11 +50,14 @@ public class SerializationTester extends ProxyTester {
 
         LOG.debug("Test json serialization - {}", getClazz().getName());
         final Object obj = createObject(1);
-        OBJECT_MAPPER.setSerializationInclusion(Include.NON_EMPTY);
+        final ObjectMapper objectMapper = ThreadLocalMapper.newMapper();
+        final SimpleModule module = new SimpleModule();
+        module.addDeserializer(VersionStatus.class, new VersionStatusDeserializer());
+        objectMapper.registerModule(module);
         LOG.debug("  {}", obj);
-        final String json = OBJECT_MAPPER.writeValueAsString(obj);
+        final String json = objectMapper.writeValueAsString(obj);
         LOG.info("json = {}", json);
-        final Object obj3 = OBJECT_MAPPER.readValue(json, obj.getClass());
+        final Object obj3 = objectMapper.readValue(json, obj.getClass());
 
         LOG.debug("  {}", obj3);
 
@@ -77,9 +79,9 @@ public class SerializationTester extends ProxyTester {
         if (obj.equals(obj3)) {
             return true;
         }
-        final String json3 = OBJECT_MAPPER.writeValueAsString(obj3);
-        final JsonNode tree1 = OBJECT_MAPPER.readTree(json);
-        final JsonNode tree3 = OBJECT_MAPPER.readTree(json3);
+        final String json3 = objectMapper.writeValueAsString(obj3);
+        final JsonNode tree1 = objectMapper.readTree(json);
+        final JsonNode tree3 = objectMapper.readTree(json3);
         if (tree1.equals(tree3)) {
             return true;
         }
