@@ -64,6 +64,7 @@ public class ReindexApplication {
     public static void main(final String[] args) {
 
         ConfigurableApplicationContext context = null;
+        int exitCode = 0;
         try {
             System.setProperty("spring.devtools.restart.enabled", "false");
             System.setProperty("spring.cloud.consul.enabled", "false");
@@ -82,17 +83,25 @@ public class ReindexApplication {
             try (TerminologyService service = new TerminologyService()) {
                 service.clearLuceneIndexes();
                 service.computeLuceneIndexes(blankToNull(indexedObjects));
+                // Close the shared EMF so Hikari / Hibernate Search / ES client threads stop.
+                service.closeFactory();
             }
 
             LOG.info("Elasticsearch reindex completed successfully");
         } catch (final Exception e) {
             LOG.error("Elasticsearch reindex failed", e);
-            System.exit(1);
+            exitCode = 1;
         } finally {
             if (context != null) {
-                context.close();
+                try {
+                    context.close();
+                } catch (final Exception closeEx) {
+                    LOG.warn("Error closing Spring context after reindex", closeEx);
+                }
             }
         }
+        // Non-daemon threads from pools/clients can otherwise keep the JVM (and Gradle) alive.
+        System.exit(exitCode);
     }
 
     /**
