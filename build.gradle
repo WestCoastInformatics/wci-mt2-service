@@ -329,7 +329,11 @@ bootRun {
 //   ./gradlew reindex -PindexedObjects=MapSet,Refset
 task reindex(type: JavaExec) {
 
-   classpath = sourceSets.main.runtimeClasspath
+   // Match bootRun: exclude spring-boot-devtools so RestartClassLoader does not
+   // make @Indexed Class objects differ from those in the EntityManagerFactory mapping.
+   classpath = sourceSets.main.runtimeClasspath.filter {
+      !it.name.contains("spring-boot-devtools")
+   }
    main = "org.ihtsdo.refsetservice.ReindexApplication"
    systemProperties System.getProperties()
    if (project.hasProperty("indexedObjects")) {

@@ -1482,6 +1482,13 @@ public class TerminologyService implements RootService {
 		}
 
 		final SearchSession searchSession = Search.session(getEntityManager());
+		final Set<String> indexedSimpleNames = Search.mapping(getEntityManager().getEntityManagerFactory()).allIndexedEntities().stream()
+				.map(indexedEntity -> indexedEntity.javaClass().getSimpleName()).collect(Collectors.toSet());
+		LOG.info("  Hibernate Search indexed entity types: {}", indexedSimpleNames);
+		if (indexedSimpleNames.isEmpty()) {
+			throw new Exception("Hibernate Search mapping contains no indexed entities. "
+					+ "Check spring.jpa.properties.hibernate.search.* (backend type/hosts) and that the EntityManagerFactory was created with those properties.");
+		}
 
 		// Reindex each object
 		for (final String key : reindexMap.keySet()) {
@@ -1490,10 +1497,13 @@ public class TerminologyService implements RootService {
 				LOG.info("  creating indexes for " + key);
 
 				try {
-					searchSession.workspace(reindexMap.get(key)).purge();
+					// Use the JPA-managed Class instance so massIndexer matches the Search mapping
+					// (avoids ClassLoader mismatches, e.g. spring-boot-devtools RestartClassLoader).
+					final Class<?> indexedClass = resolveManagedIndexedClass(key, reindexMap.get(key));
+					searchSession.workspace(indexedClass).purge();
 					searchSession.indexingPlan().execute(); // may not need
 															// anymore
-					searchSession.massIndexer(reindexMap.get(key)).batchSizeToLoadObjects(100)
+					searchSession.massIndexer(indexedClass).batchSizeToLoadObjects(100)
 							.cacheMode(CacheMode.IGNORE).idFetchSize(100).threadsToLoadObjects(10).startAndWait();
 				} catch (final IllegalArgumentException e) {
 					LOG.warn("      NOT AN ENTITY in this project");
@@ -1520,6 +1530,29 @@ public class TerminologyService implements RootService {
 					+ "but do not exist as indexed objects: " + objectsToReindex.toString());
 		}
 
+	}
+
+	/**
+	 * Resolves the JPA-managed Class for an indexed type by simple name.
+	 * Prefer the metamodel Class so it matches the Hibernate Search mapping ClassLoader.
+	 *
+	 * @param simpleName the entity simple class name
+	 * @param fallback the Class discovered via classpath scanning
+	 * @return the managed Class to pass to massIndexer
+	 * @throws Exception if the type is not a managed entity
+	 */
+	private Class<?> resolveManagedIndexedClass(final String simpleName, final Class<?> fallback) throws Exception {
+
+		for (final javax.persistence.metamodel.EntityType<?> entityType : getEntityManager().getMetamodel().getEntities()) {
+			final Class<?> javaType = entityType.getJavaType();
+			if (javaType != null && javaType.getSimpleName().equals(simpleName)) {
+				return javaType;
+			}
+		}
+		if (fallback != null) {
+			return fallback;
+		}
+		throw new Exception("No managed entity found for indexed type: " + simpleName);
 	}
 
 	/**

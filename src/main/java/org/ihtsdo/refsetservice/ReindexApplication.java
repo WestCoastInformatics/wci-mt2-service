@@ -65,7 +65,12 @@ public class ReindexApplication {
 
         ConfigurableApplicationContext context = null;
         try {
-            context = new SpringApplicationBuilder(ReindexApplication.class).web(WebApplicationType.NONE).logStartupInfo(true).run(args);
+            System.setProperty("spring.devtools.restart.enabled", "false");
+            System.setProperty("spring.cloud.consul.enabled", "false");
+            System.setProperty("spring.cloud.vault.enabled", "false");
+
+            context = new SpringApplicationBuilder(ReindexApplication.class).web(WebApplicationType.NONE).logStartupInfo(true)
+                .properties("spring.devtools.restart.enabled=false", "spring.cloud.consul.enabled=false", "spring.cloud.vault.enabled=false").run(args);
 
             final String indexedObjects = resolveIndexedObjects(args);
             LOG.info("Starting Elasticsearch reindex for: {}",
