@@ -123,6 +123,9 @@ public class MapSetController extends BaseController {
             // sort latest versions first
             pfs.setSort("versionDate");
             pfs.setAscending(false);
+            // Explicit paging avoids IndexUtility's fetch(0, 200000) fallback (ES max_result_window).
+            pfs.setOffset(0);
+            pfs.setLimit(1000);
 
             final ResultList<MapSet> results = service.find("refSetCode:" + QueryParserBase.escape(code), pfs, MapSet.class, null);
 
