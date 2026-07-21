@@ -14,6 +14,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import javax.sql.DataSource;
+
 import org.flywaydb.core.Flyway;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
@@ -24,9 +26,14 @@ import org.springframework.boot.autoconfigure.flyway.FlywayMigrationStrategy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.Primary;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.session.jdbc.config.annotation.SpringSessionDataSource;
+import org.springframework.transaction.PlatformTransactionManager;
 
 /**
- * Set up the migration strategy.
+ * Set up the migration strategy and JDBC DataSource used by Spring Session.
  */
 @Configuration
 @DependsOn("propertyUtility")
@@ -44,6 +51,44 @@ public class PersistenceConfiguration {
     public PersistenceConfiguration() {
 
         LOG.debug("Creating instance of class FlywayConfiguration");
+    }
+
+    /**
+     * Primary JDBC DataSource for Spring Session (and other Spring JDBC usage). Hibernate continues to use its own
+     * pool via persistence.xml / hibernate.connection.*; Flyway uses its own connection in {@link #customFlyway()}.
+     *
+     * @return the data source
+     */
+    @Bean
+    @Primary
+    @SpringSessionDataSource
+    public DataSource dataSource() {
+
+        final String url = properties.getProperty("spring.datasource.url");
+        final String username = properties.getProperty("spring.datasource.username");
+        final String password = properties.getProperty("spring.datasource.password");
+        final String driver = properties.getProperty("spring.datasource.driver-class-name");
+
+        LOG.info("Creating Spring DataSource for url={}", url);
+
+        final DriverManagerDataSource dataSource = new DriverManagerDataSource();
+        dataSource.setDriverClassName(driver);
+        dataSource.setUrl(url);
+        dataSource.setUsername(username);
+        dataSource.setPassword(password);
+        return dataSource;
+    }
+
+    /**
+     * Transaction manager required by Spring Session JDBC.
+     *
+     * @param dataSource the data source
+     * @return the transaction manager
+     */
+    @Bean
+    public PlatformTransactionManager transactionManager(final DataSource dataSource) {
+
+        return new DataSourceTransactionManager(dataSource);
     }
 
     /**
@@ -69,7 +114,7 @@ public class PersistenceConfiguration {
 
     /**
      * custom flyway class.
-     * 
+     *
      * @return the custom flyway class
      * @throws Exception the exception
      */
