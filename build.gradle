@@ -322,14 +322,19 @@ bootRun {
    }
 }
 
-// ./gradlew reindex
+// Rebuild Hibernate Search / Elasticsearch indexes from the DB.
+// Prefer with MT2 jar stopped (or before traffic) after SQL seed / ES wipe.
+//   ./gradlew reindex
+//   ./gradlew reindex -PindexedObjects=MapSet
+//   ./gradlew reindex -PindexedObjects=MapSet,Refset
 task reindex(type: JavaExec) {
 
    classpath = sourceSets.main.runtimeClasspath
-   main = "org.ihtsdo.refsetservice.GeneratorApplication"
+   main = "org.ihtsdo.refsetservice.ReindexApplication"
    systemProperties System.getProperties()
-   // arguments to pass to the application
-   args ("reindex")
+   if (project.hasProperty("indexedObjects")) {
+      args(project.property("indexedObjects"))
+   }
    jvmArgs "-Xmx8G"
 }
 
