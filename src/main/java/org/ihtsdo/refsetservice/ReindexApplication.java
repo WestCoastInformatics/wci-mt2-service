@@ -13,14 +13,17 @@ import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 
 /**
  * Command-line entry point to rebuild Hibernate Search / Elasticsearch indexes from the database.
@@ -34,10 +37,13 @@ import org.springframework.context.ConfigurableApplicationContext;
  * Prefer running with the main MT2 service stopped (or before opening traffic) so searches do not hit
  * empty indexes during {@code dropAndCreate} / mass indexing.
  */
-@SpringBootApplication(scanBasePackageClasses = PropertyUtility.class, exclude = {
+@SpringBootConfiguration
+@EnableAutoConfiguration(exclude = {
     FlywayAutoConfiguration.class, ElasticsearchRestClientAutoConfiguration.class, DataSourceAutoConfiguration.class,
     HibernateJpaAutoConfiguration.class
 })
+@ComponentScan(basePackageClasses = PropertyUtility.class, useDefaultFilters = false,
+    includeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = PropertyUtility.class))
 public class ReindexApplication {
 
     /** The Constant LOG. */
@@ -54,14 +60,13 @@ public class ReindexApplication {
      * Application entry point.
      *
      * @param args optional indexed object simple names (comma-separated). {@code reindex} or {@code all} means all entities.
-     * @throws Exception the exception
      */
-    public static void main(final String[] args) throws Exception {
+    public static void main(final String[] args) {
 
-        final ConfigurableApplicationContext context =
-            new SpringApplicationBuilder(ReindexApplication.class).web(WebApplicationType.NONE).logStartupInfo(true).run(args);
-
+        ConfigurableApplicationContext context = null;
         try {
+            context = new SpringApplicationBuilder(ReindexApplication.class).web(WebApplicationType.NONE).logStartupInfo(true).run(args);
+
             final String indexedObjects = resolveIndexedObjects(args);
             LOG.info("Starting Elasticsearch reindex for: {}",
                 indexedObjects == null || indexedObjects.isBlank() ? "ALL indexed entities" : indexedObjects);
@@ -79,7 +84,9 @@ public class ReindexApplication {
             LOG.error("Elasticsearch reindex failed", e);
             System.exit(1);
         } finally {
-            context.close();
+            if (context != null) {
+                context.close();
+            }
         }
     }
 
