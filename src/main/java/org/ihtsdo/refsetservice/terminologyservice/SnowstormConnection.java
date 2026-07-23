@@ -326,7 +326,7 @@ public final class SnowstormConnection {
 
     /**
      * Downloads a file from the given URL. Uses Java HttpClient to bypass RESTEasy, which fails on binary responses when the server omits Content-Type or
-     * returns a generic type.
+     * returns a generic type. Follows redirects (e.g. prod proxies that 307 http→https); HttpClient defaults to NEVER.
      *
      * @param url The Snowstorm archive URL to download
      * @return The file content as an InputStream
@@ -347,11 +347,12 @@ public final class SnowstormConnection {
         }
         final HttpRequest request = requestBuilder.GET().build();
 
-        final HttpClient httpClient = HttpClient.newBuilder().build();
+        // NORMAL follows 3xx except https→http; needed for client Snowstorm proxies that redirect archive URLs
+        final HttpClient httpClient = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
         final HttpResponse<byte[]> response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
 
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
-            final String errorMsg = "Failed to download file. Status: " + response.statusCode();
+            final String errorMsg = "Failed to download file. Status: " + response.statusCode() + " for " + response.uri();
             LOG.error(errorMsg);
             throw new LocalException(errorMsg);
         }
