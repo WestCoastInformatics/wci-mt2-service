@@ -311,6 +311,14 @@ public final class MapSetWorkflowService {
                     "Reference set is not in the proper status to have publication completed " + mapSet.getRefSetCode());
             }
 
+            // Ensure the mapSet REFSET branch exists (clients may delete all branches under REFSETS before complete)
+            final BranchInformation branchInfo = mapSet.toBranchDetails();
+            final String refsetBranchPath = BranchService.getRefsetBranchPath(branchInfo);
+            if (!BranchService.doesBranchExist(refsetBranchPath)) {
+                LOG.info("MapSet REFSET branch missing for {}; recreating {}", mapSet.getRefSetCode(), refsetBranchPath);
+                BranchService.createRefsetBranch(branchInfo);
+            }
+
             final String mapSetBranchPath = MapSetService.getBranchPath(mapSet);
 
             if (mapSet.isLocalSet()) {
