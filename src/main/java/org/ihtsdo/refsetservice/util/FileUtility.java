@@ -252,6 +252,11 @@ public final class FileUtility {
      */
     public static void zipFiles(final List<String> sourceFiles, final Path zipOutputFilePath) throws Exception {
 
+        final Path parentDir = zipOutputFilePath.getParent();
+        if (parentDir != null) {
+            Files.createDirectories(parentDir);
+        }
+
         try (final FileOutputStream zipFileOutputStream = new FileOutputStream(zipOutputFilePath.toString());
             final ZipOutputStream zipOutputStream = new ZipOutputStream(zipFileOutputStream);) {
 
