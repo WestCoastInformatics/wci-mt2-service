@@ -32,6 +32,7 @@ public class MappingUnitTest extends BaseTest {
 
         final GetterSetterTester tester = new GetterSetterTester(object);
         tester.exclude("mapEntries");
+        tester.exclude("mapNotes");
         tester.exclude("descriptions");
         tester.test();
     }
@@ -49,6 +50,7 @@ public class MappingUnitTest extends BaseTest {
         tester.include("name");
         tester.include("mapSetId");
         tester.exclude("mapEntries");
+        tester.exclude("mapNotes");
         tester.exclude("descriptions");
         assertTrue(tester.testIdentityFieldEquals());
         assertTrue(tester.testNonIdentityFieldEquals());
@@ -63,6 +65,7 @@ public class MappingUnitTest extends BaseTest {
 
         final SerializationTester tester = new SerializationTester(object);
         tester.exclude("mapEntries");
+        tester.exclude("mapNotes");
         tester.exclude("descriptions");
         assertTrue(tester.testJsonSerialization());
     }

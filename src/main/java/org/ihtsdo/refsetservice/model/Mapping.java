@@ -1,8 +1,10 @@
 package org.ihtsdo.refsetservice.model;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -49,6 +51,13 @@ public class Mapping extends AbstractHasModified {
     @ManyToOne(targetEntity = MapEntry.class, optional = false)
     @Fetch(FetchMode.JOIN)
     private List<MapEntry> mapEntries;
+
+    /**
+     * Map notes from the MT2 database (not Snowstorm). Hydrated by service layer using mapSet +
+     * source concept code.
+     */
+    @Transient
+    private Set<MapNote> mapNotes = new HashSet<>();
 
     /** The descriptions. */
     @Transient
@@ -132,6 +141,26 @@ public class Mapping extends AbstractHasModified {
     public void setMapEntries(final List<MapEntry> mapEntries) {
 
         this.mapEntries = mapEntries;
+    }
+
+    /**
+     * Gets the map notes.
+     *
+     * @return the map notes
+     */
+    public Set<MapNote> getMapNotes() {
+
+        return mapNotes == null ? (mapNotes = new HashSet<>()) : mapNotes;
+    }
+
+    /**
+     * Sets the map notes.
+     *
+     * @param mapNotes the map notes
+     */
+    public void setMapNotes(final Set<MapNote> mapNotes) {
+
+        this.mapNotes = mapNotes;
     }
 
     /**

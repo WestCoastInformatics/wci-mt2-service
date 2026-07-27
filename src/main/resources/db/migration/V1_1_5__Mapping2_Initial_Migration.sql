@@ -7,6 +7,7 @@ DROP TABLE ${pre_if_exists} map_age_ranges ${post_if_exists};
 DROP TABLE ${pre_if_exists} map_entries ${post_if_exists};
 DROP TABLE ${pre_if_exists} map_entries_additional_map_entry_info ${post_if_exists};
 DROP TABLE ${pre_if_exists} map_notes ${post_if_exists};
+DROP TABLE ${pre_if_exists} mappings_map_notes ${post_if_exists};
 DROP TABLE ${pre_if_exists} map_principles ${post_if_exists};
 DROP TABLE ${pre_if_exists} map_projects_additional_map_entry_infos ${post_if_exists};
 DROP TABLE ${pre_if_exists} map_projects_error_messages ${post_if_exists};

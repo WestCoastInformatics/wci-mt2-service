@@ -38,6 +38,8 @@ public class MapNoteUnitTest extends BaseTest {
 
         final GetterSetterTester tester = new GetterSetterTester(object);
         tester.exclude("user");
+        tester.exclude("mapSet");
+        tester.exclude("mapSetId");
         tester.test();
     }
 
@@ -46,9 +48,16 @@ public class MapNoteUnitTest extends BaseTest {
 
         final EqualsHashcodeTester tester = new EqualsHashcodeTester(object);
         tester.exclude("id");
+        tester.exclude("created");
+        tester.exclude("modified");
+        tester.exclude("modifiedBy");
+        tester.exclude("active");
         tester.include("note");
         tester.exclude("user");
         tester.exclude("timestamp");
+        tester.exclude("mapSet");
+        tester.exclude("mapSetId");
+        tester.exclude("sourceConceptCode");
         assertTrue(tester.testIdentityFieldEquals());
         assertTrue(tester.testNonIdentityFieldEquals());
         assertTrue(tester.testIdentityFieldNotEquals());
@@ -62,6 +71,7 @@ public class MapNoteUnitTest extends BaseTest {
 
         final SerializationTester tester = new SerializationTester(object);
         tester.exclude("user");
+        tester.exclude("mapSet");
         assertTrue(tester.testJsonSerialization());
     }
 }
