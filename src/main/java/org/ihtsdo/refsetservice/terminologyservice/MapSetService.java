@@ -18,6 +18,7 @@ import java.util.Properties;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
 import org.ihtsdo.refsetservice.model.MapProject;
@@ -30,13 +31,14 @@ import org.ihtsdo.refsetservice.model.enums.VersionStatus;
 import org.ihtsdo.refsetservice.model.enums.WorkflowAction;
 import org.ihtsdo.refsetservice.model.enums.WorkflowStatus;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
+import org.ihtsdo.refsetservice.util.IndexUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
+import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 
 /**
  * Service class to handle getting and modifying internal mapset information.
@@ -273,6 +275,78 @@ public class MapSetService {
 
         return terminologyHandler.getMapSets(branch);
 
+    }
+
+    /**
+     * Search map sets in the database (Hibernate Search).
+     * Supports Lucene field queries such as {@code versionStatus:IN_DEVELOPMENT},
+     * {@code versionStatus:IN DEVELOPMENT} (JSON label form), and {@code workflowStatus:IN_EDIT}.
+     *
+     * @param service the terminology service
+     * @param searchParameters the search parameters
+     * @return matching map sets
+     * @throws Exception the exception
+     */
+    public static ResultList<MapSet> searchMapSets(final TerminologyService service, final SearchParameters searchParameters) throws Exception {
+
+        LOG.info("Searching for MapSet with parameters: [{}]", searchParameters);
+
+        final long start = System.currentTimeMillis();
+        String query = (searchParameters != null && StringUtils.isNotBlank(searchParameters.getQuery())) ? searchParameters.getQuery() : "";
+
+        // API/JSON expose VersionStatus labels (e.g. "IN DEVELOPMENT"); the Lucene index stores enum names.
+        query = normalizeVersionStatusQueryValues(query);
+
+        final PfsParameter pfs = new PfsParameter();
+        if (searchParameters != null) {
+            if (Boolean.TRUE.equals(searchParameters.getActiveOnly())) {
+                query = query.isEmpty() ? "active:true" : query + " AND active:true";
+            }
+            if (searchParameters.getOffset() != null) {
+                pfs.setOffset(searchParameters.getOffset());
+            }
+            if (searchParameters.getLimit() != null) {
+                pfs.setLimit(searchParameters.getLimit());
+            }
+            if (searchParameters.getSortAscending() != null) {
+                pfs.setAscending(searchParameters.getSortAscending());
+            }
+            if (searchParameters.getSort() != null) {
+                pfs.setSort(searchParameters.getSort());
+            }
+        }
+
+        if (StringUtils.isNotBlank(query)) {
+            query = IndexUtility.addWildcardsToQuery(query, MapSet.class);
+        }
+
+        LOG.info("Searching for MapSets with query: [{}]", query);
+
+        final ResultList<MapSet> results = service.find(query, pfs, MapSet.class, null);
+        results.setTimeTaken(System.currentTimeMillis() - start);
+        results.setTotalKnown(true);
+
+        return results;
+    }
+
+    /**
+     * Replaces VersionStatus JSON labels in a Lucene query with enum names used by the index.
+     *
+     * @param query the raw query
+     * @return query with labels normalized to enum names
+     */
+    private static String normalizeVersionStatusQueryValues(final String query) {
+
+        if (StringUtils.isBlank(query)) {
+            return query;
+        }
+        String normalized = query;
+        for (final VersionStatus status : VersionStatus.values()) {
+            if (!status.name().equals(status.getLabel())) {
+                normalized = normalized.replace(status.getLabel(), status.name());
+            }
+        }
+        return normalized;
     }
 
     /**

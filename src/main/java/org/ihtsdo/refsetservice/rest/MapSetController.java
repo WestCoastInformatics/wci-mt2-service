@@ -157,7 +157,9 @@ public class MapSetController extends BaseController {
         @ApiResponse(responseCode = "404", description = "Resource not found"), @ApiResponse(responseCode = "417", description = "Failed Expectation")
     })
     @Parameters({
-        @Parameter(name = "query", description = "The search query", required = false),
+        @Parameter(name = "query",
+            description = "Lucene search query. Supports status filters, e.g. versionStatus:IN DEVELOPMENT, versionStatus:IN_DEVELOPMENT, workflowStatus:IN_EDIT",
+            required = false),
         @Parameter(name = "limit", description = "Maximum number of search results", required = false),
         @Parameter(name = "offset", description = "Start index of search results", required = false),
         @Parameter(name = "activeOnly", description = "Only active content", required = false),
@@ -174,6 +176,14 @@ public class MapSetController extends BaseController {
         // final User authUser = authorizeUser(request);
 
         try (final TerminologyService service = new TerminologyService()) {
+
+            // When a Lucene query (or activeOnly) is provided, search DB map sets via Hibernate Search.
+            // Example: ?query=versionStatus:IN DEVELOPMENT  or  ?query=workflowStatus:IN_EDIT
+            if (searchParameters != null
+                && (StringUtils.isNotBlank(searchParameters.getQuery()) || Boolean.TRUE.equals(searchParameters.getActiveOnly()))) {
+                final ResultList<MapSet> results = MapSetService.searchMapSets(service, searchParameters);
+                return new ResponseEntity<>(results.getItems(), HttpStatus.OK);
+            }
 
             final String branch = MapSetService.resolveBranchFromMapSets(service, null);
             if (StringUtils.isBlank(branch) || "empty".equals(branch) || "none".equals(branch)) {
