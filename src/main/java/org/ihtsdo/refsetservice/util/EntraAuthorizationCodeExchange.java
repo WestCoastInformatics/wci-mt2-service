@@ -7,7 +7,7 @@
  * and are protected by trade secret or copyright law.  Dissemination of this information
  * or reproduction of this material is strictly forbidden.
  */
-package org.ihtsdo.refsetservice.handler;
+package org.ihtsdo.refsetservice.util;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -16,17 +16,19 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+
 import org.apache.commons.lang3.StringUtils;
-import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
+import org.ihtsdo.refsetservice.handler.EntraIDSecurityServiceHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Stateless helpers for the OAuth2 authorization code flow against Microsoft Entra ID: token exchange and authorize URL
- * construction. Not a Spring bean; all entry points are static.
+ * Stateless helpers for the OAuth2 authorization code flow against Microsoft Entra ID: token exchange and authorize URL construction. Not a Spring bean; all
+ * entry points are static.
  */
 public final class EntraAuthorizationCodeExchange {
 
@@ -34,9 +36,7 @@ public final class EntraAuthorizationCodeExchange {
     private static final Logger LOG = LoggerFactory.getLogger(EntraAuthorizationCodeExchange.class);
 
     /** Shared HTTP client for token endpoint calls (connection timeout only; each request sets its own timeout). */
-    private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
-        .connectTimeout(Duration.ofSeconds(15))
-        .build();
+    private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
 
     /**
      * Prevents instantiation; use static methods only.
@@ -46,9 +46,8 @@ public final class EntraAuthorizationCodeExchange {
     }
 
     /**
-     * Exchanges an authorization code for tokens by POSTing to the Entra token endpoint ({@code grant_type=authorization_code}).
-     * Parses the JSON body and returns the {@code id_token} when present (preferred for validation with app audience); otherwise
-     * returns {@code access_token}.
+     * Exchanges an authorization code for tokens by POSTing to the Entra token endpoint ({@code grant_type=authorization_code}). Parses the JSON body and
+     * returns the {@code id_token} when present (preferred for validation with app audience); otherwise returns {@code access_token}.
      *
      * @param tokenEndpoint Entra OAuth2 token URL (v2.0)
      * @param clientId registered application (client) id
@@ -56,9 +55,9 @@ public final class EntraAuthorizationCodeExchange {
      * @param code authorization code from the redirect query string
      * @param redirectUri exact redirect URI used in the authorize request and registered in Entra
      * @return JWT string suitable for {@link EntraIDSecurityServiceHandler#authenticateWithBearerToken(String)}
+     * @throws Exception if the HTTP client fails or JSON parsing fails
      * @throws IllegalArgumentException if any required parameter is null or blank
      * @throws IllegalStateException if HTTP status is not 2xx, the body contains {@code error}, or neither token field is present
-     * @throws Exception if the HTTP client fails or JSON parsing fails
      */
     public static String exchangeCodeForJwt(final String tokenEndpoint, final String clientId, final String clientSecret, final String code,
         final String redirectUri) throws Exception {
@@ -67,19 +66,12 @@ public final class EntraAuthorizationCodeExchange {
             throw new IllegalArgumentException("token exchange: missing required parameter");
         }
 
-        final String form = String.join("&",
-            "grant_type=" + urlEncode("authorization_code"),
-            "client_id=" + urlEncode(clientId),
-            "client_secret=" + urlEncode(clientSecret),
-            "code=" + urlEncode(code),
-            "redirect_uri=" + urlEncode(redirectUri));
+        final String form = String.join("&", "grant_type=" + urlEncode("authorization_code"), "client_id=" + urlEncode(clientId),
+            "client_secret=" + urlEncode(clientSecret), "code=" + urlEncode(code), "redirect_uri=" + urlEncode(redirectUri));
 
-        final HttpRequest request = HttpRequest.newBuilder()
-            .uri(URI.create(tokenEndpoint))
-            .timeout(Duration.ofSeconds(30))
-            .header("Content-Type", "application/x-www-form-urlencoded")
-            .POST(HttpRequest.BodyPublishers.ofString(form))
-            .build();
+        final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(tokenEndpoint)).timeout(Duration.ofSeconds(30))
+            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+            .POST(HttpRequest.BodyPublishers.ofString(form)).build();
 
         LOG.debug("Entra token exchange: POST {}", tokenEndpoint);
 
@@ -92,8 +84,7 @@ public final class EntraAuthorizationCodeExchange {
             throw new IllegalStateException("Entra token endpoint returned HTTP " + response.statusCode());
         }
 
-        final ObjectMapper mapper = ThreadLocalMapper.get();
-        final JsonNode root = mapper.readTree(body);
+        final JsonNode root = ThreadLocalMapper.get().readTree(body);
         final String error = text(root, "error");
         if (StringUtils.isNotBlank(error)) {
             final String desc = text(root, "error_description");
@@ -152,12 +143,45 @@ public final class EntraAuthorizationCodeExchange {
     public static String buildAuthorizeUrl(final String authorizationEndpoint, final String clientId, final String redirectUri, final String scope,
         final String state) {
 
-        return authorizationEndpoint
-            + "?client_id=" + urlEncode(clientId)
-            + "&response_type=code"
-            + "&redirect_uri=" + urlEncode(redirectUri)
-            + "&scope=" + urlEncode(scope)
-            + "&state=" + urlEncode(state)
-            + "&response_mode=query";
+        return authorizationEndpoint + "?client_id=" + urlEncode(clientId) + "&response_type=code" + "&redirect_uri=" + urlEncode(redirectUri) + "&scope="
+            + urlEncode(scope) + "&state=" + urlEncode(state) + "&response_mode=query";
+    }
+
+    /**
+     * Builds the Entra OIDC logout (end-session) URL for a browser GET redirect.
+     *
+     * @param logoutEndpoint Entra v2.0 logout endpoint URL (may already include a query string)
+     * @param postLogoutRedirectUri optional registered post-logout redirect URI; blank or {@code none} omits redirect params
+     * @param clientId optional application (client) id; appended when post-logout redirect is present (helps Entra honor the redirect)
+     * @return logout endpoint, optionally with {@code post_logout_redirect_uri} and {@code client_id} percent-encoded
+     * @throws IllegalArgumentException if {@code logoutEndpoint} is null or blank
+     */
+    public static String buildLogoutUrl(final String logoutEndpoint, final String postLogoutRedirectUri, final String clientId) {
+
+        if (StringUtils.isBlank(logoutEndpoint)) {
+            throw new IllegalArgumentException("logout endpoint is required");
+        }
+        if (StringUtils.isBlank(postLogoutRedirectUri) || "none".equalsIgnoreCase(postLogoutRedirectUri.trim())) {
+            return logoutEndpoint.trim();
+        }
+        String url = logoutEndpoint.trim();
+        final String sep = url.contains("?") ? "&" : "?";
+        url = url + sep + "post_logout_redirect_uri=" + urlEncode(postLogoutRedirectUri.trim());
+        if (StringUtils.isNotBlank(clientId) && !"none".equalsIgnoreCase(clientId.trim())) {
+            url = url + "&client_id=" + urlEncode(clientId.trim());
+        }
+        return url;
+    }
+
+    /**
+     * Builds logout URL without {@code client_id} (tests / callers that only need the redirect param).
+     *
+     * @param logoutEndpoint Entra logout endpoint
+     * @param postLogoutRedirectUri optional post-logout redirect URI
+     * @return see {@link #buildLogoutUrl(String, String, String)}
+     */
+    public static String buildLogoutUrl(final String logoutEndpoint, final String postLogoutRedirectUri) {
+
+        return buildLogoutUrl(logoutEndpoint, postLogoutRedirectUri, null);
     }
 }

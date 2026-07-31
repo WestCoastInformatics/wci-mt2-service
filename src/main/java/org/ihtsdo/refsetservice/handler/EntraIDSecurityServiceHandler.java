@@ -22,6 +22,10 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.model.BrowserLoginCallback;
+import org.ihtsdo.refsetservice.model.BrowserLoginException;
+import org.ihtsdo.refsetservice.util.EntraAuthorizationCodeExchange;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -91,8 +95,8 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
         final String authority = getRequiredProperty("authority");
         final String clientId = getRequiredProperty("client.id");
 
-        LOG.debug("EntraID authenticateWithBearerToken: config — jwks.endpoint={}, authority={}, client.id (expected audience)={}", jwksEndpoint,
-            authority, clientId);
+        LOG.debug("EntraID authenticateWithBearerToken: config — jwks.endpoint={}, authority={}, client.id (expected audience)={}", jwksEndpoint, authority,
+            clientId);
 
         try {
             logUnverifiedJwtSummary("before signature verify", token);
@@ -102,8 +106,7 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
             LOG.debug("EntraID authenticateWithBearerToken: JWT signature and issuer/audience verification succeeded");
 
             final String identifierClaim = properties != null && StringUtils.isNotBlank(properties.getProperty("user.identifier.claim"))
-                ? properties.getProperty("user.identifier.claim")
-                : "email";
+                ? properties.getProperty("user.identifier.claim") : "email";
 
             LOG.debug("EntraID authenticateWithBearerToken: using identifier claim name={}", identifierClaim);
 
@@ -131,8 +134,7 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
 
             user.setModifiedBy(user.getUserName());
 
-            LOG.info("EntraID authenticateWithBearerToken: success for userName={}, email={}, roles={}", user.getUserName(), user.getEmail(),
-                user.getRoles());
+            LOG.info("EntraID authenticateWithBearerToken: success for userName={}, email={}, roles={}", user.getUserName(), user.getEmail(), user.getRoles());
             LOG.debug("EntraID authenticateWithBearerToken: full user object: {}", user);
             return user;
 
@@ -215,10 +217,7 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
 
         final Algorithm algorithm = Algorithm.RSA256((RSAPublicKey) jwk.getPublicKey(), null);
 
-        final JWTVerifier verifier = JWT.require(algorithm)
-            .withIssuer(authority)
-            .withAudience(clientId)
-            .build();
+        final JWTVerifier verifier = JWT.require(algorithm).withIssuer(authority).withAudience(clientId).build();
 
         LOG.debug("EntraID validateToken: verifying signature, issuer must equal authority, audience must contain clientId");
         final DecodedJWT verified = verifier.verify(token);
@@ -242,15 +241,8 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
             final List<String> aud = d.getAudience();
             final Date exp = d.getExpiresAt();
             final Date iat = d.getIssuedAt();
-            LOG.debug(
-                "EntraID JWT summary ({}): issuer={}, subject={}, audience={}, expiresAt={}, issuedAt={}, keyId={}",
-                phase,
-                d.getIssuer(),
-                d.getSubject(),
-                aud,
-                exp,
-                iat,
-                d.getKeyId());
+            LOG.debug("EntraID JWT summary ({}): issuer={}, subject={}, audience={}, expiresAt={}, issuedAt={}, keyId={}", phase, d.getIssuer(), d.getSubject(),
+                aud, exp, iat, d.getKeyId());
         } catch (final Exception e) {
             LOG.debug("EntraID JWT summary ({}): could not decode token for logging — {}", phase, e.getMessage());
         }
@@ -343,19 +335,23 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
 
         if (properties == null) {
             LOG.error("EntraID getRequiredProperty: properties bundle is null, requested key={}", key);
-            throw new RestException(false, 500, "Server Error",
-                "EntraID handler properties not configured for key: " + key);
+            throw new RestException(false, 500, "Server Error", "EntraID handler properties not configured for key: " + key);
         }
         final String value = properties.getProperty(key);
         if (StringUtils.isBlank(value)) {
             LOG.error("EntraID getRequiredProperty: missing or blank value for required key={}", key);
-            throw new RestException(false, 500, "Server Error",
-                "Missing required EntraID handler property: " + key);
+            throw new RestException(false, 500, "Server Error", "Missing required EntraID handler property: " + key);
         }
         LOG.trace("EntraID getRequiredProperty: key={} present (value length={})", key, value.length());
         return value;
     }
 
+    /**
+     * Timeout user.
+     *
+     * @param user the user
+     * @return true, if successful
+     */
     /* see superclass */
     @Override
     public boolean timeoutUser(final String user) {
@@ -364,6 +360,12 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
         return false;
     }
 
+    /**
+     * Compute token for user.
+     *
+     * @param user the user
+     * @return the string
+     */
     /* see superclass */
     @Override
     public String computeTokenForUser(final String user) {
@@ -371,6 +373,11 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
         return user;
     }
 
+    /**
+     * Sets the properties.
+     *
+     * @param properties the new properties
+     */
     /* see superclass */
     @Override
     public void setProperties(final Properties properties) {
@@ -379,12 +386,16 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
         if (properties == null) {
             LOG.warn("EntraID setProperties: properties set to null");
         } else {
-            LOG.info("EntraID setProperties: loaded {} property entries for handler (keys not listed to avoid leaking secrets)",
-                properties.size());
+            LOG.info("EntraID setProperties: loaded {} property entries for handler (keys not listed to avoid leaking secrets)", properties.size());
             LOG.debug("EntraID setProperties: property key names: {}", properties.stringPropertyNames());
         }
     }
 
+    /**
+     * Gets the name.
+     *
+     * @return the name
+     */
     /* see superclass */
     @Override
     public String getName() {
@@ -392,6 +403,12 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
         return "EntraID Security Service handler";
     }
 
+    /**
+     * Gets the authenticate url.
+     *
+     * @return the authenticate url
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public String getAuthenticateUrl() throws Exception {
@@ -412,6 +429,102 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
 
     /* see superclass */
     @Override
+    public boolean requiresBrowserLoginState() {
+
+        return true;
+    }
+
+    /* see superclass */
+    @Override
+    public boolean supportsBrowserCallback() {
+
+        return true;
+    }
+
+    /* see superclass */
+    @Override
+    public String buildBrowserLoginUrl(final String oauthState) throws Exception {
+
+        if (properties == null) {
+            throw new IllegalStateException("EntraID handler properties not set");
+        }
+        final String authorizationEndpoint = properties.getProperty("authorization.endpoint");
+        final String clientId = properties.getProperty("client.id");
+        final String redirectUri = properties.getProperty("redirect.uri");
+        final String scope = properties.getProperty("scopes");
+        if (StringUtils.isAnyBlank(authorizationEndpoint, clientId, redirectUri, oauthState) || "none".equalsIgnoreCase(clientId)) {
+            throw new IllegalStateException("Entra authorize URL cannot be built: missing authorization.endpoint, client.id, redirect.uri, or state");
+        }
+        final String scopeResolved = StringUtils.isNotBlank(scope) ? scope : "openid profile email";
+        return EntraAuthorizationCodeExchange.buildAuthorizeUrl(authorizationEndpoint, clientId, redirectUri.trim(), scopeResolved, oauthState);
+    }
+
+    /* see superclass */
+    @Override
+    public String getPostLoginRedirectUri() throws Exception {
+
+        String url = properties != null ? properties.getProperty("post.login.redirect.uri") : null;
+        if (StringUtils.isBlank(url) || "none".equalsIgnoreCase(url)) {
+            url = PropertyUtility.getProperty("app.url.root");
+        }
+        if (StringUtils.isBlank(url) || "none".equalsIgnoreCase(url)) {
+            return "/";
+        }
+        return url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
+    }
+
+    /* see superclass */
+    @Override
+    public User completeBrowserLogin(final BrowserLoginCallback callback) throws Exception {
+
+        if (callback == null) {
+            throw new BrowserLoginException("missing_code");
+        }
+        if (StringUtils.isNotBlank(callback.getError())) {
+            LOG.warn("Entra OAuth error={} description={}", callback.getError(), callback.getErrorDescription());
+            throw new BrowserLoginException(callback.getError());
+        }
+        if (StringUtils.isBlank(callback.getCode())) {
+            throw new BrowserLoginException("missing_code");
+        }
+        if (StringUtils.isNotBlank(callback.getExpectedState()) && !StringUtils.equals(callback.getExpectedState(), callback.getState())) {
+            LOG.warn("Entra OAuth state mismatch");
+            throw new BrowserLoginException("state_mismatch");
+        }
+
+        if (properties == null) {
+            throw new BrowserLoginException("config");
+        }
+        final String redirectUri = properties.getProperty("redirect.uri");
+        final String tokenEndpoint = properties.getProperty("token.endpoint");
+        final String clientId = properties.getProperty("client.id");
+        final String clientSecret = properties.getProperty("client.secret");
+        if (StringUtils.isAnyBlank(redirectUri, tokenEndpoint, clientId, clientSecret) || "none".equalsIgnoreCase(redirectUri)
+            || "none".equalsIgnoreCase(clientId)) {
+            LOG.error("Entra token endpoint, client id, secret, or redirect.uri not configured");
+            throw new BrowserLoginException("config");
+        }
+
+        final String jwtFromEntra;
+        try {
+            jwtFromEntra =
+                EntraAuthorizationCodeExchange.exchangeCodeForJwt(tokenEndpoint, clientId, clientSecret, callback.getCode().trim(), redirectUri.trim());
+        } catch (final Exception ex) {
+            LOG.warn("Entra authorization code exchange failed: {}", ex.getMessage());
+            throw new BrowserLoginException("token_exchange", ex);
+        }
+
+        return authenticateWithBearerToken(jwtFromEntra);
+    }
+
+    /**
+     * Gets the logout url.
+     *
+     * @return the logout url
+     * @throws Exception the exception
+     */
+    /* see superclass */
+    @Override
     public String getLogoutUrl() throws Exception {
 
         if (properties == null) {
@@ -419,14 +532,27 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
             return null;
         }
         final String endpoint = properties.getProperty("logout.endpoint");
-        if (StringUtils.isNotBlank(endpoint)) {
-            LOG.debug("EntraID getLogoutUrl: returning logout.endpoint");
-            return endpoint;
+        if (StringUtils.isBlank(endpoint) || "none".equalsIgnoreCase(endpoint.trim())) {
+            LOG.debug("EntraID getLogoutUrl: logout.endpoint blank");
+            return null;
         }
-        LOG.debug("EntraID getLogoutUrl: logout.endpoint blank");
-        return null;
+        String postLogoutRedirectUri = properties.getProperty("post.logout.redirect.uri");
+        if (StringUtils.isBlank(postLogoutRedirectUri) || "none".equalsIgnoreCase(postLogoutRedirectUri.trim())) {
+            postLogoutRedirectUri = PropertyUtility.getProperty("app.url.root");
+        }
+        final String clientId = properties.getProperty("client.id");
+        final String url = EntraAuthorizationCodeExchange.buildLogoutUrl(endpoint, postLogoutRedirectUri, clientId);
+        LOG.debug("EntraID getLogoutUrl: returning logout URL (post_logout_redirect_uri present={})",
+            StringUtils.isNotBlank(postLogoutRedirectUri) && !"none".equalsIgnoreCase(postLogoutRedirectUri.trim()));
+        return url;
     }
 
+    /**
+     * Gets the system admin user names.
+     *
+     * @return the system admin user names
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public Set<String> getSystemAdminUserNames() throws Exception {
@@ -444,6 +570,12 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
         return set;
     }
 
+    /**
+     * Gets the system author user names.
+     *
+     * @return the system author user names
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public Set<String> getSystemAuthorUserNames() throws Exception {
@@ -461,6 +593,12 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
         return set;
     }
 
+    /**
+     * Gets the system reviewer user names.
+     *
+     * @return the system reviewer user names
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public Set<String> getSystemReviewerUserNames() throws Exception {
@@ -478,4 +616,3 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
         return set;
     }
 }
-

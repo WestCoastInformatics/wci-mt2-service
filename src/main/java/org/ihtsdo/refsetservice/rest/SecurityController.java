@@ -20,10 +20,11 @@ import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
-import org.ihtsdo.refsetservice.handler.EntraAuthorizationCodeExchange;
+import org.ihtsdo.refsetservice.handler.SecurityServiceHandler;
+import org.ihtsdo.refsetservice.model.BrowserLoginCallback;
+import org.ihtsdo.refsetservice.model.BrowserLoginException;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
-import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +46,7 @@ import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
 /**
- * Controller for authentication and user end points.
+ * Controller for authentication and user end points. Identity-provider specifics live in {@link SecurityServiceHandler}.
  *
  * @author Nuno
  *
@@ -56,10 +57,15 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 public class SecurityController extends BaseController {
 
     /** The Constant LOG. */
-    @SuppressWarnings("unused")
     private static final Logger LOG = LoggerFactory.getLogger(SecurityController.class);
 
-    /** Cryptographic RNG for OAuth2 {@code state} values on {@link #entraOAuthLogin(HttpServletRequest)}. */
+    /** Query flag after successful browser login (handler-agnostic). */
+    private static final String AUTH_LOGIN_SUCCESS = "auth_login=success";
+
+    /** Query flag prefix after failed browser login (handler-agnostic). */
+    private static final String AUTH_ERROR_PREFIX = "auth_error=";
+
+    /** Cryptographic RNG for OAuth2 {@code state} values on {@link #authenticateLogin(HttpServletRequest)}. */
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     /** The request. */
@@ -106,140 +112,181 @@ public class SecurityController extends BaseController {
     }
 
     /**
-     * OAuth2 redirect target after Entra sign-in: exchanges {@code code} for tokens, validates the JWT, runs {@link SecurityService#authenticateWithEntraBearerToken(String)},
-     * stores the {@link User} in the HTTP session, clears OAuth {@code state} from the session, and redirects the browser to the post-login URL with a query outcome
-     * ({@code entra_login=success} or {@code entra_error=...}).
+     * Returns the authenticated session user (including {@code authToken}) for browser clients after identity-provider login redirect.
      *
-     * @param code authorization code from Entra (query); required unless {@code error} is set
-     * @param error Entra error code when authorization failed
-     * @param errorDescription optional human-readable error detail from Entra
-     * @param state OAuth2 state; must equal session {@link SecurityService#SESSION_ENTRA_OAUTH_STATE_KEY} when login was started via {@code GET /authenticate/login}
+     * @return 200 with {@link User}, or 401 if no authenticated session
+     * @throws Exception if session access fails unexpectedly
+     */
+    @GetMapping(value = "/authenticate/session")
+    public ResponseEntity<User> authenticateSession() throws Exception {
+
+        final User user = SecurityService.getUserFromSession();
+        if (user == null || StringUtils.isBlank(user.getUserName()) || SecurityService.GUEST_USERNAME.equals(user.getUserName())
+            || StringUtils.isBlank(user.getAuthToken())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok(user);
+    }
+
+    /**
+     * Identity-provider redirect target after browser sign-in. Delegates to {@link SecurityServiceHandler#completeBrowserLogin(BrowserLoginCallback)}, then
+     * stores the MT2 session user and redirects with {@code auth_login=success} or {@code auth_error=...}.
+     *
+     * @param code authorization code from the IdP (query); required unless {@code error} is set
+     * @param error IdP error code when authorization failed
+     * @param errorDescription optional human-readable error detail from the IdP
+     * @param state OAuth2 state; must equal session {@link SecurityService#SESSION_OAUTH_STATE_KEY} when login used state
      * @param httpRequest current request (session and servlet context)
-     * @return HTTP 302 {@code Location} to the resolved post-login base URL with an appended query flag (never returns a body)
-     * @throws Exception rethrown from services if an unexpected failure escapes (normally errors yield a redirect with {@code entra_error})
+     * @return HTTP 302 {@code Location} to the post-login base URL with an appended query flag
+     * @throws Exception if handler resolution fails unexpectedly
      */
     @GetMapping(value = "/authenticate/callback")
-    public ResponseEntity<Void> entraOAuthCallback(@RequestParam(required = false) final String code,
+    public ResponseEntity<Void> authenticateCallback(@RequestParam(required = false) final String code,
         @RequestParam(name = "error", required = false) final String error,
         @RequestParam(name = "error_description", required = false) final String errorDescription, @RequestParam(required = false) final String state,
         final HttpServletRequest httpRequest) throws Exception {
 
-        LOG.info("Callback hit: raw query={}, code={}, error={}, state={}",
-            httpRequest.getQueryString(), code, error, state);
+        LOG.info("Auth callback: raw query={}, code={}, error={}, state={}", httpRequest.getQueryString(), code, error, state);
 
-        final String postLogin = resolvePostLoginRedirectUrl();
-        if (!"ENTRAID".equalsIgnoreCase(StringUtils.trimToEmpty(PropertyUtility.getProperty("security.handler")))) {
-            LOG.warn("entraOAuthCallback invoked but security.handler is not ENTRAID");
-            return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(appendQuery(postLogin, "entra_callback=disabled"))).build();
+        final SecurityServiceHandler handler = SecurityService.getSecurityHandler();
+        final String postLogin = normalizePostLoginUrl(handler.getPostLoginRedirectUri());
+
+        if (!handler.supportsBrowserCallback()) {
+            LOG.warn("Auth callback invoked but handler does not support browser callback");
+            return redirectAuthError(postLogin, "callback_disabled");
         }
 
-        if (StringUtils.isNotBlank(error)) {
-            LOG.warn("Entra OAuth error={} description={}", error, errorDescription);
-            return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(appendQuery(postLogin, "entra_error=" + urlEncode(error)))).build();
-        }
-
-        if (StringUtils.isBlank(code)) {
-            return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(appendQuery(postLogin, "entra_error=missing_code"))).build();
-        }
-
-        final Object expectedState =
-            httpRequest.getSession(false) != null ? httpRequest.getSession(false).getAttribute(SecurityService.SESSION_ENTRA_OAUTH_STATE_KEY) : null;
-        if (expectedState != null) {
-            if (!StringUtils.equals(String.valueOf(expectedState), state)) {
-                LOG.warn("Entra OAuth state mismatch");
-                return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(appendQuery(postLogin, "entra_error=state_mismatch"))).build();
-            }
-        }
-
-        final String redirectUri = PropertyUtility.getProperty("security.handler.ENTRAID.redirect.uri");
-        if (StringUtils.isBlank(redirectUri) || "none".equalsIgnoreCase(redirectUri)) {
-            LOG.error("security.handler.ENTRAID.redirect.uri is not configured (required for OAuth callback)");
-            return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(appendQuery(postLogin, "entra_error=config"))).build();
-        }
-
-        final String tokenEndpoint = PropertyUtility.getProperty("security.handler.ENTRAID.token.endpoint");
-        final String clientId = PropertyUtility.getProperty("security.handler.ENTRAID.client.id");
-        final String clientSecret = PropertyUtility.getProperty("security.handler.ENTRAID.client.secret");
-        if (StringUtils.isAnyBlank(tokenEndpoint, clientId, clientSecret) || "none".equalsIgnoreCase(clientId)) {
-            LOG.error("Entra token endpoint, client id, or secret not configured");
-            return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(appendQuery(postLogin, "entra_error=config"))).build();
-        }
-
-        final String jwtFromEntra;
-        try {
-            jwtFromEntra = EntraAuthorizationCodeExchange.exchangeCodeForJwt(tokenEndpoint, clientId, clientSecret, code.trim(), redirectUri.trim());
-        } catch (final Exception ex) {
-            LOG.warn("Entra authorization code exchange failed: {}", ex.getMessage());
-            return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(appendQuery(postLogin, "entra_error=token_exchange"))).build();
-        }
+        final Object expectedStateObj =
+            httpRequest.getSession(false) != null ? httpRequest.getSession(false).getAttribute(SecurityService.SESSION_OAUTH_STATE_KEY) : null;
+        final String expectedState = expectedStateObj != null ? String.valueOf(expectedStateObj) : null;
 
         try (final SecurityService securityService = new SecurityService()) {
-            final User user = securityService.authenticateWithEntraBearerToken(jwtFromEntra);
+            final User idpUser = handler.completeBrowserLogin(new BrowserLoginCallback(code, error, errorDescription, state, expectedState));
+            final User user = securityService.authenticateHandlerUser(idpUser);
             if (user == null || user.getAuthToken() == null) {
-                return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(appendQuery(postLogin, "entra_error=no_user"))).build();
+                return redirectAuthError(postLogin, "no_user");
             }
             httpRequest.getSession(true).setAttribute(SecurityService.SESSION_USER_OBJECT_KEY, user);
-            httpRequest.getSession().removeAttribute(SecurityService.SESSION_ENTRA_OAUTH_STATE_KEY);
-            LOG.info("Entra OAuth callback: session established for user={}", user.getUserName());
+            httpRequest.getSession().removeAttribute(SecurityService.SESSION_OAUTH_STATE_KEY);
+            LOG.info("Auth callback: session established for user={}", user.getUserName());
+        } catch (final BrowserLoginException ex) {
+            LOG.warn("Auth callback login failed: {}", ex.getErrorCode());
+            return redirectAuthError(postLogin, urlEncode(ex.getErrorCode()));
         } catch (final Exception ex) {
-            LOG.warn("Entra OAuth callback login failed: {}", ex.toString());
-            return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(appendQuery(postLogin, "entra_error=login"))).build();
+            LOG.warn("Auth callback login failed: {}", ex.toString());
+            return redirectAuthError(postLogin, "login");
         }
 
-        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(appendQuery(postLogin, "entra_login=success"))).build();
+        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(appendQuery(postLogin, AUTH_LOGIN_SUCCESS))).build();
     }
 
     /**
-     * Starts the Entra authorization code flow for browser clients: generates a cryptographically random {@code state}, stores it under
-     * {@link SecurityService#SESSION_ENTRA_OAUTH_STATE_KEY}, builds the Microsoft authorize URL (same {@code redirect_uri} as configured for the callback), and returns
-     * HTTP 302 to Entra. SPAs may omit this endpoint if they initiate OAuth themselves with an identical registered {@code redirect_uri}.
+     * Starts browser login via the configured {@link SecurityServiceHandler}.
      *
-     * @param httpRequest used to create or access the HTTP session for {@code state} storage
-     * @return HTTP 302 to the Entra authorize endpoint, or 404 if {@code security.handler} is not {@code ENTRAID}, or 503 if required Entra properties are missing
+     * @param httpRequest used to create or access the HTTP session for OAuth {@code state} when required
+     * @return HTTP 302 to the identity provider, or 503 if required configuration is missing
      * @throws Exception if building the redirect URL fails unexpectedly
      */
     @GetMapping(value = "/authenticate/login")
-    public ResponseEntity<Void> entraOAuthLogin(final HttpServletRequest httpRequest) throws Exception {
+    public ResponseEntity<Void> authenticateLogin(final HttpServletRequest httpRequest) throws Exception {
 
-        if (!"ENTRAID".equalsIgnoreCase(StringUtils.trimToEmpty(PropertyUtility.getProperty("security.handler")))) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        final SecurityServiceHandler handler = SecurityService.getSecurityHandler();
+        String oauthState = null;
+        if (handler.requiresBrowserLoginState()) {
+            final byte[] bytes = new byte[24];
+            SECURE_RANDOM.nextBytes(bytes);
+            oauthState = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+            httpRequest.getSession(true).setAttribute(SecurityService.SESSION_OAUTH_STATE_KEY, oauthState);
         }
 
-        final String authorizationEndpoint = PropertyUtility.getProperty("security.handler.ENTRAID.authorization.endpoint");
-        final String clientId = PropertyUtility.getProperty("security.handler.ENTRAID.client.id");
-        final String redirectUri = PropertyUtility.getProperty("security.handler.ENTRAID.redirect.uri");
-        final String scope = PropertyUtility.getProperty("security.handler.ENTRAID.scopes");
-        if (StringUtils.isAnyBlank(authorizationEndpoint, clientId, redirectUri) || "none".equalsIgnoreCase(clientId)) {
-            LOG.error("Entra authorize URL cannot be built: missing authorization.endpoint, client.id, or redirect.uri");
+        final String url;
+        try {
+            url = handler.buildBrowserLoginUrl(oauthState);
+        } catch (final Exception ex) {
+            LOG.error("Browser login URL could not be built: {}", ex.getMessage());
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
         }
-
-        final String scopeResolved = StringUtils.isNotBlank(scope) ? scope : "openid profile email";
-        final byte[] bytes = new byte[24];
-        SECURE_RANDOM.nextBytes(bytes);
-        final String oauthState = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-        httpRequest.getSession(true).setAttribute(SecurityService.SESSION_ENTRA_OAUTH_STATE_KEY, oauthState);
-
-        final String url = EntraAuthorizationCodeExchange.buildAuthorizeUrl(authorizationEndpoint, clientId, redirectUri.trim(), scopeResolved, oauthState);
+        if (StringUtils.isBlank(url)) {
+            LOG.error("Browser login URL is blank");
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+        }
         return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(url)).build();
     }
 
     /**
-     * Resolves the base URL for browser redirects after Entra OAuth callback: {@code security.handler.ENTRAID.post.login.redirect.uri}, then {@code app.url.root},
-     * then {@code "/"}. Trailing slash is removed so a single query string can be appended.
+     * Starts browser logout: clears MT2 session, then redirects to the handler logout URL.
      *
-     * @return non-blank base URL without a trailing {@code /}
+     * @param httpRequest used to clear or invalidate the HTTP session
+     * @return HTTP 302 to the identity provider logout, or 503 when misconfigured
+     * @throws Exception if building the redirect URL fails unexpectedly
      */
-    private static String resolvePostLoginRedirectUrl() {
+    @GetMapping(value = "/authenticate/logout")
+    public ResponseEntity<Void> authenticateLogout(final HttpServletRequest httpRequest) throws Exception {
 
-        String url = PropertyUtility.getProperty("security.handler.ENTRAID.post.login.redirect.uri");
-        if (StringUtils.isBlank(url) || "none".equalsIgnoreCase(url)) {
-            url = PropertyUtility.getProperty("app.url.root");
+        clearBrowserAuthSession(httpRequest);
+
+        final String url = SecurityService.getSecurityHandler().getLogoutUrl();
+        if (StringUtils.isBlank(url)) {
+            LOG.error("Browser logout URL is not configured");
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
         }
+        LOG.info("Auth logout: redirect Location={}", url);
+        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(url)).build();
+    }
+
+    /**
+     * Best-effort clear of browser session state used by login (user object, OAuth state, app JWT maps). Does not throw if there is no session.
+     *
+     * @param httpRequest current request
+     */
+    private static void clearBrowserAuthSession(final HttpServletRequest httpRequest) {
+
+        final javax.servlet.http.HttpSession session = httpRequest.getSession(false);
+        if (session == null) {
+            return;
+        }
+        try {
+            final Object userObj = session.getAttribute(SecurityService.SESSION_USER_OBJECT_KEY);
+            if (userObj instanceof User) {
+                final String authToken = ((User) userObj).getAuthToken();
+                if (StringUtils.isNotBlank(authToken)) {
+                    SecurityService.clearAuthTokenMaps(authToken);
+                }
+            }
+            session.removeAttribute(SecurityService.SESSION_USER_OBJECT_KEY);
+            session.removeAttribute(SecurityService.SESSION_OAUTH_STATE_KEY);
+            session.invalidate();
+        } catch (final IllegalStateException e) {
+            LOG.debug("Auth logout: session already invalid: {}", e.getMessage());
+        } catch (final Exception e) {
+            LOG.warn("Auth logout: session clear failed: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Normalizes post-login redirect base (strip trailing slash).
+     *
+     * @param url handler post-login URL
+     * @return non-blank base without trailing {@code /}
+     */
+    private static String normalizePostLoginUrl(final String url) {
+
         if (StringUtils.isBlank(url) || "none".equalsIgnoreCase(url)) {
             return "/";
         }
         return url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
+    }
+
+    /**
+     * Builds a 302 to {@code postLogin} with {@code auth_error=...}.
+     *
+     * @param postLogin base URL
+     * @param errorCode error fragment (already encoded if needed)
+     * @return redirect response
+     */
+    private static ResponseEntity<Void> redirectAuthError(final String postLogin, final String errorCode) {
+
+        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(appendQuery(postLogin, AUTH_ERROR_PREFIX + errorCode))).build();
     }
 
     /**
@@ -259,7 +306,7 @@ public class SecurityController extends BaseController {
      * Percent-encodes a string for safe use in a query parameter value; spaces are encoded as {@code %20} (not {@code +}).
      *
      * @param s raw string (must not be {@code null})
-     * @return UTF-8 application/x-www-form-urlencoded–style encoding
+     * @return UTF-8 form-urlencoded–style encoding
      */
     private static String urlEncode(final String s) {
 
