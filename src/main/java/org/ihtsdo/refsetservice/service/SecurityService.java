@@ -23,7 +23,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.apache.commons.lang3.StringUtils;
-import org.ihtsdo.refsetservice.handler.EntraIDSecurityServiceHandler;
 import org.ihtsdo.refsetservice.handler.SecurityServiceHandler;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.RestException;
@@ -70,7 +69,8 @@ public class SecurityService implements AutoCloseable {
     public static final String SESSION_USER_PROJECTS = "RT2_USER_PROJECTS";
 
     /** Session attribute for OAuth2 state when Entra login is started via {@code /authenticate/login}. */
-    public static final String SESSION_ENTRA_OAUTH_STATE_KEY = "ENTRA_OAUTH_STATE";
+    /** Session attribute for OAuth2 {@code state} during browser login (handler-agnostic). */
+    public static final String SESSION_OAUTH_STATE_KEY = "OAUTH_STATE";
 
     /** The handler. */
     public static final String GUEST_USERNAME = "nonLoggedInUser";
@@ -123,9 +123,8 @@ public class SecurityService implements AutoCloseable {
         // TODO - Find a better solution for unit tests
         final String profiles = PropertyUtility.getProperty("springProfiles");
         final String authDevBypass = PropertyUtility.getProperty("auth.dev.bypass");
-        final boolean devBypass = "true".equalsIgnoreCase(authDevBypass)
-            || (!"false".equalsIgnoreCase(authDevBypass)
-                && profiles != null && (profiles.toLowerCase().contains("test") || profiles.toLowerCase().contains("dev")));
+        final boolean devBypass = "true".equalsIgnoreCase(authDevBypass) || (!"false".equalsIgnoreCase(authDevBypass) && profiles != null
+            && (profiles.toLowerCase().contains("test") || profiles.toLowerCase().contains("dev")));
         if (devBypass) {
 
             final User devUser = new User("devUser", "Dev User", "", "", "", new HashSet<>());
@@ -438,39 +437,42 @@ public class SecurityService implements AutoCloseable {
     }
 
     /**
-     * Completes login using an Entra-issued JWT (for example after OAuth2 authorization code exchange). Loads the configured {@link SecurityServiceHandler};
-     * if it is {@link EntraIDSecurityServiceHandler}, validates the token and builds a user, then runs {@link #authHelper(TerminologyService, User)} so DB state and
-     * the application {@code authToken} match the normal {@link #authenticate(String)} path.
+     * Completes MT2 login for a user already authenticated by the configured {@link SecurityServiceHandler} (browser callback or other IdP path). Runs
+     * {@link #authHelper(TerminologyService, User)} so DB state and the application {@code authToken} match the normal {@link #authenticate(String)} path.
      *
-     * @param entraJwt the access or id token string (no {@code Bearer } prefix)
+     * @param authUser identity-provider user (roles, email, userName set)
      * @return the persisted MT2 user with {@link User#getAuthToken()} set for API calls
-     * @throws LocalException if {@code entraJwt} is blank
-     * @throws RestException if {@code security.handler} is not EntraID (HTTP 503) or Entra validation / auth rules fail
      * @throws Exception for database or other failures from {@link TerminologyService} / {@link #authHelper(TerminologyService, User)}
      */
-    public User authenticateWithEntraBearerToken(final String entraJwt) throws Exception {
+    public User authenticateHandlerUser(final User authUser) throws Exception {
 
-        if (StringUtils.isBlank(entraJwt)) {
-            throw new LocalException("Invalid Entra token: blank");
+        if (authUser == null) {
+            throw new LocalException("Invalid authenticated user: null");
         }
 
         initializeHandlerIfNeeded();
 
-        if (!(handler instanceof EntraIDSecurityServiceHandler)) {
-            throw new RestException(false, 503, "Service Unavailable",
-                "Entra OAuth callback requires security.handler=ENTRAID.");
-        }
-
         try (final TerminologyService service = new TerminologyService()) {
-            final User authUser = ((EntraIDSecurityServiceHandler) handler).authenticateWithBearerToken(entraJwt);
-            LOG.info("Authenticated user from Entra bearer token is {}", authUser);
+            LOG.info("Authenticated user from security handler is {}", authUser);
             return authHelper(service, authUser);
         }
     }
 
     /**
-     * Lazily constructs the static {@link #handler} from {@code security.handler} and the corresponding {@code security.handler.*} prefixed properties, and sets
-     * {@link #timeout} from {@code spring.session.timeout.seconds}. No-op when {@code handler} is already set.
+     * Returns the configured {@link SecurityServiceHandler}, initializing it if needed.
+     *
+     * @return the handler
+     * @throws Exception if the handler cannot be loaded
+     */
+    public static SecurityServiceHandler getSecurityHandler() throws Exception {
+
+        initializeHandlerIfNeeded();
+        return handler;
+    }
+
+    /**
+     * Lazily constructs the static {@link #handler} from {@code security.handler} and the corresponding {@code security.handler.*} prefixed properties, and
+     * sets {@link #timeout} from {@code spring.session.timeout.seconds}. No-op when {@code handler} is already set.
      *
      * @throws Exception if the handler class cannot be loaded or configured
      */
@@ -494,6 +496,7 @@ public class SecurityService implements AutoCloseable {
     /**
      * Auth helper.
      *
+     * @param service the service
      * @param authUser the auth user
      * @return the user
      * @throws Exception the exception
@@ -562,6 +565,7 @@ public class SecurityService implements AutoCloseable {
      * Logout.
      *
      * @param userName the user name
+     * @param authToken the auth token
      * @throws Exception the exception
      */
     public void logout(final String userName, final String authToken) throws Exception {
@@ -576,6 +580,21 @@ public class SecurityService implements AutoCloseable {
         tokenTimeoutMap.remove(authToken);
         removeFromSession(SESSION_USER_OBJECT_KEY);
         clearCookies();
+    }
+
+    /**
+     * Removes an application JWT from the in-memory auth maps without requiring a matching session user name. Used by browser Entra logout when clearing
+     * session state.
+     *
+     * @param authToken the application JWT to forget (ignored if blank)
+     */
+    public static void clearAuthTokenMaps(final String authToken) {
+
+        if (StringUtils.isBlank(authToken)) {
+            return;
+        }
+        tokenUsernameMap.remove(authToken);
+        tokenTimeoutMap.remove(authToken);
     }
 
     /**
@@ -669,6 +688,11 @@ public class SecurityService implements AutoCloseable {
 
     }
 
+    /**
+     * Close.
+     *
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public void close() throws Exception {
@@ -676,7 +700,7 @@ public class SecurityService implements AutoCloseable {
         // n/a
 
     }
-    
+
     /**
      * Returns the system admin user names.
      *
@@ -749,6 +773,7 @@ public class SecurityService implements AutoCloseable {
     /**
      * Check user.
      *
+     * @param service the service
      * @param user the user
      * @return true, if successful
      * @throws Exception the exception

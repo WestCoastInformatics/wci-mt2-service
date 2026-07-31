@@ -9,6 +9,8 @@
  */
 package org.ihtsdo.refsetservice.handler;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -219,6 +221,36 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
     public String getAuthenticateUrl() throws Exception {
 
         return PropertyUtility.getProperty("security.handler.IMS.url");
+    }
+
+    /* see superclass */
+    @Override
+    public String buildBrowserLoginUrl(final String oauthState) throws Exception {
+
+        final String logoutUrl = getLogoutUrl();
+        if (StringUtils.isBlank(logoutUrl)) {
+            return null;
+        }
+        String serviceReferer = PropertyUtility.getProperty("app.url.root");
+        if (StringUtils.isBlank(serviceReferer) || "none".equalsIgnoreCase(serviceReferer)) {
+            serviceReferer = "/";
+        }
+        final String refererParam = "serviceReferer=" + URLEncoder.encode(serviceReferer, StandardCharsets.UTF_8).replace("+", "%20");
+        if (logoutUrl.contains("#/logout")) {
+            return logoutUrl.replace("#/logout/", "#/login?" + refererParam).replace("#/logout", "#/login?" + refererParam);
+        }
+        return logoutUrl;
+    }
+
+    /* see superclass */
+    @Override
+    public String getPostLoginRedirectUri() throws Exception {
+
+        String url = PropertyUtility.getProperty("app.url.root");
+        if (StringUtils.isBlank(url) || "none".equalsIgnoreCase(url)) {
+            return "/";
+        }
+        return url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
     }
 
     /* see superclass */

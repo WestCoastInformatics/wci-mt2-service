@@ -128,7 +128,9 @@ public class MappingController extends BaseController {
         @RequestParam(required = false) final Integer limit, @RequestParam(required = false) final Integer offset,
         @RequestParam(required = false) final Boolean activeOnly, @RequestParam(required = false) final String sort,
         @RequestParam(required = false) final Boolean sortAscending, @RequestParam(required = false) final Boolean editing,
-        @RequestParam(required = false) final String searchAfter) throws Exception {
+        @RequestParam(required = false) final String searchAfter, final HttpServletRequest request) throws Exception {
+
+        requireSessionUser(request);
 
         final SearchParameters sp = new SearchParameters();
         sp.setQuery(query);
@@ -141,7 +143,6 @@ public class MappingController extends BaseController {
         sp.setSearchAfter(searchAfter);
         LOG.info("Mappings for a Mapset {}: {}", mapSetInternalId, sp);
         final long controllerStartMs = System.currentTimeMillis();
-        // final User authUser = authorizeUser(request);
 
         try (final TerminologyService service = new TerminologyService()) {
             final List<String> conceptCodesList = parseConceptCodes(conceptCodes);

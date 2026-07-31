@@ -13,6 +13,8 @@ import java.util.Set;
 
 import org.ihtsdo.refsetservice.model.Configurable;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.model.BrowserLoginCallback;
+import org.ihtsdo.refsetservice.model.BrowserLoginException;
 
 /**
  * Generically represents a handler that can authenticate a user.
@@ -37,7 +39,7 @@ public interface SecurityServiceHandler extends Configurable {
     public String getAuthenticateUrl() throws Exception;
 
     /**
-     * Returns the logout url.
+     * Returns the logout url (full browser redirect target for federated logout when configured).
      *
      * @return the logout url
      * @throws Exception the exception
@@ -59,7 +61,7 @@ public interface SecurityServiceHandler extends Configurable {
      * @return the string
      */
     public String computeTokenForUser(String user);
-    
+
     /**
      * Gets the system admin user names.
      *
@@ -83,4 +85,60 @@ public interface SecurityServiceHandler extends Configurable {
      * @throws Exception the exception
      */
     public Set<String> getSystemReviewerUserNames() throws Exception;
+
+    /**
+     * Whether {@link #buildBrowserLoginUrl(String)} requires a non-blank OAuth {@code state} stored in the HTTP session.
+     *
+     * @return true when the handler uses OAuth state (e.g. Entra authorization code flow)
+     */
+    default boolean requiresBrowserLoginState() {
+
+        return false;
+    }
+
+    /**
+     * Whether {@link #completeBrowserLogin(BrowserLoginCallback)} is supported for {@code GET /authenticate/callback}.
+     *
+     * @return true when the handler completes a browser OAuth (or similar) callback
+     */
+    default boolean supportsBrowserCallback() {
+
+        return false;
+    }
+
+    /**
+     * Builds the full identity-provider URL for {@code GET /authenticate/login}.
+     *
+     * @param oauthState CSRF state to embed when {@link #requiresBrowserLoginState()} is true; may be null otherwise
+     * @return absolute redirect URL
+     * @throws Exception if required configuration is missing
+     */
+    default String buildBrowserLoginUrl(final String oauthState) throws Exception {
+
+        return getAuthenticateUrl();
+    }
+
+    /**
+     * Base URL for post-login browser redirects after {@code /authenticate/callback} (no trailing slash preferred).
+     *
+     * @return non-blank URL, or {@code "/"} as last resort
+     * @throws Exception if property resolution fails
+     */
+    default String getPostLoginRedirectUri() throws Exception {
+
+        return "/";
+    }
+
+    /**
+     * Completes a browser identity-provider callback and returns the IdP-authenticated user (before MT2 {@code authHelper}).
+     *
+     * @param callback query and session inputs
+     * @return authenticated user from the identity provider
+     * @throws BrowserLoginException for expected failures mapped to {@code auth_error}
+     * @throws Exception for unexpected failures
+     */
+    default User completeBrowserLogin(final BrowserLoginCallback callback) throws Exception {
+
+        throw new BrowserLoginException("callback_disabled");
+    }
 }
