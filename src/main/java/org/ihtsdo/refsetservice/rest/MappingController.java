@@ -28,6 +28,7 @@ import javax.ws.rs.core.MediaType;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.MapNote;
+import org.ihtsdo.refsetservice.model.MapNoteImportResult;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.Mapping;
@@ -774,6 +775,58 @@ public class MappingController extends BaseController {
     }
 
     /**
+     * Import map notes from a pipe-delimited file for a map set.
+     * <p>
+     * File format (optional header): {@code conceptCode|User name|Date|Map note text}
+     * </p>
+     * Validates the entire file first. Unknown usernames are reported and nothing is imported.
+     *
+     * @param mapSetInternalId the map set internal id
+     * @param notesFile the notes file
+     * @param request the HTTP request
+     * @return created notes on success, or validation preview on failure
+     * @throws Exception the exception
+     */
+    @PostMapping(value = "/mapset/{mapSetInternalId}/notes/import", consumes = MediaType.MULTIPART_FORM_DATA, produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Import map notes from a pipe-delimited file.", tags = {
+        "mapset"
+    }, responses = {
+        @ApiResponse(responseCode = "200", description = "Successfully imported map notes"),
+        @ApiResponse(responseCode = "400", description = "Validation failed; response body is the preview"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "404", description = "Map set not found")
+    })
+    @RecordMetric
+    public @ResponseBody ResponseEntity<?> importMappingNotes(@PathVariable final String mapSetInternalId,
+        @RequestParam(name = "notesFile", required = true) final MultipartFile notesFile, final HttpServletRequest request) throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+            final User user = requireSessionUser(request);
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
+
+            final MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
+            if (mapSet.getMapProject() == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+
+            final MapNoteImportResult result = MapNoteService.importNotes(service, user, mapSet, notesFile);
+            if (!result.isSuccess()) {
+                service.rollback();
+                return new ResponseEntity<>(result.getPreview(), HttpStatus.BAD_REQUEST);
+            }
+
+            service.commit();
+            return new ResponseEntity<>(result.getNotes(), HttpStatus.OK);
+        } catch (final Exception e) {
+            rethrowHandled(e);
+            return null;
+        }
+    }
+
+    /**
      * List map notes for a source concept on a map set.
      *
      * @param mapSetInternalId the map set internal id
@@ -917,7 +970,7 @@ public class MappingController extends BaseController {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
 
-            MapNoteService.deleteNote(service, user, mapSet, conceptCode, noteId);
+            MapNoteService.deleteNote(service, mapSet, conceptCode, noteId);
             service.commit();
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } catch (final Exception e) {
