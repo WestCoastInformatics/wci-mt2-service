@@ -143,8 +143,10 @@ public class MappingWorkflowUnitTestUtilities {
     public List<Mapping> updateMappings(final String mapSetId, final List<Mapping> mappings, final User asUser) throws Exception {
 
         final String url = baseUrl + "/" + mapSetId + "/bulk";
-        final MvcResult result = mvc.perform(withUser(put(url), asUser).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
-            .content(ModelUtility.toJson(mappings))).andExpect(status().isOk()).andReturn();
+        final MvcResult result = mvc
+            .perform(
+                withUser(put(url), asUser).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).content(ModelUtility.toJson(mappings)))
+            .andExpect(status().isOk()).andReturn();
         return ThreadLocalMapper.get().readValue(result.getResponse().getContentAsString(), new TypeReference<List<Mapping>>() {
         });
     }
@@ -160,8 +162,9 @@ public class MappingWorkflowUnitTestUtilities {
     public void updateMappingsExpectUnauthorized(final String mapSetId, final List<Mapping> mappings, final User asUser) throws Exception {
 
         final String url = baseUrl + "/" + mapSetId + "/bulk";
-        mvc.perform(withUser(put(url), asUser).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
-            .content(ModelUtility.toJson(mappings))).andExpect(status().isUnauthorized());
+        mvc.perform(
+            withUser(put(url), asUser).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).content(ModelUtility.toJson(mappings)))
+            .andExpect(status().isUnauthorized());
     }
 
     /**
@@ -184,6 +187,36 @@ public class MappingWorkflowUnitTestUtilities {
     }
 
     /**
+     * Get currently assigned workflows for the session user.
+     *
+     * @param asUser the session user
+     * @param queryString optional query string (without leading '?'), or null
+     * @return the result list
+     * @throws Exception the exception
+     */
+    public ResultList<MappingWorkflow> getAssignedWorkflows(final User asUser, final String queryString) throws Exception {
+
+        final String url = "/mappings/workflow/assigned" + (queryString == null || queryString.isEmpty() ? "" : "?" + queryString);
+        final MvcResult result = mvc.perform(withUser(get(url), asUser).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+        return MAPPER.readValue(result.getResponse().getContentAsString(), new TypeReference<ResultList<MappingWorkflow>>() {
+        });
+    }
+
+    /**
+     * Attempt get assigned workflows and expect HTTP 400.
+     *
+     * @param asUser the session user
+     * @param queryString query string without leading '?'
+     * @return the assigned workflows expect bad request
+     * @throws Exception the exception
+     */
+    public void getAssignedWorkflowsExpectBadRequest(final User asUser, final String queryString) throws Exception {
+
+        final String url = "/mappings/workflow/assigned?" + queryString;
+        mvc.perform(withUser(get(url), asUser).accept(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest());
+    }
+
+    /**
      * Validate a mapping workflow history row.
      *
      * @param history the history row
@@ -203,11 +236,21 @@ public class MappingWorkflowUnitTestUtilities {
         assertThat(history.getMappingWorkflowId()).isEqualTo(workflowId);
     }
 
+    /**
+     * Workflow status url.
+     *
+     * @param mapSetId the map set id
+     * @param conceptCode the concept code
+     * @param action the action
+     * @param note the note
+     * @param assignToUser the assign to user
+     * @return the string
+     */
     private String workflowStatusUrl(final String mapSetId, final String conceptCode, final MappingWorkflowAction action, final String note,
         final String assignToUser) {
 
-        final StringBuilder url = new StringBuilder(baseUrl).append("/").append(mapSetId).append("/mappings/").append(conceptCode)
-            .append("/workflowStatus?action=").append(action);
+        final StringBuilder url =
+            new StringBuilder(baseUrl).append("/").append(mapSetId).append("/mappings/").append(conceptCode).append("/workflowStatus?action=").append(action);
         if (note != null) {
             url.append("&notes=").append(note);
         }
@@ -217,6 +260,13 @@ public class MappingWorkflowUnitTestUtilities {
         return url.toString();
     }
 
+    /**
+     * With user.
+     *
+     * @param builder the builder
+     * @param asUser the as user
+     * @return the mock http servlet request builder
+     */
     private MockHttpServletRequestBuilder withUser(final MockHttpServletRequestBuilder builder, final User asUser) {
 
         return builder.with(new SessionUserRequestPostProcessor(asUser));

@@ -31,6 +31,7 @@ import org.ihtsdo.refsetservice.model.MapNote;
 import org.ihtsdo.refsetservice.model.MapNoteImportResult;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
+import org.ihtsdo.refsetservice.model.MapWorkflowStatus;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.MappingWorkflow;
@@ -51,7 +52,6 @@ import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -99,6 +99,7 @@ public class MappingController extends BaseController {
      * @param sortAscending the sort ascending
      * @param editing the editing
      * @param searchAfter the search after
+     * @param request the request
      * @return the mappings
      * @throws Exception the exception
      */
@@ -550,6 +551,7 @@ public class MappingController extends BaseController {
      *
      * @param mapSetInternalId the map set internal id
      * @param mapping the mapping
+     * @param request the request
      * @return the response entity
      * @throws Exception the exception
      */
@@ -605,6 +607,7 @@ public class MappingController extends BaseController {
      *
      * @param mapSetInternalId the map set internal id
      * @param mappings the mappings
+     * @param request the request
      * @return the response entity
      * @throws Exception the exception
      */
@@ -655,10 +658,72 @@ public class MappingController extends BaseController {
     }
 
     /**
+     * Get currently assigned mapping workflows for the authenticated user.
+     *
+     * @param limit max rows (default 10, max 1000)
+     * @param offset start index (default 0)
+     * @param sort sort field (default assignedAt)
+     * @param sortAscending true for oldest first (default false)
+     * @param mapProjectId optional map project filter
+     * @param mapSetId optional map set filter
+     * @param workflowStatus optional workflow status filter
+     * @param request the request
+     * @return assigned mapping workflow rows
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/mappings/workflow/assigned", produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Get currently assigned mapping workflows for the current user.", tags = {
+        "mapping"
+    })
+    @Parameters({
+        @Parameter(name = "limit", description = "Maximum number of results (default 10, max 1000)", required = false),
+        @Parameter(name = "offset", description = "Start index of results (default 0)", required = false),
+        @Parameter(name = "sort", description = "Sort field (default assignedAt)", required = false),
+        @Parameter(name = "sortAscending", description = "Sort ascending (true) or descending (false, default)", required = false),
+        @Parameter(name = "mapProjectId", description = "Optional map project id filter", required = false),
+        @Parameter(name = "mapSetId", description = "Optional map set id filter", required = false),
+        @Parameter(name = "workflowStatus", description = "Optional workflow status filter", required = false)
+    })
+    @RecordMetric
+    public @ResponseBody ResponseEntity<ResultList<MappingWorkflow>> getAssignedMappingWorkflows(@RequestParam(required = false) final Integer limit,
+        @RequestParam(required = false) final Integer offset, @RequestParam(required = false) final String sort,
+        @RequestParam(required = false) final Boolean sortAscending, @RequestParam(required = false) final String mapProjectId,
+        @RequestParam(required = false) final String mapSetId, @RequestParam(required = false) final String workflowStatus, final HttpServletRequest request)
+        throws Exception {
+
+        final User user = requireSessionUser(request);
+
+        MapWorkflowStatus statusFilter = null;
+        if (StringUtils.isNotBlank(workflowStatus)) {
+            try {
+                statusFilter = MapWorkflowStatus.fromString(workflowStatus);
+            } catch (final IllegalArgumentException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid workflowStatus: " + workflowStatus);
+            }
+        }
+
+        final SearchParameters searchParameters = new SearchParameters();
+        searchParameters.setLimit(limit);
+        searchParameters.setOffset(offset);
+        searchParameters.setSort(sort);
+        searchParameters.setSortAscending(sortAscending);
+
+        try (final TerminologyService service = new TerminologyService()) {
+            final ResultList<MappingWorkflow> results =
+                MappingWorkflowService.findAssignedWorkflows(service, user.getUserName(), mapProjectId, mapSetId, statusFilter, searchParameters);
+            return new ResponseEntity<>(results, HttpStatus.OK);
+        } catch (final Exception e) {
+            rethrowHandled(e);
+            return null;
+        }
+    }
+
+    /**
      * Get the per-concept mapping workflow state.
      *
      * @param mapSetInternalId the map set internal id
      * @param conceptCode the source concept code
+     * @param request the request
      * @return the mapping workflow row
      * @throws Exception the exception
      */
@@ -695,6 +760,7 @@ public class MappingController extends BaseController {
      * @param action the workflow action
      * @param notes transition notes
      * @param assignToUser target user for REASSIGN
+     * @param request the request
      * @return the updated mapping workflow row
      * @throws Exception the exception
      */
@@ -746,6 +812,7 @@ public class MappingController extends BaseController {
      * @param mapSetInternalId the map set internal id
      * @param conceptCode the source concept code
      * @param searchParameters optional paging/sorting
+     * @param request the request
      * @return the workflow history rows
      * @throws Exception the exception
      */
@@ -983,7 +1050,9 @@ public class MappingController extends BaseController {
     /**
      * Returns the authenticated user from the HTTP session.
      *
+     * @param httpServletRequest the http servlet request
      * @return the session user
+     * @throws Exception the exception
      * @throws ResponseStatusException when no authenticated user is present
      */
     private User requireSessionUser(final HttpServletRequest httpServletRequest) throws Exception {
@@ -1029,6 +1098,12 @@ public class MappingController extends BaseController {
         handleException(exception);
     }
 
+    /**
+     * Find response status exception.
+     *
+     * @param exception the exception
+     * @return the response status exception
+     */
     private ResponseStatusException findResponseStatusException(final Throwable exception) {
 
         for (Throwable current = exception; current != null; current = current.getCause()) {

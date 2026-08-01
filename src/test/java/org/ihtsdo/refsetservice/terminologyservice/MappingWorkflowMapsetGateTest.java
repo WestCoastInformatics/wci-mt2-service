@@ -27,8 +27,12 @@ import org.springframework.web.server.ResponseStatusException;
 @ActiveProfiles("test")
 public class MappingWorkflowMapsetGateTest {
 
+    /** The promotion called. */
     private final AtomicBoolean promotionCalled = new AtomicBoolean(false);
 
+    /**
+     * Setup promotion mock.
+     */
     @BeforeEach
     public void setupPromotionMock() {
 
@@ -39,6 +43,9 @@ public class MappingWorkflowMapsetGateTest {
         });
     }
 
+    /**
+     * Restore promotion mock.
+     */
     @AfterEach
     public void restorePromotionMock() {
 
@@ -46,14 +53,19 @@ public class MappingWorkflowMapsetGateTest {
         PropertyUtility.setProperty("auth.dev.bypass", "true");
     }
 
+    /**
+     * Finish edit blocked by in progress mapping.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void finishEdit_blockedByInProgressMapping() throws Exception {
+    public void finishEditBlockedByInProgressMapping() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowAssignedTo(context.getSpecialistUser().getUserName());
 
-            final ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> MappingWorkflowService.assertMapsetTransitionAllowed(
-                context.getService(), context.getMapSet(), WorkflowAction.FINISH_EDIT));
+            final ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> MappingWorkflowService.assertMapsetTransitionAllowed(context.getService(), context.getMapSet(), WorkflowAction.FINISH_EDIT));
 
             assertEquals(HttpStatus.CONFLICT, exception.getStatus());
             assertTrue(exception.getReason().contains("blocked by mapping"));
@@ -63,25 +75,34 @@ public class MappingWorkflowMapsetGateTest {
         }
     }
 
+    /**
+     * Finish edit allowed when all terminal.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void finishEdit_allowedWhenAllTerminal() throws Exception {
+    public void finishEditAllowedWhenAllTerminal() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowStatus(MapWorkflowStatus.EDITING_DONE);
             context.addWorkflowForConcept("concept-new", MapWorkflowStatus.NEW);
             context.addWorkflowForConcept("concept-ready", MapWorkflowStatus.READY_FOR_PUBLICATION);
 
-            MappingWorkflowService.assertMapsetTransitionAllowed(
-                context.getService(), context.getMapSet(), WorkflowAction.FINISH_EDIT);
-            MapSetWorkflowService.setWorkflowStatus(context.getService(), context.getAdminUser(), WorkflowAction.FINISH_EDIT,
-                context.getMapSet(), "Finish edit", WorkflowStatus.READY_FOR_EDIT, null);
+            MappingWorkflowService.assertMapsetTransitionAllowed(context.getService(), context.getMapSet(), WorkflowAction.FINISH_EDIT);
+            MapSetWorkflowService.setWorkflowStatus(context.getService(), context.getAdminUser(), WorkflowAction.FINISH_EDIT, context.getMapSet(),
+                "Finish edit", WorkflowStatus.READY_FOR_EDIT, null);
 
             assertEquals(WorkflowStatus.READY_FOR_EDIT, context.reloadMapSet().getWorkflowStatus());
         }
     }
 
+    /**
+     * Finish edit allowed with untouched new.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void finishEdit_allowedWithUntouchedNew() throws Exception {
+    public void finishEditAllowedWithUntouchedNew() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowStatus(MapWorkflowStatus.NEW);
@@ -91,23 +112,27 @@ public class MappingWorkflowMapsetGateTest {
             context.addWorkflowForConcept("ready-1", MapWorkflowStatus.READY_FOR_PUBLICATION);
             context.addWorkflowForConcept("ready-2", MapWorkflowStatus.READY_FOR_PUBLICATION);
 
-            MappingWorkflowService.assertMapsetTransitionAllowed(
-                context.getService(), context.getMapSet(), WorkflowAction.FINISH_EDIT);
-            MapSetWorkflowService.setWorkflowStatus(context.getService(), context.getAdminUser(), WorkflowAction.FINISH_EDIT,
-                context.getMapSet(), "Finish edit", WorkflowStatus.READY_FOR_EDIT, null);
+            MappingWorkflowService.assertMapsetTransitionAllowed(context.getService(), context.getMapSet(), WorkflowAction.FINISH_EDIT);
+            MapSetWorkflowService.setWorkflowStatus(context.getService(), context.getAdminUser(), WorkflowAction.FINISH_EDIT, context.getMapSet(),
+                "Finish edit", WorkflowStatus.READY_FOR_EDIT, null);
 
             assertEquals(WorkflowStatus.READY_FOR_EDIT, context.reloadMapSet().getWorkflowStatus());
         }
     }
 
+    /**
+     * Request publication blocked by review in progress.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void requestPublication_blockedByReviewInProgress() throws Exception {
+    public void requestPublicationBlockedByReviewInProgress() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowAssignedTo(context.getLeadUser().getUserName(), MapWorkflowStatus.REVIEW_IN_PROGRESS);
 
-            final ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> MappingWorkflowService.assertMapsetTransitionAllowed(
-                context.getService(), context.getMapSet(), WorkflowAction.REQUEST_PUBLICATION));
+            final ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> MappingWorkflowService.assertMapsetTransitionAllowed(context.getService(), context.getMapSet(), WorkflowAction.REQUEST_PUBLICATION));
 
             assertEquals(HttpStatus.CONFLICT, exception.getStatus());
             assertTrue(exception.getReason().contains("blocked by mapping"));

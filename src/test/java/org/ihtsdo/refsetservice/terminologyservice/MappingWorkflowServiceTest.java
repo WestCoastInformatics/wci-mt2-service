@@ -6,14 +6,18 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Date;
 import java.util.Set;
 
+import org.ihtsdo.refsetservice.Application;
 import org.ihtsdo.refsetservice.model.MapWorkflowStatus;
 import org.ihtsdo.refsetservice.model.MappingWorkflow;
 import org.ihtsdo.refsetservice.model.MappingWorkflowHistory;
 import org.ihtsdo.refsetservice.model.enums.MappingWorkflowAction;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
+import org.ihtsdo.refsetservice.util.ResultList;
+import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -25,27 +29,33 @@ import org.springframework.web.server.ResponseStatusException;
 /**
  * Service-level tests for {@link MappingWorkflowService}.
  */
-@SpringBootTest
+@SpringBootTest(classes = Application.class)
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
-    "auth.dev.bypass=false",
-    "mapping.workflow.concept.branch.enabled=false"
+    "auth.dev.bypass=false", "mapping.workflow.concept.branch.enabled=false"
 })
 public class MappingWorkflowServiceTest {
 
+    /**
+     * Disable concept branch side effects.
+     */
     @BeforeEach
     public void disableConceptBranchSideEffects() {
 
         PropertyUtility.setProperty("mapping.workflow.concept.branch.enabled", "false");
     }
 
+    /**
+     * Assign from new by specialist.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void assign_fromNew_bySpecialist() throws Exception {
+    public void assignFromNewBySpecialist() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             final TerminologyService service = context.getService();
-            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(
-                service, context.getSpecialistUser(), MappingWorkflowAction.ASSIGN,
+            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(service, context.getSpecialistUser(), MappingWorkflowAction.ASSIGN,
                 context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assigned", null);
 
             assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, updated.getWorkflowStatus());
@@ -61,16 +71,21 @@ public class MappingWorkflowServiceTest {
         }
     }
 
+    /**
+     * Assign when already assigned.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void assign_whenAlreadyAssigned() throws Exception {
+    public void assignWhenAlreadyAssigned() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowAssignedTo(context.getOtherSpecialistUser().getUserName());
             final int historyBefore = context.historyCount();
 
-            assertThrows(ResponseStatusException.class, () -> MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getSpecialistUser(), MappingWorkflowAction.ASSIGN,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assign again", null));
+            assertThrows(ResponseStatusException.class,
+                () -> MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(), MappingWorkflowAction.ASSIGN,
+                    context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assign again", null));
 
             final MappingWorkflow reloaded = context.reloadWorkflow();
             assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, reloaded.getWorkflowStatus());
@@ -79,13 +94,17 @@ public class MappingWorkflowServiceTest {
         }
     }
 
+    /**
+     * Assign by viewer.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void assign_byViewer() throws Exception {
+    public void assignByViewer() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
-            assertThrows(ResponseStatusException.class, () -> MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getViewerUser(), MappingWorkflowAction.ASSIGN,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Viewer assign", null));
+            assertThrows(ResponseStatusException.class, () -> MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getViewerUser(),
+                MappingWorkflowAction.ASSIGN, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Viewer assign", null));
 
             final MappingWorkflow reloaded = context.reloadWorkflow();
             assertEquals(MapWorkflowStatus.NEW, reloaded.getWorkflowStatus());
@@ -94,28 +113,37 @@ public class MappingWorkflowServiceTest {
         }
     }
 
+    /**
+     * Assign when mapset not in edit.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void assign_whenMapsetNotInEdit() throws Exception {
+    public void assignWhenMapsetNotInEdit() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createReadyForEdit()) {
-            assertThrows(ResponseStatusException.class, () -> MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getSpecialistUser(), MappingWorkflowAction.ASSIGN,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assign", null));
+            assertThrows(ResponseStatusException.class,
+                () -> MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(), MappingWorkflowAction.ASSIGN,
+                    context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assign", null));
 
             final MappingWorkflow reloaded = context.reloadWorkflow();
             assertEquals(MapWorkflowStatus.NEW, reloaded.getWorkflowStatus());
         }
     }
 
+    /**
+     * Release by assignee.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void release_byAssignee() throws Exception {
+    public void releaseByAssignee() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowAssignedTo(context.getSpecialistUser().getUserName());
 
-            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getSpecialistUser(), MappingWorkflowAction.RELEASE,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Release", null);
+            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(),
+                MappingWorkflowAction.RELEASE, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Release", null);
 
             assertEquals(MapWorkflowStatus.NEW, updated.getWorkflowStatus());
             assertNull(updated.getAssignedUser());
@@ -125,16 +153,21 @@ public class MappingWorkflowServiceTest {
         }
     }
 
+    /**
+     * Release by non holder.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void release_byNonHolder() throws Exception {
+    public void releaseByNonHolder() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowAssignedTo(context.getOtherSpecialistUser().getUserName());
             final int historyBefore = context.historyCount();
 
-            assertThrows(ResponseStatusException.class, () -> MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getSpecialistUser(), MappingWorkflowAction.RELEASE,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Release", null));
+            assertThrows(ResponseStatusException.class,
+                () -> MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(), MappingWorkflowAction.RELEASE,
+                    context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Release", null));
 
             final MappingWorkflow reloaded = context.reloadWorkflow();
             assertEquals(context.getOtherSpecialistUser().getUserName(), reloaded.getAssignedUser());
@@ -142,27 +175,36 @@ public class MappingWorkflowServiceTest {
         }
     }
 
+    /**
+     * Release from new.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void release_fromNew() throws Exception {
+    public void releaseFromNew() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
-            assertThrows(ResponseStatusException.class, () -> MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getSpecialistUser(), MappingWorkflowAction.RELEASE,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Release", null));
+            assertThrows(ResponseStatusException.class,
+                () -> MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(), MappingWorkflowAction.RELEASE,
+                    context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Release", null));
 
             assertEquals(MapWorkflowStatus.NEW, context.reloadWorkflow().getWorkflowStatus());
         }
     }
 
+    /**
+     * Finish editing by assignee.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void finishEditing_byAssignee() throws Exception {
+    public void finishEditingByAssignee() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowAssignedTo(context.getSpecialistUser().getUserName());
 
-            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getSpecialistUser(), MappingWorkflowAction.FINISH_EDITING,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Done", null);
+            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(),
+                MappingWorkflowAction.FINISH_EDITING, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Done", null);
 
             assertEquals(MapWorkflowStatus.EDITING_DONE, updated.getWorkflowStatus());
             assertNull(updated.getAssignedUser());
@@ -170,27 +212,37 @@ public class MappingWorkflowServiceTest {
         }
     }
 
+    /**
+     * Finish editing from new.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void finishEditing_fromNew() throws Exception {
+    public void finishEditingFromNew() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
-            assertThrows(ResponseStatusException.class, () -> MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getSpecialistUser(), MappingWorkflowAction.FINISH_EDITING,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Done", null));
+            assertThrows(ResponseStatusException.class,
+                () -> MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(), MappingWorkflowAction.FINISH_EDITING,
+                    context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Done", null));
 
             assertEquals(MapWorkflowStatus.NEW, context.reloadWorkflow().getWorkflowStatus());
         }
     }
 
+    /**
+     * Finish editing by non holder.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void finishEditing_byNonHolder() throws Exception {
+    public void finishEditingByNonHolder() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowAssignedTo(context.getOtherSpecialistUser().getUserName());
 
-            assertThrows(ResponseStatusException.class, () -> MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getSpecialistUser(), MappingWorkflowAction.FINISH_EDITING,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Done", null));
+            assertThrows(ResponseStatusException.class,
+                () -> MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(), MappingWorkflowAction.FINISH_EDITING,
+                    context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Done", null));
 
             final MappingWorkflow reloaded = context.reloadWorkflow();
             assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, reloaded.getWorkflowStatus());
@@ -198,44 +250,57 @@ public class MappingWorkflowServiceTest {
         }
     }
 
+    /**
+     * Approve by lead.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void approve_byLead() throws Exception {
+    public void approveByLead() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowStatus(MapWorkflowStatus.EDITING_DONE);
 
-            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getLeadUser(), MappingWorkflowAction.APPROVE_FOR_PUBLICATION,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Approved", null);
+            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getLeadUser(),
+                MappingWorkflowAction.APPROVE_FOR_PUBLICATION, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Approved", null);
 
             assertEquals(MapWorkflowStatus.READY_FOR_PUBLICATION, updated.getWorkflowStatus());
             assertEquals(MappingWorkflowAction.APPROVE_FOR_PUBLICATION, context.latestHistory().getWorkflowAction());
         }
     }
 
+    /**
+     * Approve by specialist.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void approve_bySpecialist() throws Exception {
+    public void approveBySpecialist() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowStatus(MapWorkflowStatus.EDITING_DONE);
 
-            assertThrows(ResponseStatusException.class, () -> MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getSpecialistUser(), MappingWorkflowAction.APPROVE_FOR_PUBLICATION,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Approve", null));
+            assertThrows(ResponseStatusException.class,
+                () -> MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(),
+                    MappingWorkflowAction.APPROVE_FOR_PUBLICATION, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Approve", null));
 
             assertEquals(MapWorkflowStatus.EDITING_DONE, context.reloadWorkflow().getWorkflowStatus());
         }
     }
 
+    /**
+     * Force release by admin.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void forceRelease_byAdmin() throws Exception {
+    public void forceReleaseByAdmin() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowAssignedTo(context.getOtherSpecialistUser().getUserName());
 
-            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getAdminUser(), MappingWorkflowAction.FORCE_RELEASE,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Force release", null);
+            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getAdminUser(),
+                MappingWorkflowAction.FORCE_RELEASE, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Force release", null);
 
             assertEquals(MapWorkflowStatus.NEW, updated.getWorkflowStatus());
             assertNull(updated.getAssignedUser());
@@ -243,28 +308,37 @@ public class MappingWorkflowServiceTest {
         }
     }
 
+    /**
+     * Force release by specialist.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void forceRelease_bySpecialist() throws Exception {
+    public void forceReleaseBySpecialist() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowAssignedTo(context.getSpecialistUser().getUserName());
 
-            assertThrows(ResponseStatusException.class, () -> MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getSpecialistUser(), MappingWorkflowAction.FORCE_RELEASE,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Force", null));
+            assertThrows(ResponseStatusException.class,
+                () -> MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(), MappingWorkflowAction.FORCE_RELEASE,
+                    context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Force", null));
         }
     }
 
+    /**
+     * Reassign by lead.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void reassign_byLead() throws Exception {
+    public void reassignByLead() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowAssignedTo(context.getSpecialistUser().getUserName());
 
-            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getLeadUser(), MappingWorkflowAction.REASSIGN,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Reassign",
-                context.getOtherSpecialistUser().getUserName());
+            final MappingWorkflow updated =
+                MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getLeadUser(), MappingWorkflowAction.REASSIGN,
+                    context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Reassign", context.getOtherSpecialistUser().getUserName());
 
             assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, updated.getWorkflowStatus());
             assertEquals(context.getOtherSpecialistUser().getUserName(), updated.getAssignedUser());
@@ -273,27 +347,36 @@ public class MappingWorkflowServiceTest {
         }
     }
 
+    /**
+     * Reassign by non admin.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void reassign_byNonAdmin() throws Exception {
+    public void reassignByNonAdmin() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowAssignedTo(context.getSpecialistUser().getUserName());
 
-            assertThrows(ResponseStatusException.class, () -> MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getOtherSpecialistUser(), MappingWorkflowAction.REASSIGN,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Reassign",
-                context.getOtherSpecialistUser().getUserName()));
+            assertThrows(ResponseStatusException.class,
+                () -> MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getOtherSpecialistUser(), MappingWorkflowAction.REASSIGN,
+                    context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Reassign", context.getOtherSpecialistUser().getUserName()));
 
             assertEquals(context.getSpecialistUser().getUserName(), context.reloadWorkflow().getAssignedUser());
         }
     }
 
+    /**
+     * Allowed actions new specialist.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void allowedActions_new_specialist() throws Exception {
+    public void allowedActionsNewSpecialist() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
-            final Set<MappingWorkflowAction> allowed = MappingWorkflowService.getAllowedActions(
-                context.getSpecialistUser(), context.getWorkflow(), context.getMapSet(), context.getMapProject());
+            final Set<MappingWorkflowAction> allowed =
+                MappingWorkflowService.getAllowedActions(context.getSpecialistUser(), context.getWorkflow(), context.getMapSet(), context.getMapProject());
 
             assertEquals(Set.of(MappingWorkflowAction.ASSIGN), allowed);
             assertTrue(!allowed.contains(MappingWorkflowAction.FINISH_EDITING));
@@ -301,57 +384,132 @@ public class MappingWorkflowServiceTest {
         }
     }
 
+    /**
+     * Allowed actions in progress non holder.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void allowedActions_inProgress_nonHolder() throws Exception {
+    public void allowedActionsInProgressNonHolder() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowAssignedTo(context.getOtherSpecialistUser().getUserName());
 
-            final Set<MappingWorkflowAction> allowed = MappingWorkflowService.getAllowedActions(
-                context.getSpecialistUser(), context.getWorkflow(), context.getMapSet(), context.getMapProject());
+            final Set<MappingWorkflowAction> allowed =
+                MappingWorkflowService.getAllowedActions(context.getSpecialistUser(), context.getWorkflow(), context.getMapSet(), context.getMapProject());
 
             assertTrue(allowed.isEmpty());
         }
     }
 
+    /**
+     * Test simple path end to end.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testSimplePathEndToEnd() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             final TerminologyService service = context.getService();
 
-            MappingWorkflowService.setWorkflowStatusByAction(
-                service, context.getSpecialistUser(), MappingWorkflowAction.ASSIGN,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assign", null);
+            MappingWorkflowService.setWorkflowStatusByAction(service, context.getSpecialistUser(), MappingWorkflowAction.ASSIGN, context.getWorkflow(),
+                context.getMapSet(), context.getMapProject(), "Assign", null);
             assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, context.reloadWorkflow().getWorkflowStatus());
 
-            MappingWorkflowService.setWorkflowStatusByAction(
-                service, context.getSpecialistUser(), MappingWorkflowAction.FINISH_EDITING,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Finish", null);
+            MappingWorkflowService.setWorkflowStatusByAction(service, context.getSpecialistUser(), MappingWorkflowAction.FINISH_EDITING, context.getWorkflow(),
+                context.getMapSet(), context.getMapProject(), "Finish", null);
             final MappingWorkflow afterFinish = context.reloadWorkflow();
             assertEquals(MapWorkflowStatus.EDITING_DONE, afterFinish.getWorkflowStatus());
             assertNull(afterFinish.getAssignedUser());
 
-            MappingWorkflowService.setWorkflowStatusByAction(
-                service, context.getLeadUser(), MappingWorkflowAction.APPROVE_FOR_PUBLICATION,
+            MappingWorkflowService.setWorkflowStatusByAction(service, context.getLeadUser(), MappingWorkflowAction.APPROVE_FOR_PUBLICATION,
                 context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Approve", null);
             assertEquals(MapWorkflowStatus.READY_FOR_PUBLICATION, context.reloadWorkflow().getWorkflowStatus());
             assertEquals(3, context.historyCount());
 
-            assertThrows(ResponseStatusException.class, () -> MappingWorkflowService.setWorkflowStatusByAction(
-                service, context.getSpecialistUser(), MappingWorkflowAction.ASSIGN,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Too late", null));
+            assertThrows(ResponseStatusException.class, () -> MappingWorkflowService.setWorkflowStatusByAction(service, context.getSpecialistUser(),
+                MappingWorkflowAction.ASSIGN, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Too late", null));
         }
     }
 
+    /**
+     * Unauthorized is 401.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void unauthorized_is401() throws Exception {
+    public void unauthorizedIs401() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
-            final ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getViewerUser(), MappingWorkflowAction.ASSIGN,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "No", null));
+            final ResponseStatusException ex =
+                assertThrows(ResponseStatusException.class, () -> MappingWorkflowService.setWorkflowStatusByAction(context.getService(),
+                    context.getViewerUser(), MappingWorkflowAction.ASSIGN, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "No", null));
             assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatus());
+        }
+    }
+
+    /**
+     * Find assigned workflows returns current assignments only.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void findAssignedWorkflowsReturnsCurrentAssignmentsOnly() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            final TerminologyService service = context.getService();
+            final SearchParameters searchParameters = new SearchParameters();
+            searchParameters.setLimit(25);
+            searchParameters.setSort("assignedAt");
+            searchParameters.setSortAscending(false);
+
+            ResultList<MappingWorkflow> empty =
+                MappingWorkflowService.findAssignedWorkflows(service, context.getSpecialistUser().getUserName(), null, null, null, searchParameters);
+            assertEquals(0, empty.getTotal());
+
+            MappingWorkflowService.setWorkflowStatusByAction(service, context.getSpecialistUser(), MappingWorkflowAction.ASSIGN, context.getWorkflow(),
+                context.getMapSet(), context.getMapProject(), "Assigned", null);
+
+            final MappingWorkflow other = context.addWorkflowForConcept("999888777", MapWorkflowStatus.NEW);
+            other.setAssignedUser(context.getOtherSpecialistUser().getUserName());
+            other.setAssignedAt(new Date(System.currentTimeMillis() - 60000L));
+            other.setWorkflowStatus(MapWorkflowStatus.EDITING_IN_PROGRESS);
+            service.update(other);
+
+            ResultList<MappingWorkflow> mine =
+                MappingWorkflowService.findAssignedWorkflows(service, context.getSpecialistUser().getUserName(), null, null, null, searchParameters);
+            assertEquals(1, mine.getTotal());
+            assertEquals(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, mine.getItems().get(0).getSourceConceptCode());
+            assertEquals(context.getSpecialistUser().getUserName(), mine.getItems().get(0).getAssignedUser());
+
+            ResultList<MappingWorkflow> filtered = MappingWorkflowService.findAssignedWorkflows(service, context.getSpecialistUser().getUserName(),
+                context.getMapProject().getId(), context.getMapSet().getId(), MapWorkflowStatus.EDITING_IN_PROGRESS, searchParameters);
+            assertEquals(1, filtered.getTotal());
+
+            MappingWorkflowService.setWorkflowStatusByAction(service, context.getSpecialistUser(), MappingWorkflowAction.FINISH_EDITING, context.getWorkflow(),
+                context.getMapSet(), context.getMapProject(), "Finished", null);
+
+            ResultList<MappingWorkflow> afterFinish =
+                MappingWorkflowService.findAssignedWorkflows(service, context.getSpecialistUser().getUserName(), null, null, null, searchParameters);
+            assertEquals(0, afterFinish.getTotal());
+        }
+    }
+
+    /**
+     * Find assigned workflows rejects limit over max.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void findAssignedWorkflowsRejectsLimitOverMax() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            final SearchParameters searchParameters = new SearchParameters();
+            searchParameters.setLimit(1001);
+            final ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> MappingWorkflowService
+                .findAssignedWorkflows(context.getService(), context.getSpecialistUser().getUserName(), null, null, null, searchParameters));
+            assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
         }
     }
 }
