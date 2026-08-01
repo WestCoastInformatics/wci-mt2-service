@@ -28,8 +28,8 @@ import org.ihtsdo.refsetservice.helpers.WorkflowType;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.MapUser;
-import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MapWorkflowStatus;
+import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingWorkflow;
 import org.ihtsdo.refsetservice.model.MappingWorkflowHistory;
 import org.ihtsdo.refsetservice.model.PfsParameter;
@@ -115,6 +115,16 @@ public final class MappingWorkflowService {
         MappingWorkflowAction.REQUEST_REVISION,
         MappingWorkflowAction.RESOLVE_CONFLICT
     );
+
+    /** Default page size for assigned-workflow queries. */
+    private static final int ASSIGNED_WORKFLOWS_DEFAULT_LIMIT = 10;
+
+    /** Maximum page size for assigned-workflow queries. */
+    private static final int ASSIGNED_WORKFLOWS_MAX_LIMIT = 1000;
+
+    /** Allowed JPQL sort fields for assigned-workflow queries. */
+    private static final Set<String> ASSIGNED_WORKFLOWS_SORT_FIELDS =
+        new HashSet<>(Arrays.asList("assignedAt", "modified", "workflowStatus", "sourceConceptCode", "leaseExpiresAt"));
 
     /** Delegates per-concept Snowstorm branch operations (overridable in unit tests). */
     private static ConceptBranchOperations conceptBranchOperations = new DefaultConceptBranchOperations();
@@ -279,6 +289,116 @@ public final class MappingWorkflowService {
     }
 
     /**
+     * Find currently assigned mapping workflow rows for a user across map sets / projects.
+     *
+     * <p>
+     * Only rows whose {@code assignedUser} matches are returned (current assignments). Historical assignments are not included once assignment fields are
+     * cleared.
+     *
+     * @param service the terminology service
+     * @param assignedUser the assigned user name (session user)
+     * @param mapProjectId optional map project id filter
+     * @param mapSetId optional map set id filter
+     * @param workflowStatus optional workflow status filter
+     * @param searchParameters optional paging/sorting ({@code limit} default 10, max 1000; {@code sort} default {@code assignedAt}; {@code sortAscending}
+     *            default false)
+     * @return the assigned workflow rows
+     * @throws Exception the exception
+     */
+    public static ResultList<MappingWorkflow> findAssignedWorkflows(final TerminologyService service, final String assignedUser, final String mapProjectId,
+        final String mapSetId, final MapWorkflowStatus workflowStatus, final SearchParameters searchParameters) throws Exception {
+
+        if (StringUtils.isBlank(assignedUser)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "assignedUser is required");
+        }
+
+        int limit = ASSIGNED_WORKFLOWS_DEFAULT_LIMIT;
+        int offset = 0;
+        String sort = "assignedAt";
+        boolean ascending = false;
+
+        if (searchParameters != null) {
+            if (searchParameters.getLimit() != null) {
+                if (searchParameters.getLimit() > ASSIGNED_WORKFLOWS_MAX_LIMIT) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "limit may not exceed " + ASSIGNED_WORKFLOWS_MAX_LIMIT);
+                }
+                if (searchParameters.getLimit() > 0) {
+                    limit = searchParameters.getLimit();
+                }
+            }
+            if (searchParameters.getOffset() != null && searchParameters.getOffset() >= 0) {
+                offset = searchParameters.getOffset();
+            }
+            if (StringUtils.isNotBlank(searchParameters.getSort())) {
+                sort = searchParameters.getSort();
+            }
+            if (searchParameters.getSortAscending() != null) {
+                ascending = searchParameters.getSortAscending();
+            }
+        }
+
+        if (!ASSIGNED_WORKFLOWS_SORT_FIELDS.contains(sort)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported sort field: " + sort);
+        }
+
+        final StringBuilder where = new StringBuilder("from MappingWorkflow mw where mw.active = true and mw.assignedUser = :assignedUser");
+        if (StringUtils.isNotBlank(mapProjectId)) {
+            where.append(" and mw.mapProject.id = :mapProjectId");
+        }
+        if (StringUtils.isNotBlank(mapSetId)) {
+            where.append(" and mw.mapSet.id = :mapSetId");
+        }
+        if (workflowStatus != null) {
+            where.append(" and mw.workflowStatus = :workflowStatus");
+        }
+
+        final javax.persistence.TypedQuery<Long> countQuery = service.getEntityManager().createQuery("select count(mw) " + where, Long.class);
+        applyAssignedWorkflowFilters(countQuery, assignedUser, mapProjectId, mapSetId, workflowStatus);
+        final long totalCount = countQuery.getSingleResult();
+
+        final String orderBy = " order by mw." + sort + (ascending ? " asc" : " desc");
+        final javax.persistence.TypedQuery<MappingWorkflow> dataQuery =
+            service.getEntityManager().createQuery(where.toString() + orderBy, MappingWorkflow.class);
+        applyAssignedWorkflowFilters(dataQuery, assignedUser, mapProjectId, mapSetId, workflowStatus);
+        dataQuery.setFirstResult(offset);
+        dataQuery.setMaxResults(limit);
+        final List<MappingWorkflow> items = dataQuery.getResultList();
+
+        final ResultList<MappingWorkflow> results = new ResultList<>();
+        results.setItems(items);
+        results.setTotal((int) totalCount);
+        results.setTotalKnown(true);
+        results.setLimit(limit);
+        results.setOffset(offset);
+        results.setParameters(searchParameters);
+        return results;
+    }
+
+    /**
+     * Bind shared filter parameters for assigned-workflow JPQL queries.
+     *
+     * @param query the query
+     * @param assignedUser the assigned user
+     * @param mapProjectId optional map project id
+     * @param mapSetId optional map set id
+     * @param workflowStatus optional workflow status
+     */
+    private static void applyAssignedWorkflowFilters(final javax.persistence.Query query, final String assignedUser, final String mapProjectId,
+        final String mapSetId, final MapWorkflowStatus workflowStatus) {
+
+        query.setParameter("assignedUser", assignedUser);
+        if (StringUtils.isNotBlank(mapProjectId)) {
+            query.setParameter("mapProjectId", mapProjectId);
+        }
+        if (StringUtils.isNotBlank(mapSetId)) {
+            query.setParameter("mapSetId", mapSetId);
+        }
+        if (workflowStatus != null) {
+            query.setParameter("workflowStatus", workflowStatus);
+        }
+    }
+
+    /**
      * Get workflow actions allowed for the current user and mapping state.
      *
      * @param user the acting user
@@ -433,6 +553,14 @@ public final class MappingWorkflowService {
         WORKFLOW_PERMUTATIONS.putAll(loaded);
     }
 
+    /**
+     * Apply assignment side effects.
+     *
+     * @param user the user
+     * @param workflow the workflow
+     * @param action the action
+     * @param assignToUser the assign to user
+     */
     private static void applyAssignmentSideEffects(final User user, final MappingWorkflow workflow, final MappingWorkflowAction action,
         final String assignToUser) {
 
@@ -458,6 +586,17 @@ public final class MappingWorkflowService {
         }
     }
 
+    /**
+     * Checks if is action permitted.
+     *
+     * @param user the user
+     * @param workflow the workflow
+     * @param mapSet the map set
+     * @param mapProject the map project
+     * @param action the action
+     * @param assignToUser the assign to user
+     * @return true, if is action permitted
+     */
     private static boolean isActionPermitted(final User user, final MappingWorkflow workflow, final MapSet mapSet, final MapProject mapProject,
         final MappingWorkflowAction action, final String assignToUser) {
 
@@ -484,6 +623,15 @@ public final class MappingWorkflowService {
         return false;
     }
 
+    /**
+     * Passes action gates.
+     *
+     * @param user the user
+     * @param workflow the workflow
+     * @param action the action
+     * @param mapsetInEdit the mapset in edit
+     * @return true, if successful
+     */
     private static boolean passesActionGates(final User user, final MappingWorkflow workflow, final MappingWorkflowAction action,
         final boolean mapsetInEdit) {
 
@@ -511,6 +659,14 @@ public final class MappingWorkflowService {
         }
     }
 
+    /**
+     * Adjust result status for workflow type.
+     *
+     * @param mapProject the map project
+     * @param action the action
+     * @param nextStatus the next status
+     * @return the map workflow status
+     */
     private static MapWorkflowStatus adjustResultStatusForWorkflowType(final MapProject mapProject, final MappingWorkflowAction action,
         final MapWorkflowStatus nextStatus) {
 
@@ -523,11 +679,22 @@ public final class MappingWorkflowService {
         return nextStatus;
     }
 
+    /**
+     * Checks if is mapset in edit.
+     *
+     * @param mapSet the map set
+     * @return true, if is mapset in edit
+     */
     private static boolean isMapsetInEdit(final MapSet mapSet) {
 
         return mapSet.getVersionStatus() == VersionStatus.IN_DEVELOPMENT && mapSet.getWorkflowStatus() == WorkflowStatus.IN_EDIT;
     }
 
+    /**
+     * Gets the lease duration ms.
+     *
+     * @return the lease duration ms
+     */
     private static long getLeaseDurationMs() {
 
         final String configured = PropertyUtility.getProperty(LEASE_DURATION_PROPERTY);
@@ -541,6 +708,11 @@ public final class MappingWorkflowService {
         return DEFAULT_LEASE_DURATION_MS;
     }
 
+    /**
+     * Checks if is dev bypass enabled.
+     *
+     * @return true, if is dev bypass enabled
+     */
     private static boolean isDevBypassEnabled() {
 
         final String bypass = PropertyUtility.getProperty("auth.dev.bypass");
@@ -551,6 +723,13 @@ public final class MappingWorkflowService {
         return profiles != null && profiles.toLowerCase().contains("dev");
     }
 
+    /**
+     * Unauthorized.
+     *
+     * @param workflow the workflow
+     * @param action the action
+     * @return the response status exception
+     */
     private static ResponseStatusException unauthorized(final MappingWorkflow workflow, final MappingWorkflowAction action) {
 
         return new ResponseStatusException(HttpStatus.UNAUTHORIZED,
@@ -841,6 +1020,14 @@ public final class MappingWorkflowService {
         conceptBranchOperations = operations != null ? operations : new DefaultConceptBranchOperations();
     }
 
+    /**
+     * Apply concept branch side effects.
+     *
+     * @param action the action
+     * @param mapSet the map set
+     * @param workflow the workflow
+     * @throws Exception the exception
+     */
     private static void applyConceptBranchSideEffects(final MappingWorkflowAction action, final MapSet mapSet, final MappingWorkflow workflow)
         throws Exception {
 
@@ -874,12 +1061,25 @@ public final class MappingWorkflowService {
         }
     }
 
+    /**
+     * Checks if is concept branch side effects enabled.
+     *
+     * @return true, if is concept branch side effects enabled
+     */
     private static boolean isConceptBranchSideEffectsEnabled() {
 
         final String enabled = PropertyUtility.getProperty(CONCEPT_BRANCH_ENABLED_PROPERTY);
         return !"false".equalsIgnoreCase(enabled);
     }
 
+    /**
+     * Apply conflict join after finish.
+     *
+     * @param service the service
+     * @param mapSet the map set
+     * @param workflow the workflow
+     * @throws Exception the exception
+     */
     private static void applyConflictJoinAfterFinish(final TerminologyService service, final MapSet mapSet, final MappingWorkflow workflow)
         throws Exception {
 
@@ -910,6 +1110,18 @@ public final class MappingWorkflowService {
         service.update(sibling);
     }
 
+    /**
+     * Sync conflict sibling if needed.
+     *
+     * @param service the service
+     * @param user the user
+     * @param action the action
+     * @param workflow the workflow
+     * @param mapSet the map set
+     * @param mapProject the map project
+     * @param notes the notes
+     * @throws Exception the exception
+     */
     private static void syncConflictSiblingIfNeeded(final TerminologyService service, final User user, final MappingWorkflowAction action,
         final MappingWorkflow workflow, final MapSet mapSet, final MapProject mapProject, final String notes) throws Exception {
 
@@ -933,6 +1145,15 @@ public final class MappingWorkflowService {
         addWorkflowHistory(service, user, action, sibling, notes);
     }
 
+    /**
+     * Find sibling workflow.
+     *
+     * @param service the service
+     * @param mapSet the map set
+     * @param workflow the workflow
+     * @return the mapping workflow
+     * @throws Exception the exception
+     */
     private static MappingWorkflow findSiblingWorkflow(final TerminologyService service, final MapSet mapSet, final MappingWorkflow workflow)
         throws Exception {
 
@@ -943,6 +1164,14 @@ public final class MappingWorkflowService {
         return findWorkflowForConceptAndSlot(service, mapSet, workflow.getSourceConceptCode(), siblingSlot);
     }
 
+    /**
+     * Gets the finish comparison key.
+     *
+     * @param service the service
+     * @param workflow the workflow
+     * @return the finish comparison key
+     * @throws Exception the exception
+     */
     private static String getFinishComparisonKey(final TerminologyService service, final MappingWorkflow workflow) throws Exception {
 
         final SearchParameters searchParameters = new SearchParameters();
@@ -992,20 +1221,45 @@ public final class MappingWorkflowService {
         void deleteConceptBranch(MapSet mapSet, String conceptCode) throws Exception;
     }
 
+    /**
+     * The Class DefaultConceptBranchOperations.
+     */
     private static final class DefaultConceptBranchOperations implements ConceptBranchOperations {
 
+        /**
+         * Creates the concept branch.
+         *
+         * @param mapSet the map set
+         * @param conceptCode the concept code
+         * @return the string
+         * @throws Exception the exception
+         */
         @Override
         public String createConceptBranch(final MapSet mapSet, final String conceptCode) throws Exception {
 
             return BranchService.createConceptBranch(mapSet, conceptCode);
         }
 
+        /**
+         * Merge concept to edit.
+         *
+         * @param mapSet the map set
+         * @param conceptCode the concept code
+         * @throws Exception the exception
+         */
         @Override
         public void mergeConceptToEdit(final MapSet mapSet, final String conceptCode) throws Exception {
 
             BranchService.mergeConceptToEdit(mapSet, conceptCode);
         }
 
+        /**
+         * Delete concept branch.
+         *
+         * @param mapSet the map set
+         * @param conceptCode the concept code
+         * @throws Exception the exception
+         */
         @Override
         public void deleteConceptBranch(final MapSet mapSet, final String conceptCode) throws Exception {
 

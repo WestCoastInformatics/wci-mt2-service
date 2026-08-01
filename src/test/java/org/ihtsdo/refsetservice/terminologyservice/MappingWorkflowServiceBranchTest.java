@@ -26,8 +26,12 @@ import org.springframework.web.server.ResponseStatusException;
 @TestPropertySource(properties = "auth.dev.bypass=false")
 public class MappingWorkflowServiceBranchTest {
 
+    /** The branch operations. */
     private final RecordingConceptBranchOperations branchOperations = new RecordingConceptBranchOperations();
 
+    /**
+     * Setup.
+     */
     @BeforeEach
     public void setup() {
 
@@ -35,6 +39,9 @@ public class MappingWorkflowServiceBranchTest {
         MappingWorkflowService.setConceptBranchOperationsForTests(branchOperations);
     }
 
+    /**
+     * Teardown.
+     */
     @AfterEach
     public void teardown() {
 
@@ -42,15 +49,19 @@ public class MappingWorkflowServiceBranchTest {
         MappingWorkflowService.setConceptBranchOperationsForTests(null);
     }
 
+    /**
+     * Assign creates concept branch.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void assign_createsConceptBranch() throws Exception {
+    public void assignCreatesConceptBranch() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             final String expectedPath = BranchService.getConceptBranchPath(context.getMapSet(), MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE);
 
-            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getSpecialistUser(), MappingWorkflowAction.ASSIGN,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assigned", null);
+            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(),
+                MappingWorkflowAction.ASSIGN, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assigned", null);
 
             assertEquals(1, branchOperations.createCount);
             assertEquals(0, branchOperations.mergeCount);
@@ -62,16 +73,20 @@ public class MappingWorkflowServiceBranchTest {
         }
     }
 
+    /**
+     * Assign when create concept branch throws.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void assign_whenCreateConceptBranchThrows() throws Exception {
+    public void assignWhenCreateConceptBranchThrows() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             branchOperations.createThrows = true;
             final int historyBefore = context.historyCount();
 
-            assertThrows(Exception.class, () -> MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getSpecialistUser(), MappingWorkflowAction.ASSIGN,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assigned", null));
+            assertThrows(Exception.class, () -> MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(),
+                MappingWorkflowAction.ASSIGN, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assigned", null));
 
             final MappingWorkflow reloaded = context.reloadWorkflow();
             assertEquals(MapWorkflowStatus.NEW, reloaded.getWorkflowStatus());
@@ -82,15 +97,19 @@ public class MappingWorkflowServiceBranchTest {
         }
     }
 
+    /**
+     * Finish editing merges concept branch.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void finishEditing_mergesConceptBranch() throws Exception {
+    public void finishEditingMergesConceptBranch() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowAssignedTo(context.getSpecialistUser().getUserName());
 
-            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getSpecialistUser(), MappingWorkflowAction.FINISH_EDITING,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Done", null);
+            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(),
+                MappingWorkflowAction.FINISH_EDITING, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Done", null);
 
             assertEquals(1, branchOperations.mergeCount);
             assertEquals(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, branchOperations.lastConceptCode);
@@ -99,17 +118,21 @@ public class MappingWorkflowServiceBranchTest {
         }
     }
 
+    /**
+     * Finish editing when merge concept branch throws.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void finishEditing_whenMergeConceptBranchThrows() throws Exception {
+    public void finishEditingWhenMergeConceptBranchThrows() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowAssignedTo(context.getSpecialistUser().getUserName());
             branchOperations.mergeThrows = true;
             final int historyBefore = context.historyCount();
 
-            assertThrows(Exception.class, () -> MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getSpecialistUser(), MappingWorkflowAction.FINISH_EDITING,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Done", null));
+            assertThrows(Exception.class, () -> MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(),
+                MappingWorkflowAction.FINISH_EDITING, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Done", null));
 
             final MappingWorkflow reloaded = context.reloadWorkflow();
             assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, reloaded.getWorkflowStatus());
@@ -118,15 +141,19 @@ public class MappingWorkflowServiceBranchTest {
         }
     }
 
+    /**
+     * Release deletes concept branch.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void release_deletesConceptBranch() throws Exception {
+    public void releaseDeletesConceptBranch() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowAssignedTo(context.getSpecialistUser().getUserName());
 
-            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getSpecialistUser(), MappingWorkflowAction.RELEASE,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Release", null);
+            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(),
+                MappingWorkflowAction.RELEASE, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Release", null);
 
             assertEquals(1, branchOperations.deleteCount);
             assertEquals(MapWorkflowStatus.NEW, updated.getWorkflowStatus());
@@ -134,16 +161,20 @@ public class MappingWorkflowServiceBranchTest {
         }
     }
 
+    /**
+     * Release when delete concept branch throws.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void release_whenDeleteConceptBranchThrows() throws Exception {
+    public void releaseWhenDeleteConceptBranchThrows() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowAssignedTo(context.getSpecialistUser().getUserName());
             branchOperations.deleteThrows = true;
 
             final ResponseStatusException exception = assertThrows(ResponseStatusException.class,
-                () -> MappingWorkflowService.setWorkflowStatusByAction(
-                    context.getService(), context.getSpecialistUser(), MappingWorkflowAction.RELEASE,
+                () -> MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(), MappingWorkflowAction.RELEASE,
                     context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Release", null));
 
             assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatus());
@@ -152,15 +183,19 @@ public class MappingWorkflowServiceBranchTest {
         }
     }
 
+    /**
+     * Force release deletes concept branch.
+     *
+     * @throws Exception the exception
+     */
     @Test
-    public void forceRelease_deletesConceptBranch() throws Exception {
+    public void forceReleaseDeletesConceptBranch() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowAssignedTo(context.getSpecialistUser().getUserName());
 
-            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getAdminUser(), MappingWorkflowAction.FORCE_RELEASE,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Force", null);
+            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getAdminUser(),
+                MappingWorkflowAction.FORCE_RELEASE, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Force", null);
 
             assertEquals(1, branchOperations.deleteCount);
             assertEquals(MapWorkflowStatus.NEW, updated.getWorkflowStatus());
@@ -173,22 +208,38 @@ public class MappingWorkflowServiceBranchTest {
      */
     private static final class RecordingConceptBranchOperations implements MappingWorkflowService.ConceptBranchOperations {
 
+        /** The create count. */
         private int createCount;
 
+        /** The merge count. */
         private int mergeCount;
 
+        /** The delete count. */
         private int deleteCount;
 
+        /** The last created path. */
         private String lastCreatedPath;
 
+        /** The last concept code. */
         private String lastConceptCode;
 
+        /** The create throws. */
         private boolean createThrows;
 
+        /** The merge throws. */
         private boolean mergeThrows;
 
+        /** The delete throws. */
         private boolean deleteThrows;
 
+        /**
+         * Creates the concept branch.
+         *
+         * @param mapSet the map set
+         * @param conceptCode the concept code
+         * @return the string
+         * @throws Exception the exception
+         */
         @Override
         public String createConceptBranch(final org.ihtsdo.refsetservice.model.MapSet mapSet, final String conceptCode) throws Exception {
 
@@ -201,6 +252,13 @@ public class MappingWorkflowServiceBranchTest {
             return lastCreatedPath;
         }
 
+        /**
+         * Merge concept to edit.
+         *
+         * @param mapSet the map set
+         * @param conceptCode the concept code
+         * @throws Exception the exception
+         */
         @Override
         public void mergeConceptToEdit(final org.ihtsdo.refsetservice.model.MapSet mapSet, final String conceptCode) throws Exception {
 
@@ -211,6 +269,13 @@ public class MappingWorkflowServiceBranchTest {
             }
         }
 
+        /**
+         * Delete concept branch.
+         *
+         * @param mapSet the map set
+         * @param conceptCode the concept code
+         * @throws Exception the exception
+         */
         @Override
         public void deleteConceptBranch(final org.ihtsdo.refsetservice.model.MapSet mapSet, final String conceptCode) throws Exception {
 

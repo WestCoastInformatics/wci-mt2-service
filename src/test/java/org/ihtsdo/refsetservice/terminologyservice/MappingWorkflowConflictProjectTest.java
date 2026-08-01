@@ -37,7 +37,7 @@ public class MappingWorkflowConflictProjectTest {
     }
 
     @Test
-    public void slot1Assign_independentOfSlot2() throws Exception {
+    public void slot1AssignIndependentOfSlot2() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createConflictProjectInEdit()) {
             MappingWorkflowService.setWorkflowStatusByAction(
@@ -51,7 +51,7 @@ public class MappingWorkflowConflictProjectTest {
     }
 
     @Test
-    public void bothFinish_agree() throws Exception {
+    public void bothFinishAgree() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createConflictProjectInEdit()) {
             finishBothSlots(context, TARGET_CODE_A, TARGET_CODE_A);
@@ -62,7 +62,7 @@ public class MappingWorkflowConflictProjectTest {
     }
 
     @Test
-    public void bothFinish_differ() throws Exception {
+    public void bothFinishDiffer() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createConflictProjectInEdit()) {
             finishBothSlots(context, TARGET_CODE_A, TARGET_CODE_B);
@@ -73,7 +73,7 @@ public class MappingWorkflowConflictProjectTest {
     }
 
     @Test
-    public void oneSlotFinished_otherOpen() throws Exception {
+    public void oneSlotFinishedOtherOpen() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createConflictProjectInEdit()) {
             context.setWorkflowAssignedTo(context.getSpecialistUser().getUserName());
