@@ -1,134 +1,231 @@
 package org.ihtsdo.refsetservice.model;
 
 import java.util.Date;
+import java.util.Objects;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
-import javax.xml.bind.annotation.XmlID;
+import javax.xml.bind.annotation.XmlTransient;
 
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
+import org.hibernate.search.engine.backend.types.Projectable;
+import org.hibernate.search.engine.backend.types.Searchable;
+import org.hibernate.search.engine.backend.types.Sortable;
+import org.hibernate.search.mapper.pojo.automaticindexing.ReindexOnUpdate;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDependency;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.ObjectPath;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.PropertyValue;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
- * The Map Note Jpa object
+ * A note attached to a mapping, keyed by map set and source concept code (Snowstorm mappings are not DB entities).
  */
 @Entity
 @Table(name = "map_notes")
-@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonIgnoreProperties(ignoreUnknown = true, value = {
+    "hibernateLazyInitializer", "handler"
+})
 @Indexed
-public class MapNote extends AbstractHasId {
+public class MapNote extends AbstractHasModified {
 
-    /** The id. */
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    /** The map set that scopes this note. */
+    @ManyToOne(targetEntity = MapSet.class, fetch = FetchType.LAZY)
+    @JoinColumn(name = "mapSet_id", nullable = false)
+    @Fetch(FetchMode.JOIN)
+    @JsonIgnore
+    private MapSet mapSet;
 
-    /** The user. */
+    /** The source concept code (referencedComponentId). */
+    @Column(nullable = false, length = 255)
+    private String sourceConceptCode;
+
+    /** The user who authored the note. */
     @ManyToOne(targetEntity = MapUser.class)
     @JoinColumn(nullable = false)
     private MapUser user;
 
-    /** The note. */
+    /** The note text. */
     @Column(nullable = false, length = 4000)
     private String note;
 
-    /** The timestamp. */
+    /** When the note was authored. */
     @Temporal(TemporalType.TIMESTAMP)
     @Column(nullable = false)
     private Date timestamp = new Date();
 
-    /** Default constructor */
+    /**
+     * Instantiates an empty {@link MapNote}.
+     */
     public MapNote() {
 
-    }
-
-    /**
-     * Constructor
-     * @param id the id
-     * @param user the user
-     * @param note the note
-     * @param timestamp the timestamp
-     */
-    public MapNote(final Long id, final MapUser user, final String note, final Date timestamp) {
-
-        super();
-        this.user = user;
-        this.note = note;
-        this.timestamp = timestamp;
+        // n/a
     }
 
     /**
      * Instantiates a {@link MapNote} from the specified parameters.
      *
      * @param mapNote the map note
-     * @param keepIds the keep ids
+     * @param keepIds whether to copy ids
      */
     public MapNote(final MapNote mapNote, final boolean keepIds) {
 
-        // if deep copy not indicated, copy id and timestamp
-        if (keepIds) {
-            super.setId(mapNote.getId());
+        if (keepIds && mapNote.getId() != null) {
+            setId(mapNote.getId());
         }
-
+        this.mapSet = mapNote.getMapSet();
+        this.sourceConceptCode = mapNote.getSourceConceptCode();
         this.timestamp = mapNote.getTimestamp();
-
-        // copy basic type fields (non-persisted objects)
         this.note = mapNote.getNote();
-
-        // copy objects/collections excluded from deep copy (i.e. retain persistence
-        // references)
-        this.user = new MapUser(mapNote.getUser());
+        if (mapNote.getUser() != null) {
+            this.user = new MapUser(mapNote.getUser());
+        }
     }
 
     /**
-     * Returns the id in string form
-     * @return the id in string form
+     * Returns the map set id.
+     *
+     * @return the map set id
      */
-    @XmlID
+    @XmlTransient
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    @IndexingDependency(derivedFrom = @ObjectPath({
+        @PropertyValue(propertyName = "mapSet")
+    }))
+    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
+    public String getMapSetId() {
 
-    public String getObjectId() {
-
-        return (this.id == null ? null : id.toString());
+        return mapSet == null ? null : mapSet.getId();
     }
 
+    /**
+     * Sets the map set id.
+     *
+     * @param mapSetId the map set id
+     */
+    public void setMapSetId(final String mapSetId) {
+
+        // n/a - derived from mapSet
+    }
+
+    /**
+     * Returns the map set.
+     *
+     * @return the map set
+     */
+    public MapSet getMapSet() {
+
+        return mapSet;
+    }
+
+    /**
+     * Sets the map set.
+     *
+     * @param mapSet the map set
+     */
+    public void setMapSet(final MapSet mapSet) {
+
+        this.mapSet = mapSet;
+    }
+
+    /**
+     * Returns the source concept code.
+     *
+     * @return the source concept code
+     */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    public String getSourceConceptCode() {
+
+        return sourceConceptCode;
+    }
+
+    /**
+     * Sets the source concept code.
+     *
+     * @param sourceConceptCode the source concept code
+     */
+    public void setSourceConceptCode(final String sourceConceptCode) {
+
+        this.sourceConceptCode = sourceConceptCode;
+    }
+
+    /**
+     * Returns the user.
+     *
+     * @return the user
+     */
     public MapUser getUser() {
 
         return user;
     }
 
+    /**
+     * Sets the user.
+     *
+     * @param user the user
+     */
     public void setUser(final MapUser user) {
 
         this.user = user;
     }
 
+    /**
+     * Returns the note.
+     *
+     * @return the note
+     */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
     public String getNote() {
 
         return note;
     }
 
+    /**
+     * Sets the note.
+     *
+     * @param note the note
+     */
     public void setNote(final String note) {
 
         this.note = note;
     }
 
+    /**
+     * Returns the timestamp.
+     *
+     * @return the timestamp
+     */
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public Date getTimestamp() {
 
         return timestamp;
     }
 
+    /**
+     * Sets the timestamp.
+     *
+     * @param timestamp the timestamp
+     */
     public void setTimestamp(final Date timestamp) {
 
         this.timestamp = timestamp;
+    }
+
+    @Override
+    public void lazyInit() {
+
+        // n/a
     }
 
     @Override
@@ -144,11 +241,7 @@ public class MapNote extends AbstractHasId {
     @Override
     public int hashCode() {
 
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((note == null) ? 0 : note.hashCode());
-        result = prime * result + ((user == null) ? 0 : user.hashCode());
-        return result;
+        return Objects.hash(note, user);
     }
 
     @Override
@@ -157,28 +250,11 @@ public class MapNote extends AbstractHasId {
         if (this == obj) {
             return true;
         }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
+        if (obj == null || getClass() != obj.getClass()) {
             return false;
         }
         final MapNote other = (MapNote) obj;
-        if (note == null) {
-            if (other.note != null) {
-                return false;
-            }
-        } else if (!note.equals(other.note)) {
-            return false;
-        }
-        if (user == null) {
-            if (other.user != null) {
-                return false;
-            }
-        } else if (!user.equals(other.user)) {
-            return false;
-        }
-        return true;
+        return Objects.equals(note, other.note) && Objects.equals(user, other.user);
     }
 
 }

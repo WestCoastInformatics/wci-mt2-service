@@ -27,6 +27,8 @@ import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
+import org.ihtsdo.refsetservice.model.MapNote;
+import org.ihtsdo.refsetservice.model.MapNoteImportResult;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.Mapping;
@@ -39,6 +41,7 @@ import org.ihtsdo.refsetservice.model.enums.MappingWorkflowAction;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.BranchService;
+import org.ihtsdo.refsetservice.terminologyservice.MapNoteService;
 import org.ihtsdo.refsetservice.terminologyservice.MapProjectService;
 import org.ihtsdo.refsetservice.terminologyservice.MapSetService;
 import org.ihtsdo.refsetservice.terminologyservice.MappingService;
@@ -164,6 +167,8 @@ public class MappingController extends BaseController {
             if (conceptCodesList != null && !conceptCodesList.isEmpty()) {
                 reorderMappingsByConceptCodes(mappings, conceptCodesList);
             }
+
+            MapNoteService.attachNotes(service, mapSet, mappings);
 
             LOG.info("getMappings HTTP done mapSet={} {}ms items={} total={}", mapSetInternalId, System.currentTimeMillis() - controllerStartMs,
                 mappings.getItems().size(), mappings.getTotal());
@@ -428,6 +433,7 @@ public class MappingController extends BaseController {
             }
             final MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
             final Mapping mapping = MappingService.getMapping(branch, conceptCode, showOverriddenEntries, mapSet);
+            MapNoteService.attachNotes(service, mapSet, mapping);
 
             return new ResponseEntity<>(mapping, HttpStatus.OK);
 
@@ -763,6 +769,211 @@ public class MappingController extends BaseController {
             final MappingWorkflow workflow = MappingWorkflowService.ensureWorkflowForConcept(service, mapSet, conceptCode);
             final ResultList<MappingWorkflowHistory> history = MappingWorkflowService.getWorkflowHistory(service, workflow, searchParameters);
             return new ResponseEntity<>(history, HttpStatus.OK);
+        } catch (final Exception e) {
+            rethrowHandled(e);
+            return null;
+        }
+    }
+
+    /**
+     * Import map notes from a pipe-delimited file for a map set.
+     * <p>
+     * File format (optional header): {@code conceptCode|User name|Date|Map note text}
+     * </p>
+     * Validates the entire file first. Unknown usernames are reported and nothing is imported.
+     *
+     * @param mapSetInternalId the map set internal id
+     * @param notesFile the notes file
+     * @param request the HTTP request
+     * @return created notes on success, or validation preview on failure
+     * @throws Exception the exception
+     */
+    @PostMapping(value = "/mapset/{mapSetInternalId}/notes/import", consumes = MediaType.MULTIPART_FORM_DATA, produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Import map notes from a pipe-delimited file.", tags = {
+        "mapset"
+    }, responses = {
+        @ApiResponse(responseCode = "200", description = "Successfully imported map notes"),
+        @ApiResponse(responseCode = "400", description = "Validation failed; response body is the preview"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "404", description = "Map set not found")
+    })
+    @RecordMetric
+    public @ResponseBody ResponseEntity<?> importMappingNotes(@PathVariable final String mapSetInternalId,
+        @RequestParam(name = "notesFile", required = true) final MultipartFile notesFile, final HttpServletRequest request) throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+            final User user = requireSessionUser(request);
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
+
+            final MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
+            if (mapSet.getMapProject() == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+
+            final MapNoteImportResult result = MapNoteService.importNotes(service, user, mapSet, notesFile);
+            if (!result.isSuccess()) {
+                service.rollback();
+                return new ResponseEntity<>(result.getPreview(), HttpStatus.BAD_REQUEST);
+            }
+
+            service.commit();
+            return new ResponseEntity<>(result.getNotes(), HttpStatus.OK);
+        } catch (final Exception e) {
+            rethrowHandled(e);
+            return null;
+        }
+    }
+
+    /**
+     * List map notes for a source concept on a map set.
+     *
+     * @param mapSetInternalId the map set internal id
+     * @param conceptCode the source concept code
+     * @param request the HTTP request
+     * @return the notes
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/mapset/{mapSetInternalId}/mappings/{conceptCode}/notes",
+        produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "List map notes for a source concept.", tags = {
+        "mapset"
+    })
+    public @ResponseBody ResponseEntity<List<MapNote>> getMappingNotes(@PathVariable final String mapSetInternalId,
+        @PathVariable final String conceptCode, final HttpServletRequest request) throws Exception {
+
+        final User user = requireSessionUser(request);
+
+        try (final TerminologyService service = new TerminologyService()) {
+            service.setModifiedBy(user.getUserName());
+            final MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
+            if (mapSet.getMapProject() == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+            return new ResponseEntity<>(MapNoteService.getNotes(service, mapSet, conceptCode), HttpStatus.OK);
+        } catch (final Exception e) {
+            rethrowHandled(e);
+            return null;
+        }
+    }
+
+    /**
+     * Create a map note for a source concept on a map set.
+     *
+     * @param mapSetInternalId the map set internal id
+     * @param conceptCode the source concept code
+     * @param mapNote the note payload (uses note text)
+     * @param request the HTTP request
+     * @return the created note
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.POST, value = "/mapset/{mapSetInternalId}/mappings/{conceptCode}/notes",
+        consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Create a map note for a source concept.", tags = {
+        "mapset"
+    })
+    public @ResponseBody ResponseEntity<MapNote> createMappingNote(@PathVariable final String mapSetInternalId,
+        @PathVariable final String conceptCode, @RequestBody final MapNote mapNote, final HttpServletRequest request) throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+            final User user = requireSessionUser(request);
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
+
+            final MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
+            if (mapSet.getMapProject() == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+
+            final String noteText = mapNote == null ? null : mapNote.getNote();
+            final MapNote created = MapNoteService.createNote(service, user, mapSet, conceptCode, noteText);
+            service.commit();
+            return new ResponseEntity<>(created, HttpStatus.CREATED);
+        } catch (final Exception e) {
+            rethrowHandled(e);
+            return null;
+        }
+    }
+
+    /**
+     * Update a map note for a source concept on a map set.
+     *
+     * @param mapSetInternalId the map set internal id
+     * @param conceptCode the source concept code
+     * @param noteId the note id
+     * @param mapNote the note payload (uses note text)
+     * @param request the HTTP request
+     * @return the updated note
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.PUT, value = "/mapset/{mapSetInternalId}/mappings/{conceptCode}/notes/{noteId}",
+        consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Update a map note for a source concept.", tags = {
+        "mapset"
+    })
+    public @ResponseBody ResponseEntity<MapNote> updateMappingNote(@PathVariable final String mapSetInternalId,
+        @PathVariable final String conceptCode, @PathVariable final String noteId, @RequestBody final MapNote mapNote,
+        final HttpServletRequest request) throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+            final User user = requireSessionUser(request);
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
+
+            final MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
+            if (mapSet.getMapProject() == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+
+            final String noteText = mapNote == null ? null : mapNote.getNote();
+            final MapNote updated = MapNoteService.updateNote(service, user, mapSet, conceptCode, noteId, noteText);
+            service.commit();
+            return new ResponseEntity<>(updated, HttpStatus.OK);
+        } catch (final Exception e) {
+            rethrowHandled(e);
+            return null;
+        }
+    }
+
+    /**
+     * Delete a map note for a source concept on a map set.
+     *
+     * @param mapSetInternalId the map set internal id
+     * @param conceptCode the source concept code
+     * @param noteId the note id
+     * @param request the HTTP request
+     * @return empty response
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.DELETE, value = "/mapset/{mapSetInternalId}/mappings/{conceptCode}/notes/{noteId}",
+        produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Delete a map note for a source concept.", tags = {
+        "mapset"
+    })
+    public @ResponseBody ResponseEntity<Void> deleteMappingNote(@PathVariable final String mapSetInternalId,
+        @PathVariable final String conceptCode, @PathVariable final String noteId, final HttpServletRequest request) throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+            final User user = requireSessionUser(request);
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
+
+            final MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
+            if (mapSet.getMapProject() == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+
+            MapNoteService.deleteNote(service, mapSet, conceptCode, noteId);
+            service.commit();
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } catch (final Exception e) {
             rethrowHandled(e);
             return null;
