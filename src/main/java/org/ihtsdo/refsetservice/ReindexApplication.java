@@ -13,7 +13,6 @@ import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
@@ -23,6 +22,7 @@ import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfigurat
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
 
 /**
@@ -36,8 +36,11 @@ import org.springframework.context.annotation.FilterType;
  * </ul>
  * Prefer running with the main MT2 service stopped (or before opening traffic) so searches do not hit
  * empty indexes during {@code dropAndCreate} / mass indexing.
+ * <p>
+ * Uses {@link Configuration} (not {@code @SpringBootConfiguration}) so Spring Boot tests continue to
+ * resolve a single configuration class ({@link Application}).
  */
-@SpringBootConfiguration
+@Configuration
 @EnableAutoConfiguration(exclude = {
     FlywayAutoConfiguration.class, ElasticsearchRestClientAutoConfiguration.class, DataSourceAutoConfiguration.class,
     HibernateJpaAutoConfiguration.class

@@ -10,6 +10,7 @@
 
 package org.ihtsdo.refsetservice.test;
 
+import org.ihtsdo.refsetservice.Application;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,7 +25,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
  * Integration tests for MetadataController.
  */
 @ExtendWith(SpringExtension.class)
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@SpringBootTest(classes = Application.class, webEnvironment = WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({
     "test"
 })
