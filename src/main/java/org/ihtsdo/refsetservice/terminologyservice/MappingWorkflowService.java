@@ -34,6 +34,8 @@ import org.ihtsdo.refsetservice.model.MapUser;
 import org.ihtsdo.refsetservice.model.MapWorkflowStatus;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingWorkflow;
+import org.ihtsdo.refsetservice.model.MappingWorkflowBulkItemResult;
+import org.ihtsdo.refsetservice.model.MappingWorkflowBulkResult;
 import org.ihtsdo.refsetservice.model.MappingWorkflowHistory;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.User;
@@ -512,6 +514,98 @@ public final class MappingWorkflowService {
         if (StringUtils.isNotBlank(mapSetId)) {
             query.setParameter("mapSetId", mapSetId);
         }
+    }
+
+    /** Maximum concept codes accepted in one bulk workflow request. */
+    private static final int BULK_WORKFLOW_MAX_CONCEPT_CODES = 1000;
+
+    /**
+     * Apply the same workflow action to many source concepts in one map set.
+     *
+     * <p>
+     * Each concept is processed independently so partial failures are reported without rolling back successful transitions. Specialist "request review" is
+     * {@link MappingWorkflowAction#FINISH_EDITING}; lead "start review" is {@link MappingWorkflowAction#START_REVIEW}.
+     *
+     * @param service the terminology service
+     * @param user the acting user
+     * @param action the workflow action
+     * @param mapSet the map set
+     * @param mapProject the map project
+     * @param conceptCodes source concept codes to update
+     * @param notes optional notes applied to each transition
+     * @param assignToUser target user for REASSIGN; ignored for other actions
+     * @return per-concept results in request order
+     * @throws Exception the exception
+     */
+    public static MappingWorkflowBulkResult setWorkflowStatusByActionBulk(final TerminologyService service, final User user, final MappingWorkflowAction action,
+        final MapSet mapSet, final MapProject mapProject, final List<String> conceptCodes, final String notes, final String assignToUser) throws Exception {
+
+        if (action == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "action is required");
+        }
+        if (mapSet == null || mapProject == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Map set or map project not found");
+        }
+        if (conceptCodes == null || conceptCodes.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "conceptCodes is required and must not be empty");
+        }
+        if (conceptCodes.size() > BULK_WORKFLOW_MAX_CONCEPT_CODES) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "Requested conceptCodes size " + conceptCodes.size() + " exceeds maximum of " + BULK_WORKFLOW_MAX_CONCEPT_CODES);
+        }
+
+        final boolean previousTransactionPerOperation = service.getTransactionPerOperation();
+        service.setTransactionPerOperation(true);
+
+        final MappingWorkflowBulkResult result = new MappingWorkflowBulkResult();
+        try {
+            for (final String rawConceptCode : conceptCodes) {
+                final String conceptCode = rawConceptCode == null ? null : rawConceptCode.trim();
+                if (StringUtils.isBlank(conceptCode)) {
+                    result.addItem(MappingWorkflowBulkItemResult.failure(rawConceptCode, HttpStatus.BAD_REQUEST.value(), "conceptCode is required"));
+                    continue;
+                }
+
+                try {
+                    final MappingWorkflow workflow = ensureWorkflowForConcept(service, mapSet, conceptCode);
+                    final MappingWorkflow updated = setWorkflowStatusByAction(service, user, action, workflow, mapSet, mapProject, notes, assignToUser);
+                    result.addItem(MappingWorkflowBulkItemResult.success(conceptCode, updated));
+                } catch (final ResponseStatusException ex) {
+                    final String message = StringUtils.isNotBlank(ex.getReason()) ? ex.getReason() : ex.getMessage();
+                    result.addItem(MappingWorkflowBulkItemResult.failure(conceptCode, ex.getStatus().value(), message));
+                } catch (final Exception ex) {
+                    final ResponseStatusException nested = findNestedResponseStatusException(ex);
+                    if (nested != null) {
+                        final String message = StringUtils.isNotBlank(nested.getReason()) ? nested.getReason() : nested.getMessage();
+                        result.addItem(MappingWorkflowBulkItemResult.failure(conceptCode, nested.getStatus().value(), message));
+                    } else {
+                        LOG.warn("Bulk mapping workflow action failed for conceptCode={}: {}", conceptCode, ex.getMessage(), ex);
+                        result.addItem(MappingWorkflowBulkItemResult.failure(conceptCode, HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                            ex.getMessage() != null ? ex.getMessage() : "Unexpected error"));
+                    }
+                }
+            }
+        } finally {
+            service.setTransactionPerOperation(previousTransactionPerOperation);
+        }
+
+        return result;
+    }
+
+    /**
+     * Find a nested {@link ResponseStatusException}.
+     *
+     * @param exception the exception
+     * @return the response status exception, or null
+     */
+    private static ResponseStatusException findNestedResponseStatusException(final Throwable exception) {
+
+        for (Throwable current = exception; current != null; current = current.getCause()) {
+            if (current instanceof ResponseStatusException) {
+                return (ResponseStatusException) current;
+            }
+        }
+        return null;
     }
 
     /**

@@ -2,11 +2,18 @@ package org.ihtsdo.refsetservice.terminologyservice;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Arrays;
+import java.util.Collections;
+
+import org.ihtsdo.refsetservice.Application;
 import org.ihtsdo.refsetservice.model.MapWorkflowStatus;
 import org.ihtsdo.refsetservice.model.MappingWorkflow;
+import org.ihtsdo.refsetservice.model.MappingWorkflowBulkResult;
 import org.ihtsdo.refsetservice.model.MappingWorkflowHistory;
 import org.ihtsdo.refsetservice.model.enums.MappingWorkflowAction;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
@@ -15,6 +22,7 @@ import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.web.server.ResponseStatusException;
@@ -22,7 +30,7 @@ import org.springframework.web.server.ResponseStatusException;
 /**
  * Service tests for {@link org.ihtsdo.refsetservice.helpers.WorkflowType#REVIEW_PROJECT} mapping workflow.
  */
-@SpringBootTest
+@SpringBootTest(classes = Application.class)
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
     "auth.dev.bypass=false", "mapping.workflow.concept.branch.enabled=false"
@@ -190,6 +198,49 @@ public class MappingWorkflowReviewProjectTest {
                     assertThat(row.getWorkflowStatus()).isIn(MapWorkflowStatus.EDITING_IN_PROGRESS, MapWorkflowStatus.REVIEW_IN_PROGRESS);
                 }
             }
+        }
+    }
+
+    /**
+     * Bulk accept review succeeds for eligible concepts and reports failures for others.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void bulkAcceptReviewReportsPartialFailures() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createReviewProjectInEdit()) {
+            context.setWorkflowAssignedTo(context.getLeadUser().getUserName(), MapWorkflowStatus.REVIEW_IN_PROGRESS);
+
+            final MappingWorkflow second = context.addWorkflowForConcept("555666777", MapWorkflowStatus.REVIEW_NEEDED);
+
+            final MappingWorkflowBulkResult result = MappingWorkflowService.setWorkflowStatusByActionBulk(context.getService(), context.getLeadUser(),
+                MappingWorkflowAction.ACCEPT_REVIEW, context.getMapSet(), context.getMapProject(),
+                Arrays.asList(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, second.getSourceConceptCode()), "Bulk accepted", null);
+
+            assertEquals(1, result.getSuccessCount());
+            assertEquals(1, result.getFailureCount());
+            assertTrue(result.getItems().get(0).isSuccess());
+            assertEquals(MapWorkflowStatus.REVIEW_RESOLVED, result.getItems().get(0).getWorkflow().getWorkflowStatus());
+            assertFalse(result.getItems().get(1).isSuccess());
+            assertEquals(HttpStatus.UNAUTHORIZED.value(), result.getItems().get(1).getStatus().intValue());
+            assertEquals(MapWorkflowStatus.REVIEW_NEEDED, context.getService().get(second.getId(), MappingWorkflow.class).getWorkflowStatus());
+        }
+    }
+
+    /**
+     * Bulk request rejects an empty concept list.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void bulkRejectsEmptyConceptCodes() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createReviewProjectInEdit()) {
+            final ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> MappingWorkflowService.setWorkflowStatusByActionBulk(context.getService(), context.getLeadUser(), MappingWorkflowAction.ACCEPT_REVIEW,
+                    context.getMapSet(), context.getMapProject(), Collections.emptyList(), "notes", null));
+            assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
         }
     }
 }

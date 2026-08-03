@@ -11,6 +11,8 @@ import java.util.List;
 import org.ihtsdo.refsetservice.model.MapWorkflowStatus;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingWorkflow;
+import org.ihtsdo.refsetservice.model.MappingWorkflowBulkRequest;
+import org.ihtsdo.refsetservice.model.MappingWorkflowBulkResult;
 import org.ihtsdo.refsetservice.model.MappingWorkflowHistory;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.enums.MappingWorkflowAction;
@@ -244,6 +246,31 @@ public class MappingWorkflowUnitTestUtilities {
 
         final String url = "/mappings/workflow/recentlyModified?" + queryString;
         mvc.perform(withUser(get(url), asUser).accept(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest());
+    }
+
+    /**
+     * Bulk update mapping workflow status via API.
+     *
+     * @param mapSetId the map set id
+     * @param action the action
+     * @param notes the notes
+     * @param conceptCodes the concept codes
+     * @param asUser the acting user
+     * @return the bulk result
+     * @throws Exception the exception
+     */
+    public MappingWorkflowBulkResult updateWorkflowBulk(final String mapSetId, final MappingWorkflowAction action, final String notes,
+        final List<String> conceptCodes, final User asUser) throws Exception {
+
+        final MappingWorkflowBulkRequest body = new MappingWorkflowBulkRequest();
+        body.setConceptCodes(conceptCodes);
+        final StringBuilder url = new StringBuilder(baseUrl).append("/").append(mapSetId).append("/mappings/workflowStatus?action=").append(action);
+        if (notes != null) {
+            url.append("&notes=").append(notes);
+        }
+        final MvcResult result = mvc.perform(withUser(post(url.toString()), asUser).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
+            .content(ModelUtility.toJson(body))).andExpect(status().isOk()).andReturn();
+        return MAPPER.readValue(result.getResponse().getContentAsString(), MappingWorkflowBulkResult.class);
     }
 
     /**
