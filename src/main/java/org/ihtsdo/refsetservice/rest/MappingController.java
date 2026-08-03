@@ -719,6 +719,59 @@ public class MappingController extends BaseController {
     }
 
     /**
+     * Get mapping workflows most recently modified by the authenticated user.
+     *
+     * <p>Uses {@code MappingWorkflow.modifiedBy}/{@code modified} (workflow-row updates), not Snowstorm
+     * content edits.
+     *
+     * @param limit max rows (default 10, max 100)
+     * @param offset start index (default 0)
+     * @param sort sort field (default modified)
+     * @param sortAscending true for oldest first (default false)
+     * @param mapProjectId optional map project filter
+     * @param mapSetId optional map set filter
+     * @param request the request
+     * @return recently modified mapping workflow rows
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/mappings/workflow/recentlyModified", produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Get mapping workflows most recently modified by the current user.", tags = {
+        "mapping"
+    })
+    @Parameters({
+        @Parameter(name = "limit", description = "Maximum number of results (default 10, max 100)", required = false),
+        @Parameter(name = "offset", description = "Start index of results (default 0)", required = false),
+        @Parameter(name = "sort", description = "Sort field (default modified)", required = false),
+        @Parameter(name = "sortAscending", description = "Sort ascending (true) or descending (false, default)", required = false),
+        @Parameter(name = "mapProjectId", description = "Optional map project id filter", required = false),
+        @Parameter(name = "mapSetId", description = "Optional map set id filter", required = false)
+    })
+    @RecordMetric
+    public @ResponseBody ResponseEntity<ResultList<MappingWorkflow>> getRecentlyModifiedMappingWorkflows(
+        @RequestParam(required = false) final Integer limit, @RequestParam(required = false) final Integer offset,
+        @RequestParam(required = false) final String sort, @RequestParam(required = false) final Boolean sortAscending,
+        @RequestParam(required = false) final String mapProjectId, @RequestParam(required = false) final String mapSetId,
+        final HttpServletRequest request) throws Exception {
+
+        final User user = requireSessionUser(request);
+
+        final SearchParameters searchParameters = new SearchParameters();
+        searchParameters.setLimit(limit);
+        searchParameters.setOffset(offset);
+        searchParameters.setSort(sort);
+        searchParameters.setSortAscending(sortAscending);
+
+        try (final TerminologyService service = new TerminologyService()) {
+            final ResultList<MappingWorkflow> results =
+                MappingWorkflowService.findRecentlyModifiedWorkflows(service, user.getUserName(), mapProjectId, mapSetId, searchParameters);
+            return new ResponseEntity<>(results, HttpStatus.OK);
+        } catch (final Exception e) {
+            rethrowHandled(e);
+            return null;
+        }
+    }
+
+    /**
      * Get the per-concept mapping workflow state.
      *
      * @param mapSetInternalId the map set internal id

@@ -217,6 +217,36 @@ public class MappingWorkflowUnitTestUtilities {
     }
 
     /**
+     * Get recently modified workflows for the session user.
+     *
+     * @param asUser the session user
+     * @param queryString optional query string (without leading '?'), or null
+     * @return the result list
+     * @throws Exception the exception
+     */
+    public ResultList<MappingWorkflow> getRecentlyModifiedWorkflows(final User asUser, final String queryString) throws Exception {
+
+        final String url = "/mappings/workflow/recentlyModified" + (queryString == null || queryString.isEmpty() ? "" : "?" + queryString);
+        final MvcResult result = mvc.perform(withUser(get(url), asUser).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+        return MAPPER.readValue(result.getResponse().getContentAsString(), new TypeReference<ResultList<MappingWorkflow>>() {
+        });
+    }
+
+    /**
+     * Attempt get recently modified workflows and expect HTTP 400.
+     *
+     * @param asUser the session user
+     * @param queryString query string without leading '?'
+     * @return the recently modified workflows expect bad request
+     * @throws Exception the exception
+     */
+    public void getRecentlyModifiedWorkflowsExpectBadRequest(final User asUser, final String queryString) throws Exception {
+
+        final String url = "/mappings/workflow/recentlyModified?" + queryString;
+        mvc.perform(withUser(get(url), asUser).accept(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest());
+    }
+
+    /**
      * Validate a mapping workflow history row.
      *
      * @param history the history row

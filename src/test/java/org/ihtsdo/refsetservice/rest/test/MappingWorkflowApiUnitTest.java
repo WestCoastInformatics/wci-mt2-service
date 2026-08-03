@@ -299,4 +299,45 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
             workflowUtil.getAssignedWorkflowsExpectBadRequest(context.getSpecialistUser(), "limit=1001");
         }
     }
+
+    /**
+     * Test get recently modified workflows for current user.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testGetRecentlyModifiedWorkflowsForCurrentUser() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            workflowUtil.updateWorkflow(context.getMapSet().getId(), MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, MappingWorkflowAction.ASSIGN, "Assigned",
+                context.getSpecialistUser());
+
+            final ResultList<MappingWorkflow> results =
+                workflowUtil.getRecentlyModifiedWorkflows(context.getSpecialistUser(), "limit=10&sort=modified&sortAscending=false");
+            assertEquals(1, results.getTotal());
+            assertEquals(10, results.getLimit());
+            assertEquals(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, results.getItems().get(0).getSourceConceptCode());
+            assertEquals(context.getSpecialistUser().getUserName(), results.getItems().get(0).getModifiedBy());
+
+            final ResultList<MappingWorkflow> filtered =
+                workflowUtil.getRecentlyModifiedWorkflows(context.getSpecialistUser(), "mapSetId=" + context.getMapSet().getId());
+            assertEquals(1, filtered.getTotal());
+
+            final ResultList<MappingWorkflow> otherUser = workflowUtil.getRecentlyModifiedWorkflows(context.getOtherSpecialistUser(), null);
+            assertEquals(0, otherUser.getTotal());
+        }
+    }
+
+    /**
+     * Test get recently modified workflows rejects limit over 100.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testGetRecentlyModifiedWorkflowsRejectsLimitOver100() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            workflowUtil.getRecentlyModifiedWorkflowsExpectBadRequest(context.getSpecialistUser(), "limit=101");
+        }
+    }
 }

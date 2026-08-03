@@ -121,9 +121,9 @@ public class ErrorHandlerController implements ErrorController {
 			final boolean includeStackTrace) {
 
 		final WebRequest webRequest = new ServletWebRequest(request);
-		final ErrorAttributeOptions options = ErrorAttributeOptions.defaults();
+		ErrorAttributeOptions options = ErrorAttributeOptions.defaults().including(Include.MESSAGE);
 		if (includeStackTrace) {
-			options.including(Include.STACK_TRACE);
+			options = options.including(Include.STACK_TRACE);
 		}
 		final Map<String, Object> body = errorAttributes.getErrorAttributes(webRequest, options);
 		if (body.containsKey("message")) {
