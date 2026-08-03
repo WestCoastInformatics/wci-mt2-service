@@ -53,6 +53,8 @@ public class EntraIDSecurityServiceHandlerTest {
         properties.setProperty("authority", "https://login.microsoftonline.com/tenant");
         properties.setProperty("authorization.endpoint", "https://login.microsoftonline.com/tenant/oauth2/v2.0/authorize");
         properties.setProperty("logout.endpoint", "https://login.microsoftonline.com/tenant/oauth2/v2.0/logout");
+        // Explicit none so APP_URL_ROOT from the environment cannot leak into this unit test.
+        properties.setProperty("post.logout.redirect.uri", "none");
         handler.setProperties(properties);
 
         assertEquals("EntraID Security Service handler", handler.getName());

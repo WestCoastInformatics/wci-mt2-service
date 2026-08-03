@@ -35,6 +35,8 @@ import org.ihtsdo.refsetservice.model.MapWorkflowStatus;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.MappingWorkflow;
+import org.ihtsdo.refsetservice.model.MappingWorkflowBulkRequest;
+import org.ihtsdo.refsetservice.model.MappingWorkflowBulkResult;
 import org.ihtsdo.refsetservice.model.MappingWorkflowHistory;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.model.User;
@@ -853,6 +855,63 @@ public class MappingController extends BaseController {
                 service, user, action, workflow, mapSet, mapProject, notes, assignToUser);
             service.commit();
             return new ResponseEntity<>(updated, HttpStatus.OK);
+        } catch (final Exception e) {
+            rethrowHandled(e);
+            return null;
+        }
+    }
+
+    /**
+     * Apply the same mapping workflow action to many source concepts in a map set.
+     *
+     * <p>
+     * Specialist "request review" is {@code FINISH_EDITING}; lead "start review" is {@code START_REVIEW}. Each concept is processed independently so the
+     * response reports per-concept success or failure.
+     *
+     * @param mapSetInternalId the map set internal id
+     * @param action the workflow action
+     * @param notes transition notes applied to each success
+     * @param assignToUser target user for REASSIGN
+     * @param body concept codes to update
+     * @param request the request
+     * @return per-concept bulk result
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.POST, value = "/mapset/{mapSetInternalId}/mappings/workflowStatus", consumes = MediaType.APPLICATION_JSON,
+        produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Change mapping workflow state for many source concepts.", tags = {
+        "mapset"
+    })
+    @Parameters({
+        @Parameter(name = "action", description = "Mapping workflow action (e.g. FINISH_EDITING, START_REVIEW, ACCEPT_REVIEW, REJECT_REVIEW)", required = true),
+        @Parameter(name = "notes", description = "Optional transition notes applied to each concept", required = false),
+        @Parameter(name = "assignToUser", description = "Target user for REASSIGN only", required = false)
+    })
+    @RecordMetric
+    public @ResponseBody ResponseEntity<MappingWorkflowBulkResult> setMappingWorkflowStatusBulk(@PathVariable final String mapSetInternalId,
+        @RequestParam final MappingWorkflowAction action, @RequestParam(required = false) final String notes,
+        @RequestParam(required = false) final String assignToUser, @RequestBody final MappingWorkflowBulkRequest body, final HttpServletRequest request)
+        throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+            final User user = requireSessionUser(request);
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
+
+            final MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
+            if (mapSet.getMapProject() == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+
+            final MapProject mapProject = MappingWorkflowService.loadMapProject(service, mapSet);
+            if (mapProject == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+
+            final List<String> conceptCodes = body == null ? null : body.getConceptCodes();
+            final MappingWorkflowBulkResult result =
+                MappingWorkflowService.setWorkflowStatusByActionBulk(service, user, action, mapSet, mapProject, conceptCodes, notes, assignToUser);
+            return new ResponseEntity<>(result, HttpStatus.OK);
         } catch (final Exception e) {
             rethrowHandled(e);
             return null;

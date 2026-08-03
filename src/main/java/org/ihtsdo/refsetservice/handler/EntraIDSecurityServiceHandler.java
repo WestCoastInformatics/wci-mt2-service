@@ -537,7 +537,10 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
             return null;
         }
         String postLogoutRedirectUri = properties.getProperty("post.logout.redirect.uri");
-        if (StringUtils.isBlank(postLogoutRedirectUri) || "none".equalsIgnoreCase(postLogoutRedirectUri.trim())) {
+        if (StringUtils.isNotBlank(postLogoutRedirectUri) && "none".equalsIgnoreCase(postLogoutRedirectUri.trim())) {
+            // Explicit none: omit post_logout_redirect_uri (do not fall back to app.url.root).
+            postLogoutRedirectUri = null;
+        } else if (StringUtils.isBlank(postLogoutRedirectUri)) {
             postLogoutRedirectUri = PropertyUtility.getProperty("app.url.root");
         }
         final String clientId = properties.getProperty("client.id");

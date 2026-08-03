@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -11,6 +12,7 @@ import org.ihtsdo.refsetservice.Application;
 import org.ihtsdo.refsetservice.model.MapWorkflowStatus;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingWorkflow;
+import org.ihtsdo.refsetservice.model.MappingWorkflowBulkResult;
 import org.ihtsdo.refsetservice.model.MappingWorkflowHistory;
 import org.ihtsdo.refsetservice.model.enums.MappingWorkflowAction;
 import org.ihtsdo.refsetservice.rest.test.util.MappingWorkflowTestHandler;
@@ -338,6 +340,28 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             workflowUtil.getRecentlyModifiedWorkflowsExpectBadRequest(context.getSpecialistUser(), "limit=101");
+        }
+    }
+
+    /**
+     * Test bulk accept review with partial failure.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testBulkAcceptReviewPartialFailure() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createReviewProjectInEdit()) {
+            context.setWorkflowAssignedTo(context.getLeadUser().getUserName(), MapWorkflowStatus.REVIEW_IN_PROGRESS);
+            final MappingWorkflow second = context.addWorkflowForConcept("444555666", MapWorkflowStatus.REVIEW_NEEDED);
+
+            final MappingWorkflowBulkResult result = workflowUtil.updateWorkflowBulk(context.getMapSet().getId(), MappingWorkflowAction.ACCEPT_REVIEW,
+                "BulkAccept", Arrays.asList(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, second.getSourceConceptCode()), context.getLeadUser());
+
+            assertEquals(1, result.getSuccessCount());
+            assertEquals(1, result.getFailureCount());
+            assertEquals(MapWorkflowStatus.REVIEW_RESOLVED, result.getItems().get(0).getWorkflow().getWorkflowStatus());
+            assertThat(result.getItems().get(1).isSuccess()).isFalse();
         }
     }
 }
