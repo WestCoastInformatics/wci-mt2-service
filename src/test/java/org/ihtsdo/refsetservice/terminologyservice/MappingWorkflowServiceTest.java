@@ -512,4 +512,59 @@ public class MappingWorkflowServiceTest {
             assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
         }
     }
+
+    /**
+     * Find recently modified workflows returns rows last touched by the user.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void findRecentlyModifiedWorkflowsReturnsRowsModifiedByUser() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            final TerminologyService service = context.getService();
+            final SearchParameters searchParameters = new SearchParameters();
+            searchParameters.setLimit(10);
+            searchParameters.setSort("modified");
+            searchParameters.setSortAscending(false);
+
+            service.setModifiedBy(context.getSpecialistUser().getUserName());
+            MappingWorkflowService.setWorkflowStatusByAction(service, context.getSpecialistUser(), MappingWorkflowAction.ASSIGN, context.getWorkflow(),
+                context.getMapSet(), context.getMapProject(), "Assigned", null);
+
+            final MappingWorkflow other = context.addWorkflowForConcept("888777666", MapWorkflowStatus.NEW);
+            service.setModifiedBy(context.getOtherSpecialistUser().getUserName());
+            other.setWorkflowStatus(MapWorkflowStatus.EDITING_IN_PROGRESS);
+            other.setAssignedUser(context.getOtherSpecialistUser().getUserName());
+            other.setAssignedAt(new Date());
+            service.update(other);
+
+            final ResultList<MappingWorkflow> mine =
+                MappingWorkflowService.findRecentlyModifiedWorkflows(service, context.getSpecialistUser().getUserName(), null, null, searchParameters);
+            assertEquals(1, mine.getTotal());
+            assertEquals(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, mine.getItems().get(0).getSourceConceptCode());
+            assertEquals(context.getSpecialistUser().getUserName(), mine.getItems().get(0).getModifiedBy());
+
+            final ResultList<MappingWorkflow> filtered = MappingWorkflowService.findRecentlyModifiedWorkflows(service,
+                context.getSpecialistUser().getUserName(), context.getMapProject().getId(), context.getMapSet().getId(), searchParameters);
+            assertEquals(1, filtered.getTotal());
+        }
+    }
+
+    /**
+     * Find recently modified workflows rejects limit over max.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void findRecentlyModifiedWorkflowsRejectsLimitOverMax() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            final SearchParameters searchParameters = new SearchParameters();
+            searchParameters.setLimit(101);
+            final ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> MappingWorkflowService
+                .findRecentlyModifiedWorkflows(context.getService(), context.getSpecialistUser().getUserName(), null, null, searchParameters));
+            assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+        }
+    }
 }

@@ -21,6 +21,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.persistence.Query;
+import javax.persistence.TypedQuery;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.hibernate.Hibernate;
@@ -50,6 +53,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
+
 
 /**
  * Per-mapping workflow transition rules loaded from {@code workflow/mappingWorkflowPermutations.txt}.
@@ -125,6 +129,16 @@ public final class MappingWorkflowService {
     /** Allowed JPQL sort fields for assigned-workflow queries. */
     private static final Set<String> ASSIGNED_WORKFLOWS_SORT_FIELDS =
         new HashSet<>(Arrays.asList("assignedAt", "modified", "workflowStatus", "sourceConceptCode", "leaseExpiresAt"));
+
+    /** Default page size for recently-modified workflow queries. */
+    private static final int RECENTLY_MODIFIED_WORKFLOWS_DEFAULT_LIMIT = 10;
+
+    /** Maximum page size for recently-modified workflow queries. */
+    private static final int RECENTLY_MODIFIED_WORKFLOWS_MAX_LIMIT = 100;
+
+    /** Allowed JPQL sort fields for recently-modified workflow queries. */
+    private static final Set<String> RECENTLY_MODIFIED_WORKFLOWS_SORT_FIELDS =
+        new HashSet<>(Arrays.asList("modified", "assignedAt", "workflowStatus", "sourceConceptCode"));
 
     /** Delegates per-concept Snowstorm branch operations (overridable in unit tests). */
     private static ConceptBranchOperations conceptBranchOperations = new DefaultConceptBranchOperations();
@@ -320,7 +334,8 @@ public final class MappingWorkflowService {
         if (searchParameters != null) {
             if (searchParameters.getLimit() != null) {
                 if (searchParameters.getLimit() > ASSIGNED_WORKFLOWS_MAX_LIMIT) {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "limit may not exceed " + ASSIGNED_WORKFLOWS_MAX_LIMIT);
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Requested limit " + searchParameters.getLimit() + " exceeds maximum of " + ASSIGNED_WORKFLOWS_MAX_LIMIT);
                 }
                 if (searchParameters.getLimit() > 0) {
                     limit = searchParameters.getLimit();
@@ -352,12 +367,12 @@ public final class MappingWorkflowService {
             where.append(" and mw.workflowStatus = :workflowStatus");
         }
 
-        final javax.persistence.TypedQuery<Long> countQuery = service.getEntityManager().createQuery("select count(mw) " + where, Long.class);
+        final TypedQuery<Long> countQuery = service.getEntityManager().createQuery("select count(mw) " + where, Long.class);
         applyAssignedWorkflowFilters(countQuery, assignedUser, mapProjectId, mapSetId, workflowStatus);
         final long totalCount = countQuery.getSingleResult();
 
         final String orderBy = " order by mw." + sort + (ascending ? " asc" : " desc");
-        final javax.persistence.TypedQuery<MappingWorkflow> dataQuery =
+        final TypedQuery<MappingWorkflow> dataQuery =
             service.getEntityManager().createQuery(where.toString() + orderBy, MappingWorkflow.class);
         applyAssignedWorkflowFilters(dataQuery, assignedUser, mapProjectId, mapSetId, workflowStatus);
         dataQuery.setFirstResult(offset);
@@ -383,7 +398,7 @@ public final class MappingWorkflowService {
      * @param mapSetId optional map set id
      * @param workflowStatus optional workflow status
      */
-    private static void applyAssignedWorkflowFilters(final javax.persistence.Query query, final String assignedUser, final String mapProjectId,
+    private static void applyAssignedWorkflowFilters(final Query query, final String assignedUser, final String mapProjectId,
         final String mapSetId, final MapWorkflowStatus workflowStatus) {
 
         query.setParameter("assignedUser", assignedUser);
@@ -395,6 +410,107 @@ public final class MappingWorkflowService {
         }
         if (workflowStatus != null) {
             query.setParameter("workflowStatus", workflowStatus);
+        }
+    }
+
+    /**
+     * Find mapping workflow rows most recently modified by a user across map sets / projects.
+     *
+     * <p>
+     * "Modified" means {@link MappingWorkflow#getModifiedBy()} / {@link MappingWorkflow#getModified()} (workflow-row updates such as assignment and status
+     * transitions), not Snowstorm mapping content edits and not {@code MappingWorkflowHistory} alone.
+     *
+     * @param service the terminology service
+     * @param modifiedBy the modifying user name (session user)
+     * @param mapProjectId optional map project id filter
+     * @param mapSetId optional map set id filter
+     * @param searchParameters optional paging/sorting ({@code limit} default 10, max 100; {@code sort} default {@code modified}; {@code sortAscending} default
+     *            false)
+     * @return the recently modified workflow rows
+     * @throws Exception the exception
+     */
+    public static ResultList<MappingWorkflow> findRecentlyModifiedWorkflows(final TerminologyService service, final String modifiedBy,
+        final String mapProjectId, final String mapSetId, final SearchParameters searchParameters) throws Exception {
+
+        if (StringUtils.isBlank(modifiedBy)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "modifiedBy is required");
+        }
+
+        int limit = RECENTLY_MODIFIED_WORKFLOWS_DEFAULT_LIMIT;
+        int offset = 0;
+        String sort = "modified";
+        boolean ascending = false;
+
+        if (searchParameters != null) {
+            if (searchParameters.getLimit() != null) {
+                if (searchParameters.getLimit() > RECENTLY_MODIFIED_WORKFLOWS_MAX_LIMIT) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Requested limit " + searchParameters.getLimit() + " exceeds maximum of " + RECENTLY_MODIFIED_WORKFLOWS_MAX_LIMIT);
+                }
+                if (searchParameters.getLimit() > 0) {
+                    limit = searchParameters.getLimit();
+                }
+            }
+            if (searchParameters.getOffset() != null && searchParameters.getOffset() >= 0) {
+                offset = searchParameters.getOffset();
+            }
+            if (StringUtils.isNotBlank(searchParameters.getSort())) {
+                sort = searchParameters.getSort();
+            }
+            if (searchParameters.getSortAscending() != null) {
+                ascending = searchParameters.getSortAscending();
+            }
+        }
+
+        if (!RECENTLY_MODIFIED_WORKFLOWS_SORT_FIELDS.contains(sort)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported sort field: " + sort);
+        }
+
+        final StringBuilder where = new StringBuilder("from MappingWorkflow mw where mw.active = true and mw.modifiedBy = :modifiedBy");
+        if (StringUtils.isNotBlank(mapProjectId)) {
+            where.append(" and mw.mapProject.id = :mapProjectId");
+        }
+        if (StringUtils.isNotBlank(mapSetId)) {
+            where.append(" and mw.mapSet.id = :mapSetId");
+        }
+
+        final TypedQuery<Long> countQuery = service.getEntityManager().createQuery("select count(mw) " + where, Long.class);
+        applyRecentlyModifiedWorkflowFilters(countQuery, modifiedBy, mapProjectId, mapSetId);
+        final long totalCount = countQuery.getSingleResult();
+
+        final String orderBy = " order by mw." + sort + (ascending ? " asc" : " desc");
+        final TypedQuery<MappingWorkflow> dataQuery = service.getEntityManager().createQuery(where.toString() + orderBy, MappingWorkflow.class);
+        applyRecentlyModifiedWorkflowFilters(dataQuery, modifiedBy, mapProjectId, mapSetId);
+        dataQuery.setFirstResult(offset);
+        dataQuery.setMaxResults(limit);
+        final List<MappingWorkflow> items = dataQuery.getResultList();
+
+        final ResultList<MappingWorkflow> results = new ResultList<>();
+        results.setItems(items);
+        results.setTotal((int) totalCount);
+        results.setTotalKnown(true);
+        results.setLimit(limit);
+        results.setOffset(offset);
+        results.setParameters(searchParameters);
+        return results;
+    }
+
+    /**
+     * Bind shared filter parameters for recently-modified workflow JPQL queries.
+     *
+     * @param query the query
+     * @param modifiedBy the modifying user
+     * @param mapProjectId optional map project id
+     * @param mapSetId optional map set id
+     */
+    private static void applyRecentlyModifiedWorkflowFilters(final Query query, final String modifiedBy, final String mapProjectId, final String mapSetId) {
+
+        query.setParameter("modifiedBy", modifiedBy);
+        if (StringUtils.isNotBlank(mapProjectId)) {
+            query.setParameter("mapProjectId", mapProjectId);
+        }
+        if (StringUtils.isNotBlank(mapSetId)) {
+            query.setParameter("mapSetId", mapSetId);
         }
     }
 
@@ -753,7 +869,6 @@ public final class MappingWorkflowService {
             return null;
         }
 
-        @SuppressWarnings("unchecked")
         final List<MappingWorkflow> results = service.getEntityManager()
             .createQuery("from MappingWorkflow mw where mw.mapSet.id = :mapSetId and mw.sourceConceptCode = :sourceConceptCode"
                 + " and mw.specialistSlot = 1 and mw.active = true",
@@ -786,7 +901,6 @@ public final class MappingWorkflowService {
             return null;
         }
 
-        @SuppressWarnings("unchecked")
         final List<MappingWorkflow> results = service.getEntityManager()
             .createQuery("from MappingWorkflow mw where mw.mapSet.id = :mapSetId and mw.sourceConceptCode = :sourceConceptCode"
                 + " and mw.specialistSlot = :specialistSlot and mw.active = true",
@@ -917,7 +1031,6 @@ public final class MappingWorkflowService {
             return List.of();
         }
 
-        @SuppressWarnings("unchecked")
         final List<MappingWorkflow> results = service.getEntityManager()
             .createQuery("from MappingWorkflow mw where mw.mapSet.id = :mapSetId and mw.active = true"
                 + " and mw.workflowStatus in :blockingStatuses",
