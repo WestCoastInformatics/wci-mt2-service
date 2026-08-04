@@ -9,18 +9,26 @@
  */
 package org.ihtsdo.refsetservice.util;
 
+import java.io.File;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.activation.DataHandler;
+import javax.activation.DataSource;
+import javax.activation.FileDataSource;
 import javax.mail.Authenticator;
+import javax.mail.BodyPart;
 import javax.mail.Message;
+import javax.mail.Multipart;
 import javax.mail.PasswordAuthentication;
 import javax.mail.Session;
 import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -90,7 +98,8 @@ public final class EmailUtility {
         if (recipients.stream().anyMatch(r -> !r.matches(EMAIL_VALIDATION_REGEX_PATTERN))) {
 
             // invalid email address. Return 400
-            final List<String> failingEmailAddresses = recipients.stream().filter(r -> r.matches(EMAIL_VALIDATION_REGEX_PATTERN)).collect(Collectors.toList());
+            final List<String> failingEmailAddresses =
+                recipients.stream().filter(r -> !r.matches(EMAIL_VALIDATION_REGEX_PATTERN)).collect(Collectors.toList());
 
             final String message = "Invalid email address requested for recipient(s): " + failingEmailAddresses;
             LOG.error(message);
@@ -145,23 +154,122 @@ public final class EmailUtility {
      */
     public static void sendEmail(final String subject, final String recipients, final String body) throws Exception {
 
-        if (recipients != null && StringUtils.isNotBlank(recipients)) {
+        sendEmail(subject, parseRecipients(recipients), body);
+    }
 
-            final Set<String> recipientList = new HashSet<>();
+    /**
+     * Sends email with a file attachment.
+     *
+     * @param subject the subject
+     * @param recipients semicolon- or comma-delimited recipients
+     * @param body the body
+     * @param attachmentPath absolute path to the attachment file
+     * @throws Exception the exception
+     */
+    public static void sendEmailWithAttachment(final String subject, final String recipients, final String body, final String attachmentPath)
+        throws Exception {
 
-            if (recipients.contains(";")) {
-                recipientList.addAll(FieldedStringTokenizer.splitAsSet(recipients, ";"));
-            } else if (recipients.contains(",")) {
-                recipientList.addAll(FieldedStringTokenizer.splitAsSet(recipients, ","));
-            } else {
-                recipientList.add(recipients);
+        sendEmailWithAttachment(subject, parseRecipients(recipients), body, attachmentPath);
+    }
+
+    /**
+     * Sends email with a file attachment.
+     *
+     * @param subject the subject
+     * @param recipients the recipients
+     * @param body the body
+     * @param attachmentPath absolute path to the attachment file
+     * @throws Exception the exception
+     */
+    public static void sendEmailWithAttachment(final String subject, final Set<String> recipients, final String body, final String attachmentPath)
+        throws Exception {
+
+        if (recipients == null || recipients.isEmpty()) {
+
+            final String message = "Email must have recipients";
+            LOG.error(message);
+            throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
+        }
+
+        if (recipients.stream().anyMatch(r -> !r.matches(EMAIL_VALIDATION_REGEX_PATTERN))) {
+
+            final List<String> failingEmailAddresses =
+                recipients.stream().filter(r -> !r.matches(EMAIL_VALIDATION_REGEX_PATTERN)).collect(Collectors.toList());
+            final String message = "Invalid email address requested for recipient(s): " + failingEmailAddresses;
+            LOG.error(message);
+            throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
+        }
+
+        if (StringUtils.isBlank(attachmentPath) || !new File(attachmentPath).isFile()) {
+            throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, "Attachment file not found: " + attachmentPath);
+        }
+
+        // avoid sending mail if disabled
+        if ("false".equals(emailEnabled)) {
+            return;
+        }
+
+        final Session session = Session.getInstance(PropertyUtility.getProperties(), new Authenticator() {
+
+            /* see superclass */
+            @Override
+            protected PasswordAuthentication getPasswordAuthentication() {
+
+                return new PasswordAuthentication(smtpUser, smtpPassword);
             }
+        });
 
-            sendEmail(subject, recipientList, body);
+        final MimeMessage message = new MimeMessage(session);
+        message.setSubject(subject);
+        message.setFrom(new InternetAddress(emailFrom));
+
+        for (final String recipient : recipients) {
+            message.addRecipient(Message.RecipientType.TO, new InternetAddress(recipient));
+        }
+
+        final BodyPart textPart = new MimeBodyPart();
+        if (body != null && body.contains("<html")) {
+            textPart.setContent(body, "text/html; charset=utf-8");
         } else {
+            textPart.setText(body == null ? "" : body);
+        }
+
+        final MimeBodyPart attachmentPart = new MimeBodyPart();
+        final DataSource source = new FileDataSource(attachmentPath);
+        attachmentPart.setDataHandler(new DataHandler(source));
+        attachmentPart.setFileName(new File(attachmentPath).getName());
+
+        final Multipart multipart = new MimeMultipart();
+        multipart.addBodyPart(textPart);
+        multipart.addBodyPart(attachmentPart);
+        message.setContent(multipart);
+
+        LOG.info("Sending email with attachment: {}", attachmentPath);
+        Transport.send(message);
+    }
+
+    /**
+     * Parses semicolon- or comma-delimited recipients.
+     *
+     * @param recipients the recipients string
+     * @return recipient set
+     * @throws Exception if blank
+     */
+    private static Set<String> parseRecipients(final String recipients) throws Exception {
+
+        if (recipients == null || StringUtils.isBlank(recipients)) {
             throw new Exception("Email must have recipients");
         }
 
+        final Set<String> recipientList = new HashSet<>();
+        if (recipients.contains(";")) {
+            recipientList.addAll(FieldedStringTokenizer.splitAsSet(recipients, ";"));
+        } else if (recipients.contains(",")) {
+            recipientList.addAll(FieldedStringTokenizer.splitAsSet(recipients, ","));
+        } else {
+            recipientList.add(recipients);
+        }
+        return recipientList;
     }
 
     /**
