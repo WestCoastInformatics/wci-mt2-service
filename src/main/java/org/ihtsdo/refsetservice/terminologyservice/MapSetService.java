@@ -294,7 +294,7 @@ public class MapSetService {
         final long start = System.currentTimeMillis();
         String query = (searchParameters != null && StringUtils.isNotBlank(searchParameters.getQuery())) ? searchParameters.getQuery() : "";
 
-        // API/JSON expose VersionStatus labels (e.g. "IN DEVELOPMENT"); the Lucene index stores enum names.
+        // API/JSON expose VersionStatus labels (e.g. "IN_DEVELOPMENT"); the Lucene index stores enum names.
         query = normalizeVersionStatusQueryValues(query);
 
         final PfsParameter pfs = new PfsParameter();

@@ -158,7 +158,7 @@ public class MapSetController extends BaseController {
     })
     @Parameters({
         @Parameter(name = "query",
-            description = "Lucene search query. Supports status filters, e.g. versionStatus:IN DEVELOPMENT, versionStatus:IN_DEVELOPMENT, workflowStatus:IN_EDIT",
+            description = "Lucene search query. Supports status filters, e.g. versionStatus:IN_DEVELOPMENT, versionStatus:IN_DEVELOPMENT, workflowStatus:IN_EDIT",
             required = false),
         @Parameter(name = "limit", description = "Maximum number of search results", required = false),
         @Parameter(name = "offset", description = "Start index of search results", required = false),
@@ -178,7 +178,7 @@ public class MapSetController extends BaseController {
         try (final TerminologyService service = new TerminologyService()) {
 
             // When a Lucene query (or activeOnly) is provided, search DB map sets via Hibernate Search.
-            // Example: ?query=versionStatus:IN DEVELOPMENT  or  ?query=workflowStatus:IN_EDIT
+            // Example: ?query=versionStatus:IN_DEVELOPMENT  or  ?query=workflowStatus:IN_EDIT
             if (searchParameters != null
                 && (StringUtils.isNotBlank(searchParameters.getQuery()) || Boolean.TRUE.equals(searchParameters.getActiveOnly()))) {
                 final ResultList<MapSet> results = MapSetService.searchMapSets(service, searchParameters);
