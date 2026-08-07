@@ -1317,6 +1317,11 @@ public final class MappingWorkflowService {
                 "Reference Set is not in edit; user does not have permission to edit this mapping.");
         }
 
+        // Skip per-concept assignment gates while AUTH_DEV_BYPASS is on (mapping workflow UI still in progress).
+        if (isDevBypassEnabled()) {
+            return;
+        }
+
         if (workflow == null || workflow.getWorkflowStatus() != MapWorkflowStatus.EDITING_IN_PROGRESS) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
                 "Mapping is not assigned for editing; user does not have permission to edit this mapping.");
