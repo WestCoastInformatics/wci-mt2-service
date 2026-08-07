@@ -34,6 +34,9 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDependency;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.ObjectPath;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.PropertyValue;
+import org.ihtsdo.refsetservice.util.ModelUtility;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * Per-source-concept mapping workflow state for a mapset version.
@@ -78,12 +81,14 @@ public class MappingWorkflow extends AbstractHasModified {
     @ManyToOne(targetEntity = MapSet.class)
     @JoinColumn(name = "mapSet_id", nullable = false)
     @Fetch(FetchMode.JOIN)
+    @JsonIgnore
     private MapSet mapSet;
 
     /** The map project. */
     @ManyToOne(targetEntity = MapProject.class)
     @JoinColumn(name = "map_project_id", nullable = true)
     @Fetch(FetchMode.JOIN)
+    @JsonIgnore
     private MapProject mapProject;
 
     /**
@@ -222,6 +227,7 @@ public class MappingWorkflow extends AbstractHasModified {
      *
      * @return the map set
      */
+    @JsonIgnore
     public MapSet getMapSet() {
 
         return mapSet;
@@ -242,6 +248,7 @@ public class MappingWorkflow extends AbstractHasModified {
      *
      * @return the map project
      */
+    @JsonIgnore
     public MapProject getMapProject() {
 
         return mapProject;

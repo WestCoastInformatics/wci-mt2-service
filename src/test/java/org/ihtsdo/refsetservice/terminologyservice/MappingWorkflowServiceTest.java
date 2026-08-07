@@ -6,11 +6,14 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 
 import org.ihtsdo.refsetservice.Application;
 import org.ihtsdo.refsetservice.model.MapWorkflowStatus;
+import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingWorkflow;
 import org.ihtsdo.refsetservice.model.MappingWorkflowHistory;
 import org.ihtsdo.refsetservice.model.enums.MappingWorkflowAction;
@@ -565,6 +568,34 @@ public class MappingWorkflowServiceTest {
             final ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> MappingWorkflowService
                 .findRecentlyModifiedWorkflows(context.getService(), context.getSpecialistUser().getUserName(), null, null, searchParameters));
             assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+        }
+    }
+
+    /**
+     * Attach workflows hydrates existing rows only and does not create missing ones.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void attachWorkflowsHydratesExistingOnly() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            context.setWorkflowAssignedTo(context.getSpecialistUser().getUserName(), MapWorkflowStatus.EDITING_IN_PROGRESS);
+
+            final Mapping withWorkflow = new Mapping();
+            withWorkflow.setCode(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE);
+
+            final Mapping withoutWorkflow = new Mapping();
+            withoutWorkflow.setCode("999888777");
+
+            final List<Mapping> mappings = Arrays.asList(withWorkflow, withoutWorkflow);
+            MappingWorkflowService.attachWorkflows(context.getService(), context.getMapSet(), mappings);
+
+            assertNotNull(withWorkflow.getMappingWorkflow());
+            assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, withWorkflow.getMappingWorkflow().getWorkflowStatus());
+            assertEquals(context.getSpecialistUser().getUserName(), withWorkflow.getMappingWorkflow().getAssignedUser());
+            assertNull(withoutWorkflow.getMappingWorkflow());
+            assertEquals(0, MappingWorkflowService.countWorkflowRows(context.getService(), context.getMapSet(), "999888777", 1));
         }
     }
 }

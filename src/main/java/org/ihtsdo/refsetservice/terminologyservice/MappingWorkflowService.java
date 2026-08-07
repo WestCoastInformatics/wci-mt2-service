@@ -14,6 +14,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,6 +39,7 @@ import org.ihtsdo.refsetservice.model.MappingWorkflowBulkItemResult;
 import org.ihtsdo.refsetservice.model.MappingWorkflowBulkResult;
 import org.ihtsdo.refsetservice.model.MappingWorkflowHistory;
 import org.ihtsdo.refsetservice.model.PfsParameter;
+import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.enums.MappingWorkflowAction;
 import org.ihtsdo.refsetservice.model.enums.MappingWorkflowRole;
@@ -520,6 +522,58 @@ public final class MappingWorkflowService {
     private static final int BULK_WORKFLOW_MAX_CONCEPT_CODES = 1000;
 
     /**
+     * Find mapping workflow rows for many source concepts, returning them in request order.
+     *
+     * <p>
+     * Does not create missing rows. Throws {@link ResponseStatusException} with 404 if any concept has no
+     * active specialist-slot-1 workflow.
+     *
+     * @param service the terminology service
+     * @param mapSet the map set
+     * @param conceptCodes source concept codes
+     * @return workflow rows in the same order as {@code conceptCodes}
+     * @throws Exception the exception
+     */
+    public static List<MappingWorkflow> findWorkflowsForConcepts(final TerminologyService service, final MapSet mapSet, final List<String> conceptCodes)
+        throws Exception {
+
+        validateBulkConceptCodes(mapSet, conceptCodes);
+
+        final List<String> trimmedCodes = new ArrayList<>(conceptCodes.size());
+        for (final String rawConceptCode : conceptCodes) {
+            final String conceptCode = rawConceptCode == null ? null : rawConceptCode.trim();
+            if (StringUtils.isBlank(conceptCode)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "conceptCode is required");
+            }
+            trimmedCodes.add(conceptCode);
+        }
+
+        final List<MappingWorkflow> found = service.getEntityManager()
+            .createQuery("from MappingWorkflow mw where mw.mapSet.id = :mapSetId and mw.sourceConceptCode in :codes"
+                + " and mw.specialistSlot = 1 and mw.active = true", MappingWorkflow.class)
+            .setParameter("mapSetId", mapSet.getId())
+            .setParameter("codes", new HashSet<>(trimmedCodes))
+            .getResultList();
+
+        final Map<String, MappingWorkflow> byCode = new HashMap<>();
+        for (final MappingWorkflow workflow : found) {
+            if (workflow != null && StringUtils.isNotBlank(workflow.getSourceConceptCode())) {
+                byCode.putIfAbsent(workflow.getSourceConceptCode(), workflow);
+            }
+        }
+
+        final List<MappingWorkflow> workflows = new ArrayList<>(trimmedCodes.size());
+        for (final String conceptCode : trimmedCodes) {
+            final MappingWorkflow workflow = byCode.get(conceptCode);
+            if (workflow == null) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Mapping workflow not found for concept " + conceptCode);
+            }
+            workflows.add(workflow);
+        }
+        return workflows;
+    }
+
+    /**
      * Apply the same workflow action to many source concepts in one map set.
      *
      * <p>
@@ -543,16 +597,10 @@ public final class MappingWorkflowService {
         if (action == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "action is required");
         }
-        if (mapSet == null || mapProject == null) {
+        if (mapProject == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Map set or map project not found");
         }
-        if (conceptCodes == null || conceptCodes.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "conceptCodes is required and must not be empty");
-        }
-        if (conceptCodes.size() > BULK_WORKFLOW_MAX_CONCEPT_CODES) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                "Requested conceptCodes size " + conceptCodes.size() + " exceeds maximum of " + BULK_WORKFLOW_MAX_CONCEPT_CODES);
-        }
+        validateBulkConceptCodes(mapSet, conceptCodes);
 
         final boolean previousTransactionPerOperation = service.getTransactionPerOperation();
         service.setTransactionPerOperation(true);
@@ -590,6 +638,26 @@ public final class MappingWorkflowService {
         }
 
         return result;
+    }
+
+    /**
+     * Validate map set and concept code list for bulk workflow operations.
+     *
+     * @param mapSet the map set
+     * @param conceptCodes the concept codes
+     */
+    private static void validateBulkConceptCodes(final MapSet mapSet, final List<String> conceptCodes) {
+
+        if (mapSet == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Map set or map project not found");
+        }
+        if (conceptCodes == null || conceptCodes.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "conceptCodes is required and must not be empty");
+        }
+        if (conceptCodes.size() > BULK_WORKFLOW_MAX_CONCEPT_CODES) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "Requested conceptCodes size " + conceptCodes.size() + " exceeds maximum of " + BULK_WORKFLOW_MAX_CONCEPT_CODES);
+        }
     }
 
     /**
@@ -1009,6 +1077,74 @@ public final class MappingWorkflowService {
             return null;
         }
         return results.get(0);
+    }
+
+    /**
+     * Hydrates {@link Mapping#getMappingWorkflow()} for a page of mappings in one query.
+     *
+     * <p>
+     * Only attaches an existing specialist-slot-1 workflow row when present; does not create missing rows.
+     *
+     * @param service the terminology service
+     * @param mapSet the map set
+     * @param mappings the mappings result list
+     * @throws Exception the exception
+     */
+    public static void attachWorkflows(final TerminologyService service, final MapSet mapSet, final ResultListMapping mappings) throws Exception {
+
+        if (mappings == null || mappings.getItems() == null) {
+            return;
+        }
+        attachWorkflows(service, mapSet, mappings.getItems());
+    }
+
+    /**
+     * Hydrates {@link Mapping#getMappingWorkflow()} for a collection of mappings in one query.
+     *
+     * <p>
+     * Only attaches an existing specialist-slot-1 workflow row when present; does not create missing rows.
+     *
+     * @param service the terminology service
+     * @param mapSet the map set
+     * @param mappings the mappings
+     * @throws Exception the exception
+     */
+    public static void attachWorkflows(final TerminologyService service, final MapSet mapSet, final Collection<Mapping> mappings) throws Exception {
+
+        if (mapSet == null || mappings == null || mappings.isEmpty()) {
+            return;
+        }
+
+        final Set<String> conceptCodes = new HashSet<>();
+        for (final Mapping mapping : mappings) {
+            if (mapping != null && StringUtils.isNotBlank(mapping.getCode())) {
+                conceptCodes.add(mapping.getCode());
+            }
+        }
+        if (conceptCodes.isEmpty()) {
+            return;
+        }
+
+        final List<MappingWorkflow> workflows = service.getEntityManager()
+            .createQuery("from MappingWorkflow mw where mw.mapSet.id = :mapSetId and mw.sourceConceptCode in :codes"
+                + " and mw.specialistSlot = 1 and mw.active = true", MappingWorkflow.class)
+            .setParameter("mapSetId", mapSet.getId())
+            .setParameter("codes", conceptCodes)
+            .getResultList();
+
+        final Map<String, MappingWorkflow> workflowByConcept = new HashMap<>();
+        for (final MappingWorkflow workflow : workflows) {
+            if (workflow != null && StringUtils.isNotBlank(workflow.getSourceConceptCode())) {
+                workflowByConcept.putIfAbsent(workflow.getSourceConceptCode(), workflow);
+            }
+        }
+
+        for (final Mapping mapping : mappings) {
+            if (mapping == null || StringUtils.isBlank(mapping.getCode())) {
+                continue;
+            }
+            mapping.setMappingWorkflow(workflowByConcept.get(mapping.getCode()));
+        }
     }
 
     /**

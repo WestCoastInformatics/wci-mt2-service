@@ -320,6 +320,7 @@ bootRun {
    classpath = sourceSets.main.runtimeClasspath.filter {
       !it.name.contains("spring-boot-devtools")
    }
+   jvmArgs "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5555"
 }
 
 // Rebuild Hibernate Search / Elasticsearch indexes from the DB.
