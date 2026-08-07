@@ -47,7 +47,7 @@ test:
 	./gradlew test
 	
 run:
-	java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5555 -jar build/libs/snomed-refset-service-*-SNAPSHOT.jar > build/log.log 2>&1 &
+	./gradlew bootRun
 
 install:
 	./gradlew clean build install -x test -x spotbugsMain -x spotbugsTest

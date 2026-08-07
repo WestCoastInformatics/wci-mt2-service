@@ -116,6 +116,37 @@ public class MappingWorkflowUnitTestUtilities {
     }
 
     /**
+     * Get mapping workflow state and expect HTTP 404.
+     *
+     * @param mapSetId the map set id
+     * @param conceptCode the source concept code
+     * @param asUser the acting user
+     * @throws Exception the exception
+     */
+    public void getWorkflowExpectNotFound(final String mapSetId, final String conceptCode, final User asUser) throws Exception {
+
+        final String url = baseUrl + "/" + mapSetId + "/mappings/" + conceptCode + "/workflowStatus";
+        mvc.perform(withUser(get(url), asUser).accept(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound());
+    }
+
+    /**
+     * Get mapping workflow state for many concept codes via API.
+     *
+     * @param mapSetId the map set id
+     * @param conceptCodes the source concept codes
+     * @param asUser the acting user
+     * @return the mapping workflows in request order
+     * @throws Exception the exception
+     */
+    public List<MappingWorkflow> getWorkflowBulk(final String mapSetId, final List<String> conceptCodes, final User asUser) throws Exception {
+
+        final String url = baseUrl + "/" + mapSetId + "/mappings/workflowStatus?conceptCodes=" + String.join(",", conceptCodes);
+        final MvcResult result = mvc.perform(withUser(get(url), asUser).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+        return MAPPER.readValue(result.getResponse().getContentAsString(),
+            MAPPER.getTypeFactory().constructCollectionType(List.class, MappingWorkflow.class));
+    }
+
+    /**
      * Attempt workflow update and expect HTTP 401.
      *
      * @param mapSetId the map set id

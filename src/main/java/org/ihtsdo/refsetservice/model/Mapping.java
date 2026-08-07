@@ -59,6 +59,13 @@ public class Mapping extends AbstractHasModified {
     @Transient
     private Set<MapNote> mapNotes = new HashSet<>();
 
+    /**
+     * Per-concept mapping workflow from the MT2 database (not Snowstorm). Hydrated by service layer
+     * when requested; null when no workflow row exists.
+     */
+    @Transient
+    private MappingWorkflow mappingWorkflow;
+
     /** The descriptions. */
     @Transient
     private List<Description> descriptions = new ArrayList<>();
@@ -161,6 +168,27 @@ public class Mapping extends AbstractHasModified {
     public void setMapNotes(final Set<MapNote> mapNotes) {
 
         this.mapNotes = mapNotes;
+    }
+
+    /**
+     * Gets the mapping workflow.
+     *
+     * @return the mapping workflow, or null if none was attached / exists
+     */
+    @JsonGetter
+    public MappingWorkflow getMappingWorkflow() {
+
+        return mappingWorkflow;
+    }
+
+    /**
+     * Sets the mapping workflow.
+     *
+     * @param mappingWorkflow the mapping workflow
+     */
+    public void setMappingWorkflow(final MappingWorkflow mappingWorkflow) {
+
+        this.mappingWorkflow = mappingWorkflow;
     }
 
     /**

@@ -1,7 +1,6 @@
 package org.ihtsdo.refsetservice.rest.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.ihtsdo.refsetservice.model.MapWorkflowStatus;
 import org.ihtsdo.refsetservice.model.MappingWorkflow;
@@ -24,7 +23,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
- * API tests for lazy initialization of per-concept mapping workflow rows.
+ * API tests for per-concept mapping workflow create-on-action (not on GET).
  */
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
@@ -53,50 +52,56 @@ public class MappingWorkflowLazyInitTest extends BaseTest {
     }
 
     @Test
-    public void firstAccessCreatesRow() throws Exception {
+    public void missingGetReturns404() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.removePrimaryWorkflow();
             assertEquals(0, MappingWorkflowService.countWorkflowRows(
                 context.getService(), context.getMapSet(), LAZY_CONCEPT_CODE, 1));
 
-            final MappingWorkflow created = workflowUtil.getWorkflow(
+            workflowUtil.getWorkflowExpectNotFound(
                 context.getMapSet().getId(), LAZY_CONCEPT_CODE, context.getSpecialistUser());
 
-            assertEquals(MapWorkflowStatus.NEW, created.getWorkflowStatus());
-            assertNull(created.getAssignedUser());
-            assertEquals(1, MappingWorkflowService.countWorkflowRows(
+            assertEquals(0, MappingWorkflowService.countWorkflowRows(
                 context.getService(), context.getMapSet(), LAZY_CONCEPT_CODE, 1));
         }
     }
 
     @Test
-    public void secondAccessNoDuplicate() throws Exception {
+    public void assignCreatesRow() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.removePrimaryWorkflow();
 
-            workflowUtil.getWorkflow(context.getMapSet().getId(), LAZY_CONCEPT_CODE, context.getSpecialistUser());
-            workflowUtil.getWorkflow(context.getMapSet().getId(), LAZY_CONCEPT_CODE, context.getSpecialistUser());
-
-            assertEquals(1, MappingWorkflowService.countWorkflowRows(
-                context.getService(), context.getMapSet(), LAZY_CONCEPT_CODE, 1));
-        }
-    }
-
-    @Test
-    public void assignOnLazyRow() throws Exception {
-
-        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
-            context.removePrimaryWorkflow();
-
-            workflowUtil.getWorkflow(context.getMapSet().getId(), LAZY_CONCEPT_CODE, context.getSpecialistUser());
             final MappingWorkflow assigned = workflowUtil.updateWorkflow(
                 context.getMapSet().getId(), LAZY_CONCEPT_CODE,
                 MappingWorkflowAction.ASSIGN, "Assign", context.getSpecialistUser());
 
             assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, assigned.getWorkflowStatus());
             assertEquals(context.getSpecialistUser().getUserName(), assigned.getAssignedUser());
+            assertEquals(1, MappingWorkflowService.countWorkflowRows(
+                context.getService(), context.getMapSet(), LAZY_CONCEPT_CODE, 1));
+        }
+    }
+
+    @Test
+    public void getAfterAssignReturnsRow() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            context.removePrimaryWorkflow();
+
+            workflowUtil.updateWorkflow(context.getMapSet().getId(), LAZY_CONCEPT_CODE,
+                MappingWorkflowAction.ASSIGN, "Assign", context.getSpecialistUser());
+
+            final MappingWorkflow fetched = workflowUtil.getWorkflow(
+                context.getMapSet().getId(), LAZY_CONCEPT_CODE, context.getSpecialistUser());
+
+            assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, fetched.getWorkflowStatus());
+            assertEquals(context.getSpecialistUser().getUserName(), fetched.getAssignedUser());
+
+            workflowUtil.getWorkflow(context.getMapSet().getId(), LAZY_CONCEPT_CODE, context.getSpecialistUser());
+            assertEquals(1, MappingWorkflowService.countWorkflowRows(
+                context.getService(), context.getMapSet(), LAZY_CONCEPT_CODE, 1));
         }
     }
 }

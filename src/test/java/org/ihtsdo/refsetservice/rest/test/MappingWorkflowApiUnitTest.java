@@ -344,6 +344,28 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
     }
 
     /**
+     * Test bulk get mapping workflow status.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testGetWorkflowStatusBulk() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            final MappingWorkflow second = context.addWorkflowForConcept("444555666", MapWorkflowStatus.NEW);
+
+            final List<MappingWorkflow> workflows = workflowUtil.getWorkflowBulk(context.getMapSet().getId(),
+                Arrays.asList(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, second.getSourceConceptCode()), context.getSpecialistUser());
+
+            assertEquals(2, workflows.size());
+            assertEquals(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, workflows.get(0).getSourceConceptCode());
+            assertEquals(second.getSourceConceptCode(), workflows.get(1).getSourceConceptCode());
+            assertEquals(MapWorkflowStatus.NEW, workflows.get(0).getWorkflowStatus());
+            assertEquals(MapWorkflowStatus.NEW, workflows.get(1).getWorkflowStatus());
+        }
+    }
+
+    /**
      * Test bulk accept review with partial failure.
      *
      * @throws Exception the exception

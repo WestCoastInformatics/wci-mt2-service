@@ -101,6 +101,7 @@ public class MappingController extends BaseController {
      * @param sortAscending the sort ascending
      * @param editing the editing
      * @param searchAfter the search after
+     * @param includeWorkflowStatus when true, attach existing per-concept mapping workflow rows
      * @param request the request
      * @return the mappings
      * @throws Exception the exception
@@ -125,7 +126,8 @@ public class MappingController extends BaseController {
         @Parameter(name = "sort", description = "Sort field for search results", required = false),
         @Parameter(name = "sortAscending", description = "Sort ascending (true) or descending (false)", required = false),
         @Parameter(name = "editing", description = "Search is for editing", required = false),
-        @Parameter(name = "searchAfter", description = "Search after cursor", required = false)
+        @Parameter(name = "searchAfter", description = "Search after cursor", required = false),
+        @Parameter(name = "includeWorkflowStatus", description = "When true, include existing per-concept mapping workflow status on each mapping", required = false)
     })
     @RecordMetric
     public @ResponseBody ResponseEntity<ResultListMapping> getMappings(@PathVariable(value = "mapSetInternalId") final String mapSetInternalId,
@@ -134,7 +136,8 @@ public class MappingController extends BaseController {
         @RequestParam(required = false) final Integer limit, @RequestParam(required = false) final Integer offset,
         @RequestParam(required = false) final Boolean activeOnly, @RequestParam(required = false) final String sort,
         @RequestParam(required = false) final Boolean sortAscending, @RequestParam(required = false) final Boolean editing,
-        @RequestParam(required = false) final String searchAfter, final HttpServletRequest request) throws Exception {
+        @RequestParam(required = false) final String searchAfter,
+        @RequestParam(required = false, defaultValue = "false") final boolean includeWorkflowStatus, final HttpServletRequest request) throws Exception {
 
         requireSessionUser(request);
 
@@ -172,6 +175,9 @@ public class MappingController extends BaseController {
             }
 
             MapNoteService.attachNotes(service, mapSet, mappings);
+            if (includeWorkflowStatus) {
+                MappingWorkflowService.attachWorkflows(service, mapSet, mappings);
+            }
 
             LOG.info("getMappings HTTP done mapSet={} {}ms items={} total={}", mapSetInternalId, System.currentTimeMillis() - controllerStartMs,
                 mappings.getItems().size(), mappings.getTotal());
@@ -790,17 +796,55 @@ public class MappingController extends BaseController {
     public @ResponseBody ResponseEntity<MappingWorkflow> getMappingWorkflowStatus(@PathVariable final String mapSetInternalId,
         @PathVariable final String conceptCode, final HttpServletRequest request) throws Exception {
 
-        final User user = requireSessionUser(request);
+        requireSessionUser(request);
 
         try (final TerminologyService service = new TerminologyService()) {
-            service.setModifiedBy(user.getUserName());
-            service.setModifiedFlag(true);
             final MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
             if (mapSet.getMapProject() == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-            final MappingWorkflow workflow = MappingWorkflowService.ensureWorkflowForConcept(service, mapSet, conceptCode);
+            final MappingWorkflow workflow = MappingWorkflowService.findWorkflowForConcept(service, mapSet, conceptCode);
+            if (workflow == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
             return new ResponseEntity<>(workflow, HttpStatus.OK);
+        } catch (final Exception e) {
+            rethrowHandled(e);
+            return null;
+        }
+    }
+
+    /**
+     * Get per-concept mapping workflow state for many source concepts.
+     *
+     * @param mapSetInternalId the map set internal id
+     * @param conceptCodes comma-delimited source concept codes
+     * @param request the request
+     * @return workflow rows in the same order as {@code conceptCodes}
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/mapset/{mapSetInternalId}/mappings/workflowStatus", produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Get per-concept mapping workflow state for many source concepts.", tags = {
+        "mapset"
+    })
+    @Parameters({
+        @Parameter(name = "mapSetInternalId", description = "Mapset internal id, e.g. &lt;uuid&gt;", required = true),
+        @Parameter(name = "conceptCodes", description = "Comma delimited list of concept codes, e.g. 880057004,880057005", required = true)
+    })
+    @RecordMetric
+    public @ResponseBody ResponseEntity<List<MappingWorkflow>> getMappingWorkflowStatusBulk(@PathVariable final String mapSetInternalId,
+        @RequestParam final String conceptCodes, final HttpServletRequest request) throws Exception {
+
+        requireSessionUser(request);
+
+        try (final TerminologyService service = new TerminologyService()) {
+            final MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
+            if (mapSet.getMapProject() == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+            final List<String> conceptCodesList = parseConceptCodes(conceptCodes);
+            final List<MappingWorkflow> workflows = MappingWorkflowService.findWorkflowsForConcepts(service, mapSet, conceptCodesList);
+            return new ResponseEntity<>(workflows, HttpStatus.OK);
         } catch (final Exception e) {
             rethrowHandled(e);
             return null;
@@ -936,16 +980,17 @@ public class MappingController extends BaseController {
     public @ResponseBody ResponseEntity<ResultList<MappingWorkflowHistory>> getMappingWorkflowHistory(@PathVariable final String mapSetInternalId,
         @PathVariable final String conceptCode, @ModelAttribute final SearchParameters searchParameters, final HttpServletRequest request) throws Exception {
 
-        final User user = requireSessionUser(request);
+        requireSessionUser(request);
 
         try (final TerminologyService service = new TerminologyService()) {
-            service.setModifiedBy(user.getUserName());
-            service.setModifiedFlag(true);
             final MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
             if (mapSet.getMapProject() == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-            final MappingWorkflow workflow = MappingWorkflowService.ensureWorkflowForConcept(service, mapSet, conceptCode);
+            final MappingWorkflow workflow = MappingWorkflowService.findWorkflowForConcept(service, mapSet, conceptCode);
+            if (workflow == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
             final ResultList<MappingWorkflowHistory> history = MappingWorkflowService.getWorkflowHistory(service, workflow, searchParameters);
             return new ResponseEntity<>(history, HttpStatus.OK);
         } catch (final Exception e) {
