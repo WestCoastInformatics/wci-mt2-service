@@ -226,7 +226,7 @@ public final class MappingWorkflowService {
         if (nextStatus == null) {
             LOG.warn("Mapping workflow action requested but no permutation: workflowId={}, sourceConceptCode={}, workflowStatus={}, action={}, user={}, roles={}",
                 workflow.getId(), workflow.getSourceConceptCode(), workflow.getWorkflowStatus(), action, user.getUserName(), roles);
-            throw unauthorized(workflow, action);
+            throw conflictTransition(workflow, action);
         }
 
         nextStatus = adjustResultStatusForWorkflowType(mapProject, action, nextStatus);
@@ -732,10 +732,50 @@ public final class MappingWorkflowService {
             return;
         }
 
-        if (!isActionPermitted(user, workflow, mapSet, mapProject, action, assignToUser)) {
+        if (user == null || workflow == null || mapSet == null || mapProject == null || workflow.getWorkflowStatus() == null || action == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User does not have permission to perform this mapping workflow action.");
+        }
+
+        if (action == MappingWorkflowAction.REASSIGN && StringUtils.isBlank(assignToUser)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "assignToUser is required for REASSIGN");
+        }
+
+        final List<MappingWorkflowRole> roles = resolveProjectRoles(user, mapProject);
+        if (roles.isEmpty()) {
+            throw forbidden(workflow, action);
+        }
+
+        boolean roleDefinesAction = false;
+        boolean hasTransition = false;
+        for (final MappingWorkflowRole role : roles) {
+            if (roleDefinesAction(role, action)) {
+                roleDefinesAction = true;
+            }
+            if (resolveTransition(role, workflow.getWorkflowStatus(), action) != null) {
+                hasTransition = true;
+            }
+        }
+
+        if (!roleDefinesAction) {
+            throw forbidden(workflow, action);
+        }
+
+        if (!hasTransition) {
             LOG.error("Unsuccessful attempt to update mapping workflow for concept {} from status {} with action {}",
                 workflow.getSourceConceptCode(), workflow.getWorkflowStatus(), action);
-            throw unauthorized(workflow, action);
+            throw conflictTransition(workflow, action);
+        }
+
+        final boolean mapsetInEdit = isMapsetInEdit(mapSet);
+        if (MAPSET_IN_EDIT_ACTIONS.contains(action) && !mapsetInEdit) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                "Reference Set is not in edit; cannot perform mapping workflow action " + action + ".");
+        }
+
+        if (!passesActionGates(user, workflow, action, mapsetInEdit)) {
+            LOG.error("Unsuccessful attempt to update mapping workflow for concept {} from status {} with action {}",
+                workflow.getSourceConceptCode(), workflow.getWorkflowStatus(), action);
+            throw forbidden(workflow, action);
         }
     }
 
@@ -1002,17 +1042,52 @@ public final class MappingWorkflowService {
     }
 
     /**
-     * Unauthorized.
+     * Forbidden — authenticated user lacks permission for this workflow action.
      *
      * @param workflow the workflow
      * @param action the action
      * @return the response status exception
      */
-    private static ResponseStatusException unauthorized(final MappingWorkflow workflow, final MappingWorkflowAction action) {
+    private static ResponseStatusException forbidden(final MappingWorkflow workflow, final MappingWorkflowAction action) {
 
-        return new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+        return new ResponseStatusException(HttpStatus.FORBIDDEN,
+            "User does not have permission to update mapping workflow for concept " + workflow.getSourceConceptCode()
+                + " from status " + workflow.getWorkflowStatus() + " with action " + action);
+    }
+
+    /**
+     * Conflict — action is not a valid transition from the current workflow status.
+     *
+     * @param workflow the workflow
+     * @param action the action
+     * @return the response status exception
+     */
+    private static ResponseStatusException conflictTransition(final MappingWorkflow workflow, final MappingWorkflowAction action) {
+
+        return new ResponseStatusException(HttpStatus.CONFLICT,
             "Unsuccessful attempt to update mapping workflow for concept " + workflow.getSourceConceptCode()
                 + " from status " + workflow.getWorkflowStatus() + " with action " + action);
+    }
+
+    /**
+     * Whether the role has any permutation that uses the given action.
+     *
+     * @param role the workflow role
+     * @param action the action
+     * @return true if the role defines the action for at least one status
+     */
+    private static boolean roleDefinesAction(final MappingWorkflowRole role, final MappingWorkflowAction action) {
+
+        final Map<MapWorkflowStatus, Map<MappingWorkflowAction, MapWorkflowStatus>> byStatus = WORKFLOW_PERMUTATIONS.get(role);
+        if (byStatus == null) {
+            return false;
+        }
+        for (final Map<MappingWorkflowAction, MapWorkflowStatus> byAction : byStatus.values()) {
+            if (byAction != null && byAction.containsKey(action)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -1313,8 +1388,8 @@ public final class MappingWorkflowService {
     public static void canUserEditMapping(final User user, final MappingWorkflow workflow, final MapSet mapSet) throws Exception {
 
         if (!isMapsetInEdit(mapSet)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
-                "Reference Set is not in edit; user does not have permission to edit this mapping.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                "Reference Set is not in edit; mapping cannot be edited.");
         }
 
         // Skip per-concept assignment gates while AUTH_DEV_BYPASS is on (mapping workflow UI still in progress).
@@ -1323,12 +1398,12 @@ public final class MappingWorkflowService {
         }
 
         if (workflow == null || workflow.getWorkflowStatus() != MapWorkflowStatus.EDITING_IN_PROGRESS) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
-                "Mapping is not assigned for editing; user does not have permission to edit this mapping.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                "Mapping is not assigned for editing; mapping cannot be edited.");
         }
 
         if (workflow.getAssignedUser() == null || !workflow.getAssignedUser().equals(user.getUserName())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                 "Mapping assignment does not match the acting user; user does not have permission to edit this mapping.");
         }
     }

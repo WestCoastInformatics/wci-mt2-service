@@ -95,7 +95,7 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             final int historyBefore = context.historyCount();
 
-            workflowUtil.updateWorkflowExpectUnauthorized(context.getMapSet().getId(), MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE,
+            workflowUtil.updateWorkflowExpectConflict(context.getMapSet().getId(), MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE,
                 MappingWorkflowAction.APPROVE_FOR_PUBLICATION, "Approve", context.getLeadUser());
 
             final MappingWorkflow reloaded = context.reloadWorkflow();
@@ -145,7 +145,7 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
             workflowUtil.updateWorkflow(context.getMapSet().getId(), MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, MappingWorkflowAction.ASSIGN,
                 "First assign", context.getSpecialistUser());
 
-            workflowUtil.updateWorkflowExpectUnauthorized(context.getMapSet().getId(), MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE,
+            workflowUtil.updateWorkflowExpectConflict(context.getMapSet().getId(), MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE,
                 MappingWorkflowAction.ASSIGN, "Second assign", context.getOtherSpecialistUser());
 
             assertEquals(context.getSpecialistUser().getUserName(), context.reloadWorkflow().getAssignedUser());
@@ -188,7 +188,7 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
             mapping.setCode(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE);
             mapping.setName("Should not save");
 
-            workflowUtil.updateMappingsExpectUnauthorized(context.getMapSet().getId(), Collections.singletonList(mapping), context.getSpecialistUser());
+            workflowUtil.updateMappingsExpectConflict(context.getMapSet().getId(), Collections.singletonList(mapping), context.getSpecialistUser());
 
             assertThat(MappingWorkflowTestHandler.wasUpdateCalled()).isFalse();
         }
@@ -209,7 +209,7 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
             mapping.setCode(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE);
             mapping.setName("Wrong user edit");
 
-            workflowUtil.updateMappingsExpectUnauthorized(context.getMapSet().getId(), Collections.singletonList(mapping), context.getOtherSpecialistUser());
+            workflowUtil.updateMappingsExpectForbidden(context.getMapSet().getId(), Collections.singletonList(mapping), context.getOtherSpecialistUser());
 
             assertEquals(context.getSpecialistUser().getUserName(), context.reloadWorkflow().getAssignedUser());
             assertThat(MappingWorkflowTestHandler.wasUpdateCalled()).isFalse();
@@ -231,7 +231,7 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
             mapping.setCode(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE);
             mapping.setName("Blocked edit");
 
-            workflowUtil.updateMappingsExpectUnauthorized(context.getMapSet().getId(), Collections.singletonList(mapping), context.getSpecialistUser());
+            workflowUtil.updateMappingsExpectConflict(context.getMapSet().getId(), Collections.singletonList(mapping), context.getSpecialistUser());
 
             assertEquals(context.getSpecialistUser().getUserName(), context.reloadWorkflow().getAssignedUser());
             assertThat(MappingWorkflowTestHandler.wasUpdateCalled()).isFalse();
@@ -253,7 +253,7 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
             mapping.setCode(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE);
             mapping.setName("Blocked edit");
 
-            workflowUtil.updateMappingsExpectUnauthorized(context.getMapSet().getId(), Collections.singletonList(mapping), context.getSpecialistUser());
+            workflowUtil.updateMappingsExpectConflict(context.getMapSet().getId(), Collections.singletonList(mapping), context.getSpecialistUser());
 
             assertEquals(MapWorkflowStatus.EDITING_DONE, context.reloadWorkflow().getWorkflowStatus());
             assertNull(context.reloadWorkflow().getAssignedUser());

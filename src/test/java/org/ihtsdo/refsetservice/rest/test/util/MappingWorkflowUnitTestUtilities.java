@@ -147,7 +147,7 @@ public class MappingWorkflowUnitTestUtilities {
     }
 
     /**
-     * Attempt workflow update and expect HTTP 401.
+     * Attempt workflow update and expect HTTP 403.
      *
      * @param mapSetId the map set id
      * @param conceptCode the source concept code
@@ -156,12 +156,30 @@ public class MappingWorkflowUnitTestUtilities {
      * @param asUser the acting user
      * @throws Exception the exception
      */
-    public void updateWorkflowExpectUnauthorized(final String mapSetId, final String conceptCode, final MappingWorkflowAction action, final String note,
+    public void updateWorkflowExpectForbidden(final String mapSetId, final String conceptCode, final MappingWorkflowAction action, final String note,
         final User asUser) throws Exception {
 
         final String url = workflowStatusUrl(mapSetId, conceptCode, action, note, null);
         mvc.perform(withUser(post(url), asUser).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().isUnauthorized());
+            .andExpect(status().isForbidden());
+    }
+
+    /**
+     * Attempt workflow update and expect HTTP 409.
+     *
+     * @param mapSetId the map set id
+     * @param conceptCode the source concept code
+     * @param action the action
+     * @param note the note
+     * @param asUser the acting user
+     * @throws Exception the exception
+     */
+    public void updateWorkflowExpectConflict(final String mapSetId, final String conceptCode, final MappingWorkflowAction action, final String note,
+        final User asUser) throws Exception {
+
+        final String url = workflowStatusUrl(mapSetId, conceptCode, action, note, null);
+        mvc.perform(withUser(post(url), asUser).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isConflict());
     }
 
     /**
@@ -185,19 +203,35 @@ public class MappingWorkflowUnitTestUtilities {
     }
 
     /**
-     * Attempt mapping update and expect HTTP 401.
+     * Attempt mapping update and expect HTTP 403.
      *
      * @param mapSetId the map set id
      * @param mappings the mappings
      * @param asUser the acting user
      * @throws Exception the exception
      */
-    public void updateMappingsExpectUnauthorized(final String mapSetId, final List<Mapping> mappings, final User asUser) throws Exception {
+    public void updateMappingsExpectForbidden(final String mapSetId, final List<Mapping> mappings, final User asUser) throws Exception {
 
         final String url = baseUrl + "/" + mapSetId + "/bulk";
         mvc.perform(
             withUser(put(url), asUser).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).content(ModelUtility.toJson(mappings)))
-            .andExpect(status().isUnauthorized());
+            .andExpect(status().isForbidden());
+    }
+
+    /**
+     * Attempt mapping update and expect HTTP 409.
+     *
+     * @param mapSetId the map set id
+     * @param mappings the mappings
+     * @param asUser the acting user
+     * @throws Exception the exception
+     */
+    public void updateMappingsExpectConflict(final String mapSetId, final List<Mapping> mappings, final User asUser) throws Exception {
+
+        final String url = baseUrl + "/" + mapSetId + "/bulk";
+        mvc.perform(
+            withUser(put(url), asUser).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON).content(ModelUtility.toJson(mappings)))
+            .andExpect(status().isConflict());
     }
 
     /**

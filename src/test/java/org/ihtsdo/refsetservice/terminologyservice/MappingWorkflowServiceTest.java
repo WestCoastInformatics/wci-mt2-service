@@ -224,9 +224,10 @@ public class MappingWorkflowServiceTest {
     public void finishEditingFromNew() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
-            assertThrows(ResponseStatusException.class,
+            final ResponseStatusException ex = assertThrows(ResponseStatusException.class,
                 () -> MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(), MappingWorkflowAction.FINISH_EDITING,
                     context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Done", null));
+            assertEquals(HttpStatus.CONFLICT, ex.getStatus());
 
             assertEquals(MapWorkflowStatus.NEW, context.reloadWorkflow().getWorkflowStatus());
         }
@@ -243,9 +244,10 @@ public class MappingWorkflowServiceTest {
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowAssignedTo(context.getOtherSpecialistUser().getUserName());
 
-            assertThrows(ResponseStatusException.class,
+            final ResponseStatusException ex = assertThrows(ResponseStatusException.class,
                 () -> MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(), MappingWorkflowAction.FINISH_EDITING,
                     context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Done", null));
+            assertEquals(HttpStatus.FORBIDDEN, ex.getStatus());
 
             final MappingWorkflow reloaded = context.reloadWorkflow();
             assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, reloaded.getWorkflowStatus());
@@ -437,18 +439,18 @@ public class MappingWorkflowServiceTest {
     }
 
     /**
-     * Unauthorized is 401.
+     * Forbidden is 403 when the user lacks a project workflow role.
      *
      * @throws Exception the exception
      */
     @Test
-    public void unauthorizedIs401() throws Exception {
+    public void forbiddenIs403() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             final ResponseStatusException ex =
                 assertThrows(ResponseStatusException.class, () -> MappingWorkflowService.setWorkflowStatusByAction(context.getService(),
                     context.getViewerUser(), MappingWorkflowAction.ASSIGN, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "No", null));
-            assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatus());
+            assertEquals(HttpStatus.FORBIDDEN, ex.getStatus());
         }
     }
 
