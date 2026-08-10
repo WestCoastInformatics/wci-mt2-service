@@ -175,8 +175,13 @@ public class BaseController {
         if ("true".equalsIgnoreCase(bypass)) {
             return true;
         }
+        // Match SecurityService: when bypass is not explicitly false, allow test/dev profiles
+        if ("false".equalsIgnoreCase(bypass)) {
+            return false;
+        }
         final String profiles = PropertyUtility.getProperty("springProfiles");
-        return profiles != null && profiles.toLowerCase().contains("dev");
+        return profiles != null
+            && (profiles.toLowerCase().contains("dev") || profiles.toLowerCase().contains("test"));
     }
 
 }

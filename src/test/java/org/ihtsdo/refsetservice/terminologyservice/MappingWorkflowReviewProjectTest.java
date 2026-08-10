@@ -223,7 +223,7 @@ public class MappingWorkflowReviewProjectTest {
             assertTrue(result.getItems().get(0).isSuccess());
             assertEquals(MapWorkflowStatus.REVIEW_RESOLVED, result.getItems().get(0).getWorkflow().getWorkflowStatus());
             assertFalse(result.getItems().get(1).isSuccess());
-            assertEquals(HttpStatus.UNAUTHORIZED.value(), result.getItems().get(1).getStatus().intValue());
+            assertEquals(HttpStatus.CONFLICT.value(), result.getItems().get(1).getStatus().intValue());
             assertEquals(MapWorkflowStatus.REVIEW_NEEDED, context.getService().get(second.getId(), MappingWorkflow.class).getWorkflowStatus());
         }
     }

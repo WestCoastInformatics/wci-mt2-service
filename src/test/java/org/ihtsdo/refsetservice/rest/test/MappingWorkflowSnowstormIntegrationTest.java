@@ -453,7 +453,7 @@ public class MappingWorkflowSnowstormIntegrationTest extends BaseTest {
                     context.getSpecialistUser());
                 act(context, MappingWorkflowAction.FINISH_EDITING, "done",
                     context.getSpecialistUser());
-                expectUnauthorized(context, MappingWorkflowAction.START_REVIEW, "nope",
+                expectForbidden(context, MappingWorkflowAction.START_REVIEW, "nope",
                     context.getSpecialistUser());
                 assertEquals(MapWorkflowStatus.REVIEW_NEEDED,
                     context.reloadWorkflow().getWorkflowStatus());
@@ -471,7 +471,7 @@ public class MappingWorkflowSnowstormIntegrationTest extends BaseTest {
             try {
                 act(context, MappingWorkflowAction.ASSIGN, "first",
                     context.getSpecialistUser());
-                expectUnauthorized(context, MappingWorkflowAction.ASSIGN, "second",
+                expectConflict(context, MappingWorkflowAction.ASSIGN, "second",
                     context.getOtherSpecialistUser());
                 assertEquals(context.getSpecialistUser().getUserName(),
                     context.reloadWorkflow().getAssignedUser());
@@ -525,11 +525,19 @@ public class MappingWorkflowSnowstormIntegrationTest extends BaseTest {
             context.getMapSet().getId(), CONCEPT, action, note, asUser, assignToUser);
     }
 
-    private void expectUnauthorized(final Context context,
+    private void expectForbidden(final Context context,
         final MappingWorkflowAction action, final String note, final User asUser)
         throws Exception {
 
-        workflowUtil.updateWorkflowExpectUnauthorized(
+        workflowUtil.updateWorkflowExpectForbidden(
+            context.getMapSet().getId(), CONCEPT, action, note, asUser);
+    }
+
+    private void expectConflict(final Context context,
+        final MappingWorkflowAction action, final String note, final User asUser)
+        throws Exception {
+
+        workflowUtil.updateWorkflowExpectConflict(
             context.getMapSet().getId(), CONCEPT, action, note, asUser);
     }
 }

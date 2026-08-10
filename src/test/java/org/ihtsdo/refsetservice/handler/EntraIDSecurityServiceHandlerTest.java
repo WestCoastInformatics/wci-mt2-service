@@ -2,7 +2,9 @@ package org.ihtsdo.refsetservice.handler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
@@ -26,18 +28,21 @@ public class EntraIDSecurityServiceHandlerTest {
         final EntraIDSecurityServiceHandler handler = new EntraIDSecurityServiceHandler();
         final Properties properties = new Properties();
         properties.setProperty("users.admin", "admin1,admin2");
-        properties.setProperty("users.author", "author1");
-        properties.setProperty("users.reviewer", "reviewer1, reviewer2");
+        properties.setProperty("users.spec", "spec1");
+        properties.setProperty("users.lead", "lead1; lead2");
 
         handler.setProperties(properties);
 
         final Set<String> admins = handler.getSystemAdminUserNames();
-        final Set<String> authors = handler.getSystemAuthorUserNames();
-        final Set<String> reviewers = handler.getSystemReviewerUserNames();
+        final Set<String> specs = handler.getSystemAuthorUserNames();
+        final Set<String> leads = handler.getSystemReviewerUserNames();
 
         assertEquals(2, admins.size());
-        assertEquals(1, authors.size());
-        assertEquals(2, reviewers.size());
+        assertEquals(1, specs.size());
+        assertEquals(2, leads.size());
+        assertTrue(specs.contains("spec1"));
+        assertTrue(leads.contains("lead1"));
+        assertTrue(leads.contains("lead2"));
     }
 
     /**
@@ -80,8 +85,7 @@ public class EntraIDSecurityServiceHandlerTest {
 
         final String url = handler.getLogoutUrl();
         assertEquals(
-            "https://login.microsoftonline.com/tenant/oauth2/v2.0/logout?post_logout_redirect_uri=http%3A%2F%2Flocalhost%3A8888%2F&client_id=client-guid",
-            url);
+            "https://login.microsoftonline.com/tenant/oauth2/v2.0/logout?post_logout_redirect_uri=http%3A%2F%2Flocalhost%3A8888%2F&client_id=client-guid", url);
     }
 
     /**
@@ -99,5 +103,18 @@ public class EntraIDSecurityServiceHandlerTest {
         handler.setProperties(properties);
 
         assertEquals("https://login.microsoftonline.com/tenant/oauth2/v2.0/logout", handler.getLogoutUrl());
+    }
+
+    /**
+     * Test EntraMapBootstrap list split used by role list parsing.
+     */
+    @Test
+    public void testEntraMapBootstrapListSplit() {
+
+        final List<String> mixed = EntraMapBootstrap.splitConfiguredList("a@x.com; b@y.com,c@z.com");
+        assertEquals(3, mixed.size());
+        assertTrue(mixed.contains("a@x.com"));
+        assertTrue(mixed.contains("b@y.com"));
+        assertTrue(mixed.contains("c@z.com"));
     }
 }

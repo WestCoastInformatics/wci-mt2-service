@@ -11,13 +11,11 @@ package org.ihtsdo.refsetservice.handler;
 
 import java.net.URL;
 import java.security.interfaces.RSAPublicKey;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.RestException;
@@ -283,15 +281,15 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
 
         final Set<String> rolesToAdd = new HashSet<>();
 
-        addRolesIfConfigured(userName, "users.admin", "all-all-all-admin", rolesToAdd);
-        addRolesIfConfigured(userName, "users.author", "all-all-all-author", rolesToAdd);
-        addRolesIfConfigured(userName, "users.reviewer", "all-all-all-reviewer", rolesToAdd);
+        addRolesIfConfigured(userName, "users.admin", EntraMapBootstrap.ROLE_ADMIN, rolesToAdd);
+        addRolesIfConfigured(userName, "users.spec", EntraMapBootstrap.ROLE_SPEC, rolesToAdd);
+        addRolesIfConfigured(userName, "users.lead", EntraMapBootstrap.ROLE_LEAD, rolesToAdd);
 
         if (!rolesToAdd.isEmpty()) {
             user.getRoles().addAll(rolesToAdd);
             LOG.info("EntraID applyDefaultRoles: added bootstrap roles {} for user={}", rolesToAdd, userName);
         } else {
-            LOG.debug("EntraID applyDefaultRoles: no bootstrap role matches for user={} (check ENTRAID_*_USERS lists)", userName);
+            LOG.debug("EntraID applyDefaultRoles: no bootstrap role matches for user={} (check ENTRAID_ADMIN/SPEC/LEAD_USERS lists)", userName);
         }
     }
 
@@ -311,12 +309,11 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
             return;
         }
 
-        final String[] users = list.split(",");
-        LOG.debug("EntraID addRolesIfConfigured: key={} rawListLength={} entries (comma-split)", key, users.length);
+        final List<String> users = EntraMapBootstrap.splitConfiguredList(list);
+        LOG.debug("EntraID addRolesIfConfigured: key={} rawListLength={} entries", key, users.size());
 
         for (final String entry : users) {
-            final String trimmed = entry.trim();
-            if (userName.equalsIgnoreCase(trimmed)) {
+            if (userName.equalsIgnoreCase(entry)) {
                 LOG.debug("EntraID addRolesIfConfigured: match user={} against {} entry → role {}", userName, key, role);
                 rolesToAdd.add(role);
                 break;
@@ -560,21 +557,13 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
     @Override
     public Set<String> getSystemAdminUserNames() throws Exception {
 
-        if (properties == null || StringUtils.isBlank(properties.getProperty("users.admin"))) {
-            LOG.trace("EntraID getSystemAdminUserNames: empty");
-            return new HashSet<>();
-        }
-        final String propertyValue = properties.getProperty("users.admin").trim();
-        if (propertyValue.isEmpty()) {
-            return new HashSet<>();
-        }
-        final Set<String> set = Arrays.stream(propertyValue.split("\\s*,\\s*")).collect(Collectors.toSet());
+        final Set<String> set = new HashSet<>(EntraMapBootstrap.splitConfiguredList(properties != null ? properties.getProperty("users.admin") : null));
         LOG.debug("EntraID getSystemAdminUserNames: count={}", set.size());
         return set;
     }
 
     /**
-     * Gets the system author user names.
+     * Gets the system author / specialist user names (Entra {@code users.spec} list).
      *
      * @return the system author user names
      * @throws Exception the exception
@@ -583,21 +572,13 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
     @Override
     public Set<String> getSystemAuthorUserNames() throws Exception {
 
-        if (properties == null || StringUtils.isBlank(properties.getProperty("users.author"))) {
-            LOG.trace("EntraID getSystemAuthorUserNames: empty");
-            return new HashSet<>();
-        }
-        final String propertyValue = properties.getProperty("users.author").trim();
-        if (propertyValue.isEmpty()) {
-            return new HashSet<>();
-        }
-        final Set<String> set = Arrays.stream(propertyValue.split("\\s*,\\s*")).collect(Collectors.toSet());
-        LOG.debug("EntraID getSystemAuthorUserNames: count={}", set.size());
+        final Set<String> set = new HashSet<>(EntraMapBootstrap.splitConfiguredList(properties != null ? properties.getProperty("users.spec") : null));
+        LOG.debug("EntraID getSystemAuthorUserNames (spec): count={}", set.size());
         return set;
     }
 
     /**
-     * Gets the system reviewer user names.
+     * Gets the system reviewer / lead user names (Entra {@code users.lead} list).
      *
      * @return the system reviewer user names
      * @throws Exception the exception
@@ -606,16 +587,8 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
     @Override
     public Set<String> getSystemReviewerUserNames() throws Exception {
 
-        if (properties == null || StringUtils.isBlank(properties.getProperty("users.reviewer"))) {
-            LOG.trace("EntraID getSystemReviewerUserNames: empty");
-            return new HashSet<>();
-        }
-        final String propertyValue = properties.getProperty("users.reviewer").trim();
-        if (propertyValue.isEmpty()) {
-            return new HashSet<>();
-        }
-        final Set<String> set = Arrays.stream(propertyValue.split("\\s*,\\s*")).collect(Collectors.toSet());
-        LOG.debug("EntraID getSystemReviewerUserNames: count={}", set.size());
+        final Set<String> set = new HashSet<>(EntraMapBootstrap.splitConfiguredList(properties != null ? properties.getProperty("users.lead") : null));
+        LOG.debug("EntraID getSystemReviewerUserNames (lead): count={}", set.size());
         return set;
     }
 }
