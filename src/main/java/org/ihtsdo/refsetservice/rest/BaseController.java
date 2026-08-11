@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.RestException;
@@ -95,18 +96,74 @@ public class BaseController {
     }
 
     /**
-     * Authorize.
+     * Resolves the request user from HTTP session or {@code Authorization: Bearer} JWT.
+     * Same-origin cookie session and local-UI remote-API token handoff both work.
      *
      * @param request the request
-     * @return the user
+     * @return the user (may be guest when neither session nor valid Bearer is present)
      * @throws Exception the exception
      */
     public User authorizeUser(final HttpServletRequest request) throws Exception {
 
-        final String jwtToken = getJwt(request);
-        // if no jwtToken then user is guest.
+        final User fromRequest = findAuthenticatedUser(request);
+        if (fromRequest != null) {
+            return fromRequest;
+        }
+        return SecurityService.getUserFromSession();
+    }
+
+    /**
+     * Like {@link #authorizeUser(HttpServletRequest)} but rejects guest / missing users.
+     *
+     * @param request the request
+     * @return authenticated non-guest user
+     * @throws Exception the exception
+     */
+    public User requireAuthenticatedUser(final HttpServletRequest request) throws Exception {
+
+        final User user = authorizeUser(request);
+        if (user == null || StringUtils.isBlank(user.getUserName()) || SecurityService.GUEST_USERNAME.equals(user.getUserName())) {
+            throw new RestException(false, 401, "Unauthorized", "Unauthorized");
+        }
+        return user;
+    }
+
+    /**
+     * Finds an authenticated non-guest user from test attribute, HTTP session, or Bearer JWT.
+     *
+     * @param request the request
+     * @return authenticated user, or null if none
+     * @throws Exception the exception
+     */
+    private User findAuthenticatedUser(final HttpServletRequest request) throws Exception {
+
+        final Object testSessionUser = request.getAttribute(SecurityService.TEST_SESSION_USER_ATTRIBUTE);
+        if (testSessionUser instanceof User) {
+            final User user = (User) testSessionUser;
+            if (isNonGuestUser(user)) {
+                return user;
+            }
+        }
+
+        final HttpSession session = request.getSession(false);
+        if (session != null) {
+            final Object sessionUser = session.getAttribute(SecurityService.SESSION_USER_OBJECT_KEY);
+            if (sessionUser instanceof User) {
+                final User user = (User) sessionUser;
+                if (isNonGuestUser(user)) {
+                    return user;
+                }
+            }
+        }
+
+        final User fromSession = SecurityService.getUserFromSession();
+        if (isNonGuestUser(fromSession)) {
+            return fromSession;
+        }
+
+        final String jwtToken = getBearerTokenOrNull(request);
         if (StringUtils.isEmpty(jwtToken) || "undefined".equals(jwtToken)) {
-            return SecurityService.getUserFromSession();
+            return null;
         }
 
         final DecodedJWT djwt = JWT.decode(jwtToken);
@@ -118,19 +175,26 @@ public class BaseController {
         }
 
         try (final TerminologyService service = new TerminologyService()) {
-            User authUser = SecurityService.getUserFromUserName(service, username);
-        if (authUser != null) {
-            final String roles = JwtUtility.getRole(djwt.getClaims());
-            authUser.getRoles().addAll(Set.of(roles.split(",")));
-        }
+            final User authUser = SecurityService.getUserFromUserName(service, username);
+            if (authUser != null) {
+                final String roles = JwtUtility.getRole(djwt.getClaims());
+                if (StringUtils.isNotBlank(roles)) {
+                    authUser.getRoles().addAll(Set.of(roles.split(",")));
+                }
+                authUser.setAuthToken(jwtToken);
+            }
 
-        if (authUser == null || (authUser.getId() == null && !PropertyUtility.getProperty("springProfiles").toLowerCase().contains("test"))) {
+            if (authUser == null
+                || (authUser.getId() == null && !PropertyUtility.getProperty("springProfiles").toLowerCase().contains("test"))) {
+                throw new RestException(false, 401, "Unauthorized", "Unable to find user from session");
+            }
+            return authUser;
+        }
+    }
 
-            throw new RestException(false, 401, "Unauthorized", "Unable to find user from session");
-        }
-        return authUser;
-        }
-        
+    private static boolean isNonGuestUser(final User user) {
+
+        return user != null && StringUtils.isNotBlank(user.getUserName()) && !SecurityService.GUEST_USERNAME.equals(user.getUserName());
     }
 
     /**
@@ -142,32 +206,41 @@ public class BaseController {
      */
     public String getJwt(final HttpServletRequest request) throws Exception {
 
-        // Extract header token -
-        final String headerToken = ConfigUtility.getHeaderToken();
-        // Replace use of "Bearer " in header token
-        String jwt = request.getHeader(headerToken);
-        if (ConfigUtility.isEmpty(jwt)) {
-            // Extract bearer token
-            jwt = request.getHeader("Authorization");
-            if (!ConfigUtility.isEmpty(jwt) && jwt.startsWith("Bearer ") && !jwt.equals("Bearer guest")) {
-                jwt = jwt.substring(jwt.indexOf(" ") + 1);
-            }
-
-            // guest
-            else {
-                if (!ConfigUtility.isEmpty(jwt) && jwt.equals("Bearer guest")) {
-                    throw new Exception("Guest login is not supported when login is enabled");
-                }
-                if (isAuthDevBypassEnabled()) {
-                    return null;
-                }
-                throw new Exception("Unexpected authorization token = " + request.getHeader("Authorization") + ", " + headerToken + ", "
-                    + request.getHeader(ConfigUtility.getHeaderToken()));
-            }
+        final String jwt = getBearerTokenOrNull(request);
+        if (!ConfigUtility.isEmpty(jwt)) {
             return jwt;
-        } else {
+        }
+
+        final String authHeader = request.getHeader("Authorization");
+        if (!ConfigUtility.isEmpty(authHeader) && authHeader.equals("Bearer guest")) {
+            throw new Exception("Guest login is not supported when login is enabled");
+        }
+        if (isAuthDevBypassEnabled()) {
+            return null;
+        }
+        final String headerToken = ConfigUtility.getHeaderToken();
+        throw new Exception("Unexpected authorization token = " + authHeader + ", " + headerToken + ", " + request.getHeader(headerToken));
+    }
+
+    /**
+     * Returns a Bearer token from the configured header or {@code Authorization}, or null if absent.
+     *
+     * @param request the request
+     * @return jwt string without Bearer prefix, or null
+     */
+    private static String getBearerTokenOrNull(final HttpServletRequest request) throws Exception {
+
+        final String headerToken = ConfigUtility.getHeaderToken();
+        String jwt = request.getHeader(headerToken);
+        if (!ConfigUtility.isEmpty(jwt)) {
             return jwt.replaceFirst("Bearer ", "");
         }
+
+        jwt = request.getHeader("Authorization");
+        if (!ConfigUtility.isEmpty(jwt) && jwt.startsWith("Bearer ") && !jwt.equals("Bearer guest")) {
+            return jwt.substring(jwt.indexOf(' ') + 1);
+        }
+        return null;
     }
 
     private static boolean isAuthDevBypassEnabled() {

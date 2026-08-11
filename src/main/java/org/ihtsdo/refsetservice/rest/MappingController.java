@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
@@ -139,7 +138,7 @@ public class MappingController extends BaseController {
         @RequestParam(required = false) final String searchAfter,
         @RequestParam(required = false, defaultValue = "false") final boolean includeWorkflowStatus, final HttpServletRequest request) throws Exception {
 
-        requireSessionUser(request);
+        requireAuthenticatedUser(request);
 
         final SearchParameters sp = new SearchParameters();
         sp.setQuery(query);
@@ -597,7 +596,7 @@ public class MappingController extends BaseController {
             }
             final List<Mapping> mappings = new ArrayList<>();
             mappings.add(mapping);
-            final User user = requireSessionUser(request);
+            final User user = requireAuthenticatedUser(request);
             MappingWorkflowService.canUserEditMappings(user, mapSet, mappings, service);
             MappingService.updateMappings(mapSet.getMapProject(), branch, mapSet.getRefSetCode(), mappings, mapSet);
 
@@ -652,7 +651,7 @@ public class MappingController extends BaseController {
             if (StringUtils.isBlank(branch)) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-            final User user = requireSessionUser(request);
+            final User user = requireAuthenticatedUser(request);
             MappingWorkflowService.canUserEditMappings(user, mapSet, mappings, service);
             final List<Mapping> updatedMappings = MappingService.updateMappings(mapSet.getMapProject(), branch, mapSet.getRefSetCode(), mappings, mapSet);
 
@@ -699,7 +698,7 @@ public class MappingController extends BaseController {
         @RequestParam(required = false) final String mapSetId, @RequestParam(required = false) final String workflowStatus, final HttpServletRequest request)
         throws Exception {
 
-        final User user = requireSessionUser(request);
+        final User user = requireAuthenticatedUser(request);
 
         MapWorkflowStatus statusFilter = null;
         if (StringUtils.isNotBlank(workflowStatus)) {
@@ -761,7 +760,7 @@ public class MappingController extends BaseController {
         @RequestParam(required = false) final String mapProjectId, @RequestParam(required = false) final String mapSetId,
         final HttpServletRequest request) throws Exception {
 
-        final User user = requireSessionUser(request);
+        final User user = requireAuthenticatedUser(request);
 
         final SearchParameters searchParameters = new SearchParameters();
         searchParameters.setLimit(limit);
@@ -796,7 +795,7 @@ public class MappingController extends BaseController {
     public @ResponseBody ResponseEntity<MappingWorkflow> getMappingWorkflowStatus(@PathVariable final String mapSetInternalId,
         @PathVariable final String conceptCode, final HttpServletRequest request) throws Exception {
 
-        requireSessionUser(request);
+        requireAuthenticatedUser(request);
 
         try (final TerminologyService service = new TerminologyService()) {
             final MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
@@ -835,7 +834,7 @@ public class MappingController extends BaseController {
     public @ResponseBody ResponseEntity<List<MappingWorkflow>> getMappingWorkflowStatusBulk(@PathVariable final String mapSetInternalId,
         @RequestParam final String conceptCodes, final HttpServletRequest request) throws Exception {
 
-        requireSessionUser(request);
+        requireAuthenticatedUser(request);
 
         try (final TerminologyService service = new TerminologyService()) {
             final MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
@@ -874,7 +873,7 @@ public class MappingController extends BaseController {
         final HttpServletRequest request) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
-            final User user = requireSessionUser(request);
+            final User user = requireAuthenticatedUser(request);
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
             service.setTransactionPerOperation(false);
@@ -938,7 +937,7 @@ public class MappingController extends BaseController {
         throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
-            final User user = requireSessionUser(request);
+            final User user = requireAuthenticatedUser(request);
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
 
@@ -980,7 +979,7 @@ public class MappingController extends BaseController {
     public @ResponseBody ResponseEntity<ResultList<MappingWorkflowHistory>> getMappingWorkflowHistory(@PathVariable final String mapSetInternalId,
         @PathVariable final String conceptCode, @ModelAttribute final SearchParameters searchParameters, final HttpServletRequest request) throws Exception {
 
-        requireSessionUser(request);
+        requireAuthenticatedUser(request);
 
         try (final TerminologyService service = new TerminologyService()) {
             final MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
@@ -1026,7 +1025,7 @@ public class MappingController extends BaseController {
         @RequestParam(name = "notesFile", required = true) final MultipartFile notesFile, final HttpServletRequest request) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
-            final User user = requireSessionUser(request);
+            final User user = requireAuthenticatedUser(request);
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
             service.setTransactionPerOperation(false);
@@ -1068,7 +1067,7 @@ public class MappingController extends BaseController {
     public @ResponseBody ResponseEntity<List<MapNote>> getMappingNotes(@PathVariable final String mapSetInternalId,
         @PathVariable final String conceptCode, final HttpServletRequest request) throws Exception {
 
-        final User user = requireSessionUser(request);
+        final User user = requireAuthenticatedUser(request);
 
         try (final TerminologyService service = new TerminologyService()) {
             service.setModifiedBy(user.getUserName());
@@ -1102,7 +1101,7 @@ public class MappingController extends BaseController {
         @PathVariable final String conceptCode, @RequestBody final MapNote mapNote, final HttpServletRequest request) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
-            final User user = requireSessionUser(request);
+            final User user = requireAuthenticatedUser(request);
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
             service.setTransactionPerOperation(false);
@@ -1144,7 +1143,7 @@ public class MappingController extends BaseController {
         final HttpServletRequest request) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
-            final User user = requireSessionUser(request);
+            final User user = requireAuthenticatedUser(request);
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
             service.setTransactionPerOperation(false);
@@ -1184,7 +1183,7 @@ public class MappingController extends BaseController {
         @PathVariable final String conceptCode, @PathVariable final String noteId, final HttpServletRequest request) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
-            final User user = requireSessionUser(request);
+            final User user = requireAuthenticatedUser(request);
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
             service.setTransactionPerOperation(false);
@@ -1202,42 +1201,6 @@ public class MappingController extends BaseController {
             rethrowHandled(e);
             return null;
         }
-    }
-
-    /**
-     * Returns the authenticated user from the HTTP session.
-     *
-     * @param httpServletRequest the http servlet request
-     * @return the session user
-     * @throws Exception the exception
-     * @throws ResponseStatusException when no authenticated user is present
-     */
-    private User requireSessionUser(final HttpServletRequest httpServletRequest) throws Exception {
-
-        final Object testSessionUser = httpServletRequest.getAttribute(SecurityService.TEST_SESSION_USER_ATTRIBUTE);
-        if (testSessionUser instanceof User) {
-            final User user = (User) testSessionUser;
-            if (!SecurityService.GUEST_USERNAME.equals(user.getUserName())) {
-                return user;
-            }
-        }
-
-        final HttpSession session = httpServletRequest.getSession(false);
-        if (session != null) {
-            final Object sessionUser = session.getAttribute(SecurityService.SESSION_USER_OBJECT_KEY);
-            if (sessionUser instanceof User) {
-                final User user = (User) sessionUser;
-                if (!SecurityService.GUEST_USERNAME.equals(user.getUserName())) {
-                    return user;
-                }
-            }
-        }
-
-        final User user = SecurityService.getUserFromSession();
-        if (user == null || SecurityService.GUEST_USERNAME.equals(user.getUserName())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
-        }
-        return user;
     }
 
     /**

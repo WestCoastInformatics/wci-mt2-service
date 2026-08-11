@@ -23,6 +23,7 @@ import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.handler.SecurityServiceHandler;
 import org.ihtsdo.refsetservice.model.BrowserLoginCallback;
 import org.ihtsdo.refsetservice.model.BrowserLoginException;
+import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
@@ -123,28 +124,14 @@ public class SecurityController extends BaseController {
     @GetMapping(value = "/authenticate/session")
     public ResponseEntity<User> authenticateSession(final HttpServletRequest httpRequest) throws Exception {
 
-        final User sessionUser = SecurityService.getUserFromSession();
-        if (isAuthenticatedSessionUser(sessionUser)) {
-            return ResponseEntity.ok(sessionUser);
-        }
-
-        final String authHeader = httpRequest.getHeader("Authorization");
-        if (StringUtils.isNotBlank(authHeader) && authHeader.startsWith("Bearer ") && !"Bearer guest".equals(authHeader)) {
-            try {
-                final String jwt = getJwt(httpRequest);
-                if (StringUtils.isNotBlank(jwt) && !"undefined".equals(jwt)) {
-                    final User authUser = authorizeUser(httpRequest);
-                    if (authUser != null && StringUtils.isNotBlank(authUser.getUserName())
-                        && !SecurityService.GUEST_USERNAME.equals(authUser.getUserName())) {
-                        authUser.setAuthToken(jwt);
-                        return ResponseEntity.ok(authUser);
-                    }
-                }
-            } catch (final Exception e) {
-                LOG.debug("Auth session Bearer fallback failed: {}", e.getMessage());
+        try {
+            return ResponseEntity.ok(requireAuthenticatedUser(httpRequest));
+        } catch (final RestException e) {
+            if (e.getError() != null && e.getError().getStatus() == 401) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
+            throw e;
         }
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 
     /**
@@ -422,18 +409,6 @@ public class SecurityController extends BaseController {
             sb.append(':').append(port);
         }
         return sb.toString();
-    }
-
-    /**
-     * Whether the user is a non-guest authenticated session user with an application JWT.
-     *
-     * @param user candidate user
-     * @return true if usable as authenticated session payload
-     */
-    private static boolean isAuthenticatedSessionUser(final User user) {
-
-        return user != null && StringUtils.isNotBlank(user.getUserName()) && !SecurityService.GUEST_USERNAME.equals(user.getUserName())
-            && StringUtils.isNotBlank(user.getAuthToken());
     }
 
     /**

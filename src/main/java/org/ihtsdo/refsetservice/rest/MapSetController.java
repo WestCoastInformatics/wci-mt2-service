@@ -431,7 +431,7 @@ public class MapSetController extends BaseController {
     public @ResponseBody ResponseEntity<Map<String, String>> getWorkflowStatus(@PathVariable(value = "mapSetInternalId") final String mapSetInternalId)
         throws Exception {
 
-        authorizeUser(request);
+        requireAuthenticatedUser(request);
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -480,13 +480,11 @@ public class MapSetController extends BaseController {
     public @ResponseBody ResponseEntity<MapSet> setWorkflowStatus(@PathVariable(value = "mapSetInternalId") final String mapSetInternalId,
         @RequestParam final WorkflowAction action, @RequestParam(required = false) final String notes) throws Exception {
 
-        authorizeUser(request);
+        final User user = requireAuthenticatedUser(request);
 
         try (final TerminologyService service = new TerminologyService()) {
 
             LOG.info("setWorkflowStatus: mapSetInternalId: {}; action: {}; notes: {}", mapSetInternalId, action, notes);
-
-            final User user = SecurityService.getUserFromSession();
 
             service.setModifiedBy(user.getUserName());
             service.setModifiedFlag(true);
@@ -534,7 +532,7 @@ public class MapSetController extends BaseController {
         @PathVariable(value = "mapSetInternalId") final String mapSetInternalId,
         @org.springframework.web.bind.annotation.RequestBody(required = true) final String notes) throws Exception {
 
-        final User authUser = authorizeUser(request);
+        final User authUser = requireAuthenticatedUser(request);
         try (final TerminologyService service = new TerminologyService()) {
 
             service.setModifiedBy(authUser.getUserName());
@@ -597,7 +595,7 @@ public class MapSetController extends BaseController {
     public @ResponseBody ResponseEntity<String> startRefsetPublications(@RequestParam(required = true) final String codeSystem) throws Exception {
 
         LOG.info("startRefsetPublications: codeSystem: " + codeSystem);
-        final User authUser = SecurityService.getUserFromSession();
+        final User authUser = requireAuthenticatedUser(request);
 
         if (!authUser.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
             return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.UNAUTHORIZED);
@@ -684,7 +682,7 @@ public class MapSetController extends BaseController {
     public @ResponseBody ResponseEntity<String> completeEditionPublication(@RequestParam(required = true) final String codeSystem) throws Exception {
 
         LOG.info("completeEditionPublication: codeSystem: " + codeSystem);
-        final User authUser = SecurityService.getUserFromSession();
+        final User authUser = requireAuthenticatedUser(request);
 
         try (final TerminologyService service = new TerminologyService()) {
             service.setModifiedBy(authUser.getUserName());
@@ -736,7 +734,7 @@ public class MapSetController extends BaseController {
     public @ResponseBody ResponseEntity<String> failRefsetPublications(@RequestParam(required = true) final String refsetIds,
         @RequestParam(required = true) final String notes) throws Exception {
 
-        final User authUser = authorizeUser(request);
+        final User authUser = requireAuthenticatedUser(request);
 
         if (!authUser.checkPermission(User.ROLE_ADMIN, "all", null, null)) {
             return new ResponseEntity<>("This user does not have permission to perform this action", HttpStatus.UNAUTHORIZED);
