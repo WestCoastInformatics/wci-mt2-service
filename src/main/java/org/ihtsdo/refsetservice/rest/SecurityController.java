@@ -25,6 +25,7 @@ import org.ihtsdo.refsetservice.model.BrowserLoginCallback;
 import org.ihtsdo.refsetservice.model.BrowserLoginException;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.SecurityService;
+import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -112,20 +113,38 @@ public class SecurityController extends BaseController {
     }
 
     /**
-     * Returns the authenticated session user (including {@code authToken}) for browser clients after identity-provider login redirect.
+     * Returns the authenticated session user (including {@code authToken}) for browser clients after identity-provider login redirect. Accepts either an HTTP
+     * session user or a valid application JWT in the {@code Authorization: Bearer} header (hybrid local-UI / remote-API handoff).
      *
-     * @return 200 with {@link User}, or 401 if no authenticated session
+     * @param httpRequest current request (session and optional Bearer token)
+     * @return 200 with {@link User}, or 401 if no authenticated session or token
      * @throws Exception if session access fails unexpectedly
      */
     @GetMapping(value = "/authenticate/session")
-    public ResponseEntity<User> authenticateSession() throws Exception {
+    public ResponseEntity<User> authenticateSession(final HttpServletRequest httpRequest) throws Exception {
 
-        final User user = SecurityService.getUserFromSession();
-        if (user == null || StringUtils.isBlank(user.getUserName()) || SecurityService.GUEST_USERNAME.equals(user.getUserName())
-            || StringUtils.isBlank(user.getAuthToken())) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        final User sessionUser = SecurityService.getUserFromSession();
+        if (isAuthenticatedSessionUser(sessionUser)) {
+            return ResponseEntity.ok(sessionUser);
         }
-        return ResponseEntity.ok(user);
+
+        final String authHeader = httpRequest.getHeader("Authorization");
+        if (StringUtils.isNotBlank(authHeader) && authHeader.startsWith("Bearer ") && !"Bearer guest".equals(authHeader)) {
+            try {
+                final String jwt = getJwt(httpRequest);
+                if (StringUtils.isNotBlank(jwt) && !"undefined".equals(jwt)) {
+                    final User authUser = authorizeUser(httpRequest);
+                    if (authUser != null && StringUtils.isNotBlank(authUser.getUserName())
+                        && !SecurityService.GUEST_USERNAME.equals(authUser.getUserName())) {
+                        authUser.setAuthToken(jwt);
+                        return ResponseEntity.ok(authUser);
+                    }
+                }
+            } catch (final Exception e) {
+                LOG.debug("Auth session Bearer fallback failed: {}", e.getMessage());
+            }
+        }
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 
     /**
@@ -149,7 +168,7 @@ public class SecurityController extends BaseController {
         LOG.info("Auth callback: raw query={}, code={}, error={}, state={}", httpRequest.getQueryString(), code, error, state);
 
         final SecurityServiceHandler handler = SecurityService.getSecurityHandler();
-        final String postLogin = normalizePostLoginUrl(handler.getPostLoginRedirectUri());
+        final String postLogin = resolvePostLoginRedirect(httpRequest, handler);
 
         if (!handler.supportsBrowserCallback()) {
             LOG.warn("Auth callback invoked but handler does not support browser callback");
@@ -160,35 +179,53 @@ public class SecurityController extends BaseController {
             httpRequest.getSession(false) != null ? httpRequest.getSession(false).getAttribute(SecurityService.SESSION_OAUTH_STATE_KEY) : null;
         final String expectedState = expectedStateObj != null ? String.valueOf(expectedStateObj) : null;
 
+        String authToken = null;
         try (final SecurityService securityService = new SecurityService()) {
             final User idpUser = handler.completeBrowserLogin(new BrowserLoginCallback(code, error, errorDescription, state, expectedState));
             final User user = securityService.authenticateHandlerUser(idpUser);
             if (user == null || user.getAuthToken() == null) {
+                clearOAuthReturnUrl(httpRequest);
                 return redirectAuthError(postLogin, "no_user");
             }
             httpRequest.getSession(true).setAttribute(SecurityService.SESSION_USER_OBJECT_KEY, user);
             httpRequest.getSession().removeAttribute(SecurityService.SESSION_OAUTH_STATE_KEY);
+            clearOAuthReturnUrl(httpRequest);
+            authToken = user.getAuthToken();
             LOG.info("Auth callback: session established for user={}", user.getUserName());
         } catch (final BrowserLoginException ex) {
             LOG.warn("Auth callback login failed: {}", ex.getErrorCode());
+            clearOAuthReturnUrl(httpRequest);
             return redirectAuthError(postLogin, urlEncode(ex.getErrorCode()));
         } catch (final Exception ex) {
             LOG.warn("Auth callback login failed: {}", ex.toString());
+            clearOAuthReturnUrl(httpRequest);
             return redirectAuthError(postLogin, "login");
         }
 
-        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(appendQuery(postLogin, AUTH_LOGIN_SUCCESS))).build();
+        final String location = appendQuery(postLogin, AUTH_LOGIN_SUCCESS) + "#auth_token=" + urlEncode(authToken);
+        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(location)).build();
     }
 
     /**
      * Starts browser login via the configured {@link SecurityServiceHandler}.
      *
+     * @param returnUrl optional allowlisted UI origin to redirect to after OAuth (scheme+host+port); ignored if not in {@code cors.allowed-origins}
      * @param httpRequest used to create or access the HTTP session for OAuth {@code state} when required
      * @return HTTP 302 to the identity provider, or 503 if required configuration is missing
      * @throws Exception if building the redirect URL fails unexpectedly
      */
     @GetMapping(value = "/authenticate/login")
-    public ResponseEntity<Void> authenticateLogin(final HttpServletRequest httpRequest) throws Exception {
+    public ResponseEntity<Void> authenticateLogin(@RequestParam(required = false) final String returnUrl, final HttpServletRequest httpRequest)
+        throws Exception {
+
+        if (StringUtils.isNotBlank(returnUrl)) {
+            final String allowedOrigin = resolveAllowlistedReturnUrl(returnUrl);
+            if (allowedOrigin != null) {
+                httpRequest.getSession(true).setAttribute(SecurityService.SESSION_OAUTH_RETURN_URL_KEY, allowedOrigin);
+            } else {
+                LOG.warn("Auth login: ignoring non-allowlisted returnUrl");
+            }
+        }
 
         final SecurityServiceHandler handler = SecurityService.getSecurityHandler();
         String oauthState = null;
@@ -255,12 +292,148 @@ public class SecurityController extends BaseController {
             }
             session.removeAttribute(SecurityService.SESSION_USER_OBJECT_KEY);
             session.removeAttribute(SecurityService.SESSION_OAUTH_STATE_KEY);
+            session.removeAttribute(SecurityService.SESSION_OAUTH_RETURN_URL_KEY);
             session.invalidate();
         } catch (final IllegalStateException e) {
             LOG.debug("Auth logout: session already invalid: {}", e.getMessage());
         } catch (final Exception e) {
             LOG.warn("Auth logout: session clear failed: {}", e.getMessage());
         }
+    }
+
+    /**
+     * Resolves post-login redirect base: allowlisted session {@code returnUrl} if present, otherwise handler post-login URI.
+     *
+     * @param httpRequest current request
+     * @param handler security handler
+     * @return normalized base without trailing slash
+     * @throws Exception if handler post-login URI cannot be resolved
+     */
+    private static String resolvePostLoginRedirect(final HttpServletRequest httpRequest, final SecurityServiceHandler handler) throws Exception {
+
+        final javax.servlet.http.HttpSession session = httpRequest.getSession(false);
+        if (session != null) {
+            final Object returnUrlObj = session.getAttribute(SecurityService.SESSION_OAUTH_RETURN_URL_KEY);
+            if (returnUrlObj != null) {
+                final String allowed = resolveAllowlistedReturnUrl(String.valueOf(returnUrlObj));
+                if (allowed != null) {
+                    return normalizePostLoginUrl(allowed);
+                }
+            }
+        }
+        return normalizePostLoginUrl(handler.getPostLoginRedirectUri());
+    }
+
+    /**
+     * Clears the optional OAuth return URL from the session.
+     *
+     * @param httpRequest current request
+     */
+    private static void clearOAuthReturnUrl(final HttpServletRequest httpRequest) {
+
+        final javax.servlet.http.HttpSession session = httpRequest.getSession(false);
+        if (session != null) {
+            session.removeAttribute(SecurityService.SESSION_OAUTH_RETURN_URL_KEY);
+        }
+    }
+
+    /**
+     * Validates {@code returnUrl} against {@code cors.allowed-origins} and returns the origin (scheme+host+port) only.
+     *
+     * @param returnUrl candidate absolute URL
+     * @return allowlisted origin, or {@code null} if rejected
+     */
+    public static String resolveAllowlistedReturnUrl(final String returnUrl) {
+
+        if (StringUtils.isBlank(returnUrl)) {
+            return null;
+        }
+
+        final String candidateOrigin;
+        try {
+            final URI uri = URI.create(returnUrl.trim());
+            if (uri.getScheme() == null || uri.getHost() == null) {
+                return null;
+            }
+            if (!"http".equalsIgnoreCase(uri.getScheme()) && !"https".equalsIgnoreCase(uri.getScheme())) {
+                return null;
+            }
+            if (StringUtils.isNotBlank(uri.getRawUserInfo())) {
+                return null;
+            }
+            candidateOrigin = buildOrigin(uri.getScheme(), uri.getHost(), uri.getPort());
+        } catch (final Exception e) {
+            return null;
+        }
+
+        final String allowedProp = PropertyUtility.getProperty("cors.allowed-origins");
+        if (StringUtils.isBlank(allowedProp) || "*".equals(allowedProp.trim())) {
+            return null;
+        }
+
+        for (final String entry : allowedProp.split(",")) {
+            final String allowedOrigin = normalizeAllowedOriginEntry(entry);
+            if (allowedOrigin != null && allowedOrigin.equalsIgnoreCase(candidateOrigin)) {
+                return candidateOrigin;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Normalizes a CORS allowlist entry to scheme://host[:port].
+     *
+     * @param entry raw CORS origin entry
+     * @return normalized origin, or {@code null}
+     */
+    private static String normalizeAllowedOriginEntry(final String entry) {
+
+        if (StringUtils.isBlank(entry)) {
+            return null;
+        }
+        try {
+            String value = entry.trim();
+            while (value.endsWith("/")) {
+                value = value.substring(0, value.length() - 1);
+            }
+            final URI uri = URI.create(value);
+            if (uri.getScheme() == null || uri.getHost() == null) {
+                return null;
+            }
+            return buildOrigin(uri.getScheme(), uri.getHost(), uri.getPort());
+        } catch (final Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Builds an origin string.
+     *
+     * @param scheme http or https
+     * @param host host name
+     * @param port port or -1 for default
+     * @return scheme://host[:port]
+     */
+    private static String buildOrigin(final String scheme, final String host, final int port) {
+
+        final StringBuilder sb = new StringBuilder();
+        sb.append(scheme.toLowerCase()).append("://").append(host.toLowerCase());
+        if (port != -1) {
+            sb.append(':').append(port);
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Whether the user is a non-guest authenticated session user with an application JWT.
+     *
+     * @param user candidate user
+     * @return true if usable as authenticated session payload
+     */
+    private static boolean isAuthenticatedSessionUser(final User user) {
+
+        return user != null && StringUtils.isNotBlank(user.getUserName()) && !SecurityService.GUEST_USERNAME.equals(user.getUserName())
+            && StringUtils.isNotBlank(user.getAuthToken());
     }
 
     /**

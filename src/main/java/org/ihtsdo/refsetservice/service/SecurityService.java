@@ -72,6 +72,11 @@ public class SecurityService implements AutoCloseable {
     /** Session attribute for OAuth2 {@code state} during browser login (handler-agnostic). */
     public static final String SESSION_OAUTH_STATE_KEY = "OAUTH_STATE";
 
+    /**
+     * Session attribute for optional post-login browser return origin (allowlisted) when login was started with {@code returnUrl}.
+     */
+    public static final String SESSION_OAUTH_RETURN_URL_KEY = "OAUTH_RETURN_URL";
+
     /** The handler. */
     public static final String GUEST_USERNAME = "nonLoggedInUser";
 
