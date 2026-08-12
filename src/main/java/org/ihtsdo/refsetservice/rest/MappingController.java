@@ -73,6 +73,8 @@ import org.springframework.web.server.ResponseStatusException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
 /**
@@ -1087,7 +1089,7 @@ public class MappingController extends BaseController {
      *
      * @param mapSetInternalId the map set internal id
      * @param conceptCode the source concept code
-     * @param mapNote the note payload (uses note text)
+     * @param noteText the note text
      * @param request the HTTP request
      * @return the created note
      * @throws Exception the exception
@@ -1096,9 +1098,11 @@ public class MappingController extends BaseController {
         consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Create a map note for a source concept.", tags = {
         "mapset"
-    })
+    }, requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Note text", required = true, content = {
+        @Content(mediaType = "application/json", schema = @Schema(implementation = String.class))
+    }))
     public @ResponseBody ResponseEntity<MapNote> createMappingNote(@PathVariable final String mapSetInternalId,
-        @PathVariable final String conceptCode, @RequestBody final MapNote mapNote, final HttpServletRequest request) throws Exception {
+        @PathVariable final String conceptCode, @RequestBody final String noteText, final HttpServletRequest request) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
             final User user = requireAuthenticatedUser(request);
@@ -1112,7 +1116,6 @@ public class MappingController extends BaseController {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
 
-            final String noteText = mapNote == null ? null : mapNote.getNote();
             final MapNote created = MapNoteService.createNote(service, user, mapSet, conceptCode, noteText);
             service.commit();
             return new ResponseEntity<>(created, HttpStatus.CREATED);
@@ -1128,7 +1131,7 @@ public class MappingController extends BaseController {
      * @param mapSetInternalId the map set internal id
      * @param conceptCode the source concept code
      * @param noteId the note id
-     * @param mapNote the note payload (uses note text)
+     * @param noteText the note text
      * @param request the HTTP request
      * @return the updated note
      * @throws Exception the exception
@@ -1137,9 +1140,11 @@ public class MappingController extends BaseController {
         consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Update a map note for a source concept.", tags = {
         "mapset"
-    })
+    }, requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Note text", required = true, content = {
+        @Content(mediaType = "application/json", schema = @Schema(implementation = String.class))
+    }))
     public @ResponseBody ResponseEntity<MapNote> updateMappingNote(@PathVariable final String mapSetInternalId,
-        @PathVariable final String conceptCode, @PathVariable final String noteId, @RequestBody final MapNote mapNote,
+        @PathVariable final String conceptCode, @PathVariable final String noteId, @RequestBody final String noteText,
         final HttpServletRequest request) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
@@ -1154,7 +1159,6 @@ public class MappingController extends BaseController {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
 
-            final String noteText = mapNote == null ? null : mapNote.getNote();
             final MapNote updated = MapNoteService.updateNote(service, user, mapSet, conceptCode, noteId, noteText);
             service.commit();
             return new ResponseEntity<>(updated, HttpStatus.OK);
