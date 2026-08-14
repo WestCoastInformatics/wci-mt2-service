@@ -339,6 +339,8 @@ public final class MapSetWorkflowService {
              */
 
             mapSet.setVersionDate(publicationDate);
+            mapSet.setVersion(publicationDateString);
+            mapSet.setFromVersion(publicationDateString);
             mapSet.setInternationalContentVersion(EditionService.getDependencyModuleNameFromBranchMetadata(mapSet.getEditionShortName(), mapSet.getModuleId(),
                 publicationDate.getTime(), mapSetBranchPath));
 
@@ -674,6 +676,8 @@ public final class MapSetWorkflowService {
             final String newVersion = branchVersions.get(0);
 
             mapSet.setVersionDate(MapSetService.getRefsetDateFromFormattedString(newVersion));
+            mapSet.setVersion(newVersion);
+            mapSet.setFromVersion(newVersion);
             mapSet.setVersionStatus(VersionStatus.PUBLISHED);
         }
 
