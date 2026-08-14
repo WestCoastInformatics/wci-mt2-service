@@ -438,12 +438,16 @@ public class MapSetService {
         MapSet oldLatestVersionMapSet = null;
         final MapSet mapSet = getMapSet(service, mapSetInternalId);
 
-        // Check no existing IN_DEVELOPMENT version
+        // Check no existing IN_DEVELOPMENT version. Ignore the source map set itself: publication
+        // complete creates the next IN_EDIT copy in the same transaction, and the search index may
+        // still show the just-published row as IN_DEVELOPMENT.
         final ResultList<MapSet> results =
             service.find("versionStatus: (" + VersionStatus.IN_DEVELOPMENT.name() + ") AND refSetCode: " + QueryParserBase.escape(mapSet.getRefSetCode()),
                 null, MapSet.class, null);
 
-        if (!results.getItems().isEmpty()) {
+        final boolean hasOtherInDevelopment = results.getItems().stream()
+            .anyMatch(existing -> !existing.getId().equals(mapSet.getId()) && existing.getVersionStatus() == VersionStatus.IN_DEVELOPMENT);
+        if (hasOtherInDevelopment) {
             throw new Exception("There is already a version of this map set that is 'In Development', and there can only be one");
         }
 
