@@ -668,7 +668,7 @@ public class MapSetController extends BaseController {
     @Hidden
     @RequestMapping(method = RequestMethod.PUT, value = "/admin/mapset/publish/complete")
     @Operation(
-        summary = "Complete the publication of all Ready for Publication mapsets in a code system. This call requires authentication with the correct role.",
+        summary = "Complete the publication of all Ready for Publication mapsets in a code system, then create an IN_EDIT copy of each newly published mapset. This call requires authentication with the correct role.",
         tags = {
             "mapset"
         }, responses = {

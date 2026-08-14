@@ -262,7 +262,7 @@ public final class MapSetWorkflowService {
 
         // see if there is an "In Development" version as that should be the latest.
         for (final MapSet mapSet : results.getItems()) {
-            mapSetsNotUpdated.addAll(completeRefsetPublication(service, mapSet, latestVersion));
+            mapSetsNotUpdated.addAll(completeRefsetPublication(service, mapSet, latestVersion, user));
         }
 
         String error = "";
@@ -292,11 +292,12 @@ public final class MapSetWorkflowService {
      * @param service the Terminology Service
      * @param mapSet the mapSet
      * @param publicationDateString the publication date of the mapSet in yyyy-MM-dd format
+     * @param user the user completing publication
      * @return A list of mapSets that were unable to have publication completed
      * @throws Exception the exception
      */
-    public static List<String> completeRefsetPublication(final TerminologyService service, final MapSet mapSet, final String publicationDateString)
-        throws Exception {
+    public static List<String> completeRefsetPublication(final TerminologyService service, final MapSet mapSet, final String publicationDateString,
+        final User user) throws Exception {
 
         final List<String> mapSetsNotUpdated = new ArrayList<>();
 
@@ -375,6 +376,12 @@ public final class MapSetWorkflowService {
 
                 LOG.info("Refset {} version marked as not latest.", previouslyPublishedVersion.getId());
             }
+
+            // Mapping always requires an IN_EDIT copy. After this version is published, create the next
+            // in-development map set in IN_EDIT so editing can continue without a separate EDIT action.
+            LOG.info("Creating IN_EDIT version of published map set {}", mapSet.getRefSetCode());
+            final MapSet inEditMapSet = MapSetService.createNewMapSetVersion(service, user, mapSet.getId(), true);
+            LOG.info("Created IN_EDIT map set {} from published map set {}", inEditMapSet.getId(), mapSet.getId());
 
         } catch (final Exception e) {
 
