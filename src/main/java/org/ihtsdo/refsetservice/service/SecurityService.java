@@ -23,10 +23,14 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.apache.commons.lang3.StringUtils;
+import org.ihtsdo.refsetservice.handler.EntraMapBootstrap;
 import org.ihtsdo.refsetservice.handler.SecurityServiceHandler;
+import org.ihtsdo.refsetservice.helpers.MapUserRole;
+import org.ihtsdo.refsetservice.model.MapUser;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.terminologyservice.MapNoteService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
 import org.ihtsdo.refsetservice.util.JwtUtility;
@@ -550,6 +554,7 @@ public class SecurityService implements AutoCloseable {
         // Reload the user to populate UserPreferences
         final User finalUser = getUser(userId);
         finalUser.setRoles(authUser.getRoles());
+        syncMapUser(service, finalUser);
 
         // Generate application-managed token
         final Properties config = PropertyUtility.getProperties();
@@ -564,6 +569,42 @@ public class SecurityService implements AutoCloseable {
 
         return finalUser;
 
+    }
+
+    /**
+     * Find or create a {@link MapUser} for the session user and set {@code applicationRole} from Entra roles.
+     *
+     * @param service the terminology service
+     * @param user the session user
+     * @throws Exception the exception
+     */
+    private void syncMapUser(final TerminologyService service, final User user) throws Exception {
+
+        if (user == null || StringUtils.isBlank(user.getUserName())) {
+            return;
+        }
+
+        service.setModifiedBy(user.getUserName());
+        final MapUserRole applicationRole = EntraMapBootstrap.toMapUserRole(user.getRoles());
+        final String userName = user.getUserName();
+        final String name = StringUtils.defaultIfBlank(user.getName(), userName);
+        final String email = StringUtils.defaultIfBlank(user.getEmail(), userName + "@unknown");
+
+        final MapUser existing = MapNoteService.findMapUser(service, userName);
+        if (existing != null) {
+            existing.setName(name);
+            existing.setEmail(email);
+            existing.setApplicationRole(applicationRole);
+            service.update(existing);
+            return;
+        }
+
+        final MapUser mapUser = new MapUser();
+        mapUser.setUserName(userName);
+        mapUser.setName(name);
+        mapUser.setEmail(email);
+        mapUser.setApplicationRole(applicationRole);
+        service.add(mapUser);
     }
 
     /**

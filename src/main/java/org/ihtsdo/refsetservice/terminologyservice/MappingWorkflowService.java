@@ -28,6 +28,7 @@ import javax.persistence.TypedQuery;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.hibernate.Hibernate;
+import org.ihtsdo.refsetservice.handler.EntraMapBootstrap;
 import org.ihtsdo.refsetservice.helpers.WorkflowType;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
@@ -789,13 +790,21 @@ public final class MappingWorkflowService {
     static List<MappingWorkflowRole> resolveProjectRoles(final User user, final MapProject mapProject) {
 
         final List<MappingWorkflowRole> roles = new ArrayList<>();
-        if (user == null || mapProject == null) {
+        if (user == null) {
             return roles;
         }
 
-        final String userName = user.getUserName();
-        addRoleFromMembership(roles, userName, mapProject.getMapSpecialists(), MappingWorkflowRole.SPECIALIST);
-        addRoleFromMembership(roles, userName, mapProject.getMapLeads(), MappingWorkflowRole.LEAD);
+        if (mapProject != null) {
+            final String userName = user.getUserName();
+            addRoleFromMembership(roles, userName, mapProject.getMapSpecialists(), MappingWorkflowRole.SPECIALIST);
+            addRoleFromMembership(roles, userName, mapProject.getMapLeads(), MappingWorkflowRole.LEAD);
+        }
+
+        for (final MappingWorkflowRole entraRole : EntraMapBootstrap.toWorkflowRoles(user.getRoles())) {
+            if (!roles.contains(entraRole)) {
+                roles.add(entraRole);
+            }
+        }
 
         return roles;
     }

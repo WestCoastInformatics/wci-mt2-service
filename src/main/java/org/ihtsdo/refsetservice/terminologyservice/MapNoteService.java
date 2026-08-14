@@ -442,7 +442,7 @@ public final class MapNoteService {
      * @return the map user
      * @throws Exception the exception
      */
-    public static MapUser ensureMapUser(final TerminologyService service, final User user) throws Exception {
+    private static MapUser ensureMapUser(final TerminologyService service, final User user) throws Exception {
 
         if (user == null || StringUtils.isBlank(user.getUserName())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authenticated user is required.");

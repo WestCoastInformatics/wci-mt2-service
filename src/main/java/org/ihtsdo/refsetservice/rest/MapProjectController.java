@@ -16,6 +16,7 @@ import javax.ws.rs.core.MediaType;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.MapProject;
+import org.ihtsdo.refsetservice.model.MapUser;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.Team;
 import org.ihtsdo.refsetservice.model.User;
@@ -148,6 +149,41 @@ public class MapProjectController extends BaseController {
 
         } catch (final Exception e) {
 
+            handleException(e);
+            return null;
+        }
+
+    }
+
+    /**
+     * Returns authorized map users (leads and specialists) for a mapProject.
+     *
+     * @param id the mapProject ID
+     * @return the authorized map users
+     * @throws Exception the exception
+     */
+    @RequestMapping(method = RequestMethod.GET, value = "/mapproject/{id}/users", produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Get authorized users for mapProject.  This call requires authentication with the correct role.", tags = {
+        "project"
+    }, responses = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"), @ApiResponse(responseCode = "403", description = "Forbidden"),
+        @ApiResponse(responseCode = "404", description = "Resource not found")
+    })
+    @Parameters({
+        @Parameter(name = "id", description = "Map Project id, e.g. &lt;uuid&gt;", required = true)
+    })
+    @RecordMetric
+    public @ResponseBody ResponseEntity<ResultList<MapUser>> getMapProjectUsers(@PathVariable(value = "id") final String id) throws Exception {
+
+        LOG.info("Map Project users: id: " + id);
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            final ResultList<MapUser> results = MapProjectService.getMapProjectUsers(service, id);
+            return new ResponseEntity<>(results, HttpStatus.OK);
+
+        } catch (final Exception e) {
             handleException(e);
             return null;
         }
