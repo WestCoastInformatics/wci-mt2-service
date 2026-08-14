@@ -326,6 +326,14 @@ public class MapSetService {
         results.setTimeTaken(System.currentTimeMillis() - start);
         results.setTotalKnown(true);
 
+        if (results.getItems() != null) {
+            for (final MapSet mapSet : results.getItems()) {
+                if (mapSet != null) {
+                    MapProjectService.prepareMapProjectForApi(service, mapSet.getMapProject());
+                }
+            }
+        }
+
         return results;
     }
 

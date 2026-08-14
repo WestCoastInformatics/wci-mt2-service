@@ -28,14 +28,13 @@ public class ApplicationStartupListener {
     private static final Logger LOG = LoggerFactory.getLogger(ApplicationStartupListener.class);
 
     /**
-     * Clear sessions and optionally prewarm caches once the application is ready.
+     * Reindex from the database, clear sessions, and optionally prewarm caches once the application is ready.
+     * The first {@link TerminologyService} construction runs the one-shot startup reindex.
      *
      * @throws Exception the exception
      */
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationReady() throws Exception {
-
-        TerminologyService.disableStartupReindex();
 
         try (final TerminologyService service = new TerminologyService()) {
             service.clearUserSessions();

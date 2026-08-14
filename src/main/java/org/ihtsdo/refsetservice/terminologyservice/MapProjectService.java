@@ -11,6 +11,8 @@ package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -19,9 +21,12 @@ import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotFoundException;
 
 import org.hibernate.Hibernate;
+import org.ihtsdo.refsetservice.handler.EntraMapBootstrap;
 import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
+import org.ihtsdo.refsetservice.helpers.MapUserRole;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.MapProject;
+import org.ihtsdo.refsetservice.model.MapUser;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.Team;
@@ -103,22 +108,16 @@ public class MapProjectService extends BaseService {
      */
     public static MapProject getMapProject(final TerminologyService service, final String mapProjectId, final boolean includeMembers) throws Exception {
 
-        final MapProject mapProject = service.findSingle("id: " + mapProjectId + " AND active:true", MapProject.class, null);
+        final MapProject mapProject = service.get(mapProjectId, MapProject.class);
 
-        if (mapProject == null) {
+        if (mapProject == null || !mapProject.isActive()) {
 
             final String errorMessage = "Unable to find mapProject for id " + mapProjectId + ".";
             LOG.info(errorMessage);
             throw new NotFoundException(errorMessage);
         }
 
-        // Initialize lazy collections so they are serialized in the API response
-        Hibernate.initialize(mapProject.getMapAdvices());
-        Hibernate.initialize(mapProject.getMapPrinciples());
-        Hibernate.initialize(mapProject.getPresetAgeRanges());
-        Hibernate.initialize(mapProject.getAdditionalMapEntryInfos());
-        Hibernate.initialize(mapProject.getMapRelations());
-        Hibernate.initialize(mapProject.getMapReportDefinitions());
+        prepareMapProjectForApi(service, mapProject);
 
         // if (includeMembers) {
         //
@@ -145,6 +144,204 @@ public class MapProjectService extends BaseService {
 
         return mapProject;
 
+    }
+
+    /**
+     * Initialize lazy collections and add users whose application role is global
+     * ({@code all-all-all-*} = all organizations, all editions, all projects).
+     *
+     * @param service the terminology service
+     * @param mapProject the map project
+     * @throws Exception the exception
+     */
+    public static void prepareMapProjectForApi(final TerminologyService service, final MapProject mapProject) throws Exception {
+
+        if (mapProject == null) {
+            return;
+        }
+
+        initializeLazyCollections(mapProject);
+        final List<MapUser> activeMapUsers = findActiveMapUsers(service);
+        if (service != null && service.getEntityManager() != null && service.getEntityManager().contains(mapProject)) {
+            service.getEntityManager().detach(mapProject);
+        }
+        mergeEntraGlobalMembers(mapProject, activeMapUsers);
+    }
+
+    /**
+     * Initialize lazy map-project collections so they are serialized in API responses.
+     *
+     * @param mapProject the map project
+     */
+    public static void initializeLazyCollections(final MapProject mapProject) {
+
+        if (mapProject == null) {
+            return;
+        }
+
+        Hibernate.initialize(mapProject.getMapAdvices());
+        Hibernate.initialize(mapProject.getMapPrinciples());
+        Hibernate.initialize(mapProject.getPresetAgeRanges());
+        Hibernate.initialize(mapProject.getAdditionalMapEntryInfos());
+        Hibernate.initialize(mapProject.getMapRelations());
+        Hibernate.initialize(mapProject.getMapReportDefinitions());
+        Hibernate.initialize(mapProject.getMapLeads());
+        Hibernate.initialize(mapProject.getMapSpecialists());
+    }
+
+    /**
+     * Active map users for Entra global-role merge.
+     *
+     * @param service the terminology service
+     * @return active map users
+     * @throws Exception the exception
+     */
+    private static List<MapUser> findActiveMapUsers(final TerminologyService service) throws Exception {
+
+        if (service == null || service.getEntityManager() == null) {
+            return new ArrayList<>();
+        }
+
+        return service.getEntityManager().createQuery("from MapUser u where u.active = true", MapUser.class).getResultList();
+    }
+
+    /**
+     * Add Entra {@code all-all-all-*} users to the response collections. Does not persist join rows.
+     * Highest role wins: admin, then lead, then specialist. A user appears in only one list.
+     *
+     * @param mapProject the map project
+     * @param activeMapUsers active map users
+     */
+    private static void mergeEntraGlobalMembers(final MapProject mapProject, final List<MapUser> activeMapUsers) {
+
+        final Set<MapUser> leads = new LinkedHashSet<>();
+        final Set<MapUser> specialists = new LinkedHashSet<>();
+        addAllCopied(leads, mapProject.getMapLeads());
+        addAllCopied(specialists, mapProject.getMapSpecialists());
+
+        final List<String> adminNames = EntraMapBootstrap.adminUserNames();
+        final List<String> leadNames = EntraMapBootstrap.leadUserNames();
+        final List<String> specNames = EntraMapBootstrap.specialistUserNames();
+
+        if (activeMapUsers != null) {
+            for (final MapUser mapUser : activeMapUsers) {
+                if (mapUser == null || mapUser.getUserName() == null) {
+                    continue;
+                }
+                if (EntraMapBootstrap.listContainsUser(adminNames, mapUser.getUserName())) {
+                    putByUserName(leads, copyWithRole(mapUser, MapUserRole.ADMINISTRATOR));
+                    removeByUserName(specialists, mapUser.getUserName());
+                } else if (EntraMapBootstrap.listContainsUser(leadNames, mapUser.getUserName())) {
+                    putByUserName(leads, copyWithRole(mapUser, MapUserRole.LEAD));
+                    removeByUserName(specialists, mapUser.getUserName());
+                } else if (EntraMapBootstrap.listContainsUser(specNames, mapUser.getUserName())) {
+                    putByUserName(specialists, copyWithRole(mapUser, MapUserRole.SPECIALIST));
+                    removeByUserName(leads, mapUser.getUserName());
+                }
+            }
+        }
+
+        mapProject.setMapLeads(leads);
+        mapProject.setMapSpecialists(specialists);
+    }
+
+    /**
+     * Copy members into the target set.
+     *
+     * @param target the target
+     * @param source the source
+     */
+    private static void addAllCopied(final Set<MapUser> target, final Set<MapUser> source) {
+
+        if (source == null) {
+            return;
+        }
+        for (final MapUser mapUser : source) {
+            if (mapUser != null) {
+                putByUserName(target, copyWithRole(mapUser, mapUser.getApplicationRole()));
+            }
+        }
+    }
+
+    /**
+     * Response copy with a display application role. Does not persist.
+     *
+     * @param source the source
+     * @param role the role
+     * @return the copy
+     */
+    private static MapUser copyWithRole(final MapUser source, final MapUserRole role) {
+
+        final MapUser copy = new MapUser(source);
+        copy.populateFrom(source);
+        copy.setApplicationRole(role);
+        return copy;
+    }
+
+    /**
+     * Replace or add a map user by user name.
+     *
+     * @param members the members
+     * @param candidate the candidate
+     */
+    private static void putByUserName(final Set<MapUser> members, final MapUser candidate) {
+
+        removeByUserName(members, candidate.getUserName());
+        members.add(candidate);
+    }
+
+    /**
+     * Remove a map user by user name.
+     *
+     * @param members the members
+     * @param userName the user name
+     */
+    private static void removeByUserName(final Set<MapUser> members, final String userName) {
+
+        if (userName == null) {
+            return;
+        }
+        members.removeIf(existing -> existing != null && userName.equals(existing.getUserName()));
+    }
+
+    /**
+     * Returns authorized map users for a map project (leads and specialists).
+     *
+     * @param service the service
+     * @param mapProjectId the mapProject ID
+     * @return the authorized map users
+     * @throws Exception the exception
+     */
+    public static ResultList<MapUser> getMapProjectUsers(final TerminologyService service, final String mapProjectId) throws Exception {
+
+        final MapProject mapProject = getMapProject(service, mapProjectId, true);
+        final Map<String, MapUser> usersByUserName = new LinkedHashMap<>();
+
+        addMapUsers(usersByUserName, mapProject.getMapLeads());
+        addMapUsers(usersByUserName, mapProject.getMapSpecialists());
+
+        final ResultList<MapUser> results = new ResultList<>(new ArrayList<>(usersByUserName.values()));
+        results.setTotalKnown(true);
+        return results;
+    }
+
+    /**
+     * Add map users to the accumulator, skipping null collections and duplicate user names.
+     *
+     * @param usersByUserName the accumulator keyed by user name
+     * @param members the project members
+     */
+    private static void addMapUsers(final Map<String, MapUser> usersByUserName, final Set<MapUser> members) {
+
+        if (members == null) {
+            return;
+        }
+
+        for (final MapUser mapUser : members) {
+            if (mapUser != null && mapUser.getUserName() != null) {
+                usersByUserName.putIfAbsent(mapUser.getUserName(), mapUser);
+            }
+        }
     }
 
     /**

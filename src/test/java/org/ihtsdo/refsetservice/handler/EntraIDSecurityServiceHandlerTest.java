@@ -116,5 +116,8 @@ public class EntraIDSecurityServiceHandlerTest {
         assertTrue(mixed.contains("a@x.com"));
         assertTrue(mixed.contains("b@y.com"));
         assertTrue(mixed.contains("c@z.com"));
+        assertEquals("all-all-all-admin", EntraMapBootstrap.ROLE_ADMIN);
+        assertEquals("all-all-all-lead", EntraMapBootstrap.ROLE_LEAD);
+        assertEquals("all-all-all-specialist", EntraMapBootstrap.ROLE_SPEC);
     }
 }

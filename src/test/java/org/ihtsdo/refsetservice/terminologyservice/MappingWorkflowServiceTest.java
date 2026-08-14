@@ -10,8 +10,15 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.hibernate.Hibernate;
 import org.ihtsdo.refsetservice.Application;
+import org.ihtsdo.refsetservice.handler.EntraMapBootstrap;
+import org.ihtsdo.refsetservice.helpers.MapUserRole;
+import org.ihtsdo.refsetservice.model.MapProject;
+import org.ihtsdo.refsetservice.model.MapSet;
+import org.ihtsdo.refsetservice.model.MapUser;
 import org.ihtsdo.refsetservice.model.MapWorkflowStatus;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingWorkflow;
@@ -113,6 +120,24 @@ public class MappingWorkflowServiceTest {
             assertEquals(MapWorkflowStatus.NEW, reloaded.getWorkflowStatus());
             assertNull(reloaded.getAssignedUser());
             assertEquals(0, context.historyCount());
+        }
+    }
+
+    /**
+     * Assign from new by Entra specialist without join-table membership.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void assignFromNewByEntraSpecialistWithoutMembership() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            context.getViewerUser().getRoles().add(EntraMapBootstrap.ROLE_SPEC);
+            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getViewerUser(),
+                MappingWorkflowAction.ASSIGN, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assigned", null);
+
+            assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, updated.getWorkflowStatus());
+            assertEquals(context.getViewerUser().getUserName(), updated.getAssignedUser());
         }
     }
 
@@ -598,6 +623,49 @@ public class MappingWorkflowServiceTest {
             assertEquals(context.getSpecialistUser().getUserName(), withWorkflow.getMappingWorkflow().getAssignedUser());
             assertNull(withoutWorkflow.getMappingWorkflow());
             assertEquals(0, MappingWorkflowService.countWorkflowRows(context.getService(), context.getMapSet(), "999888777", 1));
+        }
+    }
+
+    /**
+     * Search map sets initializes nested map project membership collections and includes
+     * global all-org/all-edition/all-project map users.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void searchMapSetsInitializesMapProjectMemberships() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            PropertyUtility.setProperty("security.handler.ENTRAID.users.admin",
+                context.getAdminUser().getUserName() + "," + context.getSpecialistUser().getUserName());
+            PropertyUtility.setProperty("security.handler.ENTRAID.users.lead", context.getLeadUser().getUserName());
+            PropertyUtility.setProperty("security.handler.ENTRAID.users.spec",
+                context.getSpecialistUser().getUserName() + "," + context.getOtherSpecialistUser().getUserName());
+
+            context.getMapProject().getMapLeads().clear();
+            context.getService().update(context.getMapProject());
+
+            final SearchParameters searchParameters = new SearchParameters();
+            searchParameters.setQuery("id:" + context.getMapSet().getId());
+
+            final ResultList<MapSet> results = MapSetService.searchMapSets(context.getService(), searchParameters);
+            assertEquals(1, results.getTotal());
+
+            final MapProject mapProject = results.getItems().get(0).getMapProject();
+            assertNotNull(mapProject);
+            assertTrue(Hibernate.isInitialized(mapProject.getMapLeads()));
+            assertTrue(Hibernate.isInitialized(mapProject.getMapSpecialists()));
+            assertTrue(Hibernate.isInitialized(mapProject.getMapPrinciples()));
+
+            final Set<String> leadNames = mapProject.getMapLeads().stream().map(MapUser::getUserName).collect(Collectors.toSet());
+            final Set<String> specialistNames = mapProject.getMapSpecialists().stream().map(MapUser::getUserName).collect(Collectors.toSet());
+            assertTrue(leadNames.contains(context.getLeadUser().getUserName()));
+            assertTrue(leadNames.contains(context.getAdminUser().getUserName()));
+            assertTrue(leadNames.contains(context.getSpecialistUser().getUserName()));
+            assertTrue(!specialistNames.contains(context.getSpecialistUser().getUserName()));
+            assertTrue(specialistNames.contains(context.getOtherSpecialistUser().getUserName()));
+            assertEquals(MapUserRole.ADMINISTRATOR, mapProject.getMapLeads().stream()
+                .filter(u -> context.getSpecialistUser().getUserName().equals(u.getUserName())).findFirst().get().getApplicationRole());
         }
     }
 }

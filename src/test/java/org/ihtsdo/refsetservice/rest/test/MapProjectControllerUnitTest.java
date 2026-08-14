@@ -30,6 +30,7 @@ import org.ihtsdo.refsetservice.rest.MapProjectController;
 import org.ihtsdo.refsetservice.rest.MapRelationController;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.EditionService;
+import org.ihtsdo.refsetservice.util.ResultList;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,15 +88,16 @@ public class MapProjectControllerUnitTest {
         final ResponseEntity<MapRelation> newMapRelation = mapRelationController.createMapRelation(mapRelation);
         assertNotNull(newMapRelation);
 
+        final String suffix = String.valueOf(System.currentTimeMillis());
         final MapUser mapLeadUser = new MapUser();
-        mapLeadUser.setUserName("mapleadusername");
+        mapLeadUser.setUserName("mapleadusername-" + suffix);
         mapLeadUser.setName("map lead name");
         mapLeadUser.setApplicationRole(MapUserRole.LEAD);
         mapLeadUser.setEmail("mapleademail@none.none");
         final MapUser newMapLeadUser = createMapUser(mapLeadUser);
 
         final MapUser mapSpecialistUser = new MapUser();
-        mapSpecialistUser.setUserName("mapspecialistusername");
+        mapSpecialistUser.setUserName("mapspecialistusername-" + suffix);
         mapSpecialistUser.setName("map specialist name");
         mapSpecialistUser.setApplicationRole(MapUserRole.SPECIALIST);
         mapSpecialistUser.setEmail("mapspecialistemail@none.none");
@@ -172,6 +174,18 @@ public class MapProjectControllerUnitTest {
         assertNotNull(newMapProject.getBody().getId());
         assertEquals(newMapProject.getBody().getName(), mapProject.getName());
         assertEquals(newMapProject.getBody().getDescription(), mapProject.getDescription());
+
+        final String mapProjectId = newMapProject.getBody().getId();
+        final ResponseEntity<MapProject> fetchedMapProject = mapProjectController.getMapProject(mapProjectId, true);
+        assertNotNull(fetchedMapProject.getBody());
+        assertEquals(1, fetchedMapProject.getBody().getMapLeads().size());
+        assertEquals(1, fetchedMapProject.getBody().getMapSpecialists().size());
+        assertEquals(newMapLeadUser.getUserName(), fetchedMapProject.getBody().getMapLeads().iterator().next().getUserName());
+        assertEquals(newMapSpecialistUser.getUserName(), fetchedMapProject.getBody().getMapSpecialists().iterator().next().getUserName());
+
+        final ResponseEntity<ResultList<MapUser>> mapProjectUsers = mapProjectController.getMapProjectUsers(mapProjectId);
+        assertNotNull(mapProjectUsers.getBody());
+        assertEquals(2, mapProjectUsers.getBody().getItems().size());
 
     }
     

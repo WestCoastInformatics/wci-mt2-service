@@ -28,7 +28,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
     })
 })
 @JsonIgnoreProperties(ignoreUnknown = true, value = {
-    "hibernateLazyInitializer", "handler"
+    "hibernateLazyInitializer", "handler", "modified", "created", "modifiedBy", "active", "userName", "email", "team", "authToken"
 })
 @Indexed
 public class MapUser extends AbstractHasModified {
