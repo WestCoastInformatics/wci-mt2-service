@@ -30,17 +30,19 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
 /**
- * REST endpoints to kick off Norway replacement reports (email results asynchronously).
+ * REST endpoints to kick off Norway reports (email results asynchronously).
  *
  * <p>
  * UI contract:
  * <ul>
  * <li>{@code POST /report/norway/replacement-map} — start map report; returns 202</li>
  * <li>{@code POST /report/norway/replacement-translation} — start translation report; returns 202</li>
+ * <li>{@code POST /report/norway/helsedirektoratet-untranslated} — start Helsedirektoratet untranslated report; returns 202</li>
  * </ul>
- * Both require an authenticated session. Recipients come from env-backed properties (not committed):
+ * All require an authenticated session. Recipients come from env-backed properties (not committed):
  * {@code NORWAY_REPLACEMENT_MAP_REPORT_USERS} /
- * {@code NORWAY_REPLACEMENT_TRANSLATION_REPORT_USERS}. Response body is JSON
+ * {@code NORWAY_REPLACEMENT_TRANSLATION_REPORT_USERS} /
+ * {@code NORWAY_HELSEDIREKTORATET_UNTRANSLATED_REPORT_USERS}. Response body is JSON
  * {@code { "status": "STARTED", "report": "..." }}. Concurrent duplicate starts return 409.
  */
 @RestController
@@ -104,6 +106,34 @@ public class NorwayReportController extends BaseController {
             LOG.info("Starting Norway replacement translation report");
             NorwayReplacementReportDispatcher.startTranslationReport();
             return accepted("replacement-translation");
+        } catch (final Exception e) {
+            handleException(e);
+            throw e;
+        }
+    }
+
+    /**
+     * Starts the Norway Helsedirektoratet untranslated report asynchronously and emails the zip when complete.
+     *
+     * @return 202 Accepted
+     * @throws Exception the exception
+     */
+    @PostMapping(value = "/report/norway/helsedirektoratet-untranslated", produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Start Norway Helsedirektoratet untranslated report (async; emails zip when done).", tags = {
+        "report"
+    }, responses = {
+        @ApiResponse(responseCode = "202", description = "Report started"), @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "409", description = "Report already running"),
+        @ApiResponse(responseCode = "417", description = "Recipients not configured")
+    })
+    @RecordMetric
+    public ResponseEntity<Map<String, String>> startHelsedirektoratetUntranslatedReport() throws Exception {
+
+        try {
+            authorizeUser(request);
+            LOG.info("Starting Norway Helsedirektoratet untranslated report");
+            NorwayReplacementReportDispatcher.startHelsedirektoratetUntranslatedReport();
+            return accepted("helsedirektoratet-untranslated");
         } catch (final Exception e) {
             handleException(e);
             throw e;

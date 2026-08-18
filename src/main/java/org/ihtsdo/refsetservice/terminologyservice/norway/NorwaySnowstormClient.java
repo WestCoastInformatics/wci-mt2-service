@@ -29,7 +29,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * HTTP client for Norway daily-build Snowstorm used by replacement reports.
+ * HTTP client for Norway Snowstorm used by Norway reports. Base URL comes from {@code norway.snowstorm.url}.
  */
 public final class NorwaySnowstormClient implements AutoCloseable {
 

@@ -19,7 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Starts Norway replacement reports asynchronously and guards against concurrent runs.
+ * Starts Norway reports asynchronously and guards against concurrent runs.
  */
 public final class NorwayReplacementReportDispatcher {
 
@@ -31,6 +31,9 @@ public final class NorwayReplacementReportDispatcher {
 
     /** Guard for translation report. */
     private static final AtomicBoolean TRANSLATION_RUNNING = new AtomicBoolean(false);
+
+    /** Guard for Helsedirektoratet untranslated report. */
+    private static final AtomicBoolean HELSEDIREKTORATET_UNTRANSLATED_RUNNING = new AtomicBoolean(false);
 
     /**
      * Instantiates a new norway replacement report dispatcher.
@@ -80,6 +83,28 @@ public final class NorwayReplacementReportDispatcher {
                 LOG.error("Norway replacement translation report failed", e);
             } finally {
                 TRANSLATION_RUNNING.set(false);
+            }
+        });
+    }
+
+    /**
+     * Starts the Norway Helsedirektoratet untranslated report in the background.
+     *
+     * @throws RestException if already running or recipients are not configured
+     */
+    public static void startHelsedirektoratetUntranslatedReport() {
+
+        requireRecipients(NorwayReplacementReportSupport.HELSEDIREKTORATET_UNTRANSLATED_RECIPIENTS_PROPERTY);
+        if (!HELSEDIREKTORATET_UNTRANSLATED_RUNNING.compareAndSet(false, true)) {
+            throw new RestException(false, 409, "Conflict", "Norway Helsedirektoratet untranslated report is already running");
+        }
+        CompletableFuture.runAsync(() -> {
+            try {
+                new NorwayHelsedirektoratetUntranslatedReportService().runReport();
+            } catch (final Exception e) {
+                LOG.error("Norway Helsedirektoratet untranslated report failed", e);
+            } finally {
+                HELSEDIREKTORATET_UNTRANSLATED_RUNNING.set(false);
             }
         });
     }

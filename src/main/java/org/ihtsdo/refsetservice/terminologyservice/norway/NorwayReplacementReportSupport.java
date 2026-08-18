@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * Shared helpers for Norway replacement reports (file/zip/email/branch helpers).
+ * Shared helpers for Norway reports (file/zip/email/branch helpers).
  */
 public final class NorwayReplacementReportSupport {
 
@@ -50,6 +50,9 @@ public final class NorwayReplacementReportSupport {
 
     /** Property key for translation report recipients (env-backed; do not commit addresses). */
     public static final String TRANSLATION_RECIPIENTS_PROPERTY = "mail.smtp.norway.replacement.translation.report.to";
+
+    /** Property key for Helsedirektoratet untranslated report recipients (env-backed; do not commit addresses). */
+    public static final String HELSEDIREKTORATET_UNTRANSLATED_RECIPIENTS_PROPERTY = "mail.smtp.norway.helsedirektoratet.untranslated.report.to";
 
     /**
      * Instantiates a new norway replacement report support.
