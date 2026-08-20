@@ -29,8 +29,10 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * Report of Helsedirektoratet refset concepts that lack a Bokmål translation, including language-refset flags
- * and ICD-10 / ICPC map targets. Uses the Snowstorm URL configured as {@code norway.snowstorm.url}.
+ * Report of Helsedirektoratet refset concepts that lack a Bokmål translation, including ICD-10 / ICPC map
+ * targets. Nynorsk, Bokmål GP, and Nynorsk GP flags are omitted: those language refsets require a Bokmål
+ * description, so they are always false for concepts in this report. Uses the Snowstorm URL configured as
+ * {@code norway.snowstorm.url}.
  */
 public class NorwayHelsedirektoratetUntranslatedReportService {
 
@@ -45,15 +47,6 @@ public class NorwayHelsedirektoratetUntranslatedReportService {
 
     /** Bokmål language refset. */
     private static final String BOKMAL_LANG_REFSET_ID = "61000202103";
-
-    /** Nynorsk language refset. */
-    private static final String NYNORSK_LANG_REFSET_ID = "91000202106";
-
-    /** Bokmål GP language refset. */
-    private static final String BOKMAL_GP_LANG_REFSET_ID = "47351000202107";
-
-    /** Nynorsk GP language refset. */
-    private static final String NYNORSK_GP_LANG_REFSET_ID = "188001000202106";
 
     /** ICD-10-NO map refset. */
     private static final String ICD10_MAP_REFSET_ID = "447562003";
@@ -79,13 +72,9 @@ public class NorwayHelsedirektoratetUntranslatedReportService {
             final Set<String> helsedirektoratetConceptIds = collectSimpleRefsetConceptIds(client, HELSEDIREKTORATET_REFSET_ID, helsedirektoratetFsns);
             LOG.info("Helsedirektoratet refset members: {}", helsedirektoratetConceptIds.size());
 
-            LOG.info("Collect language refset memberships");
+            LOG.info("Collect Bokmål language refset memberships");
             final Set<String> bokmalConceptIds = collectLanguageRefsetConceptIds(client, BOKMAL_LANG_REFSET_ID);
-            final Set<String> nynorskConceptIds = collectLanguageRefsetConceptIds(client, NYNORSK_LANG_REFSET_ID);
-            final Set<String> bokmalGpConceptIds = collectLanguageRefsetConceptIds(client, BOKMAL_GP_LANG_REFSET_ID);
-            final Set<String> nynorskGpConceptIds = collectLanguageRefsetConceptIds(client, NYNORSK_GP_LANG_REFSET_ID);
-            LOG.info("Bokmål {}, Nynorsk {}, Bokmål GP {}, Nynorsk GP {}", bokmalConceptIds.size(), nynorskConceptIds.size(), bokmalGpConceptIds.size(),
-                nynorskGpConceptIds.size());
+            LOG.info("Bokmål {}", bokmalConceptIds.size());
 
             final List<String> illegalConceptIds = new ArrayList<>();
             final List<String> untranslatedConceptIds = new ArrayList<>();
@@ -114,18 +103,17 @@ public class NorwayHelsedirektoratetUntranslatedReportService {
             final Map<String, String> icpcMaps = collectPreferredMapTargets(client, ICPC_MAP_REFSET_ID, untranslatedSet);
 
             final List<String> results = new ArrayList<>();
-            results.add("Id\tFSN\tSemTag\tBokmål\tNynorsk\tBokmål GP\tNynorsk GP\tICD-10 MAP\tICPC MAP");
+            results.add("Id\tFSN\tSemTag\tBokmål\tICD-10 MAP\tICPC MAP");
 
             for (final String conceptId : untranslatedConceptIds) {
                 final String fsn = helsedirektoratetFsns.get(conceptId);
                 final String[] fsnParts = splitFsn(fsn);
                 results.add(String.join(NorwayReplacementReportSupport.COLUMN_DELIMITER, conceptId, fsnParts[0], fsnParts[1],
-                    flag(bokmalConceptIds.contains(conceptId)), flag(nynorskConceptIds.contains(conceptId)),
-                    flag(bokmalGpConceptIds.contains(conceptId)), flag(nynorskGpConceptIds.contains(conceptId)),
-                    StringUtils.defaultString(icd10Maps.get(conceptId)), StringUtils.defaultString(icpcMaps.get(conceptId))));
+                    flag(bokmalConceptIds.contains(conceptId)), StringUtils.defaultString(icd10Maps.get(conceptId)),
+                    StringUtils.defaultString(icpcMaps.get(conceptId))));
             }
             for (final String conceptId : illegalConceptIds) {
-                results.add(String.join(NorwayReplacementReportSupport.COLUMN_DELIMITER, conceptId, "INVALID CONCEPT ID", "", "", "", "", "", "", ""));
+                results.add(String.join(NorwayReplacementReportSupport.COLUMN_DELIMITER, conceptId, "INVALID CONCEPT ID", "", "", "", ""));
             }
 
             final DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
