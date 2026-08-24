@@ -117,7 +117,7 @@ public class MappingController extends BaseController {
     })
     @Parameters({
         @Parameter(name = "mapSetInternalId", description = "Mapset internal id, e.g. &lt;uuid&gt;", required = true),
-        @Parameter(name = "filter", description = "Search text: SNOMED terms on the map source, map target code (e.g. ICD-10 R07.4), or a 6–18 digit SNOMED source concept id", required = false),
+        @Parameter(name = "filter", description = "Search text: SNOMED terms on the map source, map target code (e.g. ICD-10 R07.4), map target wildcard (e.g. R07* or K14.*), or a 6–18 digit SNOMED source concept id. Asterisks are map-target wildcards when the filter looks like a target code; otherwise they are stripped.", required = false),
         @Parameter(name = "showOverriddenEntries", description = "Show underlying entries that have been overridden by this extension", required = false),
         @Parameter(name = "conceptCodes", description = "Comma delimited list of concept codes, e.g. 880057004,880057005", required = false),
         @Parameter(name = "query", description = "The search query", required = false),
