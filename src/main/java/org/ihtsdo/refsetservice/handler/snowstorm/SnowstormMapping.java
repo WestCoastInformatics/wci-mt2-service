@@ -631,6 +631,38 @@ public class SnowstormMapping extends SnowstormAbstract {
     }
 
     /**
+     * True when the filter is a map-target glob (ICD-style code plus {@code *}), e.g. {@code R07*} or {@code K14.*}.
+     * Digit-only prefixes such as {@code 42586*} are treated as terms/ids, not map targets.
+     *
+     * @param filter the filter
+     * @return true if ECL {@code wild:} mapTarget search should run
+     */
+    private static boolean looksLikeMapTargetWildcard(final String filter) {
+
+        if (StringUtils.isBlank(filter) || !filter.contains("*")) {
+            return false;
+        }
+
+        final String withoutWildcards = filter.replace("*", "").trim();
+        if (StringUtils.isBlank(withoutWildcards) || !withoutWildcards.matches(".*[0-9].*")) {
+            return false;
+        }
+
+        return withoutWildcards.matches(".*[A-Za-z].*") || withoutWildcards.contains(".");
+    }
+
+    /**
+     * Removes user-typed asterisks from a non-map-target filter so Snowstorm prefix matching can run.
+     *
+     * @param filter the filter
+     * @return filter without {@code *}, trimmed
+     */
+    private static String stripAsterisks(final String filter) {
+
+        return filter.replace("*", "").trim();
+    }
+
+    /**
      * Term search for concepts in a map set, returning a single page and total hit count.
      *
      * @param branch the branch
@@ -824,6 +856,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
     /**
      * Resolves all source concept ids matching a map set text filter (term search, optional map target, optional concept id).
+     * Asterisks are map-target wildcards when the filter looks like a target code; otherwise they are stripped.
      *
      * @param branch the branch
      * @param mapSetCode the map set code
@@ -834,12 +867,23 @@ public class SnowstormMapping extends SnowstormAbstract {
     private static LinkedHashSet<String> resolveFilteredConceptIds(final String branch, final String mapSetCode, final String trimmedFilter) throws Exception {
 
         final LinkedHashSet<String> conceptIds = new LinkedHashSet<>();
-        conceptIds.addAll(searchConcepts(branch, mapSetCode, trimmedFilter));
-        if (looksLikeMapTargetFilter(trimmedFilter)) {
-            conceptIds.addAll(searchReferencedComponentsByMapTarget(branch, mapSetCode, trimmedFilter));
+
+        if (looksLikeMapTargetWildcard(trimmedFilter)) {
+            conceptIds.addAll(searchReferencedComponentsByMapTargetEcl(branch, mapSetCode, trimmedFilter));
+            return conceptIds;
         }
-        if (trimmedFilter.matches("[0-9]{6,18}")) {
-            conceptIds.add(trimmedFilter);
+
+        final String searchFilter = trimmedFilter.contains("*") ? stripAsterisks(trimmedFilter) : trimmedFilter;
+        if (StringUtils.isBlank(searchFilter)) {
+            return conceptIds;
+        }
+
+        conceptIds.addAll(searchConcepts(branch, mapSetCode, searchFilter));
+        if (looksLikeMapTargetFilter(searchFilter)) {
+            conceptIds.addAll(searchReferencedComponentsByMapTarget(branch, mapSetCode, searchFilter));
+        }
+        if (searchFilter.matches("[0-9]{6,18}")) {
+            conceptIds.add(searchFilter);
         }
         return conceptIds;
     }
@@ -908,6 +952,83 @@ public class SnowstormMapping extends SnowstormAbstract {
         }
 
         // return list of concept codes
+        return conceptCodes;
+    }
+
+    /**
+     * Finds source concept ids whose mapTarget matches an ECL wildcard, e.g. {@code R07*} via
+     * {@code ^mapSet {{ M mapTarget = wild:"R07*" }}}.
+     *
+     * @param branch the branch path
+     * @param mapSetCode the reference set identifier
+     * @param mapTargetWildcard the user-typed map target pattern, including {@code *}
+     * @return distinct referenced component ids
+     * @throws Exception the exception
+     */
+    private static List<String> searchReferencedComponentsByMapTargetEcl(final String branch, final String mapSetCode, final String mapTargetWildcard)
+        throws Exception {
+
+        if (StringUtils.isBlank(mapTargetWildcard)) {
+            return new ArrayList<>();
+        }
+
+        final String eclFilter = "^" + mapSetCode + " {{ M mapTarget = wild:\"" + mapTargetWildcard + "\" }}";
+        LOG.info("mapTarget ECL search mapSet={} eclFilter={}", mapSetCode, eclFilter);
+
+        String searchAfter = "";
+        final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/concepts/search";
+        final List<String> conceptCodes = new ArrayList<>();
+        boolean done = false;
+
+        while (!done) {
+
+            final ObjectNode requestBody = ThreadLocalMapper.get().createObjectNode();
+            requestBody.put("eclFilter", eclFilter);
+            requestBody.put("limit", 5000);
+            requestBody.put("returnIdOnly", true);
+            if (StringUtils.isNotBlank(searchAfter)) {
+                requestBody.put("searchAfter", searchAfter);
+            }
+
+            try (final Response response = SnowstormConnection.postResponse(targetUri, requestBody.toString())) {
+
+                if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                    LOG.warn("mapTarget ECL search was not successful for map set {} and filter '{}'. Status: {}", mapSetCode, mapTargetWildcard,
+                        response.getStatus());
+                    break;
+                }
+
+                final JsonNode data = ThreadLocalMapper.get().readTree(SnowstormConnection.readEntityAsString(response));
+                final JsonNode conceptNodeBatch = data.get("items");
+                if (conceptNodeBatch == null || !conceptNodeBatch.isArray() || conceptNodeBatch.isEmpty()) {
+                    done = true;
+                    continue;
+                }
+
+                final Iterator<JsonNode> itemIterator = conceptNodeBatch.iterator();
+                while (itemIterator.hasNext()) {
+                    final JsonNode conceptNode = itemIterator.next();
+                    if (conceptNode.isTextual()) {
+                        conceptCodes.add(conceptNode.asText());
+                    } else if (conceptNode.hasNonNull("id")) {
+                        conceptCodes.add(conceptNode.get("id").asText());
+                    } else if (conceptNode.hasNonNull("conceptId")) {
+                        conceptCodes.add(conceptNode.get("conceptId").asText());
+                    }
+                }
+
+                String nextSearchAfter = null;
+                if (data.has("searchAfter") && !data.get("searchAfter").isNull()) {
+                    nextSearchAfter = data.get("searchAfter").asText();
+                }
+                if (conceptNodeBatch.size() < 5000 || StringUtils.isBlank(nextSearchAfter) || nextSearchAfter.equals(searchAfter)) {
+                    done = true;
+                } else {
+                    searchAfter = nextSearchAfter;
+                }
+            }
+        }
+
         return conceptCodes;
     }
 
