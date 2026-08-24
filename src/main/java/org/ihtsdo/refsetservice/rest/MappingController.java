@@ -599,8 +599,7 @@ public class MappingController extends BaseController {
             final List<Mapping> mappings = new ArrayList<>();
             mappings.add(mapping);
             final User user = requireAuthenticatedUser(request);
-            MappingWorkflowService.canUserEditMappings(user, mapSet, mappings, service);
-            MappingService.updateMappings(mapSet.getMapProject(), branch, mapSet.getRefSetCode(), mappings, mapSet);
+            updateMappingsWithAutoClaim(service, user, mapSet, branch, mappings);
 
             return new ResponseEntity<>(mapping, HttpStatus.OK);
 
@@ -654,8 +653,7 @@ public class MappingController extends BaseController {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
             final User user = requireAuthenticatedUser(request);
-            MappingWorkflowService.canUserEditMappings(user, mapSet, mappings, service);
-            final List<Mapping> updatedMappings = MappingService.updateMappings(mapSet.getMapProject(), branch, mapSet.getRefSetCode(), mappings, mapSet);
+            final List<Mapping> updatedMappings = updateMappingsWithAutoClaim(service, user, mapSet, branch, mappings);
 
             return new ResponseEntity<>(updatedMappings, HttpStatus.OK);
 
@@ -663,6 +661,46 @@ public class MappingController extends BaseController {
 
             rethrowHandled(e);
             return null;
+        }
+    }
+
+    /**
+     * Update mappings with temporary auto-claim / finish-edit workflow bridge.
+     *
+     * <p>
+     * {@code NEW}/unassigned (and previously finished) concepts are claimed, saved, then finished to
+     * {@code EDITING_DONE} (or {@code REVIEW_NEEDED} on review projects). Concepts already assigned to
+     * the acting user are saved without changing workflow phase.
+     *
+     * @param service the terminology service
+     * @param user the acting user
+     * @param mapSet the map set
+     * @param branch the snowstorm branch
+     * @param mappings the mappings to update
+     * @return the updated mappings
+     * @throws Exception the exception
+     */
+    private List<Mapping> updateMappingsWithAutoClaim(final TerminologyService service, final User user, final MapSet mapSet, final String branch,
+        final List<Mapping> mappings) throws Exception {
+
+        service.setModifiedBy(user.getUserName());
+        service.setModifiedFlag(true);
+        service.setTransactionPerOperation(false);
+        service.beginTransaction();
+        try {
+            final Set<String> autoClaimed = MappingWorkflowService.prepareMappingsForEdit(user, mapSet, mappings, service);
+            final List<Mapping> updated =
+                MappingService.updateMappings(mapSet.getMapProject(), branch, mapSet.getRefSetCode(), mappings, mapSet);
+            MappingWorkflowService.finishAutoClaimedMappings(user, mapSet, autoClaimed, service);
+            service.commit();
+            return updated;
+        } catch (final Exception e) {
+            try {
+                service.rollback();
+            } catch (final Exception rollbackEx) {
+                LOG.warn("Rollback after mapping update failure: {}", rollbackEx.getMessage());
+            }
+            throw e;
         }
     }
 
