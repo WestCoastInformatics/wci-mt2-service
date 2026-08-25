@@ -130,6 +130,11 @@ public class MapSetController extends BaseController {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
             final List<MapSet> items = results.getItems();
+            for (final MapSet mapSet : items) {
+                if (mapSet != null) {
+                    MapProjectService.prepareMapProjectForApi(service, mapSet.getMapProject());
+                }
+            }
 
             return new ResponseEntity<>(items, HttpStatus.OK);
 
