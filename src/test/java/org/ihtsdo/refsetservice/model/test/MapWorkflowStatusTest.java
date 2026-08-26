@@ -20,6 +20,7 @@ public class MapWorkflowStatusTest {
     /** Expected workflow phase order; enum ordinals must match. */
     private static final MapWorkflowStatus[] WORKFLOW_ORDER = {
         MapWorkflowStatus.NEW,
+        MapWorkflowStatus.PUBLISHED,
         MapWorkflowStatus.EDITING_IN_PROGRESS,
         MapWorkflowStatus.EDITING_DONE,
         MapWorkflowStatus.CONFLICT_DETECTED,
@@ -68,7 +69,7 @@ public class MapWorkflowStatusTest {
     @Test
     public void testDeprecatedRemoved() {
 
-        final Set<String> removed = Set.of("CONFLICT_NEW", "REVIEW_NEW", "QA_NEW", "PUBLISHED");
+        final Set<String> removed = Set.of("CONFLICT_NEW", "REVIEW_NEW", "QA_NEW");
         for (final MapWorkflowStatus status : MapWorkflowStatus.values()) {
             assertTrue(!removed.contains(status.name()), "Unexpected deprecated status: " + status.name());
         }

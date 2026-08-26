@@ -7,7 +7,8 @@ import java.util.List;
  * Workflow phase for a single source-concept mapping.
  *
  * <p>Phase only — who owns the mapping is stored in {@code assigned_user}, not in the status name.
- * Publication is handled at mapset level, not per mapping.
+ * Mapset publication is separate from per-mapping {@code PUBLISHED}, which means the concept was
+ * already in a prior mapset version (or in the mapset at initial load, when there is no workflow history).
  *
  * <p>Workflow status names may not be initial substrings of any other workflow status.
  *
@@ -16,8 +17,14 @@ import java.util.List;
  */
 public enum MapWorkflowStatus {
 
-  /** New, unedited specialist record */
+  /** Concept added to this mapset version; unedited. */
   NEW,
+
+  /**
+   * Carryover from a previous mapset version. Also the default when a mapping already exists
+   * but has no workflow row (initial load has no history).
+   */
+  PUBLISHED,
 
   /** Editing in progress by a specialist */
   EDITING_IN_PROGRESS,

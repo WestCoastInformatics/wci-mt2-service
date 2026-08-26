@@ -968,7 +968,7 @@ public final class MappingWorkflowService {
 
         switch (action) {
             case ASSIGN:
-                return workflow.getWorkflowStatus() == MapWorkflowStatus.NEW && workflow.getAssignedUser() == null;
+                return isUnassignedAssignable(workflow);
             case START_REVIEW:
                 return workflow.getWorkflowStatus() == MapWorkflowStatus.REVIEW_NEEDED && workflow.getAssignedUser() == null;
             case START_CONFLICT_RESOLUTION:
@@ -1167,7 +1167,10 @@ public final class MappingWorkflowService {
      * Hydrates {@link Mapping#getMappingWorkflow()} for a page of mappings in one query.
      *
      * <p>
-     * Only attaches an existing specialist-slot-1 workflow row when present; does not create missing rows.
+     * Attaches an existing specialist-slot-1 workflow row when present; otherwise attaches a non-persisted
+     * {@link MapWorkflowStatus#PUBLISHED} placeholder. Missing rows mean the concept already existed in the
+     * mapset with no workflow history (initial load or prior-version carryover), not that it was added this
+     * version ({@link MapWorkflowStatus#NEW}). Does not create database rows.
      *
      * @param service the terminology service
      * @param mapSet the map set
@@ -1186,7 +1189,10 @@ public final class MappingWorkflowService {
      * Hydrates {@link Mapping#getMappingWorkflow()} for a collection of mappings in one query.
      *
      * <p>
-     * Only attaches an existing specialist-slot-1 workflow row when present; does not create missing rows.
+     * Attaches an existing specialist-slot-1 workflow row when present; otherwise attaches a non-persisted
+     * {@link MapWorkflowStatus#PUBLISHED} placeholder. Missing rows mean the concept already existed in the
+     * mapset with no workflow history (initial load or prior-version carryover), not that it was added this
+     * version ({@link MapWorkflowStatus#NEW}). Does not create database rows.
      *
      * @param service the terminology service
      * @param mapSet the map set
@@ -1227,8 +1233,26 @@ public final class MappingWorkflowService {
             if (mapping == null || StringUtils.isBlank(mapping.getCode())) {
                 continue;
             }
-            mapping.setMappingWorkflow(workflowByConcept.get(mapping.getCode()));
+            final MappingWorkflow existing = workflowByConcept.get(mapping.getCode());
+            mapping.setMappingWorkflow(existing != null ? existing : newPublishedWorkflow(mapSet, mapping.getCode()));
         }
+    }
+
+    /**
+     * Builds a non-persisted specialist-slot-1 workflow with {@link MapWorkflowStatus#PUBLISHED}.
+     *
+     * @param mapSet the map set
+     * @param sourceConceptCode the source concept code
+     * @return the transient workflow
+     */
+    private static MappingWorkflow newPublishedWorkflow(final MapSet mapSet, final String sourceConceptCode) {
+
+        final MappingWorkflow workflow = new MappingWorkflow();
+        workflow.setSourceConceptCode(sourceConceptCode);
+        workflow.setWorkflowStatus(MapWorkflowStatus.PUBLISHED);
+        workflow.setSpecialistSlot(1);
+        workflow.setMapSet(mapSet);
+        return workflow;
     }
 
     /**
@@ -1267,7 +1291,7 @@ public final class MappingWorkflowService {
         final MapProject mapProject = loadMapProject(service, mapSet);
         final MappingWorkflow workflow = new MappingWorkflow();
         workflow.setSourceConceptCode(sourceConceptCode);
-        workflow.setWorkflowStatus(MapWorkflowStatus.NEW);
+        workflow.setWorkflowStatus(MapWorkflowStatus.PUBLISHED);
         workflow.setSpecialistSlot(specialistSlot);
         workflow.setMapSet(mapSet);
         workflow.setMapProject(mapProject);
@@ -1416,7 +1440,8 @@ public final class MappingWorkflowService {
      * Prepare mappings for an update save while the mapping workflow UI is incomplete.
      *
      * <p>
-     * For each mapping: ensure a workflow row exists; auto-{@code ASSIGN} when {@code NEW}/unassigned;
+     * For each mapping: ensure a workflow row exists; auto-{@code ASSIGN} when {@code NEW} or
+     * {@code PUBLISHED} and unassigned;
      * auto-reopen {@code EDITING_DONE} or {@code REVIEW_NEEDED} (unassigned) for iterative saves;
      * then enforce {@link #canUserEditMapping}. Returns concept codes that were auto-claimed so the
      * caller can {@link #finishAutoClaimedMappings} after a successful save.
@@ -1452,7 +1477,7 @@ public final class MappingWorkflowService {
 
             MappingWorkflow workflow = ensureWorkflowForConcept(service, mapSet, mapping.getCode());
 
-            if (workflow.getWorkflowStatus() == MapWorkflowStatus.NEW && workflow.getAssignedUser() == null) {
+            if (isUnassignedAssignable(workflow)) {
                 workflow = setWorkflowStatusByAction(service, user, MappingWorkflowAction.ASSIGN, workflow, mapSet, mapProject,
                     "Auto-claimed for mapping save", null);
                 autoClaimed.add(mapping.getCode());
@@ -1528,6 +1553,21 @@ public final class MappingWorkflowService {
             final MappingWorkflow workflow = findWorkflowForConcept(service, mapSet, mapping.getCode());
             canUserEditMapping(user, workflow, mapSet);
         }
+    }
+
+    /**
+     * True when the mapping is unassigned and in a start-of-cycle phase that can be claimed.
+     *
+     * @param workflow the workflow
+     * @return true, if unassigned NEW or PUBLISHED
+     */
+    private static boolean isUnassignedAssignable(final MappingWorkflow workflow) {
+
+        if (workflow == null || workflow.getAssignedUser() != null) {
+            return false;
+        }
+        return workflow.getWorkflowStatus() == MapWorkflowStatus.NEW
+            || workflow.getWorkflowStatus() == MapWorkflowStatus.PUBLISHED;
     }
 
     /**
