@@ -9,7 +9,8 @@
 #   RESULT_STATUS   MapWorkflowStatus phase after a successful transition
 #
 # Phase glossary (simple path):
-#   NEW                  In scope; unassigned; not edited this mapset version
+#   NEW                  Concept added to this mapset version; unassigned; not edited
+#   PUBLISHED            Carryover from a previous version (or initial load: already in the mapset, no history)
 #   EDITING_IN_PROGRESS  Assigned to a specialist; actively being edited
 #   EDITING_DONE         Specialist submitted; awaiting lead approval
 #   READY_FOR_PUBLICATION  Mapping accepted; no further mapping work this cycle
@@ -24,6 +25,7 @@
 
 # Specialist self-assigns an unassigned mapping from the queue
 SPECIALIST,NEW,ASSIGN,EDITING_IN_PROGRESS
+SPECIALIST,PUBLISHED,ASSIGN,EDITING_IN_PROGRESS
 
 # Specialist gives up the assignment without submitting (clears assigned_user)
 SPECIALIST,EDITING_IN_PROGRESS,RELEASE,NEW

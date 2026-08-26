@@ -599,12 +599,12 @@ public class MappingWorkflowServiceTest {
     }
 
     /**
-     * Attach workflows hydrates existing rows only and does not create missing ones.
+     * Attach workflows hydrates existing rows and attaches a non-persisted PUBLISHED placeholder when missing.
      *
      * @throws Exception the exception
      */
     @Test
-    public void attachWorkflowsHydratesExistingOnly() throws Exception {
+    public void attachWorkflowsHydratesExistingAndTransientNew() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowAssignedTo(context.getSpecialistUser().getUserName(), MapWorkflowStatus.EDITING_IN_PROGRESS);
@@ -621,7 +621,12 @@ public class MappingWorkflowServiceTest {
             assertNotNull(withWorkflow.getMappingWorkflow());
             assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, withWorkflow.getMappingWorkflow().getWorkflowStatus());
             assertEquals(context.getSpecialistUser().getUserName(), withWorkflow.getMappingWorkflow().getAssignedUser());
-            assertNull(withoutWorkflow.getMappingWorkflow());
+            assertNotNull(withoutWorkflow.getMappingWorkflow());
+            assertEquals(MapWorkflowStatus.PUBLISHED, withoutWorkflow.getMappingWorkflow().getWorkflowStatus());
+            assertEquals("999888777", withoutWorkflow.getMappingWorkflow().getSourceConceptCode());
+            assertEquals(1, withoutWorkflow.getMappingWorkflow().getSpecialistSlot());
+            assertEquals(context.getMapSet().getId(), withoutWorkflow.getMappingWorkflow().getMapSetId());
+            assertNull(withoutWorkflow.getMappingWorkflow().getId());
             assertEquals(0, MappingWorkflowService.countWorkflowRows(context.getService(), context.getMapSet(), "999888777", 1));
         }
     }
