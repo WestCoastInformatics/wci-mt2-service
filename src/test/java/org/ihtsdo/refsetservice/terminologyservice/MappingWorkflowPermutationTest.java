@@ -79,12 +79,18 @@ public class MappingWorkflowPermutationTest {
             MappingWorkflowService.resolveTransition(MappingWorkflowRole.SPECIALIST, MapWorkflowStatus.NEW, MappingWorkflowAction.ASSIGN));
         assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS,
             MappingWorkflowService.resolveTransition(MappingWorkflowRole.SPECIALIST, MapWorkflowStatus.PUBLISHED, MappingWorkflowAction.ASSIGN));
+        assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS,
+            MappingWorkflowService.resolveTransition(MappingWorkflowRole.SPECIALIST, MapWorkflowStatus.READY_FOR_PUBLICATION, MappingWorkflowAction.ASSIGN));
         assertEquals(MapWorkflowStatus.NEW,
             MappingWorkflowService.resolveTransition(MappingWorkflowRole.SPECIALIST, MapWorkflowStatus.EDITING_IN_PROGRESS, MappingWorkflowAction.RELEASE));
         assertEquals(MapWorkflowStatus.EDITING_DONE,
             MappingWorkflowService.resolveTransition(MappingWorkflowRole.SPECIALIST, MapWorkflowStatus.EDITING_IN_PROGRESS, MappingWorkflowAction.FINISH_EDITING));
         assertEquals(MapWorkflowStatus.READY_FOR_PUBLICATION,
             MappingWorkflowService.resolveTransition(MappingWorkflowRole.LEAD, MapWorkflowStatus.EDITING_DONE, MappingWorkflowAction.APPROVE_FOR_PUBLICATION));
+        assertEquals(MapWorkflowStatus.REVIEW_NEEDED,
+            MappingWorkflowService.resolveTransition(MappingWorkflowRole.SPECIALIST, MapWorkflowStatus.EDITING_DONE, MappingWorkflowAction.REQUEST_REVIEW));
+        assertEquals(MapWorkflowStatus.REVIEW_NEEDED,
+            MappingWorkflowService.resolveTransition(MappingWorkflowRole.LEAD, MapWorkflowStatus.EDITING_DONE, MappingWorkflowAction.REQUEST_REVIEW));
     }
 
     @Test
@@ -92,7 +98,7 @@ public class MappingWorkflowPermutationTest {
 
         assertEquals(MapWorkflowStatus.REVIEW_IN_PROGRESS,
             MappingWorkflowService.resolveTransition(MappingWorkflowRole.LEAD, MapWorkflowStatus.REVIEW_NEEDED, MappingWorkflowAction.START_REVIEW));
-        assertEquals(MapWorkflowStatus.REVIEW_RESOLVED,
+        assertEquals(MapWorkflowStatus.READY_FOR_PUBLICATION,
             MappingWorkflowService.resolveTransition(MappingWorkflowRole.LEAD, MapWorkflowStatus.REVIEW_IN_PROGRESS, MappingWorkflowAction.ACCEPT_REVIEW));
         assertEquals(MapWorkflowStatus.NEW,
             MappingWorkflowService.resolveTransition(MappingWorkflowRole.LEAD, MapWorkflowStatus.REVIEW_IN_PROGRESS, MappingWorkflowAction.REJECT_REVIEW));

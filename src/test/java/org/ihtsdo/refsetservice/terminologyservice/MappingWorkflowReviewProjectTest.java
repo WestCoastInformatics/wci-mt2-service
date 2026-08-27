@@ -118,7 +118,7 @@ public class MappingWorkflowReviewProjectTest {
             final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getLeadUser(),
                 MappingWorkflowAction.ACCEPT_REVIEW, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Accepted", null);
 
-            assertEquals(MapWorkflowStatus.REVIEW_RESOLVED, updated.getWorkflowStatus());
+            assertEquals(MapWorkflowStatus.READY_FOR_PUBLICATION, updated.getWorkflowStatus());
             assertNull(updated.getAssignedUser());
         }
     }
@@ -181,17 +181,15 @@ public class MappingWorkflowReviewProjectTest {
                 context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Finish", null);
             MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getLeadUser(), MappingWorkflowAction.START_REVIEW,
                 context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Review", null);
-            MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getLeadUser(), MappingWorkflowAction.ACCEPT_REVIEW,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Accept", null);
             final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getLeadUser(),
-                MappingWorkflowAction.APPROVE_FOR_PUBLICATION, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Approve", null);
+                MappingWorkflowAction.ACCEPT_REVIEW, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Accept", null);
 
             assertEquals(MapWorkflowStatus.READY_FOR_PUBLICATION, updated.getWorkflowStatus());
             assertNull(updated.getAssignedUser());
 
             final ResultList<MappingWorkflowHistory> history =
                 MappingWorkflowService.getWorkflowHistory(context.getService(), context.getWorkflow(), new SearchParameters());
-            assertThat(history.getItems()).hasSizeGreaterThanOrEqualTo(5);
+            assertThat(history.getItems()).hasSizeGreaterThanOrEqualTo(4);
 
             for (final MappingWorkflowHistory row : history.getItems()) {
                 if (row.getWorkflowAction() == MappingWorkflowAction.ASSIGN || row.getWorkflowAction() == MappingWorkflowAction.START_REVIEW) {
@@ -221,7 +219,7 @@ public class MappingWorkflowReviewProjectTest {
             assertEquals(1, result.getSuccessCount());
             assertEquals(1, result.getFailureCount());
             assertTrue(result.getItems().get(0).isSuccess());
-            assertEquals(MapWorkflowStatus.REVIEW_RESOLVED, result.getItems().get(0).getWorkflow().getWorkflowStatus());
+            assertEquals(MapWorkflowStatus.READY_FOR_PUBLICATION, result.getItems().get(0).getWorkflow().getWorkflowStatus());
             assertFalse(result.getItems().get(1).isSuccess());
             assertEquals(HttpStatus.CONFLICT.value(), result.getItems().get(1).getStatus().intValue());
             assertEquals(MapWorkflowStatus.REVIEW_NEEDED, context.getService().get(second.getId(), MappingWorkflow.class).getWorkflowStatus());

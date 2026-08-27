@@ -227,15 +227,9 @@ public class MappingWorkflowSnowstormIntegrationTest extends BaseTest {
                 final MappingWorkflow accepted = act(
                     context, MappingWorkflowAction.ACCEPT_REVIEW, "accepted",
                     context.getLeadUser());
-                assertEquals(MapWorkflowStatus.REVIEW_RESOLVED,
+                assertEquals(MapWorkflowStatus.READY_FOR_PUBLICATION,
                     accepted.getWorkflowStatus());
                 assertNull(accepted.getAssignedUser());
-
-                final MappingWorkflow approved = act(
-                    context, MappingWorkflowAction.APPROVE_FOR_PUBLICATION, "approved",
-                    context.getLeadUser());
-                assertEquals(MapWorkflowStatus.READY_FOR_PUBLICATION,
-                    approved.getWorkflowStatus());
             } finally {
                 MappingWorkflowSnowstormSupport.cleanupBranches(context, CONCEPT);
             }

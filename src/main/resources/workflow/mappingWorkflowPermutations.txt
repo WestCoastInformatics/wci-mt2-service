@@ -8,76 +8,101 @@
 #   ACTION          MappingWorkflowAction taken by that role
 #   RESULT_STATUS   MapWorkflowStatus phase after a successful transition
 #
-# Phase glossary (simple path):
-#   NEW                  Concept added to this mapset version; unassigned; not edited
-#   PUBLISHED            Carryover from a previous version (or initial load: already in the mapset, no history)
-#   EDITING_IN_PROGRESS  Assigned to a specialist; actively being edited
-#   EDITING_DONE         Specialist submitted; awaiting lead approval
-#   READY_FOR_PUBLICATION  Mapping accepted; no further mapping work this cycle
+# Phase glossary:
+#   NEW                    Concept added to this mapset version; unassigned; not edited
+#   PUBLISHED              Carryover from a previous version (or initial load: already in the mapset, no history)
+#   EDITING_IN_PROGRESS    Assigned to a specialist; actively being edited
+#   EDITING_DONE           Specialist submitted; awaiting lead approval or optional review
+#   REVIEW_NEEDED          Unassigned; awaiting lead review
+#   REVIEW_IN_PROGRESS     Assigned to a lead; actively being reviewed
+#   REVIEW_RESOLVED        Leftover in-flight phase; lead may still approve
+#   READY_FOR_PUBLICATION  Mapping accepted; may be re-assigned this cycle
 #
 # Loaded at startup by MappingWorkflowService.resolveTransition(role, status, action).
 # No matching row => transition is not allowed (returns null).
 #
+# Source: .work/roles/mapping-permutations-update.tsv
+#
 
 ##################
-# SPECIALIST — assign, release, and finish editing
+# SPECIALIST
 ##################
 
-# Specialist self-assigns an unassigned mapping from the queue
+# Self-assign from the queue
 SPECIALIST,NEW,ASSIGN,EDITING_IN_PROGRESS
 SPECIALIST,PUBLISHED,ASSIGN,EDITING_IN_PROGRESS
+SPECIALIST,READY_FOR_PUBLICATION,ASSIGN,EDITING_IN_PROGRESS
 
-# Specialist gives up the assignment without submitting (clears assigned_user)
+# Give up assignment without submitting (clears assigned_user)
 SPECIALIST,EDITING_IN_PROGRESS,RELEASE,NEW
 
-# Specialist submits completed mapping (clears assigned_user; may trigger review/conflict routing later)
+# Submit completed mapping (clears assigned_user)
 SPECIALIST,EDITING_IN_PROGRESS,FINISH_EDITING,EDITING_DONE
 
-##################
-# LEAD — approve finished work for publication readiness
-##################
-
-# Lead accepts specialist work; mapping is ready when the mapset publishes
-LEAD,EDITING_DONE,APPROVE_FOR_PUBLICATION,READY_FOR_PUBLICATION
+# Optional review instead of lead approve-without-review
+SPECIALIST,EDITING_DONE,REQUEST_REVIEW,REVIEW_NEEDED
 
 ##################
-# ADMIN — override assignment without changing phase (except force-release)
+# LEAD
 ##################
 
-# Admin clears assignment and returns concept to the queue
-ADMIN,EDITING_IN_PROGRESS,FORCE_RELEASE,NEW
-
-# Admin assigns the mapping to another user; phase stays in progress
-ADMIN,EDITING_IN_PROGRESS,REASSIGN,EDITING_IN_PROGRESS
-
-# Lead reassigns the mapping to another specialist
+# Reassign an in-progress editing assignment
 LEAD,EDITING_IN_PROGRESS,REASSIGN,EDITING_IN_PROGRESS
 
-##################
-# REVIEW PROJECT — lead review after specialist finish
-##################
+# Optional review, or approve specialist work without review
+LEAD,EDITING_DONE,REQUEST_REVIEW,REVIEW_NEEDED
+LEAD,EDITING_DONE,APPROVE_FOR_PUBLICATION,READY_FOR_PUBLICATION
 
-# Lead picks up a mapping awaiting review
+# Pick up, give back, or reassign a review
 LEAD,REVIEW_NEEDED,START_REVIEW,REVIEW_IN_PROGRESS
+LEAD,REVIEW_IN_PROGRESS,RELEASE,REVIEW_NEEDED
+LEAD,REVIEW_IN_PROGRESS,REASSIGN,REVIEW_IN_PROGRESS
 
-# Lead accepts review
-LEAD,REVIEW_IN_PROGRESS,ACCEPT_REVIEW,REVIEW_RESOLVED
-
-# Lead rejects review; mapping returns to the queue (assignment cleared)
+# Complete review
+LEAD,REVIEW_IN_PROGRESS,ACCEPT_REVIEW,READY_FOR_PUBLICATION
 LEAD,REVIEW_IN_PROGRESS,REJECT_REVIEW,NEW
-
-# Lead sends mapping back for specialist revision
 LEAD,REVIEW_IN_PROGRESS,REQUEST_REVISION,EDITING_IN_PROGRESS
 
-# Lead approves reviewed mapping for publication readiness
+# Leftover in-flight rows from the previous two-step accept path
 LEAD,REVIEW_RESOLVED,APPROVE_FOR_PUBLICATION,READY_FOR_PUBLICATION
 
 ##################
-# CONFLICT PROJECT — lead conflict resolution after both slots finish
+# ADMIN
 ##################
 
-# Lead picks up a mapping with detected conflict
-LEAD,CONFLICT_DETECTED,START_CONFLICT_RESOLUTION,CONFLICT_IN_PROGRESS
+# Clear editing assignment and return concept to the queue
+ADMIN,EDITING_IN_PROGRESS,FORCE_RELEASE,NEW
 
-# Lead resolves conflict; mapping is ready for publication
-LEAD,CONFLICT_IN_PROGRESS,RESOLVE_CONFLICT,READY_FOR_PUBLICATION
+# Reassign without changing phase
+ADMIN,EDITING_IN_PROGRESS,REASSIGN,EDITING_IN_PROGRESS
+ADMIN,REVIEW_IN_PROGRESS,REASSIGN,REVIEW_IN_PROGRESS
+
+# Clear review assignment and return mapping to the review queue
+ADMIN,REVIEW_IN_PROGRESS,FORCE_RELEASE,REVIEW_NEEDED
+
+##################
+# NOTES
+##################
+#
+# Origin restore (not representable as one RESULT_STATUS):
+#   TSV RELEASE/FORCE_RELEASE from EDITING_IN_PROGRESS next is
+#   NEW/PUBLISHED/READY_FOR_PUBLICATION (restore the queue status from before ASSIGN).
+#   This file uses NEW until MappingWorkflow stores that origin.
+#   REJECT_REVIEW -> NEW has the same problem for PUBLISHED carryover mappings.
+#
+# REQUEST_REVISION:
+#   Lands on EDITING_IN_PROGRESS and clears assignment. ASSIGN is not allowed from
+#   EDITING_IN_PROGRESS; lead or admin must REASSIGN to unstick it.
+#
+# ACCEPT_REVIEW:
+#   Goes straight to READY_FOR_PUBLICATION. REVIEW_RESOLVED is unreachable on the
+#   happy path; the approve row is kept for leftover in-flight rows.
+#
+# Conflict path omitted for this deployment (no CONFLICT_* transitions).
+#
+# Runtime gates not in this file:
+#   ASSIGN from READY_FOR_PUBLICATION is listed here but isUnassignedAssignable
+#   currently allows only NEW and PUBLISHED.
+#   REVIEW_PROJECT still auto-routes FINISH_EDITING to REVIEW_NEEDED, so
+#   EDITING_DONE + REQUEST_REVIEW is not reached on review projects.
+#

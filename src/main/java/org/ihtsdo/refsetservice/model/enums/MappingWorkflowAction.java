@@ -35,6 +35,9 @@ public enum MappingWorkflowAction {
     /** Lead or admin approves mapping for publication readiness. */
     APPROVE_FOR_PUBLICATION,
 
+    /** Specialist or lead requests lead review of finished editing. */
+    REQUEST_REVIEW,
+
     /** Lead starts review of a mapping awaiting review. */
     START_REVIEW,
 

@@ -414,7 +414,7 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
 
             assertEquals(1, result.getSuccessCount());
             assertEquals(1, result.getFailureCount());
-            assertEquals(MapWorkflowStatus.REVIEW_RESOLVED, result.getItems().get(0).getWorkflow().getWorkflowStatus());
+            assertEquals(MapWorkflowStatus.READY_FOR_PUBLICATION, result.getItems().get(0).getWorkflow().getWorkflowStatus());
             assertThat(result.getItems().get(1).isSuccess()).isFalse();
         }
     }
