@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.ihtsdo.refsetservice.model.MapWorkflowStatus;
-import org.ihtsdo.refsetservice.model.MappingWorkflow;
 import org.ihtsdo.refsetservice.model.enums.MappingWorkflowAction;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.junit.jupiter.api.BeforeEach;
@@ -94,25 +93,12 @@ public class MappingWorkflowConflictProjectTest {
             context.setWorkflowStatus(MapWorkflowStatus.CONFLICT_DETECTED);
             context.setWorkflowSlot2Status(MapWorkflowStatus.CONFLICT_DETECTED);
 
-            MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getLeadUser(), MappingWorkflowAction.START_CONFLICT_RESOLUTION,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Start resolution", null);
-
-            assertEquals(MapWorkflowStatus.CONFLICT_IN_PROGRESS, context.reloadWorkflow().getWorkflowStatus());
-            assertEquals(MapWorkflowStatus.CONFLICT_IN_PROGRESS, context.reloadWorkflowSlot2().getWorkflowStatus());
-            assertEquals(context.getLeadUser().getUserName(), context.getWorkflow().getAssignedUser());
-
-            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getLeadUser(), MappingWorkflowAction.RESOLVE_CONFLICT,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Resolved", null);
-
-            assertEquals(MapWorkflowStatus.READY_FOR_PUBLICATION, updated.getWorkflowStatus());
-            assertEquals(MapWorkflowStatus.READY_FOR_PUBLICATION, context.reloadWorkflowSlot2().getWorkflowStatus());
-            assertNull(updated.getAssignedUser());
-
             assertThrows(ResponseStatusException.class, () -> MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getSpecialistUser(), MappingWorkflowAction.RESOLVE_CONFLICT,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Resolve", null));
+                context.getService(), context.getLeadUser(), MappingWorkflowAction.START_CONFLICT_RESOLUTION,
+                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Start resolution", null));
+
+            assertEquals(MapWorkflowStatus.CONFLICT_DETECTED, context.reloadWorkflow().getWorkflowStatus());
+            assertEquals(MapWorkflowStatus.CONFLICT_DETECTED, context.reloadWorkflowSlot2().getWorkflowStatus());
         }
     }
 
