@@ -37,6 +37,7 @@ import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.MapSetWorkflowHistory;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
+import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.enums.VersionStatus;
 import org.ihtsdo.refsetservice.model.enums.WorkflowAction;
@@ -510,6 +511,8 @@ public final class MapSetWorkflowService {
             LOG.warn(
                 "Workflow action requested but no permutation: refSetCode={}, mapSetId={}, workflowStatus={}, action={}, user={}, rolesTried={}, file={}",
                 mapSet.getRefSetCode(), mapSet.getId(), mapSet.getWorkflowStatus(), action, user.getUserName(), roles, WORKFLOW_PERMUTATIONS_FILE_NAME);
+            throw new RestException(false, HttpStatus.BAD_REQUEST, "Bad Request",
+                "Invalid workflow action " + action + " from status " + mapSet.getWorkflowStatus());
         }
 
         if (Arrays.asList(WorkflowAction.EDIT, WorkflowAction.UPGRADE, WorkflowAction.REVIEW).contains(action)) {

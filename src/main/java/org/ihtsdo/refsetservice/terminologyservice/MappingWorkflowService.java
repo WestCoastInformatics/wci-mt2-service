@@ -15,6 +15,7 @@ import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -526,8 +527,9 @@ public final class MappingWorkflowService {
      * Find mapping workflow rows for many source concepts, returning them in request order.
      *
      * <p>
-     * Does not create missing rows. Throws {@link ResponseStatusException} with 404 if any concept has no
-     * active specialist-slot-1 workflow.
+     * Does not create missing rows. Concepts in the mapset with no workflow row receive a non-persisted
+     * {@link MapWorkflowStatus#PUBLISHED} placeholder. Throws {@link ResponseStatusException} with 404 if any
+     * concept is not in the mapset and has no workflow row.
      *
      * @param service the terminology service
      * @param mapSet the map set
@@ -563,11 +565,22 @@ public final class MappingWorkflowService {
             }
         }
 
+        final List<String> missingCodes = new ArrayList<>();
+        for (final String conceptCode : trimmedCodes) {
+            if (!byCode.containsKey(conceptCode)) {
+                missingCodes.add(conceptCode);
+            }
+        }
+        final Set<String> inMapSet = findConceptCodesInMapSet(mapSet, missingCodes);
+
         final List<MappingWorkflow> workflows = new ArrayList<>(trimmedCodes.size());
         for (final String conceptCode : trimmedCodes) {
-            final MappingWorkflow workflow = byCode.get(conceptCode);
+            MappingWorkflow workflow = byCode.get(conceptCode);
             if (workflow == null) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Mapping workflow not found for concept " + conceptCode);
+                if (!inMapSet.contains(conceptCode)) {
+                    throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Mapping workflow not found for concept " + conceptCode);
+                }
+                workflow = newPublishedWorkflow(mapSet, conceptCode);
             }
             workflows.add(workflow);
         }
@@ -1131,6 +1144,32 @@ public final class MappingWorkflowService {
     }
 
     /**
+     * Find the mapping workflow for a source concept, or a non-persisted {@link MapWorkflowStatus#PUBLISHED}
+     * placeholder when the concept is in the mapset but has no workflow row.
+     *
+     * <p>
+     * Does not create database rows. Returns {@code null} when the concept is not in the mapset.
+     *
+     * @param service the terminology service
+     * @param mapSet the map set
+     * @param sourceConceptCode the source concept code
+     * @return the workflow row, transient placeholder, or null
+     * @throws Exception the exception
+     */
+    public static MappingWorkflow getWorkflowForConcept(final TerminologyService service, final MapSet mapSet, final String sourceConceptCode)
+        throws Exception {
+
+        final MappingWorkflow existing = findWorkflowForConcept(service, mapSet, sourceConceptCode);
+        if (existing != null) {
+            return existing;
+        }
+        if (!isConceptInMapSet(mapSet, sourceConceptCode)) {
+            return null;
+        }
+        return newPublishedWorkflow(mapSet, sourceConceptCode);
+    }
+
+    /**
      * Find the mapping workflow row for a source concept and specialist slot.
      *
      * @param service the terminology service
@@ -1253,6 +1292,54 @@ public final class MappingWorkflowService {
         workflow.setSpecialistSlot(1);
         workflow.setMapSet(mapSet);
         return workflow;
+    }
+
+    /**
+     * Returns whether the source concept has a mapping in the mapset.
+     *
+     * @param mapSet the map set
+     * @param sourceConceptCode the source concept code
+     * @return true if the concept is in the mapset
+     * @throws Exception the exception
+     */
+    private static boolean isConceptInMapSet(final MapSet mapSet, final String sourceConceptCode) throws Exception {
+
+        if (StringUtils.isBlank(sourceConceptCode)) {
+            return false;
+        }
+        return findConceptCodesInMapSet(mapSet, Arrays.asList(sourceConceptCode)).contains(sourceConceptCode);
+    }
+
+    /**
+     * Returns the subset of {@code conceptCodes} that exist as mappings in the mapset.
+     *
+     * @param mapSet the map set
+     * @param conceptCodes source concept codes
+     * @return concept codes present in the mapset
+     * @throws Exception the exception
+     */
+    private static Set<String> findConceptCodesInMapSet(final MapSet mapSet, final List<String> conceptCodes) throws Exception {
+
+        if (mapSet == null || conceptCodes == null || conceptCodes.isEmpty()) {
+            return Collections.emptySet();
+        }
+        final String branch = BranchService.getMapSetBranchPath(mapSet);
+        if (StringUtils.isBlank(branch) || "empty".equals(branch) || "none".equals(branch)) {
+            return Collections.emptySet();
+        }
+        final SearchParameters searchParameters = new SearchParameters();
+        searchParameters.setLimit(conceptCodes.size());
+        final ResultListMapping mappings = MappingService.getMappings(branch, mapSet, searchParameters, StringUtils.EMPTY, true, conceptCodes);
+        if (mappings == null || mappings.getItems() == null) {
+            return Collections.emptySet();
+        }
+        final Set<String> found = new HashSet<>();
+        for (final Mapping mapping : mappings.getItems()) {
+            if (mapping != null && StringUtils.isNotBlank(mapping.getCode())) {
+                found.add(mapping.getCode());
+            }
+        }
+        return found;
     }
 
     /**

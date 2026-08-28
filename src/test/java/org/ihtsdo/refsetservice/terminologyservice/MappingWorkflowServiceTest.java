@@ -632,6 +632,26 @@ public class MappingWorkflowServiceTest {
     }
 
     /**
+     * Get workflow for concept returns the persisted row when one exists.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void getWorkflowForConceptReturnsExisting() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            context.setWorkflowAssignedTo(context.getSpecialistUser().getUserName(), MapWorkflowStatus.EDITING_IN_PROGRESS);
+
+            final MappingWorkflow workflow = MappingWorkflowService.getWorkflowForConcept(context.getService(), context.getMapSet(),
+                MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE);
+
+            assertNotNull(workflow);
+            assertEquals(context.getWorkflow().getId(), workflow.getId());
+            assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, workflow.getWorkflowStatus());
+        }
+    }
+
+    /**
      * Search map sets initializes nested map project membership collections and includes
      * global all-org/all-edition/all-project map users.
      *
