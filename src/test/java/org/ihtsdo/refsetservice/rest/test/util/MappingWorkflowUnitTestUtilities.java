@@ -147,6 +147,20 @@ public class MappingWorkflowUnitTestUtilities {
     }
 
     /**
+     * Get mapping workflow state for many concept codes and expect HTTP 404.
+     *
+     * @param mapSetId the map set id
+     * @param conceptCodes the source concept codes
+     * @param asUser the acting user
+     * @throws Exception the exception
+     */
+    public void getWorkflowBulkExpectNotFound(final String mapSetId, final List<String> conceptCodes, final User asUser) throws Exception {
+
+        final String url = baseUrl + "/" + mapSetId + "/mappings/workflowStatus?conceptCodes=" + String.join(",", conceptCodes);
+        mvc.perform(withUser(get(url), asUser).accept(MediaType.APPLICATION_JSON)).andExpect(status().isNotFound());
+    }
+
+    /**
      * Attempt workflow update and expect HTTP 403.
      *
      * @param mapSetId the map set id

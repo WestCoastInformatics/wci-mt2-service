@@ -3,6 +3,9 @@ package org.ihtsdo.refsetservice.rest.test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -172,57 +176,25 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
 
             assertThat(MappingWorkflowTestHandler.wasUpdateCalled()).isTrue();
             assertEquals("Updated mapping", updated.get(0).getName());
-            // Already claimed: save does not auto-finish
-            assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, context.reloadWorkflow().getWorkflowStatus());
-            assertEquals(context.getSpecialistUser().getUserName(), context.reloadWorkflow().getAssignedUser());
         }
     }
 
     /**
-     * Test edit auto-claims NEW mappings, saves, then finishes to EDITING_DONE.
+     * Test edit blocked when not assigned.
      *
      * @throws Exception the exception
      */
     @Test
-    public void testEditAutoClaimsNewThenFinishes() throws Exception {
+    public void testEditBlockedWhenNotAssigned() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             final Mapping mapping = new Mapping();
             mapping.setCode(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE);
-            mapping.setName("Auto claimed save");
+            mapping.setName("Should not save");
 
-            final List<Mapping> updated =
-                workflowUtil.updateMappings(context.getMapSet().getId(), Collections.singletonList(mapping), context.getSpecialistUser());
+            workflowUtil.updateMappingsExpectConflict(context.getMapSet().getId(), Collections.singletonList(mapping), context.getSpecialistUser());
 
-            assertThat(MappingWorkflowTestHandler.wasUpdateCalled()).isTrue();
-            assertEquals("Auto claimed save", updated.get(0).getName());
-            assertEquals(MapWorkflowStatus.EDITING_DONE, context.reloadWorkflow().getWorkflowStatus());
-            assertNull(context.reloadWorkflow().getAssignedUser());
-        }
-    }
-
-    /**
-     * Test edit reopens EDITING_DONE for another save, then finishes again.
-     *
-     * @throws Exception the exception
-     */
-    @Test
-    public void testEditReopensEditingDoneThenFinishes() throws Exception {
-
-        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
-            context.setWorkflowStatus(MapWorkflowStatus.EDITING_DONE);
-
-            final Mapping mapping = new Mapping();
-            mapping.setCode(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE);
-            mapping.setName("Second save");
-
-            final List<Mapping> updated =
-                workflowUtil.updateMappings(context.getMapSet().getId(), Collections.singletonList(mapping), context.getSpecialistUser());
-
-            assertThat(MappingWorkflowTestHandler.wasUpdateCalled()).isTrue();
-            assertEquals("Second save", updated.get(0).getName());
-            assertEquals(MapWorkflowStatus.EDITING_DONE, context.reloadWorkflow().getWorkflowStatus());
-            assertNull(context.reloadWorkflow().getAssignedUser());
+            assertThat(MappingWorkflowTestHandler.wasUpdateCalled()).isFalse();
         }
     }
 
@@ -271,24 +243,24 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
     }
 
     /**
-     * Test edit blocked when phase is past specialist editing and still assigned to someone else.
+     * Test edit blocked when phase edit done.
      *
      * @throws Exception the exception
      */
     @Test
-    public void testEditBlockedWhenAssignedToOtherInProgress() throws Exception {
+    public void testEditBlockedWhenPhaseEditDone() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
-            context.setWorkflowAssignedTo(context.getOtherSpecialistUser().getUserName());
+            context.setWorkflowStatus(MapWorkflowStatus.EDITING_DONE);
 
             final Mapping mapping = new Mapping();
             mapping.setCode(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE);
             mapping.setName("Blocked edit");
 
-            workflowUtil.updateMappingsExpectForbidden(context.getMapSet().getId(), Collections.singletonList(mapping), context.getSpecialistUser());
+            workflowUtil.updateMappingsExpectConflict(context.getMapSet().getId(), Collections.singletonList(mapping), context.getSpecialistUser());
 
-            assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, context.reloadWorkflow().getWorkflowStatus());
-            assertEquals(context.getOtherSpecialistUser().getUserName(), context.reloadWorkflow().getAssignedUser());
+            assertEquals(MapWorkflowStatus.EDITING_DONE, context.reloadWorkflow().getWorkflowStatus());
+            assertNull(context.reloadWorkflow().getAssignedUser());
             assertThat(MappingWorkflowTestHandler.wasUpdateCalled()).isFalse();
         }
     }
@@ -398,6 +370,42 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
     }
 
     /**
+     * Bulk GET returns a transient PUBLISHED placeholder for concepts in the mapset with no workflow row.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testGetWorkflowStatusBulkReturnsTransientPublished() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            final List<MappingWorkflow> workflows = workflowUtil.getWorkflowBulk(context.getMapSet().getId(),
+                Arrays.asList(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, "998877665"), context.getSpecialistUser());
+
+            assertEquals(2, workflows.size());
+            assertEquals(MapWorkflowStatus.NEW, workflows.get(0).getWorkflowStatus());
+            assertEquals(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, workflows.get(0).getSourceConceptCode());
+            assertEquals(MapWorkflowStatus.PUBLISHED, workflows.get(1).getWorkflowStatus());
+            assertEquals("998877665", workflows.get(1).getSourceConceptCode());
+            assertNull(workflows.get(1).getId());
+        }
+    }
+
+    /**
+     * Bulk GET returns 404 when a concept is not in the mapset and has no workflow row.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testGetWorkflowStatusBulkNotInMapSetReturns404() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            MappingWorkflowTestHandler.markConceptMissingFromMapSet("998877665");
+            workflowUtil.getWorkflowBulkExpectNotFound(context.getMapSet().getId(),
+                Arrays.asList(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, "998877665"), context.getSpecialistUser());
+        }
+    }
+
+    /**
      * Test bulk accept review with partial failure.
      *
      * @throws Exception the exception
@@ -417,5 +425,18 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
             assertEquals(MapWorkflowStatus.READY_FOR_PUBLICATION, result.getItems().get(0).getWorkflow().getWorkflowStatus());
             assertThat(result.getItems().get(1).isSuccess()).isFalse();
         }
+    }
+
+    /**
+     * Unauthenticated GET workflow status returns 401 with the RestException payload, not a 500 error page.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testGetWorkflowStatusRequiresAuthentication() throws Exception {
+
+        mvc.perform(get("/mapset/447562003/mappings/10007009/workflowStatus").accept(MediaType.APPLICATION_JSON)).andExpect(status().isUnauthorized())
+            .andExpect(jsonPath("$.status").value(401)).andExpect(jsonPath("$.error").value("Unauthorized"))
+            .andExpect(jsonPath("$.message").value("Unauthorized"));
     }
 }

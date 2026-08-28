@@ -599,7 +599,8 @@ public class MappingController extends BaseController {
             final List<Mapping> mappings = new ArrayList<>();
             mappings.add(mapping);
             final User user = requireAuthenticatedUser(request);
-            updateMappingsWithAutoClaim(service, user, mapSet, branch, mappings);
+            MappingWorkflowService.canUserEditMappings(user, mapSet, mappings, service);
+            MappingService.updateMappings(mapSet.getMapProject(), branch, mapSet.getRefSetCode(), mappings, mapSet);
 
             return new ResponseEntity<>(mapping, HttpStatus.OK);
 
@@ -653,7 +654,8 @@ public class MappingController extends BaseController {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
             final User user = requireAuthenticatedUser(request);
-            final List<Mapping> updatedMappings = updateMappingsWithAutoClaim(service, user, mapSet, branch, mappings);
+            MappingWorkflowService.canUserEditMappings(user, mapSet, mappings, service);
+            final List<Mapping> updatedMappings = MappingService.updateMappings(mapSet.getMapProject(), branch, mapSet.getRefSetCode(), mappings, mapSet);
 
             return new ResponseEntity<>(updatedMappings, HttpStatus.OK);
 
@@ -661,46 +663,6 @@ public class MappingController extends BaseController {
 
             rethrowHandled(e);
             return null;
-        }
-    }
-
-    /**
-     * Update mappings with temporary auto-claim / finish-edit workflow bridge.
-     *
-     * <p>
-     * {@code NEW}/unassigned (and previously finished) concepts are claimed, saved, then finished to
-     * {@code EDITING_DONE} (or {@code REVIEW_NEEDED} on review projects). Concepts already assigned to
-     * the acting user are saved without changing workflow phase.
-     *
-     * @param service the terminology service
-     * @param user the acting user
-     * @param mapSet the map set
-     * @param branch the snowstorm branch
-     * @param mappings the mappings to update
-     * @return the updated mappings
-     * @throws Exception the exception
-     */
-    private List<Mapping> updateMappingsWithAutoClaim(final TerminologyService service, final User user, final MapSet mapSet, final String branch,
-        final List<Mapping> mappings) throws Exception {
-
-        service.setModifiedBy(user.getUserName());
-        service.setModifiedFlag(true);
-        service.setTransactionPerOperation(false);
-        service.beginTransaction();
-        try {
-            final Set<String> autoClaimed = MappingWorkflowService.prepareMappingsForEdit(user, mapSet, mappings, service);
-            final List<Mapping> updated =
-                MappingService.updateMappings(mapSet.getMapProject(), branch, mapSet.getRefSetCode(), mappings, mapSet);
-            MappingWorkflowService.finishAutoClaimedMappings(user, mapSet, autoClaimed, service);
-            service.commit();
-            return updated;
-        } catch (final Exception e) {
-            try {
-                service.rollback();
-            } catch (final Exception rollbackEx) {
-                LOG.warn("Rollback after mapping update failure: {}", rollbackEx.getMessage());
-            }
-            throw e;
         }
     }
 
@@ -821,6 +783,10 @@ public class MappingController extends BaseController {
     /**
      * Get the per-concept mapping workflow state.
      *
+     * <p>
+     * Returns a non-persisted {@code PUBLISHED} placeholder when the concept is in the mapset but has no
+     * workflow row. Returns 404 when the concept is not in the mapset.
+     *
      * @param mapSetInternalId the map set internal id
      * @param conceptCode the source concept code
      * @param request the request
@@ -842,7 +808,7 @@ public class MappingController extends BaseController {
             if (mapSet.getMapProject() == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-            final MappingWorkflow workflow = MappingWorkflowService.findWorkflowForConcept(service, mapSet, conceptCode);
+            final MappingWorkflow workflow = MappingWorkflowService.getWorkflowForConcept(service, mapSet, conceptCode);
             if (workflow == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }

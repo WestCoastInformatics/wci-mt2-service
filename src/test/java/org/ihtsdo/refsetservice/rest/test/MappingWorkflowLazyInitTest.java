@@ -1,6 +1,7 @@
 package org.ihtsdo.refsetservice.rest.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.ihtsdo.refsetservice.model.MapWorkflowStatus;
 import org.ihtsdo.refsetservice.model.MappingWorkflow;
@@ -52,12 +53,30 @@ public class MappingWorkflowLazyInitTest extends BaseTest {
     }
 
     @Test
-    public void missingGetReturns404() throws Exception {
+    public void missingGetReturnsTransientPublished() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.removePrimaryWorkflow();
             assertEquals(0, MappingWorkflowService.countWorkflowRows(
                 context.getService(), context.getMapSet(), LAZY_CONCEPT_CODE, 1));
+
+            final MappingWorkflow fetched = workflowUtil.getWorkflow(
+                context.getMapSet().getId(), LAZY_CONCEPT_CODE, context.getSpecialistUser());
+
+            assertEquals(MapWorkflowStatus.PUBLISHED, fetched.getWorkflowStatus());
+            assertEquals(LAZY_CONCEPT_CODE, fetched.getSourceConceptCode());
+            assertEquals(1, fetched.getSpecialistSlot());
+            assertNull(fetched.getId());
+            assertEquals(0, MappingWorkflowService.countWorkflowRows(
+                context.getService(), context.getMapSet(), LAZY_CONCEPT_CODE, 1));
+        }
+    }
+
+    @Test
+    public void missingGetWhenConceptNotInMapSetReturns404() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            MappingWorkflowTestHandler.markConceptMissingFromMapSet(LAZY_CONCEPT_CODE);
 
             workflowUtil.getWorkflowExpectNotFound(
                 context.getMapSet().getId(), LAZY_CONCEPT_CODE, context.getSpecialistUser());

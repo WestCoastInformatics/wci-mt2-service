@@ -42,6 +42,7 @@ public class RestException extends RuntimeException {
   public RestException(final boolean local, final int status, final String error,
       final String message) {
 
+    super(message);
     this.error = new Error(local, status, error, message);
   }
 
@@ -56,7 +57,7 @@ public class RestException extends RuntimeException {
   public RestException(final boolean local, final HttpStatus httpStatus, final String error,
       final String message) {
 
-    this.error = new Error(local, httpStatus.value(), error, message);
+    this(local, httpStatus.value(), error, message);
   }
 
   /**
@@ -66,6 +67,7 @@ public class RestException extends RuntimeException {
    */
   public RestException(final Error error) {
 
+    super(messageOf(error));
     this.error = error;
   }
 
@@ -87,6 +89,25 @@ public class RestException extends RuntimeException {
   public void setError(final Error error) {
 
     this.error = error;
+  }
+
+  /* see superclass */
+  @Override
+  public String getMessage() {
+
+    final String fromError = messageOf(error);
+    return fromError != null ? fromError : super.getMessage();
+  }
+
+  /**
+   * Returns the message from the nested error, or null.
+   *
+   * @param error the error
+   * @return the message
+   */
+  private static String messageOf(final Error error) {
+
+    return error != null ? error.getMessage() : null;
   }
 
   /* see superclass */
