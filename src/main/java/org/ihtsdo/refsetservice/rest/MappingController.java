@@ -821,6 +821,10 @@ public class MappingController extends BaseController {
     /**
      * Get the per-concept mapping workflow state.
      *
+     * <p>
+     * Returns a non-persisted {@code PUBLISHED} placeholder when the concept is in the mapset but has no
+     * workflow row. Returns 404 when the concept is not in the mapset.
+     *
      * @param mapSetInternalId the map set internal id
      * @param conceptCode the source concept code
      * @param request the request
@@ -842,7 +846,7 @@ public class MappingController extends BaseController {
             if (mapSet.getMapProject() == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
-            final MappingWorkflow workflow = MappingWorkflowService.findWorkflowForConcept(service, mapSet, conceptCode);
+            final MappingWorkflow workflow = MappingWorkflowService.getWorkflowForConcept(service, mapSet, conceptCode);
             if (workflow == null) {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }

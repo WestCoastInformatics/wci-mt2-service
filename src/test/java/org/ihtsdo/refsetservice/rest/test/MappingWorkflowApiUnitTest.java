@@ -3,6 +3,9 @@ package org.ihtsdo.refsetservice.rest.test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -398,6 +402,42 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
     }
 
     /**
+     * Bulk GET returns a transient PUBLISHED placeholder for concepts in the mapset with no workflow row.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testGetWorkflowStatusBulkReturnsTransientPublished() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            final List<MappingWorkflow> workflows = workflowUtil.getWorkflowBulk(context.getMapSet().getId(),
+                Arrays.asList(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, "998877665"), context.getSpecialistUser());
+
+            assertEquals(2, workflows.size());
+            assertEquals(MapWorkflowStatus.NEW, workflows.get(0).getWorkflowStatus());
+            assertEquals(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, workflows.get(0).getSourceConceptCode());
+            assertEquals(MapWorkflowStatus.PUBLISHED, workflows.get(1).getWorkflowStatus());
+            assertEquals("998877665", workflows.get(1).getSourceConceptCode());
+            assertNull(workflows.get(1).getId());
+        }
+    }
+
+    /**
+     * Bulk GET returns 404 when a concept is not in the mapset and has no workflow row.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testGetWorkflowStatusBulkNotInMapSetReturns404() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            MappingWorkflowTestHandler.markConceptMissingFromMapSet("998877665");
+            workflowUtil.getWorkflowBulkExpectNotFound(context.getMapSet().getId(),
+                Arrays.asList(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, "998877665"), context.getSpecialistUser());
+        }
+    }
+
+    /**
      * Test bulk accept review with partial failure.
      *
      * @throws Exception the exception
@@ -417,5 +457,18 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
             assertEquals(MapWorkflowStatus.READY_FOR_PUBLICATION, result.getItems().get(0).getWorkflow().getWorkflowStatus());
             assertThat(result.getItems().get(1).isSuccess()).isFalse();
         }
+    }
+
+    /**
+     * Unauthenticated GET workflow status returns 401 with the RestException payload, not a 500 error page.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testGetWorkflowStatusRequiresAuthentication() throws Exception {
+
+        mvc.perform(get("/mapset/447562003/mappings/10007009/workflowStatus").accept(MediaType.APPLICATION_JSON)).andExpect(status().isUnauthorized())
+            .andExpect(jsonPath("$.status").value(401)).andExpect(jsonPath("$.error").value("Unauthorized"))
+            .andExpect(jsonPath("$.message").value("Unauthorized"));
     }
 }

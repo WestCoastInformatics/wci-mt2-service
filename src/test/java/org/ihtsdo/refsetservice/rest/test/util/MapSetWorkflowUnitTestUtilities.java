@@ -98,29 +98,17 @@ public class MapSetWorkflowUnitTestUtilities {
     }
 
     /**
-     * Attempt workflow status change and expect an error (invalid transition). The API rejects invalid transitions by throwing; we assert an exception is
-     * thrown.
+     * Attempt workflow status change and expect HTTP 4xx (invalid transition).
      *
      * @param mapSet the map set
      * @param action the action
      * @param note the note
+     * @throws Exception the exception
      */
-    public void updateWorkflowExpectError(final MapSet mapSet, final WorkflowAction action, final String note) {
+    public void updateWorkflowExpectError(final MapSet mapSet, final WorkflowAction action, final String note) throws Exception {
 
         final String url = baseUrl + "/" + mapSet.getId() + "/workflowStatus?action=" + action + "&notes=" + (note != null ? note : "");
-
-        final Exception thrown = org.junit.jupiter.api.Assertions.assertThrows(Exception.class,
-            () -> mvc.perform(post(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn());
-
-        Throwable cause = thrown;
-        while (cause != null) {
-            if (cause.getClass().getSimpleName().equals("RestException")
-                || (cause.getCause() == null && cause.getMessage() != null && cause.getMessage().contains("workflow status"))) {
-                return;
-            }
-            cause = cause.getCause();
-        }
-        org.junit.jupiter.api.Assertions.fail("Expected RestException or workflow-related error, got: " + thrown);
+        mvc.perform(post(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().is4xxClientError());
     }
 
     /** Max retries for updateWorkflowNote when Hibernate Search indexing may lag. */
