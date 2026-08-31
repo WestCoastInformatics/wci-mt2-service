@@ -183,6 +183,54 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
     }
 
     /**
+     * Test lead may save mapping data while assigned for review; phase stays REVIEW_IN_PROGRESS.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testEditAllowedWhenLeadAssignedForReview() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createReviewProjectInEdit()) {
+            context.setWorkflowAssignedTo(context.getLeadUser().getUserName(), MapWorkflowStatus.REVIEW_IN_PROGRESS);
+
+            final Mapping mapping = new Mapping();
+            mapping.setCode(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE);
+            mapping.setName("Lead review edit");
+
+            final List<Mapping> updated =
+                workflowUtil.updateMappings(context.getMapSet().getId(), Collections.singletonList(mapping), context.getLeadUser());
+
+            assertThat(MappingWorkflowTestHandler.wasUpdateCalled()).isTrue();
+            assertEquals("Lead review edit", updated.get(0).getName());
+            assertEquals(MapWorkflowStatus.REVIEW_IN_PROGRESS, context.reloadWorkflow().getWorkflowStatus());
+            assertEquals(context.getLeadUser().getUserName(), context.reloadWorkflow().getAssignedUser());
+        }
+    }
+
+    /**
+     * Test specialist cannot save mapping data assigned to a lead for review.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testEditBlockedWhenSpecialistDuringLeadReview() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createReviewProjectInEdit()) {
+            context.setWorkflowAssignedTo(context.getLeadUser().getUserName(), MapWorkflowStatus.REVIEW_IN_PROGRESS);
+
+            final Mapping mapping = new Mapping();
+            mapping.setCode(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE);
+            mapping.setName("Specialist review edit");
+
+            workflowUtil.updateMappingsExpectForbidden(context.getMapSet().getId(), Collections.singletonList(mapping), context.getSpecialistUser());
+
+            assertEquals(MapWorkflowStatus.REVIEW_IN_PROGRESS, context.reloadWorkflow().getWorkflowStatus());
+            assertEquals(context.getLeadUser().getUserName(), context.reloadWorkflow().getAssignedUser());
+            assertThat(MappingWorkflowTestHandler.wasUpdateCalled()).isFalse();
+        }
+    }
+
+    /**
      * Test edit auto-claims NEW mappings, saves, then finishes to EDITING_DONE.
      *
      * @throws Exception the exception
