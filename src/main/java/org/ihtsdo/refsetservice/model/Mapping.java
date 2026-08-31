@@ -155,6 +155,7 @@ public class Mapping extends AbstractHasModified {
      *
      * @return the map notes
      */
+    @JsonGetter
     public Set<MapNote> getMapNotes() {
 
         return mapNotes == null ? (mapNotes = new HashSet<>()) : mapNotes;
