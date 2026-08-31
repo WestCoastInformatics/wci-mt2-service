@@ -59,6 +59,13 @@ public class MappingWorkflow extends AbstractHasModified {
     @Column(nullable = false, length = 256)
     private MapWorkflowStatus workflowStatus;
 
+    /**
+     * Workflow phase before {@code ASSIGN}, restored by {@code RELEASE}/{@code FORCE_RELEASE}.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = true, length = 256)
+    private MapWorkflowStatus previousWorkflowStatus;
+
     /** The assigned user. */
     @Column(nullable = true, length = 256)
     private String assignedUser;
@@ -139,6 +146,26 @@ public class MappingWorkflow extends AbstractHasModified {
     public void setWorkflowStatus(final MapWorkflowStatus workflowStatus) {
 
         this.workflowStatus = workflowStatus;
+    }
+
+    /**
+     * Returns the workflow status from before assign.
+     *
+     * @return the previous workflow status
+     */
+    public MapWorkflowStatus getPreviousWorkflowStatus() {
+
+        return previousWorkflowStatus;
+    }
+
+    /**
+     * Sets the workflow status from before assign.
+     *
+     * @param previousWorkflowStatus the previous workflow status
+     */
+    public void setPreviousWorkflowStatus(final MapWorkflowStatus previousWorkflowStatus) {
+
+        this.previousWorkflowStatus = previousWorkflowStatus;
     }
 
     /**
@@ -327,6 +354,7 @@ public class MappingWorkflow extends AbstractHasModified {
         return specialistSlot == other.specialistSlot
             && Objects.equals(sourceConceptCode, other.sourceConceptCode)
             && workflowStatus == other.workflowStatus
+            && previousWorkflowStatus == other.previousWorkflowStatus
             && Objects.equals(assignedUser, other.assignedUser)
             && Objects.equals(assignedAt, other.assignedAt)
             && Objects.equals(leaseExpiresAt, other.leaseExpiresAt)
@@ -337,7 +365,8 @@ public class MappingWorkflow extends AbstractHasModified {
     @Override
     public int hashCode() {
 
-        return Objects.hash(sourceConceptCode, workflowStatus, assignedUser, assignedAt, leaseExpiresAt, specialistSlot, mapSet, mapProject);
+        return Objects.hash(sourceConceptCode, workflowStatus, previousWorkflowStatus, assignedUser, assignedAt, leaseExpiresAt, specialistSlot, mapSet,
+            mapProject);
     }
 
     @Override

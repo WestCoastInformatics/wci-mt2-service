@@ -81,6 +81,7 @@ public class MappingWorkflowUnitTest extends BaseTest {
             workflow.setAssignedAt(assignedAt);
             workflow.setLeaseExpiresAt(leaseExpiresAt);
             workflow.setSpecialistSlot(1);
+            workflow.setPreviousWorkflowStatus(MapWorkflowStatus.PUBLISHED);
             workflow.setMapSet(persistedMapSet);
             workflow.setMapProject(persistedMapProject);
 
@@ -202,6 +203,7 @@ public class MappingWorkflowUnitTest extends BaseTest {
 
         assertEquals(expected.getSourceConceptCode(), actual.getSourceConceptCode());
         assertEquals(expected.getWorkflowStatus(), actual.getWorkflowStatus());
+        assertEquals(expected.getPreviousWorkflowStatus(), actual.getPreviousWorkflowStatus());
         assertEquals(expected.getAssignedUser(), actual.getAssignedUser());
         assertEquals(expected.getAssignedAt().getTime(), actual.getAssignedAt().getTime());
         assertEquals(expected.getLeaseExpiresAt().getTime(), actual.getLeaseExpiresAt().getTime());

@@ -89,6 +89,28 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
     }
 
     /**
+     * Test assign then release of a PUBLISHED mapping restores PUBLISHED.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testAssignThenReleaseRestoresPublished() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            context.setWorkflowStatus(MapWorkflowStatus.PUBLISHED);
+
+            workflowUtil.updateWorkflow(context.getMapSet().getId(), MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE,
+                MappingWorkflowAction.ASSIGN, "Assigned", context.getSpecialistUser());
+            final MappingWorkflow released = workflowUtil.updateWorkflow(context.getMapSet().getId(), MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE,
+                MappingWorkflowAction.RELEASE, "Unassigned", context.getSpecialistUser());
+
+            assertEquals(MapWorkflowStatus.PUBLISHED, released.getWorkflowStatus());
+            assertNull(released.getAssignedUser());
+            assertNull(released.getPreviousWorkflowStatus());
+        }
+    }
+
+    /**
      * Test invalid transition accept review from new.
      *
      * @throws Exception the exception

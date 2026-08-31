@@ -238,6 +238,7 @@ public final class MappingWorkflowService {
         }
 
         nextStatus = adjustResultStatusForWorkflowType(mapProject, action, nextStatus);
+        nextStatus = adjustResultStatusForPreviousWorkflowStatus(workflow, action, nextStatus);
 
         applyConceptBranchSideEffects(action, mapSet, workflow);
 
@@ -912,6 +913,7 @@ public final class MappingWorkflowService {
 
         if (action == MappingWorkflowAction.ASSIGN) {
             final Date assignedAt = new Date();
+            workflow.setPreviousWorkflowStatus(workflow.getWorkflowStatus());
             workflow.setAssignedUser(user.getUserName());
             workflow.setAssignedAt(assignedAt);
             workflow.setLeaseExpiresAt(new Date(assignedAt.getTime() + getLeaseDurationMs()));
@@ -929,6 +931,7 @@ public final class MappingWorkflowService {
             workflow.setAssignedUser(null);
             workflow.setAssignedAt(null);
             workflow.setLeaseExpiresAt(null);
+            workflow.setPreviousWorkflowStatus(null);
         }
     }
 
@@ -1021,6 +1024,26 @@ public final class MappingWorkflowService {
         }
         if (action == MappingWorkflowAction.FINISH_EDITING && nextStatus == MapWorkflowStatus.EDITING_DONE) {
             return MapWorkflowStatus.REVIEW_NEEDED;
+        }
+        return nextStatus;
+    }
+
+    /**
+     * Restore the workflow phase captured on {@code ASSIGN} when giving up an editing assignment.
+     *
+     * @param workflow the workflow
+     * @param action the action
+     * @param nextStatus the permutation result
+     * @return the previous workflow status, or {@code nextStatus} when it is unset
+     */
+    private static MapWorkflowStatus adjustResultStatusForPreviousWorkflowStatus(final MappingWorkflow workflow, final MappingWorkflowAction action,
+        final MapWorkflowStatus nextStatus) {
+
+        if (workflow == null || workflow.getPreviousWorkflowStatus() == null) {
+            return nextStatus;
+        }
+        if (action == MappingWorkflowAction.RELEASE || action == MappingWorkflowAction.FORCE_RELEASE) {
+            return workflow.getPreviousWorkflowStatus();
         }
         return nextStatus;
     }
