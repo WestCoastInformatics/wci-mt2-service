@@ -84,10 +84,10 @@ ADMIN,REVIEW_IN_PROGRESS,FORCE_RELEASE,REVIEW_NEEDED
 # NOTES
 ##################
 #
-# Origin restore (not representable as one RESULT_STATUS):
-#   TSV RELEASE/FORCE_RELEASE from EDITING_IN_PROGRESS next is
-#   NEW/PUBLISHED/READY_FOR_PUBLICATION (restore the queue status from before ASSIGN).
-#   This file uses NEW until MappingWorkflow stores that origin.
+# Origin restore:
+#   RELEASE/FORCE_RELEASE from EDITING_IN_PROGRESS restores MappingWorkflow.previousWorkflowStatus
+#   (the phase captured on ASSIGN: NEW, PUBLISHED, or READY_FOR_PUBLICATION).
+#   TSV RESULT_STATUS stays NEW when previousWorkflowStatus is unset (rows assigned before this field).
 #   REJECT_REVIEW -> NEW has the same problem for PUBLISHED carryover mappings.
 #
 # REQUEST_REVISION:
