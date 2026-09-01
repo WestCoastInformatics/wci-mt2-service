@@ -182,6 +182,49 @@ public class MappingWorkflowServiceTest {
     }
 
     /**
+     * Release after assign from NEW restores NEW.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void releaseAfterAssignFromNewRestoresNew() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(),
+                MappingWorkflowAction.ASSIGN, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assign", null);
+
+            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(),
+                MappingWorkflowAction.RELEASE, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Release", null);
+
+            assertEquals(MapWorkflowStatus.NEW, updated.getWorkflowStatus());
+            assertNull(updated.getPreviousWorkflowStatus());
+            assertNull(updated.getAssignedUser());
+        }
+    }
+
+    /**
+     * Release after assign from PUBLISHED restores PUBLISHED.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void releaseAfterAssignFromPublishedRestoresPublished() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            context.setWorkflowStatus(MapWorkflowStatus.PUBLISHED);
+            MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(),
+                MappingWorkflowAction.ASSIGN, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assign", null);
+
+            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(),
+                MappingWorkflowAction.RELEASE, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Release", null);
+
+            assertEquals(MapWorkflowStatus.PUBLISHED, updated.getWorkflowStatus());
+            assertNull(updated.getPreviousWorkflowStatus());
+            assertNull(updated.getAssignedUser());
+        }
+    }
+
+    /**
      * Release by non holder.
      *
      * @throws Exception the exception
@@ -335,6 +378,28 @@ public class MappingWorkflowServiceTest {
             assertEquals(MapWorkflowStatus.NEW, updated.getWorkflowStatus());
             assertNull(updated.getAssignedUser());
             assertEquals(MappingWorkflowAction.FORCE_RELEASE, context.latestHistory().getWorkflowAction());
+        }
+    }
+
+    /**
+     * Force release after assign from PUBLISHED restores PUBLISHED.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void forceReleaseAfterAssignFromPublishedRestoresPublished() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            context.setWorkflowStatus(MapWorkflowStatus.PUBLISHED);
+            MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(),
+                MappingWorkflowAction.ASSIGN, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assign", null);
+
+            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getAdminUser(),
+                MappingWorkflowAction.FORCE_RELEASE, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Force release", null);
+
+            assertEquals(MapWorkflowStatus.PUBLISHED, updated.getWorkflowStatus());
+            assertNull(updated.getPreviousWorkflowStatus());
+            assertNull(updated.getAssignedUser());
         }
     }
 

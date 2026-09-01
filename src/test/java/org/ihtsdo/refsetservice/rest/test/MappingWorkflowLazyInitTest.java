@@ -103,6 +103,28 @@ public class MappingWorkflowLazyInitTest extends BaseTest {
         }
     }
 
+    /**
+     * Assign then release of a lazy PUBLISHED mapping restores PUBLISHED.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void assignThenReleaseRestoresPublished() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            context.removePrimaryWorkflow();
+
+            workflowUtil.updateWorkflow(context.getMapSet().getId(), LAZY_CONCEPT_CODE,
+                MappingWorkflowAction.ASSIGN, "Assign", context.getSpecialistUser());
+            final MappingWorkflow released = workflowUtil.updateWorkflow(context.getMapSet().getId(), LAZY_CONCEPT_CODE,
+                MappingWorkflowAction.RELEASE, "Unassign", context.getSpecialistUser());
+
+            assertEquals(MapWorkflowStatus.PUBLISHED, released.getWorkflowStatus());
+            assertNull(released.getAssignedUser());
+            assertNull(released.getPreviousWorkflowStatus());
+        }
+    }
+
     @Test
     public void getAfterAssignReturnsRow() throws Exception {
 

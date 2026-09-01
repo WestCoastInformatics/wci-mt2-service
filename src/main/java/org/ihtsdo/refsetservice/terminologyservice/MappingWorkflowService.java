@@ -109,6 +109,12 @@ public final class MappingWorkflowService {
         MapWorkflowStatus.CONFLICT_IN_PROGRESS
     );
 
+    /** Mapping phases in which the assigned user may save mapping data. */
+    private static final List<MapWorkflowStatus> MAPPING_EDITABLE_STATUSES = Arrays.asList(
+        MapWorkflowStatus.EDITING_IN_PROGRESS,
+        MapWorkflowStatus.REVIEW_IN_PROGRESS
+    );
+
     /** Mapset actions gated on per-mapping workflow summary. */
     private static final List<WorkflowAction> MAPSET_GATE_ACTIONS = Arrays.asList(
         WorkflowAction.FINISH_EDIT,
@@ -232,6 +238,7 @@ public final class MappingWorkflowService {
         }
 
         nextStatus = adjustResultStatusForWorkflowType(mapProject, action, nextStatus);
+        nextStatus = adjustResultStatusForPreviousWorkflowStatus(workflow, action, nextStatus);
 
         applyConceptBranchSideEffects(action, mapSet, workflow);
 
@@ -906,6 +913,7 @@ public final class MappingWorkflowService {
 
         if (action == MappingWorkflowAction.ASSIGN) {
             final Date assignedAt = new Date();
+            workflow.setPreviousWorkflowStatus(workflow.getWorkflowStatus());
             workflow.setAssignedUser(user.getUserName());
             workflow.setAssignedAt(assignedAt);
             workflow.setLeaseExpiresAt(new Date(assignedAt.getTime() + getLeaseDurationMs()));
@@ -923,6 +931,7 @@ public final class MappingWorkflowService {
             workflow.setAssignedUser(null);
             workflow.setAssignedAt(null);
             workflow.setLeaseExpiresAt(null);
+            workflow.setPreviousWorkflowStatus(null);
         }
     }
 
@@ -1015,6 +1024,26 @@ public final class MappingWorkflowService {
         }
         if (action == MappingWorkflowAction.FINISH_EDITING && nextStatus == MapWorkflowStatus.EDITING_DONE) {
             return MapWorkflowStatus.REVIEW_NEEDED;
+        }
+        return nextStatus;
+    }
+
+    /**
+     * Restore the workflow phase captured on {@code ASSIGN} when giving up an editing assignment.
+     *
+     * @param workflow the workflow
+     * @param action the action
+     * @param nextStatus the permutation result
+     * @return the previous workflow status, or {@code nextStatus} when it is unset
+     */
+    private static MapWorkflowStatus adjustResultStatusForPreviousWorkflowStatus(final MappingWorkflow workflow, final MappingWorkflowAction action,
+        final MapWorkflowStatus nextStatus) {
+
+        if (workflow == null || workflow.getPreviousWorkflowStatus() == null) {
+            return nextStatus;
+        }
+        if (action == MappingWorkflowAction.RELEASE || action == MappingWorkflowAction.FORCE_RELEASE) {
+            return workflow.getPreviousWorkflowStatus();
         }
         return nextStatus;
     }
@@ -1500,6 +1529,10 @@ public final class MappingWorkflowService {
     /**
      * Verify the user may edit mapping data for a source concept.
      *
+     * <p>
+     * Allowed when the mapset is in edit, the mapping is {@code EDITING_IN_PROGRESS} or
+     * {@code REVIEW_IN_PROGRESS}, and the acting user holds the assignment.
+     *
      * @param user the acting user
      * @param workflow the mapping workflow row
      * @param mapSet the map set
@@ -1512,7 +1545,7 @@ public final class MappingWorkflowService {
                 "Reference Set is not in edit; mapping cannot be edited.");
         }
 
-        if (workflow == null || workflow.getWorkflowStatus() != MapWorkflowStatus.EDITING_IN_PROGRESS) {
+        if (workflow == null || !MAPPING_EDITABLE_STATUSES.contains(workflow.getWorkflowStatus())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                 "Mapping is not assigned for editing; mapping cannot be edited.");
         }
