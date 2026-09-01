@@ -100,9 +100,9 @@ ADMIN,REVIEW_IN_PROGRESS,FORCE_RELEASE,REVIEW_NEEDED
 #
 # Conflict path omitted for this deployment (no CONFLICT_* transitions).
 #
-# Runtime gates not in this file:
-#   ASSIGN from READY_FOR_PUBLICATION is listed here but isUnassignedAssignable
-#   currently allows only NEW and PUBLISHED.
+# Runtime checks not in this file (assignment holder and mapset edit state):
+#   mapset must be IN_EDIT for ASSIGN/RELEASE/FINISH_EDITING/FORCE_RELEASE/REASSIGN
+#   claim actions require assigned_user empty; holder actions require assigned_user = actor
 #   REVIEW_PROJECT still auto-routes FINISH_EDITING to REVIEW_NEEDED, so
 #   EDITING_DONE + REQUEST_REVIEW is not reached on review projects.
 #
