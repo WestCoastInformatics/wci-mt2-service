@@ -102,6 +102,23 @@ public final class MappingWorkflowService {
         MappingWorkflowAction.REASSIGN
     );
 
+    /** Claim actions: permutations decide which phases; runtime requires unassigned. */
+    private static final List<MappingWorkflowAction> CLAIM_ACTIONS = Arrays.asList(
+        MappingWorkflowAction.ASSIGN,
+        MappingWorkflowAction.START_REVIEW,
+        MappingWorkflowAction.START_CONFLICT_RESOLUTION
+    );
+
+    /** Holder actions: permutations decide which phases; runtime requires assigned_user = actor. */
+    private static final List<MappingWorkflowAction> HOLDER_ACTIONS = Arrays.asList(
+        MappingWorkflowAction.RELEASE,
+        MappingWorkflowAction.FINISH_EDITING,
+        MappingWorkflowAction.ACCEPT_REVIEW,
+        MappingWorkflowAction.REJECT_REVIEW,
+        MappingWorkflowAction.REQUEST_REVISION,
+        MappingWorkflowAction.RESOLVE_CONFLICT
+    );
+
     /** Mapping phases that block mapset FINISH_EDIT and REQUEST_PUBLICATION. */
     private static final List<MapWorkflowStatus> MAPSET_GATE_BLOCKING_STATUSES = Arrays.asList(
         MapWorkflowStatus.EDITING_IN_PROGRESS,
@@ -973,7 +990,8 @@ public final class MappingWorkflowService {
     }
 
     /**
-     * Passes action gates.
+     * Runtime constraints the permutation file cannot express: mapset edit state and assignment holder.
+     * Allowed role+status+action combinations come only from {@link #resolveTransition}.
      *
      * @param user the user
      * @param workflow the workflow
@@ -988,24 +1006,15 @@ public final class MappingWorkflowService {
             return false;
         }
 
-        switch (action) {
-            case ASSIGN:
-                return isUnassignedAssignable(workflow);
-            case START_REVIEW:
-                return workflow.getWorkflowStatus() == MapWorkflowStatus.REVIEW_NEEDED && workflow.getAssignedUser() == null;
-            case START_CONFLICT_RESOLUTION:
-                return workflow.getWorkflowStatus() == MapWorkflowStatus.CONFLICT_DETECTED && workflow.getAssignedUser() == null;
-            case RELEASE:
-            case FINISH_EDITING:
-                return user.getUserName().equals(workflow.getAssignedUser());
-            case ACCEPT_REVIEW:
-            case REJECT_REVIEW:
-            case REQUEST_REVISION:
-            case RESOLVE_CONFLICT:
-                return user.getUserName().equals(workflow.getAssignedUser());
-            default:
-                return true;
+        if (CLAIM_ACTIONS.contains(action)) {
+            return workflow.getAssignedUser() == null;
         }
+
+        if (HOLDER_ACTIONS.contains(action)) {
+            return user.getUserName().equals(workflow.getAssignedUser());
+        }
+
+        return true;
     }
 
     /**
@@ -1579,21 +1588,6 @@ public final class MappingWorkflowService {
             final MappingWorkflow workflow = findWorkflowForConcept(service, mapSet, mapping.getCode());
             canUserEditMapping(user, workflow, mapSet);
         }
-    }
-
-    /**
-     * True when the mapping is unassigned and in a start-of-cycle phase that can be claimed.
-     *
-     * @param workflow the workflow
-     * @return true, if unassigned NEW or PUBLISHED
-     */
-    private static boolean isUnassignedAssignable(final MappingWorkflow workflow) {
-
-        if (workflow == null || workflow.getAssignedUser() != null) {
-            return false;
-        }
-        return workflow.getWorkflowStatus() == MapWorkflowStatus.NEW
-            || workflow.getWorkflowStatus() == MapWorkflowStatus.PUBLISHED;
     }
 
     /**

@@ -225,6 +225,28 @@ public class MappingWorkflowServiceTest {
     }
 
     /**
+     * Release after assign from READY_FOR_PUBLICATION restores READY_FOR_PUBLICATION.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void releaseAfterAssignFromReadyForPublicationRestoresReadyForPublication() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            context.setWorkflowStatus(MapWorkflowStatus.READY_FOR_PUBLICATION);
+            MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(),
+                MappingWorkflowAction.ASSIGN, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assign", null);
+
+            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(),
+                MappingWorkflowAction.RELEASE, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Release", null);
+
+            assertEquals(MapWorkflowStatus.READY_FOR_PUBLICATION, updated.getWorkflowStatus());
+            assertNull(updated.getPreviousWorkflowStatus());
+            assertNull(updated.getAssignedUser());
+        }
+    }
+
+    /**
      * Release by non holder.
      *
      * @throws Exception the exception
@@ -480,6 +502,24 @@ public class MappingWorkflowServiceTest {
     }
 
     /**
+     * Allowed actions ready for publication specialist.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void allowedActionsReadyForPublicationSpecialist() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            context.setWorkflowStatus(MapWorkflowStatus.READY_FOR_PUBLICATION);
+
+            final Set<MappingWorkflowAction> allowed =
+                MappingWorkflowService.getAllowedActions(context.getSpecialistUser(), context.getWorkflow(), context.getMapSet(), context.getMapProject());
+
+            assertEquals(Set.of(MappingWorkflowAction.ASSIGN), allowed);
+        }
+    }
+
+    /**
      * Allowed actions in progress non holder.
      *
      * @throws Exception the exception
@@ -523,8 +563,12 @@ public class MappingWorkflowServiceTest {
             assertEquals(MapWorkflowStatus.READY_FOR_PUBLICATION, context.reloadWorkflow().getWorkflowStatus());
             assertEquals(3, context.historyCount());
 
-            assertThrows(ResponseStatusException.class, () -> MappingWorkflowService.setWorkflowStatusByAction(service, context.getSpecialistUser(),
-                MappingWorkflowAction.ASSIGN, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Too late", null));
+            MappingWorkflowService.setWorkflowStatusByAction(service, context.getSpecialistUser(), MappingWorkflowAction.ASSIGN, context.getWorkflow(),
+                context.getMapSet(), context.getMapProject(), "Re-edit", null);
+            final MappingWorkflow afterReassign = context.reloadWorkflow();
+            assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, afterReassign.getWorkflowStatus());
+            assertEquals(MapWorkflowStatus.READY_FOR_PUBLICATION, afterReassign.getPreviousWorkflowStatus());
+            assertEquals(context.getSpecialistUser().getUserName(), afterReassign.getAssignedUser());
         }
     }
 
