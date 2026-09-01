@@ -198,9 +198,6 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
 
             assertThat(MappingWorkflowTestHandler.wasUpdateCalled()).isTrue();
             assertEquals("Updated mapping", updated.get(0).getName());
-            // Already claimed: save does not auto-finish
-            assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, context.reloadWorkflow().getWorkflowStatus());
-            assertEquals(context.getSpecialistUser().getUserName(), context.reloadWorkflow().getAssignedUser());
         }
     }
 
@@ -253,50 +250,21 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
     }
 
     /**
-     * Test edit auto-claims NEW mappings, saves, then finishes to EDITING_DONE.
+     * Test edit blocked when not assigned
      *
      * @throws Exception the exception
      */
     @Test
-    public void testEditAutoClaimsNewThenFinishes() throws Exception {
+    public void testEditBlockedWhenNotAssigned() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             final Mapping mapping = new Mapping();
             mapping.setCode(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE);
-            mapping.setName("Auto claimed save");
+            mapping.setName("Should not save");
 
-            final List<Mapping> updated =
-                workflowUtil.updateMappings(context.getMapSet().getId(), Collections.singletonList(mapping), context.getSpecialistUser());
+            workflowUtil.updateMappingsExpectConflict(context.getMapSet().getId(), Collections.singletonList(mapping), context.getSpecialistUser());
 
-            assertThat(MappingWorkflowTestHandler.wasUpdateCalled()).isTrue();
-            assertEquals("Auto claimed save", updated.get(0).getName());
-            assertEquals(MapWorkflowStatus.EDITING_DONE, context.reloadWorkflow().getWorkflowStatus());
-            assertNull(context.reloadWorkflow().getAssignedUser());
-        }
-    }
-
-    /**
-     * Test edit reopens EDITING_DONE for another save, then finishes again.
-     *
-     * @throws Exception the exception
-     */
-    @Test
-    public void testEditReopensEditingDoneThenFinishes() throws Exception {
-
-        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
-            context.setWorkflowStatus(MapWorkflowStatus.EDITING_DONE);
-
-            final Mapping mapping = new Mapping();
-            mapping.setCode(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE);
-            mapping.setName("Second save");
-
-            final List<Mapping> updated =
-                workflowUtil.updateMappings(context.getMapSet().getId(), Collections.singletonList(mapping), context.getSpecialistUser());
-
-            assertThat(MappingWorkflowTestHandler.wasUpdateCalled()).isTrue();
-            assertEquals("Second save", updated.get(0).getName());
-            assertEquals(MapWorkflowStatus.EDITING_DONE, context.reloadWorkflow().getWorkflowStatus());
-            assertNull(context.reloadWorkflow().getAssignedUser());
+            assertThat(MappingWorkflowTestHandler.wasUpdateCalled()).isFalse();
         }
     }
 
@@ -345,24 +313,24 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
     }
 
     /**
-     * Test edit blocked when phase is past specialist editing and still assigned to someone else.
+     * Test edit blocked when phase edit done.
      *
      * @throws Exception the exception
      */
     @Test
-    public void testEditBlockedWhenAssignedToOtherInProgress() throws Exception {
+    public void testEditBlockedWhenPhaseEditDone() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
-            context.setWorkflowAssignedTo(context.getOtherSpecialistUser().getUserName());
+            context.setWorkflowStatus(MapWorkflowStatus.EDITING_DONE);
 
             final Mapping mapping = new Mapping();
             mapping.setCode(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE);
             mapping.setName("Blocked edit");
 
-            workflowUtil.updateMappingsExpectForbidden(context.getMapSet().getId(), Collections.singletonList(mapping), context.getSpecialistUser());
+            workflowUtil.updateMappingsExpectConflict(context.getMapSet().getId(), Collections.singletonList(mapping), context.getSpecialistUser());
 
-            assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, context.reloadWorkflow().getWorkflowStatus());
-            assertEquals(context.getOtherSpecialistUser().getUserName(), context.reloadWorkflow().getAssignedUser());
+            assertEquals(MapWorkflowStatus.EDITING_DONE, context.reloadWorkflow().getWorkflowStatus());
+            assertNull(context.reloadWorkflow().getAssignedUser());
             assertThat(MappingWorkflowTestHandler.wasUpdateCalled()).isFalse();
         }
     }
