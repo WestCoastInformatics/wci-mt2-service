@@ -835,6 +835,7 @@ public final class MappingWorkflowService {
             final String userName = user.getUserName();
             addRoleFromMembership(roles, userName, mapProject.getMapSpecialists(), MappingWorkflowRole.SPECIALIST);
             addRoleFromMembership(roles, userName, mapProject.getMapLeads(), MappingWorkflowRole.LEAD);
+            addRoleFromMembership(roles, userName, mapProject.getMapAdmins(), MappingWorkflowRole.ADMIN);
         }
 
         for (final MappingWorkflowRole entraRole : EntraMapBootstrap.toWorkflowRoles(user.getRoles())) {

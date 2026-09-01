@@ -207,15 +207,18 @@ public class MapProjectService extends BaseService {
 
     /**
      * Add Entra {@code all-all-all-*} users to the response collections. Does not persist join rows.
-     * Highest role wins: admin, then lead, then specialist. A user appears in only one list.
+     * A user may appear in multiple lists when they hold multiple roles (for example admin and
+     * specialist, or lead and specialist). Admin membership populates {@code mapAdmins} only.
      *
      * @param mapProject the map project
      * @param activeMapUsers active map users
      */
     private static void mergeEntraGlobalMembers(final MapProject mapProject, final List<MapUser> activeMapUsers) {
 
+        final Set<MapUser> admins = new LinkedHashSet<>();
         final Set<MapUser> leads = new LinkedHashSet<>();
         final Set<MapUser> specialists = new LinkedHashSet<>();
+        addAllCopied(admins, mapProject.getMapAdmins());
         addAllCopied(leads, mapProject.getMapLeads());
         addAllCopied(specialists, mapProject.getMapSpecialists());
 
@@ -229,18 +232,18 @@ public class MapProjectService extends BaseService {
                     continue;
                 }
                 if (EntraMapBootstrap.listContainsUser(adminNames, mapUser.getUserName())) {
-                    putByUserName(leads, copyWithRole(mapUser, MapUserRole.ADMINISTRATOR));
-                    removeByUserName(specialists, mapUser.getUserName());
-                } else if (EntraMapBootstrap.listContainsUser(leadNames, mapUser.getUserName())) {
+                    putByUserName(admins, copyWithRole(mapUser, MapUserRole.ADMINISTRATOR));
+                }
+                if (EntraMapBootstrap.listContainsUser(leadNames, mapUser.getUserName())) {
                     putByUserName(leads, copyWithRole(mapUser, MapUserRole.LEAD));
-                    removeByUserName(specialists, mapUser.getUserName());
-                } else if (EntraMapBootstrap.listContainsUser(specNames, mapUser.getUserName())) {
+                }
+                if (EntraMapBootstrap.listContainsUser(specNames, mapUser.getUserName())) {
                     putByUserName(specialists, copyWithRole(mapUser, MapUserRole.SPECIALIST));
-                    removeByUserName(leads, mapUser.getUserName());
                 }
             }
         }
 
+        mapProject.setMapAdmins(admins);
         mapProject.setMapLeads(leads);
         mapProject.setMapSpecialists(specialists);
     }
@@ -305,7 +308,7 @@ public class MapProjectService extends BaseService {
     }
 
     /**
-     * Returns authorized map users for a map project (leads and specialists).
+     * Returns authorized map users for a map project (admins, leads, and specialists).
      *
      * @param service the service
      * @param mapProjectId the mapProject ID
@@ -317,6 +320,7 @@ public class MapProjectService extends BaseService {
         final MapProject mapProject = getMapProject(service, mapProjectId, true);
         final Map<String, MapUser> usersByUserName = new LinkedHashMap<>();
 
+        addMapUsers(usersByUserName, mapProject.getMapAdmins());
         addMapUsers(usersByUserName, mapProject.getMapLeads());
         addMapUsers(usersByUserName, mapProject.getMapSpecialists());
 

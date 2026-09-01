@@ -104,6 +104,7 @@ public class MapProjectUnitTest extends BaseTest {
         tester.exclude("presetAgeRanges");
         tester.exclude("mapLeads");
         tester.exclude("mapSpecialists");
+        tester.exclude("mapAdmins");
         tester.exclude("mapPrinciples");
         tester.exclude("mapAdvices");
         tester.exclude("additionalMapEntryInfos");
@@ -149,6 +150,7 @@ public class MapProjectUnitTest extends BaseTest {
         tester.exclude("presetAgeRanges");
         tester.exclude("mapLeads");
         tester.exclude("mapSpecialists");
+        tester.exclude("mapAdmins");
         tester.exclude("mapPrinciples");
         tester.exclude("mapAdvices");
         tester.exclude("additionalMapEntryInfos");

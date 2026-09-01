@@ -191,6 +191,12 @@ public class MapProject extends AbstractHasModified implements Copyable<MapProje
     // @IndexedEmbedded
     private Set<MapUser> mapSpecialists = new HashSet<>();
 
+    /**
+     * Global Entra administrators for API responses. Not persisted as project membership.
+     */
+    @Transient
+    private Set<MapUser> mapAdmins = new HashSet<>();
+
     /** The allowable map principles for this MapProject. */
     @ManyToMany(targetEntity = MapPrinciple.class, fetch = FetchType.LAZY)
     @JoinTable(name = "map_projects_map_principles", joinColumns = @JoinColumn(name = "map_projects_id"),
@@ -322,6 +328,7 @@ public class MapProject extends AbstractHasModified implements Copyable<MapProje
         this.presetAgeRanges = mapProject.getPresetAgeRanges();
         this.mapLeads = mapProject.getMapLeads();
         this.mapSpecialists = mapProject.getMapSpecialists();
+        this.mapAdmins = mapProject.getMapAdmins();
         this.mapPrinciples = mapProject.getMapPrinciples();
         this.mapAdvices = mapProject.getMapAdvices();
         this.additionalMapEntryInfos = mapProject.getAdditionalMapEntryInfos();
@@ -428,6 +435,46 @@ public class MapProject extends AbstractHasModified implements Copyable<MapProje
     public void removeMapSpecialist(final MapUser mapSpecialist) {
 
         mapSpecialists.remove(mapSpecialist);
+    }
+
+    /**
+     * Gets the map admins.
+     *
+     * @return the map admins
+     */
+    public Set<MapUser> getMapAdmins() {
+
+        return mapAdmins;
+    }
+
+    /**
+     * Sets the map admins.
+     *
+     * @param mapAdmins the new map admins
+     */
+    public void setMapAdmins(final Set<MapUser> mapAdmins) {
+
+        this.mapAdmins = mapAdmins;
+    }
+
+    /**
+     * Adds the map admin.
+     *
+     * @param mapAdmin the map admin
+     */
+    public void addMapAdmin(final MapUser mapAdmin) {
+
+        mapAdmins.add(mapAdmin);
+    }
+
+    /**
+     * Removes the map admin.
+     *
+     * @param mapAdmin the map admin
+     */
+    public void removeMapAdmin(final MapUser mapAdmin) {
+
+        mapAdmins.remove(mapAdmin);
     }
 
     /**
@@ -1476,7 +1523,7 @@ public class MapProject extends AbstractHasModified implements Copyable<MapProje
         final int prime = 31;
         int result = super.hashCode();
         result = prime * result + Objects.hash(additionalMapEntryInfos, description, destinationTerminology, destinationTerminologyVersion,
-            editingCycleBeginDate, edition, errorMessages, groupStructure, latestPublicationDate, mapAdvices, mapLeads, mapNotesPublic,
+            editingCycleBeginDate, edition, errorMessages, groupStructure, latestPublicationDate, mapAdmins, mapAdvices, mapLeads, mapNotesPublic,
             mapPrincipleSourceDocument, mapPrincipleSourceDocumentName, mapPrinciples, mapRefsetPattern, mapRelationStyle, mapRelations, mapReportDefinitions,
             mapSpecialists, memberList, moduleId, name, presetAgeRanges, primaryContactEmail, privateProject, propagatedFlag, propagationDescendantThreshold,
             published, refSetId, refSetName, reverseMapPattern, roles, ruleBased, scopeConcepts, scopeDescendantsFlag, scopeExcludedConcepts,
@@ -1505,8 +1552,8 @@ public class MapProject extends AbstractHasModified implements Copyable<MapProje
             && Objects.equals(destinationTerminologyVersion, other.destinationTerminologyVersion)
             && Objects.equals(editingCycleBeginDate, other.editingCycleBeginDate) && Objects.equals(edition, other.edition)
             && Objects.equals(errorMessages, other.errorMessages) && groupStructure == other.groupStructure
-            && Objects.equals(latestPublicationDate, other.latestPublicationDate) && Objects.equals(mapAdvices, other.mapAdvices)
-            && Objects.equals(mapLeads, other.mapLeads) && mapNotesPublic == other.mapNotesPublic
+            && Objects.equals(latestPublicationDate, other.latestPublicationDate) && Objects.equals(mapAdmins, other.mapAdmins)
+            && Objects.equals(mapAdvices, other.mapAdvices) && Objects.equals(mapLeads, other.mapLeads) && mapNotesPublic == other.mapNotesPublic
             && Objects.equals(mapPrincipleSourceDocument, other.mapPrincipleSourceDocument)
             && Objects.equals(mapPrincipleSourceDocumentName, other.mapPrincipleSourceDocumentName) && Objects.equals(mapPrinciples, other.mapPrinciples)
             && mapRefsetPattern == other.mapRefsetPattern && mapRelationStyle == other.mapRelationStyle && Objects.equals(mapRelations, other.mapRelations)

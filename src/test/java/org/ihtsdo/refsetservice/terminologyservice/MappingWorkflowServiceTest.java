@@ -774,7 +774,8 @@ public class MappingWorkflowServiceTest {
                 context.getAdminUser().getUserName() + "," + context.getSpecialistUser().getUserName());
             PropertyUtility.setProperty("security.handler.ENTRAID.users.lead", context.getLeadUser().getUserName());
             PropertyUtility.setProperty("security.handler.ENTRAID.users.spec",
-                context.getSpecialistUser().getUserName() + "," + context.getOtherSpecialistUser().getUserName());
+                context.getSpecialistUser().getUserName() + "," + context.getOtherSpecialistUser().getUserName() + ","
+                    + context.getLeadUser().getUserName());
 
             context.getMapProject().getMapLeads().clear();
             context.getService().update(context.getMapProject());
@@ -791,15 +792,25 @@ public class MappingWorkflowServiceTest {
             assertTrue(Hibernate.isInitialized(mapProject.getMapSpecialists()));
             assertTrue(Hibernate.isInitialized(mapProject.getMapPrinciples()));
 
+            final Set<String> adminNames = mapProject.getMapAdmins().stream().map(MapUser::getUserName).collect(Collectors.toSet());
             final Set<String> leadNames = mapProject.getMapLeads().stream().map(MapUser::getUserName).collect(Collectors.toSet());
             final Set<String> specialistNames = mapProject.getMapSpecialists().stream().map(MapUser::getUserName).collect(Collectors.toSet());
+            assertTrue(adminNames.contains(context.getAdminUser().getUserName()));
+            assertTrue(adminNames.contains(context.getSpecialistUser().getUserName()));
+            assertTrue(!leadNames.contains(context.getAdminUser().getUserName()));
+            assertTrue(!leadNames.contains(context.getSpecialistUser().getUserName()));
             assertTrue(leadNames.contains(context.getLeadUser().getUserName()));
-            assertTrue(leadNames.contains(context.getAdminUser().getUserName()));
-            assertTrue(leadNames.contains(context.getSpecialistUser().getUserName()));
-            assertTrue(!specialistNames.contains(context.getSpecialistUser().getUserName()));
+            assertTrue(specialistNames.contains(context.getSpecialistUser().getUserName()));
+            assertTrue(specialistNames.contains(context.getLeadUser().getUserName()));
             assertTrue(specialistNames.contains(context.getOtherSpecialistUser().getUserName()));
-            assertEquals(MapUserRole.ADMINISTRATOR, mapProject.getMapLeads().stream()
+            assertEquals(MapUserRole.ADMINISTRATOR, mapProject.getMapAdmins().stream()
                 .filter(u -> context.getSpecialistUser().getUserName().equals(u.getUserName())).findFirst().get().getApplicationRole());
+            assertEquals(MapUserRole.SPECIALIST, mapProject.getMapSpecialists().stream()
+                .filter(u -> context.getSpecialistUser().getUserName().equals(u.getUserName())).findFirst().get().getApplicationRole());
+            assertEquals(MapUserRole.LEAD, mapProject.getMapLeads().stream()
+                .filter(u -> context.getLeadUser().getUserName().equals(u.getUserName())).findFirst().get().getApplicationRole());
+            assertEquals(MapUserRole.SPECIALIST, mapProject.getMapSpecialists().stream()
+                .filter(u -> context.getLeadUser().getUserName().equals(u.getUserName())).findFirst().get().getApplicationRole());
         }
     }
 }
