@@ -18,6 +18,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -4402,6 +4403,26 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         mappings.setTotal(conceptIdToMappingMap.size());
         mappings.setLimit(searchParameters.getLimit());
 
+        return mappings;
+    }
+
+    /* see superclass */
+    @Override
+    public ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter,
+        final boolean showOverriddenEntries, final List<String> conceptCodes, final Collection<String> restrictToConceptCodes) throws Exception {
+
+        final ResultListMapping mappings = getMappings(branch, mapSet, searchParameters, filter, showOverriddenEntries, conceptCodes);
+        if (mappings == null || restrictToConceptCodes == null || mappings.getItems() == null) {
+            return mappings;
+        }
+        final Set<String> allowed = new HashSet<>();
+        for (final String code : restrictToConceptCodes) {
+            if (StringUtils.isNotBlank(code)) {
+                allowed.add(code);
+            }
+        }
+        mappings.getItems().removeIf(mapping -> mapping == null || !allowed.contains(mapping.getCode()));
+        mappings.setTotal(mappings.getItems().size());
         return mappings;
     }
 

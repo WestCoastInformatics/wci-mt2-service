@@ -2,6 +2,7 @@ package org.ihtsdo.refsetservice.rest.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -17,6 +18,7 @@ import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingWorkflow;
 import org.ihtsdo.refsetservice.model.MappingWorkflowBulkResult;
 import org.ihtsdo.refsetservice.model.MappingWorkflowHistory;
+import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.model.enums.MappingWorkflowAction;
 import org.ihtsdo.refsetservice.rest.test.util.MappingWorkflowTestHandler;
 import org.ihtsdo.refsetservice.rest.test.util.MappingWorkflowUnitTestUtilities;
@@ -526,5 +528,131 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
         mvc.perform(get("/mapset/447562003/mappings/10007009/workflowStatus").accept(MediaType.APPLICATION_JSON)).andExpect(status().isUnauthorized())
             .andExpect(jsonPath("$.status").value(401)).andExpect(jsonPath("$.error").value("Unauthorized"))
             .andExpect(jsonPath("$.message").value("Unauthorized"));
+    }
+
+    /**
+     * Mapping search filters by workflow status only.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testGetMappingsFiltersByWorkflowStatus() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            context.addWorkflowForConcept("444555666", MapWorkflowStatus.NEW);
+            workflowUtil.updateWorkflow(context.getMapSet().getId(), MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, MappingWorkflowAction.ASSIGN, "Assigned",
+                context.getSpecialistUser());
+
+            final ResultListMapping results = workflowUtil.getMappings(context.getMapSet().getId(), "workflowStatus=EDITING_IN_PROGRESS",
+                context.getSpecialistUser());
+            assertEquals(1, results.getTotal());
+            assertEquals(1, results.getItems().size());
+            assertEquals(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, results.getItems().get(0).getCode());
+            assertNotNull(results.getItems().get(0).getMappingWorkflow());
+            assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, results.getItems().get(0).getMappingWorkflow().getWorkflowStatus());
+            assertEquals(context.getSpecialistUser().getUserName(), results.getItems().get(0).getMappingWorkflow().getAssignedUser());
+        }
+    }
+
+    /**
+     * Mapping search filters by assigned user only.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testGetMappingsFiltersByAssignedUser() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            context.addWorkflowForConcept("444555666", MapWorkflowStatus.NEW);
+            workflowUtil.updateWorkflow(context.getMapSet().getId(), MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, MappingWorkflowAction.ASSIGN, "Assigned",
+                context.getSpecialistUser());
+
+            final ResultListMapping mine = workflowUtil.getMappings(context.getMapSet().getId(),
+                "assignedUser=" + context.getSpecialistUser().getUserName(), context.getSpecialistUser());
+            assertEquals(1, mine.getTotal());
+            assertEquals(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, mine.getItems().get(0).getCode());
+            assertEquals(context.getSpecialistUser().getUserName(), mine.getItems().get(0).getMappingWorkflow().getAssignedUser());
+
+            final ResultListMapping byMapUserId = workflowUtil.getMappings(context.getMapSet().getId(),
+                "assignedUser=" + context.getSpecialistMapUser().getId(), context.getSpecialistUser());
+            assertEquals(1, byMapUserId.getTotal());
+            assertEquals(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, byMapUserId.getItems().get(0).getCode());
+
+            final ResultListMapping other = workflowUtil.getMappings(context.getMapSet().getId(),
+                "assignedUser=" + context.getOtherSpecialistUser().getUserName(), context.getSpecialistUser());
+            assertEquals(0, other.getTotal());
+            assertEquals(0, other.getItems().size());
+        }
+    }
+
+    /**
+     * Mapping search with both filters requires status and assignee.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testGetMappingsFiltersByStatusAndAssignedUser() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            context.addWorkflowForConcept("444555666", MapWorkflowStatus.NEW);
+            workflowUtil.updateWorkflow(context.getMapSet().getId(), MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, MappingWorkflowAction.ASSIGN, "Assigned",
+                context.getSpecialistUser());
+
+            final ResultListMapping both = workflowUtil.getMappings(context.getMapSet().getId(),
+                "workflowStatus=EDITING_IN_PROGRESS&assignedUser=" + context.getSpecialistUser().getUserName(), context.getSpecialistUser());
+            assertEquals(1, both.getTotal());
+            assertEquals(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, both.getItems().get(0).getCode());
+
+            final ResultListMapping mismatch = workflowUtil.getMappings(context.getMapSet().getId(),
+                "workflowStatus=NEW&assignedUser=" + context.getSpecialistUser().getUserName(), context.getSpecialistUser());
+            assertEquals(0, mismatch.getTotal());
+            assertEquals(0, mismatch.getItems().size());
+        }
+    }
+
+    /**
+     * Mapping search with no workflow matches returns an empty list.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testGetMappingsWorkflowFilterNoMatches() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            workflowUtil.updateWorkflow(context.getMapSet().getId(), MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, MappingWorkflowAction.ASSIGN, "Assigned",
+                context.getSpecialistUser());
+
+            final ResultListMapping results = workflowUtil.getMappings(context.getMapSet().getId(), "workflowStatus=REVIEW_NEEDED",
+                context.getSpecialistUser());
+            assertEquals(0, results.getTotal());
+            assertEquals(0, results.getItems().size());
+        }
+    }
+
+    /**
+     * Mapping search rejects invalid workflowStatus.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testGetMappingsInvalidWorkflowStatus() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            workflowUtil.getMappingsExpectBadRequest(context.getMapSet().getId(), "workflowStatus=NOT_A_STATUS", context.getSpecialistUser());
+        }
+    }
+
+    /**
+     * Mapping search without workflow params succeeds.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testGetMappingsOmitsWorkflowFilters() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            final ResultListMapping results = workflowUtil.getMappings(context.getMapSet().getId(), null, context.getSpecialistUser());
+            assertNotNull(results);
+        }
     }
 }

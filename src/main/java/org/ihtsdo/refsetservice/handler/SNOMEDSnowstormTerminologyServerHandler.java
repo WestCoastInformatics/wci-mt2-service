@@ -10,6 +10,7 @@
 package org.ihtsdo.refsetservice.handler;
 
 import java.io.File;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -456,7 +457,16 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
     public ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter,
         final boolean showOverriddenEntries, final List<String> conceptCodes) throws Exception {
 
-        return SnowstormMapping.getMappings(branch, mapSet, searchParameters, filter, showOverriddenEntries, conceptCodes);
+        return getMappings(branch, mapSet, searchParameters, filter, showOverriddenEntries, conceptCodes, null);
+
+    }
+
+    /* see superclass */
+    @Override
+    public ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter,
+        final boolean showOverriddenEntries, final List<String> conceptCodes, final Collection<String> restrictToConceptCodes) throws Exception {
+
+        return SnowstormMapping.getMappings(branch, mapSet, searchParameters, filter, showOverriddenEntries, conceptCodes, restrictToConceptCodes);
 
     }
 

@@ -14,6 +14,7 @@ import org.ihtsdo.refsetservice.model.MappingWorkflow;
 import org.ihtsdo.refsetservice.model.MappingWorkflowBulkRequest;
 import org.ihtsdo.refsetservice.model.MappingWorkflowBulkResult;
 import org.ihtsdo.refsetservice.model.MappingWorkflowHistory;
+import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.enums.MappingWorkflowAction;
 import org.ihtsdo.refsetservice.model.enums.VersionStatus;
@@ -324,6 +325,36 @@ public class MappingWorkflowUnitTestUtilities {
     public void getRecentlyModifiedWorkflowsExpectBadRequest(final User asUser, final String queryString) throws Exception {
 
         final String url = "/mappings/workflow/recentlyModified?" + queryString;
+        mvc.perform(withUser(get(url), asUser).accept(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest());
+    }
+
+    /**
+     * Get mappings for a mapset.
+     *
+     * @param mapSetId the map set id
+     * @param queryString optional query string (without leading '?'), or null
+     * @param asUser the session user
+     * @return the mappings
+     * @throws Exception the exception
+     */
+    public ResultListMapping getMappings(final String mapSetId, final String queryString, final User asUser) throws Exception {
+
+        final String url = baseUrl + "/" + mapSetId + "/mappings" + (queryString == null || queryString.isEmpty() ? "" : "?" + queryString);
+        final MvcResult result = mvc.perform(withUser(get(url), asUser).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+        return MAPPER.readValue(result.getResponse().getContentAsString(), ResultListMapping.class);
+    }
+
+    /**
+     * Attempt get mappings and expect HTTP 400.
+     *
+     * @param mapSetId the map set id
+     * @param queryString query string without leading '?'
+     * @param asUser the session user
+     * @throws Exception the exception
+     */
+    public void getMappingsExpectBadRequest(final String mapSetId, final String queryString, final User asUser) throws Exception {
+
+        final String url = baseUrl + "/" + mapSetId + "/mappings?" + queryString;
         mvc.perform(withUser(get(url), asUser).accept(MediaType.APPLICATION_JSON)).andExpect(status().isBadRequest());
     }
 
