@@ -81,6 +81,10 @@ public class MappingWorkflowPermutationTest {
             MappingWorkflowService.resolveTransition(MappingWorkflowRole.SPECIALIST, MapWorkflowStatus.PUBLISHED, MappingWorkflowAction.ASSIGN));
         assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS,
             MappingWorkflowService.resolveTransition(MappingWorkflowRole.SPECIALIST, MapWorkflowStatus.READY_FOR_PUBLICATION, MappingWorkflowAction.ASSIGN));
+        assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS,
+            MappingWorkflowService.resolveTransition(MappingWorkflowRole.LEAD, MapWorkflowStatus.NEW, MappingWorkflowAction.ASSIGN));
+        assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS,
+            MappingWorkflowService.resolveTransition(MappingWorkflowRole.ADMIN, MapWorkflowStatus.NEW, MappingWorkflowAction.ASSIGN));
         assertEquals(MapWorkflowStatus.NEW,
             MappingWorkflowService.resolveTransition(MappingWorkflowRole.SPECIALIST, MapWorkflowStatus.EDITING_IN_PROGRESS, MappingWorkflowAction.RELEASE));
         assertEquals(MapWorkflowStatus.EDITING_DONE,

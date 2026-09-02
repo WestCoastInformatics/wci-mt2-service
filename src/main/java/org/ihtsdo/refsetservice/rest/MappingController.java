@@ -864,7 +864,7 @@ public class MappingController extends BaseController {
      * @param conceptCode the source concept code
      * @param action the workflow action
      * @param notes transition notes
-     * @param assignToUser target user for REASSIGN
+     * @param assignToUser target user for ASSIGN (lead/admin) or REASSIGN
      * @param request the request
      * @return the updated mapping workflow row
      * @throws Exception the exception
@@ -921,7 +921,7 @@ public class MappingController extends BaseController {
      * @param mapSetInternalId the map set internal id
      * @param action the workflow action
      * @param notes transition notes applied to each success
-     * @param assignToUser target user for REASSIGN
+     * @param assignToUser target user for ASSIGN (lead/admin) or REASSIGN
      * @param body concept codes to update
      * @param request the request
      * @return per-concept bulk result
@@ -935,7 +935,7 @@ public class MappingController extends BaseController {
     @Parameters({
         @Parameter(name = "action", description = "Mapping workflow action (e.g. FINISH_EDITING, START_REVIEW, ACCEPT_REVIEW, REJECT_REVIEW)", required = true),
         @Parameter(name = "notes", description = "Optional transition notes applied to each concept", required = false),
-        @Parameter(name = "assignToUser", description = "Target user for REASSIGN only", required = false)
+        @Parameter(name = "assignToUser", description = "Target user for ASSIGN (lead/admin) or REASSIGN", required = false)
     })
     @RecordMetric
     public @ResponseBody ResponseEntity<MappingWorkflowBulkResult> setMappingWorkflowStatusBulk(@PathVariable final String mapSetInternalId,

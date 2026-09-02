@@ -79,14 +79,14 @@ public class MappingWorkflowUnitTestUtilities {
     }
 
     /**
-     * Advance mapping workflow via API, optionally targeting another user (REASSIGN).
+     * Advance mapping workflow via API, optionally targeting another user (ASSIGN or REASSIGN).
      *
      * @param mapSetId the map set id
      * @param conceptCode the source concept code
      * @param action the action
      * @param note the note
      * @param asUser the acting user
-     * @param assignToUser target user for REASSIGN, or null
+     * @param assignToUser target user for ASSIGN or REASSIGN, or null
      * @return the updated mapping workflow
      * @throws Exception the exception
      */

@@ -82,6 +82,82 @@ public class MappingWorkflowServiceTest {
     }
 
     /**
+     * Lead ASSIGN with assignToUser assigns to the selected user, not the lead.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void assignToOtherByLead() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getLeadUser(),
+                MappingWorkflowAction.ASSIGN, context.getWorkflow(), context.getMapSet(), context.getMapProject(),
+                "Assigning to someone else as a Lead", context.getOtherSpecialistMapUser().getId());
+
+            assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, updated.getWorkflowStatus());
+            assertEquals(context.getOtherSpecialistUser().getUserName(), updated.getAssignedUser());
+            assertNotNull(updated.getAssignedAt());
+            assertEquals(MappingWorkflowAction.ASSIGN, context.latestHistory().getWorkflowAction());
+            assertEquals(context.getLeadUser().getUserName(), context.latestHistory().getUserName());
+        }
+    }
+
+    /**
+     * Admin ASSIGN with assignToUser assigns to the selected user.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void assignToOtherByAdmin() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getAdminUser(),
+                MappingWorkflowAction.ASSIGN, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assign",
+                context.getSpecialistMapUser().getId());
+
+            assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, updated.getWorkflowStatus());
+            assertEquals(context.getSpecialistUser().getUserName(), updated.getAssignedUser());
+        }
+    }
+
+    /**
+     * Lead ASSIGN without assignToUser self-assigns.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void assignFromNewByLeadToSelf() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getLeadUser(),
+                MappingWorkflowAction.ASSIGN, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Self", null);
+
+            assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, updated.getWorkflowStatus());
+            assertEquals(context.getLeadUser().getUserName(), updated.getAssignedUser());
+        }
+    }
+
+    /**
+     * Specialist ASSIGN with another user is rejected and leaves the mapping unassigned.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void assignToOtherBySpecialistRejected() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            assertThrows(ResponseStatusException.class,
+                () -> MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(), MappingWorkflowAction.ASSIGN,
+                    context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assign other", context.getOtherSpecialistMapUser().getId()));
+
+            final MappingWorkflow reloaded = context.reloadWorkflow();
+            assertEquals(MapWorkflowStatus.NEW, reloaded.getWorkflowStatus());
+            assertNull(reloaded.getAssignedUser());
+            assertEquals(0, context.historyCount());
+        }
+    }
+
+    /**
      * Assign when already assigned.
      *
      * @throws Exception the exception

@@ -73,6 +73,11 @@ public class MappingWorkflowTestHandler extends MapSetWorkflowTestHandler {
     public List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mappings,
         final MapSet mapSet, final User user) {
 
+        return recordUpdate(mappings);
+    }
+
+    private static List<Mapping> recordUpdate(final List<Mapping> mappings) {
+
         updateCalled = true;
         lastUpdatedMappings = mappings == null ? new ArrayList<>() : new ArrayList<>(mappings);
         return lastUpdatedMappings;
