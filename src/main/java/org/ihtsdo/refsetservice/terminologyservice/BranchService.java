@@ -63,6 +63,18 @@ public final class BranchService {
     /** The Constant PATH_DELIMITER. */
     private static final String PATH_DELIMITER = "/";
 
+    /**
+     * Max time to wait for Snowstorm to reflect a completed promotion. The merge job status is the source of truth; this poll is only a cache-consistency wait
+     * and must not block until the HTTP gateway times out.
+     */
+    private static final long PROMOTION_STATE_POLL_TIMEOUT_MS = 15_000L;
+
+    /**
+     * Snowstorm branch states that mean the promotion target has a settled relationship to <em>its</em> parent. After merging a child into this branch,
+     * {@code DIVERGED} is common when the ancestor has also moved (e.g. a dailybuild edition).
+     */
+    private static final List<String> SETTLED_PROMOTION_TARGET_STATES = List.of("FORWARD", "DIVERGED", "UP_TO_DATE", "CURRENT");
+
     /** The app url root. */
     private static final boolean USE_MANAGE_SERVICE_INITIALS = "true".equals(PropertyUtility.getProperties().getProperty("mapset.use.manage.service.initials"));
 
@@ -825,6 +837,24 @@ public final class BranchService {
     }
 
     /**
+     * Whether a promotion target's Snowstorm {@code state} is settled enough to stop polling.
+     * <p>
+     * Snowstorm reports a branch's state relative to <em>its</em> parent, not the source that was just merged in. After promoting an edit branch into a
+     * map-set branch, the map-set branch commonly stays {@code DIVERGED} when the edition or project branch has also moved. That is a stable outcome, not cache
+     * lag, and must not be retried indefinitely.
+     *
+     * @param state the branch state from Snowstorm
+     * @return true if polling can stop
+     */
+    static boolean isPromotedTargetBranchStateSettled(final String state) {
+
+        if (state == null) {
+            return false;
+        }
+        return SETTLED_PROMOTION_TARGET_STATES.contains(state.toUpperCase());
+    }
+
+    /**
      * Conflicts exist.
      *
      * @param reviewId the review id
@@ -1107,10 +1137,12 @@ public final class BranchService {
                                 Thread.currentThread().interrupt();
                             }
 
-                            // final check that the promotion has finished.
+                            // Final check that Snowstorm has a settled view of the target. Target state is vs
+                            // the target's parent, so DIVERGED is a valid outcome after a completed promotion.
                             boolean stateGood = false;
                             final String stateUrl = SnowstormConnection.getRestBaseUrl() + "branches/" + targetBranchPath;
                             LOG.debug("Promoted branch state info at {}", stateUrl);
+                            final long statePollDeadline = System.currentTimeMillis() + PROMOTION_STATE_POLL_TIMEOUT_MS;
 
                             while (!stateGood) {
 
@@ -1118,6 +1150,11 @@ public final class BranchService {
 
                                     final int stateHttpStatus = stateResponse.getStatus();
                                     if (!isHttpSuccessOrClientError(stateHttpStatus)) {
+                                        if (System.currentTimeMillis() >= statePollDeadline) {
+                                            LOG.warn("Promoted branch state poll: HTTP {} for {}; merge already completed, continuing", stateHttpStatus,
+                                                targetBranchPath);
+                                            break;
+                                        }
                                         LOG.warn("Promoted branch state poll: HTTP {} for {}; retrying after delay", stateHttpStatus, targetBranchPath);
                                         sleepPollInterval();
                                         continue;
@@ -1135,14 +1172,20 @@ public final class BranchService {
 
                                     LOG.info("Promoted branch state is: {}", state);
 
-                                    if (state.equals("FORWARD") || state.equals("CURRENT") || state.equals("UP_TO_DATE")) {
+                                    if (isPromotedTargetBranchStateSettled(state)) {
                                         stateGood = true;
+
+                                    } else if (System.currentTimeMillis() >= statePollDeadline) {
+                                        LOG.warn(
+                                            "Promoted branch {} still in state {} after merge completed; continuing because merge job already succeeded",
+                                            targetBranchPath, state);
+                                        break;
 
                                     } else {
 
                                         try {
 
-                                            LOG.debug("Merge promotion sleep 300ms to let snowstorm caches update.");
+                                            LOG.debug("Merge promotion sleep 1000ms to let snowstorm caches update.");
                                             Thread.sleep(1_000);
                                         } catch (final InterruptedException ex) {
                                             Thread.currentThread().interrupt();
