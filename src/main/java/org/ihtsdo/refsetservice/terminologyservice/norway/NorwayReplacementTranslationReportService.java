@@ -134,6 +134,10 @@ public class NorwayReplacementTranslationReportService {
         //We're only interested in the first node
         break;
       }
+
+      if (currentBranch == null || previousVersionBranch == null) {
+        throw new Exception("Unable to determine current or previous version branch for Norway replacement translation report.");
+      }
      
       
       LOGGER.info("Identify all in-scope concepts that are active in the previousVersionBranch, and inactive in the currentBranch");

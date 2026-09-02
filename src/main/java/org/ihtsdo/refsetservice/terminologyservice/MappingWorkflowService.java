@@ -228,14 +228,15 @@ public final class MappingWorkflowService {
      * @param mapSet the map set
      * @param mapProject the map project
      * @param notes transition notes
-     * @param assignToUser target user for REASSIGN; ignored for other actions
+     * @param assignToUser target user for ASSIGN (lead/admin) or REASSIGN; ignored for other actions
      * @return the updated mapping workflow
      * @throws Exception the exception
      */
     public static MappingWorkflow setWorkflowStatusByAction(final TerminologyService service, final User user, final MappingWorkflowAction action,
         final MappingWorkflow workflow, final MapSet mapSet, final MapProject mapProject, final String notes, final String assignToUser) throws Exception {
 
-        canUserPerformWorkflowAction(user, workflow, mapSet, mapProject, action, assignToUser);
+        final String resolvedAssignee = resolveAssigneeUserName(service, assignToUser);
+        canUserPerformWorkflowAction(user, workflow, mapSet, mapProject, action, resolvedAssignee);
 
         final List<MappingWorkflowRole> roles = resolveProjectRoles(user, mapProject);
         MapWorkflowStatus nextStatus = null;
@@ -259,7 +260,7 @@ public final class MappingWorkflowService {
 
         applyConceptBranchSideEffects(action, mapSet, workflow);
 
-        applyAssignmentSideEffects(user, workflow, action, assignToUser);
+        applyAssignmentSideEffects(user, workflow, action, resolvedAssignee);
         workflow.setWorkflowStatus(nextStatus);
 
         service.update(workflow);
@@ -625,7 +626,7 @@ public final class MappingWorkflowService {
      * @param mapProject the map project
      * @param conceptCodes source concept codes to update
      * @param notes optional notes applied to each transition
-     * @param assignToUser target user for REASSIGN; ignored for other actions
+     * @param assignToUser target user for ASSIGN (lead/admin) or REASSIGN; ignored for other actions
      * @return per-concept results in request order
      * @throws Exception the exception
      */
@@ -760,7 +761,7 @@ public final class MappingWorkflowService {
      * @param mapSet the map set
      * @param mapProject the map project
      * @param action the workflow action
-     * @param assignToUser target user for REASSIGN
+     * @param assignToUser target user for ASSIGN (lead/admin) or REASSIGN
      * @throws Exception the exception
      */
     public static void canUserPerformWorkflowAction(final User user, final MappingWorkflow workflow, final MapSet mapSet, final MapProject mapProject,
@@ -780,6 +781,11 @@ public final class MappingWorkflowService {
 
         final List<MappingWorkflowRole> roles = resolveProjectRoles(user, mapProject);
         if (roles.isEmpty()) {
+            throw forbidden(workflow, action);
+        }
+
+        if (action == MappingWorkflowAction.ASSIGN && StringUtils.isNotBlank(assignToUser) && !assignToUser.equals(user.getUserName())
+            && !roles.contains(MappingWorkflowRole.LEAD) && !roles.contains(MappingWorkflowRole.ADMIN)) {
             throw forbidden(workflow, action);
         }
 
@@ -931,8 +937,9 @@ public final class MappingWorkflowService {
 
         if (action == MappingWorkflowAction.ASSIGN) {
             final Date assignedAt = new Date();
+            final String assignee = StringUtils.isNotBlank(assignToUser) ? assignToUser : user.getUserName();
             workflow.setPreviousWorkflowStatus(workflow.getWorkflowStatus());
-            workflow.setAssignedUser(user.getUserName());
+            workflow.setAssignedUser(assignee);
             workflow.setAssignedAt(assignedAt);
             workflow.setLeaseExpiresAt(new Date(assignedAt.getTime() + getLeaseDurationMs()));
         } else if (action == MappingWorkflowAction.START_REVIEW || action == MappingWorkflowAction.START_CONFLICT_RESOLUTION) {
@@ -951,6 +958,33 @@ public final class MappingWorkflowService {
             workflow.setLeaseExpiresAt(null);
             workflow.setPreviousWorkflowStatus(null);
         }
+    }
+
+    /**
+     * Resolve {@code assignToUser} to a username. The client may send a {@link MapUser} or {@link User} id.
+     *
+     * @param service the terminology service
+     * @param assignToUser the assign-to user id or username
+     * @return the username, or null when blank
+     * @throws Exception the exception
+     */
+    private static String resolveAssigneeUserName(final TerminologyService service, final String assignToUser) throws Exception {
+
+        if (StringUtils.isBlank(assignToUser)) {
+            return null;
+        }
+
+        final MapUser mapUser = service.get(assignToUser, MapUser.class);
+        if (mapUser != null && StringUtils.isNotBlank(mapUser.getUserName())) {
+            return mapUser.getUserName();
+        }
+
+        final User user = service.get(assignToUser, User.class);
+        if (user != null && StringUtils.isNotBlank(user.getUserName())) {
+            return user.getUserName();
+        }
+
+        return assignToUser;
     }
 
     /**

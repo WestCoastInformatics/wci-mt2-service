@@ -145,6 +145,10 @@ public class NorwayReplacementMapReportService {
         break;
       }
 
+      if (currentBranch == null || previousVersionBranch == null) {
+        throw new Exception("Unable to determine current or previous version branch for Norway replacement map report.");
+      }
+
       LOGGER.info(
           "Identify all in-scope concepts that are active in the previousVersionBranch, and inactive in the currentBranch");
       // Sample JSON
@@ -343,7 +347,7 @@ public class NorwayReplacementMapReportService {
               if (active.equals("true")) {
                 final Set<String> targetSet =
                     internationalMappedConceptsAndTargetsActive.get(conceptId);
-                if (mapTarget != null && mapTarget != "") {
+                if (mapTarget != null && !mapTarget.isEmpty()) {
                   targetSet.add(additionalFieldsNode.get("mapTarget").asText());
                 }
                 internationalMappedConceptsAndTargetsActive.put(conceptId,
@@ -352,7 +356,7 @@ public class NorwayReplacementMapReportService {
                 final Set<String> targetSet =
                     internationalMappedConceptsAndTargetsInactive
                         .get(conceptId);
-                if (mapTarget != null && mapTarget != "") {
+                if (mapTarget != null && !mapTarget.isEmpty()) {
                   targetSet.add(additionalFieldsNode.get("mapTarget").asText());
                 }
                 internationalMappedConceptsAndTargetsInactive.put(conceptId,
@@ -510,7 +514,7 @@ public class NorwayReplacementMapReportService {
                 final Set<String> targetSet =
                     internationalMappedConceptsAndICPCTargetsActive
                         .get(conceptId);
-                if (mapTarget != null && mapTarget != "") {
+                if (mapTarget != null && !mapTarget.isEmpty()) {
                   targetSet.add(additionalFieldsNode.get("mapTarget").asText());
                 }
                 internationalMappedConceptsAndICPCTargetsActive.put(conceptId,
@@ -519,7 +523,7 @@ public class NorwayReplacementMapReportService {
                 final Set<String> targetSet =
                     internationalMappedConceptsAndICPCTargetsInactive
                         .get(conceptId);
-                if (mapTarget != null && mapTarget != "") {
+                if (mapTarget != null && !mapTarget.isEmpty()) {
                   targetSet.add(additionalFieldsNode.get("mapTarget").asText());
                 }
                 internationalMappedConceptsAndICPCTargetsInactive.put(conceptId,

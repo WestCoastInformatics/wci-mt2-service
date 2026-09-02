@@ -267,11 +267,11 @@ public class SnowstormMapping extends SnowstormAbstract {
             throw new LocalException("Map set code is required.");
         }
 
+        final SearchParameters paging = searchParameters != null ? searchParameters : new SearchParameters();
+
         LOG.info("getMappings start mapSet={} refSet={} branch={} filter='{}' limit={} offset={} searchAfter={} conceptCodes={}",
             mapSet.getId(), mapSet.getRefSetCode(), branch, filter,
-            searchParameters != null ? searchParameters.getLimit() : null,
-            searchParameters != null ? searchParameters.getOffset() : null,
-            searchParameters != null ? searchParameters.getSearchAfter() : null,
+            paging.getLimit(), paging.getOffset(), paging.getSearchAfter(),
             conceptCodes != null ? conceptCodes.size() : 0);
 
         final boolean explicitConceptCodes = conceptCodes != null && !conceptCodes.isEmpty();
@@ -295,8 +295,8 @@ public class SnowstormMapping extends SnowstormAbstract {
             final ResultListMapping empty = new ResultListMapping();
             empty.setTotal(0);
             empty.setTotalKnown(true);
-            empty.setLimit(searchParameters.getLimit() != null ? searchParameters.getLimit() : 0);
-            empty.setOffset(searchParameters.getOffset() != null ? searchParameters.getOffset() : 0);
+            empty.setLimit(paging.getLimit() != null ? paging.getLimit() : 0);
+            empty.setOffset(paging.getOffset() != null ? paging.getOffset() : 0);
             LOG.info("getMappings complete {}ms items=0 total=0 (no concepts matched filter)", System.currentTimeMillis() - requestStartMs);
             return empty;
         }
@@ -343,7 +343,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         String searchAfter = null;
 
         // Text filter: resolve all matching source concepts, then page map entries via member search.
-        final SearchParameters memberSearchPaging = new SearchParameters(searchParameters);
+        final SearchParameters memberSearchPaging = new SearchParameters(paging);
 
         final long memberSearchStartMs = System.currentTimeMillis();
         while (!done) {
@@ -361,19 +361,17 @@ public class SnowstormMapping extends SnowstormAbstract {
 
                 final JsonNode data = ThreadLocalMapper.get().readTree(SnowstormConnection.readEntityAsString(response));
 
-                if (searchParameters != null) {
-                    if (data.has("total")) {
-                        total = data.get("total").asInt();
-                    }
-                    if (data.has("limit")) {
-                        limit = data.get("limit").asInt();
-                    }
-                    if (data.has("offset")) {
-                        offset = data.get("offset").asInt();
-                    }
-                    if (data.has("searchAfter")) {
-                        searchAfter = data.get("searchAfter").asText();
-                    }
+                if (data.has("total")) {
+                    total = data.get("total").asInt();
+                }
+                if (data.has("limit")) {
+                    limit = data.get("limit").asInt();
+                }
+                if (data.has("offset")) {
+                    offset = data.get("offset").asInt();
+                }
+                if (data.has("searchAfter")) {
+                    searchAfter = data.get("searchAfter").asText();
                 }
 
                 final JsonNode mappingsBatch = data.get("items");
@@ -519,8 +517,8 @@ public class SnowstormMapping extends SnowstormAbstract {
         if (StringUtils.isNotBlank(searchAfter)) {
             mappings.setSearchAfter(searchAfter);
         }
-        mappings.setLimit(searchParameters.getLimit() != null ? searchParameters.getLimit() : limit);
-        mappings.setOffset(searchParameters.getOffset() != null ? searchParameters.getOffset() : offset);
+        mappings.setLimit(paging.getLimit() != null ? paging.getLimit() : limit);
+        mappings.setOffset(paging.getOffset() != null ? paging.getOffset() : offset);
 
         // Add the invalid concept ids to the result list
         if(!invalidConceptIds.isEmpty()) {
@@ -1944,10 +1942,9 @@ public class SnowstormMapping extends SnowstormAbstract {
             mapEntryJson.append("\"memberId\": \"").append(UUID.randomUUID().toString()).append("\",");
         }
         mapEntryJson.append("\"active\": ").append(mapEntry.isActive()).append(",");
-        // Module id: MapProject (project default) -> MapEntry (from client/existing) -> MapSet (refset module from DB/Snowstorm)
-        final String moduleId = StringUtils.isNotBlank(mapSet.getModuleId()) ? mapSet.getModuleId()
-            : StringUtils.isNotBlank(mapEntry.getModuleId()) ? mapEntry.getModuleId()
-                : (mapSet != null && StringUtils.isNotBlank(mapSet.getModuleId())) ? mapSet.getModuleId() : null;
+        // Module id: MapSet (refset module from DB/Snowstorm) -> MapEntry (from client/existing)
+        final String moduleId = (mapSet != null && StringUtils.isNotBlank(mapSet.getModuleId())) ? mapSet.getModuleId()
+            : StringUtils.isNotBlank(mapEntry.getModuleId()) ? mapEntry.getModuleId() : null;
         if (StringUtils.isBlank(moduleId)) {
             throw new LocalException("moduleId is required for Snowstorm. Set moduleId on MapProject, MapSet, or ensure map entry has moduleId.");
         }
@@ -2123,11 +2120,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         // Create the output file
         final File outputFile = new File(downloadDir, outputFileName);
-        final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd-hhmmss");
 
-        // TODO: What is the proper file name for the zip file?
-        // final String exportFileName = String.format("MT2-Downloaded-mapsets-%s.zip",
-        // dateFormat.format(new Date()));
         final List<String> allowedColumns =
             Arrays.asList("Source", "Source PT", "Target", "Target PT", "Group", "Priority", "Relationship", "Rule", "Advices", "Last Modified");
 

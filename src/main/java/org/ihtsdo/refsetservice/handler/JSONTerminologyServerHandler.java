@@ -4416,8 +4416,12 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             return null;
         }
 
+        if (mapSet == null) {
+            throw new Exception("Map set is required.");
+        }
+
         // Grab the specified mapSet (use param if provided and has terminology/version, else from JSON)
-        final MapSet mapSetForLookup = (mapSet != null && mapSet.getFromTerminology() != null && mapSet.getFromVersion() != null)
+        final MapSet mapSetForLookup = (mapSet.getFromTerminology() != null && mapSet.getFromVersion() != null)
             ? mapSet : getMapSet(branch, mapSet.getRefSetCode());
 
         final Mapping mapping = new Mapping();

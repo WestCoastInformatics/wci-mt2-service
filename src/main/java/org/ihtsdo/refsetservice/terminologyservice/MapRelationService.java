@@ -124,24 +124,22 @@ public class MapRelationService extends BaseService {
         String query = (searchParameters != null && StringUtils.isNotBlank(searchParameters.getQuery())) ? searchParameters.getQuery() : "";
 
         final PfsParameter pfs = new PfsParameter();
-        if (searchParameters.getActiveOnly() != null && searchParameters.getActiveOnly()) {
-            query = (query.equals("")) ? "active:true" : query + " AND active:true";
-        }
-
-        if (searchParameters.getOffset() != null) {
-            pfs.setOffset(searchParameters.getOffset());
-        }
-
-        if (searchParameters.getLimit() != null) {
-            pfs.setLimit(searchParameters.getLimit());
-        }
-
-        if (searchParameters.getSortAscending() != null) {
-            pfs.setAscending(searchParameters.getSortAscending());
-        }
-
-        if (searchParameters.getSort() != null) {
-            pfs.setSort(searchParameters.getSort());
+        if (searchParameters != null) {
+            if (Boolean.TRUE.equals(searchParameters.getActiveOnly())) {
+                query = query.isEmpty() ? "active:true" : query + " AND active:true";
+            }
+            if (searchParameters.getOffset() != null) {
+                pfs.setOffset(searchParameters.getOffset());
+            }
+            if (searchParameters.getLimit() != null) {
+                pfs.setLimit(searchParameters.getLimit());
+            }
+            if (searchParameters.getSortAscending() != null) {
+                pfs.setAscending(searchParameters.getSortAscending());
+            }
+            if (searchParameters.getSort() != null) {
+                pfs.setSort(searchParameters.getSort());
+            }
         }
 
         if (query != null && !query.equals("")) {

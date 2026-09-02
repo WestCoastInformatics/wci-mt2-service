@@ -46,6 +46,11 @@ SPECIALIST,EDITING_DONE,REQUEST_REVIEW,REVIEW_NEEDED
 # LEAD
 ##################
 
+# Assign from the queue (self, or another user via assignToUser)
+LEAD,NEW,ASSIGN,EDITING_IN_PROGRESS
+LEAD,PUBLISHED,ASSIGN,EDITING_IN_PROGRESS
+LEAD,READY_FOR_PUBLICATION,ASSIGN,EDITING_IN_PROGRESS
+
 # Reassign an in-progress editing assignment
 LEAD,EDITING_IN_PROGRESS,REASSIGN,EDITING_IN_PROGRESS
 
@@ -69,6 +74,11 @@ LEAD,REVIEW_RESOLVED,APPROVE_FOR_PUBLICATION,READY_FOR_PUBLICATION
 ##################
 # ADMIN
 ##################
+
+# Assign from the queue (self, or another user via assignToUser)
+ADMIN,NEW,ASSIGN,EDITING_IN_PROGRESS
+ADMIN,PUBLISHED,ASSIGN,EDITING_IN_PROGRESS
+ADMIN,READY_FOR_PUBLICATION,ASSIGN,EDITING_IN_PROGRESS
 
 # Clear editing assignment and return concept to the queue
 ADMIN,EDITING_IN_PROGRESS,FORCE_RELEASE,NEW
@@ -103,6 +113,7 @@ ADMIN,REVIEW_IN_PROGRESS,FORCE_RELEASE,REVIEW_NEEDED
 # Runtime checks not in this file (assignment holder and mapset edit state):
 #   mapset must be IN_EDIT for ASSIGN/RELEASE/FINISH_EDITING/FORCE_RELEASE/REASSIGN
 #   claim actions require assigned_user empty; holder actions require assigned_user = actor
+#   ASSIGN with assignToUser: lead/admin may assign another user; specialist is self only
 #   REVIEW_PROJECT still auto-routes FINISH_EDITING to REVIEW_NEEDED, so
 #   EDITING_DONE + REQUEST_REVIEW is not reached on review projects.
 #

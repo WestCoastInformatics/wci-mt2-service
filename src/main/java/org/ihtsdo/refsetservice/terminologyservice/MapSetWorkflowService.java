@@ -30,7 +30,6 @@ import javax.ws.rs.core.Response.Status.Family;
 import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
-import org.ihtsdo.refsetservice.handler.snowstorm.SnomedConstants;
 import org.ihtsdo.refsetservice.model.BranchInformation;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.MapSet;
@@ -1263,7 +1262,7 @@ public final class MapSetWorkflowService {
 
         try {
             moduleName = EditionService.getDependencyModuleNameFromBranchMetadata(mapSet.getEditionShortName(), mapSet.getModuleId(),
-                SnomedConstants.BRANCH_DATE_FORMAT.parse(releaseBranch).getTime(), mapSet.getEditionBranch());
+                new SimpleDateFormat(DateUtility.DATE_FORMAT_REVERSE).parse(releaseBranch).getTime(), mapSet.getEditionBranch());
         } catch (final Exception e) {
             LOG.error("Catching 'date must not be null' exception using mapSet properties: a) " + mapSet.getEditionShortName() + " b) " + mapSet.getModuleId()
                 + " c) " + releaseBranch + " d) " + mapSet.getEditionBranch());

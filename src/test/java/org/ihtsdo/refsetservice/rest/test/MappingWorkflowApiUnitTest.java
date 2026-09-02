@@ -89,6 +89,24 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
     }
 
     /**
+     * Test lead ASSIGN with assignToUser assigns to the selected specialist.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testLeadAssignToOtherUser() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            final MappingWorkflow assigned = workflowUtil.updateWorkflow(context.getMapSet().getId(), MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE,
+                MappingWorkflowAction.ASSIGN, "Assigning to someone else as a Lead", context.getLeadUser(),
+                context.getOtherSpecialistMapUser().getId());
+
+            assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, assigned.getWorkflowStatus());
+            assertEquals(context.getOtherSpecialistUser().getUserName(), assigned.getAssignedUser());
+        }
+    }
+
+    /**
      * Test assign then release of a PUBLISHED mapping restores PUBLISHED.
      *
      * @throws Exception the exception
