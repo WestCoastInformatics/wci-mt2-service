@@ -10,6 +10,7 @@ import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
+import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 
 /**
@@ -70,7 +71,7 @@ public class MappingWorkflowTestHandler extends MapSetWorkflowTestHandler {
 
     @Override
     public List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mappings,
-        final MapSet mapSet) {
+        final MapSet mapSet, final User user) {
 
         updateCalled = true;
         lastUpdatedMappings = mappings == null ? new ArrayList<>() : new ArrayList<>(mappings);

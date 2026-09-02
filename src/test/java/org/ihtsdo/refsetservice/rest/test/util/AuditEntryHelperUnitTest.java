@@ -11,6 +11,7 @@ package org.ihtsdo.refsetservice.rest.test.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.ihtsdo.refsetservice.model.AdditionalMapEntryInfo;
 import org.ihtsdo.refsetservice.model.AuditEntry;
@@ -83,14 +84,25 @@ public class AuditEntryHelperUnitTest {
     }
 
     /**
+     * Test map entry entity id composite.
+     */
+    @Test
+    void testMapEntryEntityId() {
+
+        assertEquals("447562003:10000006", AuditEntryHelper.mapEntryEntityId("447562003", "10000006"));
+    }
+
+    /**
      * Test add mapping entry.
      */
     @Test
     void testAddMappingEntry() {
 
-        final AuditEntry entry = AuditEntryHelper.addMappingEntry("refsetId", mapping, mapEntry);
+        final AuditEntry entry = AuditEntryHelper.addMappingEntry("447562003", mapping, mapEntry);
 
         assertNotNull(entry);
+        assertEquals("MAP_ENTRY", entry.getEntityType());
+        assertEquals("447562003:c12345", entry.getEntityId());
         assertEquals("ADD MapEntry for concept c12345", entry.getMessage());
         assertEquals("Add map entry c12345 to c67890", entry.getDetails());
 
@@ -104,9 +116,11 @@ public class AuditEntryHelperUnitTest {
 
         mapEntry.setToCode("c12345");
         mapEntry.setToName("New Target Name");
-        final AuditEntry entry = AuditEntryHelper.updateMappingEntry("refsetId", mapping, mapEntry, oldMapEntry);
+        final AuditEntry entry = AuditEntryHelper.updateMappingEntry("447562003", mapping, mapEntry, oldMapEntry);
 
         assertNotNull(entry);
+        assertEquals("MAP_ENTRY", entry.getEntityType());
+        assertEquals("447562003:c12345", entry.getEntityId());
         assertEquals("UPDATE MapEntry for concept c12345", entry.getMessage());
         assertEquals("Target Code changed from c67890 to c12345, Target Name changed from Target Name to New Target Name", entry.getDetails());
     }
@@ -118,10 +132,22 @@ public class AuditEntryHelperUnitTest {
     void testUpdateMappingEntryChangeRelated() {
 
         mapEntry.setRelation("New Relation");
-        final AuditEntry entry = AuditEntryHelper.updateMappingEntry("refsetId", mapping, mapEntry, oldMapEntry);
+        final AuditEntry entry = AuditEntryHelper.updateMappingEntry("447562003", mapping, mapEntry, oldMapEntry);
         assertEquals("UPDATE MapEntry for concept c12345", entry.getMessage());
         assertEquals("Relation changed from Related to New Relation", entry.getDetails());
 
+    }
+
+    /**
+     * Relation case differences are display-only and should not be audited.
+     */
+    @Test
+    void testUpdateMappingEntryIgnoresRelationCase() {
+
+        mapEntry.setRelation("RELATED");
+        final AuditEntry entry = AuditEntryHelper.updateMappingEntry("447562003", mapping, mapEntry, oldMapEntry);
+        assertEquals("UPDATE MapEntry for concept c12345", entry.getMessage());
+        assertNull(entry.getDetails());
     }
 
     /**
@@ -131,7 +157,7 @@ public class AuditEntryHelperUnitTest {
     void testUpdateMappingEntryChangeRule() {
 
         mapEntry.setRule("New Rule");
-        final AuditEntry entry = AuditEntryHelper.updateMappingEntry("refsetId", mapping, mapEntry, oldMapEntry);
+        final AuditEntry entry = AuditEntryHelper.updateMappingEntry("447562003", mapping, mapEntry, oldMapEntry);
         assertEquals("UPDATE MapEntry for concept c12345", entry.getMessage());
         assertEquals("Rule changed from Rule to New Rule", entry.getDetails());
 
@@ -144,7 +170,7 @@ public class AuditEntryHelperUnitTest {
     void testUpdateMappingEntryChangePriority() {
 
         mapEntry.setPriority(9);
-        final AuditEntry entry = AuditEntryHelper.updateMappingEntry("refsetId", mapping, mapEntry, oldMapEntry);
+        final AuditEntry entry = AuditEntryHelper.updateMappingEntry("447562003", mapping, mapEntry, oldMapEntry);
         assertEquals("UPDATE MapEntry for concept c12345", entry.getMessage());
         assertEquals("Priority changed from 1 to 9", entry.getDetails());
 
@@ -157,7 +183,7 @@ public class AuditEntryHelperUnitTest {
     void testUpdateMappingEntryChangeGroup() {
 
         mapEntry.setGroup(9);
-        final AuditEntry entry = AuditEntryHelper.updateMappingEntry("refsetId", mapping, mapEntry, oldMapEntry);
+        final AuditEntry entry = AuditEntryHelper.updateMappingEntry("447562003", mapping, mapEntry, oldMapEntry);
         assertEquals("UPDATE MapEntry for concept c12345", entry.getMessage());
         assertEquals("Group changed from 1 to 9", entry.getDetails());
 
@@ -170,9 +196,9 @@ public class AuditEntryHelperUnitTest {
     void testUpdateMappingEntryChangeModuleId() {
 
         mapEntry.setModuleId("m987654");
-        final AuditEntry entry = AuditEntryHelper.updateMappingEntry("refsetId", mapping, mapEntry, oldMapEntry);
+        final AuditEntry entry = AuditEntryHelper.updateMappingEntry("447562003", mapping, mapEntry, oldMapEntry);
         assertEquals("UPDATE MapEntry for concept c12345", entry.getMessage());
-        assertEquals("Module Id changed from m123456 to m987654", entry.getDetails());
+        assertNull(entry.getDetails());
 
     }
 
@@ -183,9 +209,9 @@ public class AuditEntryHelperUnitTest {
     void testUpdateMappingEntryChangeReleased() {
 
         mapEntry.setReleased(true);
-        final AuditEntry entry = AuditEntryHelper.updateMappingEntry("refsetId", mapping, mapEntry, oldMapEntry);
+        final AuditEntry entry = AuditEntryHelper.updateMappingEntry("447562003", mapping, mapEntry, oldMapEntry);
         assertEquals("UPDATE MapEntry for concept c12345", entry.getMessage());
-        assertEquals("Released changed from false to true", entry.getDetails());
+        assertNull(entry.getDetails());
 
     }
 
@@ -196,7 +222,7 @@ public class AuditEntryHelperUnitTest {
     void testUpdateMappingEntryAddAdvice() {
 
         mapEntry.getAdvices().add("Advice 3");
-        final AuditEntry entry = AuditEntryHelper.updateMappingEntry("refsetId", mapping, mapEntry, oldMapEntry);
+        final AuditEntry entry = AuditEntryHelper.updateMappingEntry("447562003", mapping, mapEntry, oldMapEntry);
         assertEquals("UPDATE MapEntry for concept c12345", entry.getMessage());
         assertEquals("Advices changed from [Advice 1, Advice 2] to [Advice 1, Advice 3, Advice 2]", entry.getDetails());
 
@@ -209,7 +235,7 @@ public class AuditEntryHelperUnitTest {
     void testUpdateMappingEntryRemoveAdvice() {
 
         mapEntry.getAdvices().remove("Advice 2");
-        final AuditEntry entry = AuditEntryHelper.updateMappingEntry("refsetId", mapping, mapEntry, oldMapEntry);
+        final AuditEntry entry = AuditEntryHelper.updateMappingEntry("447562003", mapping, mapEntry, oldMapEntry);
         assertEquals("UPDATE MapEntry for concept c12345", entry.getMessage());
         assertEquals("Advices changed from [Advice 1, Advice 2] to [Advice 1]", entry.getDetails());
 
@@ -222,7 +248,7 @@ public class AuditEntryHelperUnitTest {
     void testUpdateMappingEntryChangeAdditionalMapEntryInfoAdd() {
 
         mapEntry.getAdditionalMapEntryInfos().add(new AdditionalMapEntryInfo("9", "name-9", "field-9", "value-9"));
-        final AuditEntry entry = AuditEntryHelper.updateMappingEntry("refsetId", mapping, mapEntry, oldMapEntry);
+        final AuditEntry entry = AuditEntryHelper.updateMappingEntry("447562003", mapping, mapEntry, oldMapEntry);
         assertEquals("UPDATE MapEntry for concept c12345", entry.getMessage());
         assertEquals("Additional Map Entry Details changes: Added: field-9=value-9;", entry.getDetails());
 
@@ -239,7 +265,7 @@ public class AuditEntryHelperUnitTest {
         additionalMapEntryInfo.setValue("value-update");
         additionalMapEntryInfo.setName("name-update");
 
-        final AuditEntry entry = AuditEntryHelper.updateMappingEntry("refsetId", mapping, mapEntry, oldMapEntry);
+        final AuditEntry entry = AuditEntryHelper.updateMappingEntry("447562003", mapping, mapEntry, oldMapEntry);
         assertEquals("UPDATE MapEntry for concept c12345", entry.getMessage());
         assertEquals("Additional Map Entry Details changes: Added: field-update=value-update; Removed: field-1=value-1;", entry.getDetails());
 
@@ -252,7 +278,7 @@ public class AuditEntryHelperUnitTest {
     void testUpdateMappingEntryChangeAdditionalMapEntryInfoRemove() {
 
         mapEntry.getAdditionalMapEntryInfos().remove(mapEntry.getAdditionalMapEntryInfos().stream().reduce((first, second) -> second).orElse(null));
-        final AuditEntry entry = AuditEntryHelper.updateMappingEntry("refsetId", mapping, mapEntry, oldMapEntry);
+        final AuditEntry entry = AuditEntryHelper.updateMappingEntry("447562003", mapping, mapEntry, oldMapEntry);
         assertEquals("UPDATE MapEntry for concept c12345", entry.getMessage());
         assertEquals("Additional Map Entry Details changes: Removed: field-2=value-2;", entry.getDetails());
 
@@ -265,14 +291,14 @@ public class AuditEntryHelperUnitTest {
     void testStatusChangeMappingEntry() {
 
         mapEntry.setActive(true);
-        AuditEntry entry = AuditEntryHelper.statusChangeMappingEntry("refsetId", mapping, mapEntry);
+        AuditEntry entry = AuditEntryHelper.statusChangeMappingEntry("447562003", mapping, mapEntry);
 
         assertNotNull(entry);
         assertEquals("UPDATE MapEntry for concept c12345", entry.getMessage());
         assertEquals("Map entry for concept c12345 activated.", entry.getDetails());
 
         mapEntry.setActive(false);
-        entry = AuditEntryHelper.statusChangeMappingEntry("refsetId", mapping, mapEntry);
+        entry = AuditEntryHelper.statusChangeMappingEntry("447562003", mapping, mapEntry);
 
         assertNotNull(entry);
         assertEquals("UPDATE MapEntry for concept c12345", entry.getMessage());
@@ -286,10 +312,35 @@ public class AuditEntryHelperUnitTest {
     @Test
     void testDeleteMappingEntry() {
 
-        final AuditEntry entry = AuditEntryHelper.deleteMappingEntry("refsetId", mapping, mapEntry);
+        final AuditEntry entry = AuditEntryHelper.deleteMappingEntry("447562003", mapping, mapEntry);
 
         assertNotNull(entry);
+        assertEquals("MAP_ENTRY", entry.getEntityType());
+        assertEquals("447562003:c12345", entry.getEntityId());
         assertEquals("DELETE MapEntry for concept c12345", entry.getMessage());
         assertEquals("Delete map entry c12345 mapped to c67890.", entry.getDetails());
+    }
+
+    /**
+     * Test revert Norwegian override to International mapping.
+     */
+    @Test
+    void testRevertToInternationalMappingEntry() {
+
+        mapping.getMapEntries().add(mapEntry);
+
+        final Mapping internationalMapping = new Mapping();
+        internationalMapping.setCode("c12345");
+        final MapEntry internationalEntry = new MapEntry();
+        internationalEntry.setToCode("N42.8");
+        internationalMapping.getMapEntries().add(internationalEntry);
+
+        final AuditEntry entry = AuditEntryHelper.revertToInternationalMappingEntry("447562003", mapping, internationalMapping);
+
+        assertNotNull(entry);
+        assertEquals("MAP_ENTRY", entry.getEntityType());
+        assertEquals("447562003:c12345", entry.getEntityId());
+        assertEquals("REVERT MapEntry for concept c12345", entry.getMessage());
+        assertEquals("Removed Norwegian override mapped to c67890; reverted to International mapping (N42.8).", entry.getDetails());
     }
 }

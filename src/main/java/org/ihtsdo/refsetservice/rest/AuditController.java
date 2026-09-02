@@ -13,6 +13,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.AuditEntry;
 import org.ihtsdo.refsetservice.model.Organization;
@@ -158,7 +159,7 @@ public class AuditController extends BaseController {
 			@Parameter(name = "limit", description = "The max number of results to return", required = false, example = "10"),
 			@Parameter(name = "offset", description = "The offset for the first result", required = false, example = "0") })
 	@RecordMetric
-	@RequestMapping(method = RequestMethod.GET, value = "/audit/{entityType}/{entityId}", produces = MediaType.APPLICATION_JSON)
+	@RequestMapping(method = RequestMethod.GET, value = "/audit/{entityType}/{entityId:.+}", produces = MediaType.APPLICATION_JSON)
 	public @ResponseBody ResponseEntity<ResultList<AuditEntry>> searchAuditEntriesForEntity(
 			@PathVariable final String entityType, @PathVariable final String entityId,
 			@RequestParam(value = "expand") final Boolean expand,
@@ -219,7 +220,8 @@ public class AuditController extends BaseController {
 					}
 				}
 
-				final String query = "(entityType:" + entityType + " AND entityId:" + entityId + ") "
+				final String query = "(entityType:" + QueryParserBase.escape(entityType) + " AND entityId:"
+						+ QueryParserBase.escape(entityId) + ") "
 						+ (StringUtils.isNotEmpty(additionalQuery.toString()) ? additionalQuery.toString() : "")
 						+ (StringUtils.isNotEmpty(searchParameters.getQuery()) ? " AND " + searchParameters.getQuery()
 								: "");
@@ -227,7 +229,8 @@ public class AuditController extends BaseController {
 
 			} else {
 
-				final String query = "entityType:" + entityType + " AND entityId:" + entityId
+				final String query = "entityType:" + QueryParserBase.escape(entityType) + " AND entityId:"
+						+ QueryParserBase.escape(entityId)
 						+ (StringUtils.isNotEmpty(searchParameters.getQuery()) ? " AND " + searchParameters.getQuery()
 								: "");
 				searchParameters.setQuery(query);
