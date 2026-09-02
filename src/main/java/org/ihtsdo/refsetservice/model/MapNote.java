@@ -5,32 +5,25 @@ import java.util.Objects;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
-import javax.xml.bind.annotation.XmlTransient;
 
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
-import org.hibernate.search.mapper.pojo.automaticindexing.ReindexOnUpdate;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDependency;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.ObjectPath;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.PropertyValue;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
- * A note attached to a mapping, keyed by map set and source concept code (Snowstorm mappings are not DB entities).
+ * A note attached to a mapping, keyed by map set {@code refSetCode} and source concept code
+ * (Snowstorm mappings are not DB entities). Notes are shared across all versions of the same map
+ * product.
  */
 @Entity
 @Table(name = "map_notes")
@@ -40,12 +33,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @Indexed
 public class MapNote extends AbstractHasModified {
 
-    /** The map set that scopes this note. */
-    @ManyToOne(targetEntity = MapSet.class, fetch = FetchType.LAZY)
-    @JoinColumn(name = "mapSet_id", nullable = false)
-    @Fetch(FetchMode.JOIN)
-    @JsonIgnore
-    private MapSet mapSet;
+    /** The stable map product code ({@link MapSet#getRefSetCode()}). */
+    @Column(nullable = false, length = 255)
+    private String refSetCode;
 
     /** The source concept code (referencedComponentId). */
     @Column(nullable = false, length = 255)
@@ -84,7 +74,7 @@ public class MapNote extends AbstractHasModified {
         if (keepIds && mapNote.getId() != null) {
             setId(mapNote.getId());
         }
-        this.mapSet = mapNote.getMapSet();
+        this.refSetCode = mapNote.getRefSetCode();
         this.sourceConceptCode = mapNote.getSourceConceptCode();
         this.timestamp = mapNote.getTimestamp();
         this.note = mapNote.getNote();
@@ -94,49 +84,24 @@ public class MapNote extends AbstractHasModified {
     }
 
     /**
-     * Returns the map set id.
+     * Returns the ref set code.
      *
-     * @return the map set id
+     * @return the ref set code
      */
-    @XmlTransient
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
-    @IndexingDependency(derivedFrom = @ObjectPath({
-        @PropertyValue(propertyName = "mapSet")
-    }))
-    @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
-    public String getMapSetId() {
+    public String getRefSetCode() {
 
-        return mapSet == null ? null : mapSet.getId();
+        return refSetCode;
     }
 
     /**
-     * Sets the map set id.
+     * Sets the ref set code.
      *
-     * @param mapSetId the map set id
+     * @param refSetCode the ref set code
      */
-    public void setMapSetId(final String mapSetId) {
+    public void setRefSetCode(final String refSetCode) {
 
-        // n/a - derived from mapSet
-    }
-
-    /**
-     * Returns the map set.
-     *
-     * @return the map set
-     */
-    public MapSet getMapSet() {
-
-        return mapSet;
-    }
-
-    /**
-     * Sets the map set.
-     *
-     * @param mapSet the map set
-     */
-    public void setMapSet(final MapSet mapSet) {
-
-        this.mapSet = mapSet;
+        this.refSetCode = refSetCode;
     }
 
     /**
