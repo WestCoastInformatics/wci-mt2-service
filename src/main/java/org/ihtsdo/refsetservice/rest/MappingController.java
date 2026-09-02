@@ -354,7 +354,7 @@ public class MappingController extends BaseController {
     })
     @RecordMetric
     public ResponseEntity<String> importMappings(@PathVariable(name = "branch", required = true) String branch,
-        @RequestParam(name = "mappingFile", required = true) MultipartFile mappingFile) {
+        @RequestParam(name = "mappingFile", required = true) MultipartFile mappingFile, final HttpServletRequest request) {
 
         LOG.info("RF2 Map Import file: {}", mappingFile);
         LOG.info("RF2 Map Import branch : {}", branch);
@@ -368,6 +368,7 @@ public class MappingController extends BaseController {
             }
 
             try (final TerminologyService service = new TerminologyService()) {
+                final User user = requireAuthenticatedUser(request);
                 final MapSet mapSet = MapSetService.findMapSetByBranchPath(service, decodedBranch);
                 if (mapSet == null || mapSet.getMapProject() == null) {
                     LOG.error("No map set or map project found for branch: {}", decodedBranch);
@@ -377,7 +378,7 @@ public class MappingController extends BaseController {
                 LOG.info("Fetched MapProject with ID: {}", mapSet.getMapProject().getId());
 
                 // Import RF2 mappings
-                final List<Mapping> updatedRF2Mappings = MappingService.importMappings(mapProject, decodedBranch, mappingFile, mapSet);
+                final List<Mapping> updatedRF2Mappings = MappingService.importMappings(mapProject, decodedBranch, mappingFile, mapSet, user);
                 if (updatedRF2Mappings == null || updatedRF2Mappings.isEmpty())
                     LOG.info("Mapping import wasn't successful for branch: {}", decodedBranch);
                 else
@@ -600,7 +601,7 @@ public class MappingController extends BaseController {
             mappings.add(mapping);
             final User user = requireAuthenticatedUser(request);
             MappingWorkflowService.canUserEditMappings(user, mapSet, mappings, service);
-            MappingService.updateMappings(mapSet.getMapProject(), branch, mapSet.getRefSetCode(), mappings, mapSet);
+            MappingService.updateMappings(mapSet.getMapProject(), branch, mapSet.getRefSetCode(), mappings, mapSet, user);
 
             return new ResponseEntity<>(mapping, HttpStatus.OK);
 
@@ -655,7 +656,7 @@ public class MappingController extends BaseController {
             }
             final User user = requireAuthenticatedUser(request);
             MappingWorkflowService.canUserEditMappings(user, mapSet, mappings, service);
-            final List<Mapping> updatedMappings = MappingService.updateMappings(mapSet.getMapProject(), branch, mapSet.getRefSetCode(), mappings, mapSet);
+            final List<Mapping> updatedMappings = MappingService.updateMappings(mapSet.getMapProject(), branch, mapSet.getRefSetCode(), mappings, mapSet, user);
 
             return new ResponseEntity<>(updatedMappings, HttpStatus.OK);
 

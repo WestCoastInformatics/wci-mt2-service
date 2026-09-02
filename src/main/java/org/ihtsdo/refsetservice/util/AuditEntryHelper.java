@@ -1102,19 +1102,30 @@ public final class AuditEntryHelper {
     // ############ Mappings
     // Map Entry
     /**
+     * Stable audit entity id for a map entry across map set versions.
+     *
+     * @param refSetCode the map / refset code
+     * @param conceptCode the source concept code
+     * @return {@code refSetCode:conceptCode}
+     */
+    public static String mapEntryEntityId(final String refSetCode, final String conceptCode) {
+
+        return StringUtils.defaultString(refSetCode) + ":" + StringUtils.defaultString(conceptCode);
+    }
+
+    /**
      * Adds the mapping entry.
      *
-     * @param refsetId the refset id
+     * @param refSetCode the map / refset code
      * @param mapping  the mapping
      * @param mapEntry the map entry
      * @return the audit entry
      */
-
-    public static AuditEntry addMappingEntry(final String refsetId, final Mapping mapping, final MapEntry mapEntry) {
+    public static AuditEntry addMappingEntry(final String refSetCode, final Mapping mapping, final MapEntry mapEntry) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(EntityType.REFSET.toString());
-        entry.setEntityId(refsetId);
+        entry.setEntityType(EntityType.MAP_ENTRY.toString());
+        entry.setEntityId(mapEntryEntityId(refSetCode, mapping.getCode()));
         entry.setMessage("ADD MapEntry for concept " + mapping.getCode());
         entry.setDetails(
                 "Add map entry " + mapping.getCode() + " to "
@@ -1126,18 +1137,18 @@ public final class AuditEntryHelper {
     /**
      * Update mapping entry.
      *
-     * @param refsetId        the refset id
+     * @param refSetCode      the map / refset code
      * @param mapping         the mapping
      * @param updatedMapEntry the updated map entry
      * @param oldMapEntry     the old map entry
      * @return the audit entry
      */
-    public static AuditEntry updateMappingEntry(final String refsetId, final Mapping mapping,
+    public static AuditEntry updateMappingEntry(final String refSetCode, final Mapping mapping,
             final MapEntry updatedMapEntry, final MapEntry oldMapEntry) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(EntityType.REFSET.toString());
-        entry.setEntityId(refsetId);
+        entry.setEntityType(EntityType.MAP_ENTRY.toString());
+        entry.setEntityId(mapEntryEntityId(refSetCode, mapping.getCode()));
         entry.setMessage("UPDATE MapEntry for concept " + mapping.getCode());
 
         try {
@@ -1160,17 +1171,17 @@ public final class AuditEntryHelper {
     /**
      * Removes the mapping entry.
      *
-     * @param refsetId the refset id
+     * @param refSetCode the map / refset code
      * @param mapping  the mapping
      * @param mapEntry the map entry
      * @return the audit entry
      */
-    public static AuditEntry statusChangeMappingEntry(final String refsetId, final Mapping mapping,
+    public static AuditEntry statusChangeMappingEntry(final String refSetCode, final Mapping mapping,
             final MapEntry mapEntry) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(EntityType.REFSET.toString());
-        entry.setEntityId(refsetId);
+        entry.setEntityType(EntityType.MAP_ENTRY.toString());
+        entry.setEntityId(mapEntryEntityId(refSetCode, mapping.getCode()));
         entry.setMessage("UPDATE MapEntry for concept " + mapping.getCode());
         entry.setDetails("Map entry for concept " + mapping.getCode()
                 + ((mapEntry.isActive()) ? " activated." : " inactivated."));
@@ -1181,16 +1192,16 @@ public final class AuditEntryHelper {
     /**
      * Removes the mapping entry.
      *
-     * @param refsetId the refset id
+     * @param refSetCode the map / refset code
      * @param mapping  the mapping
      * @param mapEntry the map entry
      * @return the audit entry
      */
-    public static AuditEntry deleteMappingEntry(final String refsetId, final Mapping mapping, final MapEntry mapEntry) {
+    public static AuditEntry deleteMappingEntry(final String refSetCode, final Mapping mapping, final MapEntry mapEntry) {
 
         final AuditEntry entry = new AuditEntry();
-        entry.setEntityType(EntityType.REFSET.toString());
-        entry.setEntityId(refsetId);
+        entry.setEntityType(EntityType.MAP_ENTRY.toString());
+        entry.setEntityId(mapEntryEntityId(refSetCode, mapping.getCode()));
         entry.setMessage("DELETE MapEntry for concept " + mapping.getCode());
         entry.setDetails("Delete map entry " + mapping.getCode() + " mapped to "
                 + (StringUtils.isNotBlank(mapEntry.getToCode()) ? mapEntry.getToCode() : "NO TARGET") + ".");
@@ -1199,7 +1210,49 @@ public final class AuditEntryHelper {
     }
 
     /**
+     * Revert a Norwegian override back to the International mapping.
+     *
+     * @param refSetCode the map / refset code
+     * @param norwegianMapping the Norwegian mapping being removed
+     * @param internationalMapping the International mapping being restored
+     * @return the audit entry
+     */
+    public static AuditEntry revertToInternationalMappingEntry(final String refSetCode, final Mapping norwegianMapping,
+            final Mapping internationalMapping) {
+
+        final AuditEntry entry = new AuditEntry();
+        entry.setEntityType(EntityType.MAP_ENTRY.toString());
+        entry.setEntityId(mapEntryEntityId(refSetCode, norwegianMapping.getCode()));
+        entry.setMessage("REVERT MapEntry for concept " + norwegianMapping.getCode());
+        entry.setDetails("Removed Norwegian override mapped to " + formatMappingTargets(norwegianMapping)
+                + "; reverted to International mapping (" + formatMappingTargets(internationalMapping) + ").");
+        log(entry);
+        return entry;
+    }
+
+    /**
+     * Format map entry target codes for audit details.
+     *
+     * @param mapping the mapping
+     * @return comma-separated target codes, or NO TARGET
+     */
+    private static String formatMappingTargets(final Mapping mapping) {
+
+        if (mapping == null || mapping.getMapEntries() == null || mapping.getMapEntries().isEmpty()) {
+            return "NO TARGET";
+        }
+
+        final List<String> targets = mapping.getMapEntries().stream()
+                .map(mapEntry -> StringUtils.isNotBlank(mapEntry.getToCode()) ? mapEntry.getToCode() : "NO TARGET")
+                .collect(Collectors.toList());
+        return String.join(", ", targets);
+    }
+
+    /**
      * Compute log string map entries.
+     *
+     * Relation is compared case-insensitively (the UI uppercases display names). Module id and
+     * released are omitted; those are applied by save/publication, not edited by the user.
      *
      * @param newEntry the new entry
      * @param oldEntry the old entry
@@ -1218,10 +1271,10 @@ public final class AuditEntryHelper {
         if (!Objects.equals(oldEntry.getToName(), newEntry.getToName())) {
             changesArray.add(String.format(template, "Target Name", oldEntry.getToName(), newEntry.getToName()));
         }
-        if (!Objects.equals(oldEntry.getRelation(), newEntry.getRelation())) {
+        if (!StringUtils.equalsIgnoreCase(oldEntry.getRelation(), newEntry.getRelation())) {
             changesArray.add(String.format(template, "Relation", oldEntry.getRelation(), newEntry.getRelation()));
         }
-        if (!Objects.equals(oldEntry.getRelationCode(), newEntry.getRelationCode())) {
+        if (!StringUtils.equalsIgnoreCase(oldEntry.getRelationCode(), newEntry.getRelationCode())) {
             changesArray.add(
                     String.format(template, "Relation Code", oldEntry.getRelationCode(), newEntry.getRelationCode()));
         }
@@ -1239,13 +1292,6 @@ public final class AuditEntryHelper {
         if (oldEntry.getGroup() != newEntry.getGroup()) {
             changesArray.add(String.format(template, "Group", String.valueOf(oldEntry.getGroup()),
                     String.valueOf(newEntry.getGroup())));
-        }
-        if (!Objects.equals(oldEntry.getModuleId(), newEntry.getModuleId())) {
-            changesArray.add(String.format(template, "Module Id", oldEntry.getModuleId(), newEntry.getModuleId()));
-        }
-        if (oldEntry.isReleased() != newEntry.isReleased()) {
-            changesArray.add(String.format(template, "Released", String.valueOf(oldEntry.isReleased()),
-                    String.valueOf(newEntry.isReleased())));
         }
         if (!Objects.equals(oldEntry.getAdvices(), newEntry.getAdvices())) {
             changesArray.add(String.format(template, "Advices", oldEntry.getAdvices().toString(),

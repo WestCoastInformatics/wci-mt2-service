@@ -4605,7 +4605,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
     /* see superclass */
     @Override
     public List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mappings,
-        final MapSet mapSet) throws Exception {
+        final MapSet mapSet, final User user) throws Exception {
 
         // implement with Snowstorm
         throw new UnsupportedOperationException("Method not implemented");
@@ -4622,7 +4622,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
     /* see superclass */
     @Override
-    public List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile, final MapSet mapSet) throws Exception {
+    public List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile, final MapSet mapSet, final User user)
+        throws Exception {
 
         // implement with Snowstorm
         throw new UnsupportedOperationException("Method not implemented");

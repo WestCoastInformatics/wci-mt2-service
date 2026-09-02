@@ -525,9 +525,9 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
     /* see superclass */
     @Override
     public List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mappings,
-        final MapSet mapSet) throws Exception {
+        final MapSet mapSet, final User user) throws Exception {
 
-        return SnowstormMapping.updateMappings(mapProject, branch, mapSetCode, mappings, mapSet);
+        return SnowstormMapping.updateMappings(mapProject, branch, mapSetCode, mappings, mapSet, user);
     }
 
     /* see superclass */
@@ -540,9 +540,10 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
 
     /* see superclass */
     @Override
-    public List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile, final MapSet mapSet) throws Exception {
+    public List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile, final MapSet mapSet, final User user)
+        throws Exception {
 
-        return SnowstormMapping.importMappings(mapProject, branch, mappingFile, mapSet);
+        return SnowstormMapping.importMappings(mapProject, branch, mappingFile, mapSet, user);
     }
 
     /* see superclass */

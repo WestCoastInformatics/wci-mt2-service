@@ -18,6 +18,7 @@ import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
+import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.SearchParameters;
@@ -128,13 +129,14 @@ public final class MappingService {
      * @param mapSetCode the map set code
      * @param mapping the mapping
      * @param mapSet the map set
+     * @param user the acting user
      * @return the list
      * @throws Exception the exception
      */
     public static List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mapping,
-        final MapSet mapSet) throws Exception {
+        final MapSet mapSet, final User user) throws Exception {
 
-        return terminologyHandler.updateMappings(mapProject, branch, mapSetCode, mapping, mapSet);
+        return terminologyHandler.updateMappings(mapProject, branch, mapSetCode, mapping, mapSet, user);
     }
 
     /**
@@ -164,12 +166,13 @@ public final class MappingService {
      * @param branch the branch
      * @param mappingFile the RF2 file
      * @param mapSet the map set
+     * @param user the acting user
      * @return the imported mappings
      * @throws Exception the exception
      */
-	public static List<Mapping> importMappings(MapProject mapProject, String branch, MultipartFile mappingFile, MapSet mapSet) throws Exception {
+	public static List<Mapping> importMappings(MapProject mapProject, String branch, MultipartFile mappingFile, MapSet mapSet, User user) throws Exception {
 
-		return terminologyHandler.importMappings(mapProject, branch, mappingFile, mapSet);
+		return terminologyHandler.importMappings(mapProject, branch, mappingFile, mapSet, user);
 	}
     
 }

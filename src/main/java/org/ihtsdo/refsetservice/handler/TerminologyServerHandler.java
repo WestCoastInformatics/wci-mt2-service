@@ -634,10 +634,12 @@ public interface TerminologyServerHandler extends Configurable {
      * @param mapSetCode the map set code
      * @param mapping the mapping
      * @param mapSet the map set
+     * @param user the acting user
      * @return the list
      * @throws Exception the exception
      */
-    public List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mapping, final MapSet mapSet)
+    public List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mapping,
+        final MapSet mapSet, final User user)
         throws Exception;
 
     /**
@@ -659,10 +661,12 @@ public interface TerminologyServerHandler extends Configurable {
      * @param branch the branch
      * @param mappingFile the mappingFile
      * @param mapSet the map set
+     * @param user the acting user
      * @return the list
      * @throws Exception the exception
      */
-    public List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile, final MapSet mapSet) throws Exception;
+    public List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile, final MapSet mapSet, final User user)
+        throws Exception;
 
     /**
      * Export map set as an RF2 file.

@@ -1301,17 +1301,19 @@ public class SnowstormMapping extends SnowstormAbstract {
      * @param branch the branch
      * @param mapSetCode the map set code
      * @param mappings the mappings
+     * @param mapSet the map set
+     * @param user the acting user
      * @return the list
      * @throws Exception the exception
      */
     public static List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mappings,
-        final MapSet mapSet) throws Exception {
+        final MapSet mapSet, final User user) throws Exception {
 
         final List<Mapping> updatedMappings = new ArrayList<>();
         final List<String> conceptIds = new ArrayList<>();
 
         for (final Mapping mapping : mappings) {
-            final Mapping updatedMapping = updateMapping(mapProject, branch, mapSetCode, mapping, mapSet);
+            final Mapping updatedMapping = updateMapping(mapProject, branch, mapSetCode, mapping, mapSet, user);
             updatedMappings.add(updatedMapping);
             conceptIds.add(updatedMapping.getCode());
         }
@@ -1334,11 +1336,13 @@ public class SnowstormMapping extends SnowstormAbstract {
      * @param branch the branch
      * @param mapSetCode the map set code
      * @param submittedMapping the submitted mapping
+     * @param mapSet the map set
+     * @param user the acting user
      * @return the mapping
      * @throws Exception the exception
      */
     public static Mapping updateMapping(final MapProject mapProject, final String branch, final String mapSetCode, final Mapping submittedMapping,
-        final MapSet mapSet) throws Exception {
+        final MapSet mapSet, final User user) throws Exception {
 
         if (mapSet == null || StringUtils.isAnyBlank(mapSet.getFromTerminology(), mapSet.getFromVersion(), mapSet.getToTerminology(), mapSet.getToVersion())) {
             throw new LocalException("MapSet from database with fromTerminology, fromVersion, toTerminology and toVersion is required for updateMapping. mapSetCode: " + mapSetCode);
@@ -1371,6 +1375,8 @@ public class SnowstormMapping extends SnowstormAbstract {
         // (this may the same or different than the above).
         final Mapping existingActiveInternationalMapping =
             getMapping(branch, mapSetCode, submittedMapping.getCode(), SnomedConstants.SNOMEDCT_TO_ICD10_MAPPING_MODULE, true, false, false, mapSet);
+
+        boolean revertedToInternational = false;
 
         // If map content is identical to the existing active map, do nothing.
         if (MapEntryUtility.areMapsEquivalent(submittedMapping, existingActiveMapping)) {
@@ -1412,6 +1418,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         // In this case, remove all existing Norwegian map entries, and revert back to
         // the International.
         else if (MapEntryUtility.areMapsEquivalent(submittedMapping, existingActiveInternationalMapping)) {
+            revertedToInternational = true;
             for (final MapEntry existingMapEntry : existingActiveMapping.getMapEntries()) {
                 mapEntryRemoveList.add(existingMapEntry);
             }
@@ -1538,8 +1545,6 @@ public class SnowstormMapping extends SnowstormAbstract {
                 mapEntryDeleteList.add(existingMapEntry);
                 mapEntryCreateList.put(submittedMapEntry, existingMapEntry);
             } else {
-                existingMapEntry = MapEntryUtility.updateExistingMapEntry(existingMapEntry, submittedMapEntry);
-                // mapEntryUpdateList.put(existingMapEntry, submittedMapEntry);
                 mapEntryUpdateList.put(submittedMapEntry, existingMapEntry);
             }
         }
@@ -1547,6 +1552,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         // final MapSet snowstormMapSet = getMapSet(branch, mapSetCode);
         final List<MapEntry> updatedMapEntries = new ArrayList<>();
         final List<AuditEntry> auditEntries = new ArrayList<>();
+        final String refSetCode = StringUtils.isNotBlank(mapSet.getRefSetCode()) ? mapSet.getRefSetCode() : mapSetCode;
 
         // Create Map Entry (Refset member)
         // for (final MapEntry mapEntry : mapEntryCreateList) {
@@ -1568,9 +1574,9 @@ public class SnowstormMapping extends SnowstormAbstract {
                 updatedMapEntries.add(updatedMapEntry);
 
                 if (originalMapEntry != null) {
-                    auditEntries.add(AuditEntryHelper.updateMappingEntry(mapProject.getRefSetId(), existingActiveMapping, updatedMapEntry, originalMapEntry));
+                    addUpdateMappingAudit(auditEntries, refSetCode, existingActiveMapping, mapEntry, originalMapEntry);
                 } else {
-                    auditEntries.add(AuditEntryHelper.addMappingEntry(mapProject.getRefSetId(), existingActiveMapping, updatedMapEntry));
+                    auditEntries.add(AuditEntryHelper.addMappingEntry(refSetCode, existingActiveMapping, mapEntry));
                 }
 
             }
@@ -1584,6 +1590,7 @@ public class SnowstormMapping extends SnowstormAbstract {
                     throw new Exception(
                         "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
                 }
+                auditEntries.add(AuditEntryHelper.deleteMappingEntry(refSetCode, existingActiveMapping, mapEntry));
             }
         }
 
@@ -1600,7 +1607,7 @@ public class SnowstormMapping extends SnowstormAbstract {
                 final JsonNode updatedMapEntryJson = ThreadLocalMapper.get().readTree(SnowstormConnection.readEntityAsString(response));
                 final MapEntry updatedMapEntry = convertSnowstormMemberToMapEntry(updatedMapEntryJson, mapSet, branch);
                 updatedMapEntries.add(updatedMapEntry);
-                auditEntries.add(AuditEntryHelper.statusChangeMappingEntry(mapProject.getRefSetId(), existingActiveMapping, updatedMapEntry));
+                auditEntries.add(AuditEntryHelper.statusChangeMappingEntry(refSetCode, existingActiveMapping, mapEntry));
 
             }
         }
@@ -1618,7 +1625,7 @@ public class SnowstormMapping extends SnowstormAbstract {
                 final JsonNode updatedMapEntryJson = ThreadLocalMapper.get().readTree(SnowstormConnection.readEntityAsString(response));
                 final MapEntry updatedMapEntry = convertSnowstormMemberToMapEntry(updatedMapEntryJson, mapSet, branch);
                 updatedMapEntries.add(updatedMapEntry);
-                auditEntries.add(AuditEntryHelper.statusChangeMappingEntry(mapProject.getRefSetId(), existingActiveMapping, updatedMapEntry));
+                auditEntries.add(AuditEntryHelper.statusChangeMappingEntry(refSetCode, existingActiveMapping, mapEntry));
             }
         }
 
@@ -1637,7 +1644,7 @@ public class SnowstormMapping extends SnowstormAbstract {
                 final JsonNode updatedMapEntryJson = ThreadLocalMapper.get().readTree(SnowstormConnection.readEntityAsString(response));
                 final MapEntry updatedMapEntry = convertSnowstormMemberToMapEntry(updatedMapEntryJson, mapSet, branch);
                 updatedMapEntries.add(updatedMapEntry);
-                auditEntries.add(AuditEntryHelper.updateMappingEntry(mapProject.getRefSetId(), existingActiveMapping, updatedMapEntry, originalMapEntry));
+                addUpdateMappingAudit(auditEntries, refSetCode, existingActiveMapping, mapEntry, originalMapEntry);
             }
         }
 
@@ -1646,9 +1653,11 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         populateMappingNamesFromConcepts(branch, mapSet, submittedMapping);
 
-        final User authUser = new User();
-        authUser.setUserName("admin");
-        addAuditEntries(authUser, auditEntries);
+        if (revertedToInternational) {
+            auditEntries.add(AuditEntryHelper.revertToInternationalMappingEntry(refSetCode, existingActiveMapping, existingActiveInternationalMapping));
+        }
+
+        addAuditEntries(user, auditEntries);
 
         // // Handle edition-precedence in the map entries
         // handleEditionPrecedence(submittedMapping);
@@ -1996,18 +2005,42 @@ public class SnowstormMapping extends SnowstormAbstract {
     }
 
     /**
-     * Adds the audit entry.
+     * Adds an update audit entry only when there is a user-visible map entry change.
      *
      * @param auditEntries the audit entries
+     * @param refSetCode the map / refset code
+     * @param mapping the mapping
+     * @param updatedMapEntry the submitted map entry
+     * @param originalMapEntry the previous map entry
      */
-    private static void addAuditEntries(final User authUser, final List<AuditEntry> auditEntries) {
+    private static void addUpdateMappingAudit(final List<AuditEntry> auditEntries, final String refSetCode, final Mapping mapping,
+        final MapEntry updatedMapEntry, final MapEntry originalMapEntry) {
+
+        final AuditEntry auditEntry = AuditEntryHelper.updateMappingEntry(refSetCode, mapping, updatedMapEntry, originalMapEntry);
+        if (auditEntry != null && StringUtils.isNotBlank(auditEntry.getDetails())) {
+            auditEntries.add(auditEntry);
+        }
+    }
+
+    /**
+     * Adds the audit entry.
+     *
+     * @param user the acting user
+     * @param auditEntries the audit entries
+     */
+    private static void addAuditEntries(final User user, final List<AuditEntry> auditEntries) {
 
         if (auditEntries == null || auditEntries.isEmpty()) {
             return;
         }
 
+        if (user == null || StringUtils.isBlank(user.getUserName())) {
+            LOG.error("Failed to add audit entries: authenticated user is required");
+            return;
+        }
+
         try (final TerminologyService auditService = new TerminologyService()) {
-            auditService.setModifiedBy(authUser.getUserName());
+            auditService.setModifiedBy(user.getUserName());
             auditService.setTransactionPerOperation(false);
             auditService.beginTransaction();
             for (final AuditEntry auditEntry : auditEntries) {
@@ -2173,10 +2206,13 @@ public class SnowstormMapping extends SnowstormAbstract {
      * @param mapProject the mapProject
      * @param branch the branch
      * @param mappingFile the RF2 mappingFile
+     * @param mapSet the map set
+     * @param user the acting user
      * @return the mappings updates
      * @throws Exception the exception
      */
-    public static List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile, final MapSet mapSet) throws Exception {
+    public static List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile, final MapSet mapSet,
+        final User user) throws Exception {
 
         final List<Mapping> mappings = getMappingsFromFile(mappingFile, mapProject);
         final List<Mapping> updatedRF2Mappings = new ArrayList<>();
@@ -2184,7 +2220,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         LOG.info("importMappings -RF2 Mapping obj  : {}", mappings);
         for (final Mapping mapping : mappings) {
 
-            final Mapping updatedRF2Mapping = updateMapping(mapProject, branch, mapping.getMapSetId(), mapping, mapSet);
+            final Mapping updatedRF2Mapping = updateMapping(mapProject, branch, mapping.getMapSetId(), mapping, mapSet, user);
             updatedRF2Mappings.add(updatedRF2Mapping);
             conceptIds.add(updatedRF2Mapping.getCode());
         }
