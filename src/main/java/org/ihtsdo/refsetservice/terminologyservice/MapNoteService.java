@@ -9,6 +9,8 @@
  */
 package org.ihtsdo.refsetservice.terminologyservice;
 
+import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,6 +37,7 @@ import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.FileUtility;
+import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -42,12 +45,16 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * CRUD for map notes stored in MT2 DB and keyed by map set + source concept code.
+ * CRUD for map notes stored in MT2 DB and keyed by map set {@code refSetCode} + source concept code.
+ * APIs take a map set version; persistence uses the shared product code so notes survive publication.
  */
 public final class MapNoteService {
 
     /** The logger. */
     private static final Logger LOG = LoggerFactory.getLogger(MapNoteService.class);
+
+    /** Matches {@link MapNote#note} column length. */
+    private static final int NOTE_COLUMN_LENGTH = 4000;
 
     /** Supported date formats for note import files. */
     private static final String[] IMPORT_DATE_FORMATS = {
@@ -85,9 +92,9 @@ public final class MapNoteService {
         validateKey(mapSet, sourceConceptCode);
 
         return service.getEntityManager()
-            .createQuery("from MapNote n where n.mapSet.id = :mapSetId and n.sourceConceptCode = :sourceConceptCode"
+            .createQuery("from MapNote n where n.refSetCode = :refSetCode and n.sourceConceptCode = :sourceConceptCode"
                 + " and n.active = true order by n.timestamp asc", MapNote.class)
-            .setParameter("mapSetId", mapSet.getId())
+            .setParameter("refSetCode", mapSet.getRefSetCode())
             .setParameter("sourceConceptCode", sourceConceptCode)
             .getResultList();
     }
@@ -114,8 +121,7 @@ public final class MapNoteService {
         if (note == null || !note.isActive()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Map note not found: " + noteId);
         }
-        if (note.getMapSet() == null || !mapSet.getId().equals(note.getMapSet().getId())
-            || !sourceConceptCode.equals(note.getSourceConceptCode())) {
+        if (!mapSet.getRefSetCode().equals(note.getRefSetCode()) || !sourceConceptCode.equals(note.getSourceConceptCode())) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Map note not found for map set/concept: " + noteId);
         }
         return note;
@@ -144,7 +150,7 @@ public final class MapNoteService {
         }
 
         final MapNote note = new MapNote();
-        note.setMapSet(mapSet);
+        note.setRefSetCode(mapSet.getRefSetCode());
         note.setSourceConceptCode(sourceConceptCode);
         note.setNote(noteText.trim());
         note.setTimestamp(new Date());
@@ -203,7 +209,10 @@ public final class MapNoteService {
      * {@code conceptCode|User name|Date|Map note text}
      * </p>
      * Validates the entire file first. If invalid, returns a failed result with preview details and
-     * imports nothing. Unknown usernames are never auto-created.
+     * imports nothing. Unknown usernames are not auto-created unless {@code createMissingUsers} is true.
+     * When created, they are attribution-only {@link MapUser} records (VIEWER), not login accounts.
+     * Note text is stored as a JSON string literal so the notes modal {@code JSON.parse} can display it,
+     * and {@code created}/{@code modified} are set to the file timestamp (the modal dates from {@code modified}).
      *
      * @param service the terminology service
      * @param importingUser the authenticated user performing the import
@@ -215,27 +224,68 @@ public final class MapNoteService {
     public static MapNoteImportResult importNotes(final TerminologyService service, final User importingUser, final MapSet mapSet,
         final MultipartFile notesFile) throws Exception {
 
+        return importNotes(service, importingUser, mapSet, notesFile, false);
+    }
+
+    /**
+     * Imports map notes from a pipe-delimited file.
+     *
+     * @param service the terminology service
+     * @param importingUser the authenticated user performing the import
+     * @param mapSet the map set
+     * @param notesFile the import file
+     * @param createMissingUsers if true, create VIEWER {@link MapUser}s for unknown names
+     * @return import result (notes on success, preview on failure)
+     * @throws Exception the exception
+     */
+    public static MapNoteImportResult importNotes(final TerminologyService service, final User importingUser, final MapSet mapSet,
+        final MultipartFile notesFile, final boolean createMissingUsers) throws Exception {
+
         if (importingUser == null || StringUtils.isBlank(importingUser.getUserName())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authenticated user is required.");
         }
 
-        final ValidatedNoteImport validated = validateNotesImport(service, mapSet, notesFile);
+        final ValidatedNoteImport validated = validateNotesImport(service, mapSet, notesFile, createMissingUsers);
         if (!validated.preview.isValid()) {
             return MapNoteImportResult.failure(validated.preview);
         }
 
+        final Map<String, MapUser> createdUsers = new HashMap<>();
         final List<MapNote> created = new ArrayList<>();
         for (final ParsedNoteRow row : validated.rows) {
+            MapUser mapUser = row.mapUser;
+            if (mapUser == null && createMissingUsers) {
+                mapUser = createdUsers.get(row.userName);
+                if (mapUser == null) {
+                    mapUser = ensureMapUser(service, row.userName, row.userName, importedEmail(row.userName));
+                    createdUsers.put(row.userName, mapUser);
+                }
+            }
+            if (mapUser == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown user: " + row.userName);
+            }
+
             final MapNote note = new MapNote();
-            note.setMapSet(mapSet);
+            note.setRefSetCode(mapSet.getRefSetCode());
             note.setSourceConceptCode(row.conceptCode);
-            note.setUser(row.mapUser);
+            note.setUser(mapUser);
             note.setTimestamp(row.timestamp);
+            note.setCreated(row.timestamp);
             note.setNote(row.noteText);
-            created.add(service.add(note));
+            final MapNote persisted = service.add(note);
+            // The notes modal displays {@code modified}, not {@code timestamp}.
+            persisted.setModified(row.timestamp);
+            final boolean modifiedFlag = service.isModifiedFlag();
+            try {
+                service.setModifiedFlag(false);
+                service.update(persisted);
+            } finally {
+                service.setModifiedFlag(modifiedFlag);
+            }
+            created.add(persisted);
         }
 
-        LOG.info("Imported {} map notes for mapSet={}", created.size(), mapSet.getId());
+        LOG.info("Imported {} map notes for refSetCode={} (created {} missing map users)", created.size(), mapSet.getRefSetCode(), createdUsers.size());
         return MapNoteImportResult.success(created, validated.preview);
     }
 
@@ -245,13 +295,14 @@ public final class MapNoteService {
      * @param service the terminology service
      * @param mapSet the map set
      * @param notesFile the import file
+     * @param createMissingUsers if true, unknown usernames do not fail validation
      * @return validated rows and preview
      * @throws Exception the exception
      */
-    private static ValidatedNoteImport validateNotesImport(final TerminologyService service, final MapSet mapSet, final MultipartFile notesFile)
-        throws Exception {
+    private static ValidatedNoteImport validateNotesImport(final TerminologyService service, final MapSet mapSet, final MultipartFile notesFile,
+        final boolean createMissingUsers) throws Exception {
 
-        if (mapSet == null || StringUtils.isBlank(mapSet.getId())) {
+        if (mapSet == null || StringUtils.isBlank(mapSet.getId()) || StringUtils.isBlank(mapSet.getRefSetCode())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Map set is required.");
         }
         if (notesFile == null || notesFile.isEmpty()) {
@@ -294,9 +345,21 @@ public final class MapNoteService {
                 continue;
             }
 
+            final String encodedNote;
+            try {
+                encodedNote = encodeNoteForUi(noteText);
+            } catch (final Exception e) {
+                preview.getErrors().add("Line " + lineNumber + ": note text could not be encoded");
+                continue;
+            }
+            if (encodedNote.length() > NOTE_COLUMN_LENGTH) {
+                preview.getErrors().add("Line " + lineNumber + ": note text exceeds " + NOTE_COLUMN_LENGTH + " characters after encoding");
+                continue;
+            }
+
             final Date timestamp;
             try {
-                timestamp = DateUtils.parseDate(dateText, IMPORT_DATE_FORMATS);
+                timestamp = parseImportDate(dateText);
             } catch (final Exception e) {
                 preview.getErrors().add("Line " + lineNumber + ": invalid date '" + dateText + "'");
                 continue;
@@ -307,7 +370,7 @@ public final class MapNoteService {
             row.conceptCode = conceptCode;
             row.userName = userName;
             row.timestamp = timestamp;
-            row.noteText = noteText;
+            row.noteText = encodedNote;
             rows.add(row);
             userNames.add(userName);
         }
@@ -328,7 +391,8 @@ public final class MapNoteService {
             row.mapUser = mapUsersByUserName.get(row.userName);
         }
 
-        preview.setValid(preview.getErrors().isEmpty() && preview.getUnknownUsers().isEmpty() && preview.getTotalRows() > 0);
+        preview.setValid(preview.getErrors().isEmpty() && preview.getTotalRows() > 0
+            && (preview.getUnknownUsers().isEmpty() || createMissingUsers));
         if (preview.getTotalRows() == 0 && preview.getErrors().isEmpty()) {
             preview.getErrors().add("Notes file contains no data rows.");
             preview.setValid(false);
@@ -415,9 +479,9 @@ public final class MapNoteService {
         }
 
         final List<MapNote> notes = service.getEntityManager()
-            .createQuery("from MapNote n where n.mapSet.id = :mapSetId and n.sourceConceptCode in :codes"
+            .createQuery("from MapNote n where n.refSetCode = :refSetCode and n.sourceConceptCode in :codes"
                 + " and n.active = true order by n.timestamp asc", MapNote.class)
-            .setParameter("mapSetId", mapSet.getId())
+            .setParameter("refSetCode", mapSet.getRefSetCode())
             .setParameter("codes", conceptCodes)
             .getResultList();
 
@@ -480,6 +544,55 @@ public final class MapNoteService {
     }
 
     /**
+     * Parse a note import date. Accepts ISO-8601 instants (including {@code Z} and fractional
+     * seconds) and the formats in {@link #IMPORT_DATE_FORMATS}.
+     *
+     * @param dateText the date text
+     * @return the date
+     * @throws Exception if the text cannot be parsed
+     */
+    private static Date parseImportDate(final String dateText) throws Exception {
+
+        try {
+            return Date.from(Instant.parse(dateText));
+        } catch (final Exception e) {
+            // fall through
+        }
+        try {
+            return Date.from(OffsetDateTime.parse(dateText).toInstant());
+        } catch (final Exception e) {
+            // fall through
+        }
+        return DateUtils.parseDate(dateText, IMPORT_DATE_FORMATS);
+    }
+
+    /**
+     * Encode note text the same way the Angular notes modal saves it ({@code JSON.stringify(text)}),
+     * so {@code JSON.parse(item.note)} in the UI succeeds.
+     *
+     * @param noteText the plain note text from the import file
+     * @return a JSON string literal, e.g. {@code "hello"}
+     * @throws Exception if encoding fails
+     */
+    private static String encodeNoteForUi(final String noteText) throws Exception {
+
+        return ModelUtility.toJson(noteText);
+    }
+
+    /**
+     * Placeholder email for attribution-only map users created during import.
+     *
+     * @param userName the user name
+     * @return an email
+     */
+    private static String importedEmail(final String userName) {
+
+        final String localPart = userName.trim().replaceAll("\\s+", ".");
+        final String email = localPart + "@imported.invalid";
+        return email.length() <= 255 ? email : email.substring(0, 255);
+    }
+
+    /**
      * Returns true if the line looks like an import header.
      *
      * @param line the line
@@ -499,7 +612,7 @@ public final class MapNoteService {
      */
     private static void validateKey(final MapSet mapSet, final String sourceConceptCode) {
 
-        if (mapSet == null || StringUtils.isBlank(mapSet.getId())) {
+        if (mapSet == null || StringUtils.isBlank(mapSet.getId()) || StringUtils.isBlank(mapSet.getRefSetCode())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Map set is required.");
         }
         if (StringUtils.isBlank(sourceConceptCode)) {

@@ -1010,10 +1010,12 @@ public class MappingController extends BaseController {
      * <p>
      * File format (optional header): {@code conceptCode|User name|Date|Map note text}
      * </p>
-     * Validates the entire file first. Unknown usernames are reported and nothing is imported.
+     * Validates the entire file first. Unknown usernames are reported and nothing is imported,
+     * unless {@code createMissingUsers=true} (creates attribution-only VIEWER {@code MapUser}s).
      *
      * @param mapSetInternalId the map set internal id
      * @param notesFile the notes file
+     * @param createMissingUsers if true, create map users for names that do not already exist
      * @param request the HTTP request
      * @return created notes on success, or validation preview on failure
      * @throws Exception the exception
@@ -1029,7 +1031,9 @@ public class MappingController extends BaseController {
     })
     @RecordMetric
     public @ResponseBody ResponseEntity<?> importMappingNotes(@PathVariable final String mapSetInternalId,
-        @RequestParam(name = "notesFile", required = true) final MultipartFile notesFile, final HttpServletRequest request) throws Exception {
+        @RequestParam(name = "notesFile", required = true) final MultipartFile notesFile,
+        @RequestParam(name = "createMissingUsers", required = false, defaultValue = "false") final boolean createMissingUsers,
+        final HttpServletRequest request) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
             final User user = requireAuthenticatedUser(request);
@@ -1043,7 +1047,7 @@ public class MappingController extends BaseController {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
 
-            final MapNoteImportResult result = MapNoteService.importNotes(service, user, mapSet, notesFile);
+            final MapNoteImportResult result = MapNoteService.importNotes(service, user, mapSet, notesFile, createMissingUsers);
             if (!result.isSuccess()) {
                 service.rollback();
                 return new ResponseEntity<>(result.getPreview(), HttpStatus.BAD_REQUEST);
@@ -1059,6 +1063,7 @@ public class MappingController extends BaseController {
 
     /**
      * List map notes for a source concept on a map set.
+     * Notes are stored by map product {@code refSetCode}, so they are shared across versions.
      *
      * @param mapSetInternalId the map set internal id
      * @param conceptCode the source concept code
