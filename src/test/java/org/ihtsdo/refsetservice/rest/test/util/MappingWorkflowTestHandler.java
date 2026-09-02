@@ -1,6 +1,7 @@
 package org.ihtsdo.refsetservice.rest.test.util;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -98,11 +99,28 @@ public class MappingWorkflowTestHandler extends MapSetWorkflowTestHandler {
     public ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter,
         final boolean showOverriddenEntries, final List<String> conceptCodes) {
 
+        return getMappings(branch, mapSet, searchParameters, filter, showOverriddenEntries, conceptCodes, null);
+    }
+
+    @Override
+    public ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter,
+        final boolean showOverriddenEntries, final List<String> conceptCodes, final Collection<String> restrictToConceptCodes) {
+
         final ResultListMapping result = new ResultListMapping();
-        if (conceptCodes == null) {
-            return result;
+        final List<String> codes = new ArrayList<>();
+        if (conceptCodes != null && !conceptCodes.isEmpty()) {
+            codes.addAll(conceptCodes);
+            if (restrictToConceptCodes != null) {
+                codes.retainAll(new HashSet<>(restrictToConceptCodes));
+            }
+        } else if (restrictToConceptCodes != null) {
+            for (final String conceptCode : restrictToConceptCodes) {
+                if (StringUtils.isNotBlank(conceptCode)) {
+                    codes.add(conceptCode);
+                }
+            }
         }
-        for (final String conceptCode : conceptCodes) {
+        for (final String conceptCode : codes) {
             if (!isInMapSet(conceptCode)) {
                 continue;
             }
@@ -111,6 +129,11 @@ public class MappingWorkflowTestHandler extends MapSetWorkflowTestHandler {
             result.getItems().add(mapping);
         }
         result.setTotal(result.getItems().size());
+        result.setTotalKnown(true);
+        if (searchParameters != null) {
+            result.setLimit(searchParameters.getLimit() != null ? searchParameters.getLimit() : 0);
+            result.setOffset(searchParameters.getOffset() != null ? searchParameters.getOffset() : 0);
+        }
         return result;
     }
 

@@ -10,6 +10,7 @@
 package org.ihtsdo.refsetservice.handler;
 
 import java.io.File;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -588,6 +589,25 @@ public interface TerminologyServerHandler extends Configurable {
      */
     public ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter,
         final boolean showOverriddenEntries, final List<String> conceptCodes) throws Exception;
+
+    /**
+     * Returns the mappings, optionally restricted to the given source concept codes after filter resolution.
+     *
+     * @param branch the branch
+     * @param mapSet the map set
+     * @param searchParameters the search parameters
+     * @param filter the filter
+     * @param showOverriddenEntries the show overridden entries
+     * @param conceptCodes the concept codes
+     * @param restrictToConceptCodes when non-null, only these source concept codes are returned
+     * @return the mappings
+     * @throws Exception the exception
+     */
+    default ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter,
+        final boolean showOverriddenEntries, final List<String> conceptCodes, final Collection<String> restrictToConceptCodes) throws Exception {
+
+        return getMappings(branch, mapSet, searchParameters, filter, showOverriddenEntries, conceptCodes);
+    }
 
     /**
      * Returns the mapping.

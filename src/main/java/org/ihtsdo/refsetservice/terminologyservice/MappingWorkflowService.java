@@ -527,6 +527,151 @@ public final class MappingWorkflowService {
     }
 
     /**
+     * Resolve source concept codes for mapping search workflow filters.
+     *
+     * <p>
+     * {@code workflowStatus} and {@code assignedUser} are independent and optional; when both are set, results
+     * must match both. {@code assignedUser} may be a username, {@link MapUser} id, or {@link User} id.
+     *
+     * @param service the terminology service
+     * @param mapSet the map set
+     * @param workflowStatus optional workflow status
+     * @param assignedUser optional assignee (username or user id)
+     * @param requestConceptCodes optional request {@code conceptCodes} (used for implicit {@code PUBLISHED})
+     * @return {@code null} when no restriction should be applied; empty list when nothing matches; otherwise
+     *         the source concept codes to restrict to
+     * @throws Exception the exception
+     */
+    public static List<String> resolveMappingSearchConceptCodes(final TerminologyService service, final MapSet mapSet,
+        final MapWorkflowStatus workflowStatus, final String assignedUser, final List<String> requestConceptCodes) throws Exception {
+
+        if (workflowStatus == null && StringUtils.isBlank(assignedUser)) {
+            return null;
+        }
+        if (mapSet == null || StringUtils.isBlank(mapSet.getId())) {
+            throw new IllegalArgumentException("mapSet is required");
+        }
+
+        final String resolvedUser = resolveAssigneeUserName(service, assignedUser);
+
+        if (workflowStatus == MapWorkflowStatus.PUBLISHED && StringUtils.isBlank(resolvedUser)) {
+            if (requestConceptCodes != null && !requestConceptCodes.isEmpty()) {
+                return filterToPublishedOrMissing(service, mapSet, requestConceptCodes);
+            }
+            if (!hasNonPublishedWorkflows(service, mapSet)) {
+                return null;
+            }
+        }
+
+        return findSourceConceptCodes(service, mapSet, workflowStatus, resolvedUser);
+    }
+
+    /**
+     * Find persisted specialist-slot-1 source concept codes matching optional workflow filters.
+     *
+     * @param service the terminology service
+     * @param mapSet the map set
+     * @param workflowStatus optional workflow status
+     * @param assignedUser optional assigned username (already resolved)
+     * @return matching source concept codes
+     * @throws Exception the exception
+     */
+    public static List<String> findSourceConceptCodes(final TerminologyService service, final MapSet mapSet, final MapWorkflowStatus workflowStatus,
+        final String assignedUser) throws Exception {
+
+        if (mapSet == null || StringUtils.isBlank(mapSet.getId())) {
+            throw new IllegalArgumentException("mapSet is required");
+        }
+        if (workflowStatus == null && StringUtils.isBlank(assignedUser)) {
+            throw new IllegalArgumentException("workflowStatus or assignedUser is required");
+        }
+
+        final StringBuilder jpql = new StringBuilder("select mw.sourceConceptCode from MappingWorkflow mw where mw.mapSet.id = :mapSetId"
+            + " and mw.active = true and mw.specialistSlot = 1");
+        if (workflowStatus != null) {
+            jpql.append(" and mw.workflowStatus = :workflowStatus");
+        }
+        if (StringUtils.isNotBlank(assignedUser)) {
+            jpql.append(" and mw.assignedUser = :assignedUser");
+        }
+
+        final TypedQuery<String> query = service.getEntityManager().createQuery(jpql.toString(), String.class);
+        query.setParameter("mapSetId", mapSet.getId());
+        if (workflowStatus != null) {
+            query.setParameter("workflowStatus", workflowStatus);
+        }
+        if (StringUtils.isNotBlank(assignedUser)) {
+            query.setParameter("assignedUser", assignedUser);
+        }
+        return query.getResultList();
+    }
+
+    /**
+     * Keep request concept codes whose slot-1 row is missing or {@link MapWorkflowStatus#PUBLISHED}.
+     *
+     * @param service the terminology service
+     * @param mapSet the map set
+     * @param requestConceptCodes the request concept codes
+     * @return codes treated as published
+     * @throws Exception the exception
+     */
+    private static List<String> filterToPublishedOrMissing(final TerminologyService service, final MapSet mapSet, final List<String> requestConceptCodes)
+        throws Exception {
+
+        final List<String> trimmedCodes = new ArrayList<>();
+        for (final String rawConceptCode : requestConceptCodes) {
+            if (StringUtils.isNotBlank(rawConceptCode)) {
+                trimmedCodes.add(rawConceptCode.trim());
+            }
+        }
+        if (trimmedCodes.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        final List<MappingWorkflow> found = service.getEntityManager()
+            .createQuery("from MappingWorkflow mw where mw.mapSet.id = :mapSetId and mw.sourceConceptCode in :codes"
+                + " and mw.specialistSlot = 1 and mw.active = true", MappingWorkflow.class)
+            .setParameter("mapSetId", mapSet.getId())
+            .setParameter("codes", new HashSet<>(trimmedCodes))
+            .getResultList();
+
+        final Map<String, MappingWorkflow> byCode = new HashMap<>();
+        for (final MappingWorkflow workflow : found) {
+            if (workflow != null && StringUtils.isNotBlank(workflow.getSourceConceptCode())) {
+                byCode.putIfAbsent(workflow.getSourceConceptCode(), workflow);
+            }
+        }
+
+        final List<String> kept = new ArrayList<>();
+        for (final String conceptCode : trimmedCodes) {
+            final MappingWorkflow row = byCode.get(conceptCode);
+            if (row == null || row.getWorkflowStatus() == MapWorkflowStatus.PUBLISHED) {
+                kept.add(conceptCode);
+            }
+        }
+        return kept;
+    }
+
+    /**
+     * Returns whether the mapset has any active specialist-slot-1 row that is not {@link MapWorkflowStatus#PUBLISHED}.
+     *
+     * @param service the terminology service
+     * @param mapSet the map set
+     * @return true if a non-published row exists
+     * @throws Exception the exception
+     */
+    private static boolean hasNonPublishedWorkflows(final TerminologyService service, final MapSet mapSet) throws Exception {
+
+        final Long count = service.getEntityManager()
+            .createQuery("select count(mw) from MappingWorkflow mw where mw.mapSet.id = :mapSetId"
+                + " and mw.active = true and mw.specialistSlot = 1 and mw.workflowStatus <> :published", Long.class)
+            .setParameter("mapSetId", mapSet.getId())
+            .setParameter("published", MapWorkflowStatus.PUBLISHED)
+            .getSingleResult();
+        return count != null && count > 0;
+    }
+
+    /**
      * Bind shared filter parameters for recently-modified workflow JPQL queries.
      *
      * @param query the query

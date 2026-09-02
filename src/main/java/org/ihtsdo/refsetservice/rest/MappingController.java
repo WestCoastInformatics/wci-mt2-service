@@ -103,6 +103,8 @@ public class MappingController extends BaseController {
      * @param editing the editing
      * @param searchAfter the search after
      * @param includeWorkflowStatus when true, attach existing per-concept mapping workflow rows
+     * @param workflowStatus optional per-concept workflow status filter
+     * @param assignedUser optional assignee filter (username or user id)
      * @param request the request
      * @return the mappings
      * @throws Exception the exception
@@ -128,7 +130,9 @@ public class MappingController extends BaseController {
         @Parameter(name = "sortAscending", description = "Sort ascending (true) or descending (false)", required = false),
         @Parameter(name = "editing", description = "Search is for editing", required = false),
         @Parameter(name = "searchAfter", description = "Search after cursor", required = false),
-        @Parameter(name = "includeWorkflowStatus", description = "When true, include existing per-concept mapping workflow status on each mapping", required = false)
+        @Parameter(name = "includeWorkflowStatus", description = "When true, include existing per-concept mapping workflow status on each mapping", required = false),
+        @Parameter(name = "workflowStatus", description = "Optional per-concept workflow status filter", required = false),
+        @Parameter(name = "assignedUser", description = "Optional assignee filter (username or user id)", required = false)
     })
     @RecordMetric
     public @ResponseBody ResponseEntity<ResultListMapping> getMappings(@PathVariable(value = "mapSetInternalId") final String mapSetInternalId,
@@ -138,9 +142,20 @@ public class MappingController extends BaseController {
         @RequestParam(required = false) final Boolean activeOnly, @RequestParam(required = false) final String sort,
         @RequestParam(required = false) final Boolean sortAscending, @RequestParam(required = false) final Boolean editing,
         @RequestParam(required = false) final String searchAfter,
-        @RequestParam(required = false, defaultValue = "false") final boolean includeWorkflowStatus, final HttpServletRequest request) throws Exception {
+        @RequestParam(required = false, defaultValue = "false") final boolean includeWorkflowStatus,
+        @RequestParam(required = false) final String workflowStatus, @RequestParam(required = false) final String assignedUser,
+        final HttpServletRequest request) throws Exception {
 
         requireAuthenticatedUser(request);
+
+        MapWorkflowStatus statusFilter = null;
+        if (StringUtils.isNotBlank(workflowStatus)) {
+            try {
+                statusFilter = MapWorkflowStatus.fromString(workflowStatus);
+            } catch (final IllegalArgumentException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid workflowStatus: " + workflowStatus);
+            }
+        }
 
         final SearchParameters sp = new SearchParameters();
         sp.setQuery(query);
@@ -168,7 +183,20 @@ public class MappingController extends BaseController {
                     "map_sets.branchPath is required for map set " + mapSetInternalId + ". Database is missing required path data.");
             }
 
-            final ResultListMapping mappings = MappingService.getMappings(branch, mapSet, sp, filterString, showOverriddenEntries, conceptCodesList);
+            final ResultListMapping mappings;
+            final boolean workflowFilter = statusFilter != null || StringUtils.isNotBlank(assignedUser);
+            List<String> restrictToConceptCodes = null;
+            if (workflowFilter) {
+                restrictToConceptCodes =
+                    MappingWorkflowService.resolveMappingSearchConceptCodes(service, mapSet, statusFilter, assignedUser, conceptCodesList);
+                if (restrictToConceptCodes != null && restrictToConceptCodes.isEmpty()) {
+                    LOG.info("getMappings HTTP done mapSet={} {}ms items=0 total=0 (no workflow matches)", mapSetInternalId,
+                        System.currentTimeMillis() - controllerStartMs);
+                    return new ResponseEntity<>(emptyMappings(sp), HttpStatus.OK);
+                }
+            }
+
+            mappings = MappingService.getMappings(branch, mapSet, sp, filterString, showOverriddenEntries, conceptCodesList, restrictToConceptCodes);
 
             // Keep the returned order aligned to the incoming `conceptCodes` list (when provided).
             if (conceptCodesList != null && !conceptCodesList.isEmpty()) {
@@ -176,7 +204,7 @@ public class MappingController extends BaseController {
             }
 
             MapNoteService.attachNotes(service, mapSet, mappings);
-            if (includeWorkflowStatus) {
+            if (includeWorkflowStatus || workflowFilter) {
                 MappingWorkflowService.attachWorkflows(service, mapSet, mappings);
             }
 
@@ -212,6 +240,22 @@ public class MappingController extends BaseController {
             }
         }
         return codes;
+    }
+
+    /**
+     * Empty paged mapping result.
+     *
+     * @param searchParameters the search parameters
+     * @return an empty result list
+     */
+    private static ResultListMapping emptyMappings(final SearchParameters searchParameters) {
+
+        final ResultListMapping empty = new ResultListMapping();
+        empty.setTotal(0);
+        empty.setTotalKnown(true);
+        empty.setLimit(searchParameters.getLimit() != null ? searchParameters.getLimit() : 0);
+        empty.setOffset(searchParameters.getOffset() != null ? searchParameters.getOffset() : 0);
+        return empty;
     }
 
     /**

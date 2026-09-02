@@ -262,6 +262,25 @@ public class SnowstormMapping extends SnowstormAbstract {
     public static ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter,
         final boolean showOverriddenEntries, final List<String> conceptCodes) throws Exception {
 
+        return getMappings(branch, mapSet, searchParameters, filter, showOverriddenEntries, conceptCodes, null);
+    }
+
+    /**
+     * Gets the mappings, optionally restricted to the given source concept codes after filter resolution.
+     *
+     * @param branch the branch
+     * @param mapSet the map set
+     * @param searchParameters the search parameters
+     * @param filter the filter
+     * @param showOverriddenEntries the show overridden entries
+     * @param conceptCodes the concept codes
+     * @param restrictToConceptCodes when non-null, only these source concept codes are returned
+     * @return the mappings
+     * @throws Exception the exception
+     */
+    public static ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter,
+        final boolean showOverriddenEntries, final List<String> conceptCodes, final Collection<String> restrictToConceptCodes) throws Exception {
+
         final long requestStartMs = System.currentTimeMillis();
         if (mapSet == null || StringUtils.isBlank(mapSet.getRefSetCode())) {
             throw new LocalException("Map set code is required.");
@@ -269,10 +288,11 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         final SearchParameters paging = searchParameters != null ? searchParameters : new SearchParameters();
 
-        LOG.info("getMappings start mapSet={} refSet={} branch={} filter='{}' limit={} offset={} searchAfter={} conceptCodes={}",
+        LOG.info("getMappings start mapSet={} refSet={} branch={} filter='{}' limit={} offset={} searchAfter={} conceptCodes={} restrictTo={}",
             mapSet.getId(), mapSet.getRefSetCode(), branch, filter,
             paging.getLimit(), paging.getOffset(), paging.getSearchAfter(),
-            conceptCodes != null ? conceptCodes.size() : 0);
+            conceptCodes != null ? conceptCodes.size() : 0,
+            restrictToConceptCodes != null ? restrictToConceptCodes.size() : 0);
 
         final boolean explicitConceptCodes = conceptCodes != null && !conceptCodes.isEmpty();
 
@@ -288,17 +308,30 @@ public class SnowstormMapping extends SnowstormAbstract {
                 System.currentTimeMillis() - conceptSearchStartMs, trimmedFilter, filteredConceptSet.size());
         }
 
+        if (restrictToConceptCodes != null) {
+            final Set<String> restrictTo = new HashSet<>();
+            for (final String code : restrictToConceptCodes) {
+                if (StringUtils.isNotBlank(code)) {
+                    restrictTo.add(code);
+                }
+            }
+            if (restrictTo.isEmpty()) {
+                LOG.info("getMappings complete {}ms items=0 total=0 (empty restrictTo)", System.currentTimeMillis() - requestStartMs);
+                return emptyMappings(paging);
+            }
+            if (filteredConceptSet.isEmpty() && !explicitConceptCodes && StringUtils.isBlank(filter)) {
+                filteredConceptSet.addAll(restrictTo);
+            } else {
+                filteredConceptSet.retainAll(restrictTo);
+            }
+        }
+
         final List<String> filteredConceptList = new ArrayList<>(filteredConceptSet);
         final boolean scopedTextFilter = !explicitConceptCodes && StringUtils.isNotBlank(filter);
 
-        if (scopedTextFilter && filteredConceptList.isEmpty()) {
-            final ResultListMapping empty = new ResultListMapping();
-            empty.setTotal(0);
-            empty.setTotalKnown(true);
-            empty.setLimit(paging.getLimit() != null ? paging.getLimit() : 0);
-            empty.setOffset(paging.getOffset() != null ? paging.getOffset() : 0);
+        if (filteredConceptList.isEmpty() && (scopedTextFilter || restrictToConceptCodes != null)) {
             LOG.info("getMappings complete {}ms items=0 total=0 (no concepts matched filter)", System.currentTimeMillis() - requestStartMs);
-            return empty;
+            return emptyMappings(paging);
         }
 
         final StringBuilder requestBody = new StringBuilder();
@@ -311,6 +344,9 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         // Explicit conceptCodes only (e.g. batch edit return). Text filter matches must not create empty-map placeholders.
         final Set<String> requestedConcepts = explicitConceptCodes ? new HashSet<>(conceptCodes) : new HashSet<>();
+        if (explicitConceptCodes && restrictToConceptCodes != null) {
+            requestedConcepts.retainAll(filteredConceptSet);
+        }
 
         // if (searchParameters.getLimit() != null) {
         // requestBody.append(",").append("\"limit\":
@@ -618,7 +654,23 @@ public class SnowstormMapping extends SnowstormAbstract {
     }
 
     /**
-     * True when the filter is likely a map target code (e.g. ICD-10) rather than a SNOMED term.
+     * Empty paged mapping result.
+     *
+     * @param paging the paging parameters
+     * @return an empty result list
+     */
+    private static ResultListMapping emptyMappings(final SearchParameters paging) {
+
+        final ResultListMapping empty = new ResultListMapping();
+        empty.setTotal(0);
+        empty.setTotalKnown(true);
+        empty.setLimit(paging.getLimit() != null ? paging.getLimit() : 0);
+        empty.setOffset(paging.getOffset() != null ? paging.getOffset() : 0);
+        return empty;
+    }
+
+    /**
+     * True when the filter looks like a map target code (has a digit, and either contains {@code .} or is short).
      *
      * @param filter the filter
      * @return true if map target member search should run
