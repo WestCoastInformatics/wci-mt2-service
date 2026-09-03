@@ -109,6 +109,26 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
     }
 
     /**
+     * Test lead START_REVIEW with assignToUser assigns to the selected user, not the lead.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testLeadStartReviewToOtherUser() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createReviewProjectInEdit()) {
+            context.setWorkflowStatus(MapWorkflowStatus.REVIEW_NEEDED);
+
+            final MappingWorkflow reviewing = workflowUtil.updateWorkflow(context.getMapSet().getId(), MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE,
+                MappingWorkflowAction.START_REVIEW, "Start review for another lead", context.getLeadUser(),
+                context.getAdminMapUser().getId());
+
+            assertEquals(MapWorkflowStatus.REVIEW_IN_PROGRESS, reviewing.getWorkflowStatus());
+            assertEquals(context.getAdminUser().getUserName(), reviewing.getAssignedUser());
+        }
+    }
+
+    /**
      * Test assign then release of a PUBLISHED mapping restores PUBLISHED.
      *
      * @throws Exception the exception

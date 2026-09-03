@@ -228,7 +228,7 @@ public final class MappingWorkflowService {
      * @param mapSet the map set
      * @param mapProject the map project
      * @param notes transition notes
-     * @param assignToUser target user for ASSIGN (lead/admin) or REASSIGN; ignored for other actions
+     * @param assignToUser target user for ASSIGN (lead/admin), START_REVIEW, START_CONFLICT_RESOLUTION, or REASSIGN; ignored for other actions
      * @return the updated mapping workflow
      * @throws Exception the exception
      */
@@ -771,7 +771,7 @@ public final class MappingWorkflowService {
      * @param mapProject the map project
      * @param conceptCodes source concept codes to update
      * @param notes optional notes applied to each transition
-     * @param assignToUser target user for ASSIGN (lead/admin) or REASSIGN; ignored for other actions
+     * @param assignToUser target user for ASSIGN (lead/admin), START_REVIEW, START_CONFLICT_RESOLUTION, or REASSIGN; ignored for other actions
      * @return per-concept results in request order
      * @throws Exception the exception
      */
@@ -906,7 +906,7 @@ public final class MappingWorkflowService {
      * @param mapSet the map set
      * @param mapProject the map project
      * @param action the workflow action
-     * @param assignToUser target user for ASSIGN (lead/admin) or REASSIGN
+     * @param assignToUser target user for ASSIGN (lead/admin), START_REVIEW, START_CONFLICT_RESOLUTION, or REASSIGN
      * @throws Exception the exception
      */
     public static void canUserPerformWorkflowAction(final User user, final MappingWorkflow workflow, final MapSet mapSet, final MapProject mapProject,
@@ -1089,7 +1089,8 @@ public final class MappingWorkflowService {
             workflow.setLeaseExpiresAt(new Date(assignedAt.getTime() + getLeaseDurationMs()));
         } else if (action == MappingWorkflowAction.START_REVIEW || action == MappingWorkflowAction.START_CONFLICT_RESOLUTION) {
             final Date assignedAt = new Date();
-            workflow.setAssignedUser(user.getUserName());
+            final String assignee = StringUtils.isNotBlank(assignToUser) ? assignToUser : user.getUserName();
+            workflow.setAssignedUser(assignee);
             workflow.setAssignedAt(assignedAt);
             workflow.setLeaseExpiresAt(new Date(assignedAt.getTime() + getLeaseDurationMs()));
         } else if (action == MappingWorkflowAction.REASSIGN) {
