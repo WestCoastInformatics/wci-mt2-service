@@ -113,7 +113,8 @@ ADMIN,REVIEW_IN_PROGRESS,FORCE_RELEASE,REVIEW_NEEDED
 # Runtime checks not in this file (assignment holder and mapset edit state):
 #   mapset must be IN_EDIT for ASSIGN/RELEASE/FINISH_EDITING/FORCE_RELEASE/REASSIGN
 #   claim actions require assigned_user empty; holder actions require assigned_user = actor
-#   ASSIGN with assignToUser: lead/admin may assign another user; specialist is self only
+#   ASSIGN/START_REVIEW/REASSIGN with assignToUser: target must be able to do the assigned work
+#   (specialist for editing, lead for review); specialist ASSIGN is self only
 #   REVIEW_PROJECT still auto-routes FINISH_EDITING to REVIEW_NEEDED, so
 #   EDITING_DONE + REQUEST_REVIEW is not reached on review projects.
 #

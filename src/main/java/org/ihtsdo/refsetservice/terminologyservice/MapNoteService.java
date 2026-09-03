@@ -9,6 +9,9 @@
  */
 package org.ihtsdo.refsetservice.terminologyservice;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -36,7 +39,6 @@ import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.DateUtility;
-import org.ihtsdo.refsetservice.util.FileUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -309,7 +311,7 @@ public final class MapNoteService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Notes file is required.");
         }
 
-        final List<String> lines = FileUtility.readFileToArray(notesFile);
+        final List<String> lines = readNotesFileLines(notesFile);
         if (lines.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Notes file is empty.");
         }
@@ -577,6 +579,25 @@ public final class MapNoteService {
     private static String encodeNoteForUi(final String noteText) throws Exception {
 
         return ModelUtility.toJson(noteText);
+    }
+
+    /**
+     * Read notes file as UTF-8 so names such as {@code Gunnar Misvær} round-trip on Windows.
+     *
+     * @param notesFile the notes file
+     * @return lines
+     * @throws Exception the exception
+     */
+    private static List<String> readNotesFileLines(final MultipartFile notesFile) throws Exception {
+
+        final List<String> lines = new ArrayList<>();
+        try (final BufferedReader reader = new BufferedReader(new InputStreamReader(notesFile.getInputStream(), StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                lines.add(line);
+            }
+        }
+        return lines;
     }
 
     /**

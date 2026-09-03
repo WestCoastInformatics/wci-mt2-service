@@ -11,7 +11,6 @@ import org.ihtsdo.refsetservice.model.BranchInformation;
 import org.ihtsdo.refsetservice.model.MapWorkflowStatus;
 import org.ihtsdo.refsetservice.model.enums.WorkflowAction;
 import org.ihtsdo.refsetservice.model.enums.WorkflowStatus;
-import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,7 +49,6 @@ public class MappingWorkflowMapsetGateTest {
     public void restorePromotionMock() {
 
         MapSetWorkflowService.setEditPromotionOperationsForTests(null);
-        PropertyUtility.setProperty("auth.dev.bypass", "true");
     }
 
     /**

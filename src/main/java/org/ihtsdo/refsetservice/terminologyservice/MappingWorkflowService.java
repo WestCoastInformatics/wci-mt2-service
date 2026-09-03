@@ -237,6 +237,7 @@ public final class MappingWorkflowService {
 
         final String resolvedAssignee = resolveAssigneeUserName(service, assignToUser);
         canUserPerformWorkflowAction(user, workflow, mapSet, mapProject, action, resolvedAssignee);
+        assertAssigneeCanDoAssignedWork(mapProject, action, workflow.getWorkflowStatus(), resolvedAssignee);
 
         final List<MappingWorkflowRole> roles = resolveProjectRoles(user, mapProject);
         MapWorkflowStatus nextStatus = null;
@@ -1131,6 +1132,117 @@ public final class MappingWorkflowService {
         }
 
         return assignToUser;
+    }
+
+    /**
+     * Require the selected assignee to be able to do the work this assignment creates.
+     *
+     * @param mapProject the map project
+     * @param action the workflow action
+     * @param currentStatus the status before the action
+     * @param assigneeUserName resolved assign-to username
+     */
+    private static void assertAssigneeCanDoAssignedWork(final MapProject mapProject, final MappingWorkflowAction action,
+        final MapWorkflowStatus currentStatus, final String assigneeUserName) {
+
+        if (StringUtils.isBlank(assigneeUserName)) {
+            return;
+        }
+
+        final MappingWorkflowAction workAction = assignedWorkAction(action, currentStatus);
+        final MapWorkflowStatus workStatus = assignedWorkStatus(action, currentStatus);
+        if (workAction == null || workStatus == null) {
+            return;
+        }
+
+        for (final MappingWorkflowRole role : resolveAssigneeRoles(assigneeUserName, mapProject)) {
+            if (resolveTransition(role, workStatus, workAction) != null) {
+                return;
+            }
+        }
+
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "assignToUser cannot perform this mapping workflow assignment.");
+    }
+
+    /**
+     * Holder action the assignee must be able to take after ASSIGN, START_REVIEW, or REASSIGN.
+     *
+     * @param action the workflow action
+     * @param currentStatus the status before the action
+     * @return the holder action, or null when not an assignment
+     */
+    private static MappingWorkflowAction assignedWorkAction(final MappingWorkflowAction action, final MapWorkflowStatus currentStatus) {
+
+        if (action == MappingWorkflowAction.ASSIGN) {
+            return MappingWorkflowAction.FINISH_EDITING;
+        }
+        if (action == MappingWorkflowAction.START_REVIEW) {
+            return MappingWorkflowAction.ACCEPT_REVIEW;
+        }
+        if (action == MappingWorkflowAction.START_CONFLICT_RESOLUTION) {
+            return MappingWorkflowAction.RESOLVE_CONFLICT;
+        }
+        if (action == MappingWorkflowAction.REASSIGN) {
+            if (currentStatus == MapWorkflowStatus.EDITING_IN_PROGRESS) {
+                return MappingWorkflowAction.FINISH_EDITING;
+            }
+            if (currentStatus == MapWorkflowStatus.REVIEW_IN_PROGRESS) {
+                return MappingWorkflowAction.ACCEPT_REVIEW;
+            }
+            if (currentStatus == MapWorkflowStatus.CONFLICT_IN_PROGRESS) {
+                return MappingWorkflowAction.RESOLVE_CONFLICT;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Workflow phase the assignee will hold after the assignment action.
+     *
+     * @param action the workflow action
+     * @param currentStatus the status before the action
+     * @return the phase, or null when not an assignment
+     */
+    private static MapWorkflowStatus assignedWorkStatus(final MappingWorkflowAction action, final MapWorkflowStatus currentStatus) {
+
+        if (action == MappingWorkflowAction.ASSIGN) {
+            return MapWorkflowStatus.EDITING_IN_PROGRESS;
+        }
+        if (action == MappingWorkflowAction.START_REVIEW) {
+            return MapWorkflowStatus.REVIEW_IN_PROGRESS;
+        }
+        if (action == MappingWorkflowAction.START_CONFLICT_RESOLUTION) {
+            return MapWorkflowStatus.CONFLICT_IN_PROGRESS;
+        }
+        if (action == MappingWorkflowAction.REASSIGN) {
+            return currentStatus;
+        }
+        return null;
+    }
+
+    /**
+     * Project workflow roles for an assignee identified by username.
+     *
+     * @param userName the assignee username
+     * @param mapProject the map project
+     * @return workflow roles
+     */
+    private static List<MappingWorkflowRole> resolveAssigneeRoles(final String userName, final MapProject mapProject) {
+
+        final User assignee = new User();
+        assignee.setUserName(userName);
+        final Set<String> entraRoles = new HashSet<>();
+        if (EntraMapBootstrap.listContainsUser(EntraMapBootstrap.specialistUserNames(), userName)) {
+            entraRoles.add(EntraMapBootstrap.ROLE_SPEC);
+        }
+        if (EntraMapBootstrap.listContainsUser(EntraMapBootstrap.leadUserNames(), userName)) {
+            entraRoles.add(EntraMapBootstrap.ROLE_LEAD);
+        }
+        if (EntraMapBootstrap.listContainsUser(EntraMapBootstrap.adminUserNames(), userName)) {
+            entraRoles.add(EntraMapBootstrap.ROLE_ADMIN);
+        }
+        assignee.setRoles(entraRoles);
+        return resolveProjectRoles(assignee, mapProject);
     }
 
     /**
