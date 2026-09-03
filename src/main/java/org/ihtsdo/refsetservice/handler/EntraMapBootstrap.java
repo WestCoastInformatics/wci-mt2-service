@@ -182,7 +182,7 @@ public final class EntraMapBootstrap {
     private static List<String> configuredUserNames(final String primaryKey, final String fallbackKey) {
 
         String value = PropertyUtility.getProperty(primaryKey);
-        if (StringUtils.isBlank(value)) {
+        if (value == null) {
             value = PropertyUtility.getProperty(fallbackKey);
         }
         return splitConfiguredList(value);

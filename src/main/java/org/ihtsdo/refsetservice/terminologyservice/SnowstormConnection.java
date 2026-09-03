@@ -122,6 +122,23 @@ public final class SnowstormConnection {
     }
 
     /**
+     * Unit tests must not call Snowstorm. Live {@code *IntegrationTest*} classes set
+     * {@code terminology.handler=SNOMED_SNOWSTORM} and are allowed.
+     */
+    private static void rejectRemoteCallFromUnitTest() {
+
+        final String profiles = PropertyUtility.getProperty("springProfiles");
+        if (profiles == null || !profiles.toLowerCase().contains("test")) {
+            return;
+        }
+        final String handler = PropertyUtility.getProperty("terminology.handler");
+        if ("SNOMED_SNOWSTORM".equals(handler)) {
+            return;
+        }
+        throw new IllegalStateException("Unit tests must not call Snowstorm. terminology.handler=" + handler);
+    }
+
+    /**
      * Resolve snowstorm auth mode.
      *
      * @param authTypeProperty the auth type property
@@ -257,6 +274,7 @@ public final class SnowstormConnection {
      */
     public static Response getResponse(final String url, final String language) throws Exception {
 
+        rejectRemoteCallFromUnitTest();
         final long requestStartMs = System.currentTimeMillis();
         final Client client = getClient();
         String cookie = "";
@@ -334,6 +352,7 @@ public final class SnowstormConnection {
      */
     public static InputStream getFileDownload(final String url) throws Exception {
 
+        rejectRemoteCallFromUnitTest();
         final HttpRequest.Builder requestBuilder =
             HttpRequest.newBuilder().uri(URI.create(url)).header("Accept", "application/zip").header(HttpHeaders.ACCEPT_LANGUAGE, DEFAULT_ACCECPT_LANGUAGES);
         final String basicHeader = snowstormBasicAuthorizationHeader();
@@ -370,6 +389,7 @@ public final class SnowstormConnection {
      */
     public static Response postResponse(final String url, final String entity) throws Exception {
 
+        rejectRemoteCallFromUnitTest();
         final long requestStartMs = System.currentTimeMillis();
         final Client client = getClient();
         final WebTarget target = client.target(url);
@@ -398,6 +418,7 @@ public final class SnowstormConnection {
      */
     public static Response putResponse(final String url, final String entity) throws Exception {
 
+        rejectRemoteCallFromUnitTest();
         final Client client = getClient();
         final WebTarget target = client.target(url);
         final Builder builder = target.request(MediaType.APPLICATION_JSON).header(HttpHeaders.ACCEPT_LANGUAGE, DEFAULT_ACCECPT_LANGUAGES);
@@ -420,6 +441,7 @@ public final class SnowstormConnection {
      */
     public static Response deleteResponse(final String url, final String entity) throws Exception {
 
+        rejectRemoteCallFromUnitTest();
         final Client client = getClient();
         final WebTarget target = client.target(url);
         final Builder builder = target.request(ACCEPT).header(HttpHeaders.ACCEPT_LANGUAGE, DEFAULT_ACCECPT_LANGUAGES);
@@ -449,6 +471,7 @@ public final class SnowstormConnection {
      */
     public static String getGenericUserCookie(final boolean forceReload) throws Exception {
 
+        rejectRemoteCallFromUnitTest();
         if (authMode != SnowstormAuthMode.COOKIE) {
             return "";
         }

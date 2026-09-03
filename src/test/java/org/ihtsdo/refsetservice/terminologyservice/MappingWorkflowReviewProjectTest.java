@@ -107,6 +107,27 @@ public class MappingWorkflowReviewProjectTest {
     }
 
     /**
+     * Lead START_REVIEW to a specialist is rejected.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void startReviewToSpecialistRejected() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createReviewProjectInEdit()) {
+            context.setWorkflowStatus(MapWorkflowStatus.REVIEW_NEEDED);
+
+            final ResponseStatusException thrown = assertThrows(ResponseStatusException.class,
+                () -> MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getLeadUser(), MappingWorkflowAction.START_REVIEW,
+                    context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Start review", context.getOtherSpecialistMapUser().getId()));
+
+            assertEquals(HttpStatus.BAD_REQUEST, thrown.getStatus());
+            assertEquals(MapWorkflowStatus.REVIEW_NEEDED, context.reloadWorkflow().getWorkflowStatus());
+            assertNull(context.reloadWorkflow().getAssignedUser());
+        }
+    }
+
+    /**
      * Start review by specialist rejected.
      *
      * @throws Exception the exception

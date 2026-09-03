@@ -63,7 +63,10 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@TestPropertySource(properties = "auth.dev.bypass=true")
+@TestPropertySource(properties = {
+    "auth.dev.bypass=true", "terminology.handler=MAPSET_WORKFLOW_TEST",
+    "terminology.handler.MAPSET_WORKFLOW_TEST.class=org.ihtsdo.refsetservice.rest.test.util.MapSetWorkflowTestHandler"
+})
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class MapSetWorkflowApiUnitTest extends BaseTest {

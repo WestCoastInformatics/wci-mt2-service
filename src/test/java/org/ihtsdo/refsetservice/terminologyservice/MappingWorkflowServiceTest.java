@@ -103,6 +103,25 @@ public class MappingWorkflowServiceTest {
     }
 
     /**
+     * Lead ASSIGN to a lead-only user is rejected; they cannot finish editing.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void assignToLeadOnlyByLeadRejected() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            final ResponseStatusException thrown = assertThrows(ResponseStatusException.class,
+                () -> MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getLeadUser(), MappingWorkflowAction.ASSIGN,
+                    context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assign lead", context.getAdminMapUser().getId()));
+
+            assertEquals(HttpStatus.BAD_REQUEST, thrown.getStatus());
+            assertEquals(MapWorkflowStatus.NEW, context.reloadWorkflow().getWorkflowStatus());
+            assertNull(context.reloadWorkflow().getAssignedUser());
+        }
+    }
+
+    /**
      * Admin ASSIGN with assignToUser assigns to the selected user.
      *
      * @throws Exception the exception

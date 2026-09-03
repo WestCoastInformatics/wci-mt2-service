@@ -24,6 +24,8 @@ import org.springframework.core.env.AbstractEnvironment;
 import org.springframework.core.env.EnumerablePropertySource;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.MutablePropertySources;
+import org.springframework.core.env.PropertySource;
+import org.springframework.core.env.PropertySourcesPropertyResolver;
 import org.springframework.stereotype.Component;
 
 /**
@@ -55,12 +57,26 @@ public class PropertyUtility {
     private void init() throws Exception {
 
         final MutablePropertySources sources = ((AbstractEnvironment) env).getPropertySources();
+        final boolean testProfile = Arrays.stream(env.getActiveProfiles()).anyMatch("test"::equalsIgnoreCase);
+        final MutablePropertySources copyFrom = new MutablePropertySources();
+        StreamSupport.stream(sources.spliterator(), false).forEach(propertySource -> {
+            if (testProfile && isOsEnvironmentSource(propertySource)) {
+                return;
+            }
+            copyFrom.addLast(propertySource);
+        });
+        final PropertySourcesPropertyResolver resolver = new PropertySourcesPropertyResolver(copyFrom);
 
         LOG.info("Property Sources: " + sources.toString());
 
-        StreamSupport.stream(sources.spliterator(), false).filter(ps -> ps instanceof EnumerablePropertySource)
-            .map(ps -> ((EnumerablePropertySource) ps).getPropertyNames()).flatMap(Arrays::stream).distinct()
-            .forEach(prop -> properties.setProperty(prop, env.getProperty(prop)));
+        properties.clear();
+        StreamSupport.stream(copyFrom.spliterator(), false).filter(ps -> ps instanceof EnumerablePropertySource)
+            .map(ps -> ((EnumerablePropertySource) ps).getPropertyNames()).flatMap(Arrays::stream).distinct().forEach(prop -> {
+                final String value = resolver.getProperty(prop);
+                if (value != null) {
+                    properties.setProperty(prop, value);
+                }
+            });
         ready = true;
 
         properties.setProperty("springProfiles", Arrays.toString(env.getActiveProfiles()));
@@ -169,6 +185,19 @@ public class PropertyUtility {
         }
 
         return jpaProperties;
+    }
+
+    /**
+     * Whether this source is the OS environment. Test profile copies skip it so
+     * application-test.properties and {@code @TestPropertySource} win.
+     *
+     * @param propertySource the property source
+     * @return true if OS environment
+     */
+    private static boolean isOsEnvironmentSource(final PropertySource<?> propertySource) {
+
+        final String name = propertySource.getName();
+        return name != null && (name.equals("systemEnvironment") || name.startsWith("systemEnvironment"));
     }
 
     /**

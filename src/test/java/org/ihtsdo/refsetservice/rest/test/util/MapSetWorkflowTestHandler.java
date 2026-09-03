@@ -9,20 +9,9 @@
  */
 package org.ihtsdo.refsetservice.rest.test.util;
 
-import java.util.Collections;
-import java.util.List;
-
-import org.ihtsdo.refsetservice.handler.SNOMEDSnowstormTerminologyServerHandler;
-
 /**
- * Terminology handler for MapSet workflow tests. Overrides getBranchVersions to return a dummy value so workflow transitions that do not require Snowstorm can
- * run without a Snowstorm server.
+ * Terminology handler for MapSet workflow unit tests. Does not call Snowstorm.
  */
-public class MapSetWorkflowTestHandler extends SNOMEDSnowstormTerminologyServerHandler {
+public class MapSetWorkflowTestHandler extends OfflineTerminologyServerHandler {
 
-    @Override
-    public List<String> getBranchVersions(final String editionPath) {
-
-        return Collections.singletonList("2025-01-01");
-    }
 }
