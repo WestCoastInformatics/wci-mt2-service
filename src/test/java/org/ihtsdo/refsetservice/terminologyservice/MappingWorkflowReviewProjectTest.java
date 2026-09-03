@@ -85,6 +85,28 @@ public class MappingWorkflowReviewProjectTest {
     }
 
     /**
+     * Lead START_REVIEW with assignToUser assigns to the selected user, not the lead.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void startReviewToOtherByLead() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createReviewProjectInEdit()) {
+            context.setWorkflowStatus(MapWorkflowStatus.REVIEW_NEEDED);
+
+            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getLeadUser(),
+                MappingWorkflowAction.START_REVIEW, context.getWorkflow(), context.getMapSet(), context.getMapProject(),
+                "Start review for another lead", context.getAdminMapUser().getId());
+
+            assertEquals(MapWorkflowStatus.REVIEW_IN_PROGRESS, updated.getWorkflowStatus());
+            assertEquals(context.getAdminUser().getUserName(), updated.getAssignedUser());
+            assertEquals(MappingWorkflowAction.START_REVIEW, context.latestHistory().getWorkflowAction());
+            assertEquals(context.getLeadUser().getUserName(), context.latestHistory().getUserName());
+        }
+    }
+
+    /**
      * Start review by specialist rejected.
      *
      * @throws Exception the exception

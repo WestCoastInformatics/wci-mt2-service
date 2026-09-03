@@ -239,6 +239,11 @@ public final class MappingWorkflowTestFixtures {
             return leadMapUser;
         }
 
+        public MapUser getAdminMapUser() {
+
+            return adminMapUser;
+        }
+
         public MappingWorkflow reloadWorkflow() throws Exception {
 
             service.getEntityManager().clear();
