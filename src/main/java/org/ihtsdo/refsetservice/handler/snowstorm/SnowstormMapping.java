@@ -1635,16 +1635,15 @@ public class SnowstormMapping extends SnowstormAbstract {
                 }
             }
             if (!matchFound) {
-                if (existingActiveInternationalMapping != null && existingActiveInternationalMapping.getMapEntries() != null) {
-                    // Find matching International entry to track what we're replacing
-                    final MapEntry originalMapEntry = existingActiveInternationalMapping.getMapEntries().stream()
-                        .filter(e -> e.getGroup() == submittedMapEntry.getGroup() && e.getPriority() == submittedMapEntry.getPriority()).findFirst()
-                        .orElse(null);
-                    mapEntryCreateList.put(submittedMapEntry, originalMapEntry);
-                } else {
-                    // No International entry exists, just create new entry
-                    mapEntryCreateList.put(submittedMapEntry, null);
+                // Changing the target code creates a new Snowstorm member. If a Norwegian
+                // entry at the same group/priority is being removed, that is the previous
+                // value for audit (A99 → A98), not the International mapping (M89.54).
+                MapEntry originalMapEntry = findMapEntryAtGroupPriority(mapEntryRemoveList, submittedMapEntry.getGroup(), submittedMapEntry.getPriority());
+                if (originalMapEntry == null && existingActiveInternationalMapping != null && existingActiveInternationalMapping.getMapEntries() != null) {
+                    originalMapEntry = findMapEntryAtGroupPriority(existingActiveInternationalMapping.getMapEntries(), submittedMapEntry.getGroup(),
+                        submittedMapEntry.getPriority());
                 }
+                mapEntryCreateList.put(submittedMapEntry, originalMapEntry);
             }
         }
 
@@ -1717,7 +1716,12 @@ public class SnowstormMapping extends SnowstormAbstract {
                     throw new Exception(
                         "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
                 }
-                auditEntries.add(AuditEntryHelper.deleteMappingEntry(refSetCode, existingActiveMapping, mapEntry));
+                // Snowstorm still deletes the previous member. Skip audit when this is a
+                // same-group/priority replacement (logged as UPDATE) or a revert to
+                // International (logged as REVERT).
+                if (!revertedToInternational && !isReplacedAtGroupPriority(mapEntryCreateList, mapEntry)) {
+                    auditEntries.add(AuditEntryHelper.deleteMappingEntry(refSetCode, existingActiveMapping, mapEntry));
+                }
             }
         }
 
@@ -1734,7 +1738,9 @@ public class SnowstormMapping extends SnowstormAbstract {
                 final JsonNode updatedMapEntryJson = ThreadLocalMapper.get().readTree(SnowstormConnection.readEntityAsString(response));
                 final MapEntry updatedMapEntry = convertSnowstormMemberToMapEntry(updatedMapEntryJson, mapSet, branch);
                 updatedMapEntries.add(updatedMapEntry);
-                auditEntries.add(AuditEntryHelper.statusChangeMappingEntry(refSetCode, existingActiveMapping, mapEntry));
+                if (!revertedToInternational && !isReplacedAtGroupPriority(mapEntryCreateList, mapEntry)) {
+                    auditEntries.add(AuditEntryHelper.statusChangeMappingEntry(refSetCode, existingActiveMapping, mapEntry));
+                }
 
             }
         }
@@ -2128,6 +2134,42 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         return mapEntryJson.toString();
 
+    }
+
+    /**
+     * Returns the map entry at the given group and priority, or null if none.
+     *
+     * @param entries the map entries
+     * @param group the map group
+     * @param priority the map priority
+     * @return the matching map entry
+     */
+    private static MapEntry findMapEntryAtGroupPriority(final Collection<MapEntry> entries, final int group, final int priority) {
+
+        if (entries == null) {
+            return null;
+        }
+        for (final MapEntry entry : entries) {
+            if (entry != null && entry.getGroup() == group && entry.getPriority() == priority) {
+                return entry;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * True when a new map entry is being created at the same group/priority as an existing member that Snowstorm must remove or inactivate.
+     *
+     * @param mapEntryCreateList the map entries being created, keyed by submitted entry
+     * @param existingMapEntry the existing map entry being removed or inactivated
+     * @return true if this is a replacement rather than a user delete
+     */
+    private static boolean isReplacedAtGroupPriority(final Map<MapEntry, MapEntry> mapEntryCreateList, final MapEntry existingMapEntry) {
+
+        if (mapEntryCreateList == null || existingMapEntry == null) {
+            return false;
+        }
+        return findMapEntryAtGroupPriority(mapEntryCreateList.keySet(), existingMapEntry.getGroup(), existingMapEntry.getPriority()) != null;
     }
 
     /**

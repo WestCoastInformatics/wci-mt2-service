@@ -1114,6 +1114,22 @@ public final class AuditEntryHelper {
     }
 
     /**
+     * UI Group/Priority label, e.g. {@code 1/2}.
+     *
+     * @param mapEntry the map entry
+     * @return group/priority
+     */
+    public static String formatGroupPriority(final MapEntry mapEntry) {
+
+        if (mapEntry == null) {
+            return "1/1";
+        }
+        final int group = mapEntry.getGroup() > 0 ? mapEntry.getGroup() : 1;
+        final int priority = mapEntry.getPriority() > 0 ? mapEntry.getPriority() : 1;
+        return group + "/" + priority;
+    }
+
+    /**
      * Adds the mapping entry.
      *
      * @param refSetCode the map / refset code
@@ -1126,9 +1142,9 @@ public final class AuditEntryHelper {
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.MAP_ENTRY.toString());
         entry.setEntityId(mapEntryEntityId(refSetCode, mapping.getCode()));
-        entry.setMessage("ADD MapEntry for concept " + mapping.getCode());
+        entry.setMessage("ADD MapEntry " + formatGroupPriority(mapEntry) + " for concept " + mapping.getCode());
         entry.setDetails(
-                "Add map entry " + mapping.getCode() + " to "
+                "Add map entry " + formatGroupPriority(mapEntry) + " " + mapping.getCode() + " to "
                         + (StringUtils.isNotBlank(mapEntry.getToCode()) ? mapEntry.getToCode() : "NO TARGET"));
         log(entry);
         return entry;
@@ -1149,7 +1165,7 @@ public final class AuditEntryHelper {
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.MAP_ENTRY.toString());
         entry.setEntityId(mapEntryEntityId(refSetCode, mapping.getCode()));
-        entry.setMessage("UPDATE MapEntry for concept " + mapping.getCode());
+        entry.setMessage("UPDATE MapEntry " + formatGroupPriority(updatedMapEntry) + " for concept " + mapping.getCode());
 
         try {
             final List<String> differences = computeDetailsMapEntry(updatedMapEntry, oldMapEntry);
@@ -1182,8 +1198,8 @@ public final class AuditEntryHelper {
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.MAP_ENTRY.toString());
         entry.setEntityId(mapEntryEntityId(refSetCode, mapping.getCode()));
-        entry.setMessage("UPDATE MapEntry for concept " + mapping.getCode());
-        entry.setDetails("Map entry for concept " + mapping.getCode()
+        entry.setMessage("UPDATE MapEntry " + formatGroupPriority(mapEntry) + " for concept " + mapping.getCode());
+        entry.setDetails("Map entry " + formatGroupPriority(mapEntry) + " for concept " + mapping.getCode()
                 + ((mapEntry.isActive()) ? " activated." : " inactivated."));
         log(entry);
         return entry;
@@ -1202,8 +1218,8 @@ public final class AuditEntryHelper {
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.MAP_ENTRY.toString());
         entry.setEntityId(mapEntryEntityId(refSetCode, mapping.getCode()));
-        entry.setMessage("DELETE MapEntry for concept " + mapping.getCode());
-        entry.setDetails("Delete map entry " + mapping.getCode() + " mapped to "
+        entry.setMessage("DELETE MapEntry " + formatGroupPriority(mapEntry) + " for concept " + mapping.getCode());
+        entry.setDetails("Delete map entry " + formatGroupPriority(mapEntry) + " " + mapping.getCode() + " mapped to "
                 + (StringUtils.isNotBlank(mapEntry.getToCode()) ? mapEntry.getToCode() : "NO TARGET") + ".");
         log(entry);
         return entry;
@@ -1243,7 +1259,8 @@ public final class AuditEntryHelper {
         }
 
         final List<String> targets = mapping.getMapEntries().stream()
-                .map(mapEntry -> StringUtils.isNotBlank(mapEntry.getToCode()) ? mapEntry.getToCode() : "NO TARGET")
+                .map(mapEntry -> formatGroupPriority(mapEntry) + " "
+                        + (StringUtils.isNotBlank(mapEntry.getToCode()) ? mapEntry.getToCode() : "NO TARGET"))
                 .collect(Collectors.toList());
         return String.join(", ", targets);
     }
@@ -1281,17 +1298,12 @@ public final class AuditEntryHelper {
         if (!Objects.equals(oldEntry.getRule(), newEntry.getRule())) {
             changesArray.add(String.format(template, "Rule", oldEntry.getRule(), newEntry.getRule()));
         }
-        if (oldEntry.getPriority() != newEntry.getPriority()) {
-            changesArray.add(String.format(template, "Priority", String.valueOf(oldEntry.getPriority()),
-                    String.valueOf(newEntry.getPriority())));
+        if (oldEntry.getPriority() != newEntry.getPriority() || oldEntry.getGroup() != newEntry.getGroup()) {
+            changesArray.add(String.format(template, "Group/Priority", formatGroupPriority(oldEntry), formatGroupPriority(newEntry)));
         }
         if (oldEntry.getBlock() != newEntry.getBlock()) {
             changesArray.add(String.format(template, "Block", String.valueOf(oldEntry.getBlock()),
                     String.valueOf(newEntry.getBlock())));
-        }
-        if (oldEntry.getGroup() != newEntry.getGroup()) {
-            changesArray.add(String.format(template, "Group", String.valueOf(oldEntry.getGroup()),
-                    String.valueOf(newEntry.getGroup())));
         }
         if (!Objects.equals(oldEntry.getAdvices(), newEntry.getAdvices())) {
             changesArray.add(String.format(template, "Advices", oldEntry.getAdvices().toString(),
