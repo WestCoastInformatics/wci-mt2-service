@@ -17,6 +17,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -281,6 +282,27 @@ public class SnowstormMapping extends SnowstormAbstract {
     public static ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter,
         final boolean showOverriddenEntries, final List<String> conceptCodes, final Collection<String> restrictToConceptCodes) throws Exception {
 
+        return getMappings(branch, mapSet, searchParameters, filter, showOverriddenEntries, conceptCodes, restrictToConceptCodes, null);
+    }
+
+    /**
+     * Returns the mappings, optionally restricted to and/or excluding source concept codes after filter resolution.
+     *
+     * @param branch the branch
+     * @param mapSet the map set
+     * @param searchParameters the search parameters
+     * @param filter the filter
+     * @param showOverriddenEntries the show overridden entries
+     * @param conceptCodes the concept codes
+     * @param restrictToConceptCodes when non-null, only these source concept codes are returned
+     * @param excludeConceptCodes when non-null, these source concept codes are omitted
+     * @return the mappings
+     * @throws Exception the exception
+     */
+    public static ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter,
+        final boolean showOverriddenEntries, final List<String> conceptCodes, final Collection<String> restrictToConceptCodes,
+        final Collection<String> excludeConceptCodes) throws Exception {
+
         final long requestStartMs = System.currentTimeMillis();
         if (mapSet == null || StringUtils.isBlank(mapSet.getRefSetCode())) {
             throw new LocalException("Map set code is required.");
@@ -288,11 +310,12 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         final SearchParameters paging = searchParameters != null ? searchParameters : new SearchParameters();
 
-        LOG.info("getMappings start mapSet={} refSet={} branch={} filter='{}' limit={} offset={} searchAfter={} conceptCodes={} restrictTo={}",
+        LOG.info("getMappings start mapSet={} refSet={} branch={} filter='{}' limit={} offset={} searchAfter={} conceptCodes={} restrictTo={} exclude={}",
             mapSet.getId(), mapSet.getRefSetCode(), branch, filter,
             paging.getLimit(), paging.getOffset(), paging.getSearchAfter(),
             conceptCodes != null ? conceptCodes.size() : 0,
-            restrictToConceptCodes != null ? restrictToConceptCodes.size() : 0);
+            restrictToConceptCodes != null ? restrictToConceptCodes.size() : 0,
+            excludeConceptCodes != null ? excludeConceptCodes.size() : 0);
 
         final boolean explicitConceptCodes = conceptCodes != null && !conceptCodes.isEmpty();
 
@@ -326,10 +349,22 @@ public class SnowstormMapping extends SnowstormAbstract {
             }
         }
 
+        final Set<String> excludeCodes = new HashSet<>();
+        if (excludeConceptCodes != null) {
+            for (final String code : excludeConceptCodes) {
+                if (StringUtils.isNotBlank(code)) {
+                    excludeCodes.add(code);
+                }
+            }
+        }
+        if (!excludeCodes.isEmpty() && !filteredConceptSet.isEmpty()) {
+            filteredConceptSet.removeAll(excludeCodes);
+        }
+
         final List<String> filteredConceptList = new ArrayList<>(filteredConceptSet);
         final boolean scopedTextFilter = !explicitConceptCodes && StringUtils.isNotBlank(filter);
 
-        if (filteredConceptList.isEmpty() && (scopedTextFilter || restrictToConceptCodes != null)) {
+        if (filteredConceptList.isEmpty() && (scopedTextFilter || restrictToConceptCodes != null || explicitConceptCodes)) {
             LOG.info("getMappings complete {}ms items=0 total=0 (no concepts matched filter)", System.currentTimeMillis() - requestStartMs);
             return emptyMappings(paging);
         }
@@ -344,7 +379,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         // Explicit conceptCodes only (e.g. batch edit return). Text filter matches must not create empty-map placeholders.
         final Set<String> requestedConcepts = explicitConceptCodes ? new HashSet<>(conceptCodes) : new HashSet<>();
-        if (explicitConceptCodes && restrictToConceptCodes != null) {
+        if (explicitConceptCodes && (restrictToConceptCodes != null || !excludeCodes.isEmpty())) {
             requestedConcepts.retainAll(filteredConceptSet);
         }
 
@@ -378,10 +413,23 @@ public class SnowstormMapping extends SnowstormAbstract {
         int offset = 0;
         String searchAfter = null;
 
+        final int pageLimit = paging.getLimit() != null && paging.getLimit() > 0 ? paging.getLimit() : 100;
+        final int pageOffset = paging.getOffset() != null && paging.getOffset() > 0 ? paging.getOffset() : 0;
+        final boolean unscopedExclude = !excludeCodes.isEmpty() && filteredConceptList.isEmpty();
+        final ExcludeAwarePageCollector collector =
+            unscopedExclude ? new ExcludeAwarePageCollector(excludeCodes, pageLimit, pageOffset) : null;
+
         // Text filter: resolve all matching source concepts, then page map entries via member search.
         final SearchParameters memberSearchPaging = new SearchParameters(paging);
+        if (unscopedExclude) {
+            memberSearchPaging.setLimit(Math.min(1000, Math.max(pageLimit * 2, 50)));
+            memberSearchPaging.setOffset(0);
+            memberSearchPaging.setSearchAfter(null);
+        }
 
         final long memberSearchStartMs = System.currentTimeMillis();
+        int snowstormPages = 0;
+        final int maxSnowstormPages = unscopedExclude ? 500 : 2;
         while (!done) {
 
             final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/search?"
@@ -426,6 +474,16 @@ public class SnowstormMapping extends SnowstormAbstract {
                     // mapping and add it to the tracker
                     final String mapCode = mappingNode.get("referencedComponentId").asText();
 
+                    if (collector != null) {
+                        final ExcludeAwarePageCollector.Decision decision = collector.decide(mapCode);
+                        if (decision != ExcludeAwarePageCollector.Decision.ACCEPT_NEW
+                            && decision != ExcludeAwarePageCollector.Decision.ACCEPT_EXISTING) {
+                            continue;
+                        }
+                    } else if (!excludeCodes.isEmpty() && excludeCodes.contains(mapCode)) {
+                        continue;
+                    }
+
                     if (!conceptIdToMappingMap.containsKey(mapCode)) {
 
                         final Mapping mapping = new Mapping();
@@ -451,8 +509,23 @@ public class SnowstormMapping extends SnowstormAbstract {
 
             }
 
+            snowstormPages++;
             if (scopedTextFilter) {
                 done = true;
+            } else if (unscopedExclude) {
+                if (collector == null || !collector.hasRoom() || snowstormPages >= maxSnowstormPages) {
+                    done = true;
+                } else if (StringUtils.isNotBlank(searchAfter)) {
+                    if (searchAfter.equals(memberSearchPaging.getSearchAfter())) {
+                        done = true;
+                    } else {
+                        memberSearchPaging.setSearchAfter(searchAfter);
+                        memberSearchPaging.setOffset(0);
+                    }
+                } else {
+                    final int fetchLimit = memberSearchPaging.getLimit() != null ? memberSearchPaging.getLimit() : pageLimit;
+                    memberSearchPaging.setOffset((memberSearchPaging.getOffset() != null ? memberSearchPaging.getOffset() : 0) + fetchLimit);
+                }
             } else {
                 i++;
                 memberSearchPaging.setOffset(i * memberSearchPaging.getLimit());
@@ -460,6 +533,10 @@ public class SnowstormMapping extends SnowstormAbstract {
                     done = true;
                 }
             }
+        }
+
+        if (unscopedExclude) {
+            total = publishedMemberTotal(total, excludeCodes.size());
         }
         LOG.info("getMappings phase=memberSearch {}ms mappingConcepts={}", System.currentTimeMillis() - memberSearchStartMs, conceptIdToMappingMap.size());
 
@@ -2372,6 +2449,91 @@ public class SnowstormMapping extends SnowstormAbstract {
         LOG.info("getMappingsFromFile RF2 Mappings : {}", mappings);
 
         return mappings;
+    }
+
+    /**
+     * Snowstorm member total minus excluded source concepts, not below zero.
+     *
+     * @param snowstormTotal member hit count from Snowstorm
+     * @param excludeCount unique source concepts omitted as not published
+     * @return published total used for paging
+     */
+    static int publishedMemberTotal(final int snowstormTotal, final int excludeCount) {
+
+        return Math.max(0, snowstormTotal - Math.max(0, excludeCount));
+    }
+
+    /**
+     * Walks Snowstorm members and keeps a page of unique published source concepts.
+     *
+     * <p>
+     * Excluded codes are omitted. {@code pageOffset} unique published concepts are skipped so later pages stay aligned
+     * after exclusions punch holes in Snowstorm's member pages.
+     */
+    static final class ExcludeAwarePageCollector {
+
+        enum Decision {
+            EXCLUDE,
+            SKIP_OFFSET,
+            ACCEPT_EXISTING,
+            ACCEPT_NEW,
+            DROP
+        }
+
+        private final Set<String> excludeCodes;
+
+        private final int pageLimit;
+
+        private int remainingSkip;
+
+        private final Set<String> skippedCodes = new HashSet<>();
+
+        private final Set<String> acceptedCodes = new LinkedHashSet<>();
+
+        private boolean pageFull;
+
+        ExcludeAwarePageCollector(final Set<String> excludeCodes, final int pageLimit, final int pageOffset) {
+
+            this.excludeCodes = excludeCodes != null ? excludeCodes : Collections.emptySet();
+            this.pageLimit = pageLimit > 0 ? pageLimit : 100;
+            this.remainingSkip = Math.max(0, pageOffset);
+        }
+
+        Decision decide(final String mapCode) {
+
+            if (mapCode == null || excludeCodes.contains(mapCode)) {
+                return Decision.EXCLUDE;
+            }
+            if (skippedCodes.contains(mapCode)) {
+                return Decision.SKIP_OFFSET;
+            }
+            if (acceptedCodes.contains(mapCode)) {
+                return Decision.ACCEPT_EXISTING;
+            }
+            if (pageFull) {
+                return Decision.DROP;
+            }
+            if (remainingSkip > 0) {
+                skippedCodes.add(mapCode);
+                remainingSkip--;
+                return Decision.SKIP_OFFSET;
+            }
+            acceptedCodes.add(mapCode);
+            if (acceptedCodes.size() >= pageLimit) {
+                pageFull = true;
+            }
+            return Decision.ACCEPT_NEW;
+        }
+
+        boolean hasRoom() {
+
+            return !pageFull;
+        }
+
+        int acceptedCount() {
+
+            return acceptedCodes.size();
+        }
     }
 
 }

@@ -908,4 +908,45 @@ public class MappingWorkflowServiceTest {
                 .filter(u -> context.getLeadUser().getUserName().equals(u.getUserName())).findFirst().get().getApplicationRole());
         }
     }
+
+    /**
+     * PUBLISHED search without concept codes excludes non-published rows instead of requiring persisted PUBLISHED rows.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void resolvePublishedSearchExcludesNonPublishedRatherThanRequiringPersistedRows() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            context.addWorkflowForConcept("444555666", MapWorkflowStatus.PUBLISHED);
+
+            final MappingWorkflowService.MappingSearchConceptFilter filter = MappingWorkflowService.resolveMappingSearchFilter(context.getService(),
+                context.getMapSet(), MapWorkflowStatus.PUBLISHED, null, null);
+
+            assertNull(filter.getRestrictTo());
+            assertNotNull(filter.getExclude());
+            assertTrue(filter.getExclude().contains(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE));
+            assertTrue(!filter.getExclude().contains("444555666"));
+        }
+    }
+
+    /**
+     * PUBLISHED search with request concept codes keeps missing rows and persisted PUBLISHED rows.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void resolvePublishedSearchWithConceptCodesKeepsMissingAndPublished() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            context.addWorkflowForConcept("444555666", MapWorkflowStatus.PUBLISHED);
+
+            final MappingWorkflowService.MappingSearchConceptFilter filter = MappingWorkflowService.resolveMappingSearchFilter(context.getService(),
+                context.getMapSet(), MapWorkflowStatus.PUBLISHED, null,
+                Arrays.asList(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, "444555666", "999888777"));
+
+            assertNull(filter.getExclude());
+            assertEquals(Arrays.asList("444555666", "999888777"), filter.getRestrictTo());
+        }
+    }
 }

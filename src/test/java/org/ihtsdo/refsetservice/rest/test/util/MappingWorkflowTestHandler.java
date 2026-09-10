@@ -3,6 +3,7 @@ package org.ihtsdo.refsetservice.rest.test.util;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -28,6 +29,9 @@ public class MappingWorkflowTestHandler extends MapSetWorkflowTestHandler {
     /** Concept codes treated as not present in the mapset. */
     private static final Set<String> conceptsNotInMapSet = new HashSet<>();
 
+    /** Concept codes returned when search is not limited to request or restrict-to codes. */
+    private static final Set<String> searchableConceptCodes = new LinkedHashSet<>();
+
     /**
      * Reset handler state between tests.
      */
@@ -36,6 +40,7 @@ public class MappingWorkflowTestHandler extends MapSetWorkflowTestHandler {
         updateCalled = false;
         lastUpdatedMappings = new ArrayList<>();
         conceptsNotInMapSet.clear();
+        searchableConceptCodes.clear();
     }
 
     /**
@@ -47,6 +52,18 @@ public class MappingWorkflowTestHandler extends MapSetWorkflowTestHandler {
 
         if (StringUtils.isNotBlank(conceptCode)) {
             conceptsNotInMapSet.add(conceptCode);
+        }
+    }
+
+    /**
+     * Treat the concept as present in unscoped mapping search results.
+     *
+     * @param conceptCode the source concept code
+     */
+    public static void addSearchableConcept(final String conceptCode) {
+
+        if (StringUtils.isNotBlank(conceptCode)) {
+            searchableConceptCodes.add(conceptCode);
         }
     }
 
@@ -106,6 +123,14 @@ public class MappingWorkflowTestHandler extends MapSetWorkflowTestHandler {
     public ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter,
         final boolean showOverriddenEntries, final List<String> conceptCodes, final Collection<String> restrictToConceptCodes) {
 
+        return getMappings(branch, mapSet, searchParameters, filter, showOverriddenEntries, conceptCodes, restrictToConceptCodes, null);
+    }
+
+    @Override
+    public ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter,
+        final boolean showOverriddenEntries, final List<String> conceptCodes, final Collection<String> restrictToConceptCodes,
+        final Collection<String> excludeConceptCodes) {
+
         final ResultListMapping result = new ResultListMapping();
         final List<String> codes = new ArrayList<>();
         if (conceptCodes != null && !conceptCodes.isEmpty()) {
@@ -119,6 +144,11 @@ public class MappingWorkflowTestHandler extends MapSetWorkflowTestHandler {
                     codes.add(conceptCode);
                 }
             }
+        } else {
+            codes.addAll(searchableConceptCodes);
+        }
+        if (excludeConceptCodes != null && !excludeConceptCodes.isEmpty()) {
+            codes.removeAll(new HashSet<>(excludeConceptCodes));
         }
         for (final String conceptCode : codes) {
             if (!isInMapSet(conceptCode)) {

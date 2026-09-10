@@ -186,17 +186,21 @@ public class MappingController extends BaseController {
             final ResultListMapping mappings;
             final boolean workflowFilter = statusFilter != null || StringUtils.isNotBlank(assignedUser);
             List<String> restrictToConceptCodes = null;
+            List<String> excludeConceptCodes = null;
             if (workflowFilter) {
-                restrictToConceptCodes =
-                    MappingWorkflowService.resolveMappingSearchConceptCodes(service, mapSet, statusFilter, assignedUser, conceptCodesList);
-                if (restrictToConceptCodes != null && restrictToConceptCodes.isEmpty()) {
+                final MappingWorkflowService.MappingSearchConceptFilter conceptFilter =
+                    MappingWorkflowService.resolveMappingSearchFilter(service, mapSet, statusFilter, assignedUser, conceptCodesList);
+                if (conceptFilter.isEmptyMatch()) {
                     LOG.info("getMappings HTTP done mapSet={} {}ms items=0 total=0 (no workflow matches)", mapSetInternalId,
                         System.currentTimeMillis() - controllerStartMs);
                     return new ResponseEntity<>(emptyMappings(sp), HttpStatus.OK);
                 }
+                restrictToConceptCodes = conceptFilter.getRestrictTo();
+                excludeConceptCodes = conceptFilter.getExclude();
             }
 
-            mappings = MappingService.getMappings(branch, mapSet, sp, filterString, showOverriddenEntries, conceptCodesList, restrictToConceptCodes);
+            mappings = MappingService.getMappings(branch, mapSet, sp, filterString, showOverriddenEntries, conceptCodesList, restrictToConceptCodes,
+                excludeConceptCodes);
 
             // Keep the returned order aligned to the incoming `conceptCodes` list (when provided).
             if (conceptCodesList != null && !conceptCodesList.isEmpty()) {
