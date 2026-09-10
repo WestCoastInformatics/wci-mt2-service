@@ -103,10 +103,32 @@ public final class MappingService {
     public static ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter,
         final boolean showOverriddenEntries, final List<String> conceptCodes, final Collection<String> restrictToConceptCodes) throws Exception {
 
+        return getMappings(branch, mapSet, searchParameters, filter, showOverriddenEntries, conceptCodes, restrictToConceptCodes, null);
+    }
+
+    /**
+     * Returns the mappings, optionally restricted to and/or excluding source concept codes after filter resolution.
+     *
+     * @param branch the branch
+     * @param mapSet the map set
+     * @param searchParameters the search parameters
+     * @param filter the filter
+     * @param showOverriddenEntries the show overridden entries
+     * @param conceptCodes the concept codes
+     * @param restrictToConceptCodes when non-null, only these source concept codes are returned
+     * @param excludeConceptCodes when non-null, these source concept codes are omitted
+     * @return the mappings
+     * @throws Exception the exception
+     */
+    public static ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter,
+        final boolean showOverriddenEntries, final List<String> conceptCodes, final Collection<String> restrictToConceptCodes,
+        final Collection<String> excludeConceptCodes) throws Exception {
+
         if (mapSet == null) {
             throw new IllegalArgumentException("MapSet from database is required for getMappings. No fallback.");
         }
-        return terminologyHandler.getMappings(branch, mapSet, searchParameters, filter, showOverriddenEntries, conceptCodes, restrictToConceptCodes);
+        return terminologyHandler.getMappings(branch, mapSet, searchParameters, filter, showOverriddenEntries, conceptCodes, restrictToConceptCodes,
+            excludeConceptCodes);
     }
 
     /**

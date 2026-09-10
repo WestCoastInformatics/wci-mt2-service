@@ -528,26 +528,85 @@ public final class MappingWorkflowService {
     }
 
     /**
-     * Resolve source concept codes for mapping search workflow filters.
+     * Inclusion and exclusion concept-code constraints for mapping search workflow filters.
+     */
+    public static final class MappingSearchConceptFilter {
+
+        /** When non-null, only these source concept codes may be returned. */
+        private final List<String> restrictTo;
+
+        /** When non-null, these source concept codes are omitted from results. */
+        private final List<String> exclude;
+
+        /**
+         * Instantiates a {@link MappingSearchConceptFilter}.
+         *
+         * @param restrictTo optional inclusion list
+         * @param exclude optional exclusion list
+         */
+        private MappingSearchConceptFilter(final List<String> restrictTo, final List<String> exclude) {
+
+            this.restrictTo = restrictTo;
+            this.exclude = exclude;
+        }
+
+        /**
+         * Returns the inclusion list, or {@code null} when unrestricted.
+         *
+         * @return the inclusion list
+         */
+        public List<String> getRestrictTo() {
+
+            return restrictTo;
+        }
+
+        /**
+         * Returns the exclusion list, or {@code null} when nothing should be excluded.
+         *
+         * @return the exclusion list
+         */
+        public List<String> getExclude() {
+
+            return exclude;
+        }
+
+        /**
+         * Returns whether the inclusion list is present and empty (no matches).
+         *
+         * @return true if the search should return no mappings
+         */
+        public boolean isEmptyMatch() {
+
+            return restrictTo != null && restrictTo.isEmpty();
+        }
+    }
+
+    /**
+     * Resolve concept-code constraints for mapping search workflow filters.
      *
      * <p>
      * {@code workflowStatus} and {@code assignedUser} are independent and optional; when both are set, results
      * must match both. {@code assignedUser} may be a username, {@link MapUser} id, or {@link User} id.
+     *
+     * <p>
+     * {@link MapWorkflowStatus#PUBLISHED} includes mappings with no workflow row (implicit published) as well as
+     * persisted {@code PUBLISHED} rows. When no request {@code conceptCodes} are supplied, that is expressed as an
+     * exclusion list of non-published source concepts rather than an incomplete inclusion list of persisted
+     * {@code PUBLISHED} rows.
      *
      * @param service the terminology service
      * @param mapSet the map set
      * @param workflowStatus optional workflow status
      * @param assignedUser optional assignee (username or user id)
      * @param requestConceptCodes optional request {@code conceptCodes} (used for implicit {@code PUBLISHED})
-     * @return {@code null} when no restriction should be applied; empty list when nothing matches; otherwise
-     *         the source concept codes to restrict to
+     * @return filter constraints; never {@code null}
      * @throws Exception the exception
      */
-    public static List<String> resolveMappingSearchConceptCodes(final TerminologyService service, final MapSet mapSet,
+    public static MappingSearchConceptFilter resolveMappingSearchFilter(final TerminologyService service, final MapSet mapSet,
         final MapWorkflowStatus workflowStatus, final String assignedUser, final List<String> requestConceptCodes) throws Exception {
 
         if (workflowStatus == null && StringUtils.isBlank(assignedUser)) {
-            return null;
+            return new MappingSearchConceptFilter(null, null);
         }
         if (mapSet == null || StringUtils.isBlank(mapSet.getId())) {
             throw new IllegalArgumentException("mapSet is required");
@@ -557,14 +616,13 @@ public final class MappingWorkflowService {
 
         if (workflowStatus == MapWorkflowStatus.PUBLISHED && StringUtils.isBlank(resolvedUser)) {
             if (requestConceptCodes != null && !requestConceptCodes.isEmpty()) {
-                return filterToPublishedOrMissing(service, mapSet, requestConceptCodes);
+                return new MappingSearchConceptFilter(filterToPublishedOrMissing(service, mapSet, requestConceptCodes), null);
             }
-            if (!hasNonPublishedWorkflows(service, mapSet)) {
-                return null;
-            }
+            final List<String> exclude = findNonPublishedSourceConceptCodes(service, mapSet);
+            return new MappingSearchConceptFilter(null, exclude.isEmpty() ? null : exclude);
         }
 
-        return findSourceConceptCodes(service, mapSet, workflowStatus, resolvedUser);
+        return new MappingSearchConceptFilter(findSourceConceptCodes(service, mapSet, workflowStatus, resolvedUser), null);
     }
 
     /**
@@ -654,22 +712,21 @@ public final class MappingWorkflowService {
     }
 
     /**
-     * Returns whether the mapset has any active specialist-slot-1 row that is not {@link MapWorkflowStatus#PUBLISHED}.
+     * Find active specialist-slot-1 source concept codes that are not {@link MapWorkflowStatus#PUBLISHED}.
      *
      * @param service the terminology service
      * @param mapSet the map set
-     * @return true if a non-published row exists
+     * @return non-published source concept codes
      * @throws Exception the exception
      */
-    private static boolean hasNonPublishedWorkflows(final TerminologyService service, final MapSet mapSet) throws Exception {
+    static List<String> findNonPublishedSourceConceptCodes(final TerminologyService service, final MapSet mapSet) throws Exception {
 
-        final Long count = service.getEntityManager()
-            .createQuery("select count(mw) from MappingWorkflow mw where mw.mapSet.id = :mapSetId"
-                + " and mw.active = true and mw.specialistSlot = 1 and mw.workflowStatus <> :published", Long.class)
+        return service.getEntityManager()
+            .createQuery("select mw.sourceConceptCode from MappingWorkflow mw where mw.mapSet.id = :mapSetId"
+                + " and mw.active = true and mw.specialistSlot = 1 and mw.workflowStatus <> :published", String.class)
             .setParameter("mapSetId", mapSet.getId())
             .setParameter("published", MapWorkflowStatus.PUBLISHED)
-            .getSingleResult();
-        return count != null && count > 0;
+            .getResultList();
     }
 
     /**

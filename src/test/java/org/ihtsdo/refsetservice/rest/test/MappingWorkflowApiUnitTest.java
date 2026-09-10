@@ -675,4 +675,52 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
             assertNotNull(results);
         }
     }
+
+    /**
+     * Mapping search for PUBLISHED includes concepts with no workflow row.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testGetMappingsPublishedIncludesImplicitPublished() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            final String implicitPublished = "999888777";
+            final String persistedPublished = "444555666";
+            context.addWorkflowForConcept(persistedPublished, MapWorkflowStatus.PUBLISHED);
+            MappingWorkflowTestHandler.addSearchableConcept(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE);
+            MappingWorkflowTestHandler.addSearchableConcept(implicitPublished);
+            MappingWorkflowTestHandler.addSearchableConcept(persistedPublished);
+
+            final ResultListMapping results = workflowUtil.getMappings(context.getMapSet().getId(),
+                "filter=Radiating&includeWorkflowStatus=true&workflowStatus=PUBLISHED", context.getSpecialistUser());
+            assertEquals(2, results.getTotal());
+            assertEquals(2, results.getItems().size());
+            final List<String> codes = results.getItems().stream().map(Mapping::getCode).toList();
+            assertThat(codes).containsExactlyInAnyOrder(implicitPublished, persistedPublished);
+            for (final Mapping mapping : results.getItems()) {
+                assertNotNull(mapping.getMappingWorkflow());
+                assertEquals(MapWorkflowStatus.PUBLISHED, mapping.getMappingWorkflow().getWorkflowStatus());
+            }
+        }
+    }
+
+    /**
+     * Mapping search for PUBLISHED with conceptCodes keeps missing-row codes and drops other statuses.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testGetMappingsPublishedFilterWithConceptCodes() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            final String implicitPublished = "999888777";
+            final ResultListMapping results = workflowUtil.getMappings(context.getMapSet().getId(),
+                "conceptCodes=" + MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE + "," + implicitPublished + "&workflowStatus=PUBLISHED",
+                context.getSpecialistUser());
+            assertEquals(1, results.getTotal());
+            assertEquals(implicitPublished, results.getItems().get(0).getCode());
+            assertEquals(MapWorkflowStatus.PUBLISHED, results.getItems().get(0).getMappingWorkflow().getWorkflowStatus());
+        }
+    }
 }
