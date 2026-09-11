@@ -2,15 +2,19 @@ package org.ihtsdo.refsetservice.handler.snowstorm;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.concurrent.CompletableFuture;
+
+import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * Tests the dummy concept-search used to warm Snowstorm's ECL results cache after map saves.
+ * Tests ECL cache warmup after map saves and search wait behavior.
  */
 public class SnowstormMappingEclCacheWarmupTest {
 
@@ -34,5 +38,41 @@ public class SnowstormMappingEclCacheWarmupTest {
         SnowstormMapping.warmEclResultsCacheAsync(null, "447562003");
         SnowstormMapping.warmEclResultsCacheAsync("MAIN/SNOMEDCT-NO", " ");
         SnowstormMapping.warmEclResultsCacheAsync("", "447562003");
+    }
+
+    @Test
+    public void searchReturnsImmediatelyWhenNoWarmupIsInFlight() {
+
+        SnowstormMapping.awaitEclCacheWarmup("MAIN/SNOMEDCT-NO", "447562003", 50L);
+    }
+
+    @Test
+    public void searchWaitsForWarmupToFinish() {
+
+        final String branch = "MAIN/TEST-WAIT";
+        final String mapSetCode = "447562003";
+        final CompletableFuture<Void> warmup = SnowstormMapping.putInFlightWarmupForTest(branch, mapSetCode);
+        try {
+            warmup.complete(null);
+            SnowstormMapping.awaitEclCacheWarmup(branch, mapSetCode, 200L);
+        } finally {
+            SnowstormMapping.clearInFlightWarmupForTest(branch, mapSetCode);
+        }
+    }
+
+    @Test
+    public void searchThrowsServiceUnavailableWhenWarmupExceedsWait() {
+
+        final String branch = "MAIN/TEST-TIMEOUT";
+        final String mapSetCode = "447562003";
+        final CompletableFuture<Void> warmup = SnowstormMapping.putInFlightWarmupForTest(branch, mapSetCode);
+        try {
+            final RestException thrown = assertThrows(RestException.class, () -> SnowstormMapping.awaitEclCacheWarmup(branch, mapSetCode, 50L));
+            assertEquals(503, thrown.getError().getStatus());
+            assertEquals(SnowstormMapping.ECL_CACHE_UPDATING_MESSAGE, thrown.getError().getMessage());
+        } finally {
+            warmup.complete(null);
+            SnowstormMapping.clearInFlightWarmupForTest(branch, mapSetCode);
+        }
     }
 }

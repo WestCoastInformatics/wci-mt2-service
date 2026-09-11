@@ -29,8 +29,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.client.Client;
@@ -50,6 +54,7 @@ import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
+import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.enums.VersionStatus;
 import org.ihtsdo.refsetservice.service.TerminologyService;
@@ -88,6 +93,16 @@ public class SnowstormMapping extends SnowstormAbstract {
      */
     static final String ECL_CACHE_WARMUP_TERM = "___mt2EclWarmup___";
 
+    /** Shown when a search arrives while Snowstorm is still filling the ECL cache. */
+    static final String ECL_CACHE_UPDATING_MESSAGE =
+        "The map index is still updating after a recent save. Please try the search again in a minute.";
+
+    /**
+     * How long a user search will wait for an in-flight warmup. Kept under a typical 60s gateway timeout so the
+     * search can still run after warmup, or return 503 instead of hanging until 504.
+     */
+    static final long SEARCH_WAIT_FOR_WARMUP_MS = 45_000L;
+
     /** Serializes cache warm-up so rapid saves do not stampede Snowstorm. */
     private static final Executor ECL_CACHE_WARMUP_EXECUTOR = Executors.newSingleThreadExecutor(runnable -> {
 
@@ -95,6 +110,12 @@ public class SnowstormMapping extends SnowstormAbstract {
         thread.setDaemon(true);
         return thread;
     });
+
+    /** In-flight warmup futures keyed by branch + map set. */
+    private static final ConcurrentHashMap<String, CompletableFuture<Void>> ECL_CACHE_WARMUPS = new ConcurrentHashMap<>();
+
+    /** Keys that need another warmup after the current one because another save landed while it was running. */
+    private static final Set<String> ECL_CACHE_WARMUP_AGAIN = ConcurrentHashMap.newKeySet();
 
     /** The client. */
     private static ThreadLocal<Client> clients = new ThreadLocal<>() {
@@ -956,7 +977,44 @@ public class SnowstormMapping extends SnowstormAbstract {
             return;
         }
 
-        CompletableFuture.runAsync(() -> warmEclResultsCache(branch, mapSetCode), ECL_CACHE_WARMUP_EXECUTOR);
+        final String key = eclCacheWarmupKey(branch, mapSetCode);
+        final CompletableFuture<Void> existing = ECL_CACHE_WARMUPS.get(key);
+        if (existing != null && !existing.isDone()) {
+            ECL_CACHE_WARMUP_AGAIN.add(key);
+            LOG.info("warmEclResultsCache coalesced onto in-flight warmup branch={} mapSet={}", branch, mapSetCode);
+            return;
+        }
+
+        final CompletableFuture<Void> warmup = new CompletableFuture<>();
+        ECL_CACHE_WARMUPS.put(key, warmup);
+        CompletableFuture.runAsync(() -> runEclCacheWarmup(branch, mapSetCode, key, warmup), ECL_CACHE_WARMUP_EXECUTOR);
+    }
+
+    /**
+     * Runs warmup, repeating once if another save landed while it was in flight.
+     *
+     * @param branch the branch
+     * @param mapSetCode the map set code
+     * @param key the warmup map key
+     * @param warmup the future searches wait on
+     */
+    private static void runEclCacheWarmup(final String branch, final String mapSetCode, final String key, final CompletableFuture<Void> warmup) {
+
+        try {
+            do {
+                ECL_CACHE_WARMUP_AGAIN.remove(key);
+                warmEclResultsCache(branch, mapSetCode);
+            } while (ECL_CACHE_WARMUP_AGAIN.remove(key));
+            warmup.complete(null);
+        } catch (final Exception e) {
+            LOG.warn("warmEclResultsCache failed branch={} mapSet={}: {}", branch, mapSetCode, e.getMessage());
+            warmup.complete(null);
+        } finally {
+            ECL_CACHE_WARMUPS.remove(key, warmup);
+            if (ECL_CACHE_WARMUP_AGAIN.remove(key)) {
+                warmEclResultsCacheAsync(branch, mapSetCode);
+            }
+        }
     }
 
     /**
@@ -1000,6 +1058,87 @@ public class SnowstormMapping extends SnowstormAbstract {
         requestBody.put("termActive", true);
         requestBody.put("returnIdOnly", true);
         return requestBody.toString();
+    }
+
+    /**
+     * Waits for an in-flight ECL cache warmup so a user search does not start a second Snowstorm ECL computation.
+     *
+     * @param branch the branch
+     * @param mapSetCode the map set code
+     */
+    static void awaitEclCacheWarmup(final String branch, final String mapSetCode) {
+
+        awaitEclCacheWarmup(branch, mapSetCode, SEARCH_WAIT_FOR_WARMUP_MS);
+    }
+
+    /**
+     * Waits for an in-flight ECL cache warmup, or throws 503 if it does not finish in time.
+     *
+     * @param branch the branch
+     * @param mapSetCode the map set code
+     * @param timeoutMs maximum wait
+     */
+    static void awaitEclCacheWarmup(final String branch, final String mapSetCode, final long timeoutMs) {
+
+        if (StringUtils.isAnyBlank(branch, mapSetCode)) {
+            return;
+        }
+
+        final CompletableFuture<Void> warmup = ECL_CACHE_WARMUPS.get(eclCacheWarmupKey(branch, mapSetCode));
+        if (warmup == null || warmup.isDone()) {
+            return;
+        }
+
+        LOG.info("awaitEclCacheWarmup waiting up to {}ms branch={} mapSet={}", timeoutMs, branch, mapSetCode);
+        try {
+            warmup.get(Math.max(0L, timeoutMs), TimeUnit.MILLISECONDS);
+            LOG.info("awaitEclCacheWarmup released branch={} mapSet={}", branch, mapSetCode);
+        } catch (final TimeoutException e) {
+            throw new RestException(true, 503, "Service Unavailable", ECL_CACHE_UPDATING_MESSAGE);
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RestException(true, 503, "Service Unavailable", ECL_CACHE_UPDATING_MESSAGE);
+        } catch (final ExecutionException e) {
+            LOG.warn("awaitEclCacheWarmup warmup failed, continuing search: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Warmup map key.
+     *
+     * @param branch the branch
+     * @param mapSetCode the map set code
+     * @return the key
+     */
+    static String eclCacheWarmupKey(final String branch, final String mapSetCode) {
+
+        return branch + "\t" + mapSetCode;
+    }
+
+    /**
+     * Test helper: register an incomplete warmup future searches can wait on.
+     *
+     * @param branch the branch
+     * @param mapSetCode the map set code
+     * @return the in-flight future
+     */
+    static CompletableFuture<Void> putInFlightWarmupForTest(final String branch, final String mapSetCode) {
+
+        final CompletableFuture<Void> warmup = new CompletableFuture<>();
+        ECL_CACHE_WARMUPS.put(eclCacheWarmupKey(branch, mapSetCode), warmup);
+        return warmup;
+    }
+
+    /**
+     * Test helper: drop a registered warmup future.
+     *
+     * @param branch the branch
+     * @param mapSetCode the map set code
+     */
+    static void clearInFlightWarmupForTest(final String branch, final String mapSetCode) {
+
+        ECL_CACHE_WARMUPS.remove(eclCacheWarmupKey(branch, mapSetCode));
+        ECL_CACHE_WARMUP_AGAIN.remove(eclCacheWarmupKey(branch, mapSetCode));
     }
 
     /**
@@ -1069,6 +1208,8 @@ public class SnowstormMapping extends SnowstormAbstract {
      * @throws Exception the exception
      */
     private static LinkedHashSet<String> resolveFilteredConceptIds(final String branch, final String mapSetCode, final String trimmedFilter) throws Exception {
+
+        awaitEclCacheWarmup(branch, mapSetCode);
 
         final LinkedHashSet<String> conceptIds = new LinkedHashSet<>();
 
