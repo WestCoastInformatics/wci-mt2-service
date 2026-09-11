@@ -98,10 +98,10 @@ public class SnowstormMapping extends SnowstormAbstract {
         "The map index is still updating after a recent save. Please try the search again in a minute.";
 
     /**
-     * How long a user search will wait for an in-flight warmup. Kept under a typical 60s gateway timeout so the
-     * search can still run after warmup, or return 503 instead of hanging until 504.
+     * How long a user search will wait for an in-flight warmup before returning 503 so the UI can explain
+     * the delay instead of sitting on a spinner.
      */
-    static final long SEARCH_WAIT_FOR_WARMUP_MS = 45_000L;
+    static final long SEARCH_WAIT_FOR_WARMUP_MS = 5_000L;
 
     /** Serializes cache warm-up so rapid saves do not stampede Snowstorm. */
     private static final Executor ECL_CACHE_WARMUP_EXECUTOR = Executors.newSingleThreadExecutor(runnable -> {
