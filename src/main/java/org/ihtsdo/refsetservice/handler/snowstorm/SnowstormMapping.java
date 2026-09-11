@@ -28,6 +28,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.client.Client;
@@ -77,6 +80,21 @@ public class SnowstormMapping extends SnowstormAbstract {
 
     /** The Constant DEFAULT_ACCEPT. */
     private static final String DEFAULT_ACCEPT = MediaType.APPLICATION_JSON;
+
+    /**
+     * Dummy term used to warm Snowstorm's ECL results cache after map member writes.
+     * User filtered searches send {@code termFilter} plus {@code eclFilter: ^refsetId}; that path caches the full
+     * member-of result under a null page request. A term-less ECL search uses a different cache key and would not help.
+     */
+    static final String ECL_CACHE_WARMUP_TERM = "___mt2EclWarmup___";
+
+    /** Serializes cache warm-up so rapid saves do not stampede Snowstorm. */
+    private static final Executor ECL_CACHE_WARMUP_EXECUTOR = Executors.newSingleThreadExecutor(runnable -> {
+
+        final Thread thread = new Thread(runnable, "snowstorm-ecl-cache-warmup");
+        thread.setDaemon(true);
+        return thread;
+    });
 
     /** The client. */
     private static ThreadLocal<Client> clients = new ThreadLocal<>() {
@@ -926,6 +944,65 @@ public class SnowstormMapping extends SnowstormAbstract {
     }
 
     /**
+     * Starts a background concept search so Snowstorm can refill the branch ECL results cache after map member writes.
+     * Does not wait for Snowstorm; save remains fast even when the cache fill itself is slow.
+     *
+     * @param branch the branch whose head just changed
+     * @param mapSetCode the map reference set id used in later {@code ^refset} searches
+     */
+    static void warmEclResultsCacheAsync(final String branch, final String mapSetCode) {
+
+        if (StringUtils.isAnyBlank(branch, mapSetCode)) {
+            return;
+        }
+
+        CompletableFuture.runAsync(() -> warmEclResultsCache(branch, mapSetCode), ECL_CACHE_WARMUP_EXECUTOR);
+    }
+
+    /**
+     * POST {@code /concepts/search} matching the user filtered-search ECL cache key ({@code ^mapSetCode}, term present).
+     *
+     * @param branch the branch
+     * @param mapSetCode the map set code
+     */
+    private static void warmEclResultsCache(final String branch, final String mapSetCode) {
+
+        final long startMs = System.currentTimeMillis();
+        final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/concepts/search";
+        LOG.info("warmEclResultsCache start branch={} mapSet={} POST {}", branch, mapSetCode, targetUri);
+
+        try (final Response response = SnowstormConnection.postResponse(targetUri, eclCacheWarmupRequestBody(mapSetCode))) {
+
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                LOG.warn("warmEclResultsCache failed branch={} mapSet={} status={} message={} {}ms", branch, mapSetCode, response.getStatus(),
+                    formatErrorMessage(response), System.currentTimeMillis() - startMs);
+                return;
+            }
+
+            LOG.info("warmEclResultsCache complete branch={} mapSet={} {}ms", branch, mapSetCode, System.currentTimeMillis() - startMs);
+        } catch (final Exception e) {
+            LOG.warn("warmEclResultsCache failed branch={} mapSet={} {}ms: {}", branch, mapSetCode, System.currentTimeMillis() - startMs, e.getMessage());
+        }
+    }
+
+    /**
+     * Concept-search body that fills the same ECL cache entry later term searches use.
+     *
+     * @param mapSetCode the map set code
+     * @return JSON request body
+     */
+    static String eclCacheWarmupRequestBody(final String mapSetCode) {
+
+        final ObjectNode requestBody = ThreadLocalMapper.get().createObjectNode();
+        requestBody.put("termFilter", ECL_CACHE_WARMUP_TERM);
+        requestBody.put("eclFilter", "^" + mapSetCode);
+        requestBody.put("limit", 1);
+        requestBody.put("termActive", true);
+        requestBody.put("returnIdOnly", true);
+        return requestBody.toString();
+    }
+
+    /**
      * One page of source concept ids whose map target field matches the filter.
      *
      * @param branch the branch
@@ -1353,6 +1430,8 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         }
 
+        warmEclResultsCacheAsync(branch, mapSetCode);
+
         final Map<String, List<Description>> descriptions = SnowstormDescription.getDescriptions(mapProject.getEdition(), conceptIds);
         for (final Mapping mapping : newMappings) {
             mapping.setDescriptions(descriptions.get(mapping.getCode()));
@@ -1444,6 +1523,8 @@ public class SnowstormMapping extends SnowstormAbstract {
             updatedMappings.add(updatedMapping);
             conceptIds.add(updatedMapping.getCode());
         }
+
+        warmEclResultsCacheAsync(branch, mapSetCode);
 
         // add descriptions to mappings to be returned
         final Map<String, List<Description>> descriptions = SnowstormDescription.getDescriptions(mapProject.getEdition(), conceptIds);
@@ -2388,6 +2469,12 @@ public class SnowstormMapping extends SnowstormAbstract {
             updatedRF2Mappings.add(updatedRF2Mapping);
             conceptIds.add(updatedRF2Mapping.getCode());
         }
+
+        String warmupMapSetCode = mapSet != null ? mapSet.getRefSetCode() : null;
+        if (StringUtils.isBlank(warmupMapSetCode) && !mappings.isEmpty()) {
+            warmupMapSetCode = mappings.get(0).getMapSetId();
+        }
+        warmEclResultsCacheAsync(branch, warmupMapSetCode);
 
         // add descriptions to mappings to be returned
         final Map<String, List<Description>> descriptions = SnowstormDescription.getDescriptions(mapProject.getEdition(), conceptIds);
