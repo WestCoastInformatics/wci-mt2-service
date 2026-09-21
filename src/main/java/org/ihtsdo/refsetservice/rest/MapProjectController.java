@@ -9,9 +9,9 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.core.MediaType;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
@@ -46,12 +46,14 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controller for /mapproject endpoints.
  */
 @RestController
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
+@Tag(name = "project", description = "Project service endpoints")
 public class MapProjectController extends BaseController {
 
     /** The Constant LOG. */
@@ -73,11 +75,10 @@ public class MapProjectController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.POST, value = "/mapproject", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-    @Operation(summary = "Create mapping project.  This call requires authentication with the correct role.", tags = {
+    @Operation(summary = "Create mapping project.", tags = {
         "project"
     }, responses = {
-        @ApiResponse(responseCode = "200", description = "Create specified mapping project"), @ApiResponse(responseCode = "401", description = "Unauthorized"),
-        @ApiResponse(responseCode = "403", description = "Forbidden"), @ApiResponse(responseCode = "404", description = "Not Found"),
+        @ApiResponse(responseCode = "201", description = "Created mapping project"),
         @ApiResponse(responseCode = "417", description = "Failed Expectation")
     }, requestBody = @RequestBody(description = "Map Project to create", required = true, content = {
         @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = MapProject.class))
@@ -125,7 +126,7 @@ public class MapProjectController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/mapproject/{id}", produces = MediaType.APPLICATION_JSON)
-    @Operation(summary = "Get mapProject.  This call requires authentication with the correct role.", tags = {
+    @Operation(summary = "Get mapProject.", tags = {
         "project"
     }, responses = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
@@ -334,7 +335,7 @@ public class MapProjectController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.PUT, value = "/mapproject/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-    @Operation(summary = "Update mapProject.  This call requires authentication with the correct role.", tags = {
+    @Operation(summary = "Update mapProject.", tags = {
         "project"
     }, responses = {
         @ApiResponse(responseCode = "200", description = "Update specified mapProject"), @ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -394,7 +395,7 @@ public class MapProjectController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.DELETE, value = "/mapproject/{id}")
-    @Operation(summary = "Inactivate mapProject.  This call requires authentication with the correct role.", tags = {
+    @Operation(summary = "Inactivate mapProject.", tags = {
         "project"
     }, responses = {
         @ApiResponse(responseCode = "202", description = "Successfully inactivated mapProject"),

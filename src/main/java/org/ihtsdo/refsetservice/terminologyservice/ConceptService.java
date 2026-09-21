@@ -14,7 +14,6 @@ import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.ResultListConcept;
 import org.ihtsdo.refsetservice.model.ResultListConceptRef;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
-import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,24 +30,9 @@ public final class ConceptService {
     private static final Logger LOG = LoggerFactory.getLogger(ConceptService.class);
 
     /** The terminology handler. */
-    private static TerminologyServerHandler terminologyHandler;
+    private static TerminologyServerHandler getTerminologyHandler() {
 
-    static {
-
-        // Instantiate terminology handler
-        try {
-            String key = "terminology.handler";
-            String handlerName = PropertyUtility.getProperty(key);
-            if (handlerName.isEmpty()) {
-                throw new Exception("terminology.handler expected and does not exist.");
-            }
-
-            terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName, TerminologyServerHandler.class);
-
-        } catch (Exception e) {
-            LOG.error("Failed to initialize terminology.handler - serious error", e);
-            terminologyHandler = null;
-        }
+        return HandlerUtility.getOrCreateTerminologyHandler();
     }
 
     /**
@@ -71,7 +55,7 @@ public final class ConceptService {
 //     */
 //    public static Concept getConcept(final String terminology, final String code) throws Exception {
 //
-//        return terminologyHandler.getConcept(terminology, code);
+//        return getTerminologyHandler().getConcept(terminology, code);
 //    }
     
     /**
@@ -85,7 +69,7 @@ public final class ConceptService {
      */
     public static Concept getConcept(final String terminology, final String version, final String code) throws Exception {
 
-        return terminologyHandler.getConcept(terminology, version, code);
+        return getTerminologyHandler().getConcept(terminology, version, code);
     }
 
 
@@ -101,7 +85,7 @@ public final class ConceptService {
     public static ResultListConcept findConcepts(final String terminology, final String version, final SearchParameters searchParameters)
         throws Exception {
 
-        return terminologyHandler.findConcepts(terminology, version, searchParameters);
+        return getTerminologyHandler().findConcepts(terminology, version, searchParameters);
     }
     
     /**
@@ -116,7 +100,7 @@ public final class ConceptService {
     public static ResultListConceptRef autoComplete(final String terminology, final String version, final SearchParameters searchParameters)
         throws Exception {
 
-        return terminologyHandler.autoComplete(terminology, version, searchParameters);
+        return getTerminologyHandler().autoComplete(terminology, version, searchParameters);
     }
 
 }

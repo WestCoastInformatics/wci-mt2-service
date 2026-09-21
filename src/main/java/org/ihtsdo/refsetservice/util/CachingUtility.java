@@ -25,8 +25,25 @@ public class CachingUtility {
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(CachingUtility.class);
     
-    /** The Constant cacheManager. */
-    final static CacheManager cacheManager = AppContext.getBean(CacheManager.class);
+    /** The cache manager. */
+    private static CacheManager cacheManager;
+
+    private static synchronized CacheManager getCacheManager() {
+
+        if (cacheManager == null) {
+            cacheManager = AppContext.getBean(CacheManager.class);
+        }
+        return cacheManager;
+    }
+
+    private static Cache requireCache(final String cacheName) {
+
+        final Cache cache = getCacheManager().getCache(cacheName);
+        if (cache == null) {
+            throw new IllegalStateException("Cache not found: " + cacheName);
+        }
+        return cache;
+    }
 
     /**
      * Cache object.
@@ -44,7 +61,7 @@ public class CachingUtility {
             throw new Exception("Object is not an instance of class. Invalid class type for caching");
         }
 
-        final Cache cache = cacheManager.getCache(cacheName);
+        final Cache cache = requireCache(cacheName);
         cache.put(cacheKey, value);
 
     }
@@ -61,7 +78,7 @@ public class CachingUtility {
      */
     public static <T> Optional<T> getObject(final String cacheName, final String cacheKey, final Class<T> clazz) throws ClassCastException {
 
-        final Cache conceptsCache = cacheManager.getCache(cacheName);
+            final Cache conceptsCache = requireCache(cacheName);
         final Cache.ValueWrapper cachedValue = conceptsCache.get(cacheKey);
 
         if (cachedValue != null) {
@@ -86,8 +103,8 @@ public class CachingUtility {
     public static boolean containsObjects(final String cacheName, final String cacheKey) {
         
         try {
-            final Cache conceptsCache = cacheManager.getCache(cacheName);
-            return conceptsCache.get(cacheKey) != null;
+                final Cache conceptsCache = getCacheManager().getCache(cacheName);
+            return conceptsCache != null && conceptsCache.get(cacheKey) != null;
         } catch (Exception e) {
             LOG.debug("Failed to find for key: " + cacheKey + " in cache: " + cacheName);
             return false;
@@ -99,8 +116,8 @@ public class CachingUtility {
      */
     public static void loadCache() {
 
-        for (final String cacheName : cacheManager.getCacheNames()) {
-            cacheManager.getCache(cacheName);
+        for (final String cacheName : getCacheManager().getCacheNames()) {
+            getCacheManager().getCache(cacheName);
         }
     }
 
@@ -112,7 +129,7 @@ public class CachingUtility {
         if (cacheManager == null) {
             return;
         }
-        cacheManager.getCacheNames().forEach(cacheName -> cacheManager.getCache(cacheName).clear());
+        getCacheManager().getCacheNames().forEach(cacheName -> getCacheManager().getCache(cacheName).clear());
     }
 
     /**
@@ -126,7 +143,7 @@ public class CachingUtility {
         if (cacheName == null || cacheManager == null) {
             return;
         }
-        final Cache cache = cacheManager.getCache(cacheName);
+        final Cache cache = getCacheManager().getCache(cacheName);
         if (cache != null) {
             cache.clear();
         }

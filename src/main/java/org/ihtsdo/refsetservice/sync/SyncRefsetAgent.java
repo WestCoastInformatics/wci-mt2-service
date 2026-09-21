@@ -26,8 +26,8 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status.Family;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status.Family;
 
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.Project;
@@ -259,7 +259,7 @@ public class SyncRefsetAgent extends SyncAgent {
     private List<Refset> getAllPublishedRefsets(final TerminologyService service) throws Exception {
 
         final List<Refset> dbRefsets = service.getAll(Refset.class);
-        return dbRefsets.stream().filter(r -> VersionStatus.PUBLISHED.getLabel().equals(r.getVersionStatus())).collect(Collectors.toList());
+        return dbRefsets.stream().filter(r -> VersionStatus.PUBLISHED.equals(r.getVersionStatus())).collect(Collectors.toList());
     }
 
     /**
@@ -550,8 +550,8 @@ public class SyncRefsetAgent extends SyncAgent {
         final Set<Refset> dbInactiveRefsets = new HashSet<>();
         final List<Refset> dbRefsets = service.getAll(Refset.class);
 
-        dbRefsets.stream().filter(r -> VersionStatus.PUBLISHED.getLabel().equals(r.getVersionStatus()) && r.isActive()).forEach(ar -> dbActiveRefsets.add(ar));
-        dbRefsets.stream().filter(r -> VersionStatus.PUBLISHED.getLabel().equals(r.getVersionStatus()) && !r.isActive())
+        dbRefsets.stream().filter(r -> VersionStatus.PUBLISHED.equals(r.getVersionStatus()) && r.isActive()).forEach(ar -> dbActiveRefsets.add(ar));
+        dbRefsets.stream().filter(r -> VersionStatus.PUBLISHED.equals(r.getVersionStatus()) && !r.isActive())
         .forEach(ir -> dbInactiveRefsets.add(ir));
 
         // Map each refsetId/version pair's SyncRefsetMetadata

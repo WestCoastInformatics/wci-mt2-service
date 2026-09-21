@@ -25,13 +25,13 @@ import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.EntityTransaction;
-import javax.persistence.LockModeType;
-import javax.persistence.NoResultException;
-import javax.persistence.Persistence;
-import javax.persistence.Query;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.Persistence;
+import jakarta.persistence.Query;
 
 import org.hibernate.CacheMode;
 import org.hibernate.search.mapper.orm.Search;
@@ -401,10 +401,10 @@ public class TerminologyService implements RootService {
 	 *
 	 * @param queryStr the query str
 	 * @param pfs      the pfs
-	 * @return the javax.persistence. query
+	 * @return the jakarta.persistence. query
 	 * @throws Exception the exception
 	 */
-	public javax.persistence.Query applyPfsToJPQLQuery(final String queryStr, final PfsParameter pfs) throws Exception {
+	public jakarta.persistence.Query applyPfsToJPQLQuery(final String queryStr, final PfsParameter pfs) throws Exception {
 
 		final StringBuilder localQueryStr = new StringBuilder();
 		localQueryStr.append(queryStr);
@@ -419,7 +419,7 @@ public class TerminologyService implements RootService {
 			}
 		}
 
-		final javax.persistence.Query query = manager.createQuery(localQueryStr.toString());
+		final jakarta.persistence.Query query = manager.createQuery(localQueryStr.toString());
 		if (pfs != null && pfs.getOffset() > -1 && pfs.getLimit() > -1) {
 			query.setFirstResult(pfs.getOffset());
 			query.setMaxResults(pfs.getLimit());
@@ -1092,7 +1092,7 @@ public class TerminologyService implements RootService {
 	public <T extends HasModified> List<T> getAll(final Class<T> clazz) throws Exception {
 
 		try {
-			final javax.persistence.Query query = getEntityManager().createQuery("from " + clazz.getName());
+			final jakarta.persistence.Query query = getEntityManager().createQuery("from " + clazz.getName());
 			return query.getResultList();
 		} catch (final NoResultException e) {
 			return null;
@@ -1543,7 +1543,7 @@ public class TerminologyService implements RootService {
 	 */
 	private Class<?> resolveManagedIndexedClass(final String simpleName, final Class<?> fallback) throws Exception {
 
-		for (final javax.persistence.metamodel.EntityType<?> entityType : getEntityManager().getMetamodel().getEntities()) {
+		for (final jakarta.persistence.metamodel.EntityType<?> entityType : getEntityManager().getMetamodel().getEntities()) {
 			final Class<?> javaType = entityType.getJavaType();
 			if (javaType != null && javaType.getSimpleName().equals(simpleName)) {
 				return javaType;

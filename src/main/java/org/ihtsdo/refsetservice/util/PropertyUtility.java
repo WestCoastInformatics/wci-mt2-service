@@ -15,7 +15,7 @@ import java.util.Iterator;
 import java.util.Properties;
 import java.util.stream.StreamSupport;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +40,9 @@ public class PropertyUtility {
     /** the Spring environment variable. */
     @Autowired
     private Environment env;
+
+    /** the properties cache lock. */
+    private static final Object READY_LOCK = new Object();
 
     /** the config properties cache. */
     private static Properties properties = new Properties();
@@ -77,9 +80,13 @@ public class PropertyUtility {
                     properties.setProperty(prop, value);
                 }
             });
-        ready = true;
+        synchronized (READY_LOCK) {
+            ready = true;
+            READY_LOCK.notifyAll();
+        }
 
         properties.setProperty("springProfiles", Arrays.toString(env.getActiveProfiles()));
+        HandlerUtility.resetTerminologyHandler();
 
         // only uncomment for testing - do not print out properties in Production environments
         // TreeSet<Object> sortedPropertyNames = new TreeSet<>(properties.keySet());
@@ -216,26 +223,24 @@ public class PropertyUtility {
      */
     public static void assureReadiness() {
 
-        if (true) {
+        if (ready) {
             return;
         }
 
-        // if (!isReady()) {
-        //
-        // synchronized (properties) {
-        //
-        // while (!isReady()) {
-        //
-        // try {
-        //
-        // LOG.debug("Properties not ready. Waiting for 1s..");
-        // Thread.sleep(1000);
-        // } catch (InterruptedException e) {
-        //
-        // LOG.error("Error waiting for properties to load.", e);
-        // }
-        // }
-        // }
-        // }
+        final long deadline = System.currentTimeMillis() + 60_000L;
+        synchronized (READY_LOCK) {
+            while (!ready) {
+                final long remaining = deadline - System.currentTimeMillis();
+                if (remaining <= 0) {
+                    throw new IllegalStateException("PropertyUtility not initialized after 60s");
+                }
+                try {
+                    READY_LOCK.wait(Math.min(1000L, remaining));
+                } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException("Interrupted waiting for PropertyUtility", e);
+                }
+            }
+        }
     }
 }

@@ -15,15 +15,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.xml.bind.annotation.XmlTransient;
+import jakarta.xml.bind.annotation.XmlTransient;
 
 import org.ihtsdo.refsetservice.model.Collection;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * Represents a list of results. Aligns with "collection".
  *
  * @param <T> the type parameter
  */
+@Schema(description = "Paged list of search or find results")
 public class ResultList<T> implements Collection<T> {
 
     /** The total count. */
@@ -150,6 +153,7 @@ public class ResultList<T> implements Collection<T> {
      * @return the objects transient
      */
     @Override
+    @Schema(description = "Result items for this page")
     public List<T> getItems() {
 
         if (items == null) {
@@ -184,6 +188,7 @@ public class ResultList<T> implements Collection<T> {
 
     /* see superclass */
     @Override
+    @Schema(description = "Total number of matching results")
     public int getTotal() {
 
         return total;
@@ -218,6 +223,7 @@ public class ResultList<T> implements Collection<T> {
 
     /* see superclass */
     @Override
+    @Schema(description = "Maximum number of items in this page")
     public int getLimit() {
 
         return limit;
@@ -272,6 +278,7 @@ public class ResultList<T> implements Collection<T> {
 
     /* see superclass */
     @Override
+    @Schema(description = "Start index of this page")
     public int getOffset() {
 
         return offset;

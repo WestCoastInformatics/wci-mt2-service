@@ -68,11 +68,12 @@ public final class FileUtility {
     /** The local artifact file directory. */
     private static String serverArtifactDir;
 
-    /** Static initialization. */
-    static {
+    private static void ensureFileDirs() {
 
-        serverIconDir = PropertyUtility.getProperty("refset.service.icon.server.dir");
-        serverArtifactDir = PropertyUtility.getProperty("refset.service.artifact.server.dir");
+        if (serverIconDir == null) {
+            serverIconDir = PropertyUtility.getProperty("refset.service.icon.server.dir");
+            serverArtifactDir = PropertyUtility.getProperty("refset.service.artifact.server.dir");
+        }
     }
 
     /**
@@ -573,6 +574,7 @@ public final class FileUtility {
      */
     public static Resource getIconFile(final String fileName) throws Exception {
 
+        ensureFileDirs();
         final Resource file = getCachedFile(fileName, serverIconDir, S3ConnectionWrapper.getAwsIconPath());
 
         return file;
@@ -603,6 +605,7 @@ public final class FileUtility {
             final int maxFileSize = Integer.valueOf(PropertyUtility.getProperty("refset.service.icon.file.maxsize"));
             final List<String> fileTypes = Arrays.asList(PropertyUtility.getProperty("refset.service.icon.file.types").split(";"));
 
+        ensureFileDirs();
             final File file =
                 saveCachedFile(inputFile, fileName, serverIconDir, S3ConnectionWrapper.getAwsIconPath(), maxFileSize, fileTypes, fileNameToDelete);
 
@@ -621,6 +624,7 @@ public final class FileUtility {
      */
     public static Resource getArtifactFile(final String fileName) throws Exception {
 
+        ensureFileDirs();
         return getCachedFile(fileName, serverArtifactDir, S3ConnectionWrapper.getAwsArtifactPath());
 
     }
@@ -649,6 +653,7 @@ public final class FileUtility {
             final int maxFileSize = -1;
             final List<String> fileTypes = new ArrayList<>();
 
+            ensureFileDirs();
             return 
                 saveCachedFile(inputFile, fileName, serverArtifactDir, S3ConnectionWrapper.getAwsArtifactPath(), maxFileSize, fileTypes, fileNameToDelete);
 

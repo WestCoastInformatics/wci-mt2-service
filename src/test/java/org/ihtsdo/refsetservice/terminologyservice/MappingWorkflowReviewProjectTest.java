@@ -121,7 +121,7 @@ public class MappingWorkflowReviewProjectTest {
                 () -> MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getLeadUser(), MappingWorkflowAction.START_REVIEW,
                     context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Start review", context.getOtherSpecialistMapUser().getId()));
 
-            assertEquals(HttpStatus.BAD_REQUEST, thrown.getStatus());
+            assertEquals(HttpStatus.BAD_REQUEST, thrown.getStatusCode());
             assertEquals(MapWorkflowStatus.REVIEW_NEEDED, context.reloadWorkflow().getWorkflowStatus());
             assertNull(context.reloadWorkflow().getAssignedUser());
         }
@@ -281,7 +281,7 @@ public class MappingWorkflowReviewProjectTest {
             final ResponseStatusException ex = assertThrows(ResponseStatusException.class,
                 () -> MappingWorkflowService.setWorkflowStatusByActionBulk(context.getService(), context.getLeadUser(), MappingWorkflowAction.ACCEPT_REVIEW,
                     context.getMapSet(), context.getMapProject(), Collections.emptyList(), "notes", null));
-            assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+            assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
         }
     }
 }

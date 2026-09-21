@@ -10,11 +10,12 @@
 
 package org.ihtsdo.refsetservice.model;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /**
  * Represents an inactive concept during the refset upgrade process.
@@ -34,7 +35,7 @@ public class UpgradeReplacementConcept extends AbstractHasModified {
 
   /** The descriptions. */
   @Column(nullable = false, length = 10000)
-  @Type(type = "text")
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
   private String descriptions;
 
   /** The reason for replacement. */

@@ -13,9 +13,9 @@ import java.io.File;
 import java.nio.file.Files;
 import java.util.Arrays;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.core.MediaType;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
@@ -57,12 +57,16 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controller for /organization endpoints.
  */
 @RestController
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
+@Tag(name = "organization", description = "Organization service endpoints")
+@SecurityRequirement(name = "bearerAuth")
 public class OrganizationController extends BaseController {
 
 	/** The Constant LOG. */
@@ -137,7 +141,7 @@ public class OrganizationController extends BaseController {
 	// @ModelAttribute API params documented in SearchParameter
 	@RecordMetric
 	public @ResponseBody ResponseEntity<ResultList<Organization>> getOrganizations(
-			@RequestParam(value = "includeMembers") final boolean includeMembers,
+			@RequestParam(value = "includeMembers", defaultValue = "false") final boolean includeMembers,
 			@ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult)
 			throws Exception {
 

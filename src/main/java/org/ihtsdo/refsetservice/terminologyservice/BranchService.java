@@ -14,7 +14,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.BranchInformation;
@@ -76,7 +76,15 @@ public final class BranchService {
     private static final List<String> SETTLED_PROMOTION_TARGET_STATES = List.of("FORWARD", "DIVERGED", "UP_TO_DATE", "CURRENT");
 
     /** The app url root. */
-    private static final boolean USE_MANAGE_SERVICE_INITIALS = "true".equals(PropertyUtility.getProperties().getProperty("mapset.use.manage.service.initials"));
+    private static Boolean useManageServiceInitials;
+
+    private static boolean useManageServiceInitials() {
+
+        if (useManageServiceInitials == null) {
+            useManageServiceInitials = Boolean.valueOf("true".equals(PropertyUtility.getProperties().getProperty("mapset.use.manage.service.initials")));
+        }
+        return useManageServiceInitials.booleanValue();
+    }
 
     /**
      * Merge the project branch into the edition branch.
@@ -488,7 +496,7 @@ public final class BranchService {
             return "WCI" + PROJECT_BRANCH_NAME;
         }
 
-        if (USE_MANAGE_SERVICE_INITIALS) {
+        if (useManageServiceInitials()) {
             final int initialsLocationIndex = editionBranchPath.lastIndexOf("-");
             if (initialsLocationIndex > 0) {
                 return editionBranchPath.substring(initialsLocationIndex + 1, editionBranchPath.length()) + PROJECT_BRANCH_NAME;

@@ -14,15 +14,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.OneToMany;
-import javax.persistence.OrderBy;
-import javax.persistence.Table;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
+import jakarta.persistence.Table;
 
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
@@ -56,12 +57,12 @@ public class UpgradeInactiveConcept extends AbstractHasModified
 
   /** The descriptions. */
   @Column(nullable = false, length = 10000)
-  @Type(type = "text")
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
   private String descriptions;
 
   /** The descriptions. */
   @Column(nullable = false, length = 256)
-  @Type(type = "text")
+  @JdbcTypeCode(SqlTypes.LONGVARCHAR)
   private String inactivationReason;
 
   /** The flag showing if this concept is still a member of the refset. */

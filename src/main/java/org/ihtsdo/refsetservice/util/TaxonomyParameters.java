@@ -13,10 +13,16 @@ package org.ihtsdo.refsetservice.util;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
+import org.springdoc.core.annotations.ParameterObject;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
  * Represents parameters for a taxonomy call.
  */
 @JsonInclude(Include.NON_EMPTY)
+@ParameterObject
+@Schema(description = "Parameters for a taxonomy walk")
 public class TaxonomyParameters {
 
     /**  The Constant SNOMED_ROOT_CONCEPT_ID. */

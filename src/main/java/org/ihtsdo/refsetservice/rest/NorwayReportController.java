@@ -12,8 +12,8 @@ package org.ihtsdo.refsetservice.rest;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.MediaType;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.MediaType;
 
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.terminologyservice.norway.NorwayReplacementReportDispatcher;
@@ -28,6 +28,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * REST endpoints to kick off Norway reports (email results asynchronously).
@@ -47,6 +49,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
  */
 @RestController
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
+@Tag(name = "report", description = "Report service endpoints")
+@SecurityRequirement(name = "bearerAuth")
 public class NorwayReportController extends BaseController {
 
     /** The Constant LOG. */

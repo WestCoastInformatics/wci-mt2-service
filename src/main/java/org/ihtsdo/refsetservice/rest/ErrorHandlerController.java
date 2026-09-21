@@ -3,7 +3,7 @@ package org.ihtsdo.refsetservice.rest;
 
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
@@ -11,8 +11,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.error.ErrorAttributeOptions;
 import org.springframework.boot.web.error.ErrorAttributeOptions.Include;
-import org.springframework.boot.web.servlet.error.ErrorAttributes;
-import org.springframework.boot.web.servlet.error.ErrorController;
+import org.springframework.boot.webmvc.error.ErrorAttributes;
+import org.springframework.boot.webmvc.error.ErrorController;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -59,7 +59,7 @@ public class ErrorHandlerController implements ErrorController {
 	@ResponseBody
 	public String handleErrorHtml(final HttpServletRequest request) {
 
-		final Integer statusCode = (Integer) request.getAttribute("javax.servlet.error.status_code");
+		final Integer statusCode = (Integer) request.getAttribute("jakarta.servlet.error.status_code");
 		final Map<String, Object> body = getErrorAttributes(request, false);
 		String ppBody = null;
 		try {
@@ -99,7 +99,7 @@ public class ErrorHandlerController implements ErrorController {
 	 */
 	protected HttpStatus getStatus(final HttpServletRequest request) {
 
-		final Integer statusCode = (Integer) request.getAttribute("javax.servlet.error.status_code");
+		final Integer statusCode = (Integer) request.getAttribute("jakarta.servlet.error.status_code");
 		if (statusCode == null) {
 			return HttpStatus.INTERNAL_SERVER_ERROR;
 		}

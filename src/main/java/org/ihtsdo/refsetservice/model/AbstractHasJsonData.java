@@ -1,9 +1,9 @@
 
 package org.ihtsdo.refsetservice.model;
 
-import javax.persistence.MappedSuperclass;
-import javax.persistence.PrePersist;
-import javax.persistence.PreUpdate;
+import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 
 import org.hibernate.annotations.Type;
 import org.ihtsdo.refsetservice.util.ModelUtility;
@@ -17,11 +17,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * .
  */
 @MappedSuperclass
-@org.hibernate.annotations.TypeDef(name = "JsonBType", typeClass = JsonBType.class)
 public abstract class AbstractHasJsonData extends AbstractHasModified implements HasJsonData {
 
   /** The data. */
-  @Type(type = "JsonBType")
+  @Type(JsonBType.class)
   private String data;
 
   /**

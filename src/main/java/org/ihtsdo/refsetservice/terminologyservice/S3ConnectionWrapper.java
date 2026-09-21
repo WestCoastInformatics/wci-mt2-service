@@ -72,8 +72,7 @@ public final class S3ConnectionWrapper {
     /** The S3 SEPARATOR character. */
     private static final String SEPARATOR = "/";
 
-    /** Static initialization. */
-    static {
+    public static void loadConfigurationFromProperties() {
 
         awsBucket = PropertyUtility.getProperty("aws.bucket");
         awsRegion = Regions.fromName(PropertyUtility.getProperty("aws.region"));
@@ -82,6 +81,13 @@ public final class S3ConnectionWrapper {
         artifactDir = PropertyUtility.getProperty("aws.artifact.dir");
         awsAccessKeyId = PropertyUtility.getProperty("aws.access.key.id");
         awsSecretAccessKey = PropertyUtility.getProperty("aws.secret.access.key");
+    }
+
+    private static void ensureConfigured() {
+
+        if (awsBucket == null) {
+            loadConfigurationFromProperties();
+        }
     }
 
     /**
@@ -155,6 +161,7 @@ public final class S3ConnectionWrapper {
      */
     public static String getProjectDirectory() {
 
+        ensureConfigured();
         return projectDir;
     }
 

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
@@ -18,10 +19,14 @@ import java.util.Date;
 import java.util.Properties;
 import java.util.UUID;
 
+import org.ihtsdo.refsetservice.model.BrowserLoginCallback;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
@@ -93,6 +98,7 @@ public class EntraIDSecurityServiceHandlerStubJwksTest {
     @AfterEach
     public void stopJwksServer() {
 
+        RequestContextHolder.resetRequestAttributes();
         if (httpServer != null) {
             httpServer.stop(0);
             httpServer = null;
@@ -238,6 +244,89 @@ public class EntraIDSecurityServiceHandlerStubJwksTest {
         assertEquals(401, ex.getError().getStatus());
     }
 
+    /**
+     * {@link EntraIDSecurityServiceHandler#authenticate(String)} reads the Bearer header from the current request.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testAuthenticateReadsBearerFromRequest() throws Exception {
+
+        final EntraIDSecurityServiceHandler handler = configuredHandler();
+        final String token = mintAccessToken((RSAPrivateKey) keyPair.getPrivate(), testIssuer, testClientId, "dev.user@stub-entra.test", "Dev User");
+        final MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("Authorization", "Bearer " + token);
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        final org.ihtsdo.refsetservice.model.User user = handler.authenticate("ignored");
+
+        assertEquals("dev.user@stub-entra.test", user.getUserName());
+    }
+
+    /**
+     * Configured identifier claim can be {@code preferred_username} instead of {@code email}.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testAuthenticateWithBearerTokenUsesConfiguredIdentifierClaim() throws Exception {
+
+        final Properties properties = new Properties();
+        properties.setProperty("jwks.endpoint", jwksBaseUrl);
+        properties.setProperty("authority", testIssuer);
+        properties.setProperty("client.id", testClientId);
+        properties.setProperty("user.identifier.claim", "preferred_username");
+        final EntraIDSecurityServiceHandler handler = new EntraIDSecurityServiceHandler();
+        handler.setProperties(properties);
+
+        final Algorithm algorithm = Algorithm.RSA256(null, (RSAPrivateKey) keyPair.getPrivate());
+        final String token = JWT.create()
+            .withKeyId(KID)
+            .withIssuer(testIssuer)
+            .withAudience(testClientId)
+            .withSubject(UUID.randomUUID().toString())
+            .withIssuedAt(new Date())
+            .withExpiresAt(new Date(System.currentTimeMillis() + 3600_000L))
+            .withClaim("preferred_username", "pref.user@stub-entra.test")
+            .withClaim("name", "Pref User")
+            .sign(algorithm);
+
+        final org.ihtsdo.refsetservice.model.User user = handler.authenticateWithBearerToken(token);
+
+        assertEquals("pref.user@stub-entra.test", user.getUserName());
+        assertEquals("Pref User", user.getName());
+    }
+
+    /**
+     * {@link EntraIDSecurityServiceHandler#completeBrowserLogin} exchanges the code then validates the returned JWT.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testCompleteBrowserLoginExchangesStubIdToken() throws Exception {
+
+        final String jwt = mintAccessToken((RSAPrivateKey) keyPair.getPrivate(), testIssuer, testClientId, "dev.user@stub-entra.test", "Dev User");
+        final HttpServer tokenServer = startJsonPostServer("{\"id_token\":\"" + jwt + "\"}");
+        try {
+            final Properties properties = new Properties();
+            properties.setProperty("jwks.endpoint", jwksBaseUrl);
+            properties.setProperty("authority", testIssuer);
+            properties.setProperty("client.id", testClientId);
+            properties.setProperty("client.secret", "stub-secret");
+            properties.setProperty("token.endpoint", "http://127.0.0.1:" + tokenServer.getAddress().getPort() + "/token");
+            properties.setProperty("redirect.uri", "http://localhost:8888/callback");
+            final EntraIDSecurityServiceHandler handler = new EntraIDSecurityServiceHandler();
+            handler.setProperties(properties);
+
+            final org.ihtsdo.refsetservice.model.User user =
+                handler.completeBrowserLogin(new BrowserLoginCallback("auth-code", null, null, "state-1", "state-1"));
+
+            assertEquals("dev.user@stub-entra.test", user.getUserName());
+        } finally {
+            tokenServer.stop(0);
+        }
+    }
+
     private EntraIDSecurityServiceHandler configuredHandler() throws Exception {
 
         final Properties properties = new Properties();
@@ -278,5 +367,36 @@ public class EntraIDSecurityServiceHandlerStubJwksTest {
             bytes = Arrays.copyOfRange(bytes, 1, bytes.length);
         }
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    /**
+     * Starts a local POST endpoint that returns a JSON body.
+     *
+     * @param jsonBody response body
+     * @return started server
+     * @throws Exception the exception
+     */
+    private static HttpServer startJsonPostServer(final String jsonBody) throws Exception {
+
+        final HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/token", ex -> {
+
+            if (!"POST".equalsIgnoreCase(ex.getRequestMethod())) {
+                ex.sendResponseHeaders(405, -1);
+                ex.close();
+                return;
+            }
+            try (InputStream in = ex.getRequestBody()) {
+                in.readAllBytes();
+            }
+            final byte[] body = jsonBody.getBytes(StandardCharsets.UTF_8);
+            ex.getResponseHeaders().set("Content-Type", "application/json");
+            ex.sendResponseHeaders(200, body.length);
+            try (OutputStream os = ex.getResponseBody()) {
+                os.write(body);
+            }
+        });
+        server.start();
+        return server;
     }
 }

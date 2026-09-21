@@ -75,9 +75,24 @@ public class OrganizationService extends BaseService {
     private static String crowdUnitTestSkip;
 
     static {
+        appUrlRoot = null;
+        crowdUnitTestSkip = null;
+    }
 
-        appUrlRoot = PropertyUtility.getProperties().getProperty("app.url.root");
-        crowdUnitTestSkip = PropertyUtility.getProperty("crowd.unit.test.skip");
+    private static String getAppUrlRoot() {
+
+        if (appUrlRoot == null) {
+            appUrlRoot = PropertyUtility.getProperties().getProperty("app.url.root");
+        }
+        return appUrlRoot;
+    }
+
+    private static String getCrowdUnitTestSkip() {
+
+        if (crowdUnitTestSkip == null) {
+            crowdUnitTestSkip = PropertyUtility.getProperty("crowd.unit.test.skip");
+        }
+        return crowdUnitTestSkip;
     }
 
     /**
@@ -182,7 +197,7 @@ public class OrganizationService extends BaseService {
         }
 
         // Only if all went successfully at this point should the crowd group be created (for the admin team)
-        if (crowdUnitTestSkip == null || !"true".equalsIgnoreCase(crowdUnitTestSkip)) {
+        if (getCrowdUnitTestSkip() == null || !"true".equalsIgnoreCase(getCrowdUnitTestSkip())) {
 
             final String groupName = CrowdGroupNameAlgorithm.buildCrowdGroupName(organization.getCrowdId(), "all", "all", "admin");
 
@@ -1033,8 +1048,8 @@ public class OrganizationService extends BaseService {
             service.setModifiedBy(SecurityService.getUserFromSession().getUserName());
             service.add(request);
 
-            final String acceptUrl = appUrlRoot + "/invite/response?ir=" + request.getId() + "&r=true";
-            final String declineUrl = appUrlRoot + "/invite/response?ir=" + request.getId() + "&r=false";
+            final String acceptUrl = getAppUrlRoot() + "/invite/response?ir=" + request.getId() + "&r=true";
+            final String declineUrl = getAppUrlRoot() + "/invite/response?ir=" + request.getId() + "&r=false";
 
             final String ahrefStyle = "'padding: 8px 12px; border: 1px solid #c3e7fe;border-radius: 2px;"
                 + "font-family: Helvetica, Arial, sans-serif;font-size: 14px; color: #000000;"
@@ -1167,7 +1182,7 @@ public class OrganizationService extends BaseService {
 
             // Go to app
             emailBody.append("    <span style='width: 400px; display: inline-block'>")
-                .append(button.replace("{{BUTTION_LINK}}", appUrlRoot).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
+                .append(button.replace("{{BUTTION_LINK}}", getAppUrlRoot()).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
 
             emailBody.append("</div>");
             emailBody.append("</body>");
@@ -1209,7 +1224,7 @@ public class OrganizationService extends BaseService {
 
             // Go to app
             emailBody.append("    <span style='width: 400px; display: inline-block'>")
-                .append(button.replace("{{BUTTION_LINK}}", appUrlRoot).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
+                .append(button.replace("{{BUTTION_LINK}}", getAppUrlRoot()).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
 
             emailBody.append("</div>");
             emailBody.append("</body>");
@@ -1240,7 +1255,7 @@ public class OrganizationService extends BaseService {
      */
     private static void removeUserFromTeams(final TerminologyService service, final Organization organization, final User userToRemove, final User authUser) {
 
-        if (crowdUnitTestSkip == null || !"true".equalsIgnoreCase(crowdUnitTestSkip)) {
+        if (getCrowdUnitTestSkip() == null || !"true".equalsIgnoreCase(getCrowdUnitTestSkip())) {
 
             LOG.info("CALLING CROWD API from ProjectService updateMemberships");
 

@@ -21,8 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.MediaType;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.MediaType;
 
 import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.lang3.StringUtils;
@@ -87,12 +87,16 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
- * Controller for /concept endpoints.
+ * Controller for /refset endpoints.
  */
 @RestController
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
+@Tag(name = "refset", description = "Refset service endpoints")
+@SecurityRequirement(name = "bearerAuth")
 public class RefsetController extends BaseController {
 
     /** The Constant LOG. */
@@ -111,7 +115,15 @@ public class RefsetController extends BaseController {
     /** Static initialization. */
     static {
 
-        exportFileDir = PropertyUtility.getProperty("export.fileDir") + "/";
+        exportFileDir = null;
+    }
+
+    private static String getExportFileDir() {
+
+        if (exportFileDir == null) {
+            exportFileDir = PropertyUtility.getProperty("export.fileDir") + "/";
+        }
+        return exportFileDir;
     }
 
     /**
@@ -2035,7 +2047,7 @@ public class RefsetController extends BaseController {
         authorizeUser(request);
         try {
 
-            final Path filePath = Paths.get(exportFileDir + fileName);
+            final Path filePath = Paths.get(getExportFileDir() + fileName);
             final Resource file = new UrlResource(filePath.toUri());
 
             if (!file.exists() || !file.isReadable()) {

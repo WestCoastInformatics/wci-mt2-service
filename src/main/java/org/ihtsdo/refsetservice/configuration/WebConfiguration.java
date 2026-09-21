@@ -15,10 +15,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-import org.springframework.web.util.UrlPathHelper;
 
 /**
  * Set up the web settings.
@@ -56,16 +54,5 @@ public class WebConfiguration implements WebMvcConfigurer {
         registry.addRedirectViewController("/swagger", "/swagger-ui/index.html");
         registry.addRedirectViewController("/swagger/", "/swagger-ui/index.html");
         registry.addRedirectViewController("/swagger/index.html", "/swagger-ui/index.html");
-    }
-
-    /* see superclass */
-    @Override
-    public void configurePathMatch(PathMatchConfigurer configurer) {
-
-        UrlPathHelper urlPathHelper = new UrlPathHelper();
-        // Don't decode the URL
-        urlPathHelper.setUrlDecode(false);
-        urlPathHelper.setRemoveSemicolonContent(false);
-        configurer.setUrlPathHelper(urlPathHelper);
     }
 }

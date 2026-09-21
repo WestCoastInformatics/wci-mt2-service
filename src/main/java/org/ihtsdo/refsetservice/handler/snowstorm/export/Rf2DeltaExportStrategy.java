@@ -49,8 +49,12 @@ public class Rf2DeltaExportStrategy extends AbstractMapSetExportStrategy {
     /** The export file dir. */
     private static String exportFileDir;
 
-    static {
-        exportFileDir = PropertyUtility.getProperty("mapexport.fileDir");
+    private static String getExportFileDir() {
+
+        if (exportFileDir == null) {
+            exportFileDir = PropertyUtility.getProperty("mapexport.fileDir");
+        }
+        return exportFileDir;
     }
 
     /**
@@ -271,12 +275,12 @@ public class Rf2DeltaExportStrategy extends AbstractMapSetExportStrategy {
                 LOG.info("uploading snowstorm generated file to S3");
 
                 // store file on s3
-                S3ConnectionWrapper.uploadToS3(deltaAwsVersionedPath, exportFileDir, deltaMt2VersionFileName);
+                S3ConnectionWrapper.uploadToS3(deltaAwsVersionedPath, getExportFileDir(), deltaMt2VersionFileName);
                 FileUtility.deleteDirectory(localSnowGeneratedTempDir.toFile());
 
             } else {
 
-                final Path exportFilePath = Paths.get(exportFileDir, deltaMt2VersionFileName);
+                final Path exportFilePath = Paths.get(getExportFileDir(), deltaMt2VersionFileName);
                 if (!Files.exists(exportFilePath)) {
                     LOG.info("Downloading MT2 delta generated file from S3");
                     S3ConnectionWrapper.downloadFileFromS3(deltaAwsVersionedPath, deltaMt2VersionFileName, exportFilePath.toString());
@@ -356,11 +360,11 @@ public class Rf2DeltaExportStrategy extends AbstractMapSetExportStrategy {
         LOG.info("ready to be zipped source files: {}", sourceFiles);
 
         // zip the files together
-        FileUtility.zipFiles(sourceFiles, Paths.get(exportFileDir, mt2ZipFileName));
+        FileUtility.zipFiles(sourceFiles, Paths.get(getExportFileDir(), mt2ZipFileName));
 
         // Delete directory structure and original zip
         FileUtility.deleteDirectory(builderDirectoryTempDir.toFile());
 
-        return exportFileDir;
+        return getExportFileDir();
     }
 }

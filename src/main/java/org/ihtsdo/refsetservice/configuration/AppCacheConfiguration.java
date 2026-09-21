@@ -10,23 +10,29 @@
 
 package org.ihtsdo.refsetservice.configuration;
 
+import java.net.URI;
+import java.net.URL;
+
+import javax.cache.Caching;
+
+import org.ehcache.config.Configuration;
+import org.ehcache.jsr107.EhcacheCachingProvider;
+import org.ehcache.xml.XmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.cache.ehcache.EhCacheCacheManager;
-import org.springframework.cache.ehcache.EhCacheManagerFactoryBean;
+import org.springframework.cache.jcache.JCacheCacheManager;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 
 /**
- * Cache configuration.
+ * Cache configuration (EhCache 3 via JCache).
  *
  * @author Arun
  */
-@Configuration
+@org.springframework.context.annotation.Configuration
 @EnableCaching
 public class AppCacheConfiguration {
 
@@ -35,32 +41,31 @@ public class AppCacheConfiguration {
     private static final Logger LOG = LoggerFactory.getLogger(AppCacheConfiguration.class);
 
     /**
-     * EhCache manager factory bean. Uses EhCacheManagerFactoryBean to ensure
-     * proper shutdown (dispose) so disk-persistent caches are flushed on exit.
+     * JCache manager. Unique URI per cache manager name so parallel tests do not share one JCache manager.
      *
-     * @return the eh cache manager factory bean
+     * @param cacheManagerName the cache manager name
+     * @return the JCache manager
+     * @throws Exception the exception
      */
-    @Bean
-    public EhCacheManagerFactoryBean ehCacheManagerFactoryBean(
-            @Value("${ehcache.cache.manager.name:refsetServiceCacheManager}") final String cacheManagerName) {
+    @Bean(destroyMethod = "close")
+    public javax.cache.CacheManager jCacheManager(@Value("${ehcache.cache.manager.name:refsetServiceCacheManager}") final String cacheManagerName)
+        throws Exception {
 
-        final EhCacheManagerFactoryBean bean = new EhCacheManagerFactoryBean();
-        bean.setConfigLocation(new ClassPathResource("ehcache.xml"));
-        bean.setShared(false);
-        bean.setCacheManagerName(cacheManagerName);
-        return bean;
+        final URL xmlUrl = new ClassPathResource("ehcache.xml").getURL();
+        final Configuration xmlConfig = new XmlConfiguration(xmlUrl);
+        final EhcacheCachingProvider provider = (EhcacheCachingProvider) Caching.getCachingProvider(EhcacheCachingProvider.class.getName());
+        return provider.getCacheManager(URI.create("ehcache://" + cacheManagerName), xmlConfig);
     }
 
     /**
-     * Cache manager.
+     * Spring cache manager wrapping JCache.
      *
-     * @param ehCacheManager the underlying eh cache manager from factory
+     * @param jCacheManager the JCache manager
      * @return the spring cache manager
      */
     @Bean
-    public CacheManager cacheManager(final net.sf.ehcache.CacheManager ehCacheManager) {
-
-        return new EhCacheCacheManager(ehCacheManager);
+    public CacheManager cacheManager(final javax.cache.CacheManager jCacheManager) {
+        return new JCacheCacheManager(jCacheManager);
     }
 
 }

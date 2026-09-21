@@ -12,6 +12,7 @@ package org.ihtsdo.refsetservice.util;
 
 import java.util.Properties;
 
+import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
 import org.ihtsdo.refsetservice.model.Configurable;
 
 /**
@@ -21,6 +22,9 @@ public final class HandlerUtility {
 
     /** The property key for service handlers. */
     public static final String SERVICE_KEY = "service.handler";
+
+    /** Shared lazy terminology handler. */
+    private static TerminologyServerHandler terminologyHandler;
 
     /**
      * Instantiates an empty {@link HandlerUtility}.
@@ -90,6 +94,46 @@ public final class HandlerUtility {
 
         handler.setProperties(handlerProperties);
         return handler;
+    }
+
+    /**
+     * Lazily constructs the configured {@link TerminologyServerHandler}.
+     *
+     * @return the terminology server handler
+     */
+    public static TerminologyServerHandler createTerminologyHandler() {
+
+        return getOrCreateTerminologyHandler();
+    }
+
+    /**
+     * Returns the cached terminology handler, creating it once under a lock.
+     *
+     * @return the terminology server handler
+     */
+    public static synchronized TerminologyServerHandler getOrCreateTerminologyHandler() {
+
+        if (terminologyHandler == null) {
+            try {
+                final String key = "terminology.handler";
+                final String handlerName = PropertyUtility.getProperty(key);
+                if (handlerName == null || handlerName.isEmpty()) {
+                    throw new Exception("terminology.handler expected and does not exist.");
+                }
+                terminologyHandler = newStandardHandlerInstanceWithConfiguration(key, handlerName, TerminologyServerHandler.class);
+            } catch (final Exception e) {
+                throw new IllegalStateException("Failed to initialize terminology.handler", e);
+            }
+        }
+        return terminologyHandler;
+    }
+
+    /**
+     * Drop the cached terminology handler so the next lookup uses current properties.
+     */
+    public static synchronized void resetTerminologyHandler() {
+
+        terminologyHandler = null;
     }
 
     /**

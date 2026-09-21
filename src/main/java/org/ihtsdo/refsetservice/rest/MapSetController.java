@@ -16,8 +16,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.MediaType;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.MediaType;
 
 import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.lang3.StringUtils;
@@ -69,12 +69,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * The Class MapSetConroller.
  */
 @RestController
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
+@Tag(name = "mapset", description = "Map set and mapping endpoints")
 public class MapSetController extends BaseController {
 
     /** The Constant LOG. */
@@ -154,7 +156,7 @@ public class MapSetController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/mapset", produces = MediaType.APPLICATION_JSON)
-    @Operation(summary = "Find mapset. This call requires authentication with the correct role.", description = API_NOTES, tags = {
+    @Operation(summary = "Find mapset.", description = API_NOTES, tags = {
         "mapset"
     }, responses = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),

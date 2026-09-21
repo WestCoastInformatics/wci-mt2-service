@@ -17,7 +17,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.hibernate5.Hibernate5Module;
+import com.fasterxml.jackson.datatype.hibernate7.Hibernate7Module;
 
 /**
  * Unit test for {@link Mapping}.
@@ -123,7 +123,7 @@ public class MappingUnitTest extends BaseTest {
     private static ObjectMapper hibernateObjectMapper() {
 
         final ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new Hibernate5Module());
+        mapper.registerModule(new Hibernate7Module());
         return mapper;
     }
 }

@@ -9,7 +9,7 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Edition;
@@ -34,12 +34,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controller for /edition endpoints.
  */
 @RestController
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
+@Tag(name = "edition", description = "Edition service endpoints")
 public class EditionController extends BaseController {
 
     /** The Constant LOG. */
@@ -84,7 +86,7 @@ public class EditionController extends BaseController {
      * @return the editions
      * @throws Exception the exception
      */
-    @RequestMapping(method = RequestMethod.GET, value = "/edition/", produces = MediaType.APPLICATION_JSON)
+    @RequestMapping(method = RequestMethod.GET, value = {"/edition", "/edition/"}, produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Get all editions", tags = {
         "edition"
     }, responses = {

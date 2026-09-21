@@ -9,8 +9,8 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.MediaType;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.MediaType;
 
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.DiscussionPost;
@@ -42,6 +42,8 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controller for /discussion endpoints.
@@ -49,6 +51,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
  */
 @RestController
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
+@Tag(name = "discussion", description = "Discussion service endpoints")
+@SecurityRequirement(name = "bearerAuth")
 public class DiscussionController extends BaseController {
 
 	/** The Constant LOG. */
@@ -154,7 +158,10 @@ public class DiscussionController extends BaseController {
 	@Operation(summary = "Add discussion. This call requires authentication with the correct role.", tags = {
 			"discussion" }, responses = { @ApiResponse(responseCode = "201", description = "Added discussion"),
 					@ApiResponse(responseCode = "401", description = "Unauthorized"),
-					@ApiResponse(responseCode = "403", description = "Forbidden") })
+					@ApiResponse(responseCode = "403", description = "Forbidden") },
+			requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Discussion thread to add", required = true,
+					content = @io.swagger.v3.oas.annotations.media.Content(mediaType = MediaType.APPLICATION_JSON,
+							schema = @Schema(implementation = DiscussionThread.class))))
 	@Parameters({ @Parameter(name = "thread", description = "Discussion thread object", required = true) })
 	@RecordMetric
 	public @ResponseBody ResponseEntity<DiscussionThread> createDiscussionThread(

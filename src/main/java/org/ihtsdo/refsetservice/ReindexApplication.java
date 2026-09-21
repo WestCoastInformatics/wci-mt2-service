@@ -15,10 +15,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
+import org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
@@ -42,8 +40,10 @@ import org.springframework.context.annotation.FilterType;
  */
 @Configuration
 @EnableAutoConfiguration(exclude = {
-    FlywayAutoConfiguration.class, ElasticsearchRestClientAutoConfiguration.class, DataSourceAutoConfiguration.class,
-    HibernateJpaAutoConfiguration.class
+    FlywayAutoConfiguration.class, DataSourceAutoConfiguration.class
+}, excludeName = {
+    "org.springframework.boot.elasticsearch.autoconfigure.ElasticsearchRestClientAutoConfiguration",
+    "org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration"
 })
 @ComponentScan(basePackageClasses = PropertyUtility.class, useDefaultFilters = false,
     includeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = PropertyUtility.class))

@@ -28,18 +28,18 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.persistence.EntityManager;
-import javax.persistence.ManyToMany;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status.Family;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status.Family;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -111,32 +111,7 @@ public final class IndexUtility {
     private static List<Class<?>> dateClasses =
         Arrays.asList(Date.class, LocalDate.class, LocalDateTime.class, ZonedDateTime.class, Instant.class, OffsetDateTime.class);
 
-    // Initialize the field names maps
-    static {
-        try {
-
-            final Map<String, Class<?>> reindexMap = new HashMap<>();
-            final String indexProp = PropertyUtility.getProperties().getProperty("app.entity_packages");
-
-            if (indexProp == null) {
-                throw new Exception("Property app.entity_packages must be present.");
-            }
-            final String[] packages = indexProp.split(";");
-            final Reflections reflections = new Reflections(new ConfigurationBuilder().forPackages(packages));
-            for (final Class<?> clazz : reflections.getTypesAnnotatedWith(Indexed.class)) {
-                reindexMap.put(clazz.getSimpleName(), clazz);
-            }
-            final Class<?>[] classes = reindexMap.values().toArray(new Class<?>[0]);
-
-            for (final Class<?> clazz : classes) {
-                stringFieldNames.put(clazz, IndexUtility.getIndexedFieldNames(clazz, "string"));
-                allFieldNames.put(clazz, IndexUtility.getIndexedFieldNames(clazz, "all"));
-                dateFieldNames.put(clazz, IndexUtility.getIndexedFieldNames(clazz, "date"));
-            }
-        } catch (final Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+    // Initialize the field names maps lazily so PropertyUtility is ready.
 
     /**
      * Returns the indexed field names for a given class.

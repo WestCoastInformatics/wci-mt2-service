@@ -1,6 +1,6 @@
 package org.ihtsdo.refsetservice.model;
 
-import javax.persistence.MappedSuperclass;
+import jakarta.persistence.MappedSuperclass;
 
 import org.ihtsdo.refsetservice.util.ModelUtility;
 

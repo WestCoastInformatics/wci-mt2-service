@@ -16,8 +16,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.NotFoundException;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotFoundException;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.Organization;
@@ -49,7 +49,15 @@ public class ProjectService extends BaseService {
     private static String crowdUnitTestSkip;
 
     static {
-        crowdUnitTestSkip = PropertyUtility.getProperty("crowd.unit.test.skip");
+        crowdUnitTestSkip = null;
+    }
+
+    private static String getCrowdUnitTestSkip() {
+
+        if (crowdUnitTestSkip == null) {
+            crowdUnitTestSkip = PropertyUtility.getProperty("crowd.unit.test.skip");
+        }
+        return crowdUnitTestSkip;
     }
 
     /**
@@ -453,7 +461,7 @@ public class ProjectService extends BaseService {
      */
     private static void updateMemberships(final User authUser, final Project project, final Set<String> oldTeams, final Set<String> newTeams) throws Exception {
 
-        if (crowdUnitTestSkip == null || !"true".equalsIgnoreCase(crowdUnitTestSkip)) {
+        if (getCrowdUnitTestSkip() == null || !"true".equalsIgnoreCase(getCrowdUnitTestSkip())) {
 
             LOG.info("CALLING CROWD API from ProjectService updateMemberships");
 

@@ -8,22 +8,55 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 
-import javax.xml.bind.DatatypeConverter;
+import jakarta.xml.bind.DatatypeConverter;
 
 import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.type.SerializationException;
+import org.hibernate.type.descriptor.WrapperOptions;
 import org.hibernate.usertype.UserType;
 
 /**
  * Custom data type for postgres.
  */
-public class JsonBType implements UserType {
+public class JsonBType implements UserType<String> {
 
   /* see superclass */
   @Override
-  public void nullSafeSet(final PreparedStatement st, final Object value, final int index,
-    final SharedSessionContractImplementor session) throws HibernateException, SQLException {
+  public int getSqlType() {
+
+    return Types.OTHER;
+  }
+
+  /* see superclass */
+  @Override
+  public Class<String> returnedClass() {
+
+    return String.class;
+  }
+
+  /* see superclass */
+  @Override
+  public String nullSafeGet(final ResultSet rs, final int position, final WrapperOptions options)
+    throws SQLException {
+
+    final Object value = rs.getObject(position);
+    if (value instanceof String) {
+      final String s = value.toString();
+      try {
+        final byte[] bytes = DatatypeConverter.parseHexBinary(s.substring(14));
+        return new String(bytes, "UTF-8");
+      } catch (final UnsupportedEncodingException e) {
+        return s;
+      }
+    }
+
+    return null;
+  }
+
+  /* see superclass */
+  @Override
+  public void nullSafeSet(final PreparedStatement st, final String value, final int index, final WrapperOptions options)
+    throws SQLException {
 
     if (value == null) {
       st.setNull(index, Types.OTHER);
@@ -34,62 +67,12 @@ public class JsonBType implements UserType {
 
   /* see superclass */
   @Override
-  public Object deepCopy(final Object originalValue) throws HibernateException {
+  public String deepCopy(final String originalValue) {
 
     if (originalValue == null) {
       return null;
     }
-    return new String(originalValue.toString());
-  }
-
-  /* see superclass */
-  @Override
-  public Object nullSafeGet(final ResultSet rs, final String[] names,
-    final SharedSessionContractImplementor session, final Object owner)
-    throws HibernateException, SQLException {
-
-    if (rs.getObject(names[0]) instanceof String) {
-      final String s = rs.getObject(names[0]).toString();
-      try {
-        final byte[] bytes = DatatypeConverter.parseHexBinary(s.substring(14));
-        return new String(bytes, "UTF-8");
-      } catch (final UnsupportedEncodingException e) {
-        return s;
-      }
-    }
-
-    return null;
-
-  }
-
-  /* see superclass */
-  @Override
-  public Serializable disassemble(final Object value) throws HibernateException {
-
-    final Object copy = deepCopy(value);
-
-    if (copy instanceof Serializable) {
-      return (Serializable) copy;
-    }
-
-    throw new SerializationException(
-        String.format("Cannot serialize '%s', %s is not Serializable.", value, value.getClass()),
-        null);
-  }
-
-  /* see superclass */
-  @Override
-  public Object assemble(final Serializable cached, final Object owner) throws HibernateException {
-
-    return deepCopy(cached);
-  }
-
-  /* see superclass */
-  @Override
-  public Object replace(final Object original, final Object target, final Object owner)
-    throws HibernateException {
-
-    return deepCopy(original);
+    return new String(originalValue);
   }
 
   /* see superclass */
@@ -101,7 +84,34 @@ public class JsonBType implements UserType {
 
   /* see superclass */
   @Override
-  public int hashCode(final Object x) throws HibernateException {
+  public Serializable disassemble(final String value) {
+
+    final String copy = deepCopy(value);
+
+    if (copy instanceof Serializable) {
+      return copy;
+    }
+
+    throw new SerializationException(String.format("Cannot serialize '%s', %s is not Serializable.", value, value.getClass()), null);
+  }
+
+  /* see superclass */
+  @Override
+  public String assemble(final Serializable cached, final Object owner) {
+
+    return deepCopy((String) cached);
+  }
+
+  /* see superclass */
+  @Override
+  public String replace(final String original, final String target, final Object owner) {
+
+    return deepCopy(original);
+  }
+
+  /* see superclass */
+  @Override
+  public int hashCode(final String x) {
 
     if (x == null) {
       return 0;
@@ -112,7 +122,7 @@ public class JsonBType implements UserType {
 
   /* see superclass */
   @Override
-  public boolean equals(final Object x, final Object y) throws HibernateException {
+  public boolean equals(final String x, final String y) {
 
     if (x == null && y == null) {
       return true;
@@ -121,22 +131,6 @@ public class JsonBType implements UserType {
     } else {
       return false;
     }
-  }
-
-  /* see superclass */
-  @Override
-  public Class<?> returnedClass() {
-
-    return String.class;
-  }
-
-  /* see superclass */
-  @Override
-  public int[] sqlTypes() {
-
-    return new int[] {
-        Types.JAVA_OBJECT
-    };
   }
 
 }

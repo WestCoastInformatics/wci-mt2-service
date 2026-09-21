@@ -9,7 +9,7 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.ihtsdo.refsetservice.model.ApplicationVersionInfo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,12 +23,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * The Class VersionController.
  */
 @RestController
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
+@Tag(name = "version", description = "Build version endpoints")
 public class VersionController {
 
     /** The build properties. */

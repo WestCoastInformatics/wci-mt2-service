@@ -39,6 +39,9 @@ public class ApplicationStartupListener {
         try (final TerminologyService service = new TerminologyService()) {
             service.clearUserSessions();
 
+            org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection.loadConfigurationFromProperties();
+            org.ihtsdo.refsetservice.terminologyservice.S3ConnectionWrapper.loadConfigurationFromProperties();
+
             final String cacheConceptsEnabled = PropertyUtility.getProperty("cache.terminology.prewarm.enabled");
             final boolean shouldCacheConcepts = cacheConceptsEnabled == null || "true".equalsIgnoreCase(cacheConceptsEnabled);
             if (shouldCacheConcepts) {

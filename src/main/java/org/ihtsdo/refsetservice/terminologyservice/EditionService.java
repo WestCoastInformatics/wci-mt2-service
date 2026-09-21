@@ -14,8 +14,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
@@ -63,24 +63,9 @@ public class EditionService extends BaseService {
     private static final Map<String, Map<Long, String>> DEPENDENCY_MODULE_CACHE = new HashMap<>();
 
 	/** The terminology handler. */
-	private static TerminologyServerHandler terminologyHandler;
+	private static TerminologyServerHandler getTerminologyHandler() {
 
-	static {
-		// Instantiate terminology handler
-		try {
-			String key = "terminology.handler";
-			String handlerName = PropertyUtility.getProperty(key);
-			if (handlerName.isEmpty()) {
-				throw new Exception("terminology.handler expected and does not exist.");
-			}
-
-			terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName,
-					TerminologyServerHandler.class);
-
-		} catch (Exception e) {
-			LOG.error("Failed to initialize terminology.handler - serious error", e);
-			terminologyHandler = null;
-		}
+		return HandlerUtility.getOrCreateTerminologyHandler();
 	}
 
 	/**
@@ -185,7 +170,7 @@ public class EditionService extends BaseService {
 	 * @throws Exception the exception
 	 */
 	public static List<Edition> getAffiliateEditionList() throws Exception {
-		return terminologyHandler.getAffiliateEditionList();
+		return getTerminologyHandler().getAffiliateEditionList();
 	}
 
     /**

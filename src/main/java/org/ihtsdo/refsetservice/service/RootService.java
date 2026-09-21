@@ -3,7 +3,7 @@ package org.ihtsdo.refsetservice.service;
 
 import java.util.List;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 
 import org.ihtsdo.refsetservice.handler.SearchHandler;
 import org.ihtsdo.refsetservice.model.HasId;

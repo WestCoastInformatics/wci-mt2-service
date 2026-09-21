@@ -115,7 +115,7 @@ public class MappingWorkflowServiceTest {
                 () -> MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getLeadUser(), MappingWorkflowAction.ASSIGN,
                     context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assign lead", context.getAdminMapUser().getId()));
 
-            assertEquals(HttpStatus.BAD_REQUEST, thrown.getStatus());
+            assertEquals(HttpStatus.BAD_REQUEST, thrown.getStatusCode());
             assertEquals(MapWorkflowStatus.NEW, context.reloadWorkflow().getWorkflowStatus());
             assertNull(context.reloadWorkflow().getAssignedUser());
         }
@@ -412,7 +412,7 @@ public class MappingWorkflowServiceTest {
             final ResponseStatusException ex = assertThrows(ResponseStatusException.class,
                 () -> MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(), MappingWorkflowAction.FINISH_EDITING,
                     context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Done", null));
-            assertEquals(HttpStatus.CONFLICT, ex.getStatus());
+            assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
 
             assertEquals(MapWorkflowStatus.NEW, context.reloadWorkflow().getWorkflowStatus());
         }
@@ -432,7 +432,7 @@ public class MappingWorkflowServiceTest {
             final ResponseStatusException ex = assertThrows(ResponseStatusException.class,
                 () -> MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(), MappingWorkflowAction.FINISH_EDITING,
                     context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Done", null));
-            assertEquals(HttpStatus.FORBIDDEN, ex.getStatus());
+            assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
 
             final MappingWorkflow reloaded = context.reloadWorkflow();
             assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, reloaded.getWorkflowStatus());
@@ -679,7 +679,7 @@ public class MappingWorkflowServiceTest {
             final ResponseStatusException ex =
                 assertThrows(ResponseStatusException.class, () -> MappingWorkflowService.setWorkflowStatusByAction(context.getService(),
                     context.getViewerUser(), MappingWorkflowAction.ASSIGN, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "No", null));
-            assertEquals(HttpStatus.FORBIDDEN, ex.getStatus());
+            assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
         }
     }
 
@@ -743,7 +743,7 @@ public class MappingWorkflowServiceTest {
             searchParameters.setLimit(1001);
             final ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> MappingWorkflowService
                 .findAssignedWorkflows(context.getService(), context.getSpecialistUser().getUserName(), null, null, null, searchParameters));
-            assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+            assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
         }
     }
 
@@ -798,7 +798,7 @@ public class MappingWorkflowServiceTest {
             searchParameters.setLimit(101);
             final ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> MappingWorkflowService
                 .findRecentlyModifiedWorkflows(context.getService(), context.getSpecialistUser().getUserName(), null, null, searchParameters));
-            assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+            assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
         }
     }
 

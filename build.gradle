@@ -1,6 +1,6 @@
 buildscript {
   ext {
-    springBootVersion = "2.7.18"
+    springBootVersion = "4.1.1"
   }
 
   repositories {
@@ -10,14 +10,13 @@ buildscript {
     maven { url "https://repo.spring.io/milestone" }
     maven { url "https://repo.spring.io/snapshot" }
     maven { url "https://plugins.gradle.org/m2/" }
-    jcenter()
   }
 
   dependencies {
     classpath "org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}"
-    classpath "gradle.plugin.com.github.spotbugs.snom:spotbugs-gradle-plugin:4.7.0"
-    classpath "com.netflix.nebula:gradle-ospackage-plugin:8.4.1"
-	classpath "org.owasp:dependency-check-gradle:8.2.1"
+    classpath "com.github.spotbugs.snom:spotbugs-gradle-plugin:6.0.27"
+    classpath "com.netflix.nebula:gradle-ospackage-plugin:11.11.2"
+    classpath "org.owasp:dependency-check-gradle:12.1.3"
   }
 }
 
@@ -82,22 +81,29 @@ apply plugin: "org.springframework.boot"
 apply plugin: "checkstyle"
 /*
  * The dependency management plugin remains a transitive dependency of spring-boot-gradle-plugin
- * so there�s no need for it to be listed as a classpath dependency in the buildscript configuration.
+ * so there is no need for it to be listed as a classpath dependency in the buildscript configuration.
  */
 apply plugin: "io.spring.dependency-management"
 apply plugin: "maven-publish"
 apply plugin: "application"
-apply plugin: "nebula.deb"
-apply plugin: "nebula.ospackage"
+apply plugin: "com.netflix.nebula.deb"
+apply plugin: "com.netflix.nebula.ospackage"
 apply plugin: "org.owasp.dependencycheck"
 
-mainClassName = "org.ihtsdo.refsetservice.Application"
+application {
+    mainClass = "org.ihtsdo.refsetservice.Application"
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
+}
+
+// Keep Tomcat ahead of Boot 4.1.1's default (11.0.24) for CVEs fixed in 11.0.25+
+ext['tomcat.version'] = '11.0.25'
 
 // apply the version tag to the project.version
 version = version + versionTag
-
-sourceCompatibility = 17
-targetCompatibility = 17
 
 springBoot {
     // generate file META-INF/build-info.properties during the build
@@ -109,6 +115,7 @@ configurations.all {
    exclude group: "org.springframework.boot", module: "spring-boot-starter-logging"
    resolutionStrategy {
     force "com.google.guava:guava:33.0.0-jre"
+    force "commons-beanutils:commons-beanutils:1.11.0"
    }
 }
 
@@ -140,92 +147,84 @@ ospackage {
 	link("var/log/${debAppName}", "/var/opt/${debAppName}/log")
 }
 
-// overrides for spring boot dependency versions
-ext['log4j2.version'] = '2.20.0'
-ext['tomcat.version'] = '9.0.106'
-ext['snakeyaml.version'] = '2.2'
-ext['com.h2database']= 'h2:2.1.210'
-
 // Dependencies - https://docs.gradle.org/current/userguide/declaring_dependencies.html
 dependencies {
 
-  // NOTE: "spring-boot-starter-web" must be the first dependency
-  implementation "org.springframework.boot:spring-boot-starter-web"
+  // NOTE: "spring-boot-starter-webmvc" must be the first dependency
+  implementation "org.springframework.boot:spring-boot-starter-webmvc"
 
   // resteasy required for delete api call with entity
-  implementation "org.jboss.resteasy:resteasy-client:5.0.9.Final"
-  implementation "org.jboss.resteasy:resteasy-jackson2-provider:5.0.9.Final"
+  implementation "org.jboss.resteasy:resteasy-client:7.0.5.Final"
+  implementation "org.jboss.resteasy:resteasy-jackson2-provider:7.0.5.Final"
 
-  implementation "org.springframework:spring-web:5.3.39"
-  implementation "org.springframework:spring-webmvc:5.3.39"
   implementation "org.springframework.boot:spring-boot-starter-log4j2"
-  implementation "org.springframework.boot:spring-boot-devtools"
+  developmentOnly "org.springframework.boot:spring-boot-devtools"
   implementation "org.springframework.boot:spring-boot-starter-actuator"
   implementation "org.springframework.boot:spring-boot-starter-cache"
-  implementation "org.springframework.boot:spring-boot-starter-jersey"
   implementation "org.springframework.boot:spring-boot-properties-migrator"
   implementation "org.springframework.boot:spring-boot-starter-jdbc"
   implementation "org.springframework.boot:spring-boot-starter-tomcat"
-  implementation "org.springframework.session:spring-session-core"
-  implementation "org.springframework.session:spring-session-jdbc"
-  implementation "org.springframework.security:spring-security-core:5.8.16"
-  implementation "org.springframework.security:spring-security-crypto:5.8.16"
-  implementation "org.springframework.security:spring-security-web:5.8.16"
+  implementation "org.springframework.boot:spring-boot-starter-session-jdbc"
+  implementation "org.springframework.boot:spring-boot-starter-flyway"
+  implementation "org.springframework.boot:spring-boot-starter-aspectj"
+  implementation "org.springframework.boot:spring-boot-jackson2"
+  implementation "org.springframework.security:spring-security-core"
+  implementation "org.springframework.security:spring-security-crypto"
+  implementation "org.springframework.security:spring-security-web"
   implementation "org.springframework.cloud:spring-cloud-starter-consul-config"
   implementation "org.springframework.cloud:spring-cloud-starter-consul-discovery"
   implementation "org.springframework.cloud:spring-cloud-starter-vault-config"
   implementation "org.springframework:spring-aop"
   implementation "org.bouncycastle:bcprov-jdk18on:1.78"
-  implementation "joda-time:joda-time:2.12.7"  
+  implementation "joda-time:joda-time:2.12.7"
 
   // Database
-  implementation "org.flywaydb:flyway-mysql:8.5.3"
-  implementation "com.mysql:mysql-connector-j:8.2.0"
+  implementation "org.flywaydb:flyway-mysql"
+  implementation "com.mysql:mysql-connector-j:26.7.0"
 
-  // Hibernate
-  implementation "org.hibernate:hibernate-core:5.6.15.Final"
-  implementation "org.hibernate.search:hibernate-search-mapper-orm:6.0.11.Final"
-  implementation "org.hibernate.search:hibernate-search-backend-lucene:6.0.11.Final"
-  implementation "org.hibernate.search:hibernate-search-backend-elasticsearch:6.0.11.Final"
-  implementation "org.hibernate:hibernate-hikaricp:5.5.9.Final"
-  implementation "com.fasterxml.jackson.datatype:jackson-datatype-hibernate5"
+  // Hibernate ORM 7 (Boot-managed) + Search 8.4 (BOM)
+  implementation "org.hibernate.orm:hibernate-core"
+  implementation "org.hibernate.orm:hibernate-hikaricp"
+  implementation "org.hibernate.search:hibernate-search-mapper-orm"
+  implementation "org.hibernate.search:hibernate-search-backend-lucene"
+  implementation "org.hibernate.search:hibernate-search-backend-elasticsearch"
+  implementation "com.fasterxml.jackson.datatype:jackson-datatype-hibernate7:2.22.2"
 
-  // Springfox is deprecated
-  // implementation "io.springfox:springfox-boot-starter:3.0.0"
-  // implementation "io.springfox:springfox-swagger-ui:3.0.0"
-  implementation "org.springdoc:springdoc-openapi-ui:1.8.0"
-  
-  // Others
-  implementation "org.aspectj:aspectjweaver:1.9.2"
+  implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1"
   implementation "org.apache.commons:commons-text:1.10.0"
-  implementation "com.fasterxml.jackson.core:jackson-core:2.19.1"
   implementation "org.reflections:reflections:0.9.11"
-  implementation "javax.ws.rs:javax.ws.rs-api:2.1.1"
-  implementation "com.sun.mail:javax.mail:1.6.2"
+  implementation "jakarta.ws.rs:jakarta.ws.rs-api"
+  implementation "org.eclipse.angus:jakarta.mail:2.0.5"
+  implementation "jakarta.xml.bind:jakarta.xml.bind-api"
+  implementation "org.glassfish.jaxb:jaxb-runtime"
   implementation "commons-cli:commons-cli:1.4"
-  implementation "cglib:cglib:3.3.0"
-  implementation "com.amazonaws:aws-java-sdk-s3:1.12.633"
+  implementation "commons-io:commons-io:2.16.1"
+  implementation "com.fasterxml.jackson.jakarta.rs:jackson-jakarta-rs-json-provider"
+  implementation "com.amazonaws:aws-java-sdk-s3:1.12.797"
 
-  implementation "net.sf.ehcache:ehcache:2.10.6"
+  implementation "javax.cache:cache-api"
+  implementation "org.ehcache:ehcache:3.10.8:jakarta"
 
   // Security
   implementation "com.auth0:java-jwt:3.8.3"
   implementation "com.auth0:jwks-rsa:0.9.0"
-  
+
   // runtime only
   testRuntimeOnly "com.h2database:h2"
 
   // test dependencies
-  testImplementation "org.springframework.boot:spring-boot-starter-test"
-  spotbugs "com.github.spotbugs:spotbugs:4.8.0"
-  testImplementation "org.junit.jupiter:junit-jupiter-api:5.6.0"
-  testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:5.6.0"
+  testImplementation "org.springframework.boot:spring-boot-starter-webmvc-test"
+  testImplementation "net.bytebuddy:byte-buddy:1.18.14"
+  spotbugs "com.github.spotbugs:spotbugs:4.8.6"
   testImplementation "org.testcontainers:mysql:1.20.0"
+  testImplementation "org.testcontainers:junit-jupiter:1.20.0"
+  testImplementation "com.github.dasniko:testcontainers-keycloak:3.6.0"
 }
 
 dependencyManagement {
   imports {
-    mavenBom "org.springframework.cloud:spring-cloud-dependencies:2021.0.9"
+    mavenBom "org.springframework.cloud:spring-cloud-dependencies:2025.1.3"
+    mavenBom "org.hibernate.search:hibernate-search-bom:8.4.0.Final"
   }
 }
 
@@ -234,34 +233,29 @@ spotbugs {
     ignoreFailures = false
     showStackTraces = true
     showProgress = true
-    // includeFilter = file("include.xml")
     excludeFilter = file("config/spotbugs/exclude.xml")
-    // onlyAnalyze = [ "com.foobar.MyClass", "com.foobar.mypkg.*" ]
-    // jvmArgs = [ "-Duser.language=ja" ]
 }
 spotbugsMain {
     enabled = true
     reports {
-        xml.enabled = false
-        html.enabled = true
+        xml.required = false
+        html.required = true
     }
 }
 spotbugsTest {
     enabled = true
     reports {
-        xml.enabled = false
-        html.enabled = true
+        xml.required = false
+        html.required = true
     }
 }
 
 checkstyle {
-  // config = resources.text.fromFile(file("${project.rootDir}/config/checkstyle/checkstyle.xml"))
   toolVersion = "10.3.1"
   ignoreFailures = true
   checkstyleMain.exclude "**/package-info.java"
   checkstyleTest.exclude "**/package-info.java"
 
-  // end temp
   configProperties = [
     "checkstyle.cache.file"         : rootProject.file(".out/checkstyle/checkstyle.cache"),
     "checkstyle.suppressions.file"  : rootProject.file("config/checkstyle/suppressions.xml"),
@@ -275,7 +269,6 @@ tasks.withType(Checkstyle) {
   reports {
     xml.required = false
     html.required = true
-    html.stylesheet resources.text.fromFile("config/checkstyle/checkstyle-report.xsl")
   }
 }
 
@@ -284,16 +277,23 @@ dependencyCheck {
     format = 'JSON'
     outputDirectory = file("$buildDir/reports/dependency-check")
     suppressionFile = file("dependencies.xml")
+    scanConfigurations = ['productionRuntimeClasspath']
+    analyzers {
+        ossIndex {
+            enabled = false
+        }
+    }
+    nvd {
+        apiKey = System.getenv('NVD_API_KEY')
+    }
 }
 
 test {
    // Use junit platform for unit tests
    systemProperty "spring.profiles.active", "test"
    useJUnitPlatform()
-   //testLogging {
-   //  showStandardStreams = true
-   //}
    exclude "**/*IntegrationTest*"
+   jvmArgs "--add-opens=java.base/java.lang=ALL-UNNAMED"
 }
 
 // Live / external-system tests. Not part of default ./gradlew test.
@@ -308,6 +308,7 @@ task integrationTest(type: Test) {
    useJUnitPlatform()
    include "**/*IntegrationTest*"
    shouldRunAfter test
+   jvmArgs "--add-opens=java.base/java.lang=ALL-UNNAMED"
    testLogging {
       events "passed", "skipped", "failed"
       exceptionFormat "full"
@@ -335,7 +336,7 @@ task reindex(type: JavaExec) {
    classpath = sourceSets.main.runtimeClasspath.filter {
       !it.name.contains("spring-boot-devtools")
    }
-   main = "org.ihtsdo.refsetservice.ReindexApplication"
+   mainClass = "org.ihtsdo.refsetservice.ReindexApplication"
    systemProperties System.getProperties()
    if (project.hasProperty("indexedObjects")) {
       args(project.property("indexedObjects"))
@@ -347,7 +348,7 @@ task reindex(type: JavaExec) {
 task migrateRttRefset(type: JavaExec) {
 
    classpath = sourceSets.main.runtimeClasspath
-   main = "org.ihtsdo.refsetservice.GeneratorApplication"
+   mainClass = "org.ihtsdo.refsetservice.GeneratorApplication"
    systemProperties System.getProperties()
    // arguments to pass to the application
    args ("migrateRttRefset")

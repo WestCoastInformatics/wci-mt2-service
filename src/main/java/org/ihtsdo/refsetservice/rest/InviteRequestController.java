@@ -1,6 +1,6 @@
 package org.ihtsdo.refsetservice.rest;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.InviteRequest;
@@ -26,12 +26,14 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controller for /invite endpoints.
  */
 @RestController
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
+@Tag(name = "invite", description = "Invite/Request service endpoints")
 public class InviteRequestController extends BaseController {
 
 	/** The Constant LOG. */
@@ -41,7 +43,15 @@ public class InviteRequestController extends BaseController {
 	private static String appUrlRoot;
 
 	static {
-		appUrlRoot = PropertyUtility.getProperties().getProperty("app.url.root");
+		appUrlRoot = null;
+	}
+
+	private static String getAppUrlRoot() {
+
+		if (appUrlRoot == null) {
+			appUrlRoot = PropertyUtility.getProperties().getProperty("app.url.root");
+		}
+		return appUrlRoot;
 	}
 
 	/**
@@ -67,7 +77,7 @@ public class InviteRequestController extends BaseController {
 		// no auth - response is from email.
 
 		final HttpHeaders headers = new HttpHeaders();
-		headers.add("Location", appUrlRoot);
+		headers.add("Location", getAppUrlRoot());
 
 		try (final TerminologyService service = new TerminologyService()) {
 

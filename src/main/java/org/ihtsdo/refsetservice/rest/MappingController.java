@@ -21,8 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.MediaType;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
@@ -78,12 +78,14 @@ import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * The Class MappingConroller.
  */
 @RestController
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
+@Tag(name = "mapset", description = "Map set and mapping endpoints")
 public class MappingController extends BaseController {
 
     /** The Constant LOG. */
@@ -327,9 +329,9 @@ public class MappingController extends BaseController {
         "mapset"
     }, responses = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-        @ApiResponse(responseCode = "401", description = "Unauthorized"), @ApiResponse(responseCode = "403", description = "Forbidden"),
         @ApiResponse(responseCode = "404", description = "Resource not found"), @ApiResponse(responseCode = "417", description = "Failed Expectation")
-    })
+    }, requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Export request", required = true,
+        content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = MappingExportRequest.class))))
     @Parameters({
         @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. 447562003", required = true)
     })
@@ -458,7 +460,7 @@ public class MappingController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/mapset/{mapSetInternalId}/mappings/{conceptCode}", produces = MediaType.APPLICATION_JSON)
-    @Operation(summary = "Get mapping. This call requires authentication with the correct role.", tags = {
+    @Operation(summary = "Get mapping.", tags = {
         "mapset"
     }, responses = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
@@ -777,7 +779,7 @@ public class MappingController extends BaseController {
      */
     @RequestMapping(method = RequestMethod.GET, value = "/mappings/workflow/assigned", produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Get currently assigned mapping workflows for the current user.", tags = {
-        "mapping"
+        "mapset"
     })
     @Parameters({
         @Parameter(name = "limit", description = "Maximum number of results (default 10, max 1000)", required = false),
@@ -840,7 +842,7 @@ public class MappingController extends BaseController {
      */
     @RequestMapping(method = RequestMethod.GET, value = "/mappings/workflow/recentlyModified", produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Get mapping workflows most recently modified by the current user.", tags = {
-        "mapping"
+        "mapset"
     })
     @Parameters({
         @Parameter(name = "limit", description = "Maximum number of results (default 10, max 100)", required = false),

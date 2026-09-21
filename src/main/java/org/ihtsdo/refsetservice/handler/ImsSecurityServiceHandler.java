@@ -20,12 +20,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.servlet.http.Cookie;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.servlet.http.Cookie;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.RestException;
@@ -162,7 +162,7 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 
         final Client client = ClientBuilder.newClient();
         final WebTarget target = client.target(url);
-        final javax.ws.rs.core.Cookie newCookie = new javax.ws.rs.core.Cookie(imsCookie.getName(), imsCookie.getValue());
+        final jakarta.ws.rs.core.Cookie newCookie = new jakarta.ws.rs.core.Cookie(imsCookie.getName(), imsCookie.getValue());
 
         try (Response response = target.request(MediaType.APPLICATION_JSON).cookie(newCookie).get()) {
 

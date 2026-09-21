@@ -23,8 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.persistence.Query;
-import javax.persistence.TypedQuery;
+import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
@@ -862,12 +862,12 @@ public final class MappingWorkflowService {
                     result.addItem(MappingWorkflowBulkItemResult.success(conceptCode, updated));
                 } catch (final ResponseStatusException ex) {
                     final String message = StringUtils.isNotBlank(ex.getReason()) ? ex.getReason() : ex.getMessage();
-                    result.addItem(MappingWorkflowBulkItemResult.failure(conceptCode, ex.getStatus().value(), message));
+                    result.addItem(MappingWorkflowBulkItemResult.failure(conceptCode, ex.getStatusCode().value(), message));
                 } catch (final Exception ex) {
                     final ResponseStatusException nested = findNestedResponseStatusException(ex);
                     if (nested != null) {
                         final String message = StringUtils.isNotBlank(nested.getReason()) ? nested.getReason() : nested.getMessage();
-                        result.addItem(MappingWorkflowBulkItemResult.failure(conceptCode, nested.getStatus().value(), message));
+                        result.addItem(MappingWorkflowBulkItemResult.failure(conceptCode, nested.getStatusCode().value(), message));
                     } else {
                         LOG.warn("Bulk mapping workflow action failed for conceptCode={}: {}", conceptCode, ex.getMessage(), ex);
                         result.addItem(MappingWorkflowBulkItemResult.failure(conceptCode, HttpStatus.INTERNAL_SERVER_ERROR.value(),

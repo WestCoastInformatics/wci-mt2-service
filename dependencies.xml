@@ -1,312 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <suppressions
 	xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
-	<suppress>
-		<notes><![CDATA[
-   file name: spring-web-5.3.39.jar
-	   ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org\.springframework/spring\-web@5\.3\.39$
-		</packageUrl>
-		<cve>CVE-2016-1000027</cve>
-		<cve>CVE-2025-41234</cve>
-	</suppress>
 
+	<!-- Consul/Vault config clients are CPE-matched to spring_cloud_config (Config Server).
+	     CVEs below are Config Server issues (monitor webhook, git/svn basedir, native repo, GSM). -->
 	<suppress>
 		<notes><![CDATA[
-      file name: spring-expression-5.3.31.jar
-      ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org\.springframework/spring\-expression@5\.3\.31$
-		</packageUrl>
-		<cve>CVE-2024-38808</cve>
-	</suppress>
-
-	<!-- spring-vault-core -->
-	<suppress>
-		<notes><![CDATA[
-	   file name: spring-vault-core-2.3.2.jar
-	   ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org\.springframework\.vault/spring\-vault\-core@.*$
-		</packageUrl>
-		<cve>CVE-2023-20859</cve>
-	</suppress>
-
-	<suppress>
-		<notes><![CDATA[
-	   file name: spring-vault-core-2.3.2.jar
-	   ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org\.springframework\.vault/spring\-vault\-core@.*$
-		</packageUrl>
-		<cpe>cpe:/a:vmware:spring</cpe>
-	</suppress>
-
-	<suppress>
-		<notes><![CDATA[
-	   file name: spring-vault-core-2.3.2.jar
-	   ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org\.springframework\.vault/spring\-vault\-core@.*$
-		</packageUrl>
-		<cpe>cpe:/a:vmware:spring_vault</cpe>
-	</suppress>
-
-	<!-- spring-cloud-consul-config -->
-	<suppress>
-		<notes><![CDATA[
-	   file name: spring-cloud-consul-config-3.0.3.jar
-	   ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org\.springframework\.cloud/spring\-cloud\-consul\-config@.*$
-		</packageUrl>
-		<cpe>cpe:/a:vmware:spring</cpe>
-	</suppress>
-
-	<suppress>
-		<notes><![CDATA[
-	   file name: spring-cloud-consul-config-3.0.3.jar
-	   ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org\.springframework\.cloud/spring\-cloud\-consul\-config@.*$
-		</packageUrl>
+		False positive: spring-cloud-consul-config is not Spring Cloud Config Server.
+		]]></notes>
+		<packageUrl regex="true">^pkg:maven/org\.springframework\.cloud/spring-cloud-consul-config@.*$</packageUrl>
 		<cpe>cpe:/a:vmware:spring_cloud_config</cpe>
 	</suppress>
-
 	<suppress>
 		<notes><![CDATA[
-	   file name: spring-cloud-starter-consul-config-3.1.4.jar
-	   ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org\.springframework\.vault/spring\-cloud\-starter\-consul\-config@.*$
-		</packageUrl>
-		<cve>CVE-2023-20859</cve>
-	</suppress>
-
-	<suppress>
-		<notes><![CDATA[
-	   file name: spring-cloud-starter-consul-config-3.0.3.jar
-	   ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org\.springframework\.cloud/spring\-cloud\-starter\-consul\-config@.*$
-		</packageUrl>
-		<cpe>cpe:/a:vmware:spring</cpe>
-	</suppress>
-
-	<!-- spring-cloud-starter-vault-config-3.1.3.jar -->
-	<suppress>
-		<notes><![CDATA[
-	   file name: spring-cloud-starter-vault-config-3.1.3.jar
-	   ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org\.springframework\.vault/spring\-cloud\-starter\-vault\-config@.*$
-		</packageUrl>
-		<cve>CVE-2023-20859</cve>
-	</suppress>
-
-	<suppress>
-		<notes><![CDATA[
-	   file name: spring-cloud-starter-vault-config-3.0.3.jar
-	   ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org\.springframework\.cloud/spring\-cloud\-starter\-vault\-config@.*$
-		</packageUrl>
-		<cpe>cpe:/a:vmware:spring</cpe>
-	</suppress>
-
-	<suppress>
-		<notes><![CDATA[
-	   file name: spring-cloud-starter-vault-config-3.0.3.jar
-	   ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org\.springframework\.cloud/spring\-cloud\-starter\-vault\-config@.*$
-		</packageUrl>
+		False positive: spring-cloud-starter-consul-config is not Spring Cloud Config Server.
+		]]></notes>
+		<packageUrl regex="true">^pkg:maven/org\.springframework\.cloud/spring-cloud-starter-consul-config@.*$</packageUrl>
 		<cpe>cpe:/a:vmware:spring_cloud_config</cpe>
 	</suppress>
-
 	<suppress>
 		<notes><![CDATA[
-	   file name: spring-cloud-starter-vault-config-3.0.3.jar
-	   ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org\.springframework\.cloud/spring\-cloud\-starter\-vault\-config@.*$
-		</packageUrl>
-		<cpe>cpe:/a:vmware:spring_cloud_vault</cpe>
-	</suppress>
-
-	<suppress>
-		<notes><![CDATA[
-	   file name: spring-cloud-starter-vault-config-3.0.3.jar
-	   ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org\.springframework\.cloud/spring\-cloud\-starter\-vault\-config@.*$
-		</packageUrl>
-		<cpe>cpe:/a:vmware:spring_vault</cpe>
-	</suppress>
-
-
-	<!-- spring-cloud-vault-config -->
-	<suppress>
-		<notes><![CDATA[
-	   file name: spring-cloud-vault-config-3.0.3.jar
-	   ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org\.springframework\.cloud/spring\-cloud\-vault\-config@.*$
-		</packageUrl>
-		<cpe>cpe:/a:vmware:spring</cpe>
-	</suppress>
-
-	<suppress>
-		<notes><![CDATA[
-	   file name: spring-cloud-vault-config-3.0.3.jar
-	   ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org\.springframework\.cloud/spring\-cloud\-vault\-config@.*$
-		</packageUrl>
+		False positive: spring-cloud-starter-vault-config is not Spring Cloud Config Server.
+		]]></notes>
+		<packageUrl regex="true">^pkg:maven/org\.springframework\.cloud/spring-cloud-starter-vault-config@.*$</packageUrl>
 		<cpe>cpe:/a:vmware:spring_cloud_config</cpe>
 	</suppress>
-
 	<suppress>
 		<notes><![CDATA[
-	   file name: spring-cloud-vault-config-3.0.3.jar
-	   ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org\.springframework\.cloud/spring\-cloud\-vault\-config@.*$
-		</packageUrl>
-		<cpe>cpe:/a:vmware:spring_cloud_vault</cpe>
-	</suppress>
-
-	<suppress>
-		<notes><![CDATA[
-	   file name: spring-cloud-vault-config-3.0.3.jar
-	   ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org\.springframework\.cloud/spring\-cloud\-vault\-config@.*$
-		</packageUrl>
-		<cpe>cpe:/a:vmware:spring_vault</cpe>
-	</suppress>
-
-	<suppress>
-		<notes><![CDATA[
-	   file name: springfox-swagger-ui-3.0.0.jar: swagger-ui-bundle.js
-	   ]]></notes>
-		<packageUrl regex="true">^pkg:javascript/DOMPurify@.*$
-		</packageUrl>
-		<cve>CVE-2020-26870</cve>
-	</suppress>
-
-	<suppress>
-		<notes><![CDATA[
-      file name: spring-security-crypto-5.8.11.jar
-      ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org\.springframework\.security/spring\-security\-crypto@.*$
-		</packageUrl>
-		<vulnerabilityName>CVE-2020-5408</vulnerabilityName>
-		<vulnerabilityName>CVE-2025-22228</vulnerabilityName>
-	</suppress>
-
-	<suppress>
-		<notes><![CDATA[
-	   file name: joda-time-2.12.7.jar
-	   ]]></notes>
-		<packageUrl regex="true">^pkg:maven/joda-time/joda-time@2.12.7
-		</packageUrl>
-		<vulnerabilityName>CVE-2024-23080</vulnerabilityName>
-	</suppress>
-
-	<suppress>
-		<notes><![CDATA[
-	   file name: dom4j-2.1.4.jar
-	   ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org.dom4j/dom4j@2.1.4
-		</packageUrl>
-		<vulnerabilityName>CVE-2023-45960</vulnerabilityName>
-	</suppress>
-
-	<suppress>
-		<notes><![CDATA[
-     file name: ion-java-1.0.2.jar
-     ]]></notes>
-		<packageUrl regex="true">^pkg:maven/software.amazon.ion/ion-java@1.0.2
-		</packageUrl>
-		<vulnerabilityName>CVE-2024-21634</vulnerabilityName>
-	</suppress>
-
-	<suppress>
-		<notes><![CDATA[
-   file name: swagger-ui-5.11.8.jar: swagger-ui-bundle.js
-   ]]></notes>
-		<packageUrl regex="true">^pkg:javascript/DOMPurify@.*$
-		</packageUrl>
-		<vulnerabilityName>CVE-2024-45801</vulnerabilityName>
-		<vulnerabilityName>CVE-2024-47875</vulnerabilityName>
-		<vulnerabilityName>CVE-2025-26791</vulnerabilityName>
-	</suppress>
-
-	<suppress>
-		<notes><![CDATA[
-   file name: swagger-ui-5.11.8.jar: swagger-ui-es-bundle.js
-   ]]></notes>
-		<packageUrl regex="true">^pkg:javascript/DOMPurify@.*$
-		</packageUrl>
-		<vulnerabilityName>CVE-2024-45801</vulnerabilityName>
-		<vulnerabilityName>CVE-2024-47875</vulnerabilityName>
-		<vulnerabilityName>CVE-2025-26791</vulnerabilityName>
-	</suppress>
-
-	<suppress>
-		<notes><![CDATA[
-   file name: lucene-analyzers-common-8.7.0.jar
-   ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org\.apache\.lucene/lucene\-analyzers\-common@.*$
-		</packageUrl>
-		<cve>CVE-2024-45772</cve>
-	</suppress>
-
-	<suppress>
-		<notes><![CDATA[
-   file name: lucene-core-8.7.0.jar
-   ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org\.apache\.lucene/lucene\-core@.*$
-		</packageUrl>
-		<cve>CVE-2024-45772</cve>
-	</suppress>
-
-	<suppress>
-		<notes><![CDATA[
-   file name: lucene-facet-8.7.0.jar
-   ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org\.apache\.lucene/lucene\-facet@.*$
-		</packageUrl>
-		<cve>CVE-2024-45772</cve>
-	</suppress>
-
-	<suppress>
-		<notes><![CDATA[
-   file name: lucene-join-8.7.0.jar
-   ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org\.apache\.lucene/lucene\-join@.*$
-		</packageUrl>
-		<cve>CVE-2024-45772</cve>
-	</suppress>
-
-	<suppress>
-		<notes><![CDATA[
-   file name: lucene-queries-8.7.0.jar
-   ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org\.apache\.lucene/lucene\-queries@.*$
-		</packageUrl>
-		<cve>CVE-2024-45772</cve>
-	</suppress>
-
-	<suppress>
-		<notes><![CDATA[
-   file name: lucene-queryparser-8.7.0.jar
-   ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org\.apache\.lucene/lucene\-queryparser@.*$
-		</packageUrl>
-		<cve>CVE-2024-45772</cve>
-	</suppress>
-
-	<suppress>
-		<notes><![CDATA[
-   file name: lucene-sandbox-8.7.0.jar
-   ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org\.apache\.lucene/lucene\-sandbox@.*$
-		</packageUrl>
-		<cve>CVE-2024-45772</cve>
-	</suppress>
-
-	<suppress>
-		<notes><![CDATA[
-   file name: spring-webmvc-5.3.39.jar
-   ]]></notes>
-		<packageUrl regex="true">^pkg:maven/org\.springframework/spring\-webmvc@5\.3\.39$
-		</packageUrl>
-		<cve>CVE-2024-38816</cve>
+		False positive: spring-cloud-vault-config is not Spring Cloud Config Server.
+		]]></notes>
+		<packageUrl regex="true">^pkg:maven/org\.springframework\.cloud/spring-cloud-vault-config@.*$</packageUrl>
+		<cpe>cpe:/a:vmware:spring_cloud_config</cpe>
 	</suppress>
 
 </suppressions>

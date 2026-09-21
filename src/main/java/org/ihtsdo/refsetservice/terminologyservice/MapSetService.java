@@ -15,8 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityTransaction;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
@@ -49,27 +49,15 @@ public class MapSetService {
     private static final Logger LOG = LoggerFactory.getLogger(MapSetService.class);
 
     /** The config properties. */
-    protected static final Properties PROPERTIES = PropertyUtility.getProperties();
+    protected static Properties getConfigProperties() {
+
+        return PropertyUtility.getProperties();
+    }
 
     /** The terminology handler. */
-    private static TerminologyServerHandler terminologyHandler;
+    private static TerminologyServerHandler getTerminologyHandler() {
 
-    static {
-
-        // Instantiate terminology handler
-        try {
-            final String key = "terminology.handler";
-            final String handlerName = PropertyUtility.getProperty(key);
-            if (handlerName.isEmpty()) {
-                throw new Exception("terminology.handler expected and does not exist.");
-            }
-
-            terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName, TerminologyServerHandler.class);
-
-        } catch (Exception e) {
-            LOG.error("Failed to initialize terminology.handler - serious error", e);
-            terminologyHandler = null;
-        }
+        return HandlerUtility.getOrCreateTerminologyHandler();
     }
 
     /**
@@ -254,13 +242,9 @@ public class MapSetService {
      */
     public static void cacheConceptsForActiveMapSets(final TerminologyService service) throws Exception {
 
-        if (terminologyHandler == null) {
-            LOG.warn("Terminology handler not configured; skipping concept cache");
-            return;
-        }
         final Map<String, String> terminologyToVersion = getTerminologyVersionsFromMapSets(service);
         if (!terminologyToVersion.isEmpty()) {
-            terminologyHandler.cacheConcepts(terminologyToVersion);
+            getTerminologyHandler().cacheConcepts(terminologyToVersion);
         }
     }
 
@@ -273,7 +257,7 @@ public class MapSetService {
      */
     public static List<MapSet> getMapSets(final String branch) throws Exception {
 
-        return terminologyHandler.getMapSets(branch);
+        return getTerminologyHandler().getMapSets(branch);
 
     }
 
@@ -373,7 +357,7 @@ public class MapSetService {
         if (mapSet == null) {
             throw new IllegalArgumentException("MapSet is required for export. No fallback.");
         }
-        return terminologyHandler.exportMapSet(user, mapProject, mapSetExportRequest, mapSet);
+        return getTerminologyHandler().exportMapSet(user, mapProject, mapSetExportRequest, mapSet);
     }
 
     /**
@@ -518,7 +502,7 @@ public class MapSetService {
      */
     public static void clearAllRefsetCaches(final String branch) throws Exception {
 
-        terminologyHandler.clearAllRefsetCaches(branch);
+        getTerminologyHandler().clearAllRefsetCaches(branch);
     }
 
     /**
@@ -530,7 +514,7 @@ public class MapSetService {
      */
     public static String getBranchPath(final MapSet mapSet) throws Exception {
 
-        return terminologyHandler.getBranchPath(mapSet);
+        return getTerminologyHandler().getBranchPath(mapSet);
     }
 
     /**
@@ -542,7 +526,7 @@ public class MapSetService {
      */
     public static Date getRefsetDateFromFormattedString(final String publicationDateString) throws Exception {
 
-        return terminologyHandler.getRefsetDateFromFormattedString(publicationDateString);
+        return getTerminologyHandler().getRefsetDateFromFormattedString(publicationDateString);
     }
 
     /**
@@ -556,7 +540,7 @@ public class MapSetService {
      */
     public static List<String> setRoles(final User user, final Project project, final List<String> roles) throws Exception {
 
-        return terminologyHandler.setRoles(user, project, roles);
+        return getTerminologyHandler().setRoles(user, project, roles);
     }
 
     /**
@@ -568,7 +552,7 @@ public class MapSetService {
      */
     public static List<String> getBranchVersions(final String branch) throws Exception {
 
-        return terminologyHandler.getBranchVersions(branch);
+        return getTerminologyHandler().getBranchVersions(branch);
     }
 
     /**
@@ -580,7 +564,7 @@ public class MapSetService {
      */
     public static void removeMapSetEditHistory(final TerminologyService service, final String refsetCode) throws Exception {
 
-        terminologyHandler.removeMapSetEditHistory(service, refsetCode);
+        getTerminologyHandler().removeMapSetEditHistory(service, refsetCode);
     }
 
     /**
@@ -593,7 +577,7 @@ public class MapSetService {
      */
     public static void setMapSetMemberCount(final TerminologyService service, final MapSet mapSet, final boolean force) throws Exception {
 
-        terminologyHandler.setMapSetMemberCount(service, mapSet, force);
+        getTerminologyHandler().setMapSetMemberCount(service, mapSet, force);
     }
 
     /**
@@ -605,7 +589,7 @@ public class MapSetService {
      */
     public static void removeUpgradeData(final TerminologyService service, final MapSet mapSet) throws Exception {
 
-        terminologyHandler.removeUpgradeData(service, mapSet);
+        getTerminologyHandler().removeUpgradeData(service, mapSet);
     }
 
     /**
@@ -617,7 +601,7 @@ public class MapSetService {
      */
     public static void replaceMapSetWithEditHistory(final TerminologyService service, final MapSet mapSet) throws Exception {
 
-        terminologyHandler.replaceMapSetWithEditHistory(service, mapSet);
+        getTerminologyHandler().replaceMapSetWithEditHistory(service, mapSet);
     }
 
     /**
@@ -630,7 +614,7 @@ public class MapSetService {
      */
     public static MapSet setMapSetPermissions(final User user, final MapSet mapSet) throws Exception {
 
-        return terminologyHandler.setMapSetPermissions(user, mapSet);
+        return getTerminologyHandler().setMapSetPermissions(user, mapSet);
     }
 
 }

@@ -9,15 +9,14 @@
  */
 package org.ihtsdo.refsetservice;
 
-import javax.persistence.PersistenceException;
+import jakarta.persistence.PersistenceException;
 
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
+import org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -32,7 +31,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
  * Entry point for webapp.
  */
 @SpringBootApplication(exclude = {
-    FlywayAutoConfiguration.class, ElasticsearchRestClientAutoConfiguration.class
+    FlywayAutoConfiguration.class
+}, excludeName = {
+    "org.springframework.boot.elasticsearch.autoconfigure.ElasticsearchRestClientAutoConfiguration"
 })
 @EnableScheduling
 @EnableAsync
@@ -40,11 +41,16 @@ import io.swagger.v3.oas.annotations.tags.Tag;
     info = @Info(title = "SNOMED Mapping Service API", version = "1.0.0", description = "Endponts for accessing and interacting with the refset service."),
     tags = {
         @Tag(name = "artifact", description = "Artifact service endpoints"), @Tag(name = "audit", description = "Audit service endpoints"),
-        @Tag(name = "concept", description = "Concept service endpoints"), @Tag(name = "discussion", description = "Discussion service endpoints"),
-        @Tag(name = "edition", description = "Edition service endpoints"), @Tag(name = "invite", description = "Invite/Request service endpoints"),
-        @Tag(name = "mapset", description = "Mapping service endpoints"), @Tag(name = "organization", description = "Organization service endpoints"),
-        @Tag(name = "project", description = "Project service endpoints"), @Tag(name = "refset", description = "Refset service endpoints"),
+        @Tag(name = "cache", description = "Cache management endpoints"), @Tag(name = "concept", description = "Concept service endpoints"),
+        @Tag(name = "discussion", description = "Discussion service endpoints"), @Tag(name = "edition", description = "Edition service endpoints"),
+        @Tag(name = "invite", description = "Invite/Request service endpoints"), @Tag(name = "jobs", description = "Asynchronous job endpoints"),
+        @Tag(name = "map advice", description = "Map advice endpoints"), @Tag(name = "map relation", description = "Map relation endpoints"),
+        @Tag(name = "mapping", description = "Per-concept mapping workflow endpoints"), @Tag(name = "mapset", description = "Map set and mapping endpoints"),
+        @Tag(name = "organization", description = "Organization service endpoints"), @Tag(name = "project", description = "Project service endpoints"),
+        @Tag(name = "refset", description = "Refset service endpoints"), @Tag(name = "report", description = "Report service endpoints"),
+        @Tag(name = "application metadata", description = "Application metadata endpoints"),
         @Tag(name = "security", description = "Security/auth service endpoints"), @Tag(name = "team", description = "Team service endpoints"),
+        @Tag(name = "user", description = "User service endpoints"), @Tag(name = "version", description = "Build version endpoints")
     }, servers = {
         @Server(description = "Current Instance", url = "/refsetservice")
     })

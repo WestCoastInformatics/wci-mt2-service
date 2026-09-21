@@ -36,8 +36,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.json.JacksonTester;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.test.json.Jackson2Tester;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -73,7 +73,7 @@ public class RefsetEditingIntegrationTests extends AbstractRefsetTests {
         }
 
         setObjectMapper(new ObjectMapper());
-        JacksonTester.initFields(this, getObjectMapper());
+        Jackson2Tester.initFields(this, getObjectMapper());
         setBaseUrl("/refset");
 
         if (firstTimeSetup) {

@@ -87,7 +87,10 @@ public class RefsetService {
     private static final String APP_PREFIX = "rt2-";
 
     /** The terminology handler. */
-    private static TerminologyServerHandler terminologyHandler;
+    private static TerminologyServerHandler getTerminologyHandler() {
+
+        return HandlerUtility.getOrCreateTerminologyHandler();
+    }
 
     /** The refset to language map. */
     private static final Map<String, String> REFSET_TO_LANGUAGE_MAP = new HashMap<>();
@@ -157,23 +160,12 @@ public class RefsetService {
     /** The app url root. */
     private static String appUrlRoot;
 
-    static {
-        appUrlRoot = PropertyUtility.getProperties().getProperty("app.url.root");
+    private static String getAppUrlRoot() {
 
-        // Instantiate terminology handler
-        try {
-            String key = "terminology.handler";
-            String handlerName = PropertyUtility.getProperty(key);
-            if (handlerName.isEmpty()) {
-                throw new Exception("terminology.handler expected and does not exist.");
-            }
-
-            terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName, TerminologyServerHandler.class);
-
-        } catch (Exception e) {
-            LOG.error("Failed to initialize terminology.handler - serious error", e);
-            terminologyHandler = null;
+        if (appUrlRoot == null) {
+            appUrlRoot = PropertyUtility.getProperties().getProperty("app.url.root");
         }
+        return appUrlRoot;
     }
 
     /**
@@ -187,7 +179,7 @@ public class RefsetService {
      */
     public static Object createRefset(final TerminologyService service, final User user, final Refset refsetEditParameters) throws Exception {
 
-        return terminologyHandler.createRefset(service, user, refsetEditParameters);
+        return getTerminologyHandler().createRefset(service, user, refsetEditParameters);
 
     }
 
@@ -899,7 +891,7 @@ public class RefsetService {
      */
     private static void updateRefsetConcept(final Refset refset, final boolean active, final String moduleId) throws Exception {
 
-        terminologyHandler.updateRefsetConcept(refset, active, moduleId);
+        getTerminologyHandler().updateRefsetConcept(refset, active, moduleId);
     }
 
     /**
@@ -1020,7 +1012,7 @@ public class RefsetService {
      */
     public static ResultListConcept getRefsetConcepts(final TerminologyService service, final String branch, final boolean areParentConcepts) throws Exception {
 
-        return terminologyHandler.getRefsetConcepts(service, branch, areParentConcepts);
+        return getTerminologyHandler().getRefsetConcepts(service, branch, areParentConcepts);
 
     }
 
@@ -2207,7 +2199,7 @@ public class RefsetService {
      */
     public static List<String> getBranchVersions(final String editionPath) throws Exception {
 
-        return terminologyHandler.getBranchVersions(editionPath);
+        return getTerminologyHandler().getBranchVersions(editionPath);
 
     }
 
@@ -2328,7 +2320,7 @@ public class RefsetService {
             final String version =
                 (refset.getVersionDate() != null) ? refset.getVersionDate().toString().substring(0, 10) : refset.getVersionStatus().toString();
 
-            final String refsetUrl = appUrlRoot + "/details/" + refset.getRefsetId() + "/" + StringUtility.encodeValue(version).replace("+", "%20");
+            final String refsetUrl = getAppUrlRoot() + "/details/" + refset.getRefsetId() + "/" + StringUtility.encodeValue(version).replace("+", "%20");
 
             // Title
             emailBody.append("Hello, ").append(recipient).append(LanguageUtility.COMMA_SPLIT_CHARACTER).append(System.getProperty("line.separator"))
@@ -2474,7 +2466,7 @@ public class RefsetService {
             emailBody.append("Users can be added and configured through the SNOMED CT Reference Set Tool Team pages. ")
                 .append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
-            emailBody.append("Go to the Reference Set Tool: ").append(appUrlRoot).append(System.getProperty("line.separator"))
+            emailBody.append("Go to the Reference Set Tool: ").append(getAppUrlRoot()).append(System.getProperty("line.separator"))
                 .append(System.getProperty("line.separator"));
 
             emailBody.append(System.getProperty("line.separator")).append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
@@ -2737,8 +2729,8 @@ public class RefsetService {
             service.setModifiedBy(authUser.getUserName());
             service.add(request);
 
-            final String acceptUrl = appUrlRoot + "/invite/response?ir=" + request.getId() + "&r=true";
-            final String declineUrl = appUrlRoot + "/invite/response?ir=" + request.getId() + "&r=false";
+            final String acceptUrl = getAppUrlRoot() + "/invite/response?ir=" + request.getId() + "&r=true";
+            final String declineUrl = getAppUrlRoot() + "/invite/response?ir=" + request.getId() + "&r=false";
 
             final String ahrefStyle = "'padding: 8px 12px; border: 1px solid #c3e7fe;border-radius: 2px;"
                 + "font-family: Helvetica, Arial, sans-serif;font-size: 14px; color: #000000;"
@@ -2874,7 +2866,7 @@ public class RefsetService {
 
             // Go to app
             emailBody.append("    <span style='width: 400px; display: inline-block'>")
-                .append(button.replace("{{BUTTION_LINK}}", appUrlRoot).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
+                .append(button.replace("{{BUTTION_LINK}}", getAppUrlRoot()).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
 
             emailBody.append("</div>");
             emailBody.append("</body>");
@@ -2910,7 +2902,7 @@ public class RefsetService {
 
             // Go to app
             emailBody.append("    <span style='width: 400px; display: inline-block'>")
-                .append(button.replace("{{BUTTION_LINK}}", appUrlRoot).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
+                .append(button.replace("{{BUTTION_LINK}}", getAppUrlRoot()).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
 
             emailBody.append("</div>");
             emailBody.append("</body>");
@@ -2998,7 +2990,7 @@ public class RefsetService {
      */
     public static String identifyRefsetName(final Refset dbRefset) throws Exception {
 
-        return terminologyHandler.identifyRefsetName(dbRefset);
+        return getTerminologyHandler().identifyRefsetName(dbRefset);
 
     }
 

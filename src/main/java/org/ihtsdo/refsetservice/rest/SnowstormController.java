@@ -12,9 +12,9 @@ package org.ihtsdo.refsetservice.rest;
 import java.io.BufferedReader;
 import java.util.stream.Collectors;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;

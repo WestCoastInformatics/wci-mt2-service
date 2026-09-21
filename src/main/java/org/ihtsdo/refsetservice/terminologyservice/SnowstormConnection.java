@@ -24,15 +24,15 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation.Builder;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.NewCookie;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status.Family;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.Invocation.Builder;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.NewCookie;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status.Family;
 
 import org.ihtsdo.refsetservice.util.LocalException;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
@@ -43,7 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import com.fasterxml.jackson.jakarta.rs.json.JacksonJsonProvider;
 
 /**
  * Class to handle making calls to Snowstorm.
@@ -112,9 +112,9 @@ public final class SnowstormConnection {
         BASIC
     }
 
-    /** Static initialization. */
+    /** Static initialization deferred until PropertyUtility is ready. */
     static {
-        loadConfigurationFromProperties();
+        // n/a
     }
 
     /**
@@ -324,6 +324,9 @@ public final class SnowstormConnection {
      */
     public static String getRestBaseUrl() {
 
+        if (restBaseUrl == null) {
+            loadConfigurationFromProperties();
+        }
         return restBaseUrl;
     }
 
@@ -644,6 +647,9 @@ public final class SnowstormConnection {
      */
     public static Client getClient() {
 
+        if (restBaseUrl == null) {
+            loadConfigurationFromProperties();
+        }
         if (sharedClient == null) {
             synchronized (SnowstormConnection.class) {
                 if (sharedClient == null) {

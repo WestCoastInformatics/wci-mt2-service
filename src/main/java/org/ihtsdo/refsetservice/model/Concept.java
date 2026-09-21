@@ -18,6 +18,8 @@ import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 /**
  * Represents a concept with a code from a terminology.
  *
@@ -28,7 +30,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * }
  * </pre>
  */
- @JsonInclude(JsonInclude.Include.NON_NULL)
+@Schema(description = "A concept with a code from a terminology")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Concept extends AbstractHasModified implements Comparable<Concept> {
 
   /** The code. */
@@ -203,6 +206,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
    *
    * @return the code
    */
+  @Schema(description = "Concept code")
   public String getCode() {
 
     return code;
@@ -223,6 +227,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
    *
    * @return the member ID
    */
+  @Schema(description = "UUID of the refset membership")
   public String getMemberId() {
 
     return memberId;
@@ -243,6 +248,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
    *
    * @return the name
    */
+  @Schema(description = "Preferred name")
   public String getName() {
 
     return name;
@@ -263,6 +269,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
    *
    * @return the fsn
    */
+  @Schema(description = "Fully specified name")
   public String getFsn() {
 
     return fsn;
@@ -283,6 +290,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
    *
    * @return the terminology
    */
+  @Schema(description = "Terminology, e.g. SNOMEDCT-NO")
   public String getTerminology() {
 
     return terminology;
@@ -303,6 +311,7 @@ public class Concept extends AbstractHasModified implements Comparable<Concept> 
    *
    * @return the version
    */
+  @Schema(description = "Terminology version")
   public String getVersion() {
 
     return version;

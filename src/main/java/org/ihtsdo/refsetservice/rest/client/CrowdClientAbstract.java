@@ -21,7 +21,7 @@ import java.util.Base64;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
@@ -47,10 +47,16 @@ public abstract class CrowdClientAbstract {
 
 	/** initialization of required params */
 	static {
-		// make sure Crowd URL includes the context root
-		baseUrl = StringUtils.trim(PropertyUtility.getProperty("crowd.baseUrl"));
-		username = StringUtils.trim(PropertyUtility.getProperty("crowd.username"));
-		password = StringUtils.trim(PropertyUtility.getProperty("crowd.password"));
+		baseUrl = null;
+	}
+
+	private static void ensureCrowdConfig() {
+
+		if (baseUrl == null) {
+			baseUrl = StringUtils.trim(PropertyUtility.getProperty("crowd.baseUrl"));
+			username = StringUtils.trim(PropertyUtility.getProperty("crowd.username"));
+			password = StringUtils.trim(PropertyUtility.getProperty("crowd.password"));
+		}
 	}
 
 	/** The accept. */
@@ -74,6 +80,7 @@ public abstract class CrowdClientAbstract {
 	 */
 	protected static String getBaseUrl() {
 
+		ensureCrowdConfig();
 		return baseUrl;
 	}
 

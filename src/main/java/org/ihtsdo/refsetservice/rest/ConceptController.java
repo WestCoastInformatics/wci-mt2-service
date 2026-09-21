@@ -9,8 +9,8 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.MediaType;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
@@ -20,6 +20,7 @@ import org.ihtsdo.refsetservice.terminologyservice.ConceptService;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,13 +35,17 @@ import org.springframework.web.bind.annotation.RestController;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controller for /concept endpoints.
  */
 @RestController
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
+@Tag(name = "concept", description = "Concept service endpoints")
 public class ConceptController extends BaseController {
 
     /** The Constant LOG. */
@@ -64,11 +69,11 @@ public class ConceptController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/concept/{terminology}/{version}/{code}", produces = MediaType.APPLICATION_JSON)
-    @Operation(summary = "Get concept.  This call requires authentication with the correct role.", tags = {
+    @Operation(summary = "Get concept.", tags = {
         "concept"
     }, responses = {
-        @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-        @ApiResponse(responseCode = "401", description = "Unauthorized"), @ApiResponse(responseCode = "403", description = "Forbidden"),
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = Concept.class))),
         @ApiResponse(responseCode = "404", description = "Resource not found"), @ApiResponse(responseCode = "417", description = "Failed Expectation")
     })
     @Parameters({
@@ -107,21 +112,22 @@ public class ConceptController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/concept/{terminology}/{version}", produces = MediaType.APPLICATION_JSON)
-    @Operation(summary = "Get concept.  This call requires authentication with the correct role.", tags = {
+    @Operation(summary = "Find concepts.", tags = {
         "concept"
     }, responses = {
-        @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ResultListConcept.class))),
         @ApiResponse(responseCode = "400", description = "Bad Request"), @ApiResponse(responseCode = "404", description = "Resource not found"),
         @ApiResponse(responseCode = "417", description = "Failed Expectation")
     })
     @Parameters({
         @Parameter(name = "terminology", description = "Concept terminology", required = true, example = "SNOMEDCT-NO or ICD10NO"),
-        @Parameter(name = "version", description = "Concept terminology version", required = true)
+        @Parameter(name = "version", description = "Concept terminology version", required = true, example = "2025-12-15 or 20240723")
     })
     @RecordMetric
     public @ResponseBody ResponseEntity<ResultListConcept> findConcept(@PathVariable(value = "terminology") final String terminology,
-        @PathVariable(value = "version") final String version, @ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult)
-        throws Exception {
+        @PathVariable(value = "version") final String version, @ParameterObject @ModelAttribute final SearchParameters searchParameters,
+        final BindingResult bindingResult) throws Exception {
 
         // Check to make sure parameters were properly bound to variables.
         checkBinding(bindingResult);

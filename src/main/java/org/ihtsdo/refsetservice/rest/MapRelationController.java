@@ -1,6 +1,6 @@
 package org.ihtsdo.refsetservice.rest;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
@@ -30,12 +30,14 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controller for /mapRelation endpoints.
  */
 @RestController
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
+@Tag(name = "map relation", description = "Map relation endpoints")
 public class MapRelationController extends BaseController {
 
     /** The Constant LOG. */
@@ -50,18 +52,19 @@ public class MapRelationController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.POST, value = "/mapRelation", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-    @Operation(summary = "Add map relation.  This call requires authentication with the correct role.", tags = {
+    @Operation(summary = "Add map relation.", tags = {
         "map relation"
     }, responses = {
-        @ApiResponse(responseCode = "201", description = "Successfully create map map relation"),
-        @ApiResponse(responseCode = "401", description = "Unauthorized"), @ApiResponse(responseCode = "403", description = "Forbidden"),
+        @ApiResponse(responseCode = "201", description = "Successfully created map relation",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = MapRelation.class))),
         @ApiResponse(responseCode = "404", description = "Not Found"), @ApiResponse(responseCode = "409", description = "Conflict"),
         @ApiResponse(responseCode = "417", description = "Failed Expectation")
-    }, requestBody = @RequestBody(description = "Map Project to add", required = true, content = {
-        @Content(mediaType = "application/json", schema = @Schema(implementation = MapRelation.class))
+    }, requestBody = @RequestBody(description = "Map relation to add", required = true, content = {
+        @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = MapRelation.class))
     }))
     @RecordMetric
-    public @ResponseBody ResponseEntity<MapRelation> createMapRelation(final MapRelation mapRelation) throws Exception {
+    public @ResponseBody ResponseEntity<MapRelation> createMapRelation(
+        @org.springframework.web.bind.annotation.RequestBody final MapRelation mapRelation) throws Exception {
 
         if (StringUtils.isBlank(mapRelation.getTerminologyId())) {
             final String errorMessage = "Map relation terminology id is required.";
@@ -107,7 +110,8 @@ public class MapRelationController extends BaseController {
     @Operation(summary = "Get mapRelation", tags = {
         "map relation"
     }, responses = {
-        @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information")
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = MapRelation.class)))
     })
     @Parameters({
         @Parameter(name = "id", description = "MapRelation id, e.g. &lt;uuid&gt;", required = true)
@@ -132,11 +136,12 @@ public class MapRelationController extends BaseController {
      * @return the map Relations
      * @throws Exception the exception
      */
-    @RequestMapping(method = RequestMethod.GET, value = "/mapRelation/", produces = MediaType.APPLICATION_JSON)
+    @RequestMapping(method = RequestMethod.GET, value = {"/mapRelation", "/mapRelation/"}, produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Get all map Relations", tags = {
         "map relation"
     }, responses = {
-        @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information")
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ResultList.class)))
     })
     @RecordMetric
     public ResponseEntity<ResultList<MapRelation>> getMapRelations() throws Exception {
@@ -161,17 +166,19 @@ public class MapRelationController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.PUT, value = "/mapRelation/{id}", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-    @Operation(summary = "Update map relation.  This call requires authentication with the correct role.", tags = {
+    @Operation(summary = "Update map relation.", tags = {
         "map relation"
     }, responses = {
-        @ApiResponse(responseCode = "200", description = "Update create map map relation"), @ApiResponse(responseCode = "401", description = "Unauthorized"),
-        @ApiResponse(responseCode = "403", description = "Forbidden"), @ApiResponse(responseCode = "404", description = "Not Found"),
+        @ApiResponse(responseCode = "200", description = "Updated map relation",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = MapRelation.class))),
+        @ApiResponse(responseCode = "404", description = "Not Found"),
         @ApiResponse(responseCode = "417", description = "Failed Expectation")
-    }, requestBody = @RequestBody(description = "Map Project to update", required = true, content = {
-        @Content(mediaType = "application/json", schema = @Schema(implementation = MapRelation.class))
+    }, requestBody = @RequestBody(description = "Map relation to update", required = true, content = {
+        @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = MapRelation.class))
     }))
     @RecordMetric
-    public @ResponseBody ResponseEntity<MapRelation> updateMapRelation(@PathVariable(value = "id") final String id, final MapRelation mapRelation)
+    public @ResponseBody ResponseEntity<MapRelation> updateMapRelation(@PathVariable(value = "id") final String id,
+        @org.springframework.web.bind.annotation.RequestBody final MapRelation mapRelation)
         throws Exception {
 
         if (mapRelation == null || !StringUtils.equals(id, mapRelation.getId())) {
@@ -222,22 +229,13 @@ public class MapRelationController extends BaseController {
     @Operation(summary = "Find map relations.", tags = {
         "map relation"
     }, responses = {
-        @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ResultList.class))),
         @ApiResponse(responseCode = "417", description = "Failed Expectation")
-    })
-    @Parameters({
-        @Parameter(name = "query", description = "The search query", required = false),
-        @Parameter(name = "limit", description = "Maximum number of search results", required = false),
-        @Parameter(name = "offset", description = "Start index of search results", required = false),
-        @Parameter(name = "activeOnly", description = "Only active content", required = false),
-        @Parameter(name = "sort", description = "Sort field for search results", required = false),
-        @Parameter(name = "sortAscending", description = "Sort ascending (true) or descending (false)", required = false),
-        @Parameter(name = "editing", description = "Search is for editing", required = false),
-        @Parameter(name = "searchAfter", description = "Search after cursor", required = false)
     })
     @RecordMetric
     public @ResponseBody ResponseEntity<ResultList<MapRelation>> getMapRelations(
-        @Parameter(hidden = true) @ModelAttribute final SearchParameters searchParameters,
+        @ModelAttribute final SearchParameters searchParameters,
         final BindingResult bindingResult) throws Exception {
         // no auth required
 

@@ -4,9 +4,9 @@ package org.ihtsdo.refsetservice.test;
 import java.lang.reflect.Field;
 import java.util.Set;
 
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.ihtsdo.refsetservice.model.HasId;
@@ -38,14 +38,12 @@ import org.slf4j.LoggerFactory;
  * <ul>
  * <li>All Java primitive types.
  * <li>Interfaces.
- * <li>All non-final classes if <a href="http://cglib.sourceforge.net">cglib</a> is on your classpath -- this uses cglib even when a no-argument constructor is
- * available because a constructor might have side effects that you wouldn.t want to trigger in a unit test.
+ * <li>All non-final classes via Byte Buddy subclassing.
  * <li>Java 5 enums.
  * </ul>
  * 
  * <p>
- * Properties whose types are classes declared <code>final</code> are not supported; neither are non-primitive, non-interface properties if you don't have
- * cglib.
+ * Properties whose types are classes declared <code>final</code> are not supported.
  * 
  * <p>
  * Copyright (c) 2005, Steven Grimm.<br>

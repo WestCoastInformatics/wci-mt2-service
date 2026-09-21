@@ -13,12 +13,15 @@ package org.ihtsdo.refsetservice.util;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
+import org.springdoc.core.annotations.ParameterObject;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * Represents search parameters for a "find" call.
  */
 @JsonInclude(Include.NON_EMPTY)
+@ParameterObject
 @Schema(description = "Represents a set of search parameters for finding data.")
 public class SearchParameters {
 

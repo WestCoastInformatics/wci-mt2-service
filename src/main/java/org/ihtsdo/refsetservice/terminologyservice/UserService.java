@@ -9,7 +9,7 @@
  */
 package org.ihtsdo.refsetservice.terminologyservice;
 
-import javax.ws.rs.NotFoundException;
+import jakarta.ws.rs.NotFoundException;
 
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Refset;

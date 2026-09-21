@@ -36,7 +36,8 @@ public class JobController {
     }, responses = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved job status",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = Job.class))),
-        @ApiResponse(responseCode = "404", description = "Job not found")
+        @ApiResponse(responseCode = "404", description = "Job not found"),
+        @ApiResponse(responseCode = "500", description = "Unexpected error retrieving job status")
     })
     @Parameter(name = "jobId", description = "The ID of the job to check", required = true)
     public ResponseEntity<Job> getJobStatus(@PathVariable String jobId) {

@@ -65,7 +65,7 @@ public class MappingWorkflowMapsetGateTest {
             final ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                 () -> MappingWorkflowService.assertMapsetTransitionAllowed(context.getService(), context.getMapSet(), WorkflowAction.FINISH_EDIT));
 
-            assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+            assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
             assertTrue(exception.getReason().contains("blocked by mapping"));
             assertTrue(exception.getReason().contains(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE));
             assertEquals(WorkflowStatus.IN_EDIT, context.reloadMapSet().getWorkflowStatus());
@@ -132,7 +132,7 @@ public class MappingWorkflowMapsetGateTest {
             final ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                 () -> MappingWorkflowService.assertMapsetTransitionAllowed(context.getService(), context.getMapSet(), WorkflowAction.REQUEST_PUBLICATION));
 
-            assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+            assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
             assertTrue(exception.getReason().contains("blocked by mapping"));
             assertEquals(WorkflowStatus.IN_EDIT, context.reloadMapSet().getWorkflowStatus());
             assertFalse(promotionCalled.get());

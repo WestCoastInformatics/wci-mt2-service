@@ -1,6 +1,7 @@
 
 package org.ihtsdo.refsetservice.test;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -18,6 +19,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
+
+import net.bytebuddy.ByteBuddy;
+import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
+import net.bytebuddy.implementation.StubMethod;
+import net.bytebuddy.matcher.ElementMatchers;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +51,9 @@ public class ProxyTester {
 
     /** The field proxy map. */
     private Map<String, Map<Integer, Object>> fieldProxyMap = new HashMap<>();
+
+    /** Dummy subclasses generated for concrete types. */
+    private static final Map<Class<?>, Class<?>> DUMMY_SUBCLASSES = new ConcurrentHashMap<>();
 
     /**
      * Constructs a new tester for the specified class.
@@ -276,8 +286,8 @@ public class ProxyTester {
     }
 
     /**
-     * Makes a proxy of a given class. If the class is an interface type, uses the standard JDK proxy mechanism. If it's not, uses cglib. The use of cglib is
-     * via reflection so that cglib is not required to use this library unless the caller actually needs to proxy a concrete class.
+     * Makes a proxy of a given class. If the class is an interface type, uses the standard JDK proxy mechanism. If it's not, uses Byte Buddy to subclass the
+     * concrete type.
      *
      * @param fieldName the field name
      * @param type the type
@@ -368,30 +378,22 @@ public class ProxyTester {
             }, new DummyInvocationHandler());
         }
 
-        /* Get the CGLib classes we need. */
-        Class<?> enhancerClass = null;
-        Class<?> callbackClass = null;
-        Class<?> fixedValueClass = null;
-        try {
-            enhancerClass = Class.forName("net.sf.cglib.proxy.Enhancer");
-            callbackClass = Class.forName("net.sf.cglib.proxy.Callback");
-            fixedValueClass = Class.forName("net.sf.cglib.proxy.FixedValue");
-        } catch (final ClassNotFoundException e) {
-            throw new ClassNotFoundException("Need cglib to make a dummy " + type.getName() + ". Make sure cglib.jar is on " + "your classpath.");
-        }
+        final Constructor<?> constructor = dummySubclass(type).getDeclaredConstructor();
+        constructor.setAccessible(true);
+        return constructor.newInstance();
+    }
 
-        /* Make a dummy callback (proxies within proxies!) */
-        Object callback;
-        callback = Proxy.newProxyInstance(callbackClass.getClassLoader(), new Class[] {
-            fixedValueClass
-        }, new DummyInvocationHandler());
+    /**
+     * Returns a Byte Buddy subclass of the given concrete type with stubbed methods.
+     *
+     * @param type the type
+     * @return the generated subclass
+     */
+    private static Class<?> dummySubclass(final Class<?> type) {
 
-        final Method createMethod = enhancerClass.getMethod("create", new Class[] {
-            Class.class, callbackClass
-        });
-        return createMethod.invoke(null, new Object[] {
-            type, callback
-        });
+        return DUMMY_SUBCLASSES.computeIfAbsent(type, clazz -> new ByteBuddy().subclass(clazz)
+            .method(ElementMatchers.not(ElementMatchers.isDeclaredBy(Object.class))).intercept(StubMethod.INSTANCE).make()
+            .load(clazz.getClassLoader(), ClassLoadingStrategy.Default.WRAPPER).getLoaded());
     }
 
     /**

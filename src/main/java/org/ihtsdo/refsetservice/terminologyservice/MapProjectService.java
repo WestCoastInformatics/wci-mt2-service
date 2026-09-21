@@ -17,8 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.NotFoundException;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotFoundException;
 
 import org.hibernate.Hibernate;
 import org.ihtsdo.refsetservice.handler.EntraMapBootstrap;
@@ -50,24 +50,9 @@ public class MapProjectService extends BaseService {
     private static final Logger LOG = LoggerFactory.getLogger(MapProjectService.class);
 
     /** The terminology handler. */
-    private static TerminologyServerHandler terminologyHandler;
+    private static TerminologyServerHandler getTerminologyHandler() {
 
-    static {
-
-        // Instantiate terminology handler
-        try {
-            String key = "terminology.handler";
-            String handlerName = PropertyUtility.getProperty(key);
-            if (handlerName.isEmpty()) {
-                throw new Exception("terminology.handler expected and does not exist.");
-            }
-
-            terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName, TerminologyServerHandler.class);
-
-        } catch (Exception e) {
-            LOG.error("Failed to initialize terminology.handler - serious error", e);
-            terminologyHandler = null;
-        }
+        return HandlerUtility.getOrCreateTerminologyHandler();
     }
 
     /**
@@ -501,7 +486,7 @@ public class MapProjectService extends BaseService {
      */
     public static Map<String, String> getModuleNames(final Edition edition) throws Exception {
 
-        return terminologyHandler.getModuleNames(edition);
+        return getTerminologyHandler().getModuleNames(edition);
 
     }
 

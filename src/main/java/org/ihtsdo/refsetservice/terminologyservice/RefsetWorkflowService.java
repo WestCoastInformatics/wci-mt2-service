@@ -23,9 +23,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status.Family;
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status.Family;
 
 import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.lang3.StringUtils;
@@ -909,7 +909,7 @@ public final class RefsetWorkflowService {
         final Project project = refset.getProject();
 
         // Authors can start an edit cycle on Published refsets
-        if (refset.getVersionStatus().equals(WorkflowStatus.PUBLISHED)) {
+        if (VersionStatus.PUBLISHED.equals(refset.getVersionStatus())) {
 
             if (user.doesUserHavePermission(User.ROLE_AUTHOR, project)) {
 

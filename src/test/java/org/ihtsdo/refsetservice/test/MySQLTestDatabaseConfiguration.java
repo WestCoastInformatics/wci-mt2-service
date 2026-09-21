@@ -38,7 +38,7 @@ public class MySQLTestDatabaseConfiguration {
         final String user = properties.getProperty("spring.jpa.properties.hibernate.connection.username");
         final char[] pwd = properties.getProperty("spring.jpa.properties.hibernate.connection.password").toCharArray();
 
-        return new MySQLContainer<>(DockerImageName.parse("mysql:8.0.26")).withDatabaseName(dbName).withUsername(user).withPassword(String.valueOf(pwd))
+        return new MySQLContainer<>(DockerImageName.parse("mysql:8.4")).withDatabaseName(dbName).withUsername(user).withPassword(String.valueOf(pwd))
             .withCommand("mysqld --lower_case_table_names=1");
     }
 

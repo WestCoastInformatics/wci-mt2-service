@@ -48,7 +48,7 @@ import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -65,7 +65,10 @@ public abstract class AbstractRefsetTests extends BaseTest {
     protected static final String YYYYMMDD_FORMAT = "yyyyMMdd";
 
     /** The config properties. */
-    protected static final Properties PROPERTIES = PropertyUtility.getProperties();
+    protected static Properties getTestProperties() {
+
+        return PropertyUtility.getProperties();
+    }
 
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(AbstractRefsetTests.class);
@@ -500,7 +503,7 @@ public abstract class AbstractRefsetTests extends BaseTest {
         final String fileUrl = (root.get("url")).asText();
         LOG.info("File Url: " + fileUrl);
         final String zipFileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
-        final String exportRefsetPath = PROPERTIES.getProperty("REFSET_EXPORT_DIR");
+        final String exportRefsetPath = getTestProperties().getProperty("REFSET_EXPORT_DIR");
         LOG.info("Refset Directory: " + exportRefsetPath);
         final String downloadedZipFile = exportRefsetPath + "/" + zipFileName;
         LOG.info("Zip File Path: " + downloadedZipFile);
