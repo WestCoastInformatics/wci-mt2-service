@@ -2004,9 +2004,6 @@ public class SnowstormMapping extends SnowstormAbstract {
         }
 
         submittedMapping.getMapEntries().clear();
-<<<<<<< Updated upstream
-        submittedMapping.getMapEntries().addAll(updatedMapEntries);
-=======
         if (revertedToInternational) {
             // Revert only removes Norwegian members; International members are unchanged.
             // updatedMapEntries is therefore empty (unreleased delete) or would have held
@@ -2017,7 +2014,6 @@ public class SnowstormMapping extends SnowstormAbstract {
         } else {
             submittedMapping.getMapEntries().addAll(updatedMapEntries);
         }
->>>>>>> Stashed changes
 
         populateMappingNamesFromConcepts(branch, mapSet, submittedMapping);
 
