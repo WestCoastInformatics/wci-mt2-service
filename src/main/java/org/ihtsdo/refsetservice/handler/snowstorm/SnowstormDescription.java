@@ -364,6 +364,9 @@ public class SnowstormDescription extends SnowstormAbstract {
         for (final JsonNode descriptionNode : descriptionNodes) {
 
             final JsonNode acceptabilityMap = descriptionNode.get(Description.Field.ACCEPTABILITY_MAP.getValue());
+            if (acceptabilityMap == null || !acceptabilityMap.isObject()) {
+                continue;
+            }
             String acceptability = null;
             String languageId = null;
             String typeName = null;
@@ -381,27 +384,27 @@ public class SnowstormDescription extends SnowstormAbstract {
 
             if (acceptability != null && (nonDefaultPreferredTerms.isEmpty() || "PREFERRED".equals(acceptability))) {
 
-                final String typeId = descriptionNode.get(Description.Field.TYPE_ID.getValue()).asText();
+                final String typeId = textValue(descriptionNode, Description.Field.TYPE_ID);
                 typeName = TYPE_ID_TO_TYPE_NAME.getOrDefault(typeId, ("PREFERRED".equals(acceptability)) ? "PT" : "AC");
 
                 final Description description = new Description();
-                description.setActive(descriptionNode.get(Description.Field.ACTIVE.getValue()).asBoolean());
-                description.setModuleId(descriptionNode.get(Description.Field.MODULE_ID.getValue()).asText());
-                description.setReleased(descriptionNode.get(Description.Field.RELEASED.getValue()).asBoolean());
-                description.setReleasedEffectiveTime(descriptionNode.get(Description.Field.RELEASED_EFFECTIVE_TIME.getValue()).asLong());
-                description.setDescriptionId(descriptionNode.get(Description.Field.DESCRIPTION_ID.getValue()).asText());
-                description.setTerm(descriptionNode.get(Description.Field.TERM.getValue()).asText());
-                description.setConceptId(descriptionNode.get(Description.Field.CONCEPT_ID.getValue()).asText());
-                description.setType(descriptionNode.get(Description.Field.TYPE.getValue()).asText());
+                description.setActive(booleanValue(descriptionNode, Description.Field.ACTIVE));
+                description.setModuleId(textValue(descriptionNode, Description.Field.MODULE_ID));
+                description.setReleased(booleanValue(descriptionNode, Description.Field.RELEASED));
+                description.setReleasedEffectiveTime(longValue(descriptionNode, Description.Field.RELEASED_EFFECTIVE_TIME));
+                description.setDescriptionId(textValue(descriptionNode, Description.Field.DESCRIPTION_ID));
+                description.setTerm(textValue(descriptionNode, Description.Field.TERM));
+                description.setConceptId(textValue(descriptionNode, Description.Field.CONCEPT_ID));
+                description.setType(textValue(descriptionNode, Description.Field.TYPE));
                 description.setTypeName(typeName);
-                description.setEffectiveTime(descriptionNode.get(Description.Field.EFFECTIVE_TIME.getValue()).asText());
-                description.setCaseSignificance(descriptionNode.get(Description.Field.CASE_SIGNIFICANCE.getValue()).asText());
+                description.setEffectiveTime(textValue(descriptionNode, Description.Field.EFFECTIVE_TIME));
+                description.setCaseSignificance(textValue(descriptionNode, Description.Field.CASE_SIGNIFICANCE));
 
-                description.setLanguage(descriptionNode.get(Description.Field.LANG.getValue()).asText().toLowerCase());
+                final String lang = textValue(descriptionNode, Description.Field.LANG);
+                description.setLanguage(lang.toLowerCase());
                 description.setLanguageId(languageId + typeName);
                 description.setLanguageCode(languageId);
-                description.setLanguageName(descriptionNode.get(Description.Field.LANG.getValue()).asText().toUpperCase() + " (" + typeName + ")");
-                // description.setLanguage();
+                description.setLanguageName(lang.toUpperCase() + " (" + typeName + ")");
                 descriptions.add(description);
 
             }
@@ -410,6 +413,34 @@ public class SnowstormDescription extends SnowstormAbstract {
 
         return descriptions;
 
+    }
+
+    private static JsonNode fieldNode(final JsonNode node, final Description.Field field) {
+
+        return node == null || field == null ? null : node.get(field.getValue());
+    }
+
+    private static boolean hasValue(final JsonNode value) {
+
+        return value != null && !value.isNull() && !value.isMissingNode();
+    }
+
+    private static long longValue(final JsonNode node, final Description.Field field) {
+
+        final JsonNode value = fieldNode(node, field);
+        return hasValue(value) ? value.asLong() : 0L;
+    }
+
+    private static boolean booleanValue(final JsonNode node, final Description.Field field) {
+
+        final JsonNode value = fieldNode(node, field);
+        return hasValue(value) && value.asBoolean();
+    }
+
+    private static String textValue(final JsonNode node, final Description.Field field) {
+
+        final JsonNode value = fieldNode(node, field);
+        return hasValue(value) ? value.asText() : "";
     }
 
 }
