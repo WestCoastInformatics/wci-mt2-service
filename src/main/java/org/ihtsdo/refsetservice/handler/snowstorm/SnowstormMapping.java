@@ -1722,8 +1722,10 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         // also get the map entries for the active International mapping in snowstorm
         // (this may the same or different than the above).
+        // showOverriddenEntries=true so edition precedence does not drop International
+        // members if the module filter is not applied.
         final Mapping existingActiveInternationalMapping =
-            getMapping(branch, mapSetCode, submittedMapping.getCode(), SnomedConstants.SNOMEDCT_TO_ICD10_MAPPING_MODULE, true, false, false, mapSet);
+            getMapping(branch, mapSetCode, submittedMapping.getCode(), SnomedConstants.SNOMEDCT_TO_ICD10_MAPPING_MODULE, true, true, false, mapSet);
 
         boolean revertedToInternational = false;
 
@@ -1761,12 +1763,10 @@ public class SnowstormMapping extends SnowstormAbstract {
                 mapEntryAddList.add(submittedMapEntry);
             }
         }
-        // Next check if the submitted map is identical to the active International map.
-        // This identifies where the Norwegian map had diverged from the international,
-        // but now matches again.
-        // In this case, remove all existing Norwegian map entries, and revert back to
-        // the International.
-        else if (MapEntryUtility.areMapsEquivalent(submittedMapping, existingActiveInternationalMapping)) {
+        // Next check if the submitted map is identical to the active International map,
+        // or the Norwegian override was removed entirely (batch edit sends no mapEntries).
+        // Either way, remove all existing Norwegian map entries and revert to International.
+        else if (isRevertToInternational(submittedMapping, existingActiveInternationalMapping)) {
             revertedToInternational = true;
             for (final MapEntry existingMapEntry : existingActiveMapping.getMapEntries()) {
                 mapEntryRemoveList.add(existingMapEntry);
@@ -2004,7 +2004,20 @@ public class SnowstormMapping extends SnowstormAbstract {
         }
 
         submittedMapping.getMapEntries().clear();
+<<<<<<< Updated upstream
         submittedMapping.getMapEntries().addAll(updatedMapEntries);
+=======
+        if (revertedToInternational) {
+            // Revert only removes Norwegian members; International members are unchanged.
+            // updatedMapEntries is therefore empty (unreleased delete) or would have held
+            // inactivated Norwegian entries. Return the International map now in force.
+            submittedMapping.getMapEntries().addAll(internationalEntriesOf(existingActiveInternationalMapping));
+            LOG.info("Reverted mapping for {} to International; returning {} map entries", submittedMapping.getCode(),
+                submittedMapping.getMapEntries().size());
+        } else {
+            submittedMapping.getMapEntries().addAll(updatedMapEntries);
+        }
+>>>>>>> Stashed changes
 
         populateMappingNamesFromConcepts(branch, mapSet, submittedMapping);
 
@@ -2356,6 +2369,57 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         return mapEntryJson.toString();
 
+    }
+
+    /**
+     * True when saving should drop the Norwegian override and restore International.
+     * Batch edit sends an empty mapEntries list when the Norwegian row is removed; that
+     * is not content-equivalent to International but is still a revert.
+     *
+     * @param submittedMapping the mapping from the client
+     * @param existingActiveInternationalMapping the active International mapping
+     * @return true if Norwegian members should be removed and International returned
+     */
+    private static boolean isRevertToInternational(final Mapping submittedMapping, final Mapping existingActiveInternationalMapping) {
+
+        if (internationalEntriesOf(existingActiveInternationalMapping).isEmpty()) {
+            return false;
+        }
+        if (isEmptyMapping(submittedMapping)) {
+            return true;
+        }
+        return Boolean.TRUE.equals(MapEntryUtility.areMapsEquivalent(submittedMapping, existingActiveInternationalMapping));
+    }
+
+    /**
+     * True when the mapping has no map entries.
+     *
+     * @param mapping the mapping
+     * @return true if there are no map entries
+     */
+    private static boolean isEmptyMapping(final Mapping mapping) {
+
+        return mapping == null || mapping.getMapEntries() == null || mapping.getMapEntries().isEmpty();
+    }
+
+    /**
+     * International-module map entries from a mapping.
+     *
+     * @param mapping the mapping
+     * @return international map entries, never null
+     */
+    private static List<MapEntry> internationalEntriesOf(final Mapping mapping) {
+
+        final List<MapEntry> internationalEntries = new ArrayList<>();
+        if (mapping == null || mapping.getMapEntries() == null) {
+            return internationalEntries;
+        }
+        for (final MapEntry entry : mapping.getMapEntries()) {
+            if (entry != null && SnomedConstants.SNOMEDCT_TO_ICD10_MAPPING_MODULE.equals(entry.getModuleId())) {
+                internationalEntries.add(entry);
+            }
+        }
+        return internationalEntries;
     }
 
     /**
