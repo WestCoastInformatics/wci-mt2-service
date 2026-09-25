@@ -702,7 +702,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         final MapEntry mapEntry = new MapEntry();
 
-        if (mappingNode.has("effectiveTime")) {
+        if (mappingNode.hasNonNull("effectiveTime") && StringUtils.isNotBlank(mappingNode.get("effectiveTime").asText())) {
             mapEntry.setModified(new SimpleDateFormat("yyyyMMdd").parse(mappingNode.get("effectiveTime").asText()));
         }
         mapEntry.setId(mappingNode.get("memberId").asText());
@@ -1460,29 +1460,12 @@ public class SnowstormMapping extends SnowstormAbstract {
     public static Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode, final String moduleId, final boolean activeOnly,
         final boolean showOverriddenEntries, final boolean includeDescriptions, final MapSet dbMapSet) throws Exception {
 
-        // Connect to snowstorm
+        // Connect to snowstorm. Page until every member for this concept is loaded.
+        // A single page can omit a later group/priority (1/2) and leave that Norwegian member active.
         final Client client = getClients().get();
+        final int limit = 100;
         String searchAfter = null;
-        int limit = 50;
-
-        final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members?referenceSet=" + mapSetCode + "&referencedComponentId=" + conceptCode
-            + (moduleId != null ? "&module=" + moduleId : "") + (activeOnly == false ? "" : "&active=true") + "&limit=" + limit
-            + (searchAfter != null ? "&searchAfter=" + searchAfter : "") + "&" + SnowstormApiPaging.getMemberSortQueryString();
-        LOG.info("getSnowstormMapping url: " + targetUri);
-
-        final WebTarget target = client.target(targetUri);
-
-        final Response response = target.request(DEFAULT_ACCEPT)
-            // .header("Cookie", ConfigUtility.getGenericUserCookie())
-            .get();
-        final String resultString = SnowstormConnection.readEntityAsString(response);
-        if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-            throw new Exception(
-                "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
-        }
-
-        final JsonNode data = ThreadLocalMapper.get().readTree(resultString);
-        final JsonNode mappingsBatch = data.get("items");
+        final Set<String> seenMemberIds = new HashSet<>();
 
         // Grab the specified mapSet (from Snowstorm for refset metadata; from DB for terminology/version)
         final MapSet mapSet = getMapSet(branch, mapSetCode);
@@ -1490,30 +1473,70 @@ public class SnowstormMapping extends SnowstormAbstract {
             ? dbMapSet : mapSet;
         final Mapping mapping = new Mapping();
 
-        final Iterator<JsonNode> itemIterator = mappingsBatch.iterator();
+        while (true) {
+            final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members?referenceSet=" + mapSetCode + "&referencedComponentId=" + conceptCode
+                + (moduleId != null ? "&module=" + moduleId : "") + (activeOnly == false ? "" : "&active=true") + "&limit=" + limit
+                + (searchAfter != null ? "&searchAfter=" + searchAfter : "") + "&" + SnowstormApiPaging.getMemberSortQueryString();
+            LOG.info("getSnowstormMapping url: " + targetUri);
 
-        // parse items to retrieve matching concept
-        while (itemIterator.hasNext()) {
+            final WebTarget target = client.target(targetUri);
 
-            final JsonNode mappingNode = itemIterator.next();
-
-            // If this is the first time the fromConcept is encountered, set up the
-            // mapping
-            if (mapping.getCode() == null || mapping.getCode().isEmpty()) {
-                mapping.setCode(mappingNode.get("referencedComponentId").asText());
-                if (StringUtils.isBlank(mapSetForConcept.getFromTerminology()) || StringUtils.isBlank(mapSetForConcept.getFromVersion())) {
-                    throw new LocalException("MapSet from database with fromTerminology and fromVersion is required for getMapping. mapSetCode: " + mapSetCode);
+            final JsonNode data;
+            try (final Response response = target.request(DEFAULT_ACCEPT).get()) {
+                final String resultString = SnowstormConnection.readEntityAsString(response);
+                if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                    throw new Exception(
+                        "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
                 }
-                mapping.setMapSetId(mapSet.getId());
-                mapping.setMapEntries(new ArrayList<>());
+                data = ThreadLocalMapper.get().readTree(resultString);
+            }
+            final JsonNode mappingsBatch = data.get("items");
+            if (mappingsBatch == null || !mappingsBatch.iterator().hasNext()) {
+                break;
             }
 
-            // Add an entry to the mapping
-            final MapEntry mapEntry = convertSnowstormMemberToMapEntry(mappingNode, mapSetForConcept, branch);
-            final List<MapEntry> mapEntries = mapping.getMapEntries();
-            mapEntries.add(mapEntry);
-            mapping.setMapEntries(mapEntries);
+            String nextSearchAfter = null;
+            if (data.hasNonNull("searchAfter")) {
+                nextSearchAfter = data.get("searchAfter").asText();
+            }
 
+            final Iterator<JsonNode> itemIterator = mappingsBatch.iterator();
+            int pageCount = 0;
+
+            // parse items to retrieve matching concept
+            while (itemIterator.hasNext()) {
+
+                final JsonNode mappingNode = itemIterator.next();
+                pageCount++;
+
+                // If this is the first time the fromConcept is encountered, set up the
+                // mapping
+                if (mapping.getCode() == null || mapping.getCode().isEmpty()) {
+                    mapping.setCode(mappingNode.get("referencedComponentId").asText());
+                    if (StringUtils.isBlank(mapSetForConcept.getFromTerminology()) || StringUtils.isBlank(mapSetForConcept.getFromVersion())) {
+                        throw new LocalException("MapSet from database with fromTerminology and fromVersion is required for getMapping. mapSetCode: " + mapSetCode);
+                    }
+                    mapping.setMapSetId(mapSet.getId());
+                    mapping.setMapEntries(new ArrayList<>());
+                }
+
+                final String memberId = mappingNode.hasNonNull("memberId") ? mappingNode.get("memberId").asText() : null;
+                if (StringUtils.isNotBlank(memberId) && !seenMemberIds.add(memberId)) {
+                    continue;
+                }
+
+                // Add an entry to the mapping
+                final MapEntry mapEntry = convertSnowstormMemberToMapEntry(mappingNode, mapSetForConcept, branch);
+                final List<MapEntry> mapEntries = mapping.getMapEntries();
+                mapEntries.add(mapEntry);
+                mapping.setMapEntries(mapEntries);
+
+            }
+
+            if (pageCount < limit || StringUtils.isBlank(nextSearchAfter) || nextSearchAfter.equals(searchAfter)) {
+                break;
+            }
+            searchAfter = nextSearchAfter;
         }
 
         // Handle edition-precedence in the map entries
@@ -1709,7 +1732,8 @@ public class SnowstormMapping extends SnowstormAbstract {
         }
 
         final Set<MapEntry> mapEntryAddList = new HashSet<>();
-        final Set<MapEntry> mapEntryRemoveList = new HashSet<>();
+        // List, not Set: MapEntry equality can collapse two members that must both be removed.
+        final List<MapEntry> mapEntryRemoveList = new ArrayList<>();
         // Map of modified entries:
         // Key = existing Map Entry
         // Value = submitted Map Entry
@@ -1754,22 +1778,24 @@ public class SnowstormMapping extends SnowstormAbstract {
             }
         }
 
-        // If the existing active mapping is International, then all entries
-        // of the submitted map will be added (this is a new Norwegian map overriding
-        // the International)
-        else if (!existingActiveMapping.getMapEntries().isEmpty()
-            && SnomedConstants.SNOMEDCT_TO_ICD10_MAPPING_MODULE.equals(existingActiveMapping.getMapEntries().get(0).getModuleId())) {
-            for (final MapEntry submittedMapEntry : submittedMapping.getMapEntries()) {
-                mapEntryAddList.add(submittedMapEntry);
-            }
-        }
-        // Next check if the submitted map is identical to the active International map,
-        // or the Norwegian override was removed entirely (batch edit sends no mapEntries).
-        // Either way, remove all existing Norwegian map entries and revert to International.
+        // Norwegian override removed entirely (batch edit sends no mapEntries for every
+        // row, including 1/1 and 1/2), or the submitted map matches International.
+        // Checked before the International-only branch so an empty save cannot be treated
+        // as "add nothing" when the loaded map still contains Norwegian members.
         else if (isRevertToInternational(submittedMapping, existingActiveInternationalMapping)) {
             revertedToInternational = true;
             for (final MapEntry existingMapEntry : existingActiveMapping.getMapEntries()) {
-                mapEntryRemoveList.add(existingMapEntry);
+                if (!SnomedConstants.SNOMEDCT_TO_ICD10_MAPPING_MODULE.equals(existingMapEntry.getModuleId())) {
+                    mapEntryRemoveList.add(existingMapEntry);
+                }
+            }
+        }
+        // Existing active map is International only, so every submitted entry is a new
+        // Norwegian override. All entries must be International — the first entry alone
+        // is not enough when a map has more than one member.
+        else if (isInternationalOnly(existingActiveMapping)) {
+            for (final MapEntry submittedMapEntry : submittedMapping.getMapEntries()) {
+                mapEntryAddList.add(submittedMapEntry);
             }
         }
         // Now that all mapping-wide cases have been handled,
@@ -1831,9 +1857,9 @@ public class SnowstormMapping extends SnowstormAbstract {
         // existing
         // map entries in snowstorm.
         final Map<MapEntry, MapEntry> mapEntryCreateList = new HashMap<>();
-        final Set<MapEntry> mapEntryInactivateList = new HashSet<>();
+        final List<MapEntry> mapEntryInactivateList = new ArrayList<>();
         final Set<MapEntry> mapEntryReactivateList = new HashSet<>();
-        final Set<MapEntry> mapEntryDeleteList = new HashSet<>();
+        final List<MapEntry> mapEntryDeleteList = new ArrayList<>();
         final Map<MapEntry, MapEntry> mapEntryUpdateList = new HashMap<>();
 
         // For all map entries to be added, check if there are any UUI-matching,
@@ -2396,6 +2422,25 @@ public class SnowstormMapping extends SnowstormAbstract {
     private static boolean isEmptyMapping(final Mapping mapping) {
 
         return mapping == null || mapping.getMapEntries() == null || mapping.getMapEntries().isEmpty();
+    }
+
+    /**
+     * True when every map entry belongs to the International mapping module.
+     *
+     * @param mapping the mapping
+     * @return true if there is at least one entry and all are International
+     */
+    private static boolean isInternationalOnly(final Mapping mapping) {
+
+        if (mapping == null || mapping.getMapEntries() == null || mapping.getMapEntries().isEmpty()) {
+            return false;
+        }
+        for (final MapEntry entry : mapping.getMapEntries()) {
+            if (entry == null || !SnomedConstants.SNOMEDCT_TO_ICD10_MAPPING_MODULE.equals(entry.getModuleId())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
