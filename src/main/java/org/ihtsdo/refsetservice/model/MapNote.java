@@ -8,8 +8,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
 
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
@@ -51,7 +49,6 @@ public class MapNote extends AbstractHasModified {
     private String note;
 
     /** When the note was authored. */
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(nullable = false)
     private Date timestamp = new Date();
 

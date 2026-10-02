@@ -22,8 +22,6 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
 import jakarta.persistence.Transient;
 import jakarta.persistence.UniqueConstraint;
 
@@ -93,7 +91,6 @@ public class MapSet extends AbstractHasModified {
 
     /** The version date. */
     @Column(nullable = true)
-    @Temporal(TemporalType.TIMESTAMP)
     private Date versionDate;
 
     /** The last refset published release upon which the refset's content is based on. */

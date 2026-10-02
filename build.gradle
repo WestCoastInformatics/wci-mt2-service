@@ -99,8 +99,7 @@ java {
     targetCompatibility = JavaVersion.VERSION_25
 }
 
-// Keep Tomcat ahead of Boot 4.1.1's default (11.0.24) for CVEs fixed in 11.0.25+
-ext['tomcat.version'] = '11.0.25'
+ext['tomcat.version'] = '11.0.26'
 
 // apply the version tag to the project.version
 version = version + versionTag
@@ -188,7 +187,8 @@ dependencies {
   implementation "org.hibernate.search:hibernate-search-mapper-orm"
   implementation "org.hibernate.search:hibernate-search-backend-lucene"
   implementation "org.hibernate.search:hibernate-search-backend-elasticsearch"
-  implementation "com.fasterxml.jackson.datatype:jackson-datatype-hibernate7:2.22.2"
+  // implementation "com.fasterxml.jackson.datatype:jackson-datatype-hibernate7:2.22.2"
+  implementation "com.fasterxml.jackson.datatype:jackson-datatype-hibernate7"
 
   implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1"
   implementation "org.apache.commons:commons-text:1.10.0"
@@ -215,10 +215,10 @@ dependencies {
   // test dependencies
   testImplementation "org.springframework.boot:spring-boot-starter-webmvc-test"
   testImplementation "net.bytebuddy:byte-buddy:1.18.14"
-  spotbugs "com.github.spotbugs:spotbugs:4.8.6"
+  spotbugs "com.github.spotbugs:spotbugs:4.10.4"
   testImplementation "org.testcontainers:mysql:1.20.0"
   testImplementation "org.testcontainers:junit-jupiter:1.20.0"
-  testImplementation "com.github.dasniko:testcontainers-keycloak:3.6.0"
+  testImplementation "com.github.dasniko:testcontainers-keycloak:3.7.0"
 }
 
 dependencyManagement {
@@ -251,7 +251,7 @@ spotbugsTest {
 }
 
 checkstyle {
-  toolVersion = "10.3.1"
+  toolVersion = "13.10.0"
   ignoreFailures = true
   checkstyleMain.exclude "**/package-info.java"
   checkstyleTest.exclude "**/package-info.java"
@@ -269,6 +269,7 @@ tasks.withType(Checkstyle) {
   reports {
     xml.required = false
     html.required = true
+    html.stylesheet resources.text.fromFile("config/checkstyle/checkstyle-report.xsl")
   }
 }
 

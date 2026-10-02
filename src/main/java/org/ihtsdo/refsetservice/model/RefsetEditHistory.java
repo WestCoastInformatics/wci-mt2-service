@@ -28,8 +28,6 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
 
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -78,7 +76,6 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
 
     /** The version date. */
     @Column(nullable = true)
-    @Temporal(TemporalType.TIMESTAMP)
     private Date versionDate;
 
     /** The version narrative. */

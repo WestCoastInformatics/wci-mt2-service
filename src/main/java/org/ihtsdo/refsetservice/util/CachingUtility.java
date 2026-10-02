@@ -129,7 +129,12 @@ public class CachingUtility {
         if (cacheManager == null) {
             return;
         }
-        getCacheManager().getCacheNames().forEach(cacheName -> getCacheManager().getCache(cacheName).clear());
+        getCacheManager().getCacheNames().forEach(cacheName -> {
+            final Cache cache = getCacheManager().getCache(cacheName);
+            if (cache != null) {
+                cache.clear();
+            }
+        });
     }
 
     /**

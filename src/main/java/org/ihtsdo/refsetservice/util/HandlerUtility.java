@@ -26,6 +26,9 @@ public final class HandlerUtility {
     /** Shared lazy terminology handler. */
     private static TerminologyServerHandler terminologyHandler;
 
+    /** Lock for {@link #terminologyHandler}. Not the class object, so callers cannot block handler init. */
+    private static final Object TERMINOLOGY_HANDLER_LOCK = new Object();
+
     /**
      * Instantiates an empty {@link HandlerUtility}.
      */
@@ -111,29 +114,33 @@ public final class HandlerUtility {
      *
      * @return the terminology server handler
      */
-    public static synchronized TerminologyServerHandler getOrCreateTerminologyHandler() {
+    public static TerminologyServerHandler getOrCreateTerminologyHandler() {
 
-        if (terminologyHandler == null) {
-            try {
-                final String key = "terminology.handler";
-                final String handlerName = PropertyUtility.getProperty(key);
-                if (handlerName == null || handlerName.isEmpty()) {
-                    throw new Exception("terminology.handler expected and does not exist.");
+        synchronized (TERMINOLOGY_HANDLER_LOCK) {
+            if (terminologyHandler == null) {
+                try {
+                    final String key = "terminology.handler";
+                    final String handlerName = PropertyUtility.getProperty(key);
+                    if (handlerName == null || handlerName.isEmpty()) {
+                        throw new Exception("terminology.handler expected and does not exist.");
+                    }
+                    terminologyHandler = newStandardHandlerInstanceWithConfiguration(key, handlerName, TerminologyServerHandler.class);
+                } catch (final Exception e) {
+                    throw new IllegalStateException("Failed to initialize terminology.handler", e);
                 }
-                terminologyHandler = newStandardHandlerInstanceWithConfiguration(key, handlerName, TerminologyServerHandler.class);
-            } catch (final Exception e) {
-                throw new IllegalStateException("Failed to initialize terminology.handler", e);
             }
+            return terminologyHandler;
         }
-        return terminologyHandler;
     }
 
     /**
      * Drop the cached terminology handler so the next lookup uses current properties.
      */
-    public static synchronized void resetTerminologyHandler() {
+    public static void resetTerminologyHandler() {
 
-        terminologyHandler = null;
+        synchronized (TERMINOLOGY_HANDLER_LOCK) {
+            terminologyHandler = null;
+        }
     }
 
     /**

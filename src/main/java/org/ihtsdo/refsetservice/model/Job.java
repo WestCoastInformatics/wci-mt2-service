@@ -15,8 +15,6 @@ import java.util.Objects;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
 
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
@@ -68,7 +66,6 @@ public class Job extends AbstractHasModified {
 
     /** The completed date. */
     @Column(nullable = true)
-    @Temporal(TemporalType.TIMESTAMP)
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     @JsonFormat(shape = JsonFormat.Shape.NUMBER)
     private Date completedDate;

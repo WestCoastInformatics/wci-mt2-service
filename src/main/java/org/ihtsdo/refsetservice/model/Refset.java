@@ -31,8 +31,6 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
 import jakarta.persistence.Transient;
 
 import org.hibernate.annotations.Fetch;
@@ -99,7 +97,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
     /** The version date. */
     @Column(nullable = true)
-    @Temporal(TemporalType.TIMESTAMP)
     private Date versionDate;
 
     /** The last refset published release upon which the refset's content is based on. */

@@ -85,7 +85,7 @@ public class SecurityService implements AutoCloseable {
     public static final String GUEST_USERNAME = "nonLoggedInUser";
 
     /** The timeout. */
-    private static int timeout;
+    private static volatile int timeout;
 
     /**
      * Instantiates an empty {@link SecurityServiceJpa}.

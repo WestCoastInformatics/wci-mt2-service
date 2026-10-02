@@ -9,6 +9,8 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
+import java.time.Instant;
+
 import jakarta.ws.rs.core.MediaType;
 
 import org.ihtsdo.refsetservice.model.ApplicationVersionInfo;
@@ -54,6 +56,10 @@ public class VersionController {
             throw new IllegalStateException("Build properties are not present.");
         }
 
-        return new ResponseEntity<>(new ApplicationVersionInfo(buildProperties.getVersion(), buildProperties.getTime().toString()), HttpStatus.OK);
+        final Instant buildTime = buildProperties.getTime();
+        if (buildTime == null) {
+            throw new IllegalStateException("Build time is not present.");
+        }
+        return new ResponseEntity<>(new ApplicationVersionInfo(buildProperties.getVersion(), buildTime.toString()), HttpStatus.OK);
     }
 }

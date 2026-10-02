@@ -46,7 +46,9 @@ public class SessionEndedListener implements ApplicationListener<SessionDestroye
                 final Authentication authentication = securityContext.getAuthentication();
                 LOG.debug("************ SessionEndedListener Session expired!!");
                 LOG.debug("************ SessionEndedListener securityContext" + ModelUtility.toJson(securityContext));
-                LOG.debug("************ SessionEndedListener authentication.name" + authentication.getName());
+                if (authentication != null) {
+                    LOG.debug("************ SessionEndedListener authentication.name" + authentication.getName());
+                }
                 // UserPrincipal user = (UserPrincipal) authentication.getPrincipal();
             }
         } catch (final Exception e) {

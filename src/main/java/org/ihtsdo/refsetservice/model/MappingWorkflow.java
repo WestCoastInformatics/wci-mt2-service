@@ -19,8 +19,6 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
 import jakarta.persistence.UniqueConstraint;
 
 import org.hibernate.annotations.Fetch;
@@ -72,12 +70,10 @@ public class MappingWorkflow extends AbstractHasModified {
 
     /** When the mapping was assigned. */
     @Column(nullable = true)
-    @Temporal(TemporalType.TIMESTAMP)
     private Date assignedAt;
 
     /** When the assignment lease expires. */
     @Column(nullable = true)
-    @Temporal(TemporalType.TIMESTAMP)
     private Date leaseExpiresAt;
 
     /** Specialist slot (1 or 2 for conflict workflows). */

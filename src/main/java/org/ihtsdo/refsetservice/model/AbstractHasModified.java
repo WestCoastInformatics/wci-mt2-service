@@ -5,8 +5,6 @@ import java.util.Date;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
 
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
@@ -27,12 +25,10 @@ public abstract class AbstractHasModified extends AbstractHasId implements HasMo
 
     /** The modified. */
     @Column(nullable = false)
-    @Temporal(TemporalType.TIMESTAMP)
     private Date modified;
 
     /** The created. */
     @Column(nullable = false)
-    @Temporal(TemporalType.TIMESTAMP)
     private Date created;
 
     /** The modified by. */

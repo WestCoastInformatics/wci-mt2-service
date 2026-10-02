@@ -402,7 +402,10 @@ public final class FileUtility {
 
         // Find the file to preserve based on the prefix "der2_iisssccRefset_"
         Optional<Path> targetFileOptional =
-            Files.walk(sourceFolder).filter(path -> Files.isRegularFile(path) && path.getFileName().toString().startsWith("der2_iisssccRefset_")).findFirst();
+            Files.walk(sourceFolder).filter(path -> {
+                final Path fileName = path.getFileName();
+                return Files.isRegularFile(path) && fileName != null && fileName.toString().startsWith("der2_iisssccRefset_");
+            }).findFirst();
 
         if (targetFileOptional.isEmpty()) {
             throw new IOException("No file starting with 'der2_iisssccRefset_' found in the folder: " + folderPath);

@@ -29,8 +29,6 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
 import jakarta.persistence.Transient;
 import jakarta.persistence.UniqueConstraint;
 
@@ -123,12 +121,10 @@ public class MapProject extends AbstractHasModified implements Copyable<MapProje
     private String refSetName;
 
     /** The editing cycle begin date. */
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(nullable = true)
     private Date editingCycleBeginDate;
 
     /** The latest publication date. */
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(nullable = true)
     private Date latestPublicationDate;
 
