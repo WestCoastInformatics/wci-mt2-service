@@ -34,6 +34,7 @@ import org.springframework.core.io.ClassPathResource;
  */
 public class MappingWorkflowPermutationTest {
 
+    /** The Constant WORKFLOW_PERMUTATIONS_FILE_NAME. */
     private static final String WORKFLOW_PERMUTATIONS_FILE_NAME = "workflow/mappingWorkflowPermutations.txt";
 
     /** Expected rows from the permutations file: role -> status -> action -> result. */
@@ -48,12 +49,15 @@ public class MappingWorkflowPermutationTest {
     public void setUp() throws Exception {
 
         permissiblePaths = readPermutationsFromClasspath();
-        try (final BufferedReader bufferedReader = new BufferedReader(
-            new InputStreamReader(new ClassPathResource(WORKFLOW_PERMUTATIONS_FILE_NAME).getInputStream()))) {
+        try (final BufferedReader bufferedReader =
+            new BufferedReader(new InputStreamReader(new ClassPathResource(WORKFLOW_PERMUTATIONS_FILE_NAME).getInputStream()))) {
             MappingWorkflowService.loadPermutations(bufferedReader, WORKFLOW_PERMUTATIONS_FILE_NAME);
         }
     }
 
+    /**
+     * Test all roles and initial states.
+     */
     @Test
     public void testAllRolesAndInitialStates() {
 
@@ -72,6 +76,9 @@ public class MappingWorkflowPermutationTest {
         }
     }
 
+    /**
+     * Test simple path rows present.
+     */
     @Test
     public void testSimplePathRowsPresent() {
 
@@ -87,8 +94,8 @@ public class MappingWorkflowPermutationTest {
             MappingWorkflowService.resolveTransition(MappingWorkflowRole.ADMIN, MapWorkflowStatus.NEW, MappingWorkflowAction.ASSIGN));
         assertEquals(MapWorkflowStatus.NEW,
             MappingWorkflowService.resolveTransition(MappingWorkflowRole.SPECIALIST, MapWorkflowStatus.EDITING_IN_PROGRESS, MappingWorkflowAction.RELEASE));
-        assertEquals(MapWorkflowStatus.EDITING_DONE,
-            MappingWorkflowService.resolveTransition(MappingWorkflowRole.SPECIALIST, MapWorkflowStatus.EDITING_IN_PROGRESS, MappingWorkflowAction.FINISH_EDITING));
+        assertEquals(MapWorkflowStatus.EDITING_DONE, MappingWorkflowService.resolveTransition(MappingWorkflowRole.SPECIALIST,
+            MapWorkflowStatus.EDITING_IN_PROGRESS, MappingWorkflowAction.FINISH_EDITING));
         assertEquals(MapWorkflowStatus.READY_FOR_PUBLICATION,
             MappingWorkflowService.resolveTransition(MappingWorkflowRole.LEAD, MapWorkflowStatus.EDITING_DONE, MappingWorkflowAction.APPROVE_FOR_PUBLICATION));
         assertEquals(MapWorkflowStatus.REVIEW_NEEDED,
@@ -97,6 +104,9 @@ public class MappingWorkflowPermutationTest {
             MappingWorkflowService.resolveTransition(MappingWorkflowRole.LEAD, MapWorkflowStatus.EDITING_DONE, MappingWorkflowAction.REQUEST_REVIEW));
     }
 
+    /**
+     * Test review project rows present.
+     */
     @Test
     public void testReviewProjectRowsPresent() {
 
@@ -106,18 +116,31 @@ public class MappingWorkflowPermutationTest {
             MappingWorkflowService.resolveTransition(MappingWorkflowRole.LEAD, MapWorkflowStatus.REVIEW_IN_PROGRESS, MappingWorkflowAction.ACCEPT_REVIEW));
         assertEquals(MapWorkflowStatus.NEW,
             MappingWorkflowService.resolveTransition(MappingWorkflowRole.LEAD, MapWorkflowStatus.REVIEW_IN_PROGRESS, MappingWorkflowAction.REJECT_REVIEW));
-        assertEquals(MapWorkflowStatus.READY_FOR_PUBLICATION,
-            MappingWorkflowService.resolveTransition(MappingWorkflowRole.LEAD, MapWorkflowStatus.REVIEW_RESOLVED, MappingWorkflowAction.APPROVE_FOR_PUBLICATION));
+        assertEquals(MapWorkflowStatus.READY_FOR_PUBLICATION, MappingWorkflowService.resolveTransition(MappingWorkflowRole.LEAD,
+            MapWorkflowStatus.REVIEW_RESOLVED, MappingWorkflowAction.APPROVE_FOR_PUBLICATION));
     }
 
+    /**
+     * Test malformed file fails fast.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testMalformedFileFailsFast() throws Exception {
 
-        final Exception thrown = assertThrows(Exception.class, () -> MappingWorkflowService.loadPermutations(
-            new StringReader("SPECIALIST,NEW,ASSIGN\n"), "malformed.txt"));
+        final Exception thrown =
+            assertThrows(Exception.class, () -> MappingWorkflowService.loadPermutations(new StringReader("SPECIALIST,NEW,ASSIGN\n"), "malformed.txt"));
         assertTrue(thrown.getMessage().contains("does not have 4 items"));
     }
 
+    /**
+     * Gets the expected result.
+     *
+     * @param role the role
+     * @param status the status
+     * @param action the action
+     * @return the expected result
+     */
     private MapWorkflowStatus getExpectedResult(final MappingWorkflowRole role, final MapWorkflowStatus status, final MappingWorkflowAction action) {
 
         if (!permissiblePaths.containsKey(role) || !permissiblePaths.get(role).containsKey(status)) {
@@ -126,13 +149,19 @@ public class MappingWorkflowPermutationTest {
         return permissiblePaths.get(role).get(status).get(action);
     }
 
+    /**
+     * Read permutations from classpath.
+     *
+     * @return the map
+     * @throws Exception the exception
+     */
     private static Map<MappingWorkflowRole, Map<MapWorkflowStatus, Map<MappingWorkflowAction, MapWorkflowStatus>>> readPermutationsFromClasspath()
         throws Exception {
 
         final Map<MappingWorkflowRole, Map<MapWorkflowStatus, Map<MappingWorkflowAction, MapWorkflowStatus>>> paths = new HashMap<>();
 
-        try (final BufferedReader bufferedReader = new BufferedReader(
-            new InputStreamReader(new ClassPathResource(WORKFLOW_PERMUTATIONS_FILE_NAME).getInputStream()))) {
+        try (final BufferedReader bufferedReader =
+            new BufferedReader(new InputStreamReader(new ClassPathResource(WORKFLOW_PERMUTATIONS_FILE_NAME).getInputStream()))) {
 
             String line;
             while ((line = bufferedReader.readLine()) != null) {
@@ -147,9 +176,7 @@ public class MappingWorkflowPermutationTest {
                 final MappingWorkflowAction workflowAction = MappingWorkflowAction.fromString(tokens[2].toUpperCase().strip());
                 final MapWorkflowStatus resultingStatus = MapWorkflowStatus.fromString(tokens[3].toUpperCase().strip());
 
-                paths.computeIfAbsent(role, key -> new HashMap<>())
-                    .computeIfAbsent(currentStatus, key -> new HashMap<>())
-                    .put(workflowAction, resultingStatus);
+                paths.computeIfAbsent(role, key -> new HashMap<>()).computeIfAbsent(currentStatus, key -> new HashMap<>()).put(workflowAction, resultingStatus);
             }
         }
 

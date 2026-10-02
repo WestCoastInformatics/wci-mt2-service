@@ -20,13 +20,21 @@ import org.springframework.cache.CacheManager;
 /**
  * The Class CachingUtility.
  */
-public class CachingUtility {
+public final class CachingUtility {
 
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(CachingUtility.class);
-    
+
     /** The cache manager. */
     private static CacheManager cacheManager;
+
+    /**
+     * Instantiates an empty {@link CachingUtility}.
+     */
+    private CachingUtility() {
+
+        // n/a
+    }
 
     private static synchronized CacheManager getCacheManager() {
 
@@ -78,7 +86,7 @@ public class CachingUtility {
      */
     public static <T> Optional<T> getObject(final String cacheName, final String cacheKey, final Class<T> clazz) throws ClassCastException {
 
-            final Cache conceptsCache = requireCache(cacheName);
+        final Cache conceptsCache = requireCache(cacheName);
         final Cache.ValueWrapper cachedValue = conceptsCache.get(cacheKey);
 
         if (cachedValue != null) {
@@ -101,9 +109,9 @@ public class CachingUtility {
      * @return true, if successful
      */
     public static boolean containsObjects(final String cacheName, final String cacheKey) {
-        
+
         try {
-                final Cache conceptsCache = getCacheManager().getCache(cacheName);
+            final Cache conceptsCache = getCacheManager().getCache(cacheName);
             return conceptsCache != null && conceptsCache.get(cacheKey) != null;
         } catch (Exception e) {
             LOG.debug("Failed to find for key: " + cacheKey + " in cache: " + cacheName);
@@ -140,11 +148,14 @@ public class CachingUtility {
     /**
      * Clear a specific Spring cache by name.
      *
-     * <p>Safe to call even if the cache does not exist.</p>
+     * <p>
+     * Safe to call even if the cache does not exist.
+     * </p>
      *
      * @param cacheName the cache name
      */
     public static void clearCache(final String cacheName) {
+
         if (cacheName == null || cacheManager == null) {
             return;
         }
@@ -160,6 +171,7 @@ public class CachingUtility {
      * @param cacheNames cache names
      */
     public static void clearCaches(final String... cacheNames) {
+
         if (cacheNames == null) {
             return;
         }

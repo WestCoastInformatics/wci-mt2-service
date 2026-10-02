@@ -396,6 +396,7 @@ public class CodeSystem {
         @JsonProperty("description")
         private String description;
 
+        /** The release package. */
         @JsonProperty("releasePackage")
         private String releasePackage;
 
@@ -595,6 +596,11 @@ public class CodeSystem {
             this.branchPath = branchPath;
         }
 
+        /**
+         * To string.
+         *
+         * @return the string
+         */
         /* see superclass */
         @Override
         public String toString() {
@@ -899,6 +905,11 @@ public class CodeSystem {
                 this.lang = lang;
             }
 
+            /**
+             * To string.
+             *
+             * @return the string
+             */
             /* see superclass */
             @Override
             public String toString() {
@@ -971,6 +982,11 @@ public class CodeSystem {
                 this.lang = lang;
             }
 
+            /**
+             * To string.
+             *
+             * @return the string
+             */
             /* see superclass */
             @Override
             public String toString() {
@@ -980,6 +996,11 @@ public class CodeSystem {
 
         }
 
+        /**
+         * To string.
+         *
+         * @return the string
+         */
         /* see superclass */
         @Override
         public String toString() {
@@ -991,7 +1012,11 @@ public class CodeSystem {
 
     }
 
-    /* see superclass */
+    /**
+     * Hash code.
+     *
+     * @return the int
+     */
     @Override
     public int hashCode() {
 
@@ -1014,7 +1039,12 @@ public class CodeSystem {
         return result;
     }
 
-    /* see superclass */
+    /**
+     * Equals.
+     *
+     * @param obj the obj
+     * @return true, if successful
+     */
     @Override
     public boolean equals(final Object obj) {
 
@@ -1118,7 +1148,11 @@ public class CodeSystem {
         return true;
     }
 
-    /* see superclass */
+    /**
+     * To string.
+     *
+     * @return the string
+     */
     @Override
     public String toString() {
 

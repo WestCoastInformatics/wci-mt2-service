@@ -64,7 +64,11 @@ public abstract class AbstractRefsetTests extends BaseTest {
     /** The Constant SIMPLE_DATE_FORMAT. */
     protected static final String YYYYMMDD_FORMAT = "yyyyMMdd";
 
-    /** The config properties. */
+    /**
+     * Returns the test properties.
+     *
+     * @return the test properties
+     */
     protected static Properties getTestProperties() {
 
         return PropertyUtility.getProperties();
@@ -404,7 +408,7 @@ public abstract class AbstractRefsetTests extends BaseTest {
     // concept name for validating descriptions
     protected void validateConcept(final Concept concept, final String conceptId, final String memberEfectiveTime, final boolean isRefsetMember,
         final List<String> descriptionList, final int roleGroupSize, final int parentSize, final int childSize, final boolean useDescriptions)
-            throws ParseException {
+        throws ParseException {
 
         assertThat(concept).isNotNull();
         assertThat(concept.getCode()).isEqualTo(conceptId);

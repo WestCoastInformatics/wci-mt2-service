@@ -58,7 +58,7 @@ public class ReferenceComponentDescription {
      *
      * @param term the term to set
      */
-    public void setTerm(String term) {
+    public void setTerm(final String term) {
 
         this.term = term;
     }
@@ -78,12 +78,16 @@ public class ReferenceComponentDescription {
      *
      * @param lang the lang to set
      */
-    public void setLang(String lang) {
+    public void setLang(final String lang) {
 
         this.lang = lang;
     }
 
-    /* see superclass */
+    /**
+     * Hash code.
+     *
+     * @return the int
+     */
     @Override
     public int hashCode() {
 
@@ -94,9 +98,14 @@ public class ReferenceComponentDescription {
         return result;
     }
 
-    /* see superclass */
+    /**
+     * Equals.
+     *
+     * @param obj the obj
+     * @return true, if successful
+     */
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
 
         if (this == obj) {
             return true;
@@ -122,7 +131,11 @@ public class ReferenceComponentDescription {
         return true;
     }
 
-    /* see superclass */
+    /**
+     * To string.
+     *
+     * @return the string
+     */
     @Override
     public String toString() {
 

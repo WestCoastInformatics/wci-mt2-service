@@ -40,8 +40,7 @@ public final class NorwaySnowstormClient implements AutoCloseable {
     public static final int DEFAULT_LIMIT = 10000;
 
     /** Default Norway Snowstorm base URL. */
-    private static final String DEFAULT_BASE_URL =
-        "https://dailybuild.terminologi.helsedirektoratet.no/snowstorm/snomed-ct";
+    private static final String DEFAULT_BASE_URL = "https://dailybuild.terminologi.helsedirektoratet.no/snowstorm/snomed-ct";
 
     /** Max attempts for a single GET (initial try + retries). */
     private static final int MAX_ATTEMPTS = 5;
@@ -87,8 +86,8 @@ public final class NorwaySnowstormClient implements AutoCloseable {
         final String url = absoluteOrRelativeUrl.startsWith("http") ? absoluteOrRelativeUrl : baseUrl + absoluteOrRelativeUrl;
         LOG.info(url);
 
-        final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).timeout(Duration.ofMinutes(10)).header("Accept", "application/json").GET()
-            .build();
+        final HttpRequest request =
+            HttpRequest.newBuilder().uri(URI.create(url)).timeout(Duration.ofMinutes(10)).header("Accept", "application/json").GET().build();
 
         Exception lastFailure = null;
         for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
@@ -143,7 +142,6 @@ public final class NorwaySnowstormClient implements AutoCloseable {
         return branchPath.replace("/", "%2F");
     }
 
-    /* see superclass */
     @Override
     public void close() {
 

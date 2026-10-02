@@ -88,17 +88,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  * Service class to get refset member concept information from a terminology
  * service.
- */
-/**
- * @author jesseefron
  *
+ * @author jesseefron
  */
 public final class RefsetMemberService {
 
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(RefsetMemberService.class);
 
-    /** The terminology handler. */
+    /**
+     *  The terminology handler.
+     *
+     * @return the terminology handler
+     */
     private static TerminologyServerHandler getTerminologyHandler() {
 
         return HandlerUtility.getOrCreateTerminologyHandler();
@@ -215,6 +217,11 @@ public final class RefsetMemberService {
         REFSET_TO_LANGUAGES_MAP.put("46011000052107", "sv");
     }
 
+    /**
+     * Gets the export file dir.
+     *
+     * @return the export file dir
+     */
     private static String getExportFileDir() {
 
         if (exportFileDir == null) {
@@ -348,7 +355,7 @@ public final class RefsetMemberService {
      *
      * @param conceptId the concept id
      * @param descriptions the descriptions
-     * @param refset the refset
+     * @param edition the edition
      * @param nonDefaultPreferredTerms the non-default preferred terms
      * @return the map
      * @throws Exception the exception
@@ -819,7 +826,7 @@ public final class RefsetMemberService {
      */
     public static String exportRefsetRf2Delta(final TerminologyService service, final User user, final String refsetInternalId, final String type,
         final String languageId, final String fileNameDate, final String startEffectiveTime, final String transientEffectiveTime, final boolean exportMetadata,
-        boolean withNames) throws Exception {
+        final boolean withNames) throws Exception {
 
         boolean lWithNames = withNames;
 
@@ -2910,7 +2917,6 @@ public final class RefsetMemberService {
      * @param refset the refset
      * @param concept the concept
      * @return the string
-     * @throws Exception the exception
      */
     public static String processIntensionalDefinitionException(final Refset refset, final Concept concept) {
 
@@ -3172,7 +3178,7 @@ public final class RefsetMemberService {
      *
      * @param service the Terminology Service
      * @param user the user
-     * @param refsetInternalId the internal refset ID
+     * @param refset the refset
      * @throws Exception the exception
      */
     public static void removeUpgradeData(final TerminologyService service, final User user, final Refset refset) throws Exception {

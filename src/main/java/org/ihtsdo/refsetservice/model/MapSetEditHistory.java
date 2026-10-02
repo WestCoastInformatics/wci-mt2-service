@@ -682,7 +682,7 @@ public class MapSetEditHistory extends AbstractHasModified implements Comparable
      *
      * @param inUpgrade the new in upgrade
      */
-    public void setInUpgrade(boolean inUpgrade) {
+    public void setInUpgrade(final boolean inUpgrade) {
 
         // n/a
     }
@@ -703,7 +703,7 @@ public class MapSetEditHistory extends AbstractHasModified implements Comparable
      *
      * @param inInactivate the new in inactivate
      */
-    public void setInInactivate(boolean inInactivate) {
+    public void setInInactivate(final boolean inInactivate) {
 
         // n/a
     }

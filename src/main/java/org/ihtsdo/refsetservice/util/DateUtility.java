@@ -255,14 +255,14 @@ public final class DateUtility {
      * @return <code>true</code> if so, <code>false</code> otherwise
      */
     public static boolean isValidDateString(final String dateString) {
-        
+
         if (StringUtils.isEmpty(dateString)) {
             return false;
         }
         try {
             if (dateString.contains("-")) {
                 SimpleDateFormat df = new SimpleDateFormat(DateUtility.DATE_FORMAT_REVERSE);
-                df.parse(dateString);   
+                df.parse(dateString);
             } else {
                 SimpleDateFormat df = new SimpleDateFormat(DateUtility.DATE_FORMAT_REVERSE_ONLY_NUMBERS);
                 df.parse(dateString);
@@ -271,7 +271,7 @@ public final class DateUtility {
         } catch (Exception e) {
             LOG.warn("Date string is not in the format of yyyy-MM-dd or yyyymmdd. Got {}", dateString);
             return false;
-        }        
+        }
     }
 
     /**
@@ -342,19 +342,19 @@ public final class DateUtility {
 
         return getDate(dateString + " 00:00", pattern + " HH:mm", null);
     }
-    
+
     /**
-     * 
+     *
      * @param dateString the date string
      * @param pattern the pattern
      * @return the date
      * @throws Exception the exception
      */
     public static LocalDate getLocalDateNoTime(final String dateString, final String pattern) throws Exception {
-        
+
         return LocalDate.parse(dateString);
     }
-    
+
     /**
      * Returns the local date no time.
      *
@@ -363,11 +363,11 @@ public final class DateUtility {
      * @throws Exception the exception
      */
     public static LocalDate getLocalDateNoTimeUTC(final Date date) throws Exception {
-        
+
         if (date == null) {
             return null;
         }
-        
+
         return date.toInstant().atZone(ZoneOffset.UTC).toLocalDate();
     }
 

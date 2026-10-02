@@ -27,35 +27,60 @@ public class ElasticsearchCustomLayoutStrategy implements IndexLayoutStrategy {
     /** The unique index key pattern. */
     private static final Pattern UNIQUE_KEY_PATTERN = Pattern.compile("(.*)-\\d+-\\d+-\\d+");
 
-    /* see superclass */
+    /**
+     * Creates the initial elasticsearch index name.
+     *
+     * @param hibernateSearchIndexName the hibernate search index name
+     * @return the string
+     */
     @Override
     public String createInitialElasticsearchIndexName(final String hibernateSearchIndexName) {
 
         return properties.getProperty("app.elasticsearch.index.prefix") + hibernateSearchIndexName;
     }
 
-    /* see superclass */
+    /**
+     * Creates the write alias.
+     *
+     * @param hibernateSearchIndexName the hibernate search index name
+     * @return the string
+     */
     @Override
     public String createWriteAlias(final String hibernateSearchIndexName) {
 
         return properties.getProperty("app.elasticsearch.index.prefix") + hibernateSearchIndexName + "-write";
     }
 
-    /* see superclass */
+    /**
+     * Creates the read alias.
+     *
+     * @param hibernateSearchIndexName the hibernate search index name
+     * @return the string
+     */
     @Override
     public String createReadAlias(final String hibernateSearchIndexName) {
 
         return properties.getProperty("app.elasticsearch.index.prefix") + hibernateSearchIndexName + "-read";
     }
 
-    /* see superclass */
+    /**
+     * Extract unique key from hibernate search index name.
+     *
+     * @param hibernateSearchIndexName the hibernate search index name
+     * @return the string
+     */
     @Override
     public String extractUniqueKeyFromHibernateSearchIndexName(final String hibernateSearchIndexName) {
 
         return hibernateSearchIndexName;
     }
 
-    /* see superclass */
+    /**
+     * Extract unique key from elasticsearch index name.
+     *
+     * @param elasticsearchIndexName the elasticsearch index name
+     * @return the string
+     */
     @Override
     public String extractUniqueKeyFromElasticsearchIndexName(final String elasticsearchIndexName) {
 

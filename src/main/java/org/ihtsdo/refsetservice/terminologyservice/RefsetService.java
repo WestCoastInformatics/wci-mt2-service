@@ -86,7 +86,11 @@ public class RefsetService {
     /** Group name prefix for RT2 application. */
     private static final String APP_PREFIX = "rt2-";
 
-    /** The terminology handler. */
+    /**
+     *  The terminology handler.
+     *
+     * @return the terminology handler
+     */
     private static TerminologyServerHandler getTerminologyHandler() {
 
         return HandlerUtility.getOrCreateTerminologyHandler();
@@ -135,8 +139,8 @@ public class RefsetService {
     /** The Constant AND_SUFFIX. */
     private static final String AND_SUFFIX = " AND ";
 
-    /** The Constant rttIntensionalRefsets. */
-    private static final Set<String> rttIntensionalRefsets = new HashSet<>();
+    /** The Constant RTT_INTENSIONAL_REFSETS. */
+    private static final Set<String> RTT_INTENSIONAL_REFSETS = new HashSet<>();
 
     static {
 
@@ -160,6 +164,11 @@ public class RefsetService {
     /** The app url root. */
     private static String appUrlRoot;
 
+    /**
+     * Gets the app url root.
+     *
+     * @return the app url root
+     */
     private static String getAppUrlRoot() {
 
         if (appUrlRoot == null) {
@@ -781,8 +790,8 @@ public class RefsetService {
 
             final List<String> newMembers = new ArrayList<>();
             final boolean useCompareBranch = !(Arrays.asList(WorkflowStatus.IN_EDIT, WorkflowStatus.IN_UPGRADE).contains(refset.getWorkflowStatus()));
-            final String refsetBranch = (useCompareBranch) ? BranchService.createCompareBranch(refset.toBranchDetails()) : BranchService
-                .getEditBranchPath(refset.toBranchDetails());
+            final String refsetBranch =
+                (useCompareBranch) ? BranchService.createCompareBranch(refset.toBranchDetails()) : BranchService.getEditBranchPath(refset.toBranchDetails());
             final String conceptsBranchPath = (useCompareBranch) ? refsetBranch.substring(0, refsetBranch.lastIndexOf("REFSETS/")) + "REFSETS" : refsetBranch;
 
             try {
@@ -1589,8 +1598,8 @@ public class RefsetService {
                 try {
                     final Date baseContentVersionDate =
                         SnomedConstants.BRANCH_DATE_FORMAT_ONLY_NUMBERS.parse(r.getBaseContentVersion().substring(0, r.getBaseContentVersion().indexOf(' ')));
-                    final Date intlContentVersionDate =
-                        SnomedConstants.BRANCH_DATE_FORMAT_ONLY_NUMBERS.parse(r.getInternationalContentVersion().substring(0, r.getInternationalContentVersion().indexOf(' ')));
+                    final Date intlContentVersionDate = SnomedConstants.BRANCH_DATE_FORMAT_ONLY_NUMBERS
+                        .parse(r.getInternationalContentVersion().substring(0, r.getInternationalContentVersion().indexOf(' ')));
                     final Date latestBaseVersionDate = SnomedConstants.BRANCH_DATE_FORMAT_ONLY_NUMBERS.parse(editionBaseVersionDates.get(0));
                     return (baseContentVersionDate.before(latestBaseVersionDate) || intlContentVersionDate.before(latestBaseVersionDate));
                 } catch (final Exception e) {
@@ -1819,8 +1828,7 @@ public class RefsetService {
                 if (Arrays.asList(WorkflowStatus.IN_EDIT, WorkflowStatus.IN_UPGRADE).contains(refset.getWorkflowStatus())) {
                     branchPath = BranchService.getEditBranchPath(refset.toBranchDetails());
                 } else {
-                    branchPath =
-                        BranchService.getRefsetBranchPath(refset.toBranchDetails());
+                    branchPath = BranchService.getRefsetBranchPath(refset.toBranchDetails());
                 }
             }
         } else {
@@ -1829,20 +1837,17 @@ public class RefsetService {
             if (Arrays.asList(WorkflowStatus.IN_EDIT, WorkflowStatus.IN_UPGRADE).contains(refset.getWorkflowStatus())) {
                 branchPath = BranchService.getEditBranchPath(refset.toBranchDetails());
             } else {
-                branchPath =
-                    BranchService.getRefsetBranchPath(refset.toBranchDetails());
+                branchPath = BranchService.getRefsetBranchPath(refset.toBranchDetails());
             }
         }
 
         return branchPath;
     }
 
-
     /**
      * Get all the descriptions for a refset.
      *
      * @param refset the refset
-     * @return the refset with descriptions
      * @throws Exception the exception
      */
     public static void populateRefsetDescriptions(final Refset refset) throws Exception {
@@ -1981,6 +1986,7 @@ public class RefsetService {
      * @param refset the refset
      * @param service the Terminology Service
      * @param sortAscending should the versions be sorted in ascending order
+     * @param user the user
      * @return the list of version dates sorted in descending order
      * @throws Exception the exception
      */
@@ -2444,7 +2450,7 @@ public class RefsetService {
                 throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
             }
 
-            /** Create Email **/
+            // Create Email
             final StringBuilder emailBody = new StringBuilder();
 
             // Greeting
@@ -3002,7 +3008,7 @@ public class RefsetService {
      */
     public static Set<String> getRttIntensionalRefsets() throws Exception {
 
-        return rttIntensionalRefsets;
+        return RTT_INTENSIONAL_REFSETS;
     }
 
 }

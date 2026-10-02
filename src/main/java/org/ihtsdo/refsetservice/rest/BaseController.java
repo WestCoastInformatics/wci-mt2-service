@@ -51,7 +51,6 @@ public class BaseController {
      * Handle exception.
      *
      * @param exception the e
-     * @return the ResponseEntity
      * @throws Exception the exception
      */
     public void handleException(final Exception exception) throws Exception {
@@ -96,8 +95,8 @@ public class BaseController {
     }
 
     /**
-     * Resolves the request user from HTTP session or {@code Authorization: Bearer} JWT.
-     * Same-origin cookie session and local-UI remote-API token handoff both work.
+     * Resolves the request user from HTTP session or {@code Authorization: Bearer} JWT. Same-origin cookie session and local-UI remote-API token handoff both
+     * work.
      *
      * @param request the request
      * @return the user (may be guest when neither session nor valid Bearer is present)
@@ -184,14 +183,19 @@ public class BaseController {
                 authUser.setAuthToken(jwtToken);
             }
 
-            if (authUser == null
-                || (authUser.getId() == null && !PropertyUtility.getProperty("springProfiles").toLowerCase().contains("test"))) {
+            if (authUser == null || (authUser.getId() == null && !PropertyUtility.getProperty("springProfiles").toLowerCase().contains("test"))) {
                 throw new RestException(false, 401, "Unauthorized", "Unable to find user from session");
             }
             return authUser;
         }
     }
 
+    /**
+     * Checks if is non guest user.
+     *
+     * @param user the user
+     * @return true, if is non guest user
+     */
     private static boolean isNonGuestUser(final User user) {
 
         return user != null && StringUtils.isNotBlank(user.getUserName()) && !SecurityService.GUEST_USERNAME.equals(user.getUserName());
@@ -227,6 +231,7 @@ public class BaseController {
      *
      * @param request the request
      * @return jwt string without Bearer prefix, or null
+     * @throws Exception the exception
      */
     private static String getBearerTokenOrNull(final HttpServletRequest request) throws Exception {
 
@@ -243,7 +248,13 @@ public class BaseController {
         return null;
     }
 
+    /**
+     * Checks if is auth dev bypass enabled.
+     *
+     * @return true, if is auth dev bypass enabled
+     */
     private static boolean isAuthDevBypassEnabled() {
+
         final String bypass = PropertyUtility.getProperty("auth.dev.bypass");
         if ("true".equalsIgnoreCase(bypass)) {
             return true;
@@ -253,8 +264,7 @@ public class BaseController {
             return false;
         }
         final String profiles = PropertyUtility.getProperty("springProfiles");
-        return profiles != null
-            && (profiles.toLowerCase().contains("dev") || profiles.toLowerCase().contains("test"));
+        return profiles != null && (profiles.toLowerCase().contains("dev") || profiles.toLowerCase().contains("test"));
     }
 
 }

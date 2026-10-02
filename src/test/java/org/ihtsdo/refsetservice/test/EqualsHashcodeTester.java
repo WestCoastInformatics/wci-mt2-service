@@ -36,7 +36,11 @@ public class EqualsHashcodeTester extends ProxyTester {
         final Object o1 = createObject(1);
         Object o2;
         try {
-            o2 = getClazz().getConstructor(new Class<?>[] { getClazz() }).newInstance(new Object[] { o1 });
+            o2 = getClazz().getConstructor(new Class<?>[] {
+                getClazz()
+            }).newInstance(new Object[] {
+                o1
+            });
         } catch (final NoSuchMethodException e) {
             o2 = createObject(1);
         }
@@ -61,7 +65,11 @@ public class EqualsHashcodeTester extends ProxyTester {
         final Object o1 = createObject(1);
         Object o2;
         try {
-            o2 = getClazz().getConstructor(new Class<?>[] { getClazz() }).newInstance(new Object[] { o1 });
+            o2 = getClazz().getConstructor(new Class<?>[] {
+                getClazz()
+            }).newInstance(new Object[] {
+                o1
+            });
         } catch (final NoSuchMethodException e) {
             o2 = createObject(1);
         }
@@ -132,7 +140,11 @@ public class EqualsHashcodeTester extends ProxyTester {
             // Create second object as copy of o1, then change one field
             Object o2;
             try {
-                o2 = getClazz().getConstructor(new Class<?>[] { getClazz() }).newInstance(new Object[] { o1 });
+                o2 = getClazz().getConstructor(new Class<?>[] {
+                    getClazz()
+                }).newInstance(new Object[] {
+                    o1
+                });
             } catch (final NoSuchMethodException e) {
                 o2 = createObject(1);
             }
@@ -161,7 +173,11 @@ public class EqualsHashcodeTester extends ProxyTester {
         final Object o1 = createObject(1);
         Object o2;
         try {
-            o2 = getClazz().getConstructor(new Class<?>[] { getClazz() }).newInstance(new Object[] { o1 });
+            o2 = getClazz().getConstructor(new Class<?>[] {
+                getClazz()
+            }).newInstance(new Object[] {
+                o1
+            });
         } catch (final NoSuchMethodException e) {
             o2 = createObject(1);
         }
@@ -180,7 +196,11 @@ public class EqualsHashcodeTester extends ProxyTester {
         final Object o1 = createObject(1);
         Object o2;
         try {
-            o2 = getClazz().getConstructor(new Class<?>[] { getClazz() }).newInstance(new Object[] { o1 });
+            o2 = getClazz().getConstructor(new Class<?>[] {
+                getClazz()
+            }).newInstance(new Object[] {
+                o1
+            });
         } catch (final NoSuchMethodException e) {
             o2 = createObject(1);
         }
@@ -249,7 +269,11 @@ public class EqualsHashcodeTester extends ProxyTester {
             // Create second object as copy of o1, then change one field
             Object o2;
             try {
-                o2 = getClazz().getConstructor(new Class<?>[] { getClazz() }).newInstance(new Object[] { o1 });
+                o2 = getClazz().getConstructor(new Class<?>[] {
+                    getClazz()
+                }).newInstance(new Object[] {
+                    o1
+                });
             } catch (final NoSuchMethodException e) {
                 o2 = createObject(1);
             }

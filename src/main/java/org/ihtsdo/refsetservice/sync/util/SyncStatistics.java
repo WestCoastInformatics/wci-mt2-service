@@ -15,14 +15,12 @@ package org.ihtsdo.refsetservice.sync.util;
 public class SyncStatistics {
 
     /** The code systems synced. */
-
-    // Terminology Server Code Systems
     private int codeSystemsSynced = 0;
 
     /** The code systems filtered. */
     private int codeSystemsFiltered = 0;
 
-    // Organizations
+    /** The organizations added. */
     private int organizationsAdded = 0;
 
     /** The organizations inactivated. */
@@ -48,7 +46,6 @@ public class SyncStatistics {
     private int editionOrganizationMapChanged = 0;
 
     /** The refset ids added. */
-    // Refsets Ids
     private int refsetIdsAdded = 0;
 
     /** The refset ids inactivated. */
@@ -83,6 +80,7 @@ public class SyncStatistics {
     /** The projects modified. */
     private int projectsModified;
 
+    /** The ecl clauses added. */
     private int eclClausesAdded;
 
     /** The projects modified. */
@@ -374,6 +372,11 @@ public class SyncStatistics {
         projectsModified++;
     }
 
+    /**
+     * Gets the refset ids added.
+     *
+     * @return the refset ids added
+     */
     public int getRefsetIdsAdded() {
 
         return refsetIdsAdded;

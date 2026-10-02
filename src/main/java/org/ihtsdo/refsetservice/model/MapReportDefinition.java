@@ -121,7 +121,7 @@ public class MapReportDefinition extends AbstractHasId {
 
     /**
      * Gets the report name.
-     * 
+     *
      * @return the report name
      */
 
@@ -132,7 +132,7 @@ public class MapReportDefinition extends AbstractHasId {
 
     /**
      * Sets the report name.
-     * 
+     *
      * @param name the new report name
      */
 
@@ -378,12 +378,15 @@ public class MapReportDefinition extends AbstractHasId {
     @Override
     public boolean equals(final Object obj) {
 
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         final MapReportDefinition other = (MapReportDefinition) obj;
         return Objects.equals(description, other.description) && Objects.equals(diffReportDefinitionName, other.diffReportDefinitionName)
             && frequency == other.frequency && isDiffReport == other.isDiffReport && isQACheck == other.isQACheck && Objects.equals(name, other.name)

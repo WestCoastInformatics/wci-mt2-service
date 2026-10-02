@@ -21,7 +21,6 @@ import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
-import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,17 +29,19 @@ import org.springframework.web.multipart.MultipartFile;
 /**
  * Service class to get refset member concept information from a terminology
  * service.
- */
-/**
- * @author jesseefron
  *
+ * @author jesseefron
  */
 public final class MappingService {
 
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(MappingService.class);
 
-    /** The terminology handler. */
+    /**
+     *  The terminology handler.
+     *
+     * @return the terminology handler
+     */
     private static TerminologyServerHandler getTerminologyHandler() {
 
         return HandlerUtility.getOrCreateTerminologyHandler();
@@ -126,8 +127,7 @@ public final class MappingService {
      * @return the mapping
      * @throws Exception the exception
      */
-    public static Mapping getMapping(final String branch, final String conceptCode, final boolean showOverriddenEntries,
-        final MapSet mapSet) throws Exception {
+    public static Mapping getMapping(final String branch, final String conceptCode, final boolean showOverriddenEntries, final MapSet mapSet) throws Exception {
 
         return getTerminologyHandler().getMapping(branch, conceptCode, showOverriddenEntries, mapSet);
     }
@@ -185,7 +185,6 @@ public final class MappingService {
         return getTerminologyHandler().exportMappings(branch, mapSetCode, mappingExportRequest, mapSet);
     }
 
-    
     /**
      * Import mappings.
      *
@@ -197,9 +196,10 @@ public final class MappingService {
      * @return the imported mappings
      * @throws Exception the exception
      */
-	public static List<Mapping> importMappings(MapProject mapProject, String branch, MultipartFile mappingFile, MapSet mapSet, User user) throws Exception {
+    public static List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile, final MapSet mapSet,
+        final User user) throws Exception {
 
-		return getTerminologyHandler().importMappings(mapProject, branch, mappingFile, mapSet, user);
-	}
-    
+        return getTerminologyHandler().importMappings(mapProject, branch, mappingFile, mapSet, user);
+    }
+
 }

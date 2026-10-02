@@ -87,6 +87,7 @@ public class Job extends AbstractHasModified {
      * Instantiates an empty {@link Job}.
      */
     public Job() {
+
         super();
     }
 
@@ -97,6 +98,7 @@ public class Job extends AbstractHasModified {
      * @param resourceId the resource id
      */
     public Job(final String jobType, final String resourceId) {
+
         super();
         this.jobType = jobType;
         this.resourceId = resourceId;
@@ -109,6 +111,7 @@ public class Job extends AbstractHasModified {
      * @param other the other
      */
     public Job(final Job other) {
+
         super();
         populateFrom(other);
     }
@@ -119,6 +122,7 @@ public class Job extends AbstractHasModified {
      * @param other the other
      */
     public void populateFrom(final Job other) {
+
         super.populateFrom(other);
         this.jobType = other.jobType;
         this.resourceId = other.resourceId;
@@ -136,6 +140,7 @@ public class Job extends AbstractHasModified {
      */
     @JsonProperty("jobType")
     public Type getJobType() {
+
         if (jobType == null) {
             return null;
         }
@@ -148,6 +153,7 @@ public class Job extends AbstractHasModified {
      * @param jobType the job type to set
      */
     public void setJobType(final Type jobType) {
+
         if (jobType == null) {
             this.jobType = null;
         } else {
@@ -161,6 +167,7 @@ public class Job extends AbstractHasModified {
      * @return the resource id
      */
     public String getResourceId() {
+
         return resourceId;
     }
 
@@ -170,6 +177,7 @@ public class Job extends AbstractHasModified {
      * @param resourceId the resource id to set
      */
     public void setResourceId(final String resourceId) {
+
         this.resourceId = resourceId;
     }
 
@@ -179,6 +187,7 @@ public class Job extends AbstractHasModified {
      * @return the parameters
      */
     public String getParameters() {
+
         return parameters;
     }
 
@@ -188,6 +197,7 @@ public class Job extends AbstractHasModified {
      * @param parameters the parameters to set
      */
     public void setParameters(final String parameters) {
+
         this.parameters = parameters;
     }
 
@@ -199,6 +209,7 @@ public class Job extends AbstractHasModified {
     @JsonFormat(shape = JsonFormat.Shape.NUMBER)
     @JsonProperty(value = "completedDate", required = false)
     public Date getCompletedDate() {
+
         return completedDate;
     }
 
@@ -208,6 +219,7 @@ public class Job extends AbstractHasModified {
      * @param completedDate the completed date to set
      */
     public void setCompletedDate(final Date completedDate) {
+
         this.completedDate = completedDate;
     }
 
@@ -218,6 +230,7 @@ public class Job extends AbstractHasModified {
      */
     @JsonProperty("status")
     public Status getStatus() {
+
         if (status == null) {
             return null;
         }
@@ -230,6 +243,7 @@ public class Job extends AbstractHasModified {
      * @param status the status to set
      */
     public void setStatus(final Status status) {
+
         if (status == null) {
             this.status = null;
         } else {
@@ -246,6 +260,7 @@ public class Job extends AbstractHasModified {
      * @return the error message
      */
     public String getErrorMessage() {
+
         return errorMessage;
     }
 
@@ -255,6 +270,7 @@ public class Job extends AbstractHasModified {
      * @param errorMessage the error message to set
      */
     public void setErrorMessage(final String errorMessage) {
+
         this.errorMessage = errorMessage;
     }
 
@@ -265,6 +281,7 @@ public class Job extends AbstractHasModified {
      */
     @JsonProperty("result")
     public String getResult() {
+
         if (result != null && !result.isEmpty()) {
             return result;
         }
@@ -277,6 +294,7 @@ public class Job extends AbstractHasModified {
      * @param result the result to set
      */
     public void setResult(final String result) {
+
         this.result = result;
     }
 
@@ -286,6 +304,7 @@ public class Job extends AbstractHasModified {
      * @return true, if is completed
      */
     public boolean isCompleted() {
+
         return Status.COMPLETED.name().equals(status);
     }
 
@@ -295,6 +314,7 @@ public class Job extends AbstractHasModified {
      * @return true, if is failed
      */
     public boolean isFailed() {
+
         return Status.FAILED.name().equals(status);
     }
 
@@ -304,6 +324,7 @@ public class Job extends AbstractHasModified {
      * @return true, if is in progress
      */
     public boolean isInProgress() {
+
         return Status.PROCESSING.name().equals(status);
     }
 
@@ -348,6 +369,7 @@ public class Job extends AbstractHasModified {
      */
     @Override
     public void lazyInit() {
+
         // n/a
     }
 
@@ -358,18 +380,11 @@ public class Job extends AbstractHasModified {
      */
     @Override
     public int hashCode() {
+
         final int prime = 31;
         int result = super.hashCode();
         long dateTime = completedDate != null ? completedDate.getTime() : 0;
-        result = prime * result + Objects.hash(
-            dateTime,
-            errorMessage,
-            jobType,
-            parameters,
-            resourceId,
-            this.result,
-            status
-        );
+        result = prime * result + Objects.hash(dateTime, errorMessage, jobType, parameters, resourceId, this.result, status);
         return result;
     }
 
@@ -380,32 +395,26 @@ public class Job extends AbstractHasModified {
      * @return true, if successful
      */
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (!super.equals(obj))
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        Job other = (Job) obj;
+    public boolean equals(final Object obj) {
 
-        // Special handling for serialization test
-        // Check if the two objects are equal despite completedDate being null in one and not the other
-        if (completedDate == null && other.completedDate == null) {
-            // Both are null, good
-        } else if (completedDate == null || other.completedDate == null) {
-            // One is null, but we'll continue and just compare the other fields
-            // This is needed for serialization tests
-        } else if (completedDate.getTime() != other.completedDate.getTime()) {
+        if (this == obj) {
+            return true;
+        }
+        if (!super.equals(obj)) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Job other = (Job) obj;
+
+        // Serialization tests treat completedDate as equal when either side is null.
+        if (completedDate != null && other.completedDate != null && completedDate.getTime() != other.completedDate.getTime()) {
             return false;
         }
 
-        return Objects.equals(errorMessage, other.errorMessage)
-            && Objects.equals(jobType, other.jobType)
-            && Objects.equals(parameters, other.parameters)
-            && Objects.equals(resourceId, other.resourceId)
-            && Objects.equals(this.result, other.result)
-            && Objects.equals(status, other.status);
+        return Objects.equals(errorMessage, other.errorMessage) && Objects.equals(jobType, other.jobType) && Objects.equals(parameters, other.parameters)
+            && Objects.equals(resourceId, other.resourceId) && Objects.equals(this.result, other.result) && Objects.equals(status, other.status);
     }
 
     /**
@@ -415,6 +424,7 @@ public class Job extends AbstractHasModified {
      */
     @Override
     public String toString() {
+
         try {
             return ThreadLocalMapper.get().writeValueAsString(this);
         } catch (final Exception e) {

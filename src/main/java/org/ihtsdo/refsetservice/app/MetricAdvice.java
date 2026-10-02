@@ -31,7 +31,7 @@ public class MetricAdvice {
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(MetricAdvice.class);
 
-    /** The elastic server properties. */
+    /* The elastic server properties. */
     // @Autowired
     // private ElasticServerProperties elasticServerProperties;
 

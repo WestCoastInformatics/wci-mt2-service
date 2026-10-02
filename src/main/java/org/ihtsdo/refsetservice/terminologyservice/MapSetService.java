@@ -43,18 +43,26 @@ import org.slf4j.LoggerFactory;
 /**
  * Service class to handle getting and modifying internal mapset information.
  */
-public class MapSetService {
+public final class MapSetService {
 
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(MapSetService.class);
 
-    /** The config properties. */
+    /**
+     *  The config properties.
+     *
+     * @return the config properties
+     */
     protected static Properties getConfigProperties() {
 
         return PropertyUtility.getProperties();
     }
 
-    /** The terminology handler. */
+    /**
+     *  The terminology handler.
+     *
+     * @return the terminology handler
+     */
     private static TerminologyServerHandler getTerminologyHandler() {
 
         return HandlerUtility.getOrCreateTerminologyHandler();
@@ -84,8 +92,8 @@ public class MapSetService {
     }
 
     /**
-     * Finds MapSet by refSetCode (for workflow/tracking data).
-     * Uses search index; when multiple map_sets share the same refSetCode, returns the latest by version date.
+     * Finds MapSet by refSetCode (for workflow/tracking data). Uses search index; when multiple map_sets share the same refSetCode, returns the latest by
+     * version date.
      *
      * @param service the terminology service
      * @param refSetCode the ref set code
@@ -97,12 +105,13 @@ public class MapSetService {
         if (refSetCode == null || refSetCode.isBlank()) {
             return null;
         }
-        //Look for IN DEVELOPMENT version first
-        final ResultList<MapSet> results = service.find("refSetCode:" + QueryParserBase.escape(refSetCode) + " AND versionStatus:" + VersionStatus.IN_DEVELOPMENT.name(), null, MapSet.class, null);
+        // Look for IN DEVELOPMENT version first
+        final ResultList<MapSet> results = service
+            .find("refSetCode:" + QueryParserBase.escape(refSetCode) + " AND versionStatus:" + VersionStatus.IN_DEVELOPMENT.name(), null, MapSet.class, null);
         if (!results.getItems().isEmpty()) {
             return results.getItems().get(0);
         }
-        //If no IN DEVELOPMENT version, look for latest published version
+        // If no IN DEVELOPMENT version, look for latest published version
         final PfsParameter pfs = new PfsParameter();
         pfs.setSort("versionDate");
         pfs.setAscending(false);
@@ -112,9 +121,8 @@ public class MapSetService {
     }
 
     /**
-     * Finds a map set by branch path (branchPath or fromBranchPath).
-     * Used when only branch is known (e.g. import flow).
-     * When multiple match, returns the latest by version date.
+     * Finds a map set by branch path (branchPath or fromBranchPath). Used when only branch is known (e.g. import flow). When multiple match, returns the latest
+     * by version date.
      *
      * @param service the terminology service
      * @param branchPath the branch path
@@ -137,8 +145,7 @@ public class MapSetService {
     }
 
     /**
-     * Gets MapSet for workflow operations by id or refSetCode.
-     * Tries id first (JPA get), then refSetCode lookup.
+     * Gets MapSet for workflow operations by id or refSetCode. Tries id first (JPA get), then refSetCode lookup.
      *
      * @param service the terminology service
      * @param mapSetInternalId the map set id or ref set code
@@ -166,6 +173,14 @@ public class MapSetService {
         return mapSet;
     }
 
+    /**
+     * Find map set by id.
+     *
+     * @param service the service
+     * @param mapSetInternalId the map set internal id
+     * @return the map set
+     * @throws Exception the exception
+     */
     private static MapSet findMapSetById(final TerminologyService service, final String mapSetInternalId) throws Exception {
 
         final EntityManager manager = service.getEntityManager();
@@ -184,9 +199,8 @@ public class MapSetService {
     }
 
     /**
-     * Resolves branch path for map set operations from map_sets table.
-     * For a specific map set: uses that map set. For general operations: uses last modified active map set.
-     * Branch path is resolved by BranchService (stored or computed from components).
+     * Resolves branch path for map set operations from map_sets table. For a specific map set: uses that map set. For general operations: uses last modified
+     * active map set. Branch path is resolved by BranchService (stored or computed from components).
      *
      * @param service the terminology service
      * @param mapSetCode optional ref set code; if provided, uses that map set's branch
@@ -221,12 +235,10 @@ public class MapSetService {
         final Map<String, String> terminologyToVersion = new LinkedHashMap<>();
         final ResultList<MapSet> results = service.find("active:true", null, MapSet.class, null);
         for (final MapSet m : results.getItems()) {
-            if (m.getFromTerminology() != null && !m.getFromTerminology().isBlank()
-                && m.getFromVersion() != null && !m.getFromVersion().isBlank()) {
+            if (m.getFromTerminology() != null && !m.getFromTerminology().isBlank() && m.getFromVersion() != null && !m.getFromVersion().isBlank()) {
                 terminologyToVersion.putIfAbsent(m.getFromTerminology(), m.getFromVersion());
             }
-            if (m.getToTerminology() != null && !m.getToTerminology().isBlank()
-                && m.getToVersion() != null && !m.getToVersion().isBlank()) {
+            if (m.getToTerminology() != null && !m.getToTerminology().isBlank() && m.getToVersion() != null && !m.getToVersion().isBlank()) {
                 terminologyToVersion.putIfAbsent(m.getToTerminology(), m.getToVersion());
             }
         }
@@ -234,8 +246,8 @@ public class MapSetService {
     }
 
     /**
-     * Caches concepts for terminologies used in active map sets.
-     * Uses the configured terminology handler; may be no-op for handlers that do not support caching.
+     * Caches concepts for terminologies used in active map sets. Uses the configured terminology handler; may be no-op for handlers that do not support
+     * caching.
      *
      * @param service the terminology service
      * @throws Exception the exception
@@ -262,8 +274,7 @@ public class MapSetService {
     }
 
     /**
-     * Search map sets in the database (Hibernate Search).
-     * Supports Lucene field queries such as {@code versionStatus:IN_DEVELOPMENT},
+     * Search map sets in the database (Hibernate Search). Supports Lucene field queries such as {@code versionStatus:IN_DEVELOPMENT},
      * {@code versionStatus:IN DEVELOPMENT} (JSON label form), and {@code workflowStatus:IN_EDIT}.
      *
      * @param service the terminology service
@@ -434,8 +445,8 @@ public class MapSetService {
         // complete creates the next IN_EDIT copy in the same transaction, and the search index may
         // still show the just-published row as IN_DEVELOPMENT.
         final ResultList<MapSet> results =
-            service.find("versionStatus: (" + VersionStatus.IN_DEVELOPMENT.name() + ") AND refSetCode: " + QueryParserBase.escape(mapSet.getRefSetCode()),
-                null, MapSet.class, null);
+            service.find("versionStatus: (" + VersionStatus.IN_DEVELOPMENT.name() + ") AND refSetCode: " + QueryParserBase.escape(mapSet.getRefSetCode()), null,
+                MapSet.class, null);
 
         final boolean hasOtherInDevelopment = results.getItems().stream()
             .anyMatch(existing -> !existing.getId().equals(mapSet.getId()) && existing.getVersionStatus() == VersionStatus.IN_DEVELOPMENT);

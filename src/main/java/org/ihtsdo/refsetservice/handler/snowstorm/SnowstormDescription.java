@@ -285,8 +285,8 @@ public class SnowstormDescription extends SnowstormAbstract {
         for (final List<String> batch : conceptIdBatches) {
 
             // Create Snowstorm URL
-            final String fullSnowstormUrl = SnowstormConnection.getRestBaseUrl() + edition.getBranch() + "/descriptions?limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH
-                + "&conceptIds=" + batch.stream().collect(Collectors.joining(","));
+            final String fullSnowstormUrl = SnowstormConnection.getRestBaseUrl() + edition.getBranch() + "/descriptions?limit="
+                + ELASTICSEARCH_MAX_RECORD_LENGTH + "&conceptIds=" + batch.stream().collect(Collectors.joining(","));
 
             LOG.info("getDescriptions batch conceptIds={}", batch.size());
             // Call Snowstorm

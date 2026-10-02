@@ -143,8 +143,7 @@ public class MappingWorkflowUnitTestUtilities {
 
         final String url = baseUrl + "/" + mapSetId + "/mappings/workflowStatus?conceptCodes=" + String.join(",", conceptCodes);
         final MvcResult result = mvc.perform(withUser(get(url), asUser).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
-        return MAPPER.readValue(result.getResponse().getContentAsString(),
-            MAPPER.getTypeFactory().constructCollectionType(List.class, MappingWorkflow.class));
+        return MAPPER.readValue(result.getResponse().getContentAsString(), MAPPER.getTypeFactory().constructCollectionType(List.class, MappingWorkflow.class));
     }
 
     /**
@@ -175,8 +174,7 @@ public class MappingWorkflowUnitTestUtilities {
         final User asUser) throws Exception {
 
         final String url = workflowStatusUrl(mapSetId, conceptCode, action, note, null);
-        mvc.perform(withUser(post(url), asUser).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().isForbidden());
+        mvc.perform(withUser(post(url), asUser).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isForbidden());
     }
 
     /**
@@ -193,8 +191,7 @@ public class MappingWorkflowUnitTestUtilities {
         final User asUser) throws Exception {
 
         final String url = workflowStatusUrl(mapSetId, conceptCode, action, note, null);
-        mvc.perform(withUser(post(url), asUser).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().isConflict());
+        mvc.perform(withUser(post(url), asUser).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isConflict());
     }
 
     /**
@@ -289,7 +286,6 @@ public class MappingWorkflowUnitTestUtilities {
      *
      * @param asUser the session user
      * @param queryString query string without leading '?'
-     * @return the assigned workflows expect bad request
      * @throws Exception the exception
      */
     public void getAssignedWorkflowsExpectBadRequest(final User asUser, final String queryString) throws Exception {
@@ -319,7 +315,6 @@ public class MappingWorkflowUnitTestUtilities {
      *
      * @param asUser the session user
      * @param queryString query string without leading '?'
-     * @return the recently modified workflows expect bad request
      * @throws Exception the exception
      */
     public void getRecentlyModifiedWorkflowsExpectBadRequest(final User asUser, final String queryString) throws Exception {

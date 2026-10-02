@@ -10,20 +10,19 @@
 package org.ihtsdo.refsetservice.helpers;
 
 /**
- * Enum of query types for report. Determines type of handler to be used. NONE
- * is used for "diff" reports.
+ * Enum of query types for report. Determines type of handler to be used. NONE is used for "diff" reports.
  */
 public enum ReportQueryType {
 
-  /** lucene type. */
-  LUCENE,
+    /** lucene type. */
+    LUCENE,
 
-  /** HQL type. */
-  HQL,
+    /** HQL type. */
+    HQL,
 
-  /** SQL type. */
-  SQL,
+    /** SQL type. */
+    SQL,
 
-  /** No query used, no query type. */
-  NONE
+    /** No query used, no query type. */
+    NONE
 }

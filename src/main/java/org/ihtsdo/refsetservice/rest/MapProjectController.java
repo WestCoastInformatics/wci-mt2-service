@@ -69,7 +69,6 @@ public class MapProjectController extends BaseController {
     /**
      * Update mapProject.
      *
-     * @param id the id
      * @param mapProject the mapProject
      * @return the response entity
      * @throws Exception the exception
@@ -78,8 +77,7 @@ public class MapProjectController extends BaseController {
     @Operation(summary = "Create mapping project.", tags = {
         "project"
     }, responses = {
-        @ApiResponse(responseCode = "201", description = "Created mapping project"),
-        @ApiResponse(responseCode = "417", description = "Failed Expectation")
+        @ApiResponse(responseCode = "201", description = "Created mapping project"), @ApiResponse(responseCode = "417", description = "Failed Expectation")
     }, requestBody = @RequestBody(description = "Map Project to create", required = true, content = {
         @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = MapProject.class))
     }))
@@ -142,7 +140,7 @@ public class MapProjectController extends BaseController {
         @RequestParam(value = "includeMembers", defaultValue = "false") final boolean includeMembers) throws Exception {
 
         LOG.info("Project: id: " + id);
-        //authorizeUser(request);
+        // authorizeUser(request);
 
         try (final TerminologyService service = new TerminologyService()) {
             final MapProject mapProject = MapProjectService.getMapProject(service, id, includeMembers);
@@ -261,8 +259,8 @@ public class MapProjectController extends BaseController {
     })
     @RecordMetric
     public @ResponseBody ResponseEntity<ResultList<MapProject>> getMapProjects(
-        @Parameter(hidden = true) @ModelAttribute final SearchParameters searchParameters,
-        final BindingResult bindingResult, @RequestParam(value = "includeMembers", defaultValue = "false") final boolean includeMembers,
+        @Parameter(hidden = true) @ModelAttribute final SearchParameters searchParameters, final BindingResult bindingResult,
+        @RequestParam(value = "includeMembers", defaultValue = "false") final boolean includeMembers,
         @RequestParam(value = "includeModuleNames", required = false, defaultValue = "false") final Boolean includeModuleNames,
         @RequestParam(value = "icludeTeamDetails", required = false, defaultValue = "false") final Boolean includeTeamDetails) throws Exception {
 

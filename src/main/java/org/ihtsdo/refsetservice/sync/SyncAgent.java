@@ -43,11 +43,13 @@ public abstract class SyncAgent {
     /** The db handler. */
     private static SyncDatabaseHandler dbHandler;
 
-    protected static String developerTestingBranchToUse;
+    /** The developer testing branch to use. */
+    private static String developerTestingBranchToUse;
 
     /** The Constant STATISTICS. */
     protected static final SyncStatistics STATISTICS = new SyncStatistics();
 
+    /** The Constant SNOMED_CORE_EDITION_NAME. */
     public static final String SNOMED_CORE_EDITION_NAME = "SNOMEDCT";
 
     /**
@@ -67,13 +69,13 @@ public abstract class SyncAgent {
     /** The is ignore core refsets. */
     private static Boolean isIgnoreCoreRefsets = null;
 
-    /** Testing options. */
+    /* Testing options. */
     /** The single code system short name. */
-    protected final static Set<String> shortNamesToSync = new HashSet<>();
+    protected static final Set<String> SHORT_NAMES_TO_SYNC = new HashSet<>();
 
     /** The testing refset. */
     // TODO: Make this a comma-delimited list and object
-    protected static String testingRefset = null; // To test entire edition
+    private static String testingRefset = null; // To test entire edition
     // protected static String testingRefset = "98031000146109"; // To test entire edition
     // private static String testingRefset = "56421000052109"; // SE refset with only 6 concepts
     // private static String testingRefset = "421000210109"; // NZ with def clauses
@@ -133,7 +135,7 @@ public abstract class SyncAgent {
 
         LOG.info("Starting Syncing of Users, Projects, Code System, Branches, and Refsets from Termserver");
 
-        SyncCodeSystemDeterminer termServerCodeSystemDeterminer = new SyncCodeSystemDeterminer(service, getUtilities(), STATISTICS, shortNamesToSync);
+        SyncCodeSystemDeterminer termServerCodeSystemDeterminer = new SyncCodeSystemDeterminer(service, getUtilities(), STATISTICS, SHORT_NAMES_TO_SYNC);
 
         Set<JsonNode> filteredCodeSystems = termServerCodeSystemDeterminer.determineCodeSystemsToProcess();
         final HashMap<String, String> termServerShortNameToOwnerMap = termServerCodeSystemDeterminer.getTermServerShortNameToOwnerMap(filteredCodeSystems);
@@ -162,7 +164,7 @@ public abstract class SyncAgent {
 
         /*-
          *  Contains ability to execute a series of SQL calls from a resource file
-         *  
+         *
          *  final String results = getUtilities().getSyncResults(service);
          */
         final String results = STATISTICS.printStatistics();
@@ -212,6 +214,26 @@ public abstract class SyncAgent {
     protected static void setDbHandler(final SyncDatabaseHandler dbHandler) {
 
         SyncAgent.dbHandler = dbHandler;
+    }
+
+    /**
+     * Returns the developer testing branch to use.
+     *
+     * @return the developer testing branch to use
+     */
+    protected static String getDeveloperTestingBranchToUse() {
+
+        return developerTestingBranchToUse;
+    }
+
+    /**
+     * Sets the developer testing branch to use.
+     *
+     * @param developerTestingBranchToUse the developer testing branch to use
+     */
+    protected static void setDeveloperTestingBranchToUse(final String developerTestingBranchToUse) {
+
+        SyncAgent.developerTestingBranchToUse = developerTestingBranchToUse;
     }
 
     /**
@@ -273,11 +295,11 @@ public abstract class SyncAgent {
 
         // For now, support none, a single, or a comma-delimited set of short names (without space between).
         // TODO: Improve later when not focusing elsewhere.
-        shortNamesToSync.clear();
+        SHORT_NAMES_TO_SYNC.clear();
 
         if (shortNames != null && !shortNames.isEmpty()) {
             if (!shortNames.contains(",") && !shortNames.contains(" ")) {
-                shortNamesToSync.add(shortNames);
+                SHORT_NAMES_TO_SYNC.add(shortNames);
             } else {
                 String[] shortNamesArray = shortNames.split(",");
 
@@ -285,7 +307,7 @@ public abstract class SyncAgent {
                     shortNamesArray = shortNames.split(" ");
                 }
                 for (int i = 0; i < shortNamesArray.length; i++) {
-                    shortNamesToSync.add(shortNamesArray[i]);
+                    SHORT_NAMES_TO_SYNC.add(shortNamesArray[i]);
                 }
             }
         }

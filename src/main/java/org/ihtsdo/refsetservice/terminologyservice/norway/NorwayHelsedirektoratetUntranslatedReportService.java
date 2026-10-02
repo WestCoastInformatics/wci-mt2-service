@@ -29,9 +29,8 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
- * Report of Helsedirektoratet refset concepts that lack a Bokmål translation, including ICD-10 / ICPC map
- * targets. Nynorsk, Bokmål GP, and Nynorsk GP flags are omitted: those language refsets require a Bokmål
- * description, so they are always false for concepts in this report. Uses the Snowstorm URL configured as
+ * Report of Helsedirektoratet refset concepts that lack a Bokmål translation, including ICD-10 / ICPC map targets. Nynorsk, Bokmål GP, and Nynorsk GP flags are
+ * omitted: those language refsets require a Bokmål description, so they are always false for concepts in this report. Uses the Snowstorm URL configured as
  * {@code norway.snowstorm.url}.
  */
 public class NorwayHelsedirektoratetUntranslatedReportService {
@@ -90,8 +89,8 @@ public class NorwayHelsedirektoratetUntranslatedReportService {
             Collections.sort(illegalConceptIds);
             Collections.sort(untranslatedConceptIds);
             if (!illegalConceptIds.isEmpty()) {
-                LOG.warn("Skipping Snowstorm lookups for {} non-numeric Helsedirektoratet concept id(s); " +
-                    "they will appear in the report without FSN/language/map data: {}", illegalConceptIds.size(), illegalConceptIds);
+                LOG.warn("Skipping Snowstorm lookups for {} non-numeric Helsedirektoratet concept id(s); "
+                    + "they will appear in the report without FSN/language/map data: {}", illegalConceptIds.size(), illegalConceptIds);
             }
             LOG.info("Helsedirektoratet concepts without Bokmål translation: {}", untranslatedConceptIds.size());
 
@@ -122,8 +121,7 @@ public class NorwayHelsedirektoratetUntranslatedReportService {
             final File resultFile = NorwayReplacementReportSupport.writeResultFile(filename, results);
             final File zipFile = NorwayReplacementReportSupport.zipResultFile(filename, resultFile);
 
-            NorwayReplacementReportSupport.emailReportFile("[MT2] Norway Helsedirektoratet Untranslated Report",
-                buildEmailBody(illegalConceptIds),
+            NorwayReplacementReportSupport.emailReportFile("[MT2] Norway Helsedirektoratet Untranslated Report", buildEmailBody(illegalConceptIds),
                 NorwayReplacementReportSupport.HELSEDIREKTORATET_UNTRANSLATED_RECIPIENTS_PROPERTY, zipFile);
 
             LOG.info("Norway Helsedirektoratet Untranslated Report completed.");

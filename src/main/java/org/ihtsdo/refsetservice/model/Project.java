@@ -151,7 +151,11 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
         teams = other.getTeams();
     }
 
-    /* see superclass */
+    /**
+     * Patch from.
+     *
+     * @param other the other
+     */
     @Override
     public void patchFrom(final Project other) {
 
@@ -477,7 +481,11 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
         this.lockStatus = lockStatus != null && lockStatus;
     }
 
-    /* see superclass */
+    /**
+     * Hash code.
+     *
+     * @return the int
+     */
     @Override
     public int hashCode() {
 
@@ -495,9 +503,14 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
         return result;
     }
 
-    /* see superclass */
+    /**
+     * Equals.
+     *
+     * @param obj the obj
+     * @return true, if successful
+     */
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
 
         if (this == obj) {
             return true;
@@ -567,7 +580,11 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
         return true;
     }
 
-    /* see superclass */
+    /**
+     * To string.
+     *
+     * @return the string
+     */
     @Override
     public String toString() {
 
@@ -581,7 +598,9 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
 
     }
 
-    /* see superclass */
+    /**
+     * Lazy init.
+     */
     @Override
     public void lazyInit() {
 
@@ -589,7 +608,11 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
 
     }
 
-    /* see superclass */
+    /**
+     * Validate add.
+     *
+     * @throws Exception the exception
+     */
     @Override
     public void validateAdd() throws Exception {
 
@@ -610,7 +633,12 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
 
     }
 
-    /* see superclass */
+    /**
+     * Validate update.
+     *
+     * @param other the other
+     * @throws Exception the exception
+     */
     @Override
     public void validateUpdate(final Project other) throws Exception {
 
@@ -631,7 +659,11 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
 
     }
 
-    /* see superclass */
+    /**
+     * Validate delete.
+     *
+     * @throws Exception the exception
+     */
     @Override
     public void validateDelete() throws Exception {
 

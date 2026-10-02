@@ -21,10 +21,17 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 public class DiscussionPostUnitTest extends BaseTest {
 
+    /** The object. */
     private DiscussionPost object;
 
+    /** The user. */
     private User user;
 
+    /**
+     * Setup.
+     *
+     * @throws Exception the exception
+     */
     @BeforeEach
     public void setup() throws Exception {
 
@@ -33,6 +40,11 @@ public class DiscussionPostUnitTest extends BaseTest {
         user = (User) userTester.createObject(1);
     }
 
+    /**
+     * Test model get set.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelGetSet() throws Exception {
 
@@ -41,6 +53,11 @@ public class DiscussionPostUnitTest extends BaseTest {
         tester.test();
     }
 
+    /**
+     * Test model equals hashcode.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelEqualsHashcode() throws Exception {
 
@@ -62,6 +79,11 @@ public class DiscussionPostUnitTest extends BaseTest {
         assertTrue(tester.testIdentityFieldDifferentHashcode());
     }
 
+    /**
+     * Test model serialization.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelSerialization() throws Exception {
 

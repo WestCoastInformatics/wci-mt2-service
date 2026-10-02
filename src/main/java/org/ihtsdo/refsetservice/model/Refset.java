@@ -195,7 +195,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
     @Fetch(FetchMode.JOIN)
     private List<DefinitionClause> definitionClauses = new ArrayList<>();
 
-    /** The definition clauses. */
+    /* The definition clauses. */
     /*
      * // @Fetch(FetchMode.JOIN)
      *
@@ -265,7 +265,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
     /** The upgrade versions candidate. */
     @Transient
-    public List<String> upgradeVersionsCandidate;
+    private List<String> upgradeVersionsCandidate;
 
     /** The value to use for the 'INCLUSION' intensional definition exception type. */
     @Transient
@@ -373,13 +373,14 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
             definitionClauses.add(otherClause);
         }
     }
-    
+
     /**
      * To branch details.
      *
      * @return the branch information
      */
     public BranchInformation toBranchDetails() {
+
         return new BranchInformation(this);
     }
 
@@ -1143,7 +1144,12 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
         return locked;
     }
-    
+
+    /**
+     * Checks if is active.
+     *
+     * @return true, if is active
+     */
     @JsonGetter()
     @Override
     public boolean isActive() {
@@ -1578,7 +1584,7 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
 
         this.upgradeVersionsCandidate = upgradeVersionsCandidate;
     }
-    
+
     /**
      * Hash code.
      *
@@ -1875,7 +1881,6 @@ public class Refset extends AbstractHasModified implements Comparable<Refset> {
      *
      * @return the string
      */
-    /* see superclass */
     @Override
     public String toString() {
 

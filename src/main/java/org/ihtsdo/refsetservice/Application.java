@@ -11,7 +11,6 @@ package org.ihtsdo.refsetservice;
 
 import jakarta.persistence.PersistenceException;
 
-import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;

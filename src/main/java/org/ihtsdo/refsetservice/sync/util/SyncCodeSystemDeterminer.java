@@ -337,7 +337,7 @@ public class SyncCodeSystemDeterminer {
     /**
      * Indicates whether or not a single code system is to be processed.
      *
-     * @param codeSystem the code system
+     * @param shortNameToReview the short name to review
      * @param syncUtilities the sync utilities
      * @return <code>true</code> if so, <code>false</code> otherwise
      */

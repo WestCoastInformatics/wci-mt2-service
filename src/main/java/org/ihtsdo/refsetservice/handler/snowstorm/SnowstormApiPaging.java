@@ -5,22 +5,45 @@ import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SnowstormApiPaging {
+/**
+ * The Class SnowstormApiPaging.
+ */
+public final class SnowstormApiPaging {
 
     /** The Constant LOG. */
     @SuppressWarnings("unused")
     private static final Logger LOG = LoggerFactory.getLogger(SnowstormApiPaging.class);
 
+    /** The Constant MEMBER_SORT_FIELD. */
     private static final String MEMBER_SORT_FIELD = "referencedComponentId";
+
+    /** The Constant MEMBER_SORT_ORDER. */
     private static final String MEMBER_SORT_ORDER = "asc";
 
     /**
+     * Instantiates an empty {@link SnowstormApiPaging}.
+     */
+    private SnowstormApiPaging() {
+
+        // n/a
+    }
+
+    /**
      * Snowstorm member endpoints require sortField and sortOrder together.
+     *
+     * @return the member sort query string
      */
     public static String getMemberSortQueryString() {
+
         return "sortField=" + MEMBER_SORT_FIELD + "&sortOrder=" + MEMBER_SORT_ORDER;
     }
 
+    /**
+     * Gets the paging query string.
+     *
+     * @param searchParameters the search parameters
+     * @return the paging query string
+     */
     public static String getPagingQueryString(final SearchParameters searchParameters) {
 
         if (searchParameters == null) {
@@ -30,8 +53,7 @@ public class SnowstormApiPaging {
         final StringBuilder pagingQueryString = new StringBuilder();
 
         // limit
-        final int limit = (searchParameters.getLimit() != null && searchParameters.getLimit() > 0) 
-            ? Math.min(searchParameters.getLimit(), 10000) : 50;
+        final int limit = (searchParameters.getLimit() != null && searchParameters.getLimit() > 0) ? Math.min(searchParameters.getLimit(), 10000) : 50;
         pagingQueryString.append("&limit=").append(limit);
 
         // searchAfter
@@ -60,6 +82,12 @@ public class SnowstormApiPaging {
         return pagingQueryString.toString();
     }
 
+    /**
+     * Gets the member search paging query string.
+     *
+     * @param searchParameters the search parameters
+     * @return the member search paging query string
+     */
     public static String getMemberSearchPagingQueryString(final SearchParameters searchParameters) {
 
         final String pagingQueryString = getPagingQueryString(searchParameters);
@@ -69,4 +97,3 @@ public class SnowstormApiPaging {
         return pagingQueryString + "&" + getMemberSortQueryString();
     }
 }
-

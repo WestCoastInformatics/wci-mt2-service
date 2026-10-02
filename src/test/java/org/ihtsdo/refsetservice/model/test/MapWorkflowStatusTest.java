@@ -19,26 +19,11 @@ public class MapWorkflowStatusTest {
 
     /** Expected workflow phase order; enum ordinals must match. */
     private static final MapWorkflowStatus[] WORKFLOW_ORDER = {
-        MapWorkflowStatus.NEW,
-        MapWorkflowStatus.PUBLISHED,
-        MapWorkflowStatus.EDITING_IN_PROGRESS,
-        MapWorkflowStatus.EDITING_DONE,
-        MapWorkflowStatus.CONFLICT_DETECTED,
-        MapWorkflowStatus.CONFLICT_IN_PROGRESS,
-        MapWorkflowStatus.CONFLICT_RESOLVED,
-        MapWorkflowStatus.CONFLICT_FINISHED,
-        MapWorkflowStatus.REVIEW_NEEDED,
-        MapWorkflowStatus.REVIEW_IN_PROGRESS,
-        MapWorkflowStatus.REVIEW_RESOLVED,
-        MapWorkflowStatus.REVIEW_FINISHED,
-        MapWorkflowStatus.QA_NEEDED,
-        MapWorkflowStatus.QA_IN_PROGRESS,
-        MapWorkflowStatus.QA_RESOLVED,
-        MapWorkflowStatus.CONSENSUS_NEEDED,
-        MapWorkflowStatus.CONSENSUS_NEW,
-        MapWorkflowStatus.CONSENSUS_IN_PROGRESS,
-        MapWorkflowStatus.READY_FOR_PUBLICATION,
-        MapWorkflowStatus.REVISION
+        MapWorkflowStatus.NEW, MapWorkflowStatus.PUBLISHED, MapWorkflowStatus.EDITING_IN_PROGRESS, MapWorkflowStatus.EDITING_DONE,
+        MapWorkflowStatus.CONFLICT_DETECTED, MapWorkflowStatus.CONFLICT_IN_PROGRESS, MapWorkflowStatus.CONFLICT_RESOLVED, MapWorkflowStatus.CONFLICT_FINISHED,
+        MapWorkflowStatus.REVIEW_NEEDED, MapWorkflowStatus.REVIEW_IN_PROGRESS, MapWorkflowStatus.REVIEW_RESOLVED, MapWorkflowStatus.REVIEW_FINISHED,
+        MapWorkflowStatus.QA_NEEDED, MapWorkflowStatus.QA_IN_PROGRESS, MapWorkflowStatus.QA_RESOLVED, MapWorkflowStatus.CONSENSUS_NEEDED,
+        MapWorkflowStatus.CONSENSUS_NEW, MapWorkflowStatus.CONSENSUS_IN_PROGRESS, MapWorkflowStatus.READY_FOR_PUBLICATION, MapWorkflowStatus.REVISION
     };
 
     @Test
@@ -53,16 +38,14 @@ public class MapWorkflowStatusTest {
     @Test
     public void testPhaseOrdering() {
 
-        assertEquals(MapWorkflowStatus.values().length, WORKFLOW_ORDER.length,
-            "WORKFLOW_ORDER must list every MapWorkflowStatus constant");
+        assertEquals(MapWorkflowStatus.values().length, WORKFLOW_ORDER.length, "WORKFLOW_ORDER must list every MapWorkflowStatus constant");
 
         final Set<MapWorkflowStatus> expected = new HashSet<>(Arrays.asList(WORKFLOW_ORDER));
         final Set<MapWorkflowStatus> actual = Arrays.stream(MapWorkflowStatus.values()).collect(Collectors.toSet());
         assertEquals(expected, actual, "WORKFLOW_ORDER must match enum constants exactly");
 
         for (int i = 0; i < WORKFLOW_ORDER.length - 1; i++) {
-            assertTrue(WORKFLOW_ORDER[i].ordinal() < WORKFLOW_ORDER[i + 1].ordinal(),
-                WORKFLOW_ORDER[i] + " must appear before " + WORKFLOW_ORDER[i + 1]);
+            assertTrue(WORKFLOW_ORDER[i].ordinal() < WORKFLOW_ORDER[i + 1].ordinal(), WORKFLOW_ORDER[i] + " must appear before " + WORKFLOW_ORDER[i + 1]);
         }
     }
 

@@ -15,8 +15,8 @@ import java.util.List;
 import org.ihtsdo.refsetservice.helpers.MapUserRole;
 
 /**
- * Per-mapping workflow roles used as permutation-file keys. Distinct from {@link MapUserRole}, which stores project
- * membership; {@code ADMIN} maps to {@link MapUserRole#ADMINISTRATOR}.
+ * Per-mapping workflow roles used as permutation-file keys. Distinct from {@link MapUserRole}, which stores project membership; {@code ADMIN} maps to
+ * {@link MapUserRole#ADMINISTRATOR}.
  */
 public enum MappingWorkflowRole {
 

@@ -60,6 +60,9 @@ public final class EmailUtility {
     private static final String EMAIL_VALIDATION_REGEX_PATTERN =
         "^(?=.{1,64}@)[\\p{L}0-9_+-]+(\\.[\\p{L}0-9_+-]+)*@[^-][\\p{L}0-9-]+(\\.[\\p{L}0-9-]+)*(\\.[\\p{L}]{2,})$";
 
+    /**
+     * Ensure email config.
+     */
     private static void ensureEmailConfig() {
 
         if (emailEnabled == null) {
@@ -82,7 +85,6 @@ public final class EmailUtility {
      * Sends email.
      *
      * @param subject the subject
-     * @param from the from
      * @param recipients the recipients
      * @param body the body
      * @throws Exception the exception
@@ -101,8 +103,7 @@ public final class EmailUtility {
         if (recipients.stream().anyMatch(r -> !r.matches(EMAIL_VALIDATION_REGEX_PATTERN))) {
 
             // invalid email address. Return 400
-            final List<String> failingEmailAddresses =
-                recipients.stream().filter(r -> !r.matches(EMAIL_VALIDATION_REGEX_PATTERN)).collect(Collectors.toList());
+            final List<String> failingEmailAddresses = recipients.stream().filter(r -> !r.matches(EMAIL_VALIDATION_REGEX_PATTERN)).collect(Collectors.toList());
 
             final String message = "Invalid email address requested for recipient(s): " + failingEmailAddresses;
             LOG.error(message);
@@ -169,8 +170,7 @@ public final class EmailUtility {
      * @param attachmentPath absolute path to the attachment file
      * @throws Exception the exception
      */
-    public static void sendEmailWithAttachment(final String subject, final String recipients, final String body, final String attachmentPath)
-        throws Exception {
+    public static void sendEmailWithAttachment(final String subject, final String recipients, final String body, final String attachmentPath) throws Exception {
 
         sendEmailWithAttachment(subject, parseRecipients(recipients), body, attachmentPath);
     }
@@ -198,8 +198,7 @@ public final class EmailUtility {
 
         if (recipients.stream().anyMatch(r -> !r.matches(EMAIL_VALIDATION_REGEX_PATTERN))) {
 
-            final List<String> failingEmailAddresses =
-                recipients.stream().filter(r -> !r.matches(EMAIL_VALIDATION_REGEX_PATTERN)).collect(Collectors.toList());
+            final List<String> failingEmailAddresses = recipients.stream().filter(r -> !r.matches(EMAIL_VALIDATION_REGEX_PATTERN)).collect(Collectors.toList());
             final String message = "Invalid email address requested for recipient(s): " + failingEmailAddresses;
             LOG.error(message);
             throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);

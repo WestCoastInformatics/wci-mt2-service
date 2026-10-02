@@ -169,7 +169,11 @@ public class MapPrinciple extends AbstractHasId {
 
     }
 
-    /* see superclass */
+    /**
+     * Hash code.
+     *
+     * @return the int
+     */
     @Override
     public int hashCode() {
 
@@ -182,7 +186,12 @@ public class MapPrinciple extends AbstractHasId {
         return result;
     }
 
-    /* see superclass */
+    /**
+     * Equals.
+     *
+     * @param obj the obj
+     * @return true, if successful
+     */
     @Override
     public boolean equals(final Object obj) {
 
@@ -227,7 +236,11 @@ public class MapPrinciple extends AbstractHasId {
         return true;
     }
 
-    /* see superclass */
+    /**
+     * To string.
+     *
+     * @return the string
+     */
     @Override
     public String toString() {
 

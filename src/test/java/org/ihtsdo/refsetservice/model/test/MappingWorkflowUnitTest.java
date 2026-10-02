@@ -33,12 +33,20 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 public class MappingWorkflowUnitTest extends BaseTest {
 
+    /** The object. */
     private MappingWorkflow object;
 
+    /** The map set. */
     private MapSet mapSet;
 
+    /** The map project. */
     private MapProject mapProject;
 
+    /**
+     * Setup.
+     *
+     * @throws Exception the exception
+     */
     @BeforeEach
     public void setup() throws Exception {
 
@@ -49,6 +57,11 @@ public class MappingWorkflowUnitTest extends BaseTest {
         mapProject = (MapProject) mapProjectTester.createObject(1);
     }
 
+    /**
+     * Test model get set.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelGetSet() throws Exception {
 
@@ -60,6 +73,11 @@ public class MappingWorkflowUnitTest extends BaseTest {
         tester.test();
     }
 
+    /**
+     * Test persist and reload.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testPersistAndReload() throws Exception {
 
@@ -104,6 +122,11 @@ public class MappingWorkflowUnitTest extends BaseTest {
         }
     }
 
+    /**
+     * Test find by concept and status.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testFindByConceptAndStatus() throws Exception {
 
@@ -128,8 +151,7 @@ public class MappingWorkflowUnitTest extends BaseTest {
             workflowDone.setMapSet(persistedMapSet);
             service.add(workflowDone);
 
-            final String query = "sourceConceptCode:" + QueryParserBase.escape("123")
-                + " AND workflowStatus:" + MapWorkflowStatus.NEW.name();
+            final String query = "sourceConceptCode:" + QueryParserBase.escape("123") + " AND workflowStatus:" + MapWorkflowStatus.NEW.name();
             final ResultList<MappingWorkflow> results = service.find(query, null, MappingWorkflow.class, null);
 
             assertEquals(1, results.getItems().size());
@@ -142,6 +164,13 @@ public class MappingWorkflowUnitTest extends BaseTest {
         }
     }
 
+    /**
+     * Persist map set.
+     *
+     * @param service the service
+     * @return the map set
+     * @throws Exception the exception
+     */
     private MapSet persistMapSet(final TerminologyService service) throws Exception {
 
         final ProxyTester orgTester = new ProxyTester(new Organization());
@@ -182,6 +211,14 @@ public class MappingWorkflowUnitTest extends BaseTest {
         return service.add(persistedMapSet);
     }
 
+    /**
+     * Persist map project.
+     *
+     * @param service the service
+     * @param edition the edition
+     * @return the map project
+     * @throws Exception the exception
+     */
     private MapProject persistMapProject(final TerminologyService service, final Edition edition) throws Exception {
 
         final ProxyTester mapProjectTester = new ProxyTester(new MapProject());
@@ -192,6 +229,13 @@ public class MappingWorkflowUnitTest extends BaseTest {
         return service.add(persistedMapProject);
     }
 
+    /**
+     * Cleanup map set dependencies.
+     *
+     * @param service the service
+     * @param mapSetToRemove the map set to remove
+     * @throws Exception the exception
+     */
     private void cleanupMapSetDependencies(final TerminologyService service, final MapSet mapSetToRemove) throws Exception {
 
         service.remove(mapSetToRemove.getProject());
@@ -199,6 +243,12 @@ public class MappingWorkflowUnitTest extends BaseTest {
         service.remove(mapSetToRemove.getProject().getEdition().getOrganization());
     }
 
+    /**
+     * Assert mapping workflow fields equal.
+     *
+     * @param expected the expected
+     * @param actual the actual
+     */
     private void assertMappingWorkflowFieldsEqual(final MappingWorkflow expected, final MappingWorkflow actual) {
 
         assertEquals(expected.getSourceConceptCode(), actual.getSourceConceptCode());

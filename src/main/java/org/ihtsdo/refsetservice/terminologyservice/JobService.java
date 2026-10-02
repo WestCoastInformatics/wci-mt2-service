@@ -26,7 +26,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
  * Service for managing asynchronous jobs.
  */
 @Service
-public class JobService {
+public final class JobService {
 
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(JobService.class);

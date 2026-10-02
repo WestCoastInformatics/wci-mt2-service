@@ -189,9 +189,9 @@ public final class KeycloakEntraTestSupport {
      */
     private static JsonNode requestPasswordGrant(final KeycloakContainer keycloak, final String username, final String password) throws Exception {
 
-        final String form = String.join("&", "grant_type=" + urlEncode("password"), "client_id=" + urlEncode(CLIENT_ID),
-            "client_secret=" + urlEncode(CLIENT_SECRET), "username=" + urlEncode(username), "password=" + urlEncode(password),
-            "scope=" + urlEncode("openid email profile"));
+        final String form =
+            String.join("&", "grant_type=" + urlEncode("password"), "client_id=" + urlEncode(CLIENT_ID), "client_secret=" + urlEncode(CLIENT_SECRET),
+                "username=" + urlEncode(username), "password=" + urlEncode(password), "scope=" + urlEncode("openid email profile"));
         final HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
         final HttpRequest request = HttpRequest.newBuilder(URI.create(tokenEndpoint(keycloak))).timeout(Duration.ofSeconds(30))
             .header("Content-Type", "application/x-www-form-urlencoded").POST(HttpRequest.BodyPublishers.ofString(form)).build();

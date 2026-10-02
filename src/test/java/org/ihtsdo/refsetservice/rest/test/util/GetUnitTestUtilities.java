@@ -45,221 +45,182 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 public class GetUnitTestUtilities {
 
-	/** The Constant LOG. */
-	private static final Logger LOG = LoggerFactory.getLogger(GetUnitTestUtilities.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(GetUnitTestUtilities.class);
 
-	/** The mvc. */
-	private MockMvc mvc;
+    /** The mvc. */
+    private MockMvc mvc;
 
-	/** The base url. */
-	private String baseUrl;
+    /** The base url. */
+    private String baseUrl;
 
-	/** The sdf. */
-	private SimpleDateFormat sdf = null;
+    /** The sdf. */
+    private SimpleDateFormat sdf = null;
 
-	/**
-	 * Instantiates a {@link GetUnitTestUtilities} from the specified parameters.
-	 *
-	 * @param mvc     the mvc
-	 * @param baseUrl the base url
-	 * @param sdf     the sdf
-	 */
-	public GetUnitTestUtilities(final MockMvc mvc, final String baseUrl, final SimpleDateFormat sdf) {
+    /**
+     * Instantiates a {@link GetUnitTestUtilities} from the specified parameters.
+     *
+     * @param mvc the mvc
+     * @param baseUrl the base url
+     * @param sdf the sdf
+     */
+    public GetUnitTestUtilities(final MockMvc mvc, final String baseUrl, final SimpleDateFormat sdf) {
 
-		this.mvc = mvc;
-		this.baseUrl = baseUrl;
-		this.sdf = sdf;
-	}
+        this.mvc = mvc;
+        this.baseUrl = baseUrl;
+        this.sdf = sdf;
+    }
 
-	/**
-	 * Returns the internal refset id.
-	 *
-	 * @param refsetId the refset id
-	 * @param version  the version
-	 * @return the internal refset id
-	 * @throws Exception the exception
-	 */
-	public String getInternalRefsetId(final String refsetId, final String version) throws Exception {
+    /**
+     * Returns the internal refset id.
+     *
+     * @param refsetId the refset id
+     * @param version the version
+     * @return the internal refset id
+     * @throws Exception the exception
+     */
+    public String getInternalRefsetId(final String refsetId, final String version) throws Exception {
 
-		try (final TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
-			final PfsParameter pfs = new PfsParameter();
-			pfs.setSort("versionDate");
-			pfs.setAscending(false);
+            final PfsParameter pfs = new PfsParameter();
+            pfs.setSort("versionDate");
+            pfs.setAscending(false);
 
-			final ResultList<Refset> refsets = service.find("refsetId:" + QueryParserBase.escape(refsetId) + "", pfs,
-					Refset.class, null);
+            final ResultList<Refset> refsets = service.find("refsetId:" + QueryParserBase.escape(refsetId) + "", pfs, Refset.class, null);
 
-			assertThat(refsets.getItems().size()).isGreaterThan(0);
+            assertThat(refsets.getItems().size()).isGreaterThan(0);
 
-			Refset refsetToReturn = null;
+            Refset refsetToReturn = null;
 
-			for (final Refset refset : refsets.getItems()) {
+            for (final Refset refset : refsets.getItems()) {
 
-				if (version.replaceAll("-", "").equals(sdf.format(refset.getVersionDate()))) {
+                if (version.replaceAll("-", "").equals(sdf.format(refset.getVersionDate()))) {
 
-					refsetToReturn = refset;
-					break;
-				}
+                    refsetToReturn = refset;
+                    break;
+                }
 
-			}
+            }
 
-			if (refsetToReturn == null) {
+            if (refsetToReturn == null) {
 
-				throw new Exception("Refset Id: " + refsetId + " does not exist in the RT2 database");
-			}
+                throw new Exception("Refset Id: " + refsetId + " does not exist in the RT2 database");
+            }
 
-			assertThat(refsetToReturn).isNotNull();
-			assertThat(refsetToReturn.getRefsetId()).isEqualTo(refsetId);
+            assertThat(refsetToReturn).isNotNull();
+            assertThat(refsetToReturn.getRefsetId()).isEqualTo(refsetId);
 
-			return refsetToReturn.getId();
-		}
+            return refsetToReturn.getId();
+        }
 
-	}
+    }
 
-	/**
-	 * Get the internal project ID based on the project's name.
-	 *
-	 * @param projectName The name of the project
-	 * @return the internal project ID
-	 * @throws Exception the exception
-	 */
-	public String getInternalProjectId(final String projectName) throws Exception {
+    /**
+     * Get the internal project ID based on the project's name.
+     *
+     * @param projectName The name of the project
+     * @return the internal project ID
+     * @throws Exception the exception
+     */
+    public String getInternalProjectId(final String projectName) throws Exception {
 
-		try (final TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
-			final PfsParameter pfs = new PfsParameter();
+            final PfsParameter pfs = new PfsParameter();
 
-			final ResultList<Project> projects = service.find("name:" + QueryParserBase.escape(projectName) + "", pfs,
-					Project.class, null);
+            final ResultList<Project> projects = service.find("name:" + QueryParserBase.escape(projectName) + "", pfs, Project.class, null);
 
-			if (projects.getItems().size() == 0) {
+            if (projects.getItems().size() == 0) {
 
-				throw new Exception("Refset Internal Id: " + projectName + " does not exist in the RT2 database");
-			}
+                throw new Exception("Refset Internal Id: " + projectName + " does not exist in the RT2 database");
+            }
 
-			final Project project = projects.getItems().get(0);
+            final Project project = projects.getItems().get(0);
 
-			assertThat(project.getName()).isEqualTo(projectName);
+            assertThat(project.getName()).isEqualTo(projectName);
 
-			return project.getId();
-		}
+            return project.getId();
+        }
 
-	}
+    }
 
-	/**
-	 * Get the internal edition ID based on the edition's name.
-	 *
-	 * @param name The name of the edition
-	 * @return the internal edition ID
-	 * @throws Exception the exception
-	 */
-	public String getInternalEditionId(final String name) throws Exception {
+    /**
+     * Get the internal edition ID based on the edition's name.
+     *
+     * @param name The name of the edition
+     * @return the internal edition ID
+     * @throws Exception the exception
+     */
+    public String getInternalEditionId(final String name) throws Exception {
 
-		try (final TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
-			final PfsParameter pfs = new PfsParameter();
+            final PfsParameter pfs = new PfsParameter();
 
-			final ResultList<Edition> editions = service.find("name:" + QueryParserBase.escape(name) + "", pfs,
-					Edition.class, null);
+            final ResultList<Edition> editions = service.find("name:" + QueryParserBase.escape(name) + "", pfs, Edition.class, null);
 
-			if (editions.getItems().size() == 0) {
+            if (editions.getItems().size() == 0) {
 
-				throw new Exception("Refset Internal Id: " + name + " does not exist in the RT2 database");
-			}
+                throw new Exception("Refset Internal Id: " + name + " does not exist in the RT2 database");
+            }
 
-			final Edition edition = editions.getItems().get(0);
+            final Edition edition = editions.getItems().get(0);
 
-			assertThat(edition.getName()).isEqualTo(name);
+            assertThat(edition.getName()).isEqualTo(name);
 
-			return edition.getId();
-		}
+            return edition.getId();
+        }
 
-	}
+    }
 
-	/**
-	 * Returns the project.
-	 *
-	 * @param projectId the project id
-	 * @return the project
-	 */
-	public Project getProject(final String projectId) {
+    /**
+     * Returns the project.
+     *
+     * @param projectId the project id
+     * @return the project
+     */
+    public Project getProject(final String projectId) {
 
-		try {
+        try {
 
-			final String url = "/project/" + projectId;
-			LOG.info("Get Project Testing url - " + url);
+            final String url = "/project/" + projectId;
+            LOG.info("Get Project Testing url - " + url);
 
-			final MvcResult result = mvc
-					.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-					.andExpect(status().isOk()).andReturn();
-			final String content = result.getResponse().getContentAsString();
-			LOG.info(" content = " + content);
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+            LOG.info(" content = " + content);
 
-			final Project project = ThreadLocalMapper.get().readValue(content, Project.class);
+            final Project project = ThreadLocalMapper.get().readValue(content, Project.class);
 
-			assertThat(project).isNotNull();
-			return project;
-		} catch (final Exception e) {
+            assertThat(project).isNotNull();
+            return project;
+        } catch (final Exception e) {
 
-			e.printStackTrace();
+            e.printStackTrace();
 
-			return null;
-		}
+            return null;
+        }
 
-	}
+    }
 
-
-	/**
-	 * Gets the refset from refset id and version.
-	 *
-	 * @param refsetId the refset id
-	 * @param versionDate the version date
-	 * @return the refset from refset id and version
-	 */
-	public Refset getRefsetFromRefsetIdAndVersion(final String refsetId, final String versionDate) {
-
-		try {
-
-			final String url = baseUrl + "/" + refsetId + "/versionDate/" + versionDate;
-			LOG.info("Get Refset Testing url - " + url);
-
-			final MvcResult result = mvc
-					.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-					.andExpect(status().isOk()).andReturn();
-			final String content = result.getResponse().getContentAsString();
-			LOG.info(" content = " + content);
-
-			final Refset refset = ThreadLocalMapper.get().readValue(content, Refset.class);
-
-			assertThat(refset).isNotNull();
-			return refset;
-		} catch (final Exception e) {
-
-			e.printStackTrace();
-
-			return null;
-		}
-
-	}
-	
     /**
      * Gets the refset from refset id and version.
      *
      * @param refsetId the refset id
-     * @param versionStatus the version status
+     * @param versionDate the version date
      * @return the refset from refset id and version
      */
-    public Refset getRefsetFromRefsetIdAndVersion(final String refsetId, final VersionStatus versionStatus) {
+    public Refset getRefsetFromRefsetIdAndVersion(final String refsetId, final String versionDate) {
 
         try {
 
-            final String url = baseUrl + "/" + refsetId + "/versionDate/" + versionStatus.getLabel();
+            final String url = baseUrl + "/" + refsetId + "/versionDate/" + versionDate;
             LOG.info("Get Refset Testing url - " + url);
 
-            final MvcResult result = mvc
-                    .perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isOk()).andReturn();
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
             final String content = result.getResponse().getContentAsString();
             LOG.info(" content = " + content);
 
@@ -276,486 +237,493 @@ public class GetUnitTestUtilities {
 
     }
 
-	/**
-	 * Returns the refset from internal id.
-	 *
-	 * @param interalRefsetId the interal refset id
-	 * @return the refset from internal id
-	 * @throws Exception the exception
-	 */
-	public Refset getRefsetFromInternalId(final String interalRefsetId) throws Exception {
+    /**
+     * Gets the refset from refset id and version.
+     *
+     * @param refsetId the refset id
+     * @param versionStatus the version status
+     * @return the refset from refset id and version
+     */
+    public Refset getRefsetFromRefsetIdAndVersion(final String refsetId, final VersionStatus versionStatus) {
 
-		try (final TerminologyService service = new TerminologyService()) {
+        try {
 
-			final Refset refset = service.findSingle("id:" + QueryParserBase.escape(interalRefsetId), Refset.class,
-					null);
+            final String url = baseUrl + "/" + refsetId + "/versionDate/" + versionStatus.getLabel();
+            LOG.info("Get Refset Testing url - " + url);
 
-			if (refset == null) {
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+            LOG.info(" content = " + content);
 
-				throw new Exception("Refset Id: " + interalRefsetId + " does not exist in the RT2 database");
-			}
+            final Refset refset = ThreadLocalMapper.get().readValue(content, Refset.class);
 
-			assertThat(refset.getId()).isEqualTo(interalRefsetId);
+            assertThat(refset).isNotNull();
+            return refset;
+        } catch (final Exception e) {
 
-			return refset;
-		}
+            e.printStackTrace();
 
-	}
+            return null;
+        }
 
-	/**
-	 * Returns the editions.
-	 *
-	 * @return the editions
-	 */
-	public ResultList<TypeKeyValue> getEditions() {
+    }
 
-		try {
+    /**
+     * Returns the refset from internal id.
+     *
+     * @param interalRefsetId the interal refset id
+     * @return the refset from internal id
+     * @throws Exception the exception
+     */
+    public Refset getRefsetFromInternalId(final String interalRefsetId) throws Exception {
 
-			final String url = baseUrl + "/editions";
-			LOG.info("Get Editions Testing url - " + url);
-
-			final MvcResult result = mvc
-					.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-					.andExpect(status().isOk()).andReturn();
-			final String content = result.getResponse().getContentAsString();
-			LOG.info(" content = " + content);
+        try (final TerminologyService service = new TerminologyService()) {
 
-			final ResultList<TypeKeyValue> editions = ThreadLocalMapper.get().readValue(content,
-					(new TypeReference<ResultList<TypeKeyValue>>() {
-						/* NA */
-					}));
+            final Refset refset = service.findSingle("id:" + QueryParserBase.escape(interalRefsetId), Refset.class, null);
 
-			assertThat(editions).isNotNull();
-			return editions;
-		} catch (final Exception e) {
-
-			e.printStackTrace();
-
-			return null;
-		}
-
-	}
-
-	/**
-	 * Returns the branches.
-	 *
-	 * @param codeSystem the code system
-	 * @return the branches
-	 */
-	public ResultList<String> getBranches(final String codeSystem) {
+            if (refset == null) {
 
-		try {
-
-			final String url = "/general/branchVersions?branch=MAIN/" + codeSystem;
-			LOG.info("Testing url - " + url);
-
-			final MvcResult result = mvc
-					.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-					.andExpect(status().isOk()).andReturn();
-			final String content = result.getResponse().getContentAsString();
-			LOG.info(" content = " + content);
-			final ResultList<String> versions = ThreadLocalMapper.get().readValue(content,
-					(new TypeReference<ResultList<String>>() {
-						/* NA */
-					}));
-
-			assertThat(versions).isNotNull();
-			return versions;
-		} catch (final Exception e) {
-
-			e.printStackTrace();
-
-			return null;
-		}
+                throw new Exception("Refset Id: " + interalRefsetId + " does not exist in the RT2 database");
+            }
 
-	}
+            assertThat(refset.getId()).isEqualTo(interalRefsetId);
 
-	/**
-	 * Search projects.
-	 *
-	 * @return the result list
-	 */
-	public ResultList<Project> searchProjects() {
+            return refset;
+        }
 
-		try {
+    }
 
-			// Test full list
-			final String url = "/project/search?limit=500&offset=0&sort=name&sortAscending=false";
-			LOG.info("Project Search Testing url - " + url);
-
-			final MvcResult result = mvc
-					.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-					.andExpect(status().isOk()).andReturn();
-			final String content = result.getResponse().getContentAsString();
-			LOG.info(" content = " + content);
+    /**
+     * Returns the editions.
+     *
+     * @return the editions
+     */
+    public ResultList<TypeKeyValue> getEditions() {
 
-			final ResultList<Project> projectList = ThreadLocalMapper.get().readValue(content,
-					(new TypeReference<ResultList<Project>>() {
-						// n/a
-					}));
-
-			assertThat(projectList).isNotNull();
-			assertThat(projectList.getItems()).isNotEmpty();
-			return projectList;
-		} catch (final Exception e) {
-
-			e.printStackTrace();
+        try {
 
-			return null;
-		}
-
-	}
-
-	/**
-	 * Search directory.
-	 *
-	 * @param searchTerm the search term
-	 * @return the result list
-	 */
-	public ResultList<Refset> searchDirectory(final String searchTerm) {
+            final String url = baseUrl + "/editions";
+            LOG.info("Get Editions Testing url - " + url);
 
-		try {
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+            LOG.info(" content = " + content);
 
-			final String url = baseUrl
-					+ "/search?searchConcepts=true&limit=500&offset=0&sort=versionDate&sortAscending=false&query="
-					+ searchTerm;
+            final ResultList<TypeKeyValue> editions = ThreadLocalMapper.get().readValue(content, (new TypeReference<ResultList<TypeKeyValue>>() {
+                /* NA */
+            }));
 
-			LOG.info("Testing url - " + url);
-			final MvcResult result = mvc
-					.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-					.andExpect(status().isOk()).andReturn();
-			final String content = result.getResponse().getContentAsString();
-			LOG.info(" content = " + content);
-			final ResultList<Refset> refsetList = ThreadLocalMapper.get().readValue(content,
-					(new TypeReference<ResultList<Refset>>() {
-						// n/a
-					}));
+            assertThat(editions).isNotNull();
+            return editions;
+        } catch (final Exception e) {
 
-			assertThat(refsetList).isNotNull();
-			return refsetList;
-		} catch (final Exception e) {
+            e.printStackTrace();
 
-			e.printStackTrace();
+            return null;
+        }
 
-			return null;
-		}
+    }
 
-	}
+    /**
+     * Returns the branches.
+     *
+     * @param codeSystem the code system
+     * @return the branches
+     */
+    public ResultList<String> getBranches(final String codeSystem) {
 
-	/**
-	 * Returns the concept details.
-	 *
-	 * @param internalRefsetId the internal refset id
-	 * @param conceptId        the concept id
-	 * @return the concept details
-	 */
-	public Concept getConceptDetails(final String internalRefsetId, final String conceptId) {
+        try {
 
-		try {
+            final String url = "/general/branchVersions?branch=MAIN/" + codeSystem;
+            LOG.info("Testing url - " + url);
 
-			final String url = "/concept/" + conceptId + "?refsetInternalId=" + internalRefsetId;
-			LOG.info("Testing url - " + url);
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+            LOG.info(" content = " + content);
+            final ResultList<String> versions = ThreadLocalMapper.get().readValue(content, (new TypeReference<ResultList<String>>() {
+                /* NA */
+            }));
 
-			final MvcResult result = mvc
-					.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-					.andExpect(status().isOk()).andReturn();
-			final String content = result.getResponse().getContentAsString();
-			LOG.info(" content = " + content);
+            assertThat(versions).isNotNull();
+            return versions;
+        } catch (final Exception e) {
 
-			final Concept concept = ThreadLocalMapper.get().readValue(content, Concept.class);
-			return concept;
+            e.printStackTrace();
 
-		} catch (final Exception e) {
+            return null;
+        }
 
-			e.printStackTrace();
+    }
 
-			return null;
-		}
+    /**
+     * Search projects.
+     *
+     * @return the result list
+     */
+    public ResultList<Project> searchProjects() {
 
-	}
+        try {
 
-	/**
-	 * Returns the refset concepts.
-	 *
-	 * @param branch            the branch
-	 * @param refsetConceptType the refset concept type
-	 * @return the refset concepts
-	 */
-	public ResultListConcept getRefsetConcepts(final String branch, final RefsetConceptsType refsetConceptType) {
+            // Test full list
+            final String url = "/project/search?limit=500&offset=0&sort=name&sortAscending=false";
+            LOG.info("Project Search Testing url - " + url);
 
-		// For REST call, areParentConcepts variable true if returning for new
-		// refset concepts, false for existing
-		try {
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+            LOG.info(" content = " + content);
 
-			final boolean areParentConceptsRequest = (refsetConceptType
-					.equals(RefsetConceptsType.ALL_SIMPLE_TYPE_CONCEPTS)) ? true : false;
+            final ResultList<Project> projectList = ThreadLocalMapper.get().readValue(content, (new TypeReference<ResultList<Project>>() {
+                // n/a
+            }));
 
-			final String url = "/general/refsetConcepts?branch=" + branch + "&areParentConcepts="
-					+ areParentConceptsRequest;
-			LOG.info("Testing url - " + url);
+            assertThat(projectList).isNotNull();
+            assertThat(projectList.getItems()).isNotEmpty();
+            return projectList;
+        } catch (final Exception e) {
 
-			final MvcResult result = mvc
-					.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-					.andExpect(status().isOk()).andReturn();
-			final String content = result.getResponse().getContentAsString();
-			LOG.info(" content = " + content);
+            e.printStackTrace();
 
-			final ResultListConcept refsetConcepts = ThreadLocalMapper.get().readValue(content, ResultListConcept.class);
-			assertThat(refsetConcepts.getItems()).isNotEmpty();
-			return refsetConcepts;
+            return null;
+        }
 
-		} catch (final Exception e) {
+    }
 
-			e.printStackTrace();
+    /**
+     * Search directory.
+     *
+     * @param searchTerm the search term
+     * @return the result list
+     */
+    public ResultList<Refset> searchDirectory(final String searchTerm) {
 
-			return null;
-		}
+        try {
 
-	}
+            final String url = baseUrl + "/search?searchConcepts=true&limit=500&offset=0&sort=versionDate&sortAscending=false&query=" + searchTerm;
 
-	/**
-	 * Returns the members.
-	 *
-	 * @param internalRefsetId the internal refset id
-	 * @return the members
-	 */
-	public ResultListConcept getMembers(final String internalRefsetId) {
+            LOG.info("Testing url - " + url);
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+            LOG.info(" content = " + content);
+            final ResultList<Refset> refsetList = ThreadLocalMapper.get().readValue(content, (new TypeReference<ResultList<Refset>>() {
+                // n/a
+            }));
 
-		try {
+            assertThat(refsetList).isNotNull();
+            return refsetList;
+        } catch (final Exception e) {
 
-			final String url = "/refset/" + internalRefsetId + "/members?limit=100000&offset=0&displayType=list";
-			LOG.info("Testing url - " + url);
+            e.printStackTrace();
 
-			final MvcResult result = mvc
-					.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-					.andExpect(status().isOk()).andReturn();
-			final String content = result.getResponse().getContentAsString();
-			LOG.info(" content = " + content);
-			final ResultListConcept members = ThreadLocalMapper.get().readValue(content, (ResultListConcept.class));
+            return null;
+        }
 
-			// Testing Results
-			assertThat(members).isNotNull();
-			return members;
+    }
 
-		} catch (final Exception e) {
+    /**
+     * Returns the concept details.
+     *
+     * @param internalRefsetId the internal refset id
+     * @param conceptId the concept id
+     * @return the concept details
+     */
+    public Concept getConceptDetails(final String internalRefsetId, final String conceptId) {
 
-			e.printStackTrace();
+        try {
 
-			return null;
-		}
+            final String url = "/concept/" + conceptId + "?refsetInternalId=" + internalRefsetId;
+            LOG.info("Testing url - " + url);
 
-	}
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+            LOG.info(" content = " + content);
 
-	/**
-	 * Search members.
-	 *
-	 * @param internalRefsetId the internal refset id
-	 * @param searchTerm       the search term
-	 * @return the concept result list
-	 */
-	public ResultListConcept searchMembers(final String internalRefsetId, final String searchTerm) {
+            final Concept concept = ThreadLocalMapper.get().readValue(content, Concept.class);
+            return concept;
 
-		try {
+        } catch (final Exception e) {
 
-			final String url = "/refset/" + internalRefsetId + "/members?limit=500&offset=0&query=" + searchTerm
-					+ "&displayType=list&editing=true";
+            e.printStackTrace();
 
-			LOG.info("Testing url - " + url);
-			final MvcResult result = mvc
-					.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-					.andExpect(status().isOk()).andReturn();
-			final String content = result.getResponse().getContentAsString();
+            return null;
+        }
 
-			LOG.info(" content = " + content);
-			final ResultListConcept members = ThreadLocalMapper.get().readValue(content, (ResultListConcept.class));
+    }
 
-			// Testing Results
-			assertThat(members).isNotNull();
-			return members;
+    /**
+     * Returns the refset concepts.
+     *
+     * @param branch the branch
+     * @param refsetConceptType the refset concept type
+     * @return the refset concepts
+     */
+    public ResultListConcept getRefsetConcepts(final String branch, final RefsetConceptsType refsetConceptType) {
 
-		} catch (final Exception e) {
+        // For REST call, areParentConcepts variable true if returning for new
+        // refset concepts, false for existing
+        try {
 
-			e.printStackTrace();
+            final boolean areParentConceptsRequest = refsetConceptType.equals(RefsetConceptsType.ALL_SIMPLE_TYPE_CONCEPTS);
 
-			return null;
-		}
+            final String url = "/general/refsetConcepts?branch=" + branch + "&areParentConcepts=" + areParentConceptsRequest;
+            LOG.info("Testing url - " + url);
 
-	}
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+            LOG.info(" content = " + content);
 
-	/**
-	 * Search taxonomy.
-	 *
-	 * @param internalRefsetId the internal refset id
-	 * @param searchTerm       the search term
-	 * @return the concept result list
-	 */
-	public ResultListConcept searchTaxonomy(final String internalRefsetId, final String searchTerm) {
+            final ResultListConcept refsetConcepts = ThreadLocalMapper.get().readValue(content, ResultListConcept.class);
+            assertThat(refsetConcepts.getItems()).isNotEmpty();
+            return refsetConcepts;
 
-		try {
+        } catch (final Exception e) {
 
-			final String url = "/refset/" + internalRefsetId + "/taxonomySearch?limit=100000&offset=0&query="
-					+ searchTerm;
+            e.printStackTrace();
 
-			LOG.info("Testing url - " + url);
-			final MvcResult result = mvc
-					.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-					.andExpect(status().isOk()).andReturn();
-			final String content = result.getResponse().getContentAsString();
+            return null;
+        }
 
-			LOG.info(" content = " + content);
-			final ResultListConcept members = ThreadLocalMapper.get().readValue(content, (ResultListConcept.class));
+    }
 
-			// Testing Results
-			assertThat(members).isNotNull();
-			return members;
+    /**
+     * Returns the members.
+     *
+     * @param internalRefsetId the internal refset id
+     * @return the members
+     */
+    public ResultListConcept getMembers(final String internalRefsetId) {
 
-		} catch (final Exception e) {
+        try {
 
-			e.printStackTrace();
+            final String url = "/refset/" + internalRefsetId + "/members?limit=100000&offset=0&displayType=list";
+            LOG.info("Testing url - " + url);
 
-			return null;
-		}
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+            LOG.info(" content = " + content);
+            final ResultListConcept members = ThreadLocalMapper.get().readValue(content, (ResultListConcept.class));
 
-	}
+            // Testing Results
+            assertThat(members).isNotNull();
+            return members;
 
-	/**
-	 * Returns the children.
-	 *
-	 * @param internalRefsetId the internal refset id
-	 * @param parentId         the parent id
-	 * @return the children
-	 */
-	public ResultListConcept getChildren(final String internalRefsetId, final String parentId) {
+        } catch (final Exception e) {
 
-		try {
+            e.printStackTrace();
 
-			final String url = "/refset/" + internalRefsetId
-					+ "/members?limit=500&offset=0&displayType=taxonomy&startingConceptId=" + parentId
-					+ "&language=nl-X-31000172101";
-			LOG.info("Testing url - " + url);
+            return null;
+        }
 
-			final MvcResult result = mvc
-					.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-					.andExpect(status().isOk()).andReturn();
-			final String content = result.getResponse().getContentAsString();
-			LOG.info(" content = " + content);
+    }
 
-			final ResultListConcept children = ThreadLocalMapper.get().readValue(content, (ResultListConcept.class));
+    /**
+     * Search members.
+     *
+     * @param internalRefsetId the internal refset id
+     * @param searchTerm the search term
+     * @return the concept result list
+     */
+    public ResultListConcept searchMembers(final String internalRefsetId, final String searchTerm) {
 
-			assertThat(children).isNotNull();
-			assertThat(children.getItems()).isNotEmpty();
-			return children;
+        try {
 
-		} catch (final Exception e) {
+            final String url = "/refset/" + internalRefsetId + "/members?limit=500&offset=0&query=" + searchTerm + "&displayType=list&editing=true";
 
-			e.printStackTrace();
+            LOG.info("Testing url - " + url);
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
 
-			return null;
-		}
+            LOG.info(" content = " + content);
+            final ResultListConcept members = ThreadLocalMapper.get().readValue(content, (ResultListConcept.class));
 
-	}
+            // Testing Results
+            assertThat(members).isNotNull();
+            return members;
 
-	/**
-	 * Returns the member history.
-	 *
-	 * @param internalRefsetId the internal refset id
-	 * @param conceptId        the concept id
-	 * @return the member history
-	 */
-	public ResultList<Map<String, String>> getMemberHistory(final String internalRefsetId, final String conceptId) {
+        } catch (final Exception e) {
 
-		try {
+            e.printStackTrace();
 
-			final String url = "/refset/" + internalRefsetId + "/member/" + conceptId;
-			LOG.info("Testing url - " + url);
+            return null;
+        }
 
-			final MvcResult result = mvc
-					.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-					.andExpect(status().isOk()).andReturn();
-			final String content = result.getResponse().getContentAsString();
-			LOG.info(" content = " + content);
+    }
 
-			final ResultList<Map<String, String>> memberHistory = ThreadLocalMapper.get().readValue(content,
-					(new TypeReference<ResultList<Map<String, String>>>() {
-						/* NA */
-					}));
+    /**
+     * Search taxonomy.
+     *
+     * @param internalRefsetId the internal refset id
+     * @param searchTerm the search term
+     * @return the concept result list
+     */
+    public ResultListConcept searchTaxonomy(final String internalRefsetId, final String searchTerm) {
 
-			assertThat(memberHistory).isNotNull();
-			assertThat(memberHistory.getTotal()).isEqualTo(1);
-			return memberHistory;
+        try {
 
-		} catch (final Exception e) {
+            final String url = "/refset/" + internalRefsetId + "/taxonomySearch?limit=100000&offset=0&query=" + searchTerm;
 
-			e.printStackTrace();
+            LOG.info("Testing url - " + url);
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
 
-			return null;
-		}
+            LOG.info(" content = " + content);
+            final ResultListConcept members = ThreadLocalMapper.get().readValue(content, (ResultListConcept.class));
 
-	}
+            // Testing Results
+            assertThat(members).isNotNull();
+            return members;
 
-	/**
-	 * Returns the ancestor path.
-	 *
-	 * @param conceptId        the concept id
-	 * @param internalRefsetId the internal refset id
-	 * @return the ancestor path
-	 */
-	public Concept getAncestorPath(final String conceptId, final String internalRefsetId) {
+        } catch (final Exception e) {
 
-		try {
+            e.printStackTrace();
 
-			final String url = "/refset/" + internalRefsetId + "/member/" + conceptId + "/ancestorConcepts";
-			LOG.info("Testing url - " + url);
+            return null;
+        }
 
-			final MvcResult result = mvc
-					.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-					.andExpect(status().isOk()).andReturn();
-			final String content = result.getResponse().getContentAsString();
-			LOG.info(" content = " + content);
+    }
 
-			final Concept returnedconcept = ThreadLocalMapper.get().readValue(content, Concept.class);
-			return returnedconcept;
+    /**
+     * Returns the children.
+     *
+     * @param internalRefsetId the internal refset id
+     * @param parentId the parent id
+     * @return the children
+     */
+    public ResultListConcept getChildren(final String internalRefsetId, final String parentId) {
 
-		} catch (final Exception e) {
+        try {
 
-			e.printStackTrace();
+            final String url =
+                "/refset/" + internalRefsetId + "/members?limit=500&offset=0&displayType=taxonomy&startingConceptId=" + parentId + "&language=nl-X-31000172101";
+            LOG.info("Testing url - " + url);
 
-			return null;
-		}
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+            LOG.info(" content = " + content);
 
-	}
+            final ResultListConcept children = ThreadLocalMapper.get().readValue(content, (ResultListConcept.class));
 
-	/**
-	 * Setup ancestor cache.
-	 *
-	 * @param refsetId the refset id
-	 * @param version  the version
-	 * @return true, if successful
-	 */
-	public boolean setupAncestorCache(final String refsetId, final String version) {
+            assertThat(children).isNotNull();
+            assertThat(children.getItems()).isNotEmpty();
+            return children;
 
-		try {
+        } catch (final Exception e) {
 
-			final String url = "/ancestors/" + refsetId + "/versionDate/" + version;
-			LOG.info("Testing url - " + url);
+            e.printStackTrace();
 
-			final MvcResult result = mvc
-					.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-					.andExpect(status().isOk()).andReturn();
-			final String content = result.getResponse().getContentAsString();
-			LOG.info(" content = " + content);
+            return null;
+        }
 
-			final JsonNode root = ThreadLocalMapper.get().readTree(content);
-			final boolean success = root.get("success").asBoolean();
+    }
 
-			return success;
+    /**
+     * Returns the member history.
+     *
+     * @param internalRefsetId the internal refset id
+     * @param conceptId the concept id
+     * @return the member history
+     */
+    public ResultList<Map<String, String>> getMemberHistory(final String internalRefsetId, final String conceptId) {
 
-		} catch (final Exception e) {
+        try {
 
-			e.printStackTrace();
+            final String url = "/refset/" + internalRefsetId + "/member/" + conceptId;
+            LOG.info("Testing url - " + url);
 
-			return false;
-		}
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+            LOG.info(" content = " + content);
 
-	}
+            final ResultList<Map<String, String>> memberHistory =
+                ThreadLocalMapper.get().readValue(content, (new TypeReference<ResultList<Map<String, String>>>() {
+                    /* NA */
+                }));
+
+            assertThat(memberHistory).isNotNull();
+            assertThat(memberHistory.getTotal()).isEqualTo(1);
+            return memberHistory;
+
+        } catch (final Exception e) {
+
+            e.printStackTrace();
+
+            return null;
+        }
+
+    }
+
+    /**
+     * Returns the ancestor path.
+     *
+     * @param conceptId the concept id
+     * @param internalRefsetId the internal refset id
+     * @return the ancestor path
+     */
+    public Concept getAncestorPath(final String conceptId, final String internalRefsetId) {
+
+        try {
+
+            final String url = "/refset/" + internalRefsetId + "/member/" + conceptId + "/ancestorConcepts";
+            LOG.info("Testing url - " + url);
+
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+            LOG.info(" content = " + content);
+
+            final Concept returnedconcept = ThreadLocalMapper.get().readValue(content, Concept.class);
+            return returnedconcept;
+
+        } catch (final Exception e) {
+
+            e.printStackTrace();
+
+            return null;
+        }
+
+    }
+
+    /**
+     * Setup ancestor cache.
+     *
+     * @param refsetId the refset id
+     * @param version the version
+     * @return true, if successful
+     */
+    public boolean setupAncestorCache(final String refsetId, final String version) {
+
+        try {
+
+            final String url = "/ancestors/" + refsetId + "/versionDate/" + version;
+            LOG.info("Testing url - " + url);
+
+            final MvcResult result =
+                mvc.perform(get(url).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
+            final String content = result.getResponse().getContentAsString();
+            LOG.info(" content = " + content);
+
+            final JsonNode root = ThreadLocalMapper.get().readTree(content);
+            final boolean success = root.get("success").asBoolean();
+
+            return success;
+
+        } catch (final Exception e) {
+
+            e.printStackTrace();
+
+            return false;
+        }
+
+    }
 }

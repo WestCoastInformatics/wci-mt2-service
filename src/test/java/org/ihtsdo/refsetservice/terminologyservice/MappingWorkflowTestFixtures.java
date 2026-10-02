@@ -49,6 +49,9 @@ public final class MappingWorkflowTestFixtures {
     /** Default source concept code. */
     public static final String SOURCE_CONCEPT_CODE = "123456789";
 
+    /**
+     * Instantiates a new mapping workflow test fixtures.
+     */
     private MappingWorkflowTestFixtures() {
 
         // n/a
@@ -59,38 +62,59 @@ public final class MappingWorkflowTestFixtures {
      */
     public static final class Context implements AutoCloseable {
 
+        /** The service. */
         private final TerminologyService service;
 
+        /** The map set. */
         private MapSet mapSet;
 
+        /** The map project. */
         private MapProject mapProject;
 
+        /** The workflow. */
         private MappingWorkflow workflow;
 
+        /** The workflow slot 2. */
         private MappingWorkflow workflowSlot2;
 
+        /** The specialist map user. */
         private MapUser specialistMapUser;
 
+        /** The other specialist map user. */
         private MapUser otherSpecialistMapUser;
 
+        /** The lead map user. */
         private MapUser leadMapUser;
 
+        /** The admin map user. */
         private MapUser adminMapUser;
 
+        /** The instance id. */
         private final String instanceId = UUID.randomUUID().toString().substring(0, 8);
 
+        /** The specialist user. */
         private User specialistUser;
 
+        /** The other specialist user. */
         private User otherSpecialistUser;
 
+        /** The lead user. */
         private User leadUser;
 
+        /** The admin user. */
         private User adminUser;
 
+        /** The viewer user. */
         private User viewerUser;
 
+        /** The extra workflows. */
         private final List<MappingWorkflow> extraWorkflows = new ArrayList<>();
 
+        /**
+         * Instantiates a new context.
+         *
+         * @param service the service
+         */
         private Context(final TerminologyService service) {
 
             this.service = service;
@@ -101,6 +125,12 @@ public final class MappingWorkflowTestFixtures {
             viewerUser = new User(uniqueUser(VIEWER_USER), "Viewer User", "viewer@test", null, null, null);
         }
 
+        /**
+         * Unique user.
+         *
+         * @param baseName the base name
+         * @return the string
+         */
         private String uniqueUser(final String baseName) {
 
             return baseName + "-" + instanceId;
@@ -174,76 +204,152 @@ public final class MappingWorkflowTestFixtures {
             return context;
         }
 
+        /**
+         * Gets the service.
+         *
+         * @return the service
+         */
         public TerminologyService getService() {
 
             return service;
         }
 
+        /**
+         * Gets the map set.
+         *
+         * @return the map set
+         */
         public MapSet getMapSet() {
 
             return mapSet;
         }
 
+        /**
+         * Gets the map project.
+         *
+         * @return the map project
+         */
         public MapProject getMapProject() {
 
             return mapProject;
         }
 
+        /**
+         * Gets the workflow.
+         *
+         * @return the workflow
+         */
         public MappingWorkflow getWorkflow() {
 
             return workflow;
         }
 
+        /**
+         * Gets the workflow slot 2.
+         *
+         * @return the workflow slot 2
+         */
         public MappingWorkflow getWorkflowSlot2() {
 
             return workflowSlot2;
         }
 
+        /**
+         * Gets the specialist user.
+         *
+         * @return the specialist user
+         */
         public User getSpecialistUser() {
 
             return specialistUser;
         }
 
+        /**
+         * Gets the other specialist user.
+         *
+         * @return the other specialist user
+         */
         public User getOtherSpecialistUser() {
 
             return otherSpecialistUser;
         }
 
+        /**
+         * Gets the lead user.
+         *
+         * @return the lead user
+         */
         public User getLeadUser() {
 
             return leadUser;
         }
 
+        /**
+         * Gets the admin user.
+         *
+         * @return the admin user
+         */
         public User getAdminUser() {
 
             return adminUser;
         }
 
+        /**
+         * Gets the viewer user.
+         *
+         * @return the viewer user
+         */
         public User getViewerUser() {
 
             return viewerUser;
         }
 
+        /**
+         * Gets the specialist map user.
+         *
+         * @return the specialist map user
+         */
         public MapUser getSpecialistMapUser() {
 
             return specialistMapUser;
         }
 
+        /**
+         * Gets the other specialist map user.
+         *
+         * @return the other specialist map user
+         */
         public MapUser getOtherSpecialistMapUser() {
 
             return otherSpecialistMapUser;
         }
 
+        /**
+         * Gets the lead map user.
+         *
+         * @return the lead map user
+         */
         public MapUser getLeadMapUser() {
 
             return leadMapUser;
         }
 
+        /**
+         * Gets the admin map user.
+         *
+         * @return the admin map user
+         */
         public MapUser getAdminMapUser() {
 
             return adminMapUser;
         }
 
+        /**
+         * Reload workflow.
+         *
+         * @return the mapping workflow
+         * @throws Exception the exception
+         */
         public MappingWorkflow reloadWorkflow() throws Exception {
 
             service.getEntityManager().clear();
@@ -251,6 +357,12 @@ public final class MappingWorkflowTestFixtures {
             return workflow;
         }
 
+        /**
+         * Reload workflow slot 2.
+         *
+         * @return the mapping workflow
+         * @throws Exception the exception
+         */
         public MappingWorkflow reloadWorkflowSlot2() throws Exception {
 
             service.getEntityManager().clear();
@@ -258,6 +370,12 @@ public final class MappingWorkflowTestFixtures {
             return workflowSlot2;
         }
 
+        /**
+         * Reload map set.
+         *
+         * @return the map set
+         * @throws Exception the exception
+         */
         public MapSet reloadMapSet() throws Exception {
 
             service.getEntityManager().clear();
@@ -265,29 +383,52 @@ public final class MappingWorkflowTestFixtures {
             return mapSet;
         }
 
+        /**
+         * History count.
+         *
+         * @return the int
+         * @throws Exception the exception
+         */
         public int historyCount() throws Exception {
 
-            final ResultList<MappingWorkflowHistory> history =
-                MappingWorkflowService.getWorkflowHistory(service, workflow, new SearchParameters());
+            final ResultList<MappingWorkflowHistory> history = MappingWorkflowService.getWorkflowHistory(service, workflow, new SearchParameters());
             return history.getItems().size();
         }
 
+        /**
+         * Latest history.
+         *
+         * @return the mapping workflow history
+         * @throws Exception the exception
+         */
         public MappingWorkflowHistory latestHistory() throws Exception {
 
             final SearchParameters searchParameters = new SearchParameters();
             searchParameters.setSort("modified");
             searchParameters.setSortAscending(false);
             searchParameters.setLimit(1);
-            final ResultList<MappingWorkflowHistory> history =
-                MappingWorkflowService.getWorkflowHistory(service, workflow, searchParameters);
+            final ResultList<MappingWorkflowHistory> history = MappingWorkflowService.getWorkflowHistory(service, workflow, searchParameters);
             return history.getItems().isEmpty() ? null : history.getItems().get(0);
         }
 
+        /**
+         * Sets the workflow assigned to.
+         *
+         * @param userName the new workflow assigned to
+         * @throws Exception the exception
+         */
         public void setWorkflowAssignedTo(final String userName) throws Exception {
 
             setWorkflowAssignedTo(userName, MapWorkflowStatus.EDITING_IN_PROGRESS);
         }
 
+        /**
+         * Sets the workflow assigned to.
+         *
+         * @param userName the user name
+         * @param status the status
+         * @throws Exception the exception
+         */
         public void setWorkflowAssignedTo(final String userName, final MapWorkflowStatus status) throws Exception {
 
             workflow.setWorkflowStatus(status);
@@ -298,11 +439,24 @@ public final class MappingWorkflowTestFixtures {
             reloadWorkflow();
         }
 
+        /**
+         * Sets the workflow slot 2 assigned to.
+         *
+         * @param userName the new workflow slot 2 assigned to
+         * @throws Exception the exception
+         */
         public void setWorkflowSlot2AssignedTo(final String userName) throws Exception {
 
             setWorkflowSlot2AssignedTo(userName, MapWorkflowStatus.EDITING_IN_PROGRESS);
         }
 
+        /**
+         * Sets the workflow slot 2 assigned to.
+         *
+         * @param userName the user name
+         * @param status the status
+         * @throws Exception the exception
+         */
         public void setWorkflowSlot2AssignedTo(final String userName, final MapWorkflowStatus status) throws Exception {
 
             workflowSlot2.setWorkflowStatus(status);
@@ -313,6 +467,12 @@ public final class MappingWorkflowTestFixtures {
             reloadWorkflowSlot2();
         }
 
+        /**
+         * Sets the workflow slot 2 status.
+         *
+         * @param status the new workflow slot 2 status
+         * @throws Exception the exception
+         */
         public void setWorkflowSlot2Status(final MapWorkflowStatus status) throws Exception {
 
             workflowSlot2.setWorkflowStatus(status);
@@ -325,6 +485,12 @@ public final class MappingWorkflowTestFixtures {
             reloadWorkflowSlot2();
         }
 
+        /**
+         * Sets the workflow status.
+         *
+         * @param status the new workflow status
+         * @throws Exception the exception
+         */
         public void setWorkflowStatus(final MapWorkflowStatus status) throws Exception {
 
             workflow.setWorkflowStatus(status);
@@ -337,6 +503,11 @@ public final class MappingWorkflowTestFixtures {
             reloadWorkflow();
         }
 
+        /**
+         * Removes the primary workflow.
+         *
+         * @throws Exception the exception
+         */
         public void removePrimaryWorkflow() throws Exception {
 
             if (workflow == null || workflow.getId() == null) {
@@ -349,6 +520,14 @@ public final class MappingWorkflowTestFixtures {
             workflow = null;
         }
 
+        /**
+         * Adds the workflow for concept.
+         *
+         * @param sourceConceptCode the source concept code
+         * @param status the status
+         * @return the mapping workflow
+         * @throws Exception the exception
+         */
         public MappingWorkflow addWorkflowForConcept(final String sourceConceptCode, final MapWorkflowStatus status) throws Exception {
 
             final MappingWorkflow row = new MappingWorkflow();
@@ -362,6 +541,11 @@ public final class MappingWorkflowTestFixtures {
             return row;
         }
 
+        /**
+         * Close.
+         *
+         * @throws Exception the exception
+         */
         @Override
         public void close() throws Exception {
 
@@ -415,6 +599,12 @@ public final class MappingWorkflowTestFixtures {
             service.close();
         }
 
+        /**
+         * Removes the if present.
+         *
+         * @param mapUser the map user
+         * @throws Exception the exception
+         */
         private void removeIfPresent(final MapUser mapUser) throws Exception {
 
             if (mapUser != null && mapUser.getId() != null) {
@@ -422,6 +612,13 @@ public final class MappingWorkflowTestFixtures {
             }
         }
 
+        /**
+         * Persist fixture.
+         *
+         * @param mapsetInEdit the mapset in edit
+         * @param workflowType the workflow type
+         * @throws Exception the exception
+         */
         private void persistFixture(final boolean mapsetInEdit, final WorkflowType workflowType) throws Exception {
 
             final Organization organization = new Organization();
@@ -526,6 +723,14 @@ public final class MappingWorkflowTestFixtures {
             }
         }
 
+        /**
+         * Persist map user.
+         *
+         * @param userName the user name
+         * @param role the role
+         * @return the map user
+         * @throws Exception the exception
+         */
         private MapUser persistMapUser(final String userName, final MapUserRole role) throws Exception {
 
             final MapUser mapUser = new MapUser();

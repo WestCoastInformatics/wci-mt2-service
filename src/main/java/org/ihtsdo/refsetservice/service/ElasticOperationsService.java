@@ -55,7 +55,7 @@ public interface ElasticOperationsService {
      */
     void loadMetric(Metric metric, String index) throws IOException;
 
-    /**
+    /*
      * get the instance of {@code ElasticsearchOperations}.
      *
      * @return the instance of {@code ElasticsearchOperations}

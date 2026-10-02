@@ -22,7 +22,14 @@ import com.fasterxml.jackson.databind.SerializerProvider;
  */
 public class VersionStatusJsonSerializer extends JsonSerializer<VersionStatus> {
 
-    /* see superclass */
+    /**
+     * Serialize.
+     *
+     * @param value the value
+     * @param gsonGenerator the gson generator
+     * @param serializers the serializers
+     * @throws IOException Signals that an I/O exception has occurred.
+     */
     @Override
     public void serialize(final VersionStatus value, final JsonGenerator gsonGenerator, final SerializerProvider serializers) throws IOException {
 

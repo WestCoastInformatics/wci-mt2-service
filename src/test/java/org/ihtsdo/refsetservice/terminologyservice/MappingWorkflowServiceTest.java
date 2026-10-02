@@ -91,8 +91,8 @@ public class MappingWorkflowServiceTest {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getLeadUser(),
-                MappingWorkflowAction.ASSIGN, context.getWorkflow(), context.getMapSet(), context.getMapProject(),
-                "Assigning to someone else as a Lead", context.getOtherSpecialistMapUser().getId());
+                MappingWorkflowAction.ASSIGN, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assigning to someone else as a Lead",
+                context.getOtherSpecialistMapUser().getId());
 
             assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, updated.getWorkflowStatus());
             assertEquals(context.getOtherSpecialistUser().getUserName(), updated.getAssignedUser());
@@ -130,9 +130,9 @@ public class MappingWorkflowServiceTest {
     public void assignToOtherByAdmin() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
-            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getAdminUser(),
-                MappingWorkflowAction.ASSIGN, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assign",
-                context.getSpecialistMapUser().getId());
+            final MappingWorkflow updated =
+                MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getAdminUser(), MappingWorkflowAction.ASSIGN,
+                    context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assign", context.getSpecialistMapUser().getId());
 
             assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, updated.getWorkflowStatus());
             assertEquals(context.getSpecialistUser().getUserName(), updated.getAssignedUser());
@@ -285,8 +285,8 @@ public class MappingWorkflowServiceTest {
     public void releaseAfterAssignFromNewRestoresNew() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
-            MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(),
-                MappingWorkflowAction.ASSIGN, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assign", null);
+            MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(), MappingWorkflowAction.ASSIGN,
+                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assign", null);
 
             final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(),
                 MappingWorkflowAction.RELEASE, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Release", null);
@@ -307,8 +307,8 @@ public class MappingWorkflowServiceTest {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowStatus(MapWorkflowStatus.PUBLISHED);
-            MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(),
-                MappingWorkflowAction.ASSIGN, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assign", null);
+            MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(), MappingWorkflowAction.ASSIGN,
+                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assign", null);
 
             final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(),
                 MappingWorkflowAction.RELEASE, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Release", null);
@@ -329,8 +329,8 @@ public class MappingWorkflowServiceTest {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowStatus(MapWorkflowStatus.READY_FOR_PUBLICATION);
-            MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(),
-                MappingWorkflowAction.ASSIGN, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assign", null);
+            MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(), MappingWorkflowAction.ASSIGN,
+                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assign", null);
 
             final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(),
                 MappingWorkflowAction.RELEASE, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Release", null);
@@ -508,8 +508,8 @@ public class MappingWorkflowServiceTest {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowStatus(MapWorkflowStatus.PUBLISHED);
-            MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(),
-                MappingWorkflowAction.ASSIGN, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assign", null);
+            MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(), MappingWorkflowAction.ASSIGN,
+                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assign", null);
 
             final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getAdminUser(),
                 MappingWorkflowAction.FORCE_RELEASE, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Force release", null);
@@ -846,8 +846,8 @@ public class MappingWorkflowServiceTest {
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowAssignedTo(context.getSpecialistUser().getUserName(), MapWorkflowStatus.EDITING_IN_PROGRESS);
 
-            final MappingWorkflow workflow = MappingWorkflowService.getWorkflowForConcept(context.getService(), context.getMapSet(),
-                MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE);
+            final MappingWorkflow workflow =
+                MappingWorkflowService.getWorkflowForConcept(context.getService(), context.getMapSet(), MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE);
 
             assertNotNull(workflow);
             assertEquals(context.getWorkflow().getId(), workflow.getId());
@@ -856,8 +856,7 @@ public class MappingWorkflowServiceTest {
     }
 
     /**
-     * Search map sets initializes nested map project membership collections and includes
-     * global all-org/all-edition/all-project map users.
+     * Search map sets initializes nested map project membership collections and includes global all-org/all-edition/all-project map users.
      *
      * @throws Exception the exception
      */
@@ -869,8 +868,7 @@ public class MappingWorkflowServiceTest {
                 context.getAdminUser().getUserName() + "," + context.getSpecialistUser().getUserName());
             PropertyUtility.setProperty("security.handler.ENTRAID.users.lead", context.getLeadUser().getUserName());
             PropertyUtility.setProperty("security.handler.ENTRAID.users.spec",
-                context.getSpecialistUser().getUserName() + "," + context.getOtherSpecialistUser().getUserName() + ","
-                    + context.getLeadUser().getUserName());
+                context.getSpecialistUser().getUserName() + "," + context.getOtherSpecialistUser().getUserName() + "," + context.getLeadUser().getUserName());
 
             context.getMapProject().getMapLeads().clear();
             context.getService().update(context.getMapProject());
@@ -902,8 +900,8 @@ public class MappingWorkflowServiceTest {
                 .filter(u -> context.getSpecialistUser().getUserName().equals(u.getUserName())).findFirst().get().getApplicationRole());
             assertEquals(MapUserRole.SPECIALIST, mapProject.getMapSpecialists().stream()
                 .filter(u -> context.getSpecialistUser().getUserName().equals(u.getUserName())).findFirst().get().getApplicationRole());
-            assertEquals(MapUserRole.LEAD, mapProject.getMapLeads().stream()
-                .filter(u -> context.getLeadUser().getUserName().equals(u.getUserName())).findFirst().get().getApplicationRole());
+            assertEquals(MapUserRole.LEAD, mapProject.getMapLeads().stream().filter(u -> context.getLeadUser().getUserName().equals(u.getUserName()))
+                .findFirst().get().getApplicationRole());
             assertEquals(MapUserRole.SPECIALIST, mapProject.getMapSpecialists().stream()
                 .filter(u -> context.getLeadUser().getUserName().equals(u.getUserName())).findFirst().get().getApplicationRole());
         }
@@ -920,8 +918,8 @@ public class MappingWorkflowServiceTest {
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.addWorkflowForConcept("444555666", MapWorkflowStatus.PUBLISHED);
 
-            final MappingWorkflowService.MappingSearchConceptFilter filter = MappingWorkflowService.resolveMappingSearchFilter(context.getService(),
-                context.getMapSet(), MapWorkflowStatus.PUBLISHED, null, null);
+            final MappingWorkflowService.MappingSearchConceptFilter filter =
+                MappingWorkflowService.resolveMappingSearchFilter(context.getService(), context.getMapSet(), MapWorkflowStatus.PUBLISHED, null, null);
 
             assertNull(filter.getRestrictTo());
             assertNotNull(filter.getExclude());
@@ -941,9 +939,9 @@ public class MappingWorkflowServiceTest {
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.addWorkflowForConcept("444555666", MapWorkflowStatus.PUBLISHED);
 
-            final MappingWorkflowService.MappingSearchConceptFilter filter = MappingWorkflowService.resolveMappingSearchFilter(context.getService(),
-                context.getMapSet(), MapWorkflowStatus.PUBLISHED, null,
-                Arrays.asList(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, "444555666", "999888777"));
+            final MappingWorkflowService.MappingSearchConceptFilter filter =
+                MappingWorkflowService.resolveMappingSearchFilter(context.getService(), context.getMapSet(), MapWorkflowStatus.PUBLISHED, null,
+                    Arrays.asList(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, "444555666", "999888777"));
 
             assertNull(filter.getExclude());
             assertEquals(Arrays.asList("444555666", "999888777"), filter.getRestrictTo());

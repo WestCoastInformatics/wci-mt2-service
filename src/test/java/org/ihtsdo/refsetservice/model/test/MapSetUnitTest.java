@@ -27,10 +27,17 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 public class MapSetUnitTest extends BaseTest {
 
+    /** The object. */
     private MapSet object;
 
+    /** The project. */
     private Project project;
 
+    /**
+     * Setup.
+     *
+     * @throws Exception the exception
+     */
     @BeforeEach
     public void setup() throws Exception {
 
@@ -39,6 +46,11 @@ public class MapSetUnitTest extends BaseTest {
         project = (Project) projectTester.createObject(1);
     }
 
+    /**
+     * Test model get set.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelGetSet() throws Exception {
 
@@ -61,6 +73,11 @@ public class MapSetUnitTest extends BaseTest {
         tester.test();
     }
 
+    /**
+     * Test model equals hashcode.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelEqualsHashcode() throws Exception {
 
@@ -82,6 +99,11 @@ public class MapSetUnitTest extends BaseTest {
         assertTrue(tester.testIdentityFieldDifferentHashcode());
     }
 
+    /**
+     * Test model copy.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelCopy() throws Exception {
 
@@ -104,6 +126,7 @@ public class MapSetUnitTest extends BaseTest {
         tester.exclude("upgradeWarning");
         tester.exclude("inUpgrade");
         tester.exclude("inInactivate");
+        tester.exclude("upgradeVersionsCandidate");
         tester.exclude("created");
         tester.exclude("modified");
         tester.exclude("modifiedBy");
@@ -111,6 +134,11 @@ public class MapSetUnitTest extends BaseTest {
         assertTrue(tester.testCopyConstructor(MapSet.class));
     }
 
+    /**
+     * Test model serialization.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelSerialization() throws Exception {
 
@@ -119,6 +147,11 @@ public class MapSetUnitTest extends BaseTest {
         assertTrue(tester.testJsonSerialization());
     }
 
+    /**
+     * Test persistence.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testPersistence() throws Exception {
 
@@ -151,7 +184,7 @@ public class MapSetUnitTest extends BaseTest {
             mapSet.setName("Test MapSet " + System.currentTimeMillis());
             mapSet.setVersionStatus(VersionStatus.IN_DEVELOPMENT);
             mapSet.setWorkflowStatus(WorkflowStatus.READY_FOR_EDIT);
-//            mapSet.setBranchPath("MAIN/TEST/2025-01-01/WCITEST");
+            // mapSet.setBranchPath("MAIN/TEST/2025-01-01/WCITEST");
             mapSet.setFromBranchPath("MAIN/TEST/2025-01-01");
             mapSet.setFromTerminology("TEST");
             mapSet.setFromVersion("2025-01-01");

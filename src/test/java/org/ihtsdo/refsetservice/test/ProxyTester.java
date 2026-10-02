@@ -391,9 +391,9 @@ public class ProxyTester {
      */
     private static Class<?> dummySubclass(final Class<?> type) {
 
-        return DUMMY_SUBCLASSES.computeIfAbsent(type, clazz -> new ByteBuddy().subclass(clazz)
-            .method(ElementMatchers.not(ElementMatchers.isDeclaredBy(Object.class))).intercept(StubMethod.INSTANCE).make()
-            .load(clazz.getClassLoader(), ClassLoadingStrategy.Default.WRAPPER).getLoaded());
+        return DUMMY_SUBCLASSES.computeIfAbsent(type,
+            clazz -> new ByteBuddy().subclass(clazz).method(ElementMatchers.not(ElementMatchers.isDeclaredBy(Object.class))).intercept(StubMethod.INSTANCE)
+                .make().load(clazz.getClassLoader(), ClassLoadingStrategy.Default.WRAPPER).getLoaded());
     }
 
     /**

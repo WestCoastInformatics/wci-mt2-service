@@ -147,7 +147,7 @@ public final class MapSetWorkflowService {
 
         final List<String> mapSetsNotUpdated = new ArrayList<>();
         final String query = "workflowStatus: " + WorkflowStatus.READY_FOR_PUBLICATION;
-		// + " AND editionShortName: " + editionShortName + " AND localSet: false";
+        // + " AND editionShortName: " + editionShortName + " AND localSet: false";
 
         final ResultList<MapSet> results = service.find(query, null, MapSet.class, null);
 
@@ -223,7 +223,7 @@ public final class MapSetWorkflowService {
         final String branchPath = edition.getBranch();
 
         final String query = "workflowStatus: " + WorkflowStatus.IN_PUBLICATION;
-		// + " AND editionShortName: " + editionShortName;
+        // + " AND editionShortName: " + editionShortName;
 
         // Find snowstorm's version date of the latest version of all mapSets in ready_to_published state. Ensure all identical
         final List<String> mapSetsNotUpdated = new ArrayList<>();
@@ -507,8 +507,7 @@ public final class MapSetWorkflowService {
         }
 
         if (nextStatus == null) {
-            LOG.warn(
-                "Workflow action requested but no permutation: refSetCode={}, mapSetId={}, workflowStatus={}, action={}, user={}, rolesTried={}, file={}",
+            LOG.warn("Workflow action requested but no permutation: refSetCode={}, mapSetId={}, workflowStatus={}, action={}, user={}, rolesTried={}, file={}",
                 mapSet.getRefSetCode(), mapSet.getId(), mapSet.getWorkflowStatus(), action, user.getUserName(), roles, WORKFLOW_PERMUTATIONS_FILE_NAME);
             throw new RestException(false, HttpStatus.BAD_REQUEST, "Bad Request",
                 "Invalid workflow action " + action + " from status " + mapSet.getWorkflowStatus());
@@ -1180,6 +1179,7 @@ public final class MapSetWorkflowService {
     }
 
     private static boolean isDevBypassEnabled() {
+
         final String bypass = PropertyUtility.getProperty("auth.dev.bypass");
         if ("true".equalsIgnoreCase(bypass)) {
             return true;

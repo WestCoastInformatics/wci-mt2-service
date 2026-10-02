@@ -46,6 +46,7 @@ public class SyncRefsetMetadata {
      * @param allRefsetVersions the all refset versions
      * @param version the version
      * @param branchPath the branch path
+     * @param moduleId the module id
      */
     public SyncRefsetMetadata(final JsonNode refsetNode, final Edition edition, final Set<Long> allRefsetVersions, final long version, final String branchPath,
         final String moduleId) {

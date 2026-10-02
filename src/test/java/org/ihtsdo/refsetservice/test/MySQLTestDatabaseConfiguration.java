@@ -19,8 +19,8 @@ import org.testcontainers.utility.DockerImageName;
 /**
  * The Class TestDatabaseConfiguration.
  */
-//@Configuration
-//@Profile("test")
+// @Configuration
+// @Profile("test")
 public class MySQLTestDatabaseConfiguration {
 
     /** The config properties. */

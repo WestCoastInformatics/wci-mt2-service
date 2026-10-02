@@ -144,12 +144,11 @@ public class ConceptController extends BaseController {
             }
 
             ResultListConcept resultListConcept = new ResultListConcept();
-            
+
             if (StringUtils.isBlank(searchParameters.getQuery()) || searchParameters.getQuery().length() < 2) {
                 return new ResponseEntity<>(resultListConcept, HttpStatus.OK);
             }
-            
-            
+
             if (searchParameters.getOffset() == null) {
                 searchParameters.setOffset(0);
             }

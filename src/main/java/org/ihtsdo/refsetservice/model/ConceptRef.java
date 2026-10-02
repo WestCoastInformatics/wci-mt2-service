@@ -103,7 +103,11 @@ public class ConceptRef extends AbstractHasModified implements HasName, Terminol
         populateFrom(other);
     }
 
-    /* see superclass */
+    /**
+     * Populate from.
+     *
+     * @param other the other
+     */
     @Override
     public void populateFrom(final ConceptRef other) {
 
@@ -119,7 +123,11 @@ public class ConceptRef extends AbstractHasModified implements HasName, Terminol
         hasChildren = other.getHasChildren();
     }
 
-    /* see superclass */
+    /**
+     * Patch from.
+     *
+     * @param other the other
+     */
     @Override
     public void patchFrom(final ConceptRef other) {
 
@@ -153,14 +161,23 @@ public class ConceptRef extends AbstractHasModified implements HasName, Terminol
         }
     }
 
-    /* see superclass */
+    /**
+     * Compare to.
+     *
+     * @param other the other
+     * @return the int
+     */
     @Override
     public int compareTo(final ConceptRef other) {
 
         return getCode().compareTo(other.getCode());
     }
 
-    /* see superclass */
+    /**
+     * Gets the id.
+     *
+     * @return the id
+     */
     @Override
     @Schema(description = "Unique identifier", requiredMode = RequiredMode.NOT_REQUIRED, format = "uuid")
     public String getId() {
@@ -168,16 +185,26 @@ public class ConceptRef extends AbstractHasModified implements HasName, Terminol
         return super.getId();
     }
 
-    /* see superclass */
+    /**
+     * Gets the name.
+     *
+     * @return the name
+     */
     @Override
     @Schema(description = "Concept name", requiredMode = RequiredMode.NOT_REQUIRED)
     public String getName() {
+
         return name;
     }
 
-    /* see superclass */
+    /**
+     * Sets the name.
+     *
+     * @param name the new name
+     */
     @Override
     public void setName(final String name) {
+
         this.name = name;
     }
 
@@ -345,7 +372,6 @@ public class ConceptRef extends AbstractHasModified implements HasName, Terminol
         return level;
     }
 
-
     /**
      * Sets the level.
      *
@@ -363,6 +389,7 @@ public class ConceptRef extends AbstractHasModified implements HasName, Terminol
      */
     @Schema(description = "Indicates whether or not this concept has children")
     public Boolean getHasChildren() {
+
         return hasChildren;
     }
 
@@ -372,9 +399,13 @@ public class ConceptRef extends AbstractHasModified implements HasName, Terminol
      * @param hasChildren the has children flag
      */
     public void setHasChildren(final Boolean hasChildren) {
+
         this.hasChildren = hasChildren;
     }
 
+    /**
+     * Lazy init.
+     */
     @Override
     public void lazyInit() {
         // TODO Auto-generated method stub

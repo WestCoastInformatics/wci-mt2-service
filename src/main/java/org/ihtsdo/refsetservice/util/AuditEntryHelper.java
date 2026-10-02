@@ -83,7 +83,6 @@ public final class AuditEntryHelper {
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(AuditEntryHelper.class);
 
-
     /**
      * Log.
      *
@@ -221,7 +220,7 @@ public final class AuditEntryHelper {
      * Adds the user to organization entry.
      *
      * @param organization the organization
-     * @param user         the user
+     * @param user the user
      * @return the audit entry
      */
     public static AuditEntry addUserToOrganizationEntry(final Organization organization, final User user) {
@@ -239,7 +238,7 @@ public final class AuditEntryHelper {
      * Removes the user from organization entry.
      *
      * @param organization the organization
-     * @param user         the user
+     * @param user the user
      * @return the audit entry
      */
     public static AuditEntry removeUserFromOrganizationEntry(final Organization organization, final User user) {
@@ -257,7 +256,7 @@ public final class AuditEntryHelper {
      * Update icon for organization entry.
      *
      * @param organization the organization
-     * @param fileName     the file name
+     * @param fileName the file name
      * @return the audit entry
      */
     public static AuditEntry updateIconForOrganizationEntry(final Organization organization, final String fileName) {
@@ -274,20 +273,18 @@ public final class AuditEntryHelper {
     /**
      * Send organization invite.
      *
-     * @param organization   the organization
-     * @param requester      the requester
+     * @param organization the organization
+     * @param requester the requester
      * @param recipientEmail the recipient email
      * @return the audit entry
      */
-    public static AuditEntry sendOrganizationInvite(final Organization organization, final User requester,
-            final String recipientEmail) {
+    public static AuditEntry sendOrganizationInvite(final Organization organization, final User requester, final String recipientEmail) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(organization.getId());
         entry.setMessage("INVITE Organization");
-        entry.setDetails("User " + requester.getUserName() + " sent request for " + recipientEmail
-                + " to join organization " + organization.getId());
+        entry.setDetails("User " + requester.getUserName() + " sent request for " + recipientEmail + " to join organization " + organization.getId());
         log(entry);
         return entry;
     }
@@ -295,23 +292,21 @@ public final class AuditEntryHelper {
     /**
      * Response for refset invite.
      *
-     * @param organization   the organization
-     * @param requester      the requester
+     * @param organization the organization
+     * @param requester the requester
      * @param recipientEmail the recipient email
-     * @param acceptance     the acceptance
+     * @param acceptance the acceptance
      * @return the audit entry
      */
-    public static AuditEntry responseForOrganizationInvite(final Organization organization, final User requester,
-            final String recipientEmail,
-            final boolean acceptance) {
+    public static AuditEntry responseForOrganizationInvite(final Organization organization, final User requester, final String recipientEmail,
+        final boolean acceptance) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(organization.getId());
         entry.setMessage("INVITE Organization Response");
-        entry.setDetails("Recipient " + recipientEmail + " " + (acceptance ? " accepted " : " decline ") + " user's "
-                + requester.getUserName()
-                + " request to join organization " + organization.getId());
+        entry.setDetails("Recipient " + recipientEmail + " " + (acceptance ? " accepted " : " decline ") + " user's " + requester.getUserName()
+            + " request to join organization " + organization.getId());
         log(entry);
         return entry;
     }
@@ -695,7 +690,7 @@ public final class AuditEntryHelper {
     /**
      * Update refset entry.
      *
-     * @param refset     the refset
+     * @param refset the refset
      * @param eclUpdated the ecl updated
      * @return the audit entry
      */
@@ -715,20 +710,18 @@ public final class AuditEntryHelper {
     /**
      * Add Refset Members entry.
      *
-     * @param refset                the refset
+     * @param refset the refset
      * @param additionalInformation the additional information
-     * @param conceptIds            the concept ids
+     * @param conceptIds the concept ids
      * @return the audit entry
      */
-    public static AuditEntry addMembersEntry(final Refset refset, final String additionalInformation,
-            final String conceptIds) {
+    public static AuditEntry addMembersEntry(final Refset refset, final String additionalInformation, final String conceptIds) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(refset.getId());
         entry.setMessage("UPDATE Refset");
-        entry.setDetails(
-                "Refset " + refset.getRefsetId() + " modified by adding " + additionalInformation + ": " + conceptIds);
+        entry.setDetails("Refset " + refset.getRefsetId() + " modified by adding " + additionalInformation + ": " + conceptIds);
         log(entry);
         return entry;
     }
@@ -736,20 +729,18 @@ public final class AuditEntryHelper {
     /**
      * Remove Refset Members entry.
      *
-     * @param refset                the refset
+     * @param refset the refset
      * @param additionalInformation the additional information
-     * @param conceptIds            the concept ids
+     * @param conceptIds the concept ids
      * @return the audit entry
      */
-    public static AuditEntry removeMembersEntry(final Refset refset, final String additionalInformation,
-            final String conceptIds) {
+    public static AuditEntry removeMembersEntry(final Refset refset, final String additionalInformation, final String conceptIds) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(refset.getId());
         entry.setMessage("UPDATE Refset");
-        entry.setDetails("Refset " + refset.getRefsetId() + " modified by removing " + additionalInformation + ": "
-                + conceptIds);
+        entry.setDetails("Refset " + refset.getRefsetId() + " modified by removing " + additionalInformation + ": " + conceptIds);
         log(entry);
 
         return entry;
@@ -758,7 +749,7 @@ public final class AuditEntryHelper {
     /**
      * Adds editing cycle entry.
      *
-     * @param refset   the refset
+     * @param refset the refset
      * @param isSaving the is saving
      * @return the audit entry
      */
@@ -779,7 +770,7 @@ public final class AuditEntryHelper {
     /**
      * Add editing cycle entry for MapSet.
      *
-     * @param mapSet  the map set
+     * @param mapSet the map set
      * @param isSaving the is saving
      * @return the audit entry
      */
@@ -800,8 +791,8 @@ public final class AuditEntryHelper {
     /**
      * Send refset invite.
      *
-     * @param refset         the refset
-     * @param requester      the requester
+     * @param refset the refset
+     * @param requester the requester
      * @param recipientEmail the recipient email
      * @return the audit entry
      */
@@ -811,8 +802,7 @@ public final class AuditEntryHelper {
         entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(refset.getId());
         entry.setMessage("INVITE Refset");
-        entry.setDetails("User " + requester.getUserName() + " sent request for " + recipientEmail + " to join refset "
-                + refset.getRefsetId());
+        entry.setDetails("User " + requester.getUserName() + " sent request for " + recipientEmail + " to join refset " + refset.getRefsetId());
         log(entry);
 
         return entry;
@@ -821,22 +811,20 @@ public final class AuditEntryHelper {
     /**
      * Response for refset invite.
      *
-     * @param refset         the refset
-     * @param requester      the requester
+     * @param refset the refset
+     * @param requester the requester
      * @param recipientEmail the recipient email
-     * @param acceptance     the acceptance
+     * @param acceptance the acceptance
      * @return the audit entry
      */
-    public static AuditEntry responseForRefsetInvite(final Refset refset, final User requester,
-            final String recipientEmail, final boolean acceptance) {
+    public static AuditEntry responseForRefsetInvite(final Refset refset, final User requester, final String recipientEmail, final boolean acceptance) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(refset.getId());
         entry.setMessage("INVITE Refset Response");
-        entry.setDetails("Recipient " + recipientEmail + " " + (acceptance ? " accepted " : " decline ") + " user's "
-                + requester.getUserName()
-                + " request to join refset " + refset.getRefsetId());
+        entry.setDetails("Recipient " + recipientEmail + " " + (acceptance ? " accepted " : " decline ") + " user's " + requester.getUserName()
+            + " request to join refset " + refset.getRefsetId());
         log(entry);
 
         return entry;
@@ -865,7 +853,7 @@ public final class AuditEntryHelper {
      * Update workflow note entry.
      *
      * @param workflowHistory the workflow history
-     * @param refset          the refset
+     * @param refset the refset
      * @return the audit entry
      */
     public static AuditEntry updateWorkflowNoteEntry(final RefsetWorkflowHistory workflowHistory, final Refset refset) {
@@ -874,8 +862,7 @@ public final class AuditEntryHelper {
         entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(refset.getId());
         entry.setMessage("NEW Workflow History");
-        entry.setDetails("Note for workflow history entry with status " + refset.getWorkflowStatus()
-                + " updated for refset " + refset.getRefsetId() + ".");
+        entry.setDetails("Note for workflow history entry with status " + refset.getWorkflowStatus() + " updated for refset " + refset.getRefsetId() + ".");
         log(entry);
         return entry;
     }
@@ -910,8 +897,7 @@ public final class AuditEntryHelper {
         entry.setEntityType(EntityType.REFSET.toString());
         entry.setEntityId(refset.getId());
         entry.setMessage("Convert Intensional to Extensional");
-        entry.setDetails(
-                "Note for converting intensional to extensional refset for refset " + refset.getRefsetId() + ".");
+        entry.setDetails("Note for converting intensional to extensional refset for refset " + refset.getRefsetId() + ".");
         log(entry);
         return entry;
     }
@@ -921,12 +907,11 @@ public final class AuditEntryHelper {
      *
      * @param refset the refset
      * @param action the action
-     * @param from   the from
-     * @param to     the to
+     * @param from the from
+     * @param to the to
      * @return the checks for modified
      */
-    public static HasModified sendCommunicationEmailEntry(final Refset refset, final String action, final String from,
-            final String to) {
+    public static HasModified sendCommunicationEmailEntry(final Refset refset, final String action, final String from, final String to) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.REFSET.toString());
@@ -957,7 +942,7 @@ public final class AuditEntryHelper {
     /**
      * Sync finish entry.
      *
-     * @param date              the date
+     * @param date the date
      * @param processingMinutes the processing minutes
      * @return the checks for modified
      */
@@ -1133,7 +1118,7 @@ public final class AuditEntryHelper {
      * Adds the mapping entry.
      *
      * @param refSetCode the map / refset code
-     * @param mapping  the mapping
+     * @param mapping the mapping
      * @param mapEntry the map entry
      * @return the audit entry
      */
@@ -1143,9 +1128,8 @@ public final class AuditEntryHelper {
         entry.setEntityType(EntityType.MAP_ENTRY.toString());
         entry.setEntityId(mapEntryEntityId(refSetCode, mapping.getCode()));
         entry.setMessage("ADD MapEntry " + formatGroupPriority(mapEntry) + " for concept " + mapping.getCode());
-        entry.setDetails(
-                "Add map entry " + formatGroupPriority(mapEntry) + " " + mapping.getCode() + " to "
-                        + (StringUtils.isNotBlank(mapEntry.getToCode()) ? mapEntry.getToCode() : "NO TARGET"));
+        entry.setDetails("Add map entry " + formatGroupPriority(mapEntry) + " " + mapping.getCode() + " to "
+            + (StringUtils.isNotBlank(mapEntry.getToCode()) ? mapEntry.getToCode() : "NO TARGET"));
         log(entry);
         return entry;
     }
@@ -1153,14 +1137,13 @@ public final class AuditEntryHelper {
     /**
      * Update mapping entry.
      *
-     * @param refSetCode      the map / refset code
-     * @param mapping         the mapping
+     * @param refSetCode the map / refset code
+     * @param mapping the mapping
      * @param updatedMapEntry the updated map entry
-     * @param oldMapEntry     the old map entry
+     * @param oldMapEntry the old map entry
      * @return the audit entry
      */
-    public static AuditEntry updateMappingEntry(final String refSetCode, final Mapping mapping,
-            final MapEntry updatedMapEntry, final MapEntry oldMapEntry) {
+    public static AuditEntry updateMappingEntry(final String refSetCode, final Mapping mapping, final MapEntry updatedMapEntry, final MapEntry oldMapEntry) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.MAP_ENTRY.toString());
@@ -1188,19 +1171,18 @@ public final class AuditEntryHelper {
      * Removes the mapping entry.
      *
      * @param refSetCode the map / refset code
-     * @param mapping  the mapping
+     * @param mapping the mapping
      * @param mapEntry the map entry
      * @return the audit entry
      */
-    public static AuditEntry statusChangeMappingEntry(final String refSetCode, final Mapping mapping,
-            final MapEntry mapEntry) {
+    public static AuditEntry statusChangeMappingEntry(final String refSetCode, final Mapping mapping, final MapEntry mapEntry) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.MAP_ENTRY.toString());
         entry.setEntityId(mapEntryEntityId(refSetCode, mapping.getCode()));
         entry.setMessage("UPDATE MapEntry " + formatGroupPriority(mapEntry) + " for concept " + mapping.getCode());
-        entry.setDetails("Map entry " + formatGroupPriority(mapEntry) + " for concept " + mapping.getCode()
-                + ((mapEntry.isActive()) ? " activated." : " inactivated."));
+        entry.setDetails(
+            "Map entry " + formatGroupPriority(mapEntry) + " for concept " + mapping.getCode() + ((mapEntry.isActive()) ? " activated." : " inactivated."));
         log(entry);
         return entry;
     }
@@ -1209,7 +1191,7 @@ public final class AuditEntryHelper {
      * Removes the mapping entry.
      *
      * @param refSetCode the map / refset code
-     * @param mapping  the mapping
+     * @param mapping the mapping
      * @param mapEntry the map entry
      * @return the audit entry
      */
@@ -1220,7 +1202,7 @@ public final class AuditEntryHelper {
         entry.setEntityId(mapEntryEntityId(refSetCode, mapping.getCode()));
         entry.setMessage("DELETE MapEntry " + formatGroupPriority(mapEntry) + " for concept " + mapping.getCode());
         entry.setDetails("Delete map entry " + formatGroupPriority(mapEntry) + " " + mapping.getCode() + " mapped to "
-                + (StringUtils.isNotBlank(mapEntry.getToCode()) ? mapEntry.getToCode() : "NO TARGET") + ".");
+            + (StringUtils.isNotBlank(mapEntry.getToCode()) ? mapEntry.getToCode() : "NO TARGET") + ".");
         log(entry);
         return entry;
     }
@@ -1233,15 +1215,14 @@ public final class AuditEntryHelper {
      * @param internationalMapping the International mapping being restored
      * @return the audit entry
      */
-    public static AuditEntry revertToInternationalMappingEntry(final String refSetCode, final Mapping norwegianMapping,
-            final Mapping internationalMapping) {
+    public static AuditEntry revertToInternationalMappingEntry(final String refSetCode, final Mapping norwegianMapping, final Mapping internationalMapping) {
 
         final AuditEntry entry = new AuditEntry();
         entry.setEntityType(EntityType.MAP_ENTRY.toString());
         entry.setEntityId(mapEntryEntityId(refSetCode, norwegianMapping.getCode()));
         entry.setMessage("REVERT MapEntry for concept " + norwegianMapping.getCode());
-        entry.setDetails("Removed Norwegian override mapped to " + formatMappingTargets(norwegianMapping)
-                + "; reverted to International mapping (" + formatMappingTargets(internationalMapping) + ").");
+        entry.setDetails("Removed Norwegian override mapped to " + formatMappingTargets(norwegianMapping) + "; reverted to International mapping ("
+            + formatMappingTargets(internationalMapping) + ").");
         log(entry);
         return entry;
     }
@@ -1259,25 +1240,23 @@ public final class AuditEntryHelper {
         }
 
         final List<String> targets = mapping.getMapEntries().stream()
-                .map(mapEntry -> formatGroupPriority(mapEntry) + " "
-                        + (StringUtils.isNotBlank(mapEntry.getToCode()) ? mapEntry.getToCode() : "NO TARGET"))
-                .collect(Collectors.toList());
+            .map(mapEntry -> formatGroupPriority(mapEntry) + " " + (StringUtils.isNotBlank(mapEntry.getToCode()) ? mapEntry.getToCode() : "NO TARGET"))
+            .collect(Collectors.toList());
         return String.join(", ", targets);
     }
 
     /**
      * Compute log string map entries.
      *
-     * Relation is compared case-insensitively (the UI uppercases display names). Module id and
-     * released are omitted; those are applied by save/publication, not edited by the user.
+     * Relation is compared case-insensitively (the UI uppercases display names). Module id and released are omitted; those are applied by save/publication, not
+     * edited by the user.
      *
      * @param newEntry the new entry
      * @param oldEntry the old entry
      * @return the string
      * @throws Exception the exception
      */
-    private static List<String> computeDetailsMapEntry(final MapEntry newEntry, final MapEntry oldEntry)
-            throws Exception {
+    private static List<String> computeDetailsMapEntry(final MapEntry newEntry, final MapEntry oldEntry) throws Exception {
 
         final String template = "%s changed from %s to %s";
         final List<String> changesArray = new ArrayList<>();
@@ -1292,8 +1271,7 @@ public final class AuditEntryHelper {
             changesArray.add(String.format(template, "Relation", oldEntry.getRelation(), newEntry.getRelation()));
         }
         if (!StringUtils.equalsIgnoreCase(oldEntry.getRelationCode(), newEntry.getRelationCode())) {
-            changesArray.add(
-                    String.format(template, "Relation Code", oldEntry.getRelationCode(), newEntry.getRelationCode()));
+            changesArray.add(String.format(template, "Relation Code", oldEntry.getRelationCode(), newEntry.getRelationCode()));
         }
         if (!Objects.equals(oldEntry.getRule(), newEntry.getRule())) {
             changesArray.add(String.format(template, "Rule", oldEntry.getRule(), newEntry.getRule()));
@@ -1302,12 +1280,10 @@ public final class AuditEntryHelper {
             changesArray.add(String.format(template, "Group/Priority", formatGroupPriority(oldEntry), formatGroupPriority(newEntry)));
         }
         if (oldEntry.getBlock() != newEntry.getBlock()) {
-            changesArray.add(String.format(template, "Block", String.valueOf(oldEntry.getBlock()),
-                    String.valueOf(newEntry.getBlock())));
+            changesArray.add(String.format(template, "Block", String.valueOf(oldEntry.getBlock()), String.valueOf(newEntry.getBlock())));
         }
         if (!Objects.equals(oldEntry.getAdvices(), newEntry.getAdvices())) {
-            changesArray.add(String.format(template, "Advices", oldEntry.getAdvices().toString(),
-                    newEntry.getAdvices().toString()));
+            changesArray.add(String.format(template, "Advices", oldEntry.getAdvices().toString(), newEntry.getAdvices().toString()));
         }
         if (!Objects.equals(oldEntry.getAdditionalMapEntryInfos(), newEntry.getAdditionalMapEntryInfos())) {
             changesArray.add(createChangeObject2("Additional Map Entry Details", oldEntry.getAdditionalMapEntryInfos(), newEntry.getAdditionalMapEntryInfos()));
@@ -1320,12 +1296,11 @@ public final class AuditEntryHelper {
      * Creates a change description string for AdditionalMapEntryInfo lists.
      *
      * @param fieldName the field name
-     * @param oldList   the old list of AdditionalMapEntryInfo
-     * @param newList   the new list of AdditionalMapEntryInfo
+     * @param oldList the old list of AdditionalMapEntryInfo
+     * @param newList the new list of AdditionalMapEntryInfo
      * @return formatted string describing the changes
      */
-    private static String createChangeObject2(final String fieldName, final Set<AdditionalMapEntryInfo> oldList,
-            final Set<AdditionalMapEntryInfo> newList) {
+    private static String createChangeObject2(final String fieldName, final Set<AdditionalMapEntryInfo> oldList, final Set<AdditionalMapEntryInfo> newList) {
 
         final StringBuilder changes = new StringBuilder();
 
@@ -1337,15 +1312,13 @@ public final class AuditEntryHelper {
         for (final AdditionalMapEntryInfo newInfo : newEntries) {
             boolean found = false;
             for (AdditionalMapEntryInfo oldInfo : oldEntries) {
-                if (oldInfo.getField().equals(newInfo.getField()) &&
-                        oldInfo.getValue().equals(newInfo.getValue())) {
+                if (oldInfo.getField().equals(newInfo.getField()) && oldInfo.getValue().equals(newInfo.getValue())) {
                     found = true;
                     break;
                 }
             }
             if (!found) {
-                changes.append("Added: ").append(newInfo.getField())
-                        .append("=").append(newInfo.getValue()).append("; ");
+                changes.append("Added: ").append(newInfo.getField()).append("=").append(newInfo.getValue()).append("; ");
             }
         }
 
@@ -1353,26 +1326,22 @@ public final class AuditEntryHelper {
         for (final AdditionalMapEntryInfo oldInfo : oldEntries) {
             boolean found = false;
             for (AdditionalMapEntryInfo newInfo : newEntries) {
-                if (oldInfo.getField().equals(newInfo.getField()) &&
-                        oldInfo.getValue().equals(newInfo.getValue())) {
+                if (oldInfo.getField().equals(newInfo.getField()) && oldInfo.getValue().equals(newInfo.getValue())) {
                     found = true;
                     break;
                 }
             }
             if (!found) {
-                changes.append("Removed: ").append(oldInfo.getField())
-                        .append("=").append(oldInfo.getValue()).append("; ");
+                changes.append("Removed: ").append(oldInfo.getField()).append("=").append(oldInfo.getValue()).append("; ");
             }
         }
 
         // Find modified entries
         for (final AdditionalMapEntryInfo oldInfo : oldEntries) {
             for (AdditionalMapEntryInfo newInfo : newEntries) {
-                if (oldInfo.getField().equals(newInfo.getField()) &&
-                        !oldInfo.getValue().equals(newInfo.getValue())) {
-                    changes.append("Modified: ").append(oldInfo.getField())
-                            .append(" from '").append(oldInfo.getValue())
-                            .append("' to '").append(newInfo.getValue()).append("'; ");
+                if (oldInfo.getField().equals(newInfo.getField()) && !oldInfo.getValue().equals(newInfo.getValue())) {
+                    changes.append("Modified: ").append(oldInfo.getField()).append(" from '").append(oldInfo.getValue()).append("' to '")
+                        .append(newInfo.getValue()).append("'; ");
                 }
             }
         }
@@ -1380,8 +1349,6 @@ public final class AuditEntryHelper {
         final String changeString = changes.toString().trim();
         return changeString.isEmpty() ? "No changes in additional info" : fieldName + " changes: " + changeString;
     }
-
-
 
     // Map Relation
     /**
@@ -1421,10 +1388,9 @@ public final class AuditEntryHelper {
     /**
      * Complete refset publication entry.
      *
-     * @param refset the refset
+     * @param mapSet the map set
      * @return the audit entry
      */
-    // Workflow
     public static AuditEntry completeMapSetPublicationEntry(final MapSet mapSet) {
 
         final AuditEntry entry = new AuditEntry();
@@ -1440,7 +1406,7 @@ public final class AuditEntryHelper {
      * Adds the workflow history entry.
      *
      * @param workflowHistory the workflow history
-     * @param refset the refset
+     * @param mapSet the map set
      * @param newState the new state
      * @return the audit entry
      */
@@ -1459,7 +1425,7 @@ public final class AuditEntryHelper {
      * Update workflow note entry.
      *
      * @param workflowHistory the workflow history
-     * @param refset the refset
+     * @param mapSet the map set
      * @return the audit entry
      */
     public static AuditEntry updateWorkflowNoteEntry(final MapSetWorkflowHistory workflowHistory, final MapSet mapSet) {

@@ -69,7 +69,7 @@ public class SnowstormRefset extends SnowstormAbstract {
      *
      * @param service the service
      * @param user the user
-     * @param refsetEditParameters the refset edit parameters
+     * @param newRefsetParameters the new refset parameters
      * @return the object
      * @throws Exception the exception
      */

@@ -209,7 +209,7 @@ public class OrganizationService extends BaseService {
 
         return newOrganization;
     }
-    
+
     /**
      * Returns the organization.
      *

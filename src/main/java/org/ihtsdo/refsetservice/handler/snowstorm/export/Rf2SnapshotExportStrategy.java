@@ -114,12 +114,12 @@ public class Rf2SnapshotExportStrategy extends AbstractMapSetExportStrategy {
                 LOG.info("Snowstorm export request: {}", exportRequestParameters);
 
                 // Generate on Snowstorm
-                final String snowGeneratedFileUrl = exportHandler.generateSnowVersionFile(exportRequestParameters);
+                final String snowGeneratedFileUrl = getExportHandler().generateSnowVersionFile(exportRequestParameters);
 
                 LOG.info("Downloading file from snowstorm : {}", snowGeneratedFileUrl);
 
                 // Download file from Snowstorm
-                exportHandler.downloadSnowGeneratedFile(snowGeneratedFileUrl, localSnowGeneratedFilePath);
+                getExportHandler().downloadSnowGeneratedFile(snowGeneratedFileUrl, localSnowGeneratedFilePath);
 
                 // store file one s3
                 LOG.info("uploading snowstorm generated file to S3");

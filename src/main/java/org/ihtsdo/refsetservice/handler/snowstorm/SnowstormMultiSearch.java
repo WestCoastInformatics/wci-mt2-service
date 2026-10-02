@@ -118,8 +118,8 @@ public class SnowstormMultiSearch extends SnowstormAbstract {
         final ObjectNode body = ThreadLocalMapper.get().createObjectNode();
         body.set("branches", bodyPaths);
 
-        final String url = SnowstormConnection.getRestBaseUrl() + "multisearch/descriptions?active=true&offset=0&limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH + "&ecl="
-            + StringUtility.encodeValue(ecl) + "&term=" + StringUtility.encodeValue(snowstormQuery);
+        final String url = SnowstormConnection.getRestBaseUrl() + "multisearch/descriptions?active=true&offset=0&limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH
+            + "&ecl=" + StringUtility.encodeValue(ecl) + "&term=" + StringUtility.encodeValue(snowstormQuery);
 
         LOG.debug("searchMultisearchDescriptions: Search Refset Concepts descriptions URL: " + url);
         LOG.debug("!!!!! searchMultisearchDescriptions: Search Refset Concepts descriptions BODY: " + body);

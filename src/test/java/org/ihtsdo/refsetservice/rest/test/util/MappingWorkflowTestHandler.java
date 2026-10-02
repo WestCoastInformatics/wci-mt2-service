@@ -27,10 +27,10 @@ public class MappingWorkflowTestHandler extends MapSetWorkflowTestHandler {
     private static List<Mapping> lastUpdatedMappings = new ArrayList<>();
 
     /** Concept codes treated as not present in the mapset. */
-    private static final Set<String> conceptsNotInMapSet = new HashSet<>();
+    private static final Set<String> CONCEPTS_NOT_IN_MAP_SET = new HashSet<>();
 
     /** Concept codes returned when search is not limited to request or restrict-to codes. */
-    private static final Set<String> searchableConceptCodes = new LinkedHashSet<>();
+    private static final Set<String> SEARCHABLE_CONCEPT_CODES = new LinkedHashSet<>();
 
     /**
      * Reset handler state between tests.
@@ -39,8 +39,8 @@ public class MappingWorkflowTestHandler extends MapSetWorkflowTestHandler {
 
         updateCalled = false;
         lastUpdatedMappings = new ArrayList<>();
-        conceptsNotInMapSet.clear();
-        searchableConceptCodes.clear();
+        CONCEPTS_NOT_IN_MAP_SET.clear();
+        SEARCHABLE_CONCEPT_CODES.clear();
     }
 
     /**
@@ -51,7 +51,7 @@ public class MappingWorkflowTestHandler extends MapSetWorkflowTestHandler {
     public static void markConceptMissingFromMapSet(final String conceptCode) {
 
         if (StringUtils.isNotBlank(conceptCode)) {
-            conceptsNotInMapSet.add(conceptCode);
+            CONCEPTS_NOT_IN_MAP_SET.add(conceptCode);
         }
     }
 
@@ -63,7 +63,7 @@ public class MappingWorkflowTestHandler extends MapSetWorkflowTestHandler {
     public static void addSearchableConcept(final String conceptCode) {
 
         if (StringUtils.isNotBlank(conceptCode)) {
-            searchableConceptCodes.add(conceptCode);
+            SEARCHABLE_CONCEPT_CODES.add(conceptCode);
         }
     }
 
@@ -87,6 +87,17 @@ public class MappingWorkflowTestHandler extends MapSetWorkflowTestHandler {
         return lastUpdatedMappings;
     }
 
+    /**
+     * Update mappings.
+     *
+     * @param mapProject the map project
+     * @param branch the branch
+     * @param mapSetCode the map set code
+     * @param mappings the mappings
+     * @param mapSet the map set
+     * @param user the user
+     * @return the list
+     */
     @Override
     public List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mappings,
         final MapSet mapSet, final User user) {
@@ -94,6 +105,12 @@ public class MappingWorkflowTestHandler extends MapSetWorkflowTestHandler {
         return recordUpdate(mappings);
     }
 
+    /**
+     * Record update.
+     *
+     * @param mappings the mappings
+     * @return the list
+     */
     private static List<Mapping> recordUpdate(final List<Mapping> mappings) {
 
         updateCalled = true;
@@ -101,6 +118,15 @@ public class MappingWorkflowTestHandler extends MapSetWorkflowTestHandler {
         return lastUpdatedMappings;
     }
 
+    /**
+     * Gets the mapping.
+     *
+     * @param branch the branch
+     * @param conceptCode the concept code
+     * @param showOverriddenEntries the show overridden entries
+     * @param mapSet the map set
+     * @return the mapping
+     */
     @Override
     public Mapping getMapping(final String branch, final String conceptCode, final boolean showOverriddenEntries, final MapSet mapSet) {
 
@@ -112,6 +138,17 @@ public class MappingWorkflowTestHandler extends MapSetWorkflowTestHandler {
         return mapping;
     }
 
+    /**
+     * Gets the mappings.
+     *
+     * @param branch the branch
+     * @param mapSet the map set
+     * @param searchParameters the search parameters
+     * @param filter the filter
+     * @param showOverriddenEntries the show overridden entries
+     * @param conceptCodes the concept codes
+     * @return the mappings
+     */
     @Override
     public ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter,
         final boolean showOverriddenEntries, final List<String> conceptCodes) {
@@ -119,6 +156,18 @@ public class MappingWorkflowTestHandler extends MapSetWorkflowTestHandler {
         return getMappings(branch, mapSet, searchParameters, filter, showOverriddenEntries, conceptCodes, null);
     }
 
+    /**
+     * Gets the mappings.
+     *
+     * @param branch the branch
+     * @param mapSet the map set
+     * @param searchParameters the search parameters
+     * @param filter the filter
+     * @param showOverriddenEntries the show overridden entries
+     * @param conceptCodes the concept codes
+     * @param restrictToConceptCodes the restrict to concept codes
+     * @return the mappings
+     */
     @Override
     public ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter,
         final boolean showOverriddenEntries, final List<String> conceptCodes, final Collection<String> restrictToConceptCodes) {
@@ -126,6 +175,19 @@ public class MappingWorkflowTestHandler extends MapSetWorkflowTestHandler {
         return getMappings(branch, mapSet, searchParameters, filter, showOverriddenEntries, conceptCodes, restrictToConceptCodes, null);
     }
 
+    /**
+     * Gets the mappings.
+     *
+     * @param branch the branch
+     * @param mapSet the map set
+     * @param searchParameters the search parameters
+     * @param filter the filter
+     * @param showOverriddenEntries the show overridden entries
+     * @param conceptCodes the concept codes
+     * @param restrictToConceptCodes the restrict to concept codes
+     * @param excludeConceptCodes the exclude concept codes
+     * @return the mappings
+     */
     @Override
     public ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter,
         final boolean showOverriddenEntries, final List<String> conceptCodes, final Collection<String> restrictToConceptCodes,
@@ -145,7 +207,7 @@ public class MappingWorkflowTestHandler extends MapSetWorkflowTestHandler {
                 }
             }
         } else {
-            codes.addAll(searchableConceptCodes);
+            codes.addAll(SEARCHABLE_CONCEPT_CODES);
         }
         if (excludeConceptCodes != null && !excludeConceptCodes.isEmpty()) {
             codes.removeAll(new HashSet<>(excludeConceptCodes));
@@ -167,8 +229,14 @@ public class MappingWorkflowTestHandler extends MapSetWorkflowTestHandler {
         return result;
     }
 
+    /**
+     * Checks if is in map set.
+     *
+     * @param conceptCode the concept code
+     * @return true, if is in map set
+     */
     private static boolean isInMapSet(final String conceptCode) {
 
-        return StringUtils.isNotBlank(conceptCode) && !conceptsNotInMapSet.contains(conceptCode);
+        return StringUtils.isNotBlank(conceptCode) && !CONCEPTS_NOT_IN_MAP_SET.contains(conceptCode);
     }
 }

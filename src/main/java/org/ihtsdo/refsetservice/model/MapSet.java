@@ -223,7 +223,7 @@ public class MapSet extends AbstractHasModified {
 
     /** The upgrade versions candidate. */
     @Transient
-    public List<String> upgradeVersionsCandidate;
+    private List<String> upgradeVersionsCandidate;
 
     // /** The value to use for the 'INCLUSION' intensional definition exception type. */
     // @Transient
@@ -767,6 +767,27 @@ public class MapSet extends AbstractHasModified {
     }
 
     /**
+     * Gets the upgrade versions candidate.
+     *
+     * @return the upgrade versions candidate
+     */
+    @JsonGetter()
+    public List<String> getUpgradeVersionsCandidate() {
+
+        return upgradeVersionsCandidate;
+    }
+
+    /**
+     * Sets the upgrade versions candidate.
+     *
+     * @param upgradeVersionsCandidate the new upgrade versions candidate
+     */
+    public void setUpgradeVersionsCandidate(final List<String> upgradeVersionsCandidate) {
+
+        this.upgradeVersionsCandidate = upgradeVersionsCandidate;
+    }
+
+    /**
      * Gets the edition branch.
      *
      * @return the edition branch
@@ -829,22 +850,42 @@ public class MapSet extends AbstractHasModified {
         return "";
     }
 
+    /**
+     * Checks if is in upgrade.
+     *
+     * @return true, if is in upgrade
+     */
     public boolean isInUpgrade() {
 
         return false;
     }
 
-    public void setInUpgrade(boolean inUpgrade) {
+    /**
+     * Sets the in upgrade.
+     *
+     * @param inUpgrade the new in upgrade
+     */
+    public void setInUpgrade(final boolean inUpgrade) {
 
         // n/a
     }
 
+    /**
+     * Checks if is in inactivate.
+     *
+     * @return true, if is in inactivate
+     */
     public boolean isInInactivate() {
 
         return false;
     }
 
-    public void setInInactivate(boolean inInactivate) {
+    /**
+     * Sets the in inactivate.
+     *
+     * @param inInactivate the new in inactivate
+     */
+    public void setInInactivate(final boolean inInactivate) {
 
         // n/a
     }

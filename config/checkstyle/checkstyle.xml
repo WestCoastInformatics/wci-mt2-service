@@ -32,10 +32,8 @@
 
   <!-- https://checkstyle.org/filters/suppressionfilter.html -->
   <module name="SuppressionFilter">
-    <property name="file"
-      value="${org.checkstyle.sun.suppressionfilter.config}"
-      default="checkstyle-suppressions.xml" />
-    <property name="optional" value="true" />
+    <property name="file" value="${checkstyle.suppressions.file}"/>
+    <property name="optional" value="false"/>
   </module>
 
   <!-- Checks that a package-info.java file exists for each package. -->
@@ -176,10 +174,8 @@
 
     <!-- https://checkstyle.org/filters/suppressionxpathfilter.html -->
     <module name="SuppressionXpathFilter">
-      <property name="file"
-        value="${org.checkstyle.sun.suppressionxpathfilter.config}"
-        default="checkstyle-xpath-suppressions.xml" />
-      <property name="optional" value="true" />
+      <property name="file" value="${checkstyle.suppressions.xpath.file}" />
+      <property name="optional" value="false" />
     </module>
 
   </module>

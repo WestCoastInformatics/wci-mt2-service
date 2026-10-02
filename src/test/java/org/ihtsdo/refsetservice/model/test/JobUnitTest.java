@@ -28,6 +28,7 @@ public class JobUnitTest {
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(JobUnitTest.class);
 
+    /** The object. */
     private Job object;
 
     /**

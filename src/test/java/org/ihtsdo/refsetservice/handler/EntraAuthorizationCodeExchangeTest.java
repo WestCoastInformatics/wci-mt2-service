@@ -119,10 +119,9 @@ public class EntraAuthorizationCodeExchangeTest {
     @Test
     public void testBuildLogoutUrlAppendsPostLogoutRedirectUri() {
 
-        final String url = EntraAuthorizationCodeExchange.buildLogoutUrl("https://login.example/tenant/oauth2/v2.0/logout", "http://localhost:8888/",
-            "client-1");
-        assertEquals(
-            "https://login.example/tenant/oauth2/v2.0/logout?post_logout_redirect_uri=http%3A%2F%2Flocalhost%3A8888%2F&client_id=client-1", url);
+        final String url =
+            EntraAuthorizationCodeExchange.buildLogoutUrl("https://login.example/tenant/oauth2/v2.0/logout", "http://localhost:8888/", "client-1");
+        assertEquals("https://login.example/tenant/oauth2/v2.0/logout?post_logout_redirect_uri=http%3A%2F%2Flocalhost%3A8888%2F&client_id=client-1", url);
     }
 
     /**

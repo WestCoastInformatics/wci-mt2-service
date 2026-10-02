@@ -75,6 +75,7 @@ public class SyncUtilities {
     /** The db handler. */
     private final SyncDatabaseHandler dbHandler;
 
+    /** The Constant ORGANIZATION_TO_ADMIN_TEAM_CACHE. */
     private static final Map<String, Team> ORGANIZATION_TO_ADMIN_TEAM_CACHE = new HashMap<>();
 
     /** The Constant PROPERTY_READER. */
@@ -92,12 +93,14 @@ public class SyncUtilities {
     /** The Constant DEVELOPER_ORGANIZATION_NAME_KEYWORD. */
     protected static final String DEVELOPER_ORGANIZATION_NAME_KEYWORD = "wci";
 
+    /** The Constant MODULED_ID_CONCEPT. */
     protected static final String MODULED_ID_CONCEPT = "900000000000445007";
 
     /** The Constant EDITION_MODULES_MAP. */
     // Edition shortName to Set<Module SctIds>
     private static final Map<String, Set<String>> EDITION_MODULES_FROM_DESCENDANTS_MAP = new HashMap<>();
 
+    /** The Constant EDITION_MODULE_FROM_METADATA_MAP. */
     private static final Map<String, String> EDITION_MODULE_FROM_METADATA_MAP = new HashMap<>();
 
     /** The Constant FEEDBACK_TESTING_USER_NAME. */
@@ -181,9 +184,7 @@ public class SyncUtilities {
      * Identify modules via the concept desendants call.
      *
      * @param shortName the short name
-     * @param editionName the edition name
      * @param editionBranch the edition branch
-     * @param codeSystem the code system
      * @return the sets the
      * @throws Exception the exception
      */
@@ -307,7 +308,7 @@ public class SyncUtilities {
 
             return languageRefsets;
 
-            //            languageRefsets.addAll(undefinedDefaultLanguageRefsets.get(shortName));
+            // languageRefsets.addAll(undefinedDefaultLanguageRefsets.get(shortName));
         }
 
         if (languageRefsets.isEmpty()) {
@@ -442,7 +443,8 @@ public class SyncUtilities {
 
             return "Organizational administrators can update this edition's default description via the Dashboard's Organization-Configuration page.";
         } else {
-            return "Organizational administrators can update this edition's default name and default description via the Dashboard's Organization-Configuration page.";
+            return "Organizational administrators can update this edition's default name and default description "
+                + "via the Dashboard's Organization-Configuration page.";
         }
     }
 
@@ -588,6 +590,13 @@ public class SyncUtilities {
 
     }
 
+    /**
+     * Email results.
+     *
+     * @param service the service
+     * @param results the results
+     * @throws Exception the exception
+     */
     public void emailResults(final TerminologyService service, final String results) throws Exception {
 
         if (!PropertyUtility.getProperties().containsKey("refset.service.env")) {

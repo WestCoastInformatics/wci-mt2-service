@@ -195,8 +195,7 @@ public class PropertyUtility {
     }
 
     /**
-     * Whether this source is the OS environment. Test profile copies skip it so
-     * application-test.properties and {@code @TestPropertySource} win.
+     * Whether this source is the OS environment. Test profile copies skip it so application-test.properties and {@code @TestPropertySource} win.
      *
      * @param propertySource the property source
      * @return true if OS environment

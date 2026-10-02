@@ -18,7 +18,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
 import org.apache.commons.lang3.StringUtils;
-import org.ihtsdo.refsetservice.handler.EntraIDSecurityServiceHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -54,7 +53,7 @@ public final class EntraAuthorizationCodeExchange {
      * @param clientSecret confidential client secret
      * @param code authorization code from the redirect query string
      * @param redirectUri exact redirect URI used in the authorize request and registered in Entra
-     * @return JWT string suitable for {@link EntraIDSecurityServiceHandler#authenticateWithBearerToken(String)}
+     * @return JWT string suitable for {@link org.ihtsdo.refsetservice.handler.EntraIDSecurityServiceHandler#authenticateWithBearerToken(String)}
      * @throws Exception if the HTTP client fails or JSON parsing fails
      * @throws IllegalArgumentException if any required parameter is null or blank
      * @throws IllegalStateException if HTTP status is not 2xx, the body contains {@code error}, or neither token field is present
@@ -70,8 +69,7 @@ public final class EntraAuthorizationCodeExchange {
             "client_secret=" + urlEncode(clientSecret), "code=" + urlEncode(code), "redirect_uri=" + urlEncode(redirectUri));
 
         final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(tokenEndpoint)).timeout(Duration.ofSeconds(30))
-            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-            .POST(HttpRequest.BodyPublishers.ofString(form)).build();
+            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE).POST(HttpRequest.BodyPublishers.ofString(form)).build();
 
         LOG.debug("Entra token exchange: POST {}", tokenEndpoint);
 

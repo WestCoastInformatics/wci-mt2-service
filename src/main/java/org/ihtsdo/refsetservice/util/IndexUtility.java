@@ -63,13 +63,10 @@ import org.hibernate.search.mapper.orm.scope.SearchScope;
 import org.hibernate.search.mapper.orm.session.SearchSession;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmbedded;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordField;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
-import org.reflections.Reflections;
-import org.reflections.util.ConfigurationBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -654,7 +651,7 @@ public final class IndexUtility {
         if (!PropertyUtility.getProperties().getProperty("spring.jpa.properties.hibernate.search.backend.type").trim().equals("elasticsearch")) {
 
             @SuppressWarnings("resource")
-			final QueryParser queryParser = new MultiFieldQueryParser(IndexUtility.getIndexedFieldNames(clazz, "string").toArray(new String[] {}),
+            final QueryParser queryParser = new MultiFieldQueryParser(IndexUtility.getIndexedFieldNames(clazz, "string").toArray(new String[] {}),
                 mapping.indexedEntity(clazz).indexManager().unwrap(LuceneIndexManager.class).searchAnalyzer());
 
             predicate = predicateFactory.extension(LuceneExtension.get()).fromLuceneQuery(queryParser.parse(finalQuery)).toPredicate();

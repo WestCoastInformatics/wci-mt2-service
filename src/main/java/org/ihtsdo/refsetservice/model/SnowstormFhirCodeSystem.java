@@ -76,7 +76,7 @@ public class SnowstormFhirCodeSystem {
      *
      * @param fullUrl the new full url
      */
-    public void setFullUrl(String fullUrl) {
+    public void setFullUrl(final String fullUrl) {
 
         this.fullUrl = fullUrl;
     }
@@ -96,7 +96,7 @@ public class SnowstormFhirCodeSystem {
      *
      * @param resourceType the new resource type
      */
-    public void setResourceType(String resourceType) {
+    public void setResourceType(final String resourceType) {
 
         this.resourceType = resourceType;
     }
@@ -116,7 +116,7 @@ public class SnowstormFhirCodeSystem {
      *
      * @param id the new id
      */
-    public void setId(String id) {
+    public void setId(final String id) {
 
         this.id = id;
     }
@@ -136,7 +136,7 @@ public class SnowstormFhirCodeSystem {
      *
      * @param url the new url
      */
-    public void setUrl(String url) {
+    public void setUrl(final String url) {
 
         this.url = url;
     }
@@ -156,7 +156,7 @@ public class SnowstormFhirCodeSystem {
      *
      * @param version the new version
      */
-    public void setVersion(String version) {
+    public void setVersion(final String version) {
 
         this.version = version;
     }
@@ -176,7 +176,7 @@ public class SnowstormFhirCodeSystem {
      *
      * @param name the new name
      */
-    public void setName(String name) {
+    public void setName(final String name) {
 
         this.name = name;
     }
@@ -196,7 +196,7 @@ public class SnowstormFhirCodeSystem {
      *
      * @param status the new status
      */
-    public void setStatus(String status) {
+    public void setStatus(final String status) {
 
         this.status = status;
     }
@@ -216,7 +216,7 @@ public class SnowstormFhirCodeSystem {
      *
      * @param date the new date
      */
-    public void setDate(Date date) {
+    public void setDate(final Date date) {
 
         this.date = date;
     }
@@ -236,7 +236,7 @@ public class SnowstormFhirCodeSystem {
      *
      * @param publisher the new publisher
      */
-    public void setPublisher(String publisher) {
+    public void setPublisher(final String publisher) {
 
         this.publisher = publisher;
     }
@@ -256,7 +256,7 @@ public class SnowstormFhirCodeSystem {
      *
      * @param hierarchyMeaning the new hierarchy meaning
      */
-    public void setHierarchyMeaning(String hierarchyMeaning) {
+    public void setHierarchyMeaning(final String hierarchyMeaning) {
 
         this.hierarchyMeaning = hierarchyMeaning;
     }
@@ -276,7 +276,7 @@ public class SnowstormFhirCodeSystem {
      *
      * @param compositional the new compositional
      */
-    public void setCompositional(boolean compositional) {
+    public void setCompositional(final boolean compositional) {
 
         this.compositional = compositional;
     }
@@ -296,7 +296,7 @@ public class SnowstormFhirCodeSystem {
      *
      * @param content the new content
      */
-    public void setContent(String content) {
+    public void setContent(final String content) {
 
         this.content = content;
     }
@@ -319,15 +319,18 @@ public class SnowstormFhirCodeSystem {
      * @return true, if successful
      */
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
 
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
-        SnowstormFhirCodeSystem other = (SnowstormFhirCodeSystem) obj;
+        }
+        final SnowstormFhirCodeSystem other = (SnowstormFhirCodeSystem) obj;
         return compositional == other.compositional && Objects.equals(content, other.content) && Objects.equals(date, other.date)
             && Objects.equals(fullUrl, other.fullUrl) && Objects.equals(hierarchyMeaning, other.hierarchyMeaning) && Objects.equals(id, other.id)
             && Objects.equals(name, other.name) && Objects.equals(publisher, other.publisher) && Objects.equals(resourceType, other.resourceType)

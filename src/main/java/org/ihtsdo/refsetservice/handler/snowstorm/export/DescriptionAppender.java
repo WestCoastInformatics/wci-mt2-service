@@ -50,8 +50,6 @@ public class DescriptionAppender {
 
     /**
      * Instantiates a new description appender.
-     *
-     * @param snowstormDescription the snowstorm description
      */
     public DescriptionAppender() {
 

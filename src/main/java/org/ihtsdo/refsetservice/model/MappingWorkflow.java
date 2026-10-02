@@ -32,7 +32,6 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexingDependency;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.ObjectPath;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.PropertyValue;
-import org.ihtsdo.refsetservice.util.ModelUtility;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -337,6 +336,12 @@ public class MappingWorkflow extends AbstractHasModified {
         // n/a
     }
 
+    /**
+     * Equals.
+     *
+     * @param obj the obj
+     * @return true, if successful
+     */
     @Override
     public boolean equals(final Object obj) {
 
@@ -347,17 +352,17 @@ public class MappingWorkflow extends AbstractHasModified {
             return false;
         }
         final MappingWorkflow other = (MappingWorkflow) obj;
-        return specialistSlot == other.specialistSlot
-            && Objects.equals(sourceConceptCode, other.sourceConceptCode)
-            && workflowStatus == other.workflowStatus
-            && previousWorkflowStatus == other.previousWorkflowStatus
-            && Objects.equals(assignedUser, other.assignedUser)
-            && Objects.equals(assignedAt, other.assignedAt)
-            && Objects.equals(leaseExpiresAt, other.leaseExpiresAt)
-            && Objects.equals(mapSet, other.mapSet)
+        return specialistSlot == other.specialistSlot && Objects.equals(sourceConceptCode, other.sourceConceptCode) && workflowStatus == other.workflowStatus
+            && previousWorkflowStatus == other.previousWorkflowStatus && Objects.equals(assignedUser, other.assignedUser)
+            && Objects.equals(assignedAt, other.assignedAt) && Objects.equals(leaseExpiresAt, other.leaseExpiresAt) && Objects.equals(mapSet, other.mapSet)
             && Objects.equals(mapProject, other.mapProject);
     }
 
+    /**
+     * Hash code.
+     *
+     * @return the int
+     */
     @Override
     public int hashCode() {
 
@@ -365,6 +370,9 @@ public class MappingWorkflow extends AbstractHasModified {
             mapProject);
     }
 
+    /**
+     * Lazy init.
+     */
     @Override
     public void lazyInit() {
 

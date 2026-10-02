@@ -33,12 +33,10 @@ import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.enums.FileExportType;
 import org.ihtsdo.refsetservice.model.enums.FileFormatType;
 import org.ihtsdo.refsetservice.model.enums.WorkflowAction;
-import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.MapProjectService;
 import org.ihtsdo.refsetservice.terminologyservice.MapSetService;
 import org.ihtsdo.refsetservice.terminologyservice.MapSetWorkflowService;
-import org.ihtsdo.refsetservice.terminologyservice.RefsetWorkflowService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
@@ -165,7 +163,8 @@ public class MapSetController extends BaseController {
     })
     @Parameters({
         @Parameter(name = "query",
-            description = "Lucene search query. Supports status filters, e.g. versionStatus:IN_DEVELOPMENT, versionStatus:IN_DEVELOPMENT, workflowStatus:IN_EDIT",
+            description = "Lucene search query. Supports status filters, e.g. versionStatus:IN_DEVELOPMENT, "
+                + "versionStatus:IN_DEVELOPMENT, workflowStatus:IN_EDIT",
             required = false),
         @Parameter(name = "limit", description = "Maximum number of search results", required = false),
         @Parameter(name = "offset", description = "Start index of search results", required = false),
@@ -185,18 +184,16 @@ public class MapSetController extends BaseController {
         try (final TerminologyService service = new TerminologyService()) {
 
             // When a Lucene query (or activeOnly) is provided, search DB map sets via Hibernate Search.
-            // Example: ?query=versionStatus:IN_DEVELOPMENT  or  ?query=workflowStatus:IN_EDIT
-            if (searchParameters != null
-                && (StringUtils.isNotBlank(searchParameters.getQuery()) || Boolean.TRUE.equals(searchParameters.getActiveOnly()))) {
+            // Example: ?query=versionStatus:IN_DEVELOPMENT or ?query=workflowStatus:IN_EDIT
+            if (searchParameters != null && (StringUtils.isNotBlank(searchParameters.getQuery()) || Boolean.TRUE.equals(searchParameters.getActiveOnly()))) {
                 final ResultList<MapSet> results = MapSetService.searchMapSets(service, searchParameters);
                 return new ResponseEntity<>(results.getItems(), HttpStatus.OK);
             }
 
             final String branch = MapSetService.resolveBranchFromMapSets(service, null);
             if (StringUtils.isBlank(branch) || "empty".equals(branch) || "none".equals(branch)) {
-                LOG.error(
-                    "No valid branch found in map_sets table. Resolved branch: '{}'. Ensure map_sets has active records with editionBranch, refSetCode, mapBranchId, editBranchId.",
-                    branch);
+                LOG.error("No valid branch found in map_sets table. Resolved branch: '{}'. "
+                    + "Ensure map_sets has active records with editionBranch, refSetCode, mapBranchId, editBranchId.", branch);
                 return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
             }
             final List<MapSet> mapSets = MapSetService.getMapSets(branch);
@@ -402,7 +399,7 @@ public class MapSetController extends BaseController {
 
         checkBinding(bindingResult);
 
-        //final User authUser = authorizeUser(request);
+        // final User authUser = authorizeUser(request);
         try (final TerminologyService service = new TerminologyService()) {
 
             final MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
@@ -560,6 +557,10 @@ public class MapSetController extends BaseController {
 
     /**
      * Merges branch/version from map_sets table onto MapSet from Snowstorm.
+     *
+     * @param service the service
+     * @param mapSet the map set
+     * @throws Exception the exception
      */
     private void mergeMapSetWithDbTracking(final TerminologyService service, final MapSet mapSet) throws Exception {
 
@@ -569,6 +570,11 @@ public class MapSetController extends BaseController {
         }
     }
 
+    /**
+     * Gets the user.
+     *
+     * @return the user
+     */
     // temporary method to get user
     private User getUser() {
 
@@ -665,24 +671,20 @@ public class MapSetController extends BaseController {
     /**
      * Complete the publication of all Ready for Publication refsets in a code system. This call requires authentication with the correct role.
      *
-     * @param versionDate the publication date of the refset in yyyy-MM-dd format
      * @param codeSystem a code system to limit the refset to
-     * @param publishType if value is 'localset' this will publish (non-snomed versioning) only local sets. If not supplied or any other value this will
-     *            published everything other than local sets.
      * @return the status of the operation
      * @throws Exception the exception
      */
     @Hidden
     @RequestMapping(method = RequestMethod.PUT, value = "/admin/mapset/publish/complete")
-    @Operation(
-        summary = "Complete the publication of all Ready for Publication mapsets in a code system, then create an IN_EDIT copy of each newly published mapset. This call requires authentication with the correct role.",
-        tags = {
+    @Operation(summary = "Complete the publication of all Ready for Publication mapsets in a code system, "
+        + "then create an IN_EDIT copy of each newly published mapset. This call requires authentication with the correct role.", tags = {
             "mapset"
-        }, responses = {
-            @ApiResponse(responseCode = "200", description = "Successfully published the mapsets. The payload contains the status."),
-            @ApiResponse(responseCode = "400", description = "Bad request"), @ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @ApiResponse(responseCode = "403", description = "Forbidden"), @ApiResponse(responseCode = "404", description = "Resource not found")
-        })
+    }, responses = {
+        @ApiResponse(responseCode = "200", description = "Successfully published the mapsets. The payload contains the status."),
+        @ApiResponse(responseCode = "400", description = "Bad request"), @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "403", description = "Forbidden"), @ApiResponse(responseCode = "404", description = "Resource not found")
+    })
     @Parameters({
         @Parameter(name = "codeSystem", description = "A code system to limit the publication to", required = true)
     })

@@ -22,7 +22,6 @@ import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.MapUser;
 import org.ihtsdo.refsetservice.terminologyservice.BranchService;
-import org.ihtsdo.refsetservice.terminologyservice.MappingWorkflowTestFixtures;
 import org.ihtsdo.refsetservice.terminologyservice.MappingWorkflowTestFixtures.Context;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
@@ -33,21 +32,25 @@ import org.ihtsdo.refsetservice.util.PropertyUtility;
 public final class MappingWorkflowSnowstormSupport {
 
     /** Default edition branch used by local MT2/Snowstorm dev data. */
-    public static final String DEFAULT_EDITION_BRANCH =
-        "MAIN/SNOMEDCT-NO/2025-12-15";
+    public static final String DEFAULT_EDITION_BRANCH = "MAIN/SNOMEDCT-NO/2025-12-15";
 
-    private static final String USERNAME_PROP =
-        "terminology.handler.SNOMED_SNOWSTORM.username";
+    /** The Constant USERNAME_PROP. */
+    private static final String USERNAME_PROP = "terminology.handler.SNOMED_SNOWSTORM.username";
 
-    private static final String PASSWORD_PROP =
-        "terminology.handler.SNOMED_SNOWSTORM.password";
+    /** The Constant PASSWORD_PROP. */
+    private static final String PASSWORD_PROP = "terminology.handler.SNOMED_SNOWSTORM.password";
 
-    private static final String REST_BASE_PROP =
-        "terminology.handler.SNOMED_SNOWSTORM.restBaseUrl";
+    /** The Constant REST_BASE_PROP. */
+    private static final String REST_BASE_PROP = "terminology.handler.SNOMED_SNOWSTORM.restBaseUrl";
 
+    /** The env local values. */
     private static Map<String, String> envLocalValues;
 
+    /**
+     * Instantiates a new mapping workflow snowstorm support.
+     */
     private MappingWorkflowSnowstormSupport() {
+
         // n/a
     }
 
@@ -56,12 +59,9 @@ public final class MappingWorkflowSnowstormSupport {
      */
     public static void loadDevEnvLocalIfNeeded() {
 
-        final boolean hasUser =
-            StringUtils.isNotBlank(System.getenv("SNOMED_SNOWSTORM_USERNAME"));
-        final boolean hasRest = StringUtils.isNotBlank(
-            System.getenv("SNOMED_SNOWSTORM_REST_BASE_URL"));
-        final boolean hasBase = StringUtils.isNotBlank(
-            System.getenv("SNOMED_SNOWSTORM_BASE_URL"));
+        final boolean hasUser = StringUtils.isNotBlank(System.getenv("SNOMED_SNOWSTORM_USERNAME"));
+        final boolean hasRest = StringUtils.isNotBlank(System.getenv("SNOMED_SNOWSTORM_REST_BASE_URL"));
+        final boolean hasBase = StringUtils.isNotBlank(System.getenv("SNOMED_SNOWSTORM_BASE_URL"));
         if (hasUser && (hasRest || hasBase)) {
             return;
         }
@@ -82,6 +82,11 @@ public final class MappingWorkflowSnowstormSupport {
         return envLocalValues.get(key);
     }
 
+    /**
+     * Read env local.
+     *
+     * @return the map
+     */
     private static Map<String, String> readEnvLocal() {
 
         final Path path = Paths.get(".work/mt2-dev/.env-local");
@@ -89,8 +94,7 @@ public final class MappingWorkflowSnowstormSupport {
             return Collections.emptyMap();
         }
         try {
-            final List<String> lines =
-                Files.readAllLines(path, StandardCharsets.UTF_8);
+            final List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
             final Map<String, String> values = new HashMap<>();
             for (final String raw : lines) {
                 final String line = raw.trim();
@@ -118,10 +122,15 @@ public final class MappingWorkflowSnowstormSupport {
         }
     }
 
+    /**
+     * Checks if is quoted.
+     *
+     * @param value the value
+     * @return true, if is quoted
+     */
     private static boolean isQuoted(final String value) {
 
-        return (value.startsWith("\"") && value.endsWith("\""))
-            || (value.startsWith("'") && value.endsWith("'"));
+        return (value.startsWith("\"") && value.endsWith("\"")) || (value.startsWith("'") && value.endsWith("'"));
     }
 
     /**
@@ -135,30 +144,22 @@ public final class MappingWorkflowSnowstormSupport {
         final String password = PropertyUtility.getProperty(PASSWORD_PROP);
         final String restBaseUrl = PropertyUtility.getProperty(REST_BASE_PROP);
 
-        if (StringUtils.isBlank(username)
-            || "test".equalsIgnoreCase(username.trim())) {
-            fail("Snowstorm username is not configured. "
-                + "Export SNOMED_SNOWSTORM_USERNAME "
-                + "or ensure .work/mt2-dev/.env-local exists.");
+        if (StringUtils.isBlank(username) || "test".equalsIgnoreCase(username.trim())) {
+            fail("Snowstorm username is not configured. " + "Export SNOMED_SNOWSTORM_USERNAME " + "or ensure .work/mt2-dev/.env-local exists.");
         }
-        if (StringUtils.isBlank(password)
-            || "test".equalsIgnoreCase(password.trim())) {
-            fail("Snowstorm password is not configured. "
-                + "Export SNOMED_SNOWSTORM_PASSWORD "
-                + "or ensure .work/mt2-dev/.env-local exists.");
+        if (StringUtils.isBlank(password) || "test".equalsIgnoreCase(password.trim())) {
+            fail("Snowstorm password is not configured. " + "Export SNOMED_SNOWSTORM_PASSWORD " + "or ensure .work/mt2-dev/.env-local exists.");
         }
         if (StringUtils.isBlank(restBaseUrl)) {
-            fail("Snowstorm restBaseUrl is not configured. "
-                + "Export SNOMED_SNOWSTORM_REST_BASE_URL/BASE_URL "
-                + "or ensure .work/mt2-dev/.env-local exists.");
+            fail(
+                "Snowstorm restBaseUrl is not configured. " + "Export SNOMED_SNOWSTORM_REST_BASE_URL/BASE_URL " + "or ensure .work/mt2-dev/.env-local exists.");
         }
 
         SnowstormConnection.loadConfigurationFromProperties();
 
         final String editionBranch = editionBranch();
         if (!BranchService.doesBranchExist(editionBranch)) {
-            fail("Snowstorm edition branch does not exist or is unreachable: "
-                + editionBranch);
+            fail("Snowstorm edition branch does not exist or is unreachable: " + editionBranch);
         }
     }
 
@@ -183,8 +184,7 @@ public final class MappingWorkflowSnowstormSupport {
      * @param leadAlsoSpecialist when true, lead may ASSIGN/FINISH_EDITING
      * @throws Exception the exception
      */
-    public static void wireSnowstormBranches(final Context context,
-        final boolean leadAlsoSpecialist) throws Exception {
+    public static void wireSnowstormBranches(final Context context, final boolean leadAlsoSpecialist) throws Exception {
 
         final MapSet mapSet = context.getMapSet();
         final MapProject mapProject = context.getMapProject();
@@ -198,8 +198,7 @@ public final class MappingWorkflowSnowstormSupport {
         }
 
         if (leadAlsoSpecialist) {
-            final Set<MapUser> specialists =
-                new HashSet<>(mapProject.getMapSpecialists());
+            final Set<MapUser> specialists = new HashSet<>(mapProject.getMapSpecialists());
             specialists.add(context.getLeadMapUser());
             mapProject.setMapSpecialists(specialists);
             context.getService().update(mapProject);
@@ -227,11 +226,9 @@ public final class MappingWorkflowSnowstormSupport {
      * @param expectExists expected presence
      * @throws Exception the exception
      */
-    public static void assertConceptBranch(final Context context,
-        final String conceptCode, final boolean expectExists) throws Exception {
+    public static void assertConceptBranch(final Context context, final String conceptCode, final boolean expectExists) throws Exception {
 
-        final String path = BranchService.getConceptBranchPath(
-            context.reloadMapSet(), conceptCode);
+        final String path = BranchService.getConceptBranchPath(context.reloadMapSet(), conceptCode);
         final boolean exists = BranchService.doesBranchExist(path);
         if (expectExists) {
             assertTrue(exists, "Expected concept branch to exist: " + path);
@@ -246,23 +243,19 @@ public final class MappingWorkflowSnowstormSupport {
      * @param context fixture
      * @param conceptCode concept code
      */
-    public static void cleanupBranches(final Context context,
-        final String conceptCode) {
+    public static void cleanupBranches(final Context context, final String conceptCode) {
 
         try {
             final MapSet mapSet = context.reloadMapSet();
-            final String conceptPath =
-                BranchService.getConceptBranchPath(mapSet, conceptCode);
+            final String conceptPath = BranchService.getConceptBranchPath(mapSet, conceptCode);
             if (BranchService.doesBranchExist(conceptPath)) {
                 BranchService.deleteBranch(conceptPath);
             }
-            final String editPath =
-                BranchService.getEditBranchPath(mapSet.toBranchDetails());
+            final String editPath = BranchService.getEditBranchPath(mapSet.toBranchDetails());
             if (BranchService.doesBranchExist(editPath)) {
                 BranchService.deleteBranch(editPath);
             }
-            final String refsetPath =
-                BranchService.getRefsetBranchPath(mapSet.toBranchDetails());
+            final String refsetPath = BranchService.getRefsetBranchPath(mapSet.toBranchDetails());
             if (BranchService.doesBranchExist(refsetPath)) {
                 BranchService.deleteBranch(refsetPath);
             }

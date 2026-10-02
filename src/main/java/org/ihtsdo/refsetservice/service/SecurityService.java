@@ -72,7 +72,6 @@ public class SecurityService implements AutoCloseable {
     /** The session key for the list of user projects. */
     public static final String SESSION_USER_PROJECTS = "RT2_USER_PROJECTS";
 
-    /** Session attribute for OAuth2 state when Entra login is started via {@code /authenticate/login}. */
     /** Session attribute for OAuth2 {@code state} during browser login (handler-agnostic). */
     public static final String SESSION_OAUTH_STATE_KEY = "OAUTH_STATE";
 
@@ -684,7 +683,7 @@ public class SecurityService implements AutoCloseable {
      * @return the user
      * @throws Exception the exception
      */
-    public User addUser(User user) throws Exception {
+    public User addUser(final User user) throws Exception {
 
         LOG.debug("Security Service - add user {}", user);
 
@@ -739,7 +738,6 @@ public class SecurityService implements AutoCloseable {
      *
      * @throws Exception the exception
      */
-    /* see superclass */
     @Override
     public void close() throws Exception {
 

@@ -375,7 +375,8 @@ public class RefsetWorkflowIntegrationTests extends AbstractRefsetTests {
 
             // Update Workflow State to review
             comment = "The refset is at ready_for_review";
-            refset = RefsetWorkflowService.setWorkflowStatusByAction(service, SecurityService.getUserFromSession(), WorkflowAction.REQUEST_REVIEW, refset, comment);
+            refset =
+                RefsetWorkflowService.setWorkflowStatusByAction(service, SecurityService.getUserFromSession(), WorkflowAction.REQUEST_REVIEW, refset, comment);
 
             /* Merge/promote edit branch to refset branch */
             // Verify still have the same 5 members in the refset branch
@@ -393,8 +394,8 @@ public class RefsetWorkflowIntegrationTests extends AbstractRefsetTests {
 
             // Update Workflow State to review
             comment = "The refset is at ready_for_publication";
-            refset =
-                RefsetWorkflowService.setWorkflowStatusByAction(service, SecurityService.getUserFromSession(), WorkflowAction.REQUEST_PUBLICATION, refset, comment);
+            refset = RefsetWorkflowService.setWorkflowStatusByAction(service, SecurityService.getUserFromSession(), WorkflowAction.REQUEST_PUBLICATION, refset,
+                comment);
 
         } catch (final Exception e) {
 

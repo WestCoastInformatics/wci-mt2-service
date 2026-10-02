@@ -336,7 +336,6 @@ public class RefsetWorkflowHistory extends AbstractHasModified {
         return result;
     }
 
-    /* see superclass */
     @Override
     public void lazyInit() {
         // TODO Auto-generated method stub

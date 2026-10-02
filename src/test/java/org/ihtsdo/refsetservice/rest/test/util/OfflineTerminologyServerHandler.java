@@ -63,14 +63,22 @@ public abstract class OfflineTerminologyServerHandler implements TerminologyServ
         throw new UnsupportedOperationException("Unit tests must not call a terminology server.");
     }
 
-    /* see superclass */
-    @Override
+    /**
+     * Gets the name.
+     *
+     * @return the name
+     */
     public String getName() {
 
         return getClass().getSimpleName();
     }
 
-    /* see superclass */
+    /**
+     * Sets the properties.
+     *
+     * @param properties the new properties
+     * @throws Exception the exception
+     */
     @Override
     public void setProperties(final Properties properties) throws Exception {
 
@@ -79,448 +87,950 @@ public abstract class OfflineTerminologyServerHandler implements TerminologyServ
         }
     }
 
-    /* see superclass */
+    /**
+     * Creates the branch.
+     *
+     * @param parentBranchPath the parent branch path
+     * @param branchName the branch name
+     * @return the string
+     * @throws Exception the exception
+     */
     @Override
     public String createBranch(final String parentBranchPath, final String branchName) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Delete branch.
+     *
+     * @param branchPath the branch path
+     * @return true, if successful
+     * @throws Exception the exception
+     */
     @Override
     public boolean deleteBranch(final String branchPath) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Does branch exist.
+     *
+     * @param branchPath the branch path
+     * @return true, if successful
+     * @throws Exception the exception
+     */
     @Override
     public boolean doesBranchExist(final String branchPath) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Gets the branch children.
+     *
+     * @param branchPath the branch path
+     * @return the branch children
+     * @throws Exception the exception
+     */
     @Override
     public List<String> getBranchChildren(final String branchPath) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Merge branch.
+     *
+     * @param sourceBranchPath the source branch path
+     * @param targetBranchPath the target branch path
+     * @param comment the comment
+     * @param rebase the rebase
+     * @throws Exception the exception
+     */
     @Override
     public void mergeBranch(final String sourceBranchPath, final String targetBranchPath, final String comment, final boolean rebase) throws Exception {
 
         unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Merge rebase review.
+     *
+     * @param sourceBranchPath the source branch path
+     * @param targetBranchPath the target branch path
+     * @return the string
+     * @throws Exception the exception
+     */
     @Override
     public String mergeRebaseReview(final String sourceBranchPath, final String targetBranchPath) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Gets the new refset id.
+     *
+     * @param editionBranchPath the edition branch path
+     * @return the new refset id
+     * @throws Exception the exception
+     */
     @Override
     public String getNewRefsetId(final String editionBranchPath) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Gets the branch versions.
+     *
+     * @param editionPath the edition path
+     * @return the branch versions
+     * @throws Exception the exception
+     */
     @Override
     public List<String> getBranchVersions(final String editionPath) throws Exception {
 
         return Collections.singletonList("2025-01-01");
     }
 
-    /* see superclass */
+    /**
+     * Generate version file.
+     *
+     * @param entityString the entity string
+     * @return the string
+     * @throws Exception the exception
+     */
     @Override
     public String generateVersionFile(final String entityString) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Download generated file.
+     *
+     * @param snowVersionFileUrl the snow version file url
+     * @param localSnowVersionPath the local snow version path
+     * @throws Exception the exception
+     */
     @Override
     public void downloadGeneratedFile(final String snowVersionFileUrl, final String localSnowVersionPath) throws Exception {
 
         unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Gets the module names.
+     *
+     * @param edition the edition
+     * @return the module names
+     * @throws Exception the exception
+     */
     @Override
     public Map<String, String> getModuleNames(final Edition edition) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Gets the affiliate edition list.
+     *
+     * @return the affiliate edition list
+     * @throws Exception the exception
+     */
     @Override
     public List<Edition> getAffiliateEditionList() throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Creates the refset.
+     *
+     * @param service the service
+     * @param user the user
+     * @param refsetEditParameters the refset edit parameters
+     * @return the object
+     * @throws Exception the exception
+     */
     @Override
     public Object createRefset(final TerminologyService service, final User user, final Refset refsetEditParameters) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Gets the refset concepts.
+     *
+     * @param service the service
+     * @param branch the branch
+     * @param areParentConcepts the are parent concepts
+     * @return the refset concepts
+     * @throws Exception the exception
+     */
     @Override
     public ResultListConcept getRefsetConcepts(final TerminologyService service, final String branch, final boolean areParentConcepts) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Update refset concept.
+     *
+     * @param refset the refset
+     * @param active the active
+     * @param moduleId the module id
+     * @throws Exception the exception
+     */
     @Override
     public void updateRefsetConcept(final Refset refset, final boolean active, final String moduleId) throws Exception {
 
         unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Gets the all refset members.
+     *
+     * @param service the service
+     * @param refsetInternalId the refset internal id
+     * @param searchAfter the search after
+     * @param concepts the concepts
+     * @return the all refset members
+     * @throws Exception the exception
+     */
     @Override
-    public List<Concept> getAllRefsetMembers(final TerminologyService service, final String refsetInternalId, final String searchAfter, final List<Concept> concepts) throws Exception {
+    public List<Concept> getAllRefsetMembers(final TerminologyService service, final String refsetInternalId, final String searchAfter,
+        final List<Concept> concepts) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Gets the member sct codes.
+     *
+     * @param refsetId the refset id
+     * @param branchPath the branch path
+     * @return the member sct codes
+     * @throws Exception the exception
+     */
     @Override
     public List<String> getMemberSctCodes(final String refsetId, final String branchPath) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Gets the directory members.
+     *
+     * @param snowstormQuery the snowstorm query
+     * @return the directory members
+     * @throws Exception the exception
+     */
     @Override
     public Set<String> getDirectoryMembers(final String snowstormQuery) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Search multisearch descriptions.
+     *
+     * @param searchParameters the search parameters
+     * @param ecl the ecl
+     * @param nonPublishedBranchPaths the non published branch paths
+     * @return the sets the
+     * @throws Exception the exception
+     */
     @Override
-    public Set<String> searchMultisearchDescriptions(final SearchParameters searchParameters, final String ecl, final Set<String> nonPublishedBranchPaths) throws Exception {
+    public Set<String> searchMultisearchDescriptions(final SearchParameters searchParameters, final String ecl, final Set<String> nonPublishedBranchPaths)
+        throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Gets the member sct ids.
+     *
+     * @param refsetId the refset id
+     * @param limit the limit
+     * @param searchAfter the search after
+     * @param branchPath the branch path
+     * @return the member sct ids
+     * @throws Exception the exception
+     */
     @Override
     public String getMemberSctIds(final String refsetId, final int limit, final String searchAfter, final String branchPath) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Populate all language descriptions.
+     *
+     * @param refset the refset
+     * @param conceptsToProcess the concepts to process
+     * @throws Exception the exception
+     */
     @Override
     public void populateAllLanguageDescriptions(final Refset refset, final List<Concept> conceptsToProcess) throws Exception {
 
         unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Populate concept leaf status.
+     *
+     * @param refset the refset
+     * @param conceptsToProcess the concepts to process
+     * @throws Exception the exception
+     */
     @Override
     public void populateConceptLeafStatus(final Refset refset, final List<Concept> conceptsToProcess) throws Exception {
 
         unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Gets the concept ancestors.
+     *
+     * @param refset the refset
+     * @param conceptId the concept id
+     * @return the concept ancestors
+     * @throws Exception the exception
+     */
     @Override
     public Concept getConceptAncestors(final Refset refset, final String conceptId) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Search concepts.
+     *
+     * @param refset the refset
+     * @param searchParameters the search parameters
+     * @param searchMembersMode the search members mode
+     * @param limitReturnNumber the limit return number
+     * @return the result list concept
+     * @throws Exception the exception
+     */
     @Override
-    public ResultListConcept searchConcepts(final Refset refset, final SearchParameters searchParameters, final String searchMembersMode, final int limitReturnNumber) throws Exception {
+    public ResultListConcept searchConcepts(final Refset refset, final SearchParameters searchParameters, final String searchMembersMode,
+        final int limitReturnNumber) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Gets the member count.
+     *
+     * @param refset the refset
+     * @return the member count
+     * @throws Exception the exception
+     */
     @Override
     public int getMemberCount(final Refset refset) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Gets the member list.
+     *
+     * @param refset the refset
+     * @param nonDefaultPreferredTerms the non default preferred terms
+     * @param searchParameters the search parameters
+     * @return the member list
+     * @throws Exception the exception
+     */
     @Override
-    public ResultListConcept getMemberList(final Refset refset, final List<String> nonDefaultPreferredTerms, final SearchParameters searchParameters) throws Exception {
+    public ResultListConcept getMemberList(final Refset refset, final List<String> nonDefaultPreferredTerms, final SearchParameters searchParameters)
+        throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Gets the concept details.
+     *
+     * @param conceptId the concept id
+     * @param refset the refset
+     * @return the concept details
+     * @throws Exception the exception
+     */
     @Override
     public Concept getConceptDetails(final String conceptId, final Refset refset) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Gets the parents.
+     *
+     * @param conceptId the concept id
+     * @param refset the refset
+     * @param language the language
+     * @return the parents
+     * @throws Exception the exception
+     */
     @Override
     public ResultListConcept getParents(final String conceptId, final Refset refset, final String language) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Gets the children.
+     *
+     * @param conceptId the concept id
+     * @param refset the refset
+     * @param language the language
+     * @return the children
+     * @throws Exception the exception
+     */
     @Override
     public ResultListConcept getChildren(final String conceptId, final Refset refset, final String language) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Gets the concepts from snowstorm.
+     *
+     * @param url the url
+     * @param refset the refset
+     * @param lookupParameters the lookup parameters
+     * @param language the language
+     * @return the concepts from snowstorm
+     * @throws Exception the exception
+     */
     @Override
-    public ResultListConcept getConceptsFromSnowstorm(final String url, final Refset refset, final ConceptLookupParameters lookupParameters, final String language) throws Exception {
+    public ResultListConcept getConceptsFromSnowstorm(final String url, final Refset refset, final ConceptLookupParameters lookupParameters,
+        final String language) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Populate membership information.
+     *
+     * @param refset the refset
+     * @param concepts the concepts
+     * @throws Exception the exception
+     */
     @Override
     public void populateMembershipInformation(final Refset refset, final List<Concept> concepts) throws Exception {
 
         unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Gets the latest changed version date.
+     *
+     * @param branch the branch
+     * @param refsetId the refset id
+     * @return the latest changed version date
+     * @throws Exception the exception
+     */
     @Override
     public Long getLatestChangedVersionDate(final String branch, final String refsetId) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Gets the refset concept release date.
+     *
+     * @param refsetId the refset id
+     * @param branch the branch
+     * @return the refset concept release date
+     * @throws Exception the exception
+     */
     @Override
     public Long getRefsetConceptReleaseDate(final String refsetId, final String branch) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Gets the member history.
+     *
+     * @param service the service
+     * @param referencedComponentId the referenced component id
+     * @param versions the versions
+     * @return the member history
+     * @throws Exception the exception
+     */
     @Override
-    public List<Map<String, String>> getMemberHistory(final TerminologyService service, final String referencedComponentId, final List<Map<String, String>> versions) throws Exception {
+    public List<Map<String, String>> getMemberHistory(final TerminologyService service, final String referencedComponentId,
+        final List<Map<String, String>> versions) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Cache member ancestors.
+     *
+     * @param refset the refset
+     * @return true, if successful
+     * @throws Exception the exception
+     */
     @Override
     public boolean cacheMemberAncestors(final Refset refset) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Adds the refset members.
+     *
+     * @param service the service
+     * @param user the user
+     * @param refset the refset
+     * @param conceptIds the concept ids
+     * @return the list
+     * @throws Exception the exception
+     */
     @Override
-    public List<String> addRefsetMembers(final TerminologyService service, final User user, final Refset refset, final List<String> conceptIds) throws Exception {
+    public List<String> addRefsetMembers(final TerminologyService service, final User user, final Refset refset, final List<String> conceptIds)
+        throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Call add member single.
+     *
+     * @param refsetId the refset id
+     * @param url the url
+     * @param conceptId the concept id
+     * @param moduleId the module id
+     * @return the list
+     * @throws Exception the exception
+     */
     @Override
     public List<String> callAddMemberSingle(final String refsetId, final String url, final String conceptId, final String moduleId) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Call add members bulk.
+     *
+     * @param refsetId the refset id
+     * @param url the url
+     * @param conceptIds the concept ids
+     * @param moduleId the module id
+     * @return the list
+     * @throws Exception the exception
+     */
     @Override
     public List<String> callAddMembersBulk(final String refsetId, final String url, final List<String> conceptIds, final String moduleId) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Removes the refset members.
+     *
+     * @param service the service
+     * @param user the user
+     * @param refset the refset
+     * @param conceptIds the concept ids
+     * @return the list
+     * @throws Exception the exception
+     */
     @Override
     public List<String> removeRefsetMembers(final TerminologyService service, final User user, final Refset refset, final String conceptIds) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Call update member single.
+     *
+     * @param refsetId the refset id
+     * @param url the url
+     * @param memberBody the member body
+     * @return the list
+     * @throws Exception the exception
+     */
     @Override
     public List<String> callUpdateMemberSingle(final String refsetId, final String url, final JsonNode memberBody) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Call update members bulk.
+     *
+     * @param refsetId the refset id
+     * @param url the url
+     * @param memberBodies the member bodies
+     * @return the list
+     * @throws Exception the exception
+     */
     @Override
     public List<String> callUpdateMembersBulk(final String refsetId, final String url, final ArrayNode memberBodies) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Gets the concept ids from ecl.
+     *
+     * @param branch the branch
+     * @param ecl the ecl
+     * @return the concept ids from ecl
+     * @throws Exception the exception
+     */
     @Override
     public List<String> getConceptIdsFromEcl(final String branch, final String ecl) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Compile upgrade data.
+     *
+     * @param service the service
+     * @param user the user
+     * @param refsetInternalId the refset internal id
+     * @return the string
+     * @throws Exception the exception
+     */
     @Override
     public String compileUpgradeData(final TerminologyService service, final User user, final String refsetInternalId) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Modify upgrade concept.
+     *
+     * @param service the service
+     * @param user the user
+     * @param refset the refset
+     * @param inactiveConceptId the inactive concept id
+     * @param replacementConceptId the replacement concept id
+     * @param manualReplacementConcept the manual replacement concept
+     * @param changed the changed
+     * @return the string
+     * @throws Exception the exception
+     */
     @Override
-    public String modifyUpgradeConcept(final TerminologyService service, final User user, final Refset refset, final String inactiveConceptId, final String replacementConceptId, final UpgradeReplacementConcept manualReplacementConcept, final String changed) throws Exception {
+    public String modifyUpgradeConcept(final TerminologyService service, final User user, final Refset refset, final String inactiveConceptId,
+        final String replacementConceptId, final UpgradeReplacementConcept manualReplacementConcept, final String changed) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Identify refset name.
+     *
+     * @param refset the refset
+     * @return the string
+     * @throws Exception the exception
+     */
     @Override
     public String identifyRefsetName(final Refset refset) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Gets the map sets.
+     *
+     * @param branch the branch
+     * @return the map sets
+     * @throws Exception the exception
+     */
     @Override
     public List<MapSet> getMapSets(final String branch) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Gets the map set.
+     *
+     * @param branch the branch
+     * @param code the code
+     * @return the map set
+     * @throws Exception the exception
+     */
     @Override
     public MapSet getMapSet(final String branch, final String code) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Gets the mappings.
+     *
+     * @param branch the branch
+     * @param mapSet the map set
+     * @param searchParameters the search parameters
+     * @param filter the filter
+     * @param showOverriddenEntries the show overridden entries
+     * @param conceptCodes the concept codes
+     * @return the mappings
+     * @throws Exception the exception
+     */
     @Override
-    public ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter, final boolean showOverriddenEntries, final List<String> conceptCodes) throws Exception {
+    public ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter,
+        final boolean showOverriddenEntries, final List<String> conceptCodes) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Gets the mappings.
+     *
+     * @param branch the branch
+     * @param mapSet the map set
+     * @param searchParameters the search parameters
+     * @param filter the filter
+     * @param showOverriddenEntries the show overridden entries
+     * @param conceptCodes the concept codes
+     * @param restrictToConceptCodes the restrict to concept codes
+     * @return the mappings
+     * @throws Exception the exception
+     */
     @Override
-    public ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter, final boolean showOverriddenEntries, final List<String> conceptCodes, final Collection<String> restrictToConceptCodes) throws Exception {
+    public ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter,
+        final boolean showOverriddenEntries, final List<String> conceptCodes, final Collection<String> restrictToConceptCodes) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Gets the mapping.
+     *
+     * @param branch the branch
+     * @param conceptCode the concept code
+     * @param showOverriddenEntries the show overridden entries
+     * @param mapSet the map set
+     * @return the mapping
+     * @throws Exception the exception
+     */
     @Override
     public Mapping getMapping(final String branch, final String conceptCode, final boolean showOverriddenEntries, final MapSet mapSet) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Gets the concept.
+     *
+     * @param terminology the terminology
+     * @param version the version
+     * @param code the code
+     * @return the concept
+     * @throws Exception the exception
+     */
     @Override
     public Concept getConcept(final String terminology, final String version, final String code) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Find concepts.
+     *
+     * @param terminology the terminology
+     * @param version the version
+     * @param searchParameters the search parameters
+     * @return the result list concept
+     * @throws Exception the exception
+     */
     @Override
     public ResultListConcept findConcepts(final String terminology, final String version, final SearchParameters searchParameters) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Auto complete.
+     *
+     * @param terminology the terminology
+     * @param version the version
+     * @param searchParameters the search parameters
+     * @return the result list concept ref
+     * @throws Exception the exception
+     */
     @Override
     public ResultListConceptRef autoComplete(final String terminology, final String version, final SearchParameters searchParameters) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Cache concepts.
+     *
+     * @param terminologyToVersion the terminology to version
+     * @throws Exception the exception
+     */
     @Override
     public void cacheConcepts(final Map<String, String> terminologyToVersion) throws Exception {
 
         return;
     }
 
-    /* see superclass */
+    /**
+     * Creates the mappings.
+     *
+     * @param mapProject the map project
+     * @param branch the branch
+     * @param mapSetCode the map set code
+     * @param mappings the mappings
+     * @return the list
+     * @throws Exception the exception
+     */
     @Override
-    public List<Mapping> createMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mappings) throws Exception {
+    public List<Mapping> createMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mappings)
+        throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Update mappings.
+     *
+     * @param mapProject the map project
+     * @param branch the branch
+     * @param mapSetCode the map set code
+     * @param mappings the mappings
+     * @param mapSet the map set
+     * @param user the user
+     * @return the list
+     * @throws Exception the exception
+     */
     @Override
-    public List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mappings, final MapSet mapSet, final User user) throws Exception {
+    public List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mappings,
+        final MapSet mapSet, final User user) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Export mappings.
+     *
+     * @param branch the branch
+     * @param mapSetCode the map set code
+     * @param mappingExportRequest the mapping export request
+     * @param mapSet the map set
+     * @return the file
+     * @throws Exception the exception
+     */
     @Override
-    public File exportMappings(final String branch, final String mapSetCode, final MappingExportRequest mappingExportRequest, final MapSet mapSet) throws Exception {
+    public File exportMappings(final String branch, final String mapSetCode, final MappingExportRequest mappingExportRequest, final MapSet mapSet)
+        throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Import mappings.
+     *
+     * @param mapProject the map project
+     * @param branch the branch
+     * @param mappingFile the mapping file
+     * @param mapSet the map set
+     * @param user the user
+     * @return the list
+     * @throws Exception the exception
+     */
     @Override
-    public List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile, final MapSet mapSet, final User user) throws Exception {
+    public List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile, final MapSet mapSet, final User user)
+        throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Export map set.
+     *
+     * @param user the user
+     * @param mapProject the map project
+     * @param mapSetExportRequest the map set export request
+     * @param mapSet the map set
+     * @return the string
+     * @throws Exception the exception
+     */
     @Override
-    public String exportMapSet(final User user, final MapProject mapProject, final MapSetExportRequest mapSetExportRequest, final MapSet mapSet) throws Exception {
+    public String exportMapSet(final User user, final MapProject mapProject, final MapSetExportRequest mapSetExportRequest, final MapSet mapSet)
+        throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Sets the workflow status.
+     *
+     * @param service the service
+     * @param user the user
+     * @param mapSetInternalId the map set internal id
+     * @param action the action
+     * @param notes the notes
+     * @return the map set
+     * @throws Exception the exception
+     */
     @Override
-    public MapSet setWorkflowStatus(final TerminologyService service, final User user, final String mapSetInternalId, final WorkflowAction action, final String notes) throws Exception {
+    public MapSet setWorkflowStatus(final TerminologyService service, final User user, final String mapSetInternalId, final WorkflowAction action,
+        final String notes) throws Exception {
 
         return unsupported();
     }
 
-    /* see superclass */
+    /**
+     * Clear all refset caches.
+     *
+     * @param branch the branch
+     */
     @Override
     public void clearAllRefsetCaches(final String branch) {
 
         return;
     }
 
-    /* see superclass */
+    /**
+     * Gets the branch path.
+     *
+     * @param mapSet the map set
+     * @return the branch path
+     * @throws Exception the exception
+     */
     @Override
     public String getBranchPath(final MapSet mapSet) throws Exception {
 
         return BranchService.getMapSetBranchPath(mapSet);
     }
 
-    /* see superclass */
+    /**
+     * Gets the refset date from formatted string.
+     *
+     * @param publicationDateString the publication date string
+     * @return the refset date from formatted string
+     * @throws Exception the exception
+     */
     @Override
     public Date getRefsetDateFromFormattedString(final String publicationDateString) throws Exception {
 
         return DateUtility.getDateWithNoTime(publicationDateString, DateUtility.DATE_FORMAT_REVERSE);
     }
 
-    /* see superclass */
+    /**
+     * Sets the roles.
+     *
+     * @param user the user
+     * @param project the project
+     * @param roles the roles
+     * @return the list
+     * @throws Exception the exception
+     */
     @Override
     public List<String> setRoles(final User user, final Project project, final List<String> roles) throws Exception {
 
@@ -543,35 +1053,68 @@ public abstract class OfflineTerminologyServerHandler implements TerminologyServ
         return roles;
     }
 
-    /* see superclass */
+    /**
+     * Removes the map set edit history.
+     *
+     * @param service the service
+     * @param refsetCode the refset code
+     * @throws Exception the exception
+     */
     @Override
     public void removeMapSetEditHistory(final TerminologyService service, final String refsetCode) throws Exception {
 
         return;
     }
 
-    /* see superclass */
+    /**
+     * Sets the map set member count.
+     *
+     * @param service the service
+     * @param mapSet the map set
+     * @param force the force
+     * @return true, if successful
+     * @throws Exception the exception
+     */
     @Override
     public boolean setMapSetMemberCount(final TerminologyService service, final MapSet mapSet, final boolean force) throws Exception {
 
         return false;
     }
 
-    /* see superclass */
+    /**
+     * Removes the upgrade data.
+     *
+     * @param service the service
+     * @param mapSet the map set
+     * @throws Exception the exception
+     */
     @Override
     public void removeUpgradeData(final TerminologyService service, final MapSet mapSet) throws Exception {
 
         return;
     }
 
-    /* see superclass */
+    /**
+     * Replace map set with edit history.
+     *
+     * @param service the service
+     * @param mapSet the map set
+     * @throws Exception the exception
+     */
     @Override
     public void replaceMapSetWithEditHistory(final TerminologyService service, final MapSet mapSet) throws Exception {
 
         return;
     }
 
-    /* see superclass */
+    /**
+     * Sets the map set permissions.
+     *
+     * @param user the user
+     * @param mapSet the map set
+     * @return the map set
+     * @throws Exception the exception
+     */
     @Override
     public MapSet setMapSetPermissions(final User user, final MapSet mapSet) throws Exception {
 

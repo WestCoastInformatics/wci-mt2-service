@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 /**
  * The Class SnowstormAbstract.
  */
-public class SnowstormAbstract {
+public abstract class SnowstormAbstract {
 
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(SnowstormAbstract.class);

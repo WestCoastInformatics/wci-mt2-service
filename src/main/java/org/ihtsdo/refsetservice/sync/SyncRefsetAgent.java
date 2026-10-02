@@ -95,7 +95,12 @@ public class SyncRefsetAgent extends SyncAgent {
         this.filteredCodeSystems = filteredCodeSystems;
     }
 
-    /* see superclass */
+    /**
+     * Sync component.
+     *
+     * @param service the service
+     * @throws Exception the exception
+     */
     @Override
     public void syncComponent(final TerminologyService service) throws Exception {
 
@@ -241,7 +246,7 @@ public class SyncRefsetAgent extends SyncAgent {
         addMultipleRefsets(service, addedRefsetSctIds);
 
         addedRefsetSctIds.stream().filter(refsetId -> termserverRefsetIdToRefsetVersionsDataMap.containsKey(refsetId))
-        .forEach(refsetId -> newlyCreatedAndUnchangedRefsetToVersionsMap.put(refsetId, termserverRefsetIdToRefsetVersionsDataMap.get(refsetId).keySet()));
+            .forEach(refsetId -> newlyCreatedAndUnchangedRefsetToVersionsMap.put(refsetId, termserverRefsetIdToRefsetVersionsDataMap.get(refsetId).keySet()));
 
         // Note: No reason to support activated/inactivated in sync as will be handled strictly within RT2 DB?
         addedOrInactivatedRefsetIds.addAll(addedRefsetSctIds);
@@ -450,8 +455,8 @@ public class SyncRefsetAgent extends SyncAgent {
     public void addMultipleRefsets(final TerminologyService service, final List<String> addedRefsetIds) throws Exception {
 
         addedRefsetIds.stream().filter(refsetId -> termserverRefsetIdToRefsetVersionsDataMap.containsKey(refsetId))
-        .forEach(refsetId -> termserverRefsetIdToRefsetVersionsDataMap.get(refsetId).keySet().stream()
-            .forEach(version -> addRefset(service, termserverRefsetIdToRefsetVersionsDataMap.get(refsetId).get(version))));
+            .forEach(refsetId -> termserverRefsetIdToRefsetVersionsDataMap.get(refsetId).keySet().stream()
+                .forEach(version -> addRefset(service, termserverRefsetIdToRefsetVersionsDataMap.get(refsetId).get(version))));
     }
 
     /**
@@ -488,7 +493,7 @@ public class SyncRefsetAgent extends SyncAgent {
      */
     private Set<SyncRefsetMetadata> analyzeCodeSystemBranches(final TerminologyService service) throws Exception {
 
-        /** The filtered refsets. */
+        // The filtered refsets.
         final Set<SyncRefsetMetadata> filteredRefsets = new HashSet<>();
 
         // Determine all version dates, per edition, and mapped with the associated publication branch
@@ -551,8 +556,7 @@ public class SyncRefsetAgent extends SyncAgent {
         final List<Refset> dbRefsets = service.getAll(Refset.class);
 
         dbRefsets.stream().filter(r -> VersionStatus.PUBLISHED.equals(r.getVersionStatus()) && r.isActive()).forEach(ar -> dbActiveRefsets.add(ar));
-        dbRefsets.stream().filter(r -> VersionStatus.PUBLISHED.equals(r.getVersionStatus()) && !r.isActive())
-        .forEach(ir -> dbInactiveRefsets.add(ir));
+        dbRefsets.stream().filter(r -> VersionStatus.PUBLISHED.equals(r.getVersionStatus()) && !r.isActive()).forEach(ir -> dbInactiveRefsets.add(ir));
 
         // Map each refsetId/version pair's SyncRefsetMetadata
         dbActiveRefsetIdToVersionRefsetMap.putAll(generateDatabaseRefsetIdtoRefsetVersionsMap(dbActiveRefsets));
@@ -1335,7 +1339,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
         final Map<String, Set<String>> ignoredBranches = new HashMap<>();
 
-        final SimpleDateFormat BRANCH_DATE_FORMAT = new SimpleDateFormat(DateUtility.DATE_FORMAT_REVERSE);
+        final SimpleDateFormat branchDateFormat = new SimpleDateFormat(DateUtility.DATE_FORMAT_REVERSE);
 
         for (final JsonNode codeSystem : codeSystems) {
 
@@ -1381,7 +1385,7 @@ public class SyncRefsetAgent extends SyncAgent {
                     // attempting to parse extensions i.e. MAIN/SNOMEDCT-US
                     if (childDate.matches("^\\d{4}-\\d{2}-\\d{2}$")) {
 
-                        final long branchDate = BRANCH_DATE_FORMAT.parse(childDate).getTime();
+                        final long branchDate = branchDateFormat.parse(childDate).getTime();
 
                         if (branchDate < PRE_SNOMED_SUPPORTED_RELEASES) {
 

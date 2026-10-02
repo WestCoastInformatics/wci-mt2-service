@@ -31,20 +31,24 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
-    "auth.dev.bypass=false",
-    "mapping.workflow.concept.branch.enabled=false",
-    "terminology.handler=MAPPING_WORKFLOW_TEST",
+    "auth.dev.bypass=false", "mapping.workflow.concept.branch.enabled=false", "terminology.handler=MAPPING_WORKFLOW_TEST",
     "terminology.handler.MAPPING_WORKFLOW_TEST.class=org.ihtsdo.refsetservice.rest.test.util.MappingWorkflowTestHandler"
 })
 public class MappingWorkflowLazyInitTest extends BaseTest {
 
+    /** The Constant LAZY_CONCEPT_CODE. */
     private static final String LAZY_CONCEPT_CODE = "998877665";
 
+    /** The mvc. */
     @Autowired
     private MockMvc mvc;
 
+    /** The workflow util. */
     private MappingWorkflowUnitTestUtilities workflowUtil;
 
+    /**
+     * Setup.
+     */
     @BeforeEach
     public void setup() {
 
@@ -52,54 +56,62 @@ public class MappingWorkflowLazyInitTest extends BaseTest {
         workflowUtil = new MappingWorkflowUnitTestUtilities(mvc, "/mapset");
     }
 
+    /**
+     * Missing get returns transient published.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void missingGetReturnsTransientPublished() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.removePrimaryWorkflow();
-            assertEquals(0, MappingWorkflowService.countWorkflowRows(
-                context.getService(), context.getMapSet(), LAZY_CONCEPT_CODE, 1));
+            assertEquals(0, MappingWorkflowService.countWorkflowRows(context.getService(), context.getMapSet(), LAZY_CONCEPT_CODE, 1));
 
-            final MappingWorkflow fetched = workflowUtil.getWorkflow(
-                context.getMapSet().getId(), LAZY_CONCEPT_CODE, context.getSpecialistUser());
+            final MappingWorkflow fetched = workflowUtil.getWorkflow(context.getMapSet().getId(), LAZY_CONCEPT_CODE, context.getSpecialistUser());
 
             assertEquals(MapWorkflowStatus.PUBLISHED, fetched.getWorkflowStatus());
             assertEquals(LAZY_CONCEPT_CODE, fetched.getSourceConceptCode());
             assertEquals(1, fetched.getSpecialistSlot());
             assertNull(fetched.getId());
-            assertEquals(0, MappingWorkflowService.countWorkflowRows(
-                context.getService(), context.getMapSet(), LAZY_CONCEPT_CODE, 1));
+            assertEquals(0, MappingWorkflowService.countWorkflowRows(context.getService(), context.getMapSet(), LAZY_CONCEPT_CODE, 1));
         }
     }
 
+    /**
+     * Missing get when concept not in map set returns 404.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void missingGetWhenConceptNotInMapSetReturns404() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             MappingWorkflowTestHandler.markConceptMissingFromMapSet(LAZY_CONCEPT_CODE);
 
-            workflowUtil.getWorkflowExpectNotFound(
-                context.getMapSet().getId(), LAZY_CONCEPT_CODE, context.getSpecialistUser());
+            workflowUtil.getWorkflowExpectNotFound(context.getMapSet().getId(), LAZY_CONCEPT_CODE, context.getSpecialistUser());
 
-            assertEquals(0, MappingWorkflowService.countWorkflowRows(
-                context.getService(), context.getMapSet(), LAZY_CONCEPT_CODE, 1));
+            assertEquals(0, MappingWorkflowService.countWorkflowRows(context.getService(), context.getMapSet(), LAZY_CONCEPT_CODE, 1));
         }
     }
 
+    /**
+     * Assign creates row.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void assignCreatesRow() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.removePrimaryWorkflow();
 
-            final MappingWorkflow assigned = workflowUtil.updateWorkflow(
-                context.getMapSet().getId(), LAZY_CONCEPT_CODE,
-                MappingWorkflowAction.ASSIGN, "Assign", context.getSpecialistUser());
+            final MappingWorkflow assigned = workflowUtil.updateWorkflow(context.getMapSet().getId(), LAZY_CONCEPT_CODE, MappingWorkflowAction.ASSIGN, "Assign",
+                context.getSpecialistUser());
 
             assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, assigned.getWorkflowStatus());
             assertEquals(context.getSpecialistUser().getUserName(), assigned.getAssignedUser());
-            assertEquals(1, MappingWorkflowService.countWorkflowRows(
-                context.getService(), context.getMapSet(), LAZY_CONCEPT_CODE, 1));
+            assertEquals(1, MappingWorkflowService.countWorkflowRows(context.getService(), context.getMapSet(), LAZY_CONCEPT_CODE, 1));
         }
     }
 
@@ -114,10 +126,9 @@ public class MappingWorkflowLazyInitTest extends BaseTest {
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.removePrimaryWorkflow();
 
-            workflowUtil.updateWorkflow(context.getMapSet().getId(), LAZY_CONCEPT_CODE,
-                MappingWorkflowAction.ASSIGN, "Assign", context.getSpecialistUser());
-            final MappingWorkflow released = workflowUtil.updateWorkflow(context.getMapSet().getId(), LAZY_CONCEPT_CODE,
-                MappingWorkflowAction.RELEASE, "Unassign", context.getSpecialistUser());
+            workflowUtil.updateWorkflow(context.getMapSet().getId(), LAZY_CONCEPT_CODE, MappingWorkflowAction.ASSIGN, "Assign", context.getSpecialistUser());
+            final MappingWorkflow released = workflowUtil.updateWorkflow(context.getMapSet().getId(), LAZY_CONCEPT_CODE, MappingWorkflowAction.RELEASE,
+                "Unassign", context.getSpecialistUser());
 
             assertEquals(MapWorkflowStatus.PUBLISHED, released.getWorkflowStatus());
             assertNull(released.getAssignedUser());
@@ -125,24 +136,26 @@ public class MappingWorkflowLazyInitTest extends BaseTest {
         }
     }
 
+    /**
+     * Gets the after assign returns row.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void getAfterAssignReturnsRow() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.removePrimaryWorkflow();
 
-            workflowUtil.updateWorkflow(context.getMapSet().getId(), LAZY_CONCEPT_CODE,
-                MappingWorkflowAction.ASSIGN, "Assign", context.getSpecialistUser());
+            workflowUtil.updateWorkflow(context.getMapSet().getId(), LAZY_CONCEPT_CODE, MappingWorkflowAction.ASSIGN, "Assign", context.getSpecialistUser());
 
-            final MappingWorkflow fetched = workflowUtil.getWorkflow(
-                context.getMapSet().getId(), LAZY_CONCEPT_CODE, context.getSpecialistUser());
+            final MappingWorkflow fetched = workflowUtil.getWorkflow(context.getMapSet().getId(), LAZY_CONCEPT_CODE, context.getSpecialistUser());
 
             assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, fetched.getWorkflowStatus());
             assertEquals(context.getSpecialistUser().getUserName(), fetched.getAssignedUser());
 
             workflowUtil.getWorkflow(context.getMapSet().getId(), LAZY_CONCEPT_CODE, context.getSpecialistUser());
-            assertEquals(1, MappingWorkflowService.countWorkflowRows(
-                context.getService(), context.getMapSet(), LAZY_CONCEPT_CODE, 1));
+            assertEquals(1, MappingWorkflowService.countWorkflowRows(context.getService(), context.getMapSet(), LAZY_CONCEPT_CODE, 1));
         }
     }
 }

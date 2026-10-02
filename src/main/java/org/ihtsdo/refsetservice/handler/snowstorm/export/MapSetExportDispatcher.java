@@ -38,7 +38,6 @@ public class MapSetExportDispatcher {
      * Instantiates a new map set export dispatcher.
      *
      * @param exportHandler the export handler
-     * @param jobService the job service
      */
     public MapSetExportDispatcher(final ExportHandler exportHandler) {
 
@@ -48,6 +47,7 @@ public class MapSetExportDispatcher {
     /**
      * Export map set using the appropriate strategy.
      *
+     * @param user the user
      * @param mapProject the map project
      * @param mapSetExportRequest the map set export request
      * @param mapSet the map set (required; paths must come from DB)
@@ -64,16 +64,19 @@ public class MapSetExportDispatcher {
         }
         final String resolvedBranchPath = BranchService.getMapSetBranchPath(mapSet);
         if (StringUtils.isBlank(resolvedBranchPath)) {
-            throw new MapSetExportException("Branch path could not be resolved for map set " + mapSet.getRefSetCode() + ". Database is missing required path data (editionBranch, refSetCode, mapBranchId, editBranchId).");
+            throw new MapSetExportException("Branch path could not be resolved for map set " + mapSet.getRefSetCode()
+                + ". Database is missing required path data (editionBranch, refSetCode, mapBranchId, editBranchId).");
         }
         if (StringUtils.isBlank(mapSetExportRequest.getBranch())) {
             mapSetExportRequest.setBranch(resolvedBranchPath);
         }
         if (StringUtils.isBlank(mapSet.getFromBranchPath())) {
-            throw new MapSetExportException("map_sets.fromBranchPath is required for map set " + mapSet.getRefSetCode() + ". Database is missing required path data.");
+            throw new MapSetExportException(
+                "map_sets.fromBranchPath is required for map set " + mapSet.getRefSetCode() + ". Database is missing required path data.");
         }
         if (StringUtils.isBlank(mapSet.getToBranchPath())) {
-            throw new MapSetExportException("map_sets.toBranchPath is required for map set " + mapSet.getRefSetCode() + ". Database is missing required path data.");
+            throw new MapSetExportException(
+                "map_sets.toBranchPath is required for map set " + mapSet.getRefSetCode() + ". Database is missing required path data.");
         }
 
         // Create job first

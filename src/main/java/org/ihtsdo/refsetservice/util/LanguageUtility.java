@@ -145,7 +145,8 @@ public final class LanguageUtility {
                 /*-
                  * Previous hard coded map for review if issues arise
                  *
-                final Map<String, String> languageCodeToCountryCodeMap = Map.ofEntries(Map.entry("113491000052101", "SE"), Map.entry(DEFAULT_LANGUAGE_REFSET, "US"),
+                final Map<String, String> languageCodeToCountryCodeMap = Map.ofEntries(Map.entry("113491000052101", "SE"),
+                    Map.entry(DEFAULT_LANGUAGE_REFSET, "US"),
                 Map.entry("15551000146102", "NL"), Map.entry("160161000146108", "NL"), Map.entry("188001000202106", "NO"), Map.entry("21000172104", "BE"),
                 Map.entry("21000220103", "IE"), Map.entry("21000234103", "AT"), Map.entry("21000267104", "KR"), Map.entry("231621000210105", "NZ"),
                 Map.entry("281000210109", "NZ"), Map.entry("31000146106", "NL"), Map.entry("31000172101", "BE"), Map.entry("32570271000036106", "AU"),

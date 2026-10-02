@@ -170,7 +170,7 @@ public class MapProjectControllerUnitTest {
 
         LOG.info("Map Project after create: {}", newMapProject.getBody());
         assertNotNull(newMapProject.getBody());
-        
+
         assertNotNull(newMapProject.getBody().getId());
         assertEquals(newMapProject.getBody().getName(), mapProject.getName());
         assertEquals(newMapProject.getBody().getDescription(), mapProject.getDescription());
@@ -188,18 +188,11 @@ public class MapProjectControllerUnitTest {
         assertEquals(2, mapProjectUsers.getBody().getItems().size());
 
     }
-    
-    
-    
-    
-    
-    
 
     /**
      * Creates the map user.
      *
-     * @param userName the user name
-     * @param name the name
+     * @param mapUser the map user
      * @return the map user
      * @throws Exception the exception
      */

@@ -40,9 +40,9 @@ public class JobController {
         @ApiResponse(responseCode = "500", description = "Unexpected error retrieving job status")
     })
     @Parameter(name = "jobId", description = "The ID of the job to check", required = true)
-    public ResponseEntity<Job> getJobStatus(@PathVariable String jobId) {
+    public ResponseEntity<Job> getJobStatus(@PathVariable final String jobId) {
 
-        try(final TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
             Job job = JobService.getJob(service, jobId);
             if (job == null) {
                 return ResponseEntity.notFound().build();

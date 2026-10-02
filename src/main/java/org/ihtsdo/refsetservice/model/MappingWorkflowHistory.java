@@ -203,6 +203,12 @@ public class MappingWorkflowHistory extends AbstractHasModified {
         // n/a
     }
 
+    /**
+     * Equals.
+     *
+     * @param obj the obj
+     * @return true, if successful
+     */
     @Override
     public boolean equals(final Object obj) {
 
@@ -213,19 +219,24 @@ public class MappingWorkflowHistory extends AbstractHasModified {
             return false;
         }
         final MappingWorkflowHistory other = (MappingWorkflowHistory) obj;
-        return Objects.equals(userName, other.userName)
-            && workflowStatus == other.workflowStatus
-            && workflowAction == other.workflowAction
-            && Objects.equals(notes, other.notes)
-            && Objects.equals(mappingWorkflow, other.mappingWorkflow);
+        return Objects.equals(userName, other.userName) && workflowStatus == other.workflowStatus && workflowAction == other.workflowAction
+            && Objects.equals(notes, other.notes) && Objects.equals(mappingWorkflow, other.mappingWorkflow);
     }
 
+    /**
+     * Hash code.
+     *
+     * @return the int
+     */
     @Override
     public int hashCode() {
 
         return Objects.hash(userName, workflowStatus, workflowAction, notes, mappingWorkflow);
     }
 
+    /**
+     * Lazy init.
+     */
     @Override
     public void lazyInit() {
 

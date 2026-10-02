@@ -17,7 +17,11 @@ import org.hibernate.search.backend.elasticsearch.analysis.ElasticsearchAnalysis
  */
 public class ElasticsearchCustomAnalysisConfigurer implements ElasticsearchAnalysisConfigurer {
 
-    /* see superclass */
+    /**
+     * Configure.
+     *
+     * @param context the context
+     */
     @Override
     public void configure(final ElasticsearchAnalysisConfigurationContext context) {
 

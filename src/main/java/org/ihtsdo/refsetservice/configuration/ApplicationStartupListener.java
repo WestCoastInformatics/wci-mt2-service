@@ -28,8 +28,8 @@ public class ApplicationStartupListener {
     private static final Logger LOG = LoggerFactory.getLogger(ApplicationStartupListener.class);
 
     /**
-     * Reindex from the database, clear sessions, and optionally prewarm caches once the application is ready.
-     * The first {@link TerminologyService} construction runs the one-shot startup reindex.
+     * Reindex from the database, clear sessions, and optionally prewarm caches once the application is ready. The first {@link TerminologyService} construction
+     * runs the one-shot startup reindex.
      *
      * @throws Exception the exception
      */

@@ -120,11 +120,11 @@ public class SctIdExportStrategy extends AbstractMapSetExportStrategy {
                 LOG.info("Generating RF2 snapshot file: {}", exportRequestParameters);
 
                 // Generate on Snowstorm
-                final String snowGeneratedFileUrl = this.exportHandler.generateSnowVersionFile(exportRequestParameters);
+                final String snowGeneratedFileUrl = getExportHandler().generateSnowVersionFile(exportRequestParameters);
                 LOG.info("Downloading snapshot file from Snowstorm: {}", snowGeneratedFileUrl);
 
                 // Download file from Snowstorm to the temporary directory
-                this.exportHandler.downloadSnowGeneratedFile(snowGeneratedFileUrl, localSnapshotFilePath);
+                getExportHandler().downloadSnowGeneratedFile(snowGeneratedFileUrl, localSnapshotFilePath);
 
                 // Store file on S3 using inherited method
                 LOG.info("Uploading snapshot file to S3: {} to {}", snapshotFileName, awsVersionedPath);
@@ -188,7 +188,6 @@ public class SctIdExportStrategy extends AbstractMapSetExportStrategy {
      *
      * @param origFilePath the original file path
      * @param newFilePath the new file path
-     * @return the member sct ids
      * @throws Exception the exception
      */
     private void getMemberSctIds(final Path origFilePath, final Path newFilePath) throws Exception {

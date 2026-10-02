@@ -48,22 +48,31 @@ public class SyncCodeSystemAgent extends SyncAgent {
     /** The term server edition to organization map. */
     private HashMap<String, String> termServerShortNameToOwnerMap;
 
+    /** The term server code system determiner. */
     private SyncCodeSystemDeterminer termServerCodeSystemDeterminer;
 
+    /** The db active short name to edition map. */
     private final Map<String, Edition> dbActiveShortNameToEditionMap = new HashMap<>();
 
+    /** The db inactive short name to edition map. */
     private final Map<String, Edition> dbInactiveShortNameToEditionMap = new HashMap<>();
 
+    /** The termserver short name code system map. */
     private final Map<String, JsonNode> termserverShortNameCodeSystemMap = new HashMap<>();
 
+    /** The short names to create. */
     private Set<String> shortNamesToCreate = new HashSet<>();
 
+    /** The short names with new owner. */
     private Set<String> shortNamesWithNewOwner = new HashSet<>();
 
+    /** The short names to reactivate. */
     private Set<String> shortNamesToReactivate = new HashSet<>();
 
+    /** The short names to inactivate. */
     private Set<String> shortNamesToInactivate = new HashSet<>();
 
+    /** The short name to country code map. */
     private final Map<String, String> shortNameToCountryCodeMap = new HashMap<>();
 
     /**
@@ -72,17 +81,23 @@ public class SyncCodeSystemAgent extends SyncAgent {
      * @param service the service
      * @param filteredCodeSystems the filtered code systems
      * @param termServerEditionToOrganizationMap the term server edition to organization map
-     * @param termServerCodeSystemDeterminer
+     * @param termServerCodeSystemDeterminer the term server code system determiner
      * @throws Exception the exception
      */
     public SyncCodeSystemAgent(final TerminologyService service, final Set<JsonNode> filteredCodeSystems,
-        final HashMap<String, String> termServerEditionToOrganizationMap, SyncCodeSystemDeterminer termServerCodeSystemDeterminer) throws Exception {
+        final HashMap<String, String> termServerEditionToOrganizationMap, final SyncCodeSystemDeterminer termServerCodeSystemDeterminer) throws Exception {
 
         this.filteredCodeSystems = filteredCodeSystems;
         this.termServerShortNameToOwnerMap = termServerEditionToOrganizationMap;
         this.termServerCodeSystemDeterminer = termServerCodeSystemDeterminer;
     }
 
+    /**
+     * Sync component.
+     *
+     * @param service the service
+     * @throws Exception the exception
+     */
     /* see superclass */
     public void syncComponent(final TerminologyService service) throws Exception {
 
@@ -124,7 +139,14 @@ public class SyncCodeSystemAgent extends SyncAgent {
         LOG.info("Finished syncing Code System");
     }
 
-    private void initializeSync(TerminologyService service, List<Edition> dbEditions) throws Exception {
+    /**
+     * Initialize sync.
+     *
+     * @param service the service
+     * @param dbEditions the db editions
+     * @throws Exception the exception
+     */
+    private void initializeSync(final TerminologyService service, final List<Edition> dbEditions) throws Exception {
 
         service.beginTransaction();
 
@@ -159,7 +181,14 @@ public class SyncCodeSystemAgent extends SyncAgent {
         // this.termServerShortNameToOwnerMap.clear();
     }
 
-    private void syncEditions(TerminologyService service, List<Edition> dbEditions) throws Exception {
+    /**
+     * Sync editions.
+     *
+     * @param service the service
+     * @param dbEditions the db editions
+     * @throws Exception the exception
+     */
+    private void syncEditions(final TerminologyService service, final List<Edition> dbEditions) throws Exception {
 
         // Add editions
         Set<JsonNode> updatedFilteredCodeSystems = filteredCodeSystems;
@@ -225,7 +254,14 @@ public class SyncCodeSystemAgent extends SyncAgent {
         LOG.info("Total editions whose owner changed: {}", shortNamesWithNewOwner.size());
     }
 
-    private void syncOrganizations(TerminologyService service, List<Edition> dbEditions) throws Exception {
+    /**
+     * Sync organizations.
+     *
+     * @param service the service
+     * @param dbEditions the db editions
+     * @throws Exception the exception
+     */
+    private void syncOrganizations(final TerminologyService service, final List<Edition> dbEditions) throws Exception {
 
         int newCounter = 0;
         int reactivedCounter = 0;
@@ -288,37 +324,37 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         /*-
          * Uncertain if necessary, so commenting out for now
-         * 
+         *
         codeSystemShortNamesToReview.clear();
         codeSystemShortNamesToReview.addAll(shortNamesWithNewOwner);
         codeSystemShortNamesToReview.addAll(shortNamesToInactivate);
-        
+
         final Map<Organization, Set<String>> organizationsToShortNamesMap = new HashMap<>();
-        
+
         // Group the code system short names by owner
         for (final String codeSystemShortName : codeSystemShortNamesToReview) {
             // if organization is inactive, add it to the reactivation list
             final String ownerName = termServerShortNameToOwnerMap.get(codeSystemShortName);
-        
+
             // Identify if any organizations to be relied upon that are currently inactive
             final Organization organization = dbOrganizations.stream().filter(o -> !o.isActive() && o.getName().equals(ownerName)).findAny().orElse(null);
-        
+
             if (organization != null) {
                 if (!organizationsToShortNamesMap.containsKey(organization)) {
                     organizationsToShortNamesMap.put(organization, new HashSet<>());
                 }
-        
+
                 organizationsToShortNamesMap.get(organization).add(codeSystemShortName);
             } else {
-                     
+
                 inactivedCounter++;
                 LOG.info("No need to inactivate {} as it is already inactive", ownerName);
             }
         }
-        
+
         for (Organization organization : organizationsToShortNamesMap.keySet()) {
             Set<String> organziationEditions = organizationsToShortNamesMap.get(organization);
-        
+
             if (organziationEditions.stream().noneMatch(e -> !newShortNames.contains(e) && !shortNamesToReactivate.contains(e))) {
                 // Inactivate organizations if no editions are or will be using them
                 getDbHandler().updateEditionStatus(service, organization.getId(), false);
@@ -333,8 +369,17 @@ public class SyncCodeSystemAgent extends SyncAgent {
         LOG.info("Total organizations inactivated: {}", inactivedCounter);
     }
 
-    private Set<String> inactivateEditionOrganizations(TerminologyService service, Map<String, Edition> dbActiveShortNameToEditionMap,
-        Map<String, Edition> dbInactiveShortNameToEditionMap) throws Exception {
+    /**
+     * Inactivate edition organizations.
+     *
+     * @param service the service
+     * @param dbActiveShortNameToEditionMap the db active short name to edition map
+     * @param dbInactiveShortNameToEditionMap the db inactive short name to edition map
+     * @return the sets the
+     * @throws Exception the exception
+     */
+    private Set<String> inactivateEditionOrganizations(final TerminologyService service, final Map<String, Edition> dbActiveShortNameToEditionMap,
+        final Map<String, Edition> dbInactiveShortNameToEditionMap) throws Exception {
 
         /* Inactivate: Identify code systems which are no longer on the termserver (inactivate edition and possibly corresponding organization) */
         final Set<String> shortNamesToInactivate = new HashSet<>();
@@ -350,8 +395,17 @@ public class SyncCodeSystemAgent extends SyncAgent {
         return shortNamesToInactivate;
     }
 
-    private Set<String> reactivateEditionOrganizations(TerminologyService service, Map<String, Edition> dbActiveShortNameToEditionMap,
-        Map<String, Edition> dbInactiveShortNameToEditionMap) throws Exception {
+    /**
+     * Reactivate edition organizations.
+     *
+     * @param service the service
+     * @param dbActiveShortNameToEditionMap the db active short name to edition map
+     * @param dbInactiveShortNameToEditionMap the db inactive short name to edition map
+     * @return the sets the
+     * @throws Exception the exception
+     */
+    private Set<String> reactivateEditionOrganizations(final TerminologyService service, final Map<String, Edition> dbActiveShortNameToEditionMap,
+        final Map<String, Edition> dbInactiveShortNameToEditionMap) throws Exception {
 
         /* Reactivate: Identify code systems which are newly discovered on the termserver (activate edition and possibly corresponding organization) */
         final Set<String> shortNamesToReactivate = new HashSet<>();
@@ -365,8 +419,18 @@ public class SyncCodeSystemAgent extends SyncAgent {
         return shortNamesToReactivate;
     }
 
-    private Set<String> identifyOrganizationNameChanges(TerminologyService service, List<Edition> dbEditions,
-        Map<String, Edition> dbActiveShortNameToEditionMap, Map<String, Edition> dbInactiveShortNameToEditionMap) throws Exception {
+    /**
+     * Identify organization name changes.
+     *
+     * @param service the service
+     * @param dbEditions the db editions
+     * @param dbActiveShortNameToEditionMap the db active short name to edition map
+     * @param dbInactiveShortNameToEditionMap the db inactive short name to edition map
+     * @return the sets the
+     * @throws Exception the exception
+     */
+    private Set<String> identifyOrganizationNameChanges(final TerminologyService service, final List<Edition> dbEditions,
+        final Map<String, Edition> dbActiveShortNameToEditionMap, final Map<String, Edition> dbInactiveShortNameToEditionMap) throws Exception {
 
         /*
          * New Owner: Identify code systems whose owner name has changed (necessitating updating the edition's organization and possibly inactivating the //
@@ -386,7 +450,16 @@ public class SyncCodeSystemAgent extends SyncAgent {
         return shortNamesWithNewOwner;
     }
 
-    private Set<String> addNewEditions(TerminologyService service, List<Edition> dbEditions, Map<String, JsonNode> termserverShortNameCodeSystemMap) {
+    /**
+     * Adds the new editions.
+     *
+     * @param service the service
+     * @param dbEditions the db editions
+     * @param termserverShortNameCodeSystemMap the termserver short name code system map
+     * @return the sets the
+     */
+    private Set<String> addNewEditions(final TerminologyService service, final List<Edition> dbEditions,
+        final Map<String, JsonNode> termserverShortNameCodeSystemMap) {
 
         /*
          * New Editions: Identify new code systems on the termserver that haven't been seen before (necessitating creating a new edition and possibly a new //
@@ -446,7 +519,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
                 // ignore changing if for WCI Code System
                 if (dbEdition.getShortName().equals(DEVELOPER_CODE_SYSTEM_SHORTNAME)) {
 
-                    developerTestingBranchToUse = dbEdition.getBranch();
+                    setDeveloperTestingBranchToUse(dbEdition.getBranch());
                 }
 
                 if (isDifferentAttribute(dbEdition.getShortName(), "Edition branch ", dbEdition.getBranch(), snowStormBranch)) {
@@ -496,7 +569,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
                     if (dbEdition.getShortName().equals(DEVELOPER_CODE_SYSTEM_SHORTNAME)) {
 
-                        modifyingEdition.setBranch(developerTestingBranchToUse);
+                        modifyingEdition.setBranch(getDeveloperTestingBranchToUse());
                     }
 
                     getDbHandler().updateEdition(service, modifyingEdition);
@@ -511,7 +584,15 @@ public class SyncCodeSystemAgent extends SyncAgent {
         return modifiedShortNames;
     }
 
-    private Edition identifyMathcingEdition(TerminologyService service, String shortName) throws Exception {
+    /**
+     * Identify mathcing edition.
+     *
+     * @param service the service
+     * @param shortName the short name
+     * @return the edition
+     * @throws Exception the exception
+     */
+    private Edition identifyMathcingEdition(final TerminologyService service, final String shortName) throws Exception {
 
         final List<Edition> dbEditions = readDbActiveEditions(service);
 
@@ -581,14 +662,19 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
     }
 
-    private void comapareEditions(TerminologyService service) throws Exception {
+    /**
+     * Comapare editions.
+     *
+     * @param service the service
+     * @throws Exception the exception
+     */
+    private void comapareEditions(final TerminologyService service) throws Exception {
 
         /* Look for differences between for editions that are active in the termserver and and active in the database */
         final List<String> activeInBothShortNames = new ArrayList<>();
         Set<String> shortNamesModified = new HashSet<>();
-        
-        activeInBothShortNames.addAll(dbActiveShortNameToEditionMap.keySet().stream()
-            .filter(dbShortName -> !shortNamesToCreate.contains(dbShortName))
+
+        activeInBothShortNames.addAll(dbActiveShortNameToEditionMap.keySet().stream().filter(dbShortName -> !shortNamesToCreate.contains(dbShortName))
             .filter(dbShortName -> termserverShortNameCodeSystemMap.keySet().contains(dbShortName)).collect(Collectors.toList()));
 
         // Compare editions in termserver & active in db

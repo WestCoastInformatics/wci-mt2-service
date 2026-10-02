@@ -54,6 +54,13 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
     /** The properties. */
     private static Properties properties;
 
+    /**
+     * Authenticate.
+     *
+     * @param userName the user name
+     * @return the user
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public User authenticate(final String userName) throws Exception {
@@ -187,6 +194,12 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
         return authenticated;
     }
 
+    /**
+     * Timeout user.
+     *
+     * @param user the user
+     * @return true, if successful
+     */
     /* see superclass */
     @Override
     public boolean timeoutUser(final String user) {
@@ -195,6 +208,12 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
         return false;
     }
 
+    /**
+     * Compute token for user.
+     *
+     * @param user the user
+     * @return the string
+     */
     /* see superclass */
     @Override
     public String computeTokenForUser(final String user) {
@@ -202,6 +221,11 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
         return user;
     }
 
+    /**
+     * Sets the properties.
+     *
+     * @param properties the new properties
+     */
     /* see superclass */
     @Override
     public void setProperties(final Properties properties) {
@@ -209,6 +233,11 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
         this.properties = properties;
     }
 
+    /**
+     * Gets the name.
+     *
+     * @return the name
+     */
     /* see superclass */
     @Override
     public String getName() {
@@ -216,6 +245,12 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
         return "IHTSDO Identity Management Service handler";
     }
 
+    /**
+     * Gets the authenticate url.
+     *
+     * @return the authenticate url
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public String getAuthenticateUrl() throws Exception {
@@ -223,6 +258,13 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
         return PropertyUtility.getProperty("security.handler.IMS.url");
     }
 
+    /**
+     * Builds the browser login url.
+     *
+     * @param oauthState the oauth state
+     * @return the string
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public String buildBrowserLoginUrl(final String oauthState) throws Exception {
@@ -242,6 +284,12 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
         return logoutUrl;
     }
 
+    /**
+     * Gets the post login redirect uri.
+     *
+     * @return the post login redirect uri
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public String getPostLoginRedirectUri() throws Exception {
@@ -253,6 +301,12 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
         return url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
     }
 
+    /**
+     * Gets the logout url.
+     *
+     * @return the logout url
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public String getLogoutUrl() throws Exception {
@@ -260,6 +314,12 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
         return PropertyUtility.getProperty("security.handler.IMS.url.logout");
     }
 
+    /**
+     * Gets the system admin user names.
+     *
+     * @return the system admin user names
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public Set<String> getSystemAdminUserNames() throws Exception {
@@ -269,6 +329,12 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
         return Stream.of(propertyValue.trim().split("\\s*,\\s*")).collect(Collectors.toSet());
     }
 
+    /**
+     * Gets the system author user names.
+     *
+     * @return the system author user names
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public Set<String> getSystemAuthorUserNames() throws Exception {
@@ -278,6 +344,12 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
         return Stream.of(propertyValue.trim().split("\\s*,\\s*")).collect(Collectors.toSet());
     }
 
+    /**
+     * Gets the system reviewer user names.
+     *
+     * @return the system reviewer user names
+     * @throws Exception the exception
+     */
     /* see superclass */
     @Override
     public Set<String> getSystemReviewerUserNames() throws Exception {

@@ -9,10 +9,8 @@
  */
 package org.ihtsdo.refsetservice.model;
 
-import org.ihtsdo.refsetservice.handler.SecurityServiceHandler;
-
 /**
- * Query/session inputs for {@link SecurityServiceHandler#completeBrowserLogin(BrowserLoginCallback)}.
+ * Query/session inputs for {@link org.ihtsdo.refsetservice.handler.SecurityServiceHandler#completeBrowserLogin(BrowserLoginCallback)}.
  */
 public final class BrowserLoginCallback {
 

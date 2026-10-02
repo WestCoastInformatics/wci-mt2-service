@@ -305,8 +305,8 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
      */
     public static void populateMembershipInformation(final Refset refset, final List<Concept> concepts) throws Exception {
 
-        final String baseUrl = SnowstormConnection.getRestBaseUrl() + RefsetMemberService.getBranchPath(refset) + "/members?referenceSet=" + refset.getRefsetId()
-            + "&active=true&limit=" + RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH + "&offset=0&"
+        final String baseUrl = SnowstormConnection.getRestBaseUrl() + RefsetMemberService.getBranchPath(refset) + "/members?referenceSet="
+            + refset.getRefsetId() + "&active=true&limit=" + RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH + "&offset=0&"
             + SnowstormApiPaging.getMemberSortQueryString() + "&referencedComponentId=";
         final List<Concept> conceptsToProcess = new ArrayList<>();
         String conceptIds = "";
@@ -678,8 +678,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
         // (though the concept itself can be inactive)
         final String conceptSearchUrl = SnowstormConnection.getRestBaseUrl() + branchPath + "/concepts/search";
         final String memberSearchUrl = SnowstormConnection.getRestBaseUrl() + branchPath + "/members/search?"
-            + SnowstormApiPaging.getMemberSearchPagingQueryString(
-                new SearchParameters(null, RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH, null));
+            + SnowstormApiPaging.getMemberSearchPagingQueryString(new SearchParameters(null, RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH, null));
         final String bodyBase = "{\"limit\": " + RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH + ", ";
         final String memberSearchBodyBase = "{\"referenceSet\":\"" + refsetId + "\", \"referencedComponentIds\":[";
         final List<String> permanentFullConceptList = new ArrayList<>(conceptIds);
@@ -1079,9 +1078,9 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
         // when searching for members we only want concepts whose membership is
         // active
         // (though the concept itself can be inactive)
-        final String memberSearchUrlBase = SnowstormConnection.getRestBaseUrl() + branchPath + "/members?referenceSet=" + refset.getRefsetId()
-            + "&offset=0&active=true" + "&limit=" + RefsetMemberService.URL_MAX_CHAR_LENGTH + "&" + SnowstormApiPaging.getMemberSortQueryString()
-            + "&referencedComponentId=";
+        final String memberSearchUrlBase =
+            SnowstormConnection.getRestBaseUrl() + branchPath + "/members?referenceSet=" + refset.getRefsetId() + "&offset=0&active=true" + "&limit="
+                + RefsetMemberService.URL_MAX_CHAR_LENGTH + "&" + SnowstormApiPaging.getMemberSortQueryString() + "&referencedComponentId=";
         final ArrayNode memberDeleteArray = ThreadLocalMapper.get().createArrayNode();
         final ArrayNode memberUpdateArray = ThreadLocalMapper.get().createArrayNode();
         final List<String> permanentFullConceptList = Arrays.asList(conceptIds.split(","));

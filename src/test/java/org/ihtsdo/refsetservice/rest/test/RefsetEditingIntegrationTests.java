@@ -134,7 +134,7 @@ public class RefsetEditingIntegrationTests extends AbstractRefsetTests {
         getEditUtil().deleteUnversionedRefset(refsetInternalId, refsetConcept.get("refsetDeleteStatus"));
     }
 
-    /**
+    /*
      * earlier createRefsetFromExisting test public void testCreateRefsetFromExistingConcept() throws Exception { // TODO: Review purpose // the data to create
      * a refset from an existing concept (but can't be a // refset already in RT2) final Map<String, String> refsetExistingConcept = new HashMap<>();
      * refsetExistingConcept.put("refsetId", "762103008"); refsetExistingConcept.put("name", "OWL ontology reference set");

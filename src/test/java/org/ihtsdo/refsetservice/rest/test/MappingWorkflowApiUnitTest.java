@@ -100,8 +100,7 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             final MappingWorkflow assigned = workflowUtil.updateWorkflow(context.getMapSet().getId(), MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE,
-                MappingWorkflowAction.ASSIGN, "Assigning to someone else as a Lead", context.getLeadUser(),
-                context.getOtherSpecialistMapUser().getId());
+                MappingWorkflowAction.ASSIGN, "Assigning to someone else as a Lead", context.getLeadUser(), context.getOtherSpecialistMapUser().getId());
 
             assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, assigned.getWorkflowStatus());
             assertEquals(context.getOtherSpecialistUser().getUserName(), assigned.getAssignedUser());
@@ -120,8 +119,7 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
             context.setWorkflowStatus(MapWorkflowStatus.REVIEW_NEEDED);
 
             final MappingWorkflow reviewing = workflowUtil.updateWorkflow(context.getMapSet().getId(), MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE,
-                MappingWorkflowAction.START_REVIEW, "Start review for another lead", context.getLeadUser(),
-                context.getAdminMapUser().getId());
+                MappingWorkflowAction.START_REVIEW, "Start review for another lead", context.getLeadUser(), context.getAdminMapUser().getId());
 
             assertEquals(MapWorkflowStatus.REVIEW_IN_PROGRESS, reviewing.getWorkflowStatus());
             assertEquals(context.getAdminUser().getUserName(), reviewing.getAssignedUser());
@@ -139,8 +137,8 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             context.setWorkflowStatus(MapWorkflowStatus.PUBLISHED);
 
-            workflowUtil.updateWorkflow(context.getMapSet().getId(), MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE,
-                MappingWorkflowAction.ASSIGN, "Assigned", context.getSpecialistUser());
+            workflowUtil.updateWorkflow(context.getMapSet().getId(), MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, MappingWorkflowAction.ASSIGN, "Assigned",
+                context.getSpecialistUser());
             final MappingWorkflow released = workflowUtil.updateWorkflow(context.getMapSet().getId(), MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE,
                 MappingWorkflowAction.RELEASE, "Unassigned", context.getSpecialistUser());
 
@@ -256,8 +254,7 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
             mapping.setCode(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE);
             mapping.setName("Lead review edit");
 
-            final List<Mapping> updated =
-                workflowUtil.updateMappings(context.getMapSet().getId(), Collections.singletonList(mapping), context.getLeadUser());
+            final List<Mapping> updated = workflowUtil.updateMappings(context.getMapSet().getId(), Collections.singletonList(mapping), context.getLeadUser());
 
             assertThat(MappingWorkflowTestHandler.wasUpdateCalled()).isTrue();
             assertEquals("Lead review edit", updated.get(0).getName());
@@ -510,8 +507,8 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
             MappingWorkflowTestHandler.markConceptMissingFromMapSet("998877665");
-            workflowUtil.getWorkflowBulkExpectNotFound(context.getMapSet().getId(),
-                Arrays.asList(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, "998877665"), context.getSpecialistUser());
+            workflowUtil.getWorkflowBulkExpectNotFound(context.getMapSet().getId(), Arrays.asList(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, "998877665"),
+                context.getSpecialistUser());
         }
     }
 
@@ -563,8 +560,8 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
             workflowUtil.updateWorkflow(context.getMapSet().getId(), MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, MappingWorkflowAction.ASSIGN, "Assigned",
                 context.getSpecialistUser());
 
-            final ResultListMapping results = workflowUtil.getMappings(context.getMapSet().getId(), "workflowStatus=EDITING_IN_PROGRESS",
-                context.getSpecialistUser());
+            final ResultListMapping results =
+                workflowUtil.getMappings(context.getMapSet().getId(), "workflowStatus=EDITING_IN_PROGRESS", context.getSpecialistUser());
             assertEquals(1, results.getTotal());
             assertEquals(1, results.getItems().size());
             assertEquals(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, results.getItems().get(0).getCode());
@@ -587,14 +584,14 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
             workflowUtil.updateWorkflow(context.getMapSet().getId(), MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, MappingWorkflowAction.ASSIGN, "Assigned",
                 context.getSpecialistUser());
 
-            final ResultListMapping mine = workflowUtil.getMappings(context.getMapSet().getId(),
-                "assignedUser=" + context.getSpecialistUser().getUserName(), context.getSpecialistUser());
+            final ResultListMapping mine =
+                workflowUtil.getMappings(context.getMapSet().getId(), "assignedUser=" + context.getSpecialistUser().getUserName(), context.getSpecialistUser());
             assertEquals(1, mine.getTotal());
             assertEquals(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, mine.getItems().get(0).getCode());
             assertEquals(context.getSpecialistUser().getUserName(), mine.getItems().get(0).getMappingWorkflow().getAssignedUser());
 
-            final ResultListMapping byMapUserId = workflowUtil.getMappings(context.getMapSet().getId(),
-                "assignedUser=" + context.getSpecialistMapUser().getId(), context.getSpecialistUser());
+            final ResultListMapping byMapUserId =
+                workflowUtil.getMappings(context.getMapSet().getId(), "assignedUser=" + context.getSpecialistMapUser().getId(), context.getSpecialistUser());
             assertEquals(1, byMapUserId.getTotal());
             assertEquals(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, byMapUserId.getItems().get(0).getCode());
 
@@ -642,8 +639,8 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
             workflowUtil.updateWorkflow(context.getMapSet().getId(), MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, MappingWorkflowAction.ASSIGN, "Assigned",
                 context.getSpecialistUser());
 
-            final ResultListMapping results = workflowUtil.getMappings(context.getMapSet().getId(), "workflowStatus=REVIEW_NEEDED",
-                context.getSpecialistUser());
+            final ResultListMapping results =
+                workflowUtil.getMappings(context.getMapSet().getId(), "workflowStatus=REVIEW_NEEDED", context.getSpecialistUser());
             assertEquals(0, results.getTotal());
             assertEquals(0, results.getItems().size());
         }

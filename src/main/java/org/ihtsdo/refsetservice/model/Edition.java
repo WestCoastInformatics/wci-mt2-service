@@ -672,7 +672,6 @@ public class Edition extends AbstractHasModified {
      *
      * @return the int
      */
-    /* see superclass */
     @Override
     public int hashCode() {
 
@@ -699,7 +698,6 @@ public class Edition extends AbstractHasModified {
      * @param obj the obj
      * @return true, if successful
      */
-    /* see superclass */
     @Override
     public boolean equals(final Object obj) {
 
@@ -807,7 +805,6 @@ public class Edition extends AbstractHasModified {
      *
      * @return the string
      */
-    /* see superclass */
     @Override
     public String toString() {
 

@@ -20,7 +20,6 @@ import jakarta.ws.rs.core.Response;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnomedConstants;
-import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormApiPaging;
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.PfsParameter;
 import org.ihtsdo.refsetservice.model.Project;
@@ -33,7 +32,6 @@ import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
 import org.ihtsdo.refsetservice.util.IndexUtility;
-import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.StringUtility;
@@ -49,8 +47,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class EditionService extends BaseService {
 
-	/** The Constant LOG. */
-	private static final Logger LOG = LoggerFactory.getLogger(EditionService.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(EditionService.class);
 
     /** The Constant SNOMEDCT_CORE_MODULE. */
     private static final String SNOMEDCT_CORE_MODULE = "900000000000207008";
@@ -62,116 +60,121 @@ public class EditionService extends BaseService {
     // Module Id to map of releaseDate to Dependent Module Name
     private static final Map<String, Map<Long, String>> DEPENDENCY_MODULE_CACHE = new HashMap<>();
 
-	/** The terminology handler. */
-	private static TerminologyServerHandler getTerminologyHandler() {
+    /**
+     *  The terminology handler.
+     *
+     * @return the terminology handler
+     */
+    private static TerminologyServerHandler getTerminologyHandler() {
 
-		return HandlerUtility.getOrCreateTerminologyHandler();
-	}
+        return HandlerUtility.getOrCreateTerminologyHandler();
+    }
 
-	/**
-	 * Creates the edition.
-	 *
-	 * @param user    the user
-	 * @param edition the edition
-	 * @return the edition
-	 * @throws Exception the exception
-	 */
-	public static Edition createEdition(final User user, final Edition edition) throws Exception {
+    /**
+     * Creates the edition.
+     *
+     * @param user the user
+     * @param edition the edition
+     * @return the edition
+     * @throws Exception the exception
+     */
+    public static Edition createEdition(final User user, final Edition edition) throws Exception {
 
-		try (final TerminologyService service = new TerminologyService()) {
+        try (final TerminologyService service = new TerminologyService()) {
 
-			final Edition newEdition = new Edition();
-			newEdition.populateFrom(edition);
+            final Edition newEdition = new Edition();
+            newEdition.populateFrom(edition);
 
-			service.setModifiedBy(user.getUserName());
-			service.setTransactionPerOperation(false);
-			service.beginTransaction();
+            service.setModifiedBy(user.getUserName());
+            service.setTransactionPerOperation(false);
+            service.beginTransaction();
 
-			service.add(newEdition);
-			service.add(AuditEntryHelper.addEditionEntry(newEdition));
-			service.commit();
+            service.add(newEdition);
+            service.add(AuditEntryHelper.addEditionEntry(newEdition));
+            service.commit();
 
-			return newEdition;
-		}
-	}
+            return newEdition;
+        }
+    }
 
-	/**
-	 * Returns the edition.
-	 *
+    /**
+     * Returns the edition.
+     *
      * @param service the service
-	 * @param editionId the edition id
-	 * @return the edition
-	 * @throws Exception the exception
-	 */
+     * @param editionId the edition id
+     * @return the edition
+     * @throws Exception the exception
+     */
     public static Edition getEdition(final TerminologyService service, final String editionId) throws Exception {
 
-			final Edition edition = service.get(editionId, Edition.class);
-			return edition;
-		}
+        final Edition edition = service.get(editionId, Edition.class);
+        return edition;
+    }
 
+    /**
+     * Returns the editions.
+     *
+     * @param service the service
+     * @return the editions
+     * @throws Exception the exception
+     */
+    public static ResultList<Edition> getEditions(final TerminologyService service) throws Exception {
 
-	/**
-	 * Returns the editions.
-	 *
-	 * @return the editions
-	 * @throws Exception the exception
-	 */
-	public static ResultList<Edition> getEditions(final TerminologyService service) throws Exception {
+        final ResultList<Edition> results = searchEditions(service, new SearchParameters());
+        return results;
+    }
 
-			final ResultList<Edition> results = searchEditions(service, new SearchParameters());
-			return results;
-		}
-
-	/**
-	 * Search Editions.
-	 *
-	 * @param searchParameters the search parameters
-	 * @return the list of projects
-	 * @throws Exception the exception
-	 */
+    /**
+     * Search Editions.
+     *
+     * @param service the service
+     * @param searchParameters the search parameters
+     * @return the list of projects
+     * @throws Exception the exception
+     */
     public static ResultList<Edition> searchEditions(final TerminologyService service, final SearchParameters searchParameters) throws Exception {
 
-			final long start = System.currentTimeMillis();
-			String query = getQueryForActiveOnly(searchParameters);
-			final PfsParameter pfs = new PfsParameter();
+        final long start = System.currentTimeMillis();
+        String query = getQueryForActiveOnly(searchParameters);
+        final PfsParameter pfs = new PfsParameter();
 
-			if (searchParameters.getOffset() != null) {
-				pfs.setOffset(searchParameters.getOffset());
-			}
+        if (searchParameters.getOffset() != null) {
+            pfs.setOffset(searchParameters.getOffset());
+        }
 
-			if (searchParameters.getLimit() != null) {
-				pfs.setLimit(searchParameters.getLimit());
-			}
+        if (searchParameters.getLimit() != null) {
+            pfs.setLimit(searchParameters.getLimit());
+        }
 
-			if (searchParameters.getSortAscending() != null) {
-				pfs.setAscending(searchParameters.getSortAscending());
-			}
+        if (searchParameters.getSortAscending() != null) {
+            pfs.setAscending(searchParameters.getSortAscending());
+        }
 
-			if (searchParameters.getSort() != null) {
-				pfs.setSort(searchParameters.getSort());
-			}
+        if (searchParameters.getSort() != null) {
+            pfs.setSort(searchParameters.getSort());
+        }
 
-			if (query != null && !query.equals("")) {
-				query = IndexUtility.addWildcardsToQuery(query, Edition.class);
-			}
+        if (query != null && !query.equals("")) {
+            query = IndexUtility.addWildcardsToQuery(query, Edition.class);
+        }
 
-			final ResultList<Edition> results = service.find(query, pfs, Edition.class, null);
-			results.setTimeTaken(System.currentTimeMillis() - start);
-			results.setTotalKnown(true);
+        final ResultList<Edition> results = service.find(query, pfs, Edition.class, null);
+        results.setTimeTaken(System.currentTimeMillis() - start);
+        results.setTotalKnown(true);
 
-			return results;
-		}
+        return results;
+    }
 
-	/**
-	 * Populate new editions based on affiliated code systems from the terminology
-	 * server.
-	 *
-	 * @return a list of new editions based on affiliated code systems
-	 * @throws Exception the exception
-	 */
-	public static List<Edition> getAffiliateEditionList() throws Exception {
-		return getTerminologyHandler().getAffiliateEditionList();
-	}
+    /**
+     * Populate new editions based on affiliated code systems from the terminology server.
+     *
+     * @return a list of new editions based on affiliated code systems
+     * @throws Exception the exception
+     */
+    public static List<Edition> getAffiliateEditionList() throws Exception {
+
+        return getTerminologyHandler().getAffiliateEditionList();
+    }
 
     /**
      * Returns the edition dependent version.
@@ -181,7 +184,7 @@ public class EditionService extends BaseService {
      * @return the edition dependent version
      * @throws Exception the exception
      */
-	// TODO: Move to SnowstormEdtion since this does a REST API call to Snowstorm
+    // TODO: Move to SnowstormEdtion since this does a REST API call to Snowstorm
     public static String getEditionDependentVersion(final String shortName, final User user) throws Exception {
 
         String dependentVersion = "";
@@ -211,11 +214,10 @@ public class EditionService extends BaseService {
      * Returns the edition dependent version.
      *
      * @param shortName the short name
-     * @param user the user
      * @return the edition dependent version
      * @throws Exception the exception
      */
- // TODO: Move to SnowstormEdtion since this does a REST API call to Snowstorm
+    // TODO: Move to SnowstormEdtion since this does a REST API call to Snowstorm
     public static CodeSystem getCodeSystem(final String shortName) throws Exception {
 
         CodeSystem codeSystem = null;
@@ -226,8 +228,8 @@ public class EditionService extends BaseService {
 
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
-                throw new Exception("Unable to get edition code system. Status: " + Integer.toString(response.getStatus()) + ". Error: "
-                    + formatErrorMessage(response));
+                throw new Exception(
+                    "Unable to get edition code system. Status: " + Integer.toString(response.getStatus()) + ". Error: " + formatErrorMessage(response));
             }
 
             final String resultString = SnowstormConnection.readEntityAsString(response);
@@ -311,15 +313,13 @@ public class EditionService extends BaseService {
      * @param newStatus the new status
      * @throws Exception the exception
      */
-    public static void updateEditionStatus(final TerminologyService service, final User user, Edition edition, boolean newStatus) throws Exception {
+    public static void updateEditionStatus(final TerminologyService service, final User user, final Edition edition, final boolean newStatus) throws Exception {
 
         // TODO: Unit test edition & org status changes
         OrganizationService.checkEditPermissions(user, edition.getOrganization());
 
-        if (!newStatus && edition.getOrganization().isActive()) {
-            // TODO: Do we inactivate org if last edition that is active is about to be inactivated? I think complicates matters, so leaving TODO and place
-            // holder
-        }
+        // TODO: Do we inactivate org if last edition that is active is about to be inactivated? I think complicates matters, so leaving TODO and place
+        // holder
 
         // Update the edition and it's components only
         final ResultList<Project> editionProjects = service.find("editionId:" + edition.getId(), null, Project.class, null);
@@ -437,7 +437,8 @@ public class EditionService extends BaseService {
             // SnowstormConnection.checkConnection();
 
             // Get refset members of moduleDependcy refset for refset's moduleId
-            // https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/MAIN/SNOMEDCT-US/2023-03-01/members?referenceSet=900000000000534007&module=731000124108&offset=0&limit=50
+            // https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/MAIN/SNOMEDCT-US/2023-03-01/members
+            // ?referenceSet=900000000000534007&module=731000124108&offset=0&limit=50
             String url = SnowstormConnection.getRestBaseUrl() + refset.getBranchPath() + "/members?referenceSet=" + MODULE_DEPENDENCY_REFSET_SCT_ID + "&module="
                 + refset.getModuleId();
             LOG.info("getRefsetDependencyModule url: " + url);
@@ -478,7 +479,7 @@ public class EditionService extends BaseService {
      *
      * @param moduleId the module id
      */
-    public static void clearModuleDependencyCaches(String moduleId) {
+    public static void clearModuleDependencyCaches(final String moduleId) {
 
         DEPENDENCY_MODULE_CACHE.remove(moduleId);
     }

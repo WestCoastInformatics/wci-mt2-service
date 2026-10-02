@@ -15,137 +15,175 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericFie
  * Abstractly represents something that changes over time.
  */
 @MappedSuperclass
-public abstract class AbstractHasModifiedNoGenerator extends AbstractHasIdNoGenerator
-    implements HasModified {
+public abstract class AbstractHasModifiedNoGenerator extends AbstractHasIdNoGenerator implements HasModified {
 
-  /** The modified. */
-  @Column(nullable = false)
-  private Date modified;
+    /** The modified. */
+    @Column(nullable = false)
+    private Date modified;
 
-  /** The created. */
-  @Column(nullable = false)
-  private Date created;
+    /** The created. */
+    @Column(nullable = false)
+    private Date created;
 
-  /** The modified by. */
-  @Column(nullable = false, length = 256)
-  private String modifiedBy;
+    /** The modified by. */
+    @Column(nullable = false, length = 256)
+    private String modifiedBy;
 
-  /** The local. */
-  @Column(nullable = false)
-  private boolean local = false;
+    /** The local. */
+    @Column(nullable = false)
+    private boolean local = false;
 
-  /** The active. */
-  private boolean active = true;
+    /** The active. */
+    private boolean active = true;
 
-  /**
-   * Instantiates an empty {@link AbstractHasModifiedNoGenerator}.
-   */
-  protected AbstractHasModifiedNoGenerator() {
+    /**
+     * Instantiates an empty {@link AbstractHasModifiedNoGenerator}.
+     */
+    protected AbstractHasModifiedNoGenerator() {
 
-    super();
-  }
-
-  /**
-   * Instantiates a {@link AbstractHasModifiedNoGenerator} from the specified
-   * parameters.
-   *
-   * @param other the other
-   */
-  protected AbstractHasModifiedNoGenerator(final HasModified other) {
-
-    populateFrom(other);
-  }
-
-  /**
-   * Populate from.
-   *
-   * @param other the other
-   */
-  public void populateFrom(final HasModified other) {
-
-    // Only copy this stuff if the object has an id
-    if (other.getId() != null) {
-      super.populateFrom(other);
-      created = other.getCreated();
-      modified = other.getModified();
-      modifiedBy = other.getModifiedBy();
+        super();
     }
-    active = other.isActive();
-  }
 
-  /* see superclass */
-  @Override
-  @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
-  public boolean isActive() {
+    /**
+     * Instantiates a {@link AbstractHasModifiedNoGenerator} from the specified parameters.
+     *
+     * @param other the other
+     */
+    protected AbstractHasModifiedNoGenerator(final HasModified other) {
 
-    return active;
-  }
+        populateFrom(other);
+    }
 
-  /* see superclass */
-  @Override
-  public void setActive(final Boolean active) {
+    /**
+     * Populate from.
+     *
+     * @param other the other
+     */
+    public void populateFrom(final HasModified other) {
 
-    this.active = active;
-  }
+        // Only copy this stuff if the object has an id
+        if (other.getId() != null) {
+            super.populateFrom(other);
+            created = other.getCreated();
+            modified = other.getModified();
+            modifiedBy = other.getModifiedBy();
+        }
+        active = other.isActive();
+    }
 
-  /* see superclass */
-  @Override
-  @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
-  // @DateBridge(resolution = Resolution.DAY, encoding = EncodingType.STRING)
-  public Date getModified() {
+    /**
+     * Checks if is active.
+     *
+     * @return true, if is active
+     */
+    /* see superclass */
+    @Override
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.NO)
+    public boolean isActive() {
 
-    return modified;
-  }
+        return active;
+    }
 
-  /* see superclass */
-  @Override
-  public void setModified(final Date modified) {
+    /**
+     * Sets the active.
+     *
+     * @param active the new active
+     */
+    /* see superclass */
+    @Override
+    public void setActive(final Boolean active) {
 
-    this.modified = modified;
-  }
+        this.active = active;
+    }
 
-  /* see superclass */
-  @Override
-  @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
-  // @DateBridge(resolution = Resolution.DAY, encoding = EncodingType.STRING)
-  public Date getCreated() {
+    /**
+     * Gets the modified.
+     *
+     * @return the modified
+     */
+    /* see superclass */
+    @Override
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    // @DateBridge(resolution = Resolution.DAY, encoding = EncodingType.STRING)
+    public Date getModified() {
 
-    return created;
-  }
+        return modified;
+    }
 
-  /* see superclass */
-  @Override
-  public void setCreated(final Date created) {
+    /**
+     * Sets the modified.
+     *
+     * @param modified the new modified
+     */
+    /* see superclass */
+    @Override
+    public void setModified(final Date modified) {
 
-    this.created = created;
-  }
+        this.modified = modified;
+    }
 
-  /* see superclass */
-  @Override
-  @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
-  public String getModifiedBy() {
+    /**
+     * Gets the created.
+     *
+     * @return the created
+     */
+    /* see superclass */
+    @Override
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    // @DateBridge(resolution = Resolution.DAY, encoding = EncodingType.STRING)
+    public Date getCreated() {
 
-    return modifiedBy;
-  }
+        return created;
+    }
 
-  /* see superclass */
-  @Override
-  public void setModifiedBy(final String modifiedBy) {
+    /**
+     * Sets the created.
+     *
+     * @param created the new created
+     */
+    /* see superclass */
+    @Override
+    public void setCreated(final Date created) {
 
-    this.modifiedBy = modifiedBy;
-  }
+        this.created = created;
+    }
 
-  /**
-   * Clear tracking fields.
-   */
-  @Override
-  public void clearTrackingFields() {
+    /**
+     * Gets the modified by.
+     *
+     * @return the modified by
+     */
+    /* see superclass */
+    @Override
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    public String getModifiedBy() {
 
-    setId(null);
-    created = null;
-    modified = null;
-    modifiedBy = null;
-    active = true;
-  }
-  // equals/hashcode by superclass
+        return modifiedBy;
+    }
+
+    /**
+     * Sets the modified by.
+     *
+     * @param modifiedBy the new modified by
+     */
+    /* see superclass */
+    @Override
+    public void setModifiedBy(final String modifiedBy) {
+
+        this.modifiedBy = modifiedBy;
+    }
+
+    /**
+     * Clear tracking fields.
+     */
+    @Override
+    public void clearTrackingFields() {
+
+        setId(null);
+        created = null;
+        modified = null;
+        modifiedBy = null;
+        active = true;
+    }
+    // equals/hashcode by superclass
 }

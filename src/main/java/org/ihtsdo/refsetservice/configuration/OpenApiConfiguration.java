@@ -40,7 +40,8 @@ import io.swagger.v3.oas.models.responses.ApiResponse;
  */
 @Configuration
 @SecurityScheme(name = "bearerAuth", type = SecuritySchemeType.HTTP, scheme = "bearer", bearerFormat = "JWT",
-    description = "Application JWT from authenticate. Send as Authorization: Bearer <token>. Browser session cookies also work when using Swagger UI on the same origin.")
+    description = "Application JWT from authenticate. Send as Authorization: Bearer <token>. "
+        + "Browser session cookies also work when using Swagger UI on the same origin.")
 public class OpenApiConfiguration {
 
     /** Success codes that should carry a response schema when the method returns a body. */

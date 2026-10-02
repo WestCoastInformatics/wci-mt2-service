@@ -41,11 +41,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
  * <li>{@code POST /report/norway/replacement-translation} — start translation report; returns 202</li>
  * <li>{@code POST /report/norway/helsedirektoratet-untranslated} — start Helsedirektoratet untranslated report; returns 202</li>
  * </ul>
- * All require an authenticated session. Recipients come from env-backed properties (not committed):
- * {@code NORWAY_REPLACEMENT_MAP_REPORT_USERS} /
- * {@code NORWAY_REPLACEMENT_TRANSLATION_REPORT_USERS} /
- * {@code NORWAY_HELSEDIREKTORATET_UNTRANSLATED_REPORT_USERS}. Response body is JSON
- * {@code { "status": "STARTED", "report": "..." }}. Concurrent duplicate starts return 409.
+ * All require an authenticated session. Recipients come from env-backed properties (not committed): {@code NORWAY_REPLACEMENT_MAP_REPORT_USERS} /
+ * {@code NORWAY_REPLACEMENT_TRANSLATION_REPORT_USERS} / {@code NORWAY_HELSEDIREKTORATET_UNTRANSLATED_REPORT_USERS}. Response body is JSON {@code { "status":
+ * "STARTED", "report": "..." }}. Concurrent duplicate starts return 409.
  */
 @RestController
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)

@@ -47,7 +47,7 @@ public class MapRelationController extends BaseController {
     /**
      * Add the Map Relation.
      *
-     * @param mapProject the mapProject
+     * @param mapRelation the map relation
      * @return the response entity
      * @throws Exception the exception
      */
@@ -63,8 +63,8 @@ public class MapRelationController extends BaseController {
         @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = MapRelation.class))
     }))
     @RecordMetric
-    public @ResponseBody ResponseEntity<MapRelation> createMapRelation(
-        @org.springframework.web.bind.annotation.RequestBody final MapRelation mapRelation) throws Exception {
+    public @ResponseBody ResponseEntity<MapRelation> createMapRelation(@org.springframework.web.bind.annotation.RequestBody final MapRelation mapRelation)
+        throws Exception {
 
         if (StringUtils.isBlank(mapRelation.getTerminologyId())) {
             final String errorMessage = "Map relation terminology id is required.";
@@ -92,9 +92,9 @@ public class MapRelationController extends BaseController {
 
         } catch (final Exception e) {
             handleException(e);
-            
+
             LOG.error("Failed to create map relation", e);
-            
+
             return null;
         }
     }
@@ -136,7 +136,9 @@ public class MapRelationController extends BaseController {
      * @return the map Relations
      * @throws Exception the exception
      */
-    @RequestMapping(method = RequestMethod.GET, value = {"/mapRelation", "/mapRelation/"}, produces = MediaType.APPLICATION_JSON)
+    @RequestMapping(method = RequestMethod.GET, value = {
+        "/mapRelation", "/mapRelation/"
+    }, produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Get all map Relations", tags = {
         "map relation"
     }, responses = {
@@ -161,7 +163,8 @@ public class MapRelationController extends BaseController {
     /**
      * Update the Map Relation.
      *
-     * @param mapProject the mapProject
+     * @param id the id
+     * @param mapRelation the map relation
      * @return the response entity
      * @throws Exception the exception
      */
@@ -171,15 +174,13 @@ public class MapRelationController extends BaseController {
     }, responses = {
         @ApiResponse(responseCode = "200", description = "Updated map relation",
             content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = MapRelation.class))),
-        @ApiResponse(responseCode = "404", description = "Not Found"),
-        @ApiResponse(responseCode = "417", description = "Failed Expectation")
+        @ApiResponse(responseCode = "404", description = "Not Found"), @ApiResponse(responseCode = "417", description = "Failed Expectation")
     }, requestBody = @RequestBody(description = "Map relation to update", required = true, content = {
         @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = MapRelation.class))
     }))
     @RecordMetric
     public @ResponseBody ResponseEntity<MapRelation> updateMapRelation(@PathVariable(value = "id") final String id,
-        @org.springframework.web.bind.annotation.RequestBody final MapRelation mapRelation)
-        throws Exception {
+        @org.springframework.web.bind.annotation.RequestBody final MapRelation mapRelation) throws Exception {
 
         if (mapRelation == null || !StringUtils.equals(id, mapRelation.getId())) {
 
@@ -234,8 +235,7 @@ public class MapRelationController extends BaseController {
         @ApiResponse(responseCode = "417", description = "Failed Expectation")
     })
     @RecordMetric
-    public @ResponseBody ResponseEntity<ResultList<MapRelation>> getMapRelations(
-        @ModelAttribute final SearchParameters searchParameters,
+    public @ResponseBody ResponseEntity<ResultList<MapRelation>> getMapRelations(@ModelAttribute final SearchParameters searchParameters,
         final BindingResult bindingResult) throws Exception {
         // no auth required
 

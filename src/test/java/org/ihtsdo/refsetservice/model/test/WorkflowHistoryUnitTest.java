@@ -22,10 +22,17 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 public class WorkflowHistoryUnitTest extends BaseTest {
 
+    /** The object. */
     private WorkflowHistory object;
 
+    /** The refset. */
     private Refset refset;
 
+    /**
+     * Setup.
+     *
+     * @throws Exception the exception
+     */
     @BeforeEach
     public void setup() throws Exception {
 
@@ -34,6 +41,11 @@ public class WorkflowHistoryUnitTest extends BaseTest {
         refset = (Refset) refsetTester.createObject(1);
     }
 
+    /**
+     * Test model get set.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelGetSet() throws Exception {
 
@@ -43,6 +55,11 @@ public class WorkflowHistoryUnitTest extends BaseTest {
         tester.test();
     }
 
+    /**
+     * Test model equals hashcode.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelEqualsHashcode() throws Exception {
 
@@ -65,6 +82,11 @@ public class WorkflowHistoryUnitTest extends BaseTest {
         assertTrue(tester.testIdentityFieldDifferentHashcode());
     }
 
+    /**
+     * Test model copy.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelCopy() throws Exception {
 
@@ -73,6 +95,11 @@ public class WorkflowHistoryUnitTest extends BaseTest {
         assertTrue(tester.testCopyConstructor(WorkflowHistory.class));
     }
 
+    /**
+     * Test model serialization.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelSerialization() throws Exception {
 

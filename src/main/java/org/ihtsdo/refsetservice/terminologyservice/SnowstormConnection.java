@@ -112,14 +112,8 @@ public final class SnowstormConnection {
         BASIC
     }
 
-    /** Static initialization deferred until PropertyUtility is ready. */
-    static {
-        // n/a
-    }
-
     /**
-     * Reload Snowstorm connection settings from {@link PropertyUtility}. Used by integration tests that inject
-     * credentials after the JVM starts.
+     * Reload Snowstorm connection settings from {@link PropertyUtility}. Used by integration tests that inject credentials after the JVM starts.
      */
     public static void loadConfigurationFromProperties() {
 
@@ -217,8 +211,7 @@ public final class SnowstormConnection {
     }
 
     /**
-     * Unit tests must not call Snowstorm. Live {@code *IntegrationTest*} classes set
-     * {@code terminology.handler=SNOMED_SNOWSTORM} and are allowed.
+     * Unit tests must not call Snowstorm. Live {@code *IntegrationTest*} classes set {@code terminology.handler=SNOMED_SNOWSTORM} and are allowed.
      */
     private static void rejectRemoteCallFromUnitTest() {
 
@@ -668,7 +661,7 @@ public final class SnowstormConnection {
      * @throws Exception if there is an error parsing the JSON
      */
     @SuppressWarnings("unchecked")
-    private static Map<String, Object> jsonToMap(String jsonString) throws Exception {
+    private static Map<String, Object> jsonToMap(final String jsonString) throws Exception {
 
         return ThreadLocalMapper.get().readValue(jsonString, Map.class);
     }
@@ -680,7 +673,7 @@ public final class SnowstormConnection {
      * @return the response body as a string
      * @throws Exception if there is an error reading the response
      */
-    public static String readEntityAsString(Response response) throws Exception {
+    public static String readEntityAsString(final Response response) throws Exception {
 
         final long readStartMs = System.currentTimeMillis();
         try {
@@ -754,7 +747,7 @@ public final class SnowstormConnection {
      * @param response the response to read
      * @return the response body as a string, or null if the body could not be read
      */
-    public static String readEntityAsStringSafe(Response response) {
+    public static String readEntityAsStringSafe(final Response response) {
 
         try {
             return response.readEntity(String.class);

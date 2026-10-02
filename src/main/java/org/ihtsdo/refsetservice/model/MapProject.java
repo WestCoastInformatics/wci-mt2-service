@@ -202,8 +202,7 @@ public class MapProject extends AbstractHasModified implements Copyable<MapProje
 
     /** The allowable map advices for this MapProject. */
     @ManyToMany(targetEntity = MapAdvice.class, fetch = FetchType.LAZY)
-    @JoinTable(name = "map_projects_map_advices", joinColumns = @JoinColumn(name = "map_projects_id"),
-        inverseJoinColumns = @JoinColumn(name = "mapAdvices_id"))
+    @JoinTable(name = "map_projects_map_advices", joinColumns = @JoinColumn(name = "map_projects_id"), inverseJoinColumns = @JoinColumn(name = "mapAdvices_id"))
     // @IndexedEmbedded
     private Set<MapAdvice> mapAdvices = new HashSet<>();
 
@@ -1534,14 +1533,17 @@ public class MapProject extends AbstractHasModified implements Copyable<MapProje
      * @return true, if successful
      */
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
 
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (!super.equals(obj))
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         MapProject other = (MapProject) obj;
         return Objects.equals(additionalMapEntryInfos, other.additionalMapEntryInfos) && Objects.equals(description, other.description)
             && Objects.equals(destinationTerminology, other.destinationTerminology)
@@ -1585,7 +1587,6 @@ public class MapProject extends AbstractHasModified implements Copyable<MapProje
      *
      * @return the string
      */
-    /* see superclass */
     @Override
     public String toString() {
 
@@ -1602,7 +1603,6 @@ public class MapProject extends AbstractHasModified implements Copyable<MapProje
     /**
      * Lazy init.
      */
-    /* see superclass */
     @Override
     public void lazyInit() {
 
@@ -1615,7 +1615,6 @@ public class MapProject extends AbstractHasModified implements Copyable<MapProje
      *
      * @throws Exception the exception
      */
-    /* see superclass */
     @Override
     public void validateAdd() throws Exception {
 
@@ -1642,7 +1641,6 @@ public class MapProject extends AbstractHasModified implements Copyable<MapProje
      * @param other the other
      * @throws Exception the exception
      */
-    /* see superclass */
     @Override
     public void validateUpdate(final MapProject other) throws Exception {
 
@@ -1668,7 +1666,6 @@ public class MapProject extends AbstractHasModified implements Copyable<MapProje
      *
      * @throws Exception the exception
      */
-    /* see superclass */
     @Override
     public void validateDelete() throws Exception {
 

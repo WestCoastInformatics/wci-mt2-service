@@ -54,15 +54,13 @@ public class Mapping extends AbstractHasModified {
     private List<MapEntry> mapEntries;
 
     /**
-     * Map notes from the MT2 database (not Snowstorm). Hydrated by service layer using mapSet +
-     * source concept code.
+     * Map notes from the MT2 database (not Snowstorm). Hydrated by service layer using mapSet + source concept code.
      */
     @Transient
     private Set<MapNote> mapNotes = new HashSet<>();
 
     /**
-     * Per-concept mapping workflow from the MT2 database (not Snowstorm). Hydrated by service layer
-     * when requested; null when no workflow row exists.
+     * Per-concept mapping workflow from the MT2 database (not Snowstorm). Hydrated by service layer when requested; null when no workflow row exists.
      */
     @Transient
     private MappingWorkflow mappingWorkflow;
@@ -140,8 +138,11 @@ public class Mapping extends AbstractHasModified {
      * @return the map entries
      */
     public List<MapEntry> getMapEntries() {
-        
-        return mapEntries == null ? (mapEntries = new ArrayList<>()) : mapEntries;
+
+        if (mapEntries == null) {
+            mapEntries = new ArrayList<>();
+        }
+        return mapEntries;
     }
 
     /**
@@ -162,7 +163,7 @@ public class Mapping extends AbstractHasModified {
     @JsonGetter
     public Set<MapNote> getMapNotes() {
 
-        return mapNotes == null ? (mapNotes = new HashSet<>()) : mapNotes;
+        return mapNotes == null ? new HashSet<>() : mapNotes;
     }
 
     /**
@@ -205,7 +206,7 @@ public class Mapping extends AbstractHasModified {
     public List<Description> getDescriptions() {
 
         return (descriptions == null) ? new ArrayList<>() : descriptions;
-        
+
     }
 
     /**

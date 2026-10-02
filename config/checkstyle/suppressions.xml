@@ -5,5 +5,11 @@
 
 <suppressions>
   <suppress checks="."
-    files="org[\\/]ihtsdo[\\/]services[\\/]jpa[\\/]expr[\\/]" />    
+    files="org[\\/]ihtsdo[\\/]services[\\/]jpa[\\/]expr[\\/]" />
+  <suppress checks="FileLength" files="SnowstormConcept\.java" />
+  <suppress checks="FileLength" files="SnowstormMapping\.java" />
+  <suppress checks="FileLength" files="RefsetController\.java" />
+  <suppress checks="FileLength" files="RefsetMemberService\.java"/>
+  <suppress checks="FileLength" files="RefsetService\.java" />
+  <suppress checks="FileLength" files="JSONTerminologyServerHandler\.java" />
 </suppressions>

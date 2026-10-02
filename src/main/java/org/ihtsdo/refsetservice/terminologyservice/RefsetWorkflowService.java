@@ -81,7 +81,6 @@ public final class RefsetWorkflowService {
     // Map<user, Map<currentStatus, Map<action, resultingState>>>
     private static final Map<String, Map<WorkflowStatus, Map<WorkflowAction, WorkflowStatus>>> WORKFLOW_PERMUTATIONS = new HashMap<>();
 
-
     static {
 
         try {
@@ -146,6 +145,7 @@ public final class RefsetWorkflowService {
      *
      * @param service the Terminology Service
      * @param editionShortName an code system to limit the refset to
+     * @param authUser the auth user
      * @return A list of concepts that were unable to be promoted
      * @throws Exception the exception
      */
@@ -172,13 +172,12 @@ public final class RefsetWorkflowService {
 
             try {
 
-                final String refsetBranchPath =
-                    BranchService.getRefsetBranchPath(refset.toBranchDetails());
+                final String refsetBranchPath = BranchService.getRefsetBranchPath(refset.toBranchDetails());
 
                 BranchService.mergeBranch(projectBranchPath, refsetBranchPath, "Rebasing refset branch to latest changes", true);
                 refset.setEditionBranch(editionBranch);
-                final boolean success = BranchService.promoteRefsetToProjectBranch(refset.toBranchDetails(),
-                    "Preparing for publication - promoting refset to project branch");
+                final boolean success =
+                    BranchService.promoteRefsetToProjectBranch(refset.toBranchDetails(), "Preparing for publication - promoting refset to project branch");
 
                 if (!success) {
 
@@ -500,8 +499,7 @@ public final class RefsetWorkflowService {
         }
 
         if (nextStatus == null) {
-            LOG.warn(
-                "Workflow action requested but no permutation: refsetId={}, refsetDbId={}, workflowStatus={}, action={}, user={}, rolesTried={}, file={}",
+            LOG.warn("Workflow action requested but no permutation: refsetId={}, refsetDbId={}, workflowStatus={}, action={}, user={}, rolesTried={}, file={}",
                 refset.getRefsetId(), refset.getId(), refset.getWorkflowStatus(), action, user.getUserName(), roles, WORKFLOW_PERMUTATIONS_FILE_NAME);
         }
 
@@ -525,8 +523,7 @@ public final class RefsetWorkflowService {
 
                 refset.setEditBranchId(null);
                 if (currentStatus.equals(WorkflowStatus.IN_UPGRADE) && Arrays.asList(WorkflowAction.FINISH_UPGRADE).contains(action)) {
-                    RefsetMemberService.clearAllMemberCaches(
-                        BranchService.getRefsetBranchPath(refset.toBranchDetails()));
+                    RefsetMemberService.clearAllMemberCaches(BranchService.getRefsetBranchPath(refset.toBranchDetails()));
                 }
 
                 RefsetService.removeRefsetEditHistory(service, user, refset.getRefsetId());
@@ -715,7 +712,8 @@ public final class RefsetWorkflowService {
         pfs.setAscending(false);
         pfs.setLimit(1);
 
-        final ResultList<RefsetWorkflowHistory> results = service.find("refsetId:" + QueryParserBase.escape(refset.getId()) + "", pfs, RefsetWorkflowHistory.class, null);
+        final ResultList<RefsetWorkflowHistory> results =
+            service.find("refsetId:" + QueryParserBase.escape(refset.getId()) + "", pfs, RefsetWorkflowHistory.class, null);
 
         if (results.getItems().size() == 0) {
 
@@ -734,8 +732,8 @@ public final class RefsetWorkflowService {
      * @return the current workflow object
      * @throws Exception the exception
      */
-    public static ResultList<RefsetWorkflowHistory> getWorkflowHistory(final TerminologyService service, final Refset refset, final SearchParameters searchParameters)
-        throws Exception {
+    public static ResultList<RefsetWorkflowHistory> getWorkflowHistory(final TerminologyService service, final Refset refset,
+        final SearchParameters searchParameters) throws Exception {
 
         final PfsParameter pfs = new PfsParameter();
         String query = "";

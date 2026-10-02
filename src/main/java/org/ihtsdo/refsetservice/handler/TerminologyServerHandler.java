@@ -308,8 +308,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @return the concept
      * @throws Exception the exception
      */
-    public ResultListConcept findConcepts(final String terminology, final String version, final SearchParameters searchParameters)
-        throws Exception;
+    public ResultListConcept findConcepts(final String terminology, final String version, final SearchParameters searchParameters) throws Exception;
 
     /**
      * AutoComplete.
@@ -321,7 +320,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @throws Exception the exception
      */
     public ResultListConceptRef autoComplete(final String terminology, final String version, final SearchParameters searchParameters) throws Exception;
-    
+
     /**
      * Returns the member count.
      *
@@ -628,8 +627,7 @@ public interface TerminologyServerHandler extends Configurable {
         final boolean showOverriddenEntries, final List<String> conceptCodes, final Collection<String> restrictToConceptCodes,
         final Collection<String> excludeConceptCodes) throws Exception {
 
-        final ResultListMapping mappings =
-            getMappings(branch, mapSet, searchParameters, filter, showOverriddenEntries, conceptCodes, restrictToConceptCodes);
+        final ResultListMapping mappings = getMappings(branch, mapSet, searchParameters, filter, showOverriddenEntries, conceptCodes, restrictToConceptCodes);
         if (mappings == null || mappings.getItems() == null || excludeConceptCodes == null || excludeConceptCodes.isEmpty()) {
             return mappings;
         }
@@ -657,8 +655,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @return the mapping
      * @throws Exception the exception
      */
-    public Mapping getMapping(final String branch, final String conceptCode, final boolean showOverriddenEntries, final MapSet mapSet)
-        throws Exception;
+    public Mapping getMapping(final String branch, final String conceptCode, final boolean showOverriddenEntries, final MapSet mapSet) throws Exception;
 
     /**
      * Returns the concept.
@@ -697,8 +694,7 @@ public interface TerminologyServerHandler extends Configurable {
      * @throws Exception the exception
      */
     public List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mapping,
-        final MapSet mapSet, final User user)
-        throws Exception;
+        final MapSet mapSet, final User user) throws Exception;
 
     /**
      * Export mappings.
@@ -839,8 +835,7 @@ public interface TerminologyServerHandler extends Configurable {
     public MapSet setMapSetPermissions(final User user, final MapSet mapSet) throws Exception;
 
     /**
-     * Caches concepts for the given terminology/version pairs.
-     * Handler-specific; may be no-op for servers that do not support concept caching.
+     * Caches concepts for the given terminology/version pairs. Handler-specific; may be no-op for servers that do not support concept caching.
      *
      * @param terminologyToVersion map of terminology name to version
      * @throws Exception the exception

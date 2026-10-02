@@ -20,18 +20,30 @@ import org.ihtsdo.refsetservice.model.enums.VersionStatus;
 @Converter
 public class VersionStatusConverter implements AttributeConverter<VersionStatus, String> {
 
-    /* see superclass */
+    /**
+     * Convert to database column.
+     *
+     * @param attribute the attribute
+     * @return the string
+     */
     @Override
     public String convertToDatabaseColumn(final VersionStatus attribute) {
+
         if (attribute == null) {
             return null;
         }
         return attribute.getLabel();
     }
 
-    /* see superclass */
+    /**
+     * Convert to entity attribute.
+     *
+     * @param dbData the db data
+     * @return the version status
+     */
     @Override
     public VersionStatus convertToEntityAttribute(final String dbData) {
+
         if (dbData == null) {
             return null;
         }

@@ -94,7 +94,7 @@ public class SyncDatabaseHandler {
      *
      * @param service the service
      * @param organizationName the organization name
-     * @param organizationDescription the organization description
+     * @param countryCode the country code
      * @return the organization
      */
     public Organization addOrganziation(final TerminologyService service, final String organizationName, final String countryCode) {
@@ -137,7 +137,7 @@ public class SyncDatabaseHandler {
      * @param codeSystem the code system
      * @param organizationName the organization name
      * @return the edition
-     * @throws Exception
+     * @throws Exception the exception
      */
     public Edition addEdition(final TerminologyService service, final JsonNode codeSystem, final String organizationName) throws Exception {
 
@@ -185,7 +185,7 @@ public class SyncDatabaseHandler {
      * @param maintainerType the maintainer type
      * @param organization the organization
      * @return the edition
-     * @throws Exception
+     * @throws Exception the exception
      */
     private Edition addEdition(final TerminologyService service, final String shortName, final String name, final String branch,
         final Set<String> defaultLanguageRefsets, final Set<String> modules, final String defaultLanguageCode, final String maintainerType,
@@ -225,6 +225,7 @@ public class SyncDatabaseHandler {
      * @param moduleId the module id
      * @param versionDate the version date
      * @param type the type
+     * @param branchPath the branch path
      * @param versionStatus the version status
      * @param worfklowStatus the worfklow status
      * @param project the project
@@ -343,7 +344,7 @@ public class SyncDatabaseHandler {
      * @param worfklowStatus the worfklow status
      * @param project the project
      * @return the refset
-     * @throws Exception
+     * @throws Exception the exception
      */
     @Deprecated
     public Refset addWCIRefset(final TerminologyService service, final User u, final String name, final String refsetId, final Set<String> moduleId,

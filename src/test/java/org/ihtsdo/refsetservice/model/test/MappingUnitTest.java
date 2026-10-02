@@ -26,14 +26,25 @@ import com.fasterxml.jackson.datatype.hibernate7.Hibernate7Module;
 @ActiveProfiles("test")
 public class MappingUnitTest extends BaseTest {
 
+    /** The object. */
     private Mapping object;
 
+    /**
+     * Setup.
+     *
+     * @throws Exception the exception
+     */
     @BeforeEach
     public void setup() throws Exception {
 
         object = new Mapping();
     }
 
+    /**
+     * Test model get set.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelGetSet() throws Exception {
 
@@ -44,6 +55,11 @@ public class MappingUnitTest extends BaseTest {
         tester.test();
     }
 
+    /**
+     * Test model equals hashcode.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelEqualsHashcode() throws Exception {
 
@@ -67,6 +83,11 @@ public class MappingUnitTest extends BaseTest {
         assertTrue(tester.testIdentityFieldDifferentHashcode());
     }
 
+    /**
+     * Test model serialization.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelSerialization() throws Exception {
 
@@ -78,8 +99,7 @@ public class MappingUnitTest extends BaseTest {
     }
 
     /**
-     * Hibernate5Module skips {@code @Transient} fields unless they have {@code @JsonGetter}.
-     * Hydrated map notes must still appear in API JSON.
+     * Hibernate5Module skips {@code @Transient} fields unless they have {@code @JsonGetter}. Hydrated map notes must still appear in API JSON.
      *
      * @throws Exception the exception
      */

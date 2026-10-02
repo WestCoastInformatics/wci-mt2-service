@@ -14,16 +14,16 @@ package org.ihtsdo.refsetservice.helpers;
  */
 public enum ReportTimePeriod {
 
-  /** The daily period. */
-  DAILY,
+    /** The daily period. */
+    DAILY,
 
-  /** The weekly period. */
-  WEEKLY,
+    /** The weekly period. */
+    WEEKLY,
 
-  /** The monthly period. */
-  MONTHLY,
+    /** The monthly period. */
+    MONTHLY,
 
-  /** The annually period. */
-  ANNUALLY
+    /** The annually period. */
+    ANNUALLY
 
 }

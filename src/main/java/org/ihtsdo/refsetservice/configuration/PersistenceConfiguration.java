@@ -54,8 +54,8 @@ public class PersistenceConfiguration {
     }
 
     /**
-     * Primary JDBC DataSource for Spring Session (and other Spring JDBC usage). Hibernate continues to use its own
-     * pool via persistence.xml / hibernate.connection.*; Flyway uses its own connection in {@link #customFlyway()}.
+     * Primary JDBC DataSource for Spring Session (and other Spring JDBC usage). Hibernate continues to use its own pool via persistence.xml /
+     * hibernate.connection.*; Flyway uses its own connection in {@link #customFlyway()}.
      *
      * @return the data source
      */

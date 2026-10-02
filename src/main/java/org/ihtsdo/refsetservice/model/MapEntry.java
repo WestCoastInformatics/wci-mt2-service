@@ -96,7 +96,7 @@ public class MapEntry extends AbstractHasModified {
     /** The module id. */
     @Column(nullable = false)
     private String moduleId;
-    
+
     /** The released. */
     @Column(nullable = false)
     private boolean released = false;
@@ -209,7 +209,8 @@ public class MapEntry extends AbstractHasModified {
     public Set<String> getAdvices() {
 
         if (advices == null) {
-            advices = new HashSet<>();// ensures proper serialization
+            // ensures proper serialization
+            advices = new HashSet<>();
         }
         return advices;
     }
@@ -232,7 +233,8 @@ public class MapEntry extends AbstractHasModified {
     public Set<AdditionalMapEntryInfo> getAdditionalMapEntryInfos() {
 
         if (additionalMapEntryInfos == null) {
-            additionalMapEntryInfos = new HashSet<>();// ensures proper serialization
+            // ensures proper serialization
+            additionalMapEntryInfos = new HashSet<>();
         }
         return additionalMapEntryInfos;
     }
@@ -371,22 +373,14 @@ public class MapEntry extends AbstractHasModified {
     }
 
     /**
-     * Returns the released 
-     * 
-     * @return
+     * Returns the released.
+     *
+     * @return true, if is released
      */
     public boolean isReleased() {
-		return released;
-	}
 
-	/**
-	 * Sets the released
-	 * 
-	 * @param released
-	 */
-	public void setReleased(boolean released) {
-		this.released = released;
-	}
+        return released;
+    }
 
     /**
      * Gets the target descriptions.
@@ -410,7 +404,17 @@ public class MapEntry extends AbstractHasModified {
         this.descriptions = descriptions;
     }
 
-	/**
+    /**
+     * Sets the released.
+     *
+     * @param released the new released
+     */
+    public void setReleased(final boolean released) {
+
+        this.released = released;
+    }
+
+    /**
      * Lazy init.
      */
     @Override
@@ -419,6 +423,11 @@ public class MapEntry extends AbstractHasModified {
         // N/A
     }
 
+    /**
+     * Hash code.
+     *
+     * @return the int
+     */
     @Override
     public int hashCode() {
 
@@ -429,22 +438,36 @@ public class MapEntry extends AbstractHasModified {
         return result;
     }
 
+    /**
+     * Equals.
+     *
+     * @param obj the obj
+     * @return true, if successful
+     */
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
 
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (!super.equals(obj))
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
-        MapEntry other = (MapEntry) obj;
+        }
+        final MapEntry other = (MapEntry) obj;
         return Objects.equals(additionalMapEntryInfos, other.additionalMapEntryInfos) && Objects.equals(advices, other.advices) && block == other.block
             && group == other.group && Objects.equals(moduleId, other.moduleId) && priority == other.priority && Objects.equals(relation, other.relation)
             && Objects.equals(relationCode, other.relationCode) && Objects.equals(rule, other.rule) && Objects.equals(toCode, other.toCode)
             && Objects.equals(toName, other.toName);
     }
 
+    /**
+     * To string.
+     *
+     * @return the string
+     */
     @Override
     public String toString() {
 
@@ -454,34 +477,27 @@ public class MapEntry extends AbstractHasModified {
             return e.getMessage();
         }
     }
-    
 
     /**
-     * Compares this mapEntry with the other mapEntry to see if there
-     * are relevant differences.
+     * Compares this mapEntry with the other mapEntry to see if there are relevant differences.
      *
      * @param other the other
      * @return true, if is different
      */
     public boolean isSame(final MapEntry other) {
 
-        if (this == other)
+        if (this == other) {
             return true;
-        if (getClass() != other.getClass())
+        }
+        if (getClass() != other.getClass()) {
             return false;
+        }
         // ignore timestamps from super and check active.
-        return Objects.equals(this.advices, other.advices) 
-            && Objects.equals(this.additionalMapEntryInfos, other.additionalMapEntryInfos)
-            && Objects.equals(this.toCode, other.toCode) 
-            && Objects.equals(this.toName, other.toName) 
-            && StringUtils.equalsIgnoreCase(this.rule, other.rule)
-            && Objects.equals(this.priority, other.priority) 
-            && StringUtils.equalsIgnoreCase(this.relation, other.relation)
-            && StringUtils.equalsIgnoreCase(this.relationCode, other.relationCode) 
-            && Objects.equals(this.block, other.block) 
-            && Objects.equals(this.group, other.group)
-            && Objects.equals(this.moduleId, other.moduleId) 
-            && Objects.equals(this.released, other.released)
+        return Objects.equals(this.advices, other.advices) && Objects.equals(this.additionalMapEntryInfos, other.additionalMapEntryInfos)
+            && Objects.equals(this.toCode, other.toCode) && Objects.equals(this.toName, other.toName) && StringUtils.equalsIgnoreCase(this.rule, other.rule)
+            && Objects.equals(this.priority, other.priority) && StringUtils.equalsIgnoreCase(this.relation, other.relation)
+            && StringUtils.equalsIgnoreCase(this.relationCode, other.relationCode) && Objects.equals(this.block, other.block)
+            && Objects.equals(this.group, other.group) && Objects.equals(this.moduleId, other.moduleId) && Objects.equals(this.released, other.released)
             && Objects.equals(this.isActive(), other.isActive());
     }
 

@@ -27,6 +27,7 @@ public final class ThreadLocalMapper {
      * Instantiates a new thread local mapper.
      */
     private ThreadLocalMapper() {
+
         // n/a
     }
 

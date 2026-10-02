@@ -47,7 +47,7 @@ public class MapAdviceController extends BaseController {
     /**
      * Add the Map Advice.
      *
-     * @param mapProject the mapProject
+     * @param mapAdvice the map advice
      * @return the response entity
      * @throws Exception the exception
      */
@@ -63,8 +63,8 @@ public class MapAdviceController extends BaseController {
         @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = MapAdvice.class))
     }))
     @RecordMetric
-    public @ResponseBody ResponseEntity<MapAdvice> createMapAdvice(
-        @org.springframework.web.bind.annotation.RequestBody final MapAdvice mapAdvice) throws Exception {
+    public @ResponseBody ResponseEntity<MapAdvice> createMapAdvice(@org.springframework.web.bind.annotation.RequestBody final MapAdvice mapAdvice)
+        throws Exception {
 
         if (StringUtils.isBlank(mapAdvice.getName())) {
             final String errorMessage = "Map advice name is required.";
@@ -134,7 +134,9 @@ public class MapAdviceController extends BaseController {
      * @return the map advices
      * @throws Exception the exception
      */
-    @RequestMapping(method = RequestMethod.GET, value = {"/mapAdvice", "/mapAdvice/"}, produces = MediaType.APPLICATION_JSON)
+    @RequestMapping(method = RequestMethod.GET, value = {
+        "/mapAdvice", "/mapAdvice/"
+    }, produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Get all map advices", tags = {
         "map advice"
     }, responses = {
@@ -159,7 +161,8 @@ public class MapAdviceController extends BaseController {
     /**
      * Update the Map Advice.
      *
-     * @param mapProject the mapProject
+     * @param id the id
+     * @param mapAdvice the map advice
      * @return the response entity
      * @throws Exception the exception
      */
@@ -169,8 +172,7 @@ public class MapAdviceController extends BaseController {
     }, responses = {
         @ApiResponse(responseCode = "200", description = "Updated map advice",
             content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = MapAdvice.class))),
-        @ApiResponse(responseCode = "404", description = "Not Found"),
-        @ApiResponse(responseCode = "417", description = "Failed Expectation")
+        @ApiResponse(responseCode = "404", description = "Not Found"), @ApiResponse(responseCode = "417", description = "Failed Expectation")
     }, requestBody = @RequestBody(description = "Map advice to update", required = true, content = {
         @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = MapAdvice.class))
     }))
@@ -236,8 +238,7 @@ public class MapAdviceController extends BaseController {
         @ApiResponse(responseCode = "417", description = "Failed Expectation")
     })
     @RecordMetric
-    public @ResponseBody ResponseEntity<ResultList<MapAdvice>> getMapAdvices(
-        @ModelAttribute final SearchParameters searchParameters,
+    public @ResponseBody ResponseEntity<ResultList<MapAdvice>> getMapAdvices(@ModelAttribute final SearchParameters searchParameters,
         final BindingResult bindingResult) throws Exception {
         // no auth required
 

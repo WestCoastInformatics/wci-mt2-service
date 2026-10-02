@@ -259,6 +259,7 @@ checkstyle {
   configProperties = [
     "checkstyle.cache.file"         : rootProject.file(".out/checkstyle/checkstyle.cache"),
     "checkstyle.suppressions.file"  : rootProject.file("config/checkstyle/suppressions.xml"),
+    "checkstyle.suppressions.xpath.file" : rootProject.file("config/checkstyle/suppressions-xpath.xml"),
     "checkstyle.header.file"        : "",
     "checkstyle.regexp.header.file" : "",
     "checkstyle.importcontrol.file" : ""

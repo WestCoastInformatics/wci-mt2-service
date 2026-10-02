@@ -59,8 +59,8 @@ public class MapNoteServiceTest {
             final TerminologyService service = context.getService();
             final User importer = context.getAdminUser();
             final String historicalUser = "Gunnar Misvær-" + System.currentTimeMillis();
-            final MockMultipartFile file = notesFile("conceptCode|User name|Date|Map note text\n"
-                + MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE + "|" + historicalUser + "|2021-05-31 04:35:31|Historical note\n");
+            final MockMultipartFile file = notesFile("conceptCode|User name|Date|Map note text\n" + MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE + "|"
+                + historicalUser + "|2021-05-31 04:35:31|Historical note\n");
 
             final MapNoteImportResult result = MapNoteService.importNotes(service, importer, context.getMapSet(), file, false);
 
@@ -83,9 +83,8 @@ public class MapNoteServiceTest {
             final TerminologyService service = context.getService();
             final User importer = context.getAdminUser();
             final String historicalUser = "Gunnar Misvær-" + System.currentTimeMillis();
-            final MockMultipartFile file = notesFile("conceptCode|User name|Date|Map note text\n"
-                + MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE + "|" + historicalUser
-                + "|2021-05-31T04:35:31.009Z|Historical note\n");
+            final MockMultipartFile file = notesFile("conceptCode|User name|Date|Map note text\n" + MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE + "|"
+                + historicalUser + "|2021-05-31T04:35:31.009Z|Historical note\n");
 
             final MapNoteImportResult result = MapNoteService.importNotes(service, importer, context.getMapSet(), file, true);
 
@@ -126,8 +125,8 @@ public class MapNoteServiceTest {
             final TerminologyService service = context.getService();
             final User importer = context.getAdminUser();
             final String existingUser = context.getSpecialistUser().getUserName();
-            final MockMultipartFile file = notesFile(
-                MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE + "|" + existingUser + "|2021-06-02 12:55:25|Existing user note\n");
+            final MockMultipartFile file =
+                notesFile(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE + "|" + existingUser + "|2021-06-02 12:55:25|Existing user note\n");
 
             final MapNoteImportResult result = MapNoteService.importNotes(service, importer, context.getMapSet(), file);
 
@@ -142,8 +141,7 @@ public class MapNoteServiceTest {
     }
 
     /**
-     * Imported note text is JSON-encoded so the notes modal {@code JSON.parse} can display bracketed
-     * specialist/GP comments.
+     * Imported note text is JSON-encoded so the notes modal {@code JSON.parse} can display bracketed specialist/GP comments.
      *
      * @throws Exception the exception
      */
@@ -155,8 +153,8 @@ public class MapNoteServiceTest {
             final User importer = context.getAdminUser();
             final String existingUser = context.getSpecialistUser().getUserName();
             final String plainText = "[Specialist] Flyttet fra Pulmonary medicine 11. feb";
-            final MockMultipartFile file = notesFile(
-                MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE + "|" + existingUser + "|2021-02-12T01:50:40.000Z|" + plainText + "\n");
+            final MockMultipartFile file =
+                notesFile(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE + "|" + existingUser + "|2021-02-12T01:50:40.000Z|" + plainText + "\n");
 
             final MapNoteImportResult result = MapNoteService.importNotes(service, importer, context.getMapSet(), file);
 
@@ -171,8 +169,7 @@ public class MapNoteServiceTest {
     }
 
     /**
-     * Notes are stored by {@code refSetCode}, so a later map set version with a new UUID still sees
-     * notes imported against an earlier version.
+     * Notes are stored by {@code refSetCode}, so a later map set version with a new UUID still sees notes imported against an earlier version.
      *
      * @throws Exception the exception
      */
@@ -183,8 +180,8 @@ public class MapNoteServiceTest {
             final TerminologyService service = context.getService();
             final User importer = context.getAdminUser();
             final String existingUser = context.getSpecialistUser().getUserName();
-            final MockMultipartFile file = notesFile(
-                MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE + "|" + existingUser + "|2021-06-02 12:55:25|Shared across versions\n");
+            final MockMultipartFile file =
+                notesFile(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE + "|" + existingUser + "|2021-06-02 12:55:25|Shared across versions\n");
 
             final MapNoteImportResult result = MapNoteService.importNotes(service, importer, context.getMapSet(), file);
             assertTrue(result.isSuccess());

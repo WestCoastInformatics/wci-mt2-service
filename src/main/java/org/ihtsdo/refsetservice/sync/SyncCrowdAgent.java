@@ -67,7 +67,12 @@ public class SyncCrowdAgent extends SyncAgent {
         this.filteredCodeSystems = filteredCodeSystems;
     }
 
-    /* see superclass */
+    /**
+     * Sync component.
+     *
+     * @param service the service
+     * @throws Exception the exception
+     */
     @Override
     public void syncComponent(final TerminologyService service) throws Exception {
 
@@ -109,7 +114,13 @@ public class SyncCrowdAgent extends SyncAgent {
         LOG.info("Finished syncing SyncCrowdAgent");
     }
 
-    private void initializeSync(TerminologyService service) throws Exception {
+    /**
+     * Initialize sync.
+     *
+     * @param service the service
+     * @throws Exception the exception
+     */
+    private void initializeSync(final TerminologyService service) throws Exception {
 
         updateCodeSystemsToSync(service);
 
@@ -318,7 +329,7 @@ public class SyncCrowdAgent extends SyncAgent {
         for (final Organization organization : allDbOrganizations) {
 
             if (OrganizationService.getOrganizationEditions(service, organization.getId()).getItems().stream()
-                .anyMatch(e -> shortNamesToSync.contains(e.getShortName()))) {
+                .anyMatch(e -> SHORT_NAMES_TO_SYNC.contains(e.getShortName()))) {
 
                 final String orgCrowdName = organization.getCrowdId();
                 final Set<String> groups = organizationCrowdGroupMap.get(orgCrowdName);

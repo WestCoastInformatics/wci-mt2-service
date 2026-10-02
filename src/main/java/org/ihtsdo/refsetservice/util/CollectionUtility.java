@@ -14,7 +14,15 @@ import java.util.Collection;
 /**
  * The Class CollectionUtility.
  */
-public class CollectionUtility {
+public final class CollectionUtility {
+
+    /**
+     * Instantiates an empty {@link CollectionUtility}.
+     */
+    private CollectionUtility() {
+
+        // n/a
+    }
 
     /**
      * Indicates whether or not different a collection's contents is identical.

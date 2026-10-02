@@ -28,42 +28,71 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
  */
 public class TrailingSlashMappingUnitTest {
 
+    /** The mvc. */
     private MockMvc mvc;
 
+    /**
+     * Sets the up.
+     */
     @BeforeEach
     public void setUp() {
+
         mvc = MockMvcBuilders.standaloneSetup(new EditionController() {
+
             @Override
             public ResponseEntity<ResultList<Edition>> getEditions() {
+
                 return new ResponseEntity<>(new ResultList<>(), HttpStatus.OK);
             }
         }, new MapAdviceController() {
+
             @Override
             public ResponseEntity<ResultList<MapAdvice>> getMapAdvices() {
+
                 return new ResponseEntity<>(new ResultList<>(), HttpStatus.OK);
             }
         }, new MapRelationController() {
+
             @Override
             public ResponseEntity<ResultList<MapRelation>> getMapRelations() {
+
                 return new ResponseEntity<>(new ResultList<>(), HttpStatus.OK);
             }
         }).build();
     }
 
+    /**
+     * Test edition with and without trailing slash.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testEditionWithAndWithoutTrailingSlash() throws Exception {
+
         mvc.perform(get("/edition")).andExpect(status().isOk());
         mvc.perform(get("/edition/")).andExpect(status().isOk());
     }
 
+    /**
+     * Test map advice with and without trailing slash.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testMapAdviceWithAndWithoutTrailingSlash() throws Exception {
+
         mvc.perform(get("/mapAdvice")).andExpect(status().isOk());
         mvc.perform(get("/mapAdvice/")).andExpect(status().isOk());
     }
 
+    /**
+     * Test map relation with and without trailing slash.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testMapRelationWithAndWithoutTrailingSlash() throws Exception {
+
         mvc.perform(get("/mapRelation")).andExpect(status().isOk());
         mvc.perform(get("/mapRelation/")).andExpect(status().isOk());
     }

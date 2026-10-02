@@ -23,7 +23,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public class ResultListMapping extends ResultList<Mapping> {
 
     /** Concept IDs that were requested but are not valid (e.g. not found). Only set when conceptCodes were supplied. */
-    @Schema(description = "Concept IDs that were requested but could not be resolved (e.g. not found). Present only when conceptCodes were supplied and some were invalid.")
+    @Schema(description = "Concept IDs that were requested but could not be resolved (e.g. not found). "
+        + "Present only when conceptCodes were supplied and some were invalid.")
     private List<String> invalidConceptIds;
 
     /**

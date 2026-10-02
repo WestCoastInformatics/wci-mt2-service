@@ -86,7 +86,9 @@ public class EditionController extends BaseController {
      * @return the editions
      * @throws Exception the exception
      */
-    @RequestMapping(method = RequestMethod.GET, value = {"/edition", "/edition/"}, produces = MediaType.APPLICATION_JSON)
+    @RequestMapping(method = RequestMethod.GET, value = {
+        "/edition", "/edition/"
+    }, produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Get all editions", tags = {
         "edition"
     }, responses = {

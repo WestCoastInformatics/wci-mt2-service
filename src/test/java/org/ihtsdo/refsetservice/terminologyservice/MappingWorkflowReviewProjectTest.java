@@ -95,9 +95,9 @@ public class MappingWorkflowReviewProjectTest {
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createReviewProjectInEdit()) {
             context.setWorkflowStatus(MapWorkflowStatus.REVIEW_NEEDED);
 
-            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getLeadUser(),
-                MappingWorkflowAction.START_REVIEW, context.getWorkflow(), context.getMapSet(), context.getMapProject(),
-                "Start review for another lead", context.getAdminMapUser().getId());
+            final MappingWorkflow updated =
+                MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getLeadUser(), MappingWorkflowAction.START_REVIEW,
+                    context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Start review for another lead", context.getAdminMapUser().getId());
 
             assertEquals(MapWorkflowStatus.REVIEW_IN_PROGRESS, updated.getWorkflowStatus());
             assertEquals(context.getAdminUser().getUserName(), updated.getAssignedUser());

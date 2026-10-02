@@ -19,9 +19,8 @@ import org.ihtsdo.refsetservice.util.ModelUtility;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
- * A note attached to a mapping, keyed by map set {@code refSetCode} and source concept code
- * (Snowstorm mappings are not DB entities). Notes are shared across all versions of the same map
- * product.
+ * A note attached to a mapping, keyed by map set {@code refSetCode} and source concept code (Snowstorm mappings are not DB entities). Notes are shared across
+ * all versions of the same map product.
  */
 @Entity
 @Table(name = "map_notes")
@@ -184,12 +183,20 @@ public class MapNote extends AbstractHasModified {
         this.timestamp = timestamp;
     }
 
+    /**
+     * Lazy init.
+     */
     @Override
     public void lazyInit() {
 
         // n/a
     }
 
+    /**
+     * To string.
+     *
+     * @return the string
+     */
     @Override
     public String toString() {
 
@@ -200,12 +207,23 @@ public class MapNote extends AbstractHasModified {
         }
     }
 
+    /**
+     * Hash code.
+     *
+     * @return the int
+     */
     @Override
     public int hashCode() {
 
         return Objects.hash(note, user);
     }
 
+    /**
+     * Equals.
+     *
+     * @param obj the obj
+     * @return true, if successful
+     */
     @Override
     public boolean equals(final Object obj) {
 

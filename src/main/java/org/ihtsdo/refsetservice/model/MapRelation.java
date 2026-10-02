@@ -215,14 +215,17 @@ public class MapRelation extends AbstractHasModified {
      * @return true, if successful
      */
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
 
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (!super.equals(obj))
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         MapRelation other = (MapRelation) obj;
         return Objects.equals(abbreviation, other.abbreviation) && isAllowableForNullTarget == other.isAllowableForNullTarget && isComputed == other.isComputed
             && Objects.equals(name, other.name) && Objects.equals(terminologyId, other.terminologyId);

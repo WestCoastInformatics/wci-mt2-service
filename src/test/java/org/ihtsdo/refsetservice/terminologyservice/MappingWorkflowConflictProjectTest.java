@@ -20,27 +20,35 @@ import org.springframework.web.server.ResponseStatusException;
 @SpringBootTest
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
-    "auth.dev.bypass=false",
-    "mapping.workflow.concept.branch.enabled=false"
+    "auth.dev.bypass=false", "mapping.workflow.concept.branch.enabled=false"
 })
 public class MappingWorkflowConflictProjectTest {
 
+    /** The Constant TARGET_CODE_A. */
     private static final String TARGET_CODE_A = "TARGET:111111";
 
+    /** The Constant TARGET_CODE_B. */
     private static final String TARGET_CODE_B = "TARGET:222222";
 
+    /**
+     * Disable concept branch side effects.
+     */
     @BeforeEach
     public void disableConceptBranchSideEffects() {
 
         PropertyUtility.setProperty("mapping.workflow.concept.branch.enabled", "false");
     }
 
+    /**
+     * Slot 1 assign independent of slot 2.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void slot1AssignIndependentOfSlot2() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createConflictProjectInEdit()) {
-            MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getSpecialistUser(), MappingWorkflowAction.ASSIGN,
+            MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(), MappingWorkflowAction.ASSIGN,
                 context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Assign slot 1", null);
 
             assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, context.reloadWorkflow().getWorkflowStatus());
@@ -49,6 +57,11 @@ public class MappingWorkflowConflictProjectTest {
         }
     }
 
+    /**
+     * Both finish agree.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void bothFinishAgree() throws Exception {
 
@@ -60,6 +73,11 @@ public class MappingWorkflowConflictProjectTest {
         }
     }
 
+    /**
+     * Both finish differ.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void bothFinishDiffer() throws Exception {
 
@@ -71,13 +89,17 @@ public class MappingWorkflowConflictProjectTest {
         }
     }
 
+    /**
+     * One slot finished other open.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void oneSlotFinishedOtherOpen() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createConflictProjectInEdit()) {
             context.setWorkflowAssignedTo(context.getSpecialistUser().getUserName());
-            MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getSpecialistUser(), MappingWorkflowAction.FINISH_EDITING,
+            MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(), MappingWorkflowAction.FINISH_EDITING,
                 context.getWorkflow(), context.getMapSet(), context.getMapProject(), TARGET_CODE_A, null);
 
             assertEquals(MapWorkflowStatus.EDITING_DONE, context.reloadWorkflow().getWorkflowStatus());
@@ -85,6 +107,11 @@ public class MappingWorkflowConflictProjectTest {
         }
     }
 
+    /**
+     * Resolve conflict.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void resolveConflict() throws Exception {
 
@@ -93,26 +120,33 @@ public class MappingWorkflowConflictProjectTest {
             context.setWorkflowStatus(MapWorkflowStatus.CONFLICT_DETECTED);
             context.setWorkflowSlot2Status(MapWorkflowStatus.CONFLICT_DETECTED);
 
-            assertThrows(ResponseStatusException.class, () -> MappingWorkflowService.setWorkflowStatusByAction(
-                context.getService(), context.getLeadUser(), MappingWorkflowAction.START_CONFLICT_RESOLUTION,
-                context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Start resolution", null));
+            assertThrows(ResponseStatusException.class,
+                () -> MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getLeadUser(),
+                    MappingWorkflowAction.START_CONFLICT_RESOLUTION, context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Start resolution",
+                    null));
 
             assertEquals(MapWorkflowStatus.CONFLICT_DETECTED, context.reloadWorkflow().getWorkflowStatus());
             assertEquals(MapWorkflowStatus.CONFLICT_DETECTED, context.reloadWorkflowSlot2().getWorkflowStatus());
         }
     }
 
+    /**
+     * Finish both slots.
+     *
+     * @param context the context
+     * @param slot1Target the slot 1 target
+     * @param slot2Target the slot 2 target
+     * @throws Exception the exception
+     */
     private static void finishBothSlots(final MappingWorkflowTestFixtures.Context context, final String slot1Target, final String slot2Target)
         throws Exception {
 
         context.setWorkflowAssignedTo(context.getSpecialistUser().getUserName());
-        MappingWorkflowService.setWorkflowStatusByAction(
-            context.getService(), context.getSpecialistUser(), MappingWorkflowAction.FINISH_EDITING,
+        MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(), MappingWorkflowAction.FINISH_EDITING,
             context.getWorkflow(), context.getMapSet(), context.getMapProject(), slot1Target, null);
 
         context.setWorkflowSlot2AssignedTo(context.getOtherSpecialistUser().getUserName());
-        MappingWorkflowService.setWorkflowStatusByAction(
-            context.getService(), context.getOtherSpecialistUser(), MappingWorkflowAction.FINISH_EDITING,
+        MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getOtherSpecialistUser(), MappingWorkflowAction.FINISH_EDITING,
             context.getWorkflowSlot2(), context.getMapSet(), context.getMapProject(), slot2Target, null);
     }
 }

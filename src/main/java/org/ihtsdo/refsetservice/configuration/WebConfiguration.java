@@ -28,25 +28,29 @@ public class WebConfiguration implements WebMvcConfigurer {
     @SuppressWarnings("unused")
     private static final Logger LOG = LoggerFactory.getLogger(WebConfiguration.class);
 
+    /** The allowed origins. */
     @Value("${cors.allowed-origins:*}")
     private String[] allowedOrigins;
 
-    /* see superclass */
+    /**
+     * Adds the cors mappings.
+     *
+     * @param registry the registry
+     */
     @Override
     public void addCorsMappings(final CorsRegistry registry) {
 
         LOG.info("allowedOrigins: {}", (Object[]) allowedOrigins);
 
-        registry.addMapping("/**")
-                .allowedOrigins(allowedOrigins)
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("*")
-                .exposedHeaders(HttpHeaders.CONTENT_DISPOSITION, HttpHeaders.CONTENT_TYPE, HttpHeaders.CONTENT_LENGTH)
-                .allowCredentials(true)
-                .maxAge(3600);
+        registry.addMapping("/**").allowedOrigins(allowedOrigins).allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS").allowedHeaders("*")
+            .exposedHeaders(HttpHeaders.CONTENT_DISPOSITION, HttpHeaders.CONTENT_TYPE, HttpHeaders.CONTENT_LENGTH).allowCredentials(true).maxAge(3600);
     }
 
-    /* see superclass */
+    /**
+     * Adds the view controllers.
+     *
+     * @param registry the registry
+     */
     @Override
     public void addViewControllers(final ViewControllerRegistry registry) {
 

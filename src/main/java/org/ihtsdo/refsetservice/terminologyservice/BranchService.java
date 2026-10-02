@@ -78,6 +78,14 @@ public final class BranchService {
     /** The app url root. */
     private static Boolean useManageServiceInitials;
 
+    /**
+     * Instantiates an empty {@link BranchService}.
+     */
+    private BranchService() {
+
+        // n/a
+    }
+
     private static boolean useManageServiceInitials() {
 
         if (useManageServiceInitials == null) {
@@ -698,11 +706,17 @@ public final class BranchService {
         // https://github.com/IHTSDO/snowstorm/blob/master/src/test/java/org/snomed/snowstorm/core/data/services/BranchMergeServiceTest.java
 
         /*-
-        1)        So for the authoring platform specifically - we call https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/retrieveBranch - to ascertain the branch status - a branch needs to be DIVERGED, BEHIND or STALE in order to be rebased, and we only allow promotion in the case that the branch is FORWARD.
-        2)            For a rebase we then call: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/createMergeReview - with the source being the parent branch, and the target the branch we want to rebase -- for DIVERGED OR STALE
-        3)            We then poll: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/getMergeReview to get the status of the review, using the id provided by the response on the prior post - looking for status ‘CURRENT’  -- for DIVERGED OR STALE
-        4)            Next we call https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/getMergeReviewConflictingConcepts - and hope that it’s empty - I presume for RT2 it almost always (or always) is -- for DIVERGED OR STALE
-        5)            Then finally we call: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/mergeBranch with the same source and target as the merge-review, and the ID of the above current merge-review
+        1) So for the authoring platform specifically - we call
+        https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/retrieveBranch - to ascertain the branch status - a branch
+        needs to be DIVERGED, BEHIND or STALE in order to be rebased, and we only allow promotion in the case that the branch is FORWARD.
+        2) For a rebase we then call: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/createMergeReview - with the
+        source being the parent branch, and the target the branch we want to rebase -- for DIVERGED OR STALE
+        3) We then poll: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/getMergeReview to get the status of the
+        review, using the id provided by the response on the prior post - looking for status ‘CURRENT’ -- for DIVERGED OR STALE
+        4) Next we call https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/getMergeReviewConflictingConcepts - and hope
+        that it’s empty - I presume for RT2 it almost always (or always) is -- for DIVERGED OR STALE
+        5) Then finally we call: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/mergeBranch with the same source and
+        target as the merge-review, and the ID of the above current merge-review
          */
 
         final long start = System.currentTimeMillis();
@@ -847,9 +861,9 @@ public final class BranchService {
     /**
      * Whether a promotion target's Snowstorm {@code state} is settled enough to stop polling.
      * <p>
-     * Snowstorm reports a branch's state relative to <em>its</em> parent, not the source that was just merged in. After promoting an edit branch into a
-     * map-set branch, the map-set branch commonly stays {@code DIVERGED} when the edition or project branch has also moved. That is a stable outcome, not cache
-     * lag, and must not be retried indefinitely.
+     * Snowstorm reports a branch's state relative to <em>its</em> parent, not the source that was just merged in. After promoting an edit branch into a map-set
+     * branch, the map-set branch commonly stays {@code DIVERGED} when the edition or project branch has also moved. That is a stable outcome, not cache lag,
+     * and must not be retried indefinitely.
      *
      * @param state the branch state from Snowstorm
      * @return true if polling can stop
@@ -1026,11 +1040,17 @@ public final class BranchService {
     public static void mergeBranch(final String sourceBranchPath, final String targetBranchPath, final String comment, final boolean rebase) throws Exception {
 
         /*-
-        1) So for the authoring platform specifically - we call https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/retrieveBranch - to ascertain the branch status - a branch needs to be DIVERGED, BEHIND or STALE in order to be rebased, and we only allow promotion in the case that the branch is FORWARD.
-        2) For a rebase we then call: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/createMergeReview - with the source being the parent branch, and the target the branch we want to rebase -- for DIVERGED OR STALE
-        3) We then poll: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/getMergeReview to get the status of the review, using the id provided by the response on the prior post - looking for status ‘CURRENT’  -- for DIVERGED OR STALE
-        4) Next we call https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/getMergeReviewConflictingConcepts - and hope that it’s empty - I presume for RT2 it almost always (or always) is -- for DIVERGED OR STALE
-        5) Then finally we call: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/mergeBranch with the same source and target as the merge-review, and the ID of the above current merge-review
+        1) So for the authoring platform specifically - we call
+        https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/retrieveBranch - to ascertain the branch status - a branch
+        needs to be DIVERGED, BEHIND or STALE in order to be rebased, and we only allow promotion in the case that the branch is FORWARD.
+        2) For a rebase we then call: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/createMergeReview - with the
+        source being the parent branch, and the target the branch we want to rebase -- for DIVERGED OR STALE
+        3) We then poll: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/getMergeReview to get the status of the
+        review, using the id provided by the response on the prior post - looking for status ‘CURRENT’ -- for DIVERGED OR STALE
+        4) Next we call https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/getMergeReviewConflictingConcepts - and hope
+        that it’s empty - I presume for RT2 it almost always (or always) is -- for DIVERGED OR STALE
+        5) Then finally we call: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/mergeBranch with the same source and
+        target as the merge-review, and the ID of the above current merge-review
          */
 
         final long start = System.currentTimeMillis();
@@ -1184,8 +1204,7 @@ public final class BranchService {
                                         stateGood = true;
 
                                     } else if (System.currentTimeMillis() >= statePollDeadline) {
-                                        LOG.warn(
-                                            "Promoted branch {} still in state {} after merge completed; continuing because merge job already succeeded",
+                                        LOG.warn("Promoted branch {} still in state {} after merge completed; continuing because merge job already succeeded",
                                             targetBranchPath, state);
                                         break;
 

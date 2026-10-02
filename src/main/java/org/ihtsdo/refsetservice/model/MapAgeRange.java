@@ -21,10 +21,7 @@ import org.ihtsdo.refsetservice.util.ModelUtility;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-// TODO: Auto-generated Javadoc
 /**
- *
- * 
  * Generically represents an age range for a map rule.
  */
 @Entity
@@ -248,7 +245,7 @@ public class MapAgeRange extends AbstractHasId {
 
     public boolean hasLowerBound() {
 
-        return this.lowerValue == -1 ? false : true;
+        return this.lowerValue != -1;
     }
 
     /**
@@ -259,7 +256,7 @@ public class MapAgeRange extends AbstractHasId {
 
     public boolean hasUpperBound() {
 
-        return this.upperValue == -1 ? false : true;
+        return this.upperValue != -1;
     }
 
     /**
@@ -285,12 +282,15 @@ public class MapAgeRange extends AbstractHasId {
     @Override
     public boolean equals(final Object obj) {
 
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (!super.equals(obj))
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         final MapAgeRange other = (MapAgeRange) obj;
         return lowerInclusive == other.lowerInclusive && Objects.equals(lowerUnits, other.lowerUnits) && Objects.equals(lowerValue, other.lowerValue)
             && Objects.equals(name, other.name) && upperInclusive == other.upperInclusive && Objects.equals(upperUnits, other.upperUnits)

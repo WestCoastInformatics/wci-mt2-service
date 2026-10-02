@@ -37,7 +37,7 @@ public final class StringUtility {
 
     /** The Constant NORM_PUNCTUATION_REGEX. */
     public static final String NORM_PUNCTUATION_REGEX = "[ \\t\\-{}_!@#%&\\*\\\\:;,?/~+=|<>$`^]";
-    
+
     /**
      * Instantiates an empty {@link StringUtility}.
      */
@@ -476,8 +476,7 @@ public final class StringUtility {
         }
         return sb2.toString();
     }
-    
-    
+
     /**
      * Indicates whether or not json is the case.
      *
@@ -485,6 +484,7 @@ public final class StringUtility {
      * @return <code>true</code> if so, <code>false</code> otherwise
      */
     public static boolean isJson(final String str) {
+
         try {
             ThreadLocalMapper.get().readTree(str);
             return true;

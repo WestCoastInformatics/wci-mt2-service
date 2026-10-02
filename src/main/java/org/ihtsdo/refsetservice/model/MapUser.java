@@ -124,23 +124,43 @@ public class MapUser extends AbstractHasModified {
         this.name = name;
     }
 
+    /**
+     * Gets the email.
+     *
+     * @return the email
+     */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getEmail() {
 
         return email;
     }
 
+    /**
+     * Sets the email.
+     *
+     * @param email the new email
+     */
     public void setEmail(final String email) {
 
         this.email = email;
     }
 
+    /**
+     * Gets the team.
+     *
+     * @return the team
+     */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getTeam() {
 
         return team;
     }
 
+    /**
+     * Sets the team.
+     *
+     * @param team the new team
+     */
     public void setTeam(final String team) {
 
         this.team = team;
@@ -166,13 +186,22 @@ public class MapUser extends AbstractHasModified {
         this.applicationRole = role;
     }
 
+    /**
+     * Sets the auth token.
+     *
+     * @param authToken the new auth token
+     */
     /* see superclass */
     public void setAuthToken(final String authToken) {
 
         this.authToken = authToken;
     }
 
-    /* see superclass */
+    /**
+     * To string.
+     *
+     * @return the string
+     */
     @Override
     public String toString() {
 
@@ -183,12 +212,22 @@ public class MapUser extends AbstractHasModified {
         }
     }
 
+    /**
+     * Gets the auth token.
+     *
+     * @return the auth token
+     */
     /* see superclass */
     public String getAuthToken() {
 
         return authToken;
     }
 
+    /**
+     * Hash code.
+     *
+     * @return the int
+     */
     @Override
     public int hashCode() {
 
@@ -202,6 +241,12 @@ public class MapUser extends AbstractHasModified {
         return result;
     }
 
+    /**
+     * Equals.
+     *
+     * @param obj the obj
+     * @return true, if successful
+     */
     @Override
     public boolean equals(final Object obj) {
 
@@ -249,11 +294,14 @@ public class MapUser extends AbstractHasModified {
         return true;
     }
 
+    /**
+     * Lazy init.
+     */
     @Override
     public void lazyInit() {
 
         // TODO Auto-generated method stub
-        
+
     }
 
 }

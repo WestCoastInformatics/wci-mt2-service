@@ -33,10 +33,8 @@ import com.amazonaws.services.s3.AmazonS3;
 
 /**
  * Generically represents an algorithm for object searching.
- */
-/**
- * @author jesseefron
  *
+ * @author jesseefron
  */
 public class ExportHandler {
 

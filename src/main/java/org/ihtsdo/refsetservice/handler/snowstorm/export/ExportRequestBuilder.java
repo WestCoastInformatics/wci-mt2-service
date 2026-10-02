@@ -97,7 +97,7 @@ public class ExportRequestBuilder {
      * @param type the type
      * @return the export request builder
      */
-    public ExportRequestBuilder withType(FileFormatType type) {
+    public ExportRequestBuilder withType(final FileFormatType type) {
 
         parameters.append(", \"type\": \"").append(type).append("\"");
         return this;
@@ -118,7 +118,7 @@ public class ExportRequestBuilder {
     /**
      * With module ids.
      *
-     * @param mapProject the map project
+     * @param moduleIds the module ids
      * @return the export request builder
      */
     public ExportRequestBuilder withModuleIds(final Set<String> moduleIds) {
@@ -159,13 +159,13 @@ public class ExportRequestBuilder {
         }
         return this;
     }
-    
+
     /**
      * With start export.
      *
      * @param startExport the start export
      * @return the export request builder
-    */
+     */
     public ExportRequestBuilder withStartExport(final boolean startExport) {
 
         parameters.append(", \"startExport\": ").append(startExport);

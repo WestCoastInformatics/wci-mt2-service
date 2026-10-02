@@ -65,6 +65,7 @@ public class AppCacheConfiguration {
      */
     @Bean
     public CacheManager cacheManager(final javax.cache.CacheManager jCacheManager) {
+
         return new JCacheCacheManager(jCacheManager);
     }
 

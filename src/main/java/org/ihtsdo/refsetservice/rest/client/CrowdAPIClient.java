@@ -106,7 +106,8 @@ public class CrowdAPIClient extends CrowdClientAbstract {
     private static final Set<String> SUPER_USERS_CACHE = new HashSet<>();
 
     /** The super users cache refresh datetime. */
-    private static LocalDateTime SUPER_USERS_CACHE_REFRESH_DATETIME = LocalDateTime.now();
+    // superUsersCacheRefreshDateTime
+    private static LocalDateTime superUsersCacheRefreshDateTime = LocalDateTime.now();
 
     /** The super users cache expire in seconds. */
     private static final int SUPER_USERS_CACHE_EXPIRE = 5 * 60;
@@ -336,7 +337,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
      * @return the map
      * @throws Exception the exception
      */
-    private static Map<String, Set<String>> processCrowdRuleMembersResponse(String xmlString) throws Exception {
+    private static Map<String, Set<String>> processCrowdRuleMembersResponse(final String xmlString) throws Exception {
 
         final Map<String, Set<String>> groupMemberMap = new HashMap<>();
 
@@ -637,9 +638,6 @@ public class CrowdAPIClient extends CrowdClientAbstract {
      */
     public static Set<String> getUsers(final String groupName) throws Exception {
 
-        if (StringUtils.isBlank(groupName)) {
-
-        }
         final Set<String> usernames = new HashSet<>();
         final String jsonString = get(getBaseUrl() + GET_USERS_FROM_GROUP + groupName);
 
@@ -668,14 +666,14 @@ public class CrowdAPIClient extends CrowdClientAbstract {
      */
     public static Set<String> getCrowdSuperUsers() throws Exception {
 
-        if (!SUPER_USERS_CACHE.isEmpty() && LocalDateTime.now().isBefore(SUPER_USERS_CACHE_REFRESH_DATETIME)) {
+        if (!SUPER_USERS_CACHE.isEmpty() && LocalDateTime.now().isBefore(superUsersCacheRefreshDateTime)) {
             return SUPER_USERS_CACHE;
         }
 
         LOG.debug("Get RT2 super users");
         setSuperUserGroups();
 
-        SUPER_USERS_CACHE_REFRESH_DATETIME = LocalDateTime.now().plusSeconds(SUPER_USERS_CACHE_EXPIRE);
+        superUsersCacheRefreshDateTime = LocalDateTime.now().plusSeconds(SUPER_USERS_CACHE_EXPIRE);
         SUPER_USERS_CACHE.clear();
 
         for (final String groupName : SUPER_USER_GROUPNAME_CACHE) {
@@ -737,6 +735,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
      * @throws Exception the exception
      */
     public static boolean isRt2GroupName(final String groupName) throws Exception {
+
         if (StringUtils.isBlank(groupName)) {
             return false;
         }

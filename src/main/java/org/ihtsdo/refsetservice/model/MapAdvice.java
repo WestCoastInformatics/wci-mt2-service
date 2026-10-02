@@ -189,14 +189,17 @@ public class MapAdvice extends AbstractHasModified {
      * @return true, if successful
      */
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
 
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (!super.equals(obj))
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         MapAdvice other = (MapAdvice) obj;
         return Objects.equals(detail, other.detail) && isAllowableForNullTarget == other.isAllowableForNullTarget && isComputed == other.isComputed
             && Objects.equals(name, other.name);

@@ -151,7 +151,7 @@ public class TeamControllerIntegrationTest extends AbstractRefsetTests {
 
             assertThat(organization).isNotNull();
             assertThat(organization.getId()).isNotNull();
-    
+
             final Project tempProject = new Project();
             tempProject.setId(null);
             tempProject.setName("Unit Test Create");
@@ -166,7 +166,7 @@ public class TeamControllerIntegrationTest extends AbstractRefsetTests {
             tempProject.getRoles().add("reviewer");
 
             project = ProjectService.addProject(service, testUser, tempProject);
-            
+
             service.commit();
         } catch (final Exception e) {
             LOG.error("ERROR {}", e.getMessage(), e);

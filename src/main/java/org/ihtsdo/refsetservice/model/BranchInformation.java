@@ -43,7 +43,8 @@ public class BranchInformation {
      * @param refsetBranchId the refset branch id
      * @param localSet the local set
      */
-    public BranchInformation(final String editionBranch, final String refsetId, final String editBranchId, final String refsetBranchId, final boolean localSet) {
+    public BranchInformation(final String editionBranch, final String refsetId, final String editBranchId, final String refsetBranchId,
+        final boolean localSet) {
 
         this.editionBranch = editionBranch;
         this.refsetId = refsetId;
@@ -79,8 +80,6 @@ public class BranchInformation {
         this.refsetBranchId = mapSet.getRefsetBranchId();
         this.localSet = mapSet.isLocalSet();
     }
-    
-
 
     /**
      * Gets the edition branch.
@@ -183,6 +182,8 @@ public class BranchInformation {
     }
 
     /**
+     * Gets the branch id.
+     *
      * @return the branchId
      */
     public String getBranchId() {
@@ -191,6 +192,8 @@ public class BranchInformation {
     }
 
     /**
+     * Sets the branch id.
+     *
      * @param branchId the branchId to set
      */
     public void setBranchId(final String branchId) {
@@ -198,27 +201,46 @@ public class BranchInformation {
         this.branchId = branchId;
     }
 
+    /**
+     * Hash code.
+     *
+     * @return the int
+     */
     @Override
     public int hashCode() {
 
         return Objects.hash(branchId, editBranchId, editionBranch, localSet, refsetBranchId, refsetId);
     }
 
+    /**
+     * Equals.
+     *
+     * @param obj the obj
+     * @return true, if successful
+     */
     @Override
     public boolean equals(final Object obj) {
 
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         final BranchInformation other = (BranchInformation) obj;
         return Objects.equals(branchId, other.branchId) && Objects.equals(editBranchId, other.editBranchId)
             && Objects.equals(editionBranch, other.editionBranch) && localSet == other.localSet && Objects.equals(refsetBranchId, other.refsetBranchId)
             && Objects.equals(refsetId, other.refsetId);
     }
 
+    /**
+     * To string.
+     *
+     * @return the string
+     */
     @Override
     public String toString() {
 

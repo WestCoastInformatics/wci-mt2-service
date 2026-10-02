@@ -45,8 +45,7 @@ public class JsonLoggingFilter implements Filter {
      * @throws IOException Signals that an I/O exception has occurred.
      */
     @Override
-    public void doFilter(final ServletRequest req, final ServletResponse res,
-        final FilterChain chain) throws ServletException, IOException {
+    public void doFilter(final ServletRequest req, final ServletResponse res, final FilterChain chain) throws ServletException, IOException {
 
         final HttpServletRequest hreq = (HttpServletRequest) req;
         final HttpServletResponse hres = (HttpServletResponse) res;
@@ -60,8 +59,8 @@ public class JsonLoggingFilter implements Filter {
 
         // Handle things computed by RootServiceRestImpl
         for (final String key : new String[] {
-                "http-version", "remote-address", "correlation-id", "req-uri", "req-method",
-                "req-querystring", "user-id", "organization-id", "referer", "user-agent"
+            "http-version", "remote-address", "correlation-id", "req-uri", "req-method", "req-querystring", "user-id", "organization-id", "referer",
+            "user-agent"
         }) {
             if (ThreadContext.get(key) == null) {
                 ThreadContext.put(key, "");

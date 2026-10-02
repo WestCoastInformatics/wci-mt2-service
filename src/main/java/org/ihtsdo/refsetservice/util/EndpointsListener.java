@@ -35,46 +35,45 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 @Component
 public class EndpointsListener {
 
-  /** The Constant LOG. */
-  private static final Logger LOG = LoggerFactory.getLogger(EndpointsListener.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(EndpointsListener.class);
 
-  /** The config properties. */
-  private Properties properties = PropertyUtility.getProperties();
+    /** The config properties. */
+    private Properties properties = PropertyUtility.getProperties();
 
-  /** The servlet context. */
-  @Autowired
-  private ServletContext servletContext;
+    /** The servlet context. */
+    @Autowired
+    private ServletContext servletContext;
 
-  /**
-   * Print out all REST endpoints.
-   * 
-   * @param event The event
-   * @throws Exception The exception
-   */
-  @EventListener
-  public void handleContextRefresh(final ContextRefreshedEvent event) throws Exception {
+    /**
+     * Print out all REST endpoints.
+     * 
+     * @param event The event
+     * @throws Exception The exception
+     */
+    @EventListener
+    public void handleContextRefresh(final ContextRefreshedEvent event) throws Exception {
 
-    // Local address
-    final String localAdd = InetAddress.getLocalHost().getHostAddress();
-    final String localname = InetAddress.getLocalHost().getHostName();
+        // Local address
+        final String localAdd = InetAddress.getLocalHost().getHostAddress();
+        final String localname = InetAddress.getLocalHost().getHostName();
 
-    // Remote address
-    final String remoteAdd = InetAddress.getLoopbackAddress().getHostAddress();
-    final String remoteName = InetAddress.getLoopbackAddress().getHostName();
+        // Remote address
+        final String remoteAdd = InetAddress.getLoopbackAddress().getHostAddress();
+        final String remoteName = InetAddress.getLoopbackAddress().getHostName();
 
-    LOG.debug("******* localAdd: " + localAdd);
-    LOG.debug("******* localname: " + localname);
-    LOG.debug("******* remoteAdd: " + remoteAdd);
-    LOG.debug("******* remoteName: " + remoteName);
-    LOG.debug("******* ContextPath(): " + servletContext.getContextPath());
-    LOG.debug("******* server.port: " + properties.getProperty("server.port"));
+        LOG.debug("******* localAdd: " + localAdd);
+        LOG.debug("******* localname: " + localname);
+        LOG.debug("******* remoteAdd: " + remoteAdd);
+        LOG.debug("******* remoteName: " + remoteName);
+        LOG.debug("******* ContextPath(): " + servletContext.getContextPath());
+        LOG.debug("******* server.port: " + properties.getProperty("server.port"));
 
-    final ApplicationContext applicationContext = event.getApplicationContext();
-    final RequestMappingHandlerMapping requestMappingHandlerMapping = applicationContext
-        .getBean("requestMappingHandlerMapping", RequestMappingHandlerMapping.class);
-    final Map<RequestMappingInfo, HandlerMethod> map =
-        requestMappingHandlerMapping.getHandlerMethods();
-    map.forEach((key, value) -> LOG.info("{} {}", key, value));
+        final ApplicationContext applicationContext = event.getApplicationContext();
+        final RequestMappingHandlerMapping requestMappingHandlerMapping =
+            applicationContext.getBean("requestMappingHandlerMapping", RequestMappingHandlerMapping.class);
+        final Map<RequestMappingInfo, HandlerMethod> map = requestMappingHandlerMapping.getHandlerMethods();
+        map.forEach((key, value) -> LOG.info("{} {}", key, value));
 
-  }
+    }
 }

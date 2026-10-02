@@ -482,7 +482,6 @@ public final class JwtUtility {
      * @param userId the user id
      * @param organizationId the organization id
      * @param role the role
-     * @param jwtSecret the jwt secret
      * @param expiresIn the expires in
      * @param claims the claims
      * @return the string

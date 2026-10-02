@@ -26,8 +26,9 @@ public class SecurityControllerUnitTest {
      */
     @BeforeEach
     public void setUp() {
-        PropertyUtility.setProperty("cors.allowed-origins",
-            "http://localhost:4200,http://localhost:3000,http://127.0.0.1:4200,http://localhost:8888,http://local.ihtsdotools.org:8888,https://mt2-dev.westcoastinformatics.com/,https://mt2-uat.westcoastinformatics.com/");
+
+        PropertyUtility.setProperty("cors.allowed-origins", "http://localhost:4200,http://localhost:3000,http://127.0.0.1:4200,http://localhost:8888,"
+            + "http://local.ihtsdotools.org:8888,https://mt2-dev.westcoastinformatics.com/," + "https://mt2-uat.westcoastinformatics.com/");
     }
 
     /**
@@ -35,6 +36,7 @@ public class SecurityControllerUnitTest {
      */
     @Test
     public void testLocalhost4200Allowed() {
+
         assertEquals("http://localhost:4200", SecurityController.resolveAllowlistedReturnUrl("http://localhost:4200"));
     }
 
@@ -43,8 +45,8 @@ public class SecurityControllerUnitTest {
      */
     @Test
     public void testLocalIhtsdoTools8888Allowed() {
-        assertEquals("http://local.ihtsdotools.org:8888",
-            SecurityController.resolveAllowlistedReturnUrl("http://local.ihtsdotools.org:8888"));
+
+        assertEquals("http://local.ihtsdotools.org:8888", SecurityController.resolveAllowlistedReturnUrl("http://local.ihtsdotools.org:8888"));
     }
 
     /**
@@ -52,6 +54,7 @@ public class SecurityControllerUnitTest {
      */
     @Test
     public void testPathStrippedToOrigin() {
+
         assertEquals("http://localhost:4200", SecurityController.resolveAllowlistedReturnUrl("http://localhost:4200/dashboard?x=1"));
     }
 
@@ -60,8 +63,8 @@ public class SecurityControllerUnitTest {
      */
     @Test
     public void testTrailingSlashAllowlistEntry() {
-        assertEquals("https://mt2-dev.westcoastinformatics.com",
-            SecurityController.resolveAllowlistedReturnUrl("https://mt2-dev.westcoastinformatics.com"));
+
+        assertEquals("https://mt2-dev.westcoastinformatics.com", SecurityController.resolveAllowlistedReturnUrl("https://mt2-dev.westcoastinformatics.com"));
     }
 
     /**
@@ -69,6 +72,7 @@ public class SecurityControllerUnitTest {
      */
     @Test
     public void testRejectUnknownHost() {
+
         assertNull(SecurityController.resolveAllowlistedReturnUrl("https://evil.example.com"));
     }
 
@@ -77,6 +81,7 @@ public class SecurityControllerUnitTest {
      */
     @Test
     public void testRejectNonHttpScheme() {
+
         assertNull(SecurityController.resolveAllowlistedReturnUrl("javascript:alert(1)"));
     }
 }

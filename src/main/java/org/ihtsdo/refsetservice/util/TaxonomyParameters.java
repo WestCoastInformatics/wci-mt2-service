@@ -25,7 +25,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "Parameters for a taxonomy walk")
 public class TaxonomyParameters {
 
-    /**  The Constant SNOMED_ROOT_CONCEPT_ID. */
+    /** The Constant SNOMED_ROOT_CONCEPT_ID. */
     private static final String SNOMED_ROOT_CONCEPT_ID = "138875005";
 
     /** The starting concept ID (exclusive - get the children of this concept not the concept itself). */
@@ -262,7 +262,6 @@ public class TaxonomyParameters {
      *
      * @return the string
      */
-    /* see superclass */
     @Override
     public String toString() {
 

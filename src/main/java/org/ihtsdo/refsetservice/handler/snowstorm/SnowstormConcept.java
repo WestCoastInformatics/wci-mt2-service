@@ -9,10 +9,6 @@
  */
 package org.ihtsdo.refsetservice.handler.snowstorm;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -62,7 +58,6 @@ import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.util.CachingUtility;
 import org.ihtsdo.refsetservice.util.ConceptLookupParameters;
 import org.ihtsdo.refsetservice.util.ModelUtility;
-import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.StringUtility;
@@ -106,10 +101,10 @@ public final class SnowstormConcept extends SnowstormAbstract {
      */
     public static Concept getConcept(final String terminology, final String version, final String code) throws Exception {
 
-    	//Check for empty code (this can happen for empty target maps.
-    	if (StringUtils.isAnyBlank(code)) {
-    		return null;
-    	}
+        // Check for empty code (this can happen for empty target maps.
+        if (StringUtils.isAnyBlank(code)) {
+            return null;
+        }
 
         if (StringUtils.isAnyBlank(terminology, version)) {
             throw new Exception("Terminology and version are required parameters. Neither must not be null or empty");
@@ -184,7 +179,6 @@ public final class SnowstormConcept extends SnowstormAbstract {
      *
      * @param terminology the terminology
      * @param version the version
-     * @return the result list concept
      * @throws Exception the exception
      */
     public static void cacheConcepts(final String terminology, final String version) throws Exception {
@@ -322,8 +316,8 @@ public final class SnowstormConcept extends SnowstormAbstract {
         // Connect to snowstorm
 
         final String branch = "MAIN/" + terminology + "/" + version;
-        final String targetUri =
-            SnowstormConnection.getRestBaseUrl().concat(branch).concat("/concepts?activeFilter=true&includeLeafFlag=false&form=inferred&conceptIds=").concat(code);
+        final String targetUri = SnowstormConnection.getRestBaseUrl().concat(branch)
+            .concat("/concepts?activeFilter=true&includeLeafFlag=false&form=inferred&conceptIds=").concat(code);
         LOG.info("getSnowstormConcept url: {}", targetUri);
 
         try (final Response response = SnowstormConnection.getResponse(targetUri)) {
@@ -490,7 +484,8 @@ public final class SnowstormConcept extends SnowstormAbstract {
         if (!areParentConcepts) {
 
             // get all the existing refsets for latest branch version
-            final String query = "(latestPublishedVersion: true AND hasVersionInDevelopment: false) OR versionStatus: (" + VersionStatus.IN_DEVELOPMENT.name() + ")";
+            final String query =
+                "(latestPublishedVersion: true AND hasVersionInDevelopment: false) OR versionStatus: (" + VersionStatus.IN_DEVELOPMENT.name() + ")";
             final ResultList<Refset> refsets = service.find(query, null, Refset.class, null);
 
             for (final Refset refset : refsets.getItems()) {
@@ -1299,6 +1294,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
      * @param service the service
      * @param user the user
      * @param refsetInternalId the refset internal id
+     * @param isForUpgrade the is for upgrade
      * @return the string
      * @throws Exception the exception
      */
@@ -1987,57 +1983,57 @@ public final class SnowstormConcept extends SnowstormAbstract {
     // }
 
     // /**
-    //  * Gets the ICPC 2 NO name.
-    //  *
-    //  * @param code the code
-    //  * @return the ICPC 2 NO name
-    //  * @throws Exception the exception
-    //  */
+    // * Gets the ICPC 2 NO name.
+    // *
+    // * @param code the code
+    // * @return the ICPC 2 NO name
+    // * @throws Exception the exception
+    // */
     // // TEMPORARY//
     // private static String getICPC2NOName(String code) throws Exception {
 
-    //     if (icpc2noCodeToName.isEmpty()) {
-    //         cacheICPC2NONames();
-    //     }
-    //     String ICPC2NOName = icpc2noCodeToName.get(code);
-    //     if (ICPC2NOName == null || ICPC2NOName.isBlank()) {
-    //         ICPC2NOName = code + " CONCEPT NOT FOUND";
-    //     }
-    //     return ICPC2NOName;
+    // if (icpc2noCodeToName.isEmpty()) {
+    // cacheICPC2NONames();
+    // }
+    // String ICPC2NOName = icpc2noCodeToName.get(code);
+    // if (ICPC2NOName == null || ICPC2NOName.isBlank()) {
+    // ICPC2NOName = code + " CONCEPT NOT FOUND";
+    // }
+    // return ICPC2NOName;
     // }
 
     // /**
-    //  * Cache ICPC 2 NO names.
-    //  *
-    //  * @throws Exception the exception
-    //  */
+    // * Cache ICPC 2 NO names.
+    // *
+    // * @throws Exception the exception
+    // */
     // // TEMPORARY//
     // private static void cacheICPC2NONames() throws Exception {
 
-    //     String dataDir = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.dir");
+    // String dataDir = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.dir");
 
-    //     final File f = new File(dataDir + "/ICPC2NO_concepts.txt");
-    //     if (!f.exists()) {
-    //         LOG.error("ICPC2NO file doesn't exist: " + f.getPath());
-    //         return;
-    //     }
+    // final File f = new File(dataDir + "/ICPC2NO_concepts.txt");
+    // if (!f.exists()) {
+    // LOG.error("ICPC2NO file doesn't exist: " + f.getPath());
+    // return;
+    // }
 
-    //     try (BufferedReader br = new BufferedReader(new FileReader(f.getPath()))) {
-    //         String line;
-    //         while ((line = br.readLine()) != null) {
-    //             String[] parts = line.split("\\|", 2); // Split the line into two parts
-    //                                                    // at the first occurrence of '|'
-    //             if (parts.length >= 2) {
-    //                 String key = parts[0].trim();
-    //                 String value = parts[1].trim();
-    //                 icpc2noCodeToName.put(key, value);
-    //             } else {
-    //                 System.out.println("Ignoring malformed line: " + line);
-    //             }
-    //         }
-    //     } catch (IOException e) {
-    //         e.printStackTrace();
-    //     }
+    // try (BufferedReader br = new BufferedReader(new FileReader(f.getPath()))) {
+    // String line;
+    // while ((line = br.readLine()) != null) {
+    // String[] parts = line.split("\\|", 2); // Split the line into two parts
+    // // at the first occurrence of '|'
+    // if (parts.length >= 2) {
+    // String key = parts[0].trim();
+    // String value = parts[1].trim();
+    // icpc2noCodeToName.put(key, value);
+    // } else {
+    // System.out.println("Ignoring malformed line: " + line);
+    // }
+    // }
+    // } catch (IOException e) {
+    // e.printStackTrace();
+    // }
     // }
 
     /**
@@ -2220,8 +2216,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
                 if (response.getStatus() == 404) {
-                    LOG.warn("No concept found for terminology=" + terminology + ", version=" + version
-                        + ", code=" + code);
+                    LOG.warn("No concept found for terminology=" + terminology + ", version=" + version + ", code=" + code);
                     return null;
                 }
 
@@ -2283,6 +2278,8 @@ public final class SnowstormConcept extends SnowstormAbstract {
                                                 propertyDisplay = valueCoding.get("display").asText();
                                             }
                                             break;
+                                        default:
+                                            break;
                                     }
                                 }
 
@@ -2295,6 +2292,8 @@ public final class SnowstormConcept extends SnowstormAbstract {
                                     children.add(child);
                                 }
                             }
+                            break;
+                        default:
                             break;
                     }
                 }
@@ -2414,16 +2413,18 @@ public final class SnowstormConcept extends SnowstormAbstract {
                 for (final JsonNode parameterNode : parametersNode) {
                     final JsonNode partArray = parameterNode.get("part");
                     if (partArray != null && partArray.isArray()) {
-                    	String propertyCode = null;
+                        String propertyCode = null;
 
                         for (final JsonNode partNode : partArray) {
-                        	final String partName = partNode.get("name").asText();
+                            final String partName = partNode.get("name").asText();
 
-                        	switch (partName) {
-	                            case "code":
-	                                propertyCode = partNode.get("valueCode").asText();
-	                                break;
-                        	}
+                            switch (partName) {
+                                case "code":
+                                    propertyCode = partNode.get("valueCode").asText();
+                                    break;
+                                default:
+                                    break;
+                            }
                             // if part contains valueCode with "child", it indicates children, return true
                             if ("child".equals(propertyCode)) {
                                 return true;
@@ -2444,7 +2445,6 @@ public final class SnowstormConcept extends SnowstormAbstract {
      * Gets the all concepts by code system fhir api.
      *
      * @param codeSystem the code system
-     * @return the all concepts by code system fhir api
      * @throws Exception the exception
      */
     private static void cacheSnowstormConceptRefsFhirApi(final SnowstormFhirCodeSystem codeSystem) throws Exception {
@@ -2596,7 +2596,6 @@ public final class SnowstormConcept extends SnowstormAbstract {
     /**
      * Gets the code systems. Should be called before any other methods.
      *
-     * @return the code systems
      * @throws Exception the exception
      */
     private static void getCodeSystemsFromFhir() throws Exception {
@@ -2618,35 +2617,36 @@ public final class SnowstormConcept extends SnowstormAbstract {
                 codeSystem.setFullUrl(node.get("fullUrl").asText());
 
                 final JsonNode resourceNode = node.get("resource");
-                if (resourceNode.has("resourceType"))
+                if (resourceNode.has("resourceType")) {
                     codeSystem.setResourceType(resourceNode.get("resourceType").asText());
-
-                if (resourceNode.has("id"))
+                }
+                if (resourceNode.has("id")) {
                     codeSystem.setId(resourceNode.get("id").asText());
-
-                if (resourceNode.has("url"))
+                }
+                if (resourceNode.has("url")) {
                     codeSystem.setUrl(resourceNode.get("url").asText());
-
-                if (resourceNode.has("version"))
+                }
+                if (resourceNode.has("version")) {
                     codeSystem.setVersion(resourceNode.get("version").asText());
-
-                if (resourceNode.has("name"))
+                }
+                if (resourceNode.has("name")) {
                     codeSystem.setName(resourceNode.get("name").asText());
-
-                if (resourceNode.has("status"))
+                }
+                if (resourceNode.has("status")) {
                     codeSystem.setStatus(resourceNode.get("status").asText());
-
-                if (resourceNode.has("publisher"))
+                }
+                if (resourceNode.has("publisher")) {
                     codeSystem.setPublisher(resourceNode.get("publisher").asText());
-
-                if (resourceNode.has("hierarchyMeaning"))
+                }
+                if (resourceNode.has("hierarchyMeaning")) {
                     codeSystem.setHierarchyMeaning(resourceNode.get("hierarchyMeaning").asText());
-
-                if (resourceNode.has("compositional"))
+                }
+                if (resourceNode.has("compositional")) {
                     codeSystem.setCompositional(resourceNode.get("compositional").asBoolean());
-
-                if (resourceNode.has("content"))
+                }
+                if (resourceNode.has("content")) {
                     codeSystem.setContent(resourceNode.get("content").asText());
+                }
 
                 codeSystems.put(codeSystem.getName() + "_" + codeSystem.getVersion(), codeSystem);
             }

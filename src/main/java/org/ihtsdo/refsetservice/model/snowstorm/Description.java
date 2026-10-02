@@ -59,7 +59,7 @@ public class Description {
          *
          * @param value the value
          */
-        Field(String value) {
+        Field(final String value) {
 
             this.value = value;
         }
@@ -374,12 +374,16 @@ public class Description {
      *
      * @param acceptabilityMap the acceptability map
      */
-    public void setAcceptabilityMap(Map<String, String> acceptabilityMap) {
+    public void setAcceptabilityMap(final Map<String, String> acceptabilityMap) {
 
         this.acceptabilityMap = acceptabilityMap;
     }
 
-    /* see superclass */
+    /**
+     * Hash code.
+     *
+     * @return the int
+     */
     @Override
     public int hashCode() {
 
@@ -400,9 +404,14 @@ public class Description {
         return result;
     }
 
-    /* see superclass */
+    /**
+     * Equals.
+     *
+     * @param obj the obj
+     * @return true, if successful
+     */
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
 
         if (this == obj) {
             return true;
@@ -498,7 +507,11 @@ public class Description {
         return true;
     }
 
-    /* see superclass */
+    /**
+     * To string.
+     *
+     * @return the string
+     */
     @Override
     public String toString() {
 

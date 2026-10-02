@@ -99,27 +99,34 @@ public class MappingExportRequest {
      * @return true, if successful
      */
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
 
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
-        MappingExportRequest other = (MappingExportRequest) obj;
+        }
+        final MappingExportRequest other = (MappingExportRequest) obj;
         return Objects.equals(conceptCodes, other.conceptCodes) && Objects.equals(columnNames, other.columnNames);
     }
 
-    /* see superclass */
+    /**
+     * To string.
+     *
+     * @return the string
+     */
     @Override
     public String toString() {
 
-      try {
-        return ModelUtility.toJson(this);
-      } catch (final Exception e) {
-        return e.getMessage();
-      }
+        try {
+            return ModelUtility.toJson(this);
+        } catch (final Exception e) {
+            return e.getMessage();
+        }
     }
 
 }

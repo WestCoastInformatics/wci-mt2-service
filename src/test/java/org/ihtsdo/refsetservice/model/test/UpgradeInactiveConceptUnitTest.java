@@ -20,14 +20,25 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 public class UpgradeInactiveConceptUnitTest extends BaseTest {
 
+    /** The object. */
     private UpgradeInactiveConcept object;
 
+    /**
+     * Setup.
+     *
+     * @throws Exception the exception
+     */
     @BeforeEach
     public void setup() throws Exception {
 
         object = new UpgradeInactiveConcept();
     }
 
+    /**
+     * Test model get set.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelGetSet() throws Exception {
 
@@ -36,6 +47,11 @@ public class UpgradeInactiveConceptUnitTest extends BaseTest {
         tester.test();
     }
 
+    /**
+     * Test model equals hashcode.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelEqualsHashcode() throws Exception {
 
@@ -61,6 +77,11 @@ public class UpgradeInactiveConceptUnitTest extends BaseTest {
         assertTrue(tester.testIdentityFieldDifferentHashcode());
     }
 
+    /**
+     * Test model copy.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelCopy() throws Exception {
 
@@ -68,6 +89,11 @@ public class UpgradeInactiveConceptUnitTest extends BaseTest {
         assertTrue(tester.testCopyConstructor(UpgradeInactiveConcept.class));
     }
 
+    /**
+     * Test model serialization.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelSerialization() throws Exception {
 

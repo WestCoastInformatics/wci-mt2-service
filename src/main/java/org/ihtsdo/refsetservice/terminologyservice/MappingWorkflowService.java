@@ -60,7 +60,6 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-
 /**
  * Per-mapping workflow transition rules loaded from {@code workflow/mappingWorkflowPermutations.txt}.
  */
@@ -82,72 +81,41 @@ public final class MappingWorkflowService {
     private static final String CONCEPT_BRANCH_ENABLED_PROPERTY = "mapping.workflow.concept.branch.enabled";
 
     /** Actions that create, merge, or delete per-concept Snowstorm branches. */
-    private static final List<MappingWorkflowAction> CONCEPT_BRANCH_ACTIONS = Arrays.asList(
-        MappingWorkflowAction.ASSIGN,
-        MappingWorkflowAction.FINISH_EDITING,
-        MappingWorkflowAction.RELEASE,
-        MappingWorkflowAction.FORCE_RELEASE
-    );
+    private static final List<MappingWorkflowAction> CONCEPT_BRANCH_ACTIONS =
+        Arrays.asList(MappingWorkflowAction.ASSIGN, MappingWorkflowAction.FINISH_EDITING, MappingWorkflowAction.RELEASE, MappingWorkflowAction.FORCE_RELEASE);
 
     /** Map&lt;role, Map&lt;currentStatus, Map&lt;action, resultingStatus&gt;&gt;&gt;. */
     private static final Map<MappingWorkflowRole, Map<MapWorkflowStatus, Map<MappingWorkflowAction, MapWorkflowStatus>>> WORKFLOW_PERMUTATIONS =
         new HashMap<>();
 
     /** Actions that require the mapset to be in edit. */
-    private static final List<MappingWorkflowAction> MAPSET_IN_EDIT_ACTIONS = Arrays.asList(
-        MappingWorkflowAction.ASSIGN,
-        MappingWorkflowAction.RELEASE,
-        MappingWorkflowAction.FINISH_EDITING,
-        MappingWorkflowAction.FORCE_RELEASE,
-        MappingWorkflowAction.REASSIGN
-    );
+    private static final List<MappingWorkflowAction> MAPSET_IN_EDIT_ACTIONS = Arrays.asList(MappingWorkflowAction.ASSIGN, MappingWorkflowAction.RELEASE,
+        MappingWorkflowAction.FINISH_EDITING, MappingWorkflowAction.FORCE_RELEASE, MappingWorkflowAction.REASSIGN);
 
     /** Claim actions: permutations decide which phases; runtime requires unassigned. */
-    private static final List<MappingWorkflowAction> CLAIM_ACTIONS = Arrays.asList(
-        MappingWorkflowAction.ASSIGN,
-        MappingWorkflowAction.START_REVIEW,
-        MappingWorkflowAction.START_CONFLICT_RESOLUTION
-    );
+    private static final List<MappingWorkflowAction> CLAIM_ACTIONS =
+        Arrays.asList(MappingWorkflowAction.ASSIGN, MappingWorkflowAction.START_REVIEW, MappingWorkflowAction.START_CONFLICT_RESOLUTION);
 
     /** Holder actions: permutations decide which phases; runtime requires assigned_user = actor. */
-    private static final List<MappingWorkflowAction> HOLDER_ACTIONS = Arrays.asList(
-        MappingWorkflowAction.RELEASE,
-        MappingWorkflowAction.FINISH_EDITING,
-        MappingWorkflowAction.ACCEPT_REVIEW,
-        MappingWorkflowAction.REJECT_REVIEW,
-        MappingWorkflowAction.REQUEST_REVISION,
-        MappingWorkflowAction.RESOLVE_CONFLICT
-    );
+    private static final List<MappingWorkflowAction> HOLDER_ACTIONS =
+        Arrays.asList(MappingWorkflowAction.RELEASE, MappingWorkflowAction.FINISH_EDITING, MappingWorkflowAction.ACCEPT_REVIEW,
+            MappingWorkflowAction.REJECT_REVIEW, MappingWorkflowAction.REQUEST_REVISION, MappingWorkflowAction.RESOLVE_CONFLICT);
 
     /** Mapping phases that block mapset FINISH_EDIT and REQUEST_PUBLICATION. */
-    private static final List<MapWorkflowStatus> MAPSET_GATE_BLOCKING_STATUSES = Arrays.asList(
-        MapWorkflowStatus.EDITING_IN_PROGRESS,
-        MapWorkflowStatus.REVIEW_IN_PROGRESS,
-        MapWorkflowStatus.CONFLICT_IN_PROGRESS
-    );
+    private static final List<MapWorkflowStatus> MAPSET_GATE_BLOCKING_STATUSES =
+        Arrays.asList(MapWorkflowStatus.EDITING_IN_PROGRESS, MapWorkflowStatus.REVIEW_IN_PROGRESS, MapWorkflowStatus.CONFLICT_IN_PROGRESS);
 
     /** Mapping phases in which the assigned user may save mapping data. */
-    private static final List<MapWorkflowStatus> MAPPING_EDITABLE_STATUSES = Arrays.asList(
-        MapWorkflowStatus.EDITING_IN_PROGRESS,
-        MapWorkflowStatus.REVIEW_IN_PROGRESS
-    );
+    private static final List<MapWorkflowStatus> MAPPING_EDITABLE_STATUSES =
+        Arrays.asList(MapWorkflowStatus.EDITING_IN_PROGRESS, MapWorkflowStatus.REVIEW_IN_PROGRESS);
 
     /** Mapset actions gated on per-mapping workflow summary. */
-    private static final List<WorkflowAction> MAPSET_GATE_ACTIONS = Arrays.asList(
-        WorkflowAction.FINISH_EDIT,
-        WorkflowAction.REQUEST_PUBLICATION
-    );
+    private static final List<WorkflowAction> MAPSET_GATE_ACTIONS = Arrays.asList(WorkflowAction.FINISH_EDIT, WorkflowAction.REQUEST_PUBLICATION);
 
     /** Actions that clear assignment fields on success. */
-    private static final List<MappingWorkflowAction> CLEAR_ASSIGNMENT_ACTIONS = Arrays.asList(
-        MappingWorkflowAction.RELEASE,
-        MappingWorkflowAction.FINISH_EDITING,
-        MappingWorkflowAction.FORCE_RELEASE,
-        MappingWorkflowAction.ACCEPT_REVIEW,
-        MappingWorkflowAction.REJECT_REVIEW,
-        MappingWorkflowAction.REQUEST_REVISION,
-        MappingWorkflowAction.RESOLVE_CONFLICT
-    );
+    private static final List<MappingWorkflowAction> CLEAR_ASSIGNMENT_ACTIONS = Arrays.asList(MappingWorkflowAction.RELEASE,
+        MappingWorkflowAction.FINISH_EDITING, MappingWorkflowAction.FORCE_RELEASE, MappingWorkflowAction.ACCEPT_REVIEW, MappingWorkflowAction.REJECT_REVIEW,
+        MappingWorkflowAction.REQUEST_REVISION, MappingWorkflowAction.RESOLVE_CONFLICT);
 
     /** Default page size for assigned-workflow queries. */
     private static final int ASSIGNED_WORKFLOWS_DEFAULT_LIMIT = 10;
@@ -251,7 +219,9 @@ public final class MappingWorkflowService {
         }
 
         if (nextStatus == null) {
-            LOG.warn("Mapping workflow action requested but no permutation: workflowId={}, sourceConceptCode={}, workflowStatus={}, action={}, user={}, roles={}",
+            LOG.warn(
+                "Mapping workflow action requested but no permutation: workflowId={}, sourceConceptCode={}, "
+                    + "workflowStatus={}, action={}, user={}, roles={}",
                 workflow.getId(), workflow.getSourceConceptCode(), workflow.getWorkflowStatus(), action, user.getUserName(), roles);
             throw conflictTransition(workflow, action);
         }
@@ -286,8 +256,8 @@ public final class MappingWorkflowService {
      * @param notes transition notes
      * @throws Exception the exception
      */
-    public static void addWorkflowHistory(final TerminologyService service, final User user, final MappingWorkflowAction action,
-        final MappingWorkflow workflow, final String notes) throws Exception {
+    public static void addWorkflowHistory(final TerminologyService service, final User user, final MappingWorkflowAction action, final MappingWorkflow workflow,
+        final String notes) throws Exception {
 
         final MappingWorkflowHistory history = new MappingWorkflowHistory();
         history.setUserName(user.getUserName());
@@ -404,8 +374,7 @@ public final class MappingWorkflowService {
         final long totalCount = countQuery.getSingleResult();
 
         final String orderBy = " order by mw." + sort + (ascending ? " asc" : " desc");
-        final TypedQuery<MappingWorkflow> dataQuery =
-            service.getEntityManager().createQuery(where.toString() + orderBy, MappingWorkflow.class);
+        final TypedQuery<MappingWorkflow> dataQuery = service.getEntityManager().createQuery(where.toString() + orderBy, MappingWorkflow.class);
         applyAssignedWorkflowFilters(dataQuery, assignedUser, mapProjectId, mapSetId, workflowStatus);
         dataQuery.setFirstResult(offset);
         dataQuery.setMaxResults(limit);
@@ -430,8 +399,8 @@ public final class MappingWorkflowService {
      * @param mapSetId optional map set id
      * @param workflowStatus optional workflow status
      */
-    private static void applyAssignedWorkflowFilters(final Query query, final String assignedUser, final String mapProjectId,
-        final String mapSetId, final MapWorkflowStatus workflowStatus) {
+    private static void applyAssignedWorkflowFilters(final Query query, final String assignedUser, final String mapProjectId, final String mapSetId,
+        final MapWorkflowStatus workflowStatus) {
 
         query.setParameter("assignedUser", assignedUser);
         if (StringUtils.isNotBlank(mapProjectId)) {
@@ -585,14 +554,13 @@ public final class MappingWorkflowService {
      * Resolve concept-code constraints for mapping search workflow filters.
      *
      * <p>
-     * {@code workflowStatus} and {@code assignedUser} are independent and optional; when both are set, results
-     * must match both. {@code assignedUser} may be a username, {@link MapUser} id, or {@link User} id.
+     * {@code workflowStatus} and {@code assignedUser} are independent and optional; when both are set, results must match both. {@code assignedUser} may be a
+     * username, {@link MapUser} id, or {@link User} id.
      *
      * <p>
-     * {@link MapWorkflowStatus#PUBLISHED} includes mappings with no workflow row (implicit published) as well as
-     * persisted {@code PUBLISHED} rows. When no request {@code conceptCodes} are supplied, that is expressed as an
-     * exclusion list of non-published source concepts rather than an incomplete inclusion list of persisted
-     * {@code PUBLISHED} rows.
+     * {@link MapWorkflowStatus#PUBLISHED} includes mappings with no workflow row (implicit published) as well as persisted {@code PUBLISHED} rows. When no
+     * request {@code conceptCodes} are supplied, that is expressed as an exclusion list of non-published source concepts rather than an incomplete inclusion
+     * list of persisted {@code PUBLISHED} rows.
      *
      * @param service the terminology service
      * @param mapSet the map set
@@ -645,8 +613,8 @@ public final class MappingWorkflowService {
             throw new IllegalArgumentException("workflowStatus or assignedUser is required");
         }
 
-        final StringBuilder jpql = new StringBuilder("select mw.sourceConceptCode from MappingWorkflow mw where mw.mapSet.id = :mapSetId"
-            + " and mw.active = true and mw.specialistSlot = 1");
+        final StringBuilder jpql = new StringBuilder(
+            "select mw.sourceConceptCode from MappingWorkflow mw where mw.mapSet.id = :mapSetId" + " and mw.active = true and mw.specialistSlot = 1");
         if (workflowStatus != null) {
             jpql.append(" and mw.workflowStatus = :workflowStatus");
         }
@@ -687,12 +655,11 @@ public final class MappingWorkflowService {
             return Collections.emptyList();
         }
 
-        final List<MappingWorkflow> found = service.getEntityManager()
-            .createQuery("from MappingWorkflow mw where mw.mapSet.id = :mapSetId and mw.sourceConceptCode in :codes"
-                + " and mw.specialistSlot = 1 and mw.active = true", MappingWorkflow.class)
-            .setParameter("mapSetId", mapSet.getId())
-            .setParameter("codes", new HashSet<>(trimmedCodes))
-            .getResultList();
+        final List<MappingWorkflow> found =
+            service.getEntityManager()
+                .createQuery("from MappingWorkflow mw where mw.mapSet.id = :mapSetId and mw.sourceConceptCode in :codes"
+                    + " and mw.specialistSlot = 1 and mw.active = true", MappingWorkflow.class)
+                .setParameter("mapSetId", mapSet.getId()).setParameter("codes", new HashSet<>(trimmedCodes)).getResultList();
 
         final Map<String, MappingWorkflow> byCode = new HashMap<>();
         for (final MappingWorkflow workflow : found) {
@@ -724,9 +691,7 @@ public final class MappingWorkflowService {
         return service.getEntityManager()
             .createQuery("select mw.sourceConceptCode from MappingWorkflow mw where mw.mapSet.id = :mapSetId"
                 + " and mw.active = true and mw.specialistSlot = 1 and mw.workflowStatus <> :published", String.class)
-            .setParameter("mapSetId", mapSet.getId())
-            .setParameter("published", MapWorkflowStatus.PUBLISHED)
-            .getResultList();
+            .setParameter("mapSetId", mapSet.getId()).setParameter("published", MapWorkflowStatus.PUBLISHED).getResultList();
     }
 
     /**
@@ -755,9 +720,8 @@ public final class MappingWorkflowService {
      * Find mapping workflow rows for many source concepts, returning them in request order.
      *
      * <p>
-     * Does not create missing rows. Concepts in the mapset with no workflow row receive a non-persisted
-     * {@link MapWorkflowStatus#PUBLISHED} placeholder. Throws {@link ResponseStatusException} with 404 if any
-     * concept is not in the mapset and has no workflow row.
+     * Does not create missing rows. Concepts in the mapset with no workflow row receive a non-persisted {@link MapWorkflowStatus#PUBLISHED} placeholder. Throws
+     * {@link ResponseStatusException} with 404 if any concept is not in the mapset and has no workflow row.
      *
      * @param service the terminology service
      * @param mapSet the map set
@@ -779,12 +743,11 @@ public final class MappingWorkflowService {
             trimmedCodes.add(conceptCode);
         }
 
-        final List<MappingWorkflow> found = service.getEntityManager()
-            .createQuery("from MappingWorkflow mw where mw.mapSet.id = :mapSetId and mw.sourceConceptCode in :codes"
-                + " and mw.specialistSlot = 1 and mw.active = true", MappingWorkflow.class)
-            .setParameter("mapSetId", mapSet.getId())
-            .setParameter("codes", new HashSet<>(trimmedCodes))
-            .getResultList();
+        final List<MappingWorkflow> found =
+            service.getEntityManager()
+                .createQuery("from MappingWorkflow mw where mw.mapSet.id = :mapSetId and mw.sourceConceptCode in :codes"
+                    + " and mw.specialistSlot = 1 and mw.active = true", MappingWorkflow.class)
+                .setParameter("mapSetId", mapSet.getId()).setParameter("codes", new HashSet<>(trimmedCodes)).getResultList();
 
         final Map<String, MappingWorkflow> byCode = new HashMap<>();
         for (final MappingWorkflow workflow : found) {
@@ -946,8 +909,7 @@ public final class MappingWorkflowService {
 
         for (final MappingWorkflowRole role : roles) {
             for (final MappingWorkflowAction action : MappingWorkflowAction.values()) {
-                if (resolveTransition(role, workflow.getWorkflowStatus(), action) != null
-                    && passesActionGates(user, workflow, action, mapsetInEdit)) {
+                if (resolveTransition(role, workflow.getWorkflowStatus(), action) != null && passesActionGates(user, workflow, action, mapsetInEdit)) {
                     allowedActions.add(action);
                 }
             }
@@ -1008,20 +970,19 @@ public final class MappingWorkflowService {
         }
 
         if (!hasTransition) {
-            LOG.error("Unsuccessful attempt to update mapping workflow for concept {} from status {} with action {}",
-                workflow.getSourceConceptCode(), workflow.getWorkflowStatus(), action);
+            LOG.error("Unsuccessful attempt to update mapping workflow for concept {} from status {} with action {}", workflow.getSourceConceptCode(),
+                workflow.getWorkflowStatus(), action);
             throw conflictTransition(workflow, action);
         }
 
         final boolean mapsetInEdit = isMapsetInEdit(mapSet);
         if (MAPSET_IN_EDIT_ACTIONS.contains(action) && !mapsetInEdit) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                "Reference Set is not in edit; cannot perform mapping workflow action " + action + ".");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Reference Set is not in edit; cannot perform mapping workflow action " + action + ".");
         }
 
         if (!passesActionGates(user, workflow, action, mapsetInEdit)) {
-            LOG.error("Unsuccessful attempt to update mapping workflow for concept {} from status {} with action {}",
-                workflow.getSourceConceptCode(), workflow.getWorkflowStatus(), action);
+            LOG.error("Unsuccessful attempt to update mapping workflow for concept {} from status {} with action {}", workflow.getSourceConceptCode(),
+                workflow.getWorkflowStatus(), action);
             throw forbidden(workflow, action);
         }
     }
@@ -1094,8 +1055,7 @@ public final class MappingWorkflowService {
      */
     static void loadPermutations(final Reader reader, final String fileName) throws Exception {
 
-        final Map<MappingWorkflowRole, Map<MapWorkflowStatus, Map<MappingWorkflowAction, MapWorkflowStatus>>> loaded =
-            new HashMap<>();
+        final Map<MappingWorkflowRole, Map<MapWorkflowStatus, Map<MappingWorkflowAction, MapWorkflowStatus>>> loaded = new HashMap<>();
 
         try (final BufferedReader bufferedReader = reader instanceof BufferedReader ? (BufferedReader) reader : new BufferedReader(reader)) {
 
@@ -1117,9 +1077,8 @@ public final class MappingWorkflowService {
                 final MappingWorkflowAction workflowAction = MappingWorkflowAction.fromString(tokens[2].toUpperCase().strip());
                 final MapWorkflowStatus resultingStatus = MapWorkflowStatus.fromString(tokens[3].toUpperCase().strip());
 
-                loaded.computeIfAbsent(role, key -> new HashMap<>())
-                    .computeIfAbsent(currentStatus, key -> new HashMap<>())
-                    .put(workflowAction, resultingStatus);
+                loaded.computeIfAbsent(role, key -> new HashMap<>()).computeIfAbsent(currentStatus, key -> new HashMap<>()).put(workflowAction,
+                    resultingStatus);
             }
         }
 
@@ -1199,8 +1158,8 @@ public final class MappingWorkflowService {
      * @param currentStatus the status before the action
      * @param assigneeUserName resolved assign-to username
      */
-    private static void assertAssigneeCanDoAssignedWork(final MapProject mapProject, final MappingWorkflowAction action,
-        final MapWorkflowStatus currentStatus, final String assigneeUserName) {
+    private static void assertAssigneeCanDoAssignedWork(final MapProject mapProject, final MappingWorkflowAction action, final MapWorkflowStatus currentStatus,
+        final String assigneeUserName) {
 
         if (StringUtils.isBlank(assigneeUserName)) {
             return;
@@ -1331,8 +1290,7 @@ public final class MappingWorkflowService {
 
         final boolean mapsetInEdit = isMapsetInEdit(mapSet);
         for (final MappingWorkflowRole role : roles) {
-            if (resolveTransition(role, workflow.getWorkflowStatus(), action) != null
-                && passesActionGates(user, workflow, action, mapsetInEdit)) {
+            if (resolveTransition(role, workflow.getWorkflowStatus(), action) != null && passesActionGates(user, workflow, action, mapsetInEdit)) {
                 return true;
             }
         }
@@ -1340,8 +1298,8 @@ public final class MappingWorkflowService {
     }
 
     /**
-     * Runtime constraints the permutation file cannot express: mapset edit state and assignment holder.
-     * Allowed role+status+action combinations come only from {@link #resolveTransition}.
+     * Runtime constraints the permutation file cannot express: mapset edit state and assignment holder. Allowed role+status+action combinations come only from
+     * {@link #resolveTransition}.
      *
      * @param user the user
      * @param workflow the workflow
@@ -1349,8 +1307,7 @@ public final class MappingWorkflowService {
      * @param mapsetInEdit the mapset in edit
      * @return true, if successful
      */
-    private static boolean passesActionGates(final User user, final MappingWorkflow workflow, final MappingWorkflowAction action,
-        final boolean mapsetInEdit) {
+    private static boolean passesActionGates(final User user, final MappingWorkflow workflow, final MappingWorkflowAction action, final boolean mapsetInEdit) {
 
         if (MAPSET_IN_EDIT_ACTIONS.contains(action) && !mapsetInEdit) {
             return false;
@@ -1460,9 +1417,8 @@ public final class MappingWorkflowService {
      */
     private static ResponseStatusException forbidden(final MappingWorkflow workflow, final MappingWorkflowAction action) {
 
-        return new ResponseStatusException(HttpStatus.FORBIDDEN,
-            "User does not have permission to update mapping workflow for concept " + workflow.getSourceConceptCode()
-                + " from status " + workflow.getWorkflowStatus() + " with action " + action);
+        return new ResponseStatusException(HttpStatus.FORBIDDEN, "User does not have permission to update mapping workflow for concept "
+            + workflow.getSourceConceptCode() + " from status " + workflow.getWorkflowStatus() + " with action " + action);
     }
 
     /**
@@ -1474,9 +1430,8 @@ public final class MappingWorkflowService {
      */
     private static ResponseStatusException conflictTransition(final MappingWorkflow workflow, final MappingWorkflowAction action) {
 
-        return new ResponseStatusException(HttpStatus.CONFLICT,
-            "Unsuccessful attempt to update mapping workflow for concept " + workflow.getSourceConceptCode()
-                + " from status " + workflow.getWorkflowStatus() + " with action " + action);
+        return new ResponseStatusException(HttpStatus.CONFLICT, "Unsuccessful attempt to update mapping workflow for concept " + workflow.getSourceConceptCode()
+            + " from status " + workflow.getWorkflowStatus() + " with action " + action);
     }
 
     /**
@@ -1518,12 +1473,8 @@ public final class MappingWorkflowService {
 
         final List<MappingWorkflow> results = service.getEntityManager()
             .createQuery("from MappingWorkflow mw where mw.mapSet.id = :mapSetId and mw.sourceConceptCode = :sourceConceptCode"
-                + " and mw.specialistSlot = 1 and mw.active = true",
-                MappingWorkflow.class)
-            .setParameter("mapSetId", mapSet.getId())
-            .setParameter("sourceConceptCode", sourceConceptCode)
-            .setMaxResults(1)
-            .getResultList();
+                + " and mw.specialistSlot = 1 and mw.active = true", MappingWorkflow.class)
+            .setParameter("mapSetId", mapSet.getId()).setParameter("sourceConceptCode", sourceConceptCode).setMaxResults(1).getResultList();
 
         if (results.isEmpty()) {
             return null;
@@ -1532,8 +1483,8 @@ public final class MappingWorkflowService {
     }
 
     /**
-     * Find the mapping workflow for a source concept, or a non-persisted {@link MapWorkflowStatus#PUBLISHED}
-     * placeholder when the concept is in the mapset but has no workflow row.
+     * Find the mapping workflow for a source concept, or a non-persisted {@link MapWorkflowStatus#PUBLISHED} placeholder when the concept is in the mapset but
+     * has no workflow row.
      *
      * <p>
      * Does not create database rows. Returns {@code null} when the concept is not in the mapset.
@@ -1567,8 +1518,8 @@ public final class MappingWorkflowService {
      * @return the workflow row, or null if none exists
      * @throws Exception the exception
      */
-    public static MappingWorkflow findWorkflowForConceptAndSlot(final TerminologyService service, final MapSet mapSet,
-        final String sourceConceptCode, final int specialistSlot) throws Exception {
+    public static MappingWorkflow findWorkflowForConceptAndSlot(final TerminologyService service, final MapSet mapSet, final String sourceConceptCode,
+        final int specialistSlot) throws Exception {
 
         if (mapSet == null || StringUtils.isBlank(sourceConceptCode) || specialistSlot < 1) {
             return null;
@@ -1576,13 +1527,9 @@ public final class MappingWorkflowService {
 
         final List<MappingWorkflow> results = service.getEntityManager()
             .createQuery("from MappingWorkflow mw where mw.mapSet.id = :mapSetId and mw.sourceConceptCode = :sourceConceptCode"
-                + " and mw.specialistSlot = :specialistSlot and mw.active = true",
-                MappingWorkflow.class)
-            .setParameter("mapSetId", mapSet.getId())
-            .setParameter("sourceConceptCode", sourceConceptCode)
-            .setParameter("specialistSlot", specialistSlot)
-            .setMaxResults(1)
-            .getResultList();
+                + " and mw.specialistSlot = :specialistSlot and mw.active = true", MappingWorkflow.class)
+            .setParameter("mapSetId", mapSet.getId()).setParameter("sourceConceptCode", sourceConceptCode).setParameter("specialistSlot", specialistSlot)
+            .setMaxResults(1).getResultList();
 
         if (results.isEmpty()) {
             return null;
@@ -1594,10 +1541,9 @@ public final class MappingWorkflowService {
      * Hydrates {@link Mapping#getMappingWorkflow()} for a page of mappings in one query.
      *
      * <p>
-     * Attaches an existing specialist-slot-1 workflow row when present; otherwise attaches a non-persisted
-     * {@link MapWorkflowStatus#PUBLISHED} placeholder. Missing rows mean the concept already existed in the
-     * mapset with no workflow history (initial load or prior-version carryover), not that it was added this
-     * version ({@link MapWorkflowStatus#NEW}). Does not create database rows.
+     * Attaches an existing specialist-slot-1 workflow row when present; otherwise attaches a non-persisted {@link MapWorkflowStatus#PUBLISHED} placeholder.
+     * Missing rows mean the concept already existed in the mapset with no workflow history (initial load or prior-version carryover), not that it was added
+     * this version ({@link MapWorkflowStatus#NEW}). Does not create database rows.
      *
      * @param service the terminology service
      * @param mapSet the map set
@@ -1616,10 +1562,9 @@ public final class MappingWorkflowService {
      * Hydrates {@link Mapping#getMappingWorkflow()} for a collection of mappings in one query.
      *
      * <p>
-     * Attaches an existing specialist-slot-1 workflow row when present; otherwise attaches a non-persisted
-     * {@link MapWorkflowStatus#PUBLISHED} placeholder. Missing rows mean the concept already existed in the
-     * mapset with no workflow history (initial load or prior-version carryover), not that it was added this
-     * version ({@link MapWorkflowStatus#NEW}). Does not create database rows.
+     * Attaches an existing specialist-slot-1 workflow row when present; otherwise attaches a non-persisted {@link MapWorkflowStatus#PUBLISHED} placeholder.
+     * Missing rows mean the concept already existed in the mapset with no workflow history (initial load or prior-version carryover), not that it was added
+     * this version ({@link MapWorkflowStatus#NEW}). Does not create database rows.
      *
      * @param service the terminology service
      * @param mapSet the map set
@@ -1642,12 +1587,11 @@ public final class MappingWorkflowService {
             return;
         }
 
-        final List<MappingWorkflow> workflows = service.getEntityManager()
-            .createQuery("from MappingWorkflow mw where mw.mapSet.id = :mapSetId and mw.sourceConceptCode in :codes"
-                + " and mw.specialistSlot = 1 and mw.active = true", MappingWorkflow.class)
-            .setParameter("mapSetId", mapSet.getId())
-            .setParameter("codes", conceptCodes)
-            .getResultList();
+        final List<MappingWorkflow> workflows =
+            service.getEntityManager()
+                .createQuery("from MappingWorkflow mw where mw.mapSet.id = :mapSetId and mw.sourceConceptCode in :codes"
+                    + " and mw.specialistSlot = 1 and mw.active = true", MappingWorkflow.class)
+                .setParameter("mapSetId", mapSet.getId()).setParameter("codes", conceptCodes).getResultList();
 
         final Map<String, MappingWorkflow> workflowByConcept = new HashMap<>();
         for (final MappingWorkflow workflow : workflows) {
@@ -1793,9 +1737,7 @@ public final class MappingWorkflowService {
         final Long count = service.getEntityManager()
             .createQuery("select count(mw) from MappingWorkflow mw where mw.mapSet.id = :mapSetId and mw.sourceConceptCode = :sourceConceptCode"
                 + " and mw.specialistSlot = :specialistSlot and mw.active = true", Long.class)
-            .setParameter("mapSetId", mapSet.getId())
-            .setParameter("sourceConceptCode", sourceConceptCode)
-            .setParameter("specialistSlot", specialistSlot)
+            .setParameter("mapSetId", mapSet.getId()).setParameter("sourceConceptCode", sourceConceptCode).setParameter("specialistSlot", specialistSlot)
             .getSingleResult();
         return count == null ? 0 : count.intValue();
     }
@@ -1844,13 +1786,11 @@ public final class MappingWorkflowService {
             return List.of();
         }
 
-        final List<MappingWorkflow> results = service.getEntityManager()
-            .createQuery("from MappingWorkflow mw where mw.mapSet.id = :mapSetId and mw.active = true"
-                + " and mw.workflowStatus in :blockingStatuses",
-                MappingWorkflow.class)
-            .setParameter("mapSetId", mapSet.getId())
-            .setParameter("blockingStatuses", MAPSET_GATE_BLOCKING_STATUSES)
-            .getResultList();
+        final List<MappingWorkflow> results =
+            service.getEntityManager()
+                .createQuery("from MappingWorkflow mw where mw.mapSet.id = :mapSetId and mw.active = true" + " and mw.workflowStatus in :blockingStatuses",
+                    MappingWorkflow.class)
+                .setParameter("mapSetId", mapSet.getId()).setParameter("blockingStatuses", MAPSET_GATE_BLOCKING_STATUSES).getResultList();
         return results;
     }
 
@@ -1889,8 +1829,7 @@ public final class MappingWorkflowService {
      * Verify the user may edit mapping data for a source concept.
      *
      * <p>
-     * Allowed when the mapset is in edit, the mapping is {@code EDITING_IN_PROGRESS} or
-     * {@code REVIEW_IN_PROGRESS}, and the acting user holds the assignment.
+     * Allowed when the mapset is in edit, the mapping is {@code EDITING_IN_PROGRESS} or {@code REVIEW_IN_PROGRESS}, and the acting user holds the assignment.
      *
      * @param user the acting user
      * @param workflow the mapping workflow row
@@ -1900,13 +1839,11 @@ public final class MappingWorkflowService {
     public static void canUserEditMapping(final User user, final MappingWorkflow workflow, final MapSet mapSet) throws Exception {
 
         if (!isMapsetInEdit(mapSet)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                "Reference Set is not in edit; mapping cannot be edited.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Reference Set is not in edit; mapping cannot be edited.");
         }
 
         if (workflow == null || !MAPPING_EDITABLE_STATUSES.contains(workflow.getWorkflowStatus())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                "Mapping is not assigned for editing; mapping cannot be edited.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Mapping is not assigned for editing; mapping cannot be edited.");
         }
 
         if (workflow.getAssignedUser() == null || !workflow.getAssignedUser().equals(user.getUserName())) {
@@ -2010,8 +1947,7 @@ public final class MappingWorkflowService {
      * @param workflow the workflow
      * @throws Exception the exception
      */
-    private static void applyConflictJoinAfterFinish(final TerminologyService service, final MapSet mapSet, final MappingWorkflow workflow)
-        throws Exception {
+    private static void applyConflictJoinAfterFinish(final TerminologyService service, final MapSet mapSet, final MappingWorkflow workflow) throws Exception {
 
         if (workflow.getWorkflowStatus() != MapWorkflowStatus.EDITING_DONE) {
             return;
@@ -2084,8 +2020,7 @@ public final class MappingWorkflowService {
      * @return the mapping workflow
      * @throws Exception the exception
      */
-    private static MappingWorkflow findSiblingWorkflow(final TerminologyService service, final MapSet mapSet, final MappingWorkflow workflow)
-        throws Exception {
+    private static MappingWorkflow findSiblingWorkflow(final TerminologyService service, final MapSet mapSet, final MappingWorkflow workflow) throws Exception {
 
         if (workflow == null || workflow.getSpecialistSlot() != 1 && workflow.getSpecialistSlot() != 2) {
             return null;

@@ -175,7 +175,7 @@ public final class CrowdGroupNameAlgorithm {
      * @param organizationId the organization id
      * @return the string
      */
-    public static String generateAffiliateShortName(String shortName, String organizationId) {
+    public static String generateAffiliateShortName(final String shortName, final String organizationId) {
 
         return shortName + AFFILIATE_ORGANIZATION_ID_DELIMITER + organizationId;
     }
