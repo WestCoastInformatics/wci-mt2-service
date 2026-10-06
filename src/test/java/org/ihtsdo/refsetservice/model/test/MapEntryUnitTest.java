@@ -33,6 +33,7 @@ public class MapEntryUnitTest extends BaseTest {
         final GetterSetterTester tester = new GetterSetterTester(object);
         tester.exclude("advices");
         tester.exclude("additionalMapEntryInfos");
+        tester.exclude("descriptions");
         tester.test();
     }
 
@@ -56,6 +57,7 @@ public class MapEntryUnitTest extends BaseTest {
         tester.include("relationCode");
         tester.exclude("advices");
         tester.exclude("additionalMapEntryInfos");
+        tester.exclude("descriptions");
         assertTrue(tester.testIdentityFieldEquals());
         assertTrue(tester.testNonIdentityFieldEquals());
         assertTrue(tester.testIdentityFieldNotEquals());
@@ -68,6 +70,7 @@ public class MapEntryUnitTest extends BaseTest {
     public void testModelSerialization() throws Exception {
 
         final SerializationTester tester = new SerializationTester(object);
+        tester.exclude("descriptions");
         assertTrue(tester.testJsonSerialization());
     }
 }

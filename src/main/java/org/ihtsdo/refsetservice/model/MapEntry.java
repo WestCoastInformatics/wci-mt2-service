@@ -9,7 +9,9 @@
  */
 package org.ihtsdo.refsetservice.model;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -33,7 +35,10 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericFie
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 /**
  * The Map Entry object.
@@ -95,6 +100,13 @@ public class MapEntry extends AbstractHasModified {
     /** The released. */
     @Column(nullable = false)
     private boolean released = false;
+
+    /**
+     * SNOMED CT descriptions for the target concept. Populated when the map target is SNOMED CT.
+     * Not stored on the map entry.
+     */
+    @Transient
+    private List<Description> descriptions;
 
     /**
      * default constructor.
@@ -375,6 +387,28 @@ public class MapEntry extends AbstractHasModified {
 	public void setReleased(boolean released) {
 		this.released = released;
 	}
+
+    /**
+     * Gets the target descriptions.
+     *
+     * @return the descriptions
+     */
+    @JsonGetter
+    @JsonInclude(Include.NON_EMPTY)
+    public List<Description> getDescriptions() {
+
+        return descriptions == null ? new ArrayList<>() : descriptions;
+    }
+
+    /**
+     * Sets the target descriptions.
+     *
+     * @param descriptions the descriptions
+     */
+    public void setDescriptions(final List<Description> descriptions) {
+
+        this.descriptions = descriptions;
+    }
 
 	/**
      * Lazy init.

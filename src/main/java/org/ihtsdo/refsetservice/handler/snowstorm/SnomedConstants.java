@@ -21,6 +21,12 @@ public final class SnomedConstants {
     /** The Constant SNOMED_SNOMEDCT_ICD10_MAPPING_MODULE. */
     public static final String SNOMEDCT_TO_ICD10_MAPPING_MODULE = "449080006";
 
+    /**
+     * 1193548004 |Exact match between map source and map target|, a subtype of 1193546000 |Map source to map target correlation|. Used on
+     * 1193543008 |Simple map with correlation to SNOMED CT type reference set| members.
+     */
+    public static final String MAP_TO_SNOMED_EXACT_MATCH = "1193548004";
+
     /** The parent of simple type reference set (the top-level concept for all refsets). */
     public static final String SIMPLE_TYPE_REFERENCE_SET = "446609009";
 
