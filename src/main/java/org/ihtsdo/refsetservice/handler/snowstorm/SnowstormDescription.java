@@ -322,15 +322,12 @@ public class SnowstormDescription extends SnowstormAbstract {
                     }
                 }
 
-                final List<String> nonDefaultPreferredTerms = RefsetMemberService.identifyNonDefaultPreferredTerms(edition);
-
                 // Populate concept with description-based data
                 for (final String conceptId : batch) {
 
                     final Set<JsonNode> descriptionNodes = conceptDescriptionNodes.get(conceptId);
-                    final List<Description> descriptions = descriptionNodes != null
-                        ? populateDescriptions(descriptionNodes, edition.getDefaultLanguageRefsets(), nonDefaultPreferredTerms)
-                        : new ArrayList<>();
+                    final List<Description> descriptions =
+                        descriptionNodes != null ? populateDescriptions(descriptionNodes) : new ArrayList<>();
                     conceptDescriptions.put(conceptId, descriptions);
 
                 }
@@ -348,71 +345,74 @@ public class SnowstormDescription extends SnowstormAbstract {
     }
 
     /**
-     * Populate description.
+     * One entry per active description and language refset. A description in both Bokmål and Nynorsk is returned twice.
      *
      * @param descriptionNodes the description nodes
-     * @param defaultLanguageRefsets the default language refsets
-     * @param nonDefaultPreferredTerms the non default preferred terms
      * @return the list
-     * @throws Exception the exception
      */
-    private static List<Description> populateDescriptions(final Set<JsonNode> descriptionNodes, final Set<String> defaultLanguageRefsets,
-        final List<String> nonDefaultPreferredTerms) throws Exception {
+    static List<Description> populateDescriptions(final Set<JsonNode> descriptionNodes) {
 
         final List<Description> descriptions = new ArrayList<>();
 
         for (final JsonNode descriptionNode : descriptionNodes) {
 
             final JsonNode acceptabilityMap = descriptionNode.get(Description.Field.ACCEPTABILITY_MAP.getValue());
-            if (acceptabilityMap == null || !acceptabilityMap.isObject()) {
-                continue;
-            }
-            String acceptability = null;
-            String languageId = null;
-            String typeName = null;
-
-            for (final String langRefsetId : defaultLanguageRefsets) {
-
-                if (acceptabilityMap.has(langRefsetId)) {
-
-                    acceptability = acceptabilityMap.get(langRefsetId).asText();
-                    languageId = langRefsetId;
-                    break;
+            if (acceptabilityMap != null && acceptabilityMap.isObject() && acceptabilityMap.size() > 0) {
+                final Iterator<String> languageRefsetIds = acceptabilityMap.fieldNames();
+                while (languageRefsetIds.hasNext()) {
+                    final String languageRefsetId = languageRefsetIds.next();
+                    descriptions.add(toDescription(descriptionNode, languageRefsetId, acceptabilityMap.get(languageRefsetId).asText()));
                 }
-
-            }
-
-            if (acceptability != null && (nonDefaultPreferredTerms.isEmpty() || "PREFERRED".equals(acceptability))) {
-
-                final String typeId = textValue(descriptionNode, Description.Field.TYPE_ID);
-                typeName = TYPE_ID_TO_TYPE_NAME.getOrDefault(typeId, ("PREFERRED".equals(acceptability)) ? "PT" : "AC");
-
-                final Description description = new Description();
-                description.setActive(booleanValue(descriptionNode, Description.Field.ACTIVE));
-                description.setModuleId(textValue(descriptionNode, Description.Field.MODULE_ID));
-                description.setReleased(booleanValue(descriptionNode, Description.Field.RELEASED));
-                description.setReleasedEffectiveTime(longValue(descriptionNode, Description.Field.RELEASED_EFFECTIVE_TIME));
-                description.setDescriptionId(textValue(descriptionNode, Description.Field.DESCRIPTION_ID));
-                description.setTerm(textValue(descriptionNode, Description.Field.TERM));
-                description.setConceptId(textValue(descriptionNode, Description.Field.CONCEPT_ID));
-                description.setType(textValue(descriptionNode, Description.Field.TYPE));
-                description.setTypeName(typeName);
-                description.setEffectiveTime(textValue(descriptionNode, Description.Field.EFFECTIVE_TIME));
-                description.setCaseSignificance(textValue(descriptionNode, Description.Field.CASE_SIGNIFICANCE));
-
-                final String lang = textValue(descriptionNode, Description.Field.LANG);
-                description.setLanguage(lang.toLowerCase());
-                description.setLanguageId(languageId + typeName);
-                description.setLanguageCode(languageId);
-                description.setLanguageName(lang.toUpperCase() + " (" + typeName + ")");
-                descriptions.add(description);
-
+            } else {
+                descriptions.add(toDescription(descriptionNode, "", ""));
             }
 
         }
 
         return descriptions;
 
+    }
+
+    /**
+     * Builds one description for a single language refset membership.
+     *
+     * @param descriptionNode the Snowstorm description
+     * @param languageRefsetId the language refset, or blank when the description has no acceptability
+     * @param acceptability PREFERRED, ACCEPTABLE, or blank
+     * @return the description
+     */
+    private static Description toDescription(final JsonNode descriptionNode, final String languageRefsetId, final String acceptability) {
+
+        final String typeId = textValue(descriptionNode, Description.Field.TYPE_ID);
+        final String typeName;
+        if (TYPE_ID_TO_TYPE_NAME.containsKey(typeId)) {
+            typeName = TYPE_ID_TO_TYPE_NAME.get(typeId);
+        } else if ("PREFERRED".equals(acceptability)) {
+            typeName = "PT";
+        } else if ("ACCEPTABLE".equals(acceptability)) {
+            typeName = "AC";
+        } else {
+            typeName = textValue(descriptionNode, Description.Field.TYPE);
+        }
+        final String lang = textValue(descriptionNode, Description.Field.LANG);
+
+        final Description description = new Description();
+        description.setActive(booleanValue(descriptionNode, Description.Field.ACTIVE));
+        description.setModuleId(textValue(descriptionNode, Description.Field.MODULE_ID));
+        description.setReleased(booleanValue(descriptionNode, Description.Field.RELEASED));
+        description.setReleasedEffectiveTime(longValue(descriptionNode, Description.Field.RELEASED_EFFECTIVE_TIME));
+        description.setDescriptionId(textValue(descriptionNode, Description.Field.DESCRIPTION_ID));
+        description.setTerm(textValue(descriptionNode, Description.Field.TERM));
+        description.setConceptId(textValue(descriptionNode, Description.Field.CONCEPT_ID));
+        description.setType(textValue(descriptionNode, Description.Field.TYPE));
+        description.setTypeName(typeName);
+        description.setEffectiveTime(textValue(descriptionNode, Description.Field.EFFECTIVE_TIME));
+        description.setCaseSignificance(textValue(descriptionNode, Description.Field.CASE_SIGNIFICANCE));
+        description.setLanguage(lang.toLowerCase());
+        description.setLanguageId(languageRefsetId + typeName);
+        description.setLanguageCode(languageRefsetId);
+        description.setLanguageName(lang.toUpperCase() + " (" + typeName + ")");
+        return description;
     }
 
     private static JsonNode fieldNode(final JsonNode node, final Description.Field field) {

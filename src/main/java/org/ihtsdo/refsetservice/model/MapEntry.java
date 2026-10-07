@@ -102,8 +102,8 @@ public class MapEntry extends AbstractHasModified {
     private boolean released = false;
 
     /**
-     * SNOMED CT descriptions for the target concept. Populated when the map target is SNOMED CT.
-     * Not stored on the map entry.
+     * Target concept descriptions. SNOMED CT targets use language-refset descriptions. Other targets use one
+     * description whose term is the concept name. Not stored on the map entry.
      */
     @Transient
     private List<Description> descriptions;

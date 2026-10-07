@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 SNOMED International - All Rights Reserved.
+ * Copyright 2026 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -14,13 +14,18 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.security.InvalidParameterException;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status.Family;
 
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.model.PfsParameter;
@@ -85,7 +90,37 @@ public final class LanguageUtility {
     private static final Map<String, String> LANGUAGE_TO_LANGUAGE_CODE_CACHE = new HashMap<>();
 
     /** The Constant languageToCountryCodeCache. */
-    private static final Map<String, String> LANGUAGE_TO_COUNTGRY_CODE_CACHE = new HashMap<>();
+    private static final Map<String, String> LANGUAGE_TO_COUNTRY_CODE_CACHE = new HashMap<>();
+
+    /** SNOMED description type id: Fully specified name. */
+    private static final String DESCRIPTION_TYPE_FSN = "900000000000003001";
+
+    /**
+     * Cache: branch|languageRefsetSctId &rarr; short human column label (from Snowstorm FSN, abbreviated).
+     */
+    private static final Map<String, String> LANGUAGE_REFSET_SHORT_LABEL_CACHE = new ConcurrentHashMap<>();
+
+    /**
+     * Cache: branch|fsnfull|languageRefsetSctId &rarr; unabbreviated FSN (or first active term) for column header tooltips.
+     */
+    private static final Map<String, String> LANGUAGE_REFSET_FULL_FSN_CACHE = new ConcurrentHashMap<>();
+
+    /**
+     * Cache: branch path &rarr; metadata per language-refset SCTID (label, key, language, dialectName).
+     */
+    private static final Map<String, Map<String, Map<String, String>>> BRANCH_LANGUAGE_REFSET_META_CACHE = new ConcurrentHashMap<>();
+
+    /** Metadata map key: Snowstorm optional language refset label. */
+    public static final String META_LABEL = "label";
+
+    /** Metadata map key: Snowstorm optional key. */
+    public static final String META_KEY = "key";
+
+    /** Metadata map key: language code from branch metadata. */
+    public static final String META_LANGUAGE = "language";
+
+    /** Metadata map key: dialectName from requiredLanguageRefsets. */
+    public static final String META_DIALECT_NAME = "dialectName";
 
     /**
      * Instantiates an empty {@link LanguageUtility}.
@@ -103,7 +138,7 @@ public final class LanguageUtility {
      */
     public static String identifyCountryCode(final String languageRefsetSctId) throws Exception {
 
-        if (!LANGUAGE_TO_COUNTGRY_CODE_CACHE.containsKey(languageRefsetSctId)) {
+        if (!LANGUAGE_TO_COUNTRY_CODE_CACHE.containsKey(languageRefsetSctId)) {
 
             try (final TerminologyService service = new TerminologyService()) {
 
@@ -118,15 +153,15 @@ public final class LanguageUtility {
                 Map.entry("61000202103", "NO"), Map.entry("63451000052100", "SE"), Map.entry("63461000052102", "SE"), Map.entry("63481000052108", "SE"),
                 Map.entry("63491000052105", "SE"), Map.entry("64311000052107", "SE"), Map.entry("701000172104", "BE"), Map.entry("71000181105", "EE"),
                 Map.entry("711000172101", "BE"), Map.entry("83461000052100", "SE"));
-                */
+                 */
 
                 // Defaults for US & GB as used throughout system
                 if (languageRefsetSctId.equals(DEFAULT_LANGUAGE_REFSET_US)) {
-                    LANGUAGE_TO_COUNTGRY_CODE_CACHE.put(languageRefsetSctId, UNITED_STATES_COUNTRY_CODE);
+                    LANGUAGE_TO_COUNTRY_CODE_CACHE.put(languageRefsetSctId, UNITED_STATES_COUNTRY_CODE);
 
                     return UNITED_STATES_COUNTRY_CODE;
                 } else if (languageRefsetSctId.equals(DEFAULT_LANGUAGE_REFSET_GB)) {
-                    LANGUAGE_TO_COUNTGRY_CODE_CACHE.put(languageRefsetSctId, GREAT_BRITIAN_COUNTRY_CODE);
+                    LANGUAGE_TO_COUNTRY_CODE_CACHE.put(languageRefsetSctId, GREAT_BRITIAN_COUNTRY_CODE);
 
                     return GREAT_BRITIAN_COUNTRY_CODE;
                 }
@@ -136,18 +171,18 @@ public final class LanguageUtility {
 
                 if (results.getItems().size() > 1 || results.getItems().isEmpty()) {
                     throw new Exception("Lanaguage Refset " + languageRefsetSctId + " cannot have a defaultLangaugaeRefset associated with " + results.size()
-                        + " country codes");
+                    + " country codes");
                 }
 
-                Edition matchedEdition = results.getItems().iterator().next();
+                final Edition matchedEdition = results.getItems().iterator().next();
                 final String countryCodeToCache = matchedEdition.getOrganization().getCountryCode() != null
                     ? matchedEdition.getOrganization().getCountryCode().toUpperCase() : "error in edition: " + matchedEdition.getShortName();
 
-                LANGUAGE_TO_COUNTGRY_CODE_CACHE.put(languageRefsetSctId, countryCodeToCache);
+                LANGUAGE_TO_COUNTRY_CODE_CACHE.put(languageRefsetSctId, countryCodeToCache);
             }
         }
 
-        return LANGUAGE_TO_COUNTGRY_CODE_CACHE.get(languageRefsetSctId);
+        return LANGUAGE_TO_COUNTRY_CODE_CACHE.get(languageRefsetSctId);
     }
 
     /**
@@ -168,25 +203,42 @@ public final class LanguageUtility {
 
         // Identify the language based on language refset name
         // e.g. https://snowstorm.ihtsdotools.org/snowstorm/snomed-ct/MAIN%2FSNOMEDCT-BE/concepts/48979004
-        final String conceptLookupUrl = SnowstormConnection.getRestBaseUrl() + branchPath + "/concepts/" + languageRefsetSctId + "/descriptions/";
+        final String conceptLookupUrl = SnowstormConnection.getBaseUrl() + branchPath + "/concepts/" + languageRefsetSctId + "/descriptions/";
         LOG.info("getSnowstormConcept url: " + conceptLookupUrl);
 
         boolean matchedEnglish = false;
 
         try (final Response response = SnowstormConnection.getResponse(conceptLookupUrl)) {
 
-            final String resultString = SnowstormConnection.readEntityAsString(response);
+            final String resultString = response.readEntity(String.class);
 
-            final ObjectMapper mapper = ThreadLocalMapper.get();
-            final JsonNode root = mapper.readTree(resultString);
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode root = mapper.readTree(resultString.toString());
 
-            final Iterator<JsonNode> descriptionIterator = root.get("conceptDescriptions").iterator();
+            final JsonNode conceptDescriptions = root.get("conceptDescriptions");
+            final List<String> allTerms = new ArrayList<>();
+            if (conceptDescriptions != null && conceptDescriptions.isArray()) {
+                for (final JsonNode description : conceptDescriptions) {
+                    if (description.path("active").asBoolean(true) && description.has("term")) {
+                        allTerms.add(description.get("term").asText());
+                    }
+                }
+            }
 
-            while (descriptionIterator.hasNext()) {
+            MultiwordMatch bestMulti = null;
+            for (final String termRaw : allTerms) {
+                final MultiwordMatch m = matchLongestMultiwordKeyInTerm(termRaw);
+                if (m != null && (bestMulti == null || m.keyLength > bestMulti.keyLength)) {
+                    bestMulti = m;
+                }
+            }
+            if (bestMulti != null) {
+                LANGUAGE_TO_LANGUAGE_CODE_CACHE.put(languageRefsetSctId, bestMulti.code.toLowerCase());
+                return bestMulti.code;
+            }
 
-                final JsonNode description = descriptionIterator.next();
-
-                String[] termParts = description.get("term").asText().replace(",", "").split(SPACE_SPLIT_CHARACTER);
+            for (final String termRaw : allTerms) {
+                final String[] termParts = termRaw.replace(",", "").split(SPACE_SPLIT_CHARACTER);
 
                 for (int i = 0; i < termParts.length; i++) {
                     if (LANGUAGE_TO_LANGUAGE_CODE_REFERENCE_MAP.containsKey(termParts[i])) {
@@ -195,9 +247,7 @@ public final class LanguageUtility {
                         return LANGUAGE_TO_LANGUAGE_CODE_REFERENCE_MAP.get(termParts[i]);
                     }
                 }
-
-                // Still here, no match. Try going via country code
-                if (ENGLISH_SPEAKING_COUNTRIES.stream().anyMatch(country -> description.get("term").asText().contains(country))) {
+                if (ENGLISH_SPEAKING_COUNTRIES.stream().anyMatch(country -> termRaw.contains(country))) {
                     matchedEnglish = true;
                 }
             }
@@ -213,6 +263,54 @@ public final class LanguageUtility {
 
         throw new InvalidParameterException(" Do not have language code defined for language refset: " + languageRefsetSctId + " on the branch: " + branchPath
             + ", so using: '" + UNKNOWN_LANGUAGE_CODE + "'");
+    }
+
+    /**
+     * Longest file key (e.g. "Norwegian Bokmål") that matches the term, with its language code.
+     */
+    private static final class MultiwordMatch {
+
+        /** The code. */
+        private final String code;
+
+        /** The key length. */
+        private final int keyLength;
+
+        /**
+         * Instantiates a {@link MultiwordMatch} from the specified parameters.
+         *
+         * @param code the code
+         * @param keyLength the key length
+         */
+        private MultiwordMatch(final String code, final int keyLength) {
+
+            this.code = code;
+            this.keyLength = keyLength;
+        }
+    }
+
+    /**
+     * Match the longest multi-word key from the language file contained in the term. Used so more specific phrases (e.g. "Norwegian Bokmål") win over generic
+     * tokens ("Norwegian") when scanning is done across all descriptions.
+     *
+     * @param term the term
+     * @return the multiword match
+     */
+    private static MultiwordMatch matchLongestMultiwordKeyInTerm(final String term) {
+
+        initializeMap();
+        if (term == null || term.isEmpty()) {
+            return null;
+        }
+        final String termLower = term.replace(",", "").toLowerCase();
+        final List<String> multiWordKeys = LANGUAGE_TO_LANGUAGE_CODE_REFERENCE_MAP.keySet().stream().filter(k -> k.contains(SPACE_SPLIT_CHARACTER))
+            .sorted(Comparator.comparingInt(String::length).reversed()).collect(Collectors.toList());
+        for (final String key : multiWordKeys) {
+            if (termLower.contains(key.toLowerCase())) {
+                return new MultiwordMatch(LANGUAGE_TO_LANGUAGE_CODE_REFERENCE_MAP.get(key), key.length());
+            }
+        }
+        return null;
     }
 
     /**
@@ -249,7 +347,7 @@ public final class LanguageUtility {
                     if (!columns[0].contains(COMMA_SPLIT_CHARACTER)) {
                         LANGUAGE_TO_LANGUAGE_CODE_REFERENCE_MAP.put(columns[0], columns[1].toLowerCase());
                     } else {
-                        String[] columnEntries = columns[0].split(COMMA_SPLIT_CHARACTER);
+                        final String[] columnEntries = columns[0].split(COMMA_SPLIT_CHARACTER);
 
                         for (int j = 0; j < columnEntries.length; j++) {
                             LANGUAGE_TO_LANGUAGE_CODE_REFERENCE_MAP.put(columnEntries[j], columns[1].toLowerCase());
@@ -278,6 +376,231 @@ public final class LanguageUtility {
         }
     }
 
+    /** The Constant MAX_COLUMN_DISAMBIGUATION_LENGTH. */
+    private static final int MAX_COLUMN_DISAMBIGUATION_LENGTH = 18;
+
+    /**
+     * Short tag to disambiguate language columns with the same dialect+type. Uses a very small phrase from the refset FSN; otherwise the last four digits of
+     * the SCTID.
+     *
+     * @param languageRefsetSctId the language refset sct id
+     * @param branchPath the branch path
+     * @return the language refset column suffix
+     */
+    public static String getLanguageRefsetColumnSuffix(final String languageRefsetSctId, final String branchPath) {
+
+        if (languageRefsetSctId == null || languageRefsetSctId.isEmpty()) {
+            return "";
+        }
+        if (branchPath == null || branchPath.isEmpty()) {
+            return trailingFourDigitsForLanguageRefsetId(languageRefsetSctId);
+        }
+        final String key = branchPath + "|" + languageRefsetSctId;
+        final String cached = LANGUAGE_REFSET_SHORT_LABEL_CACHE.get(key);
+        if (cached != null) {
+            return cached;
+        }
+        try {
+            SnowstormConnection.checkConnection();
+        } catch (final Exception e) {
+            final String shortLabel = trailingFourDigitsForLanguageRefsetId(languageRefsetSctId);
+            LANGUAGE_REFSET_SHORT_LABEL_CACHE.put(key, shortLabel);
+            return shortLabel;
+        }
+        final String url = SnowstormConnection.getBaseUrl() + branchPath + "/concepts/" + languageRefsetSctId + "/descriptions/";
+        try (Response response = SnowstormConnection.getResponse(url)) {
+
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                final String shortLabel = trailingFourDigitsForLanguageRefsetId(languageRefsetSctId);
+                LANGUAGE_REFSET_SHORT_LABEL_CACHE.put(key, shortLabel);
+                return shortLabel;
+            }
+
+            final String resultString = response.readEntity(String.class);
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode root = mapper.readTree(resultString);
+            final String bestTerm = firstActiveFsnOrTerm(root.get("conceptDescriptions"));
+            if (bestTerm == null) {
+                final String shortLabel = trailingFourDigitsForLanguageRefsetId(languageRefsetSctId);
+                LANGUAGE_REFSET_SHORT_LABEL_CACHE.put(key, shortLabel);
+                return shortLabel;
+            }
+
+            final String shortLabel = toCompactColumnTagFromRefsetTerm(bestTerm, languageRefsetSctId);
+            LANGUAGE_REFSET_SHORT_LABEL_CACHE.put(key, shortLabel);
+            return shortLabel;
+        } catch (final Exception e) {
+            final String shortLabel = trailingFourDigitsForLanguageRefsetId(languageRefsetSctId);
+            LANGUAGE_REFSET_SHORT_LABEL_CACHE.put(key, shortLabel);
+            return shortLabel;
+        }
+    }
+
+    /**
+     * Same as {@link #getLanguageRefsetColumnSuffix(String, String)}; kept for existing call sites.
+     *
+     * @param languageRefsetSctId the language refset sct id
+     * @param branchPath the branch path
+     * @return the language refset short label
+     * @throws Exception the exception
+     */
+    public static String getLanguageRefsetShortLabel(final String languageRefsetSctId, final String branchPath) throws Exception {
+
+        return getLanguageRefsetColumnSuffix(languageRefsetSctId, branchPath);
+    }
+
+    /**
+     * Full FSN (or first active description term) for the language refset concept, for UI tooltips. Cached per branch+refset.
+     *
+     * @param languageRefsetSctId the language refset SCTID
+     * @param branchPath edition branch
+     * @return the raw term, or empty if unavailable
+     */
+    public static String getLanguageRefsetConceptFsn(final String languageRefsetSctId, final String branchPath) {
+
+        if (languageRefsetSctId == null || languageRefsetSctId.isEmpty() || branchPath == null || branchPath.isEmpty()) {
+            return "";
+        }
+        final String key = branchPath + "|fsnfull|" + languageRefsetSctId;
+        if (LANGUAGE_REFSET_FULL_FSN_CACHE.containsKey(key)) {
+            return LANGUAGE_REFSET_FULL_FSN_CACHE.get(key);
+        }
+        try {
+            SnowstormConnection.checkConnection();
+        } catch (final Exception e) {
+            LANGUAGE_REFSET_FULL_FSN_CACHE.put(key, "");
+            return "";
+        }
+        final String url = SnowstormConnection.getBaseUrl() + branchPath + "/concepts/" + languageRefsetSctId + "/descriptions/";
+        try (Response response = SnowstormConnection.getResponse(url)) {
+
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                LANGUAGE_REFSET_FULL_FSN_CACHE.put(key, "");
+                return "";
+            }
+            final String resultString = response.readEntity(String.class);
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode root = mapper.readTree(resultString);
+            final String fsn = firstActiveFsnOrTerm(root.get("conceptDescriptions"));
+            final String value = fsn != null ? fsn : "";
+            LANGUAGE_REFSET_FULL_FSN_CACHE.put(key, value);
+            return value;
+        } catch (final Exception e) {
+            LANGUAGE_REFSET_FULL_FSN_CACHE.put(key, "");
+            return "";
+        }
+    }
+
+    /**
+     * First active fsn or term.
+     *
+     * @param list the list
+     * @return the string
+     */
+    private static String firstActiveFsnOrTerm(final JsonNode list) {
+
+        if (list == null || !list.isArray()) {
+            return null;
+        }
+        String anyTerm = null;
+        for (final JsonNode d : list) {
+            if (!d.path("active").asBoolean(true) || !d.has("term")) {
+                continue;
+            }
+            if (DESCRIPTION_TYPE_FSN.equals(d.path("typeId").asText(""))) {
+                return d.get("term").asText();
+            }
+            if (anyTerm == null) {
+                anyTerm = d.get("term").asText();
+            }
+        }
+        return anyTerm;
+    }
+
+    /**
+     * To compact column tag from refset term.
+     *
+     * @param term the term
+     * @param sctid the sctid
+     * @return the string
+     */
+    private static String toCompactColumnTagFromRefsetTerm(final String term, final String sctid) {
+
+        String s = stripRefsetMetadataForColumn(term);
+        s = s.replaceAll("(?i)\\[[^\\]]*\\]", "").replaceAll(" +", " ").trim();
+        s = s.replaceAll("(?i)( language )?type( reference set)?$", "").trim();
+        s = s.replace("…", " ").replace("...", " ").replaceAll(" +", " ").trim();
+        if (s.isEmpty() || s.length() < 2) {
+            return trailingFourDigitsForLanguageRefsetId(sctid);
+        }
+        s = limitLabelToWordBoundary(s, MAX_COLUMN_DISAMBIGUATION_LENGTH);
+        if (s.isEmpty() || s.length() < 2) {
+            return trailingFourDigitsForLanguageRefsetId(sctid);
+        }
+        return s;
+    }
+
+    /**
+     * Limit label to word boundary.
+     *
+     * @param s the s
+     * @param max the max
+     * @return the string
+     */
+    private static String limitLabelToWordBoundary(final String s, final int max) {
+
+        if (s.length() <= max) {
+            return s;
+        }
+        final int cut = s.lastIndexOf(' ', max);
+        if (cut > 2) {
+            return s.substring(0, cut).trim();
+        }
+        return s.substring(0, max).trim();
+    }
+
+    /**
+     * Strip refset metadata for column.
+     *
+     * @param term the term
+     * @return the string
+     */
+    private static String stripRefsetMetadataForColumn(final String term) {
+
+        if (term == null) {
+            return "";
+        }
+        String s = term.replace('\u00A0', ' ').trim();
+        while (true) {
+            if (s.toLowerCase().endsWith("(foundation metadata concept)")) {
+                s = s.substring(0, s.length() - "(foundation metadata concept)".length()).trim();
+            } else if (s.toLowerCase().endsWith("(core metadata concept)")) {
+                s = s.substring(0, s.length() - "(core metadata concept)".length()).trim();
+            } else {
+                break;
+            }
+        }
+        if (s.toLowerCase().endsWith(" language reference set")) {
+            s = s.substring(0, s.length() - " language reference set".length()).trim();
+        }
+        if (s.toLowerCase().endsWith(" language type reference set")) {
+            s = s.substring(0, s.length() - " language type reference set".length()).trim();
+        }
+        return s;
+    }
+
+    /**
+     * Trailing four digits for language refset id.
+     *
+     * @param languageRefsetSctId the language refset sct id
+     * @return the string
+     */
+    private static String trailingFourDigitsForLanguageRefsetId(final String languageRefsetSctId) {
+
+        return languageRefsetSctId != null && languageRefsetSctId.length() >= 4 ? languageRefsetSctId.substring(languageRefsetSctId.length() - 4)
+            : languageRefsetSctId;
+    }
+
     /**
      * Returns the supported languages.
      *
@@ -286,5 +609,243 @@ public final class LanguageUtility {
     public static Set<String> getSupportedLanguages() {
 
         return LANGUAGE_TO_LANGUAGE_CODE_REFERENCE_MAP.keySet();
+    }
+
+    /**
+     * Friendly label for a language refset from branch optional metadata, or empty if unavailable.
+     *
+     * @param languageRefsetSctId the language refset SCTID
+     * @param branchPath the edition branch
+     * @return Snowstorm optional label, or empty string
+     */
+    public static String getLanguageRefsetLabel(final String languageRefsetSctId, final String branchPath) {
+
+        if (languageRefsetSctId == null || languageRefsetSctId.isEmpty() || branchPath == null || branchPath.isEmpty()) {
+            return "";
+        }
+        final Map<String, String> meta = getBranchLanguageRefsetMetadata(branchPath).get(languageRefsetSctId);
+        if (meta == null) {
+            return "";
+        }
+        final String label = meta.get(META_LABEL);
+        return label != null ? label : "";
+    }
+
+    /**
+     * Dialect name from branch requiredLanguageRefsets metadata, or empty.
+     *
+     * @param languageRefsetSctId the language refset SCTID
+     * @param branchPath the edition branch
+     * @return dialectName or empty
+     */
+    public static String getLanguageRefsetDialectName(final String languageRefsetSctId, final String branchPath) {
+
+        if (languageRefsetSctId == null || languageRefsetSctId.isEmpty() || branchPath == null || branchPath.isEmpty()) {
+            return "";
+        }
+        final Map<String, String> meta = getBranchLanguageRefsetMetadata(branchPath).get(languageRefsetSctId);
+        if (meta == null) {
+            return "";
+        }
+        final String dialectName = meta.get(META_DIALECT_NAME);
+        return dialectName != null ? dialectName : "";
+    }
+
+    /**
+     * Strip common language-refset FSN suffix for a shorter column label.
+     *
+     * @param fsn the FSN
+     * @return cleaned term
+     */
+    public static String cleanLanguageRefsetFsnForLabel(final String fsn) {
+
+        if (fsn == null || fsn.isEmpty()) {
+            return "";
+        }
+        String s = fsn.replace('\u00A0', ' ').trim();
+        s = s.replaceAll("(?i) \\([^)]+\\)$", "").trim();
+        s = s.replaceAll("(?i) language type reference set$", "").trim();
+        s = s.replaceAll("(?i) language reference set$", "").trim();
+        s = s.replaceAll("(?i) type reference set$", "").trim();
+        return s;
+    }
+
+    /**
+     * Branch metadata for required and optional language refsets, cached by branch path.
+     *
+     * @param branchPath the branch path
+     * @return map of refsetId to metadata; empty on failure
+     */
+    public static Map<String, Map<String, String>> getBranchLanguageRefsetMetadata(final String branchPath) {
+
+        if (branchPath == null || branchPath.isEmpty()) {
+            return Map.of();
+        }
+        final Map<String, Map<String, String>> cached = BRANCH_LANGUAGE_REFSET_META_CACHE.get(branchPath);
+        if (cached != null) {
+            return cached;
+        }
+        final Map<String, Map<String, String>> parsed = fetchBranchLanguageRefsetMetadata(branchPath);
+        BRANCH_LANGUAGE_REFSET_META_CACHE.put(branchPath, parsed);
+        return parsed;
+    }
+
+    /**
+     * Fetch and parse required and optional language refsets from Snowstorm branch metadata.
+     *
+     * @param branchPath the branch path
+     * @return map of refsetId to metadata; empty on failure
+     */
+    private static Map<String, Map<String, String>> fetchBranchLanguageRefsetMetadata(final String branchPath) {
+
+        final Map<String, Map<String, String>> result = new HashMap<>();
+        try {
+            SnowstormConnection.checkConnection();
+        } catch (final Exception e) {
+            LOG.warn("Cannot connect to Snowstorm for branch language refset metadata: {}", branchPath);
+            return result;
+        }
+        final String url = SnowstormConnection.getBaseUrl() + "branches/" + branchPath + "?includeInheritedMetadata=false";
+        try (Response response = SnowstormConnection.getResponse(url)) {
+
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                LOG.warn("Failed to get branch metadata for language refsets: {} status={}", branchPath, response.getStatus());
+                return result;
+            }
+            final String resultString = response.readEntity(String.class);
+            final ObjectMapper mapper = new ObjectMapper();
+            final JsonNode root = mapper.readTree(resultString);
+            final JsonNode metadata = root.get("metadata");
+            if (metadata == null || metadata.isNull()) {
+                return result;
+            }
+            return parseBranchLanguageRefsetMetadata(metadata);
+        } catch (final Exception e) {
+            LOG.warn("Failed to process branch language refset metadata for {}: {}", branchPath, e.getMessage());
+        }
+        return result;
+    }
+
+    /**
+     * Parse required and optional language refsets from a branch metadata JSON node.
+     *
+     * @param metadata the metadata node
+     * @return map of refsetId to metadata
+     */
+    public static Map<String, Map<String, String>> parseBranchLanguageRefsetMetadata(final JsonNode metadata) {
+
+        final Map<String, Map<String, String>> result = new HashMap<>();
+        if (metadata == null || metadata.isNull()) {
+            return result;
+        }
+        parseRequiredLanguageRefsetsArray(metadata.get("requiredLanguageRefsets"), result);
+        parseRequiredLanguageRefsetFlatKeys(metadata, result);
+        parseOptionalLanguageRefsets(metadata.get("optionalLanguageRefsets"), result);
+        return result;
+    }
+
+    /**
+     * Parse requiredLanguageRefsets array.
+     *
+     * @param arrayNode the array node
+     * @param result the result map to populate
+     */
+    private static void parseRequiredLanguageRefsetsArray(final JsonNode arrayNode, final Map<String, Map<String, String>> result) {
+
+        if (arrayNode == null || !arrayNode.isArray()) {
+            return;
+        }
+        for (final JsonNode entry : arrayNode) {
+            if (entry == null || !entry.isObject()) {
+                continue;
+            }
+            String dialectName = null;
+            if (entry.has("dialectName") && !entry.get("dialectName").isNull()) {
+                dialectName = entry.get("dialectName").asText();
+            }
+            final java.util.Iterator<Map.Entry<String, JsonNode>> fields = entry.fields();
+            while (fields.hasNext()) {
+                final Map.Entry<String, JsonNode> field = fields.next();
+                final String fieldName = field.getKey();
+                if ("default".equals(fieldName) || "dialectName".equals(fieldName)) {
+                    continue;
+                }
+                final JsonNode value = field.getValue();
+                if (value == null || !value.isTextual()) {
+                    continue;
+                }
+                final String refsetId = value.asText();
+                if (refsetId == null || refsetId.isEmpty()) {
+                    continue;
+                }
+                final Map<String, String> meta = result.computeIfAbsent(refsetId, k -> new HashMap<>());
+                meta.put(META_LANGUAGE, fieldName);
+                if (dialectName != null && !dialectName.isEmpty()) {
+                    meta.put(META_DIALECT_NAME, dialectName);
+                }
+            }
+        }
+    }
+
+    /**
+     * Parse flat requiredLanguageRefset.* keys.
+     *
+     * @param metadata the metadata node
+     * @param result the result map to populate
+     */
+    private static void parseRequiredLanguageRefsetFlatKeys(final JsonNode metadata, final Map<String, Map<String, String>> result) {
+
+        final java.util.Iterator<Map.Entry<String, JsonNode>> fields = metadata.fields();
+        while (fields.hasNext()) {
+            final Map.Entry<String, JsonNode> field = fields.next();
+            final String fieldName = field.getKey();
+            if (!fieldName.startsWith("requiredLanguageRefset.") || fieldName.equals("requiredLanguageRefsets")) {
+                continue;
+            }
+            final JsonNode value = field.getValue();
+            if (value == null || !value.isTextual()) {
+                continue;
+            }
+            final String refsetId = value.asText();
+            if (refsetId == null || refsetId.isEmpty()) {
+                continue;
+            }
+            final String language = fieldName.substring("requiredLanguageRefset.".length());
+            final Map<String, String> meta = result.computeIfAbsent(refsetId, k -> new HashMap<>());
+            meta.put(META_LANGUAGE, language);
+        }
+    }
+
+    /**
+     * Parse optionalLanguageRefsets array.
+     *
+     * @param arrayNode the array node
+     * @param result the result map to populate
+     */
+    private static void parseOptionalLanguageRefsets(final JsonNode arrayNode, final Map<String, Map<String, String>> result) {
+
+        if (arrayNode == null || !arrayNode.isArray()) {
+            return;
+        }
+        for (final JsonNode refset : arrayNode) {
+            if (refset == null || !refset.has("refsetId")) {
+                LOG.error("Optional language refset must have a refsetId defined: {}", refset);
+                continue;
+            }
+            final String refsetId = refset.get("refsetId").asText();
+            if (refsetId == null || refsetId.isEmpty()) {
+                continue;
+            }
+            final Map<String, String> meta = result.computeIfAbsent(refsetId, k -> new HashMap<>());
+            if (refset.has("label") && !refset.get("label").isNull()) {
+                meta.put(META_LABEL, refset.get("label").asText());
+            }
+            if (refset.has("key") && !refset.get("key").isNull()) {
+                meta.put(META_KEY, refset.get("key").asText());
+            }
+            if (refset.has("language") && !refset.get("language").isNull()) {
+                meta.put(META_LANGUAGE, refset.get("language").asText());
+            }
+        }
     }
 }
