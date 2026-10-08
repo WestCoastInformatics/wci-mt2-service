@@ -45,6 +45,9 @@ public abstract class CrowdClientAbstract {
     /** User's password for authentication to Crowd API. */
     private static String password;
 
+    /** Shared HTTP client for Crowd calls. */
+    protected static final HttpClient HTTP_CLIENT = HttpClient.newBuilder().build();
+
     /* initialization of required params */
     static {
         baseUrl = null;
@@ -94,13 +97,12 @@ public abstract class CrowdClientAbstract {
 
     protected static String get(final String url) throws Exception {
 
-        final HttpClient httpClient = HttpClient.newBuilder().build();
         final HttpRequest request =
             HttpRequest.newBuilder().uri(URI.create(url)).GET().header("Authorization", getBasicAuthHeader()).header("Accept", ACCEPT_DEFAULT).build();
 
         LOG.debug("CROWD API GET Url: {}", url);
 
-        final HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
+        final HttpResponse<String> response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
 
         if (response.statusCode() == 200) {
 
@@ -123,12 +125,11 @@ public abstract class CrowdClientAbstract {
      */
     protected static int post(final String url, final String entity) throws Exception {
 
-        final HttpClient httpClient = HttpClient.newBuilder().build();
         final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).POST(HttpRequest.BodyPublishers.ofString(entity))
             .header("Authorization", getBasicAuthHeader()).header("Content-Type", ACCEPT_DEFAULT).build();
 
         LOG.debug("CROWD API POST Url: {}", url);
-        final HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
+        final HttpResponse<String> response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
 
         return response.statusCode();
 
@@ -143,13 +144,12 @@ public abstract class CrowdClientAbstract {
      */
     protected static int delete(final String url) throws Exception {
 
-        final HttpClient httpClient = HttpClient.newBuilder().build();
         final HttpRequest request =
             HttpRequest.newBuilder().uri(URI.create(url)).DELETE().header("Authorization", getBasicAuthHeader()).header("Accept", ACCEPT_DEFAULT).build();
 
         LOG.debug("CROWD API DELETE Url: {}", url);
 
-        final HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
+        final HttpResponse<String> response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
 
         return response.statusCode();
 

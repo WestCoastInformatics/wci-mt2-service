@@ -6,7 +6,7 @@
 			<!-- <ThresholdFilter level="INFO" /> -->
 			<JsonLayout complete="false" compact="true"
 				eventEol="true" objectMessageAsJsonObject="true">
-				<!-- See https://logging.apache.org/log4j/2.x/manual/lookups.html for 
+				<!-- See https://logging.apache.org/log4j/2.x/manual/lookups.html for
 					how to interpolate vars. -->
 				<KeyValuePair key="time"
 					value="$${date:yyyy-MM-dd'T'HH:mm:ss.SSSXXX}" />
@@ -20,7 +20,7 @@
 					value="$${ctx:http-version}" />
 				<KeyValuePair key="status-code"
 					value="$${ctx:status-code}" />
-				<!-- <KeyValuePair key="content-length" value="$${ctx:content-length}" 
+				<!-- <KeyValuePair key="content-length" value="$${ctx:content-length}"
 					/> -->
 				<KeyValuePair key="referer" value="$${ctx:referer}" />
 				<KeyValuePair key="user-agent"
@@ -33,7 +33,7 @@
 			<!-- <ThresholdFilter level="INFO" /> -->
 			<JsonLayout complete="false" compact="true"
 				eventEol="true" objectMessageAsJsonObject="true">
-				<!-- See https://logging.apache.org/log4j/2.x/manual/lookups.html for 
+				<!-- See https://logging.apache.org/log4j/2.x/manual/lookups.html for
 					how to interpolate vars. -->
 				<KeyValuePair key="time"
 					value="$${date:yyyy-MM-dd'T'HH:mm:ss.SSSXXX}" />
@@ -45,7 +45,7 @@
 		</Console>
 		<Console name="Console" target="SYSTEM_OUT">
 			<PatternLayout
-				pattern="%d{yyyy-MM-dd'T'HH:mm:ssXXX} %c %-5p : %m%n" />
+				pattern="%d{yyyy-MM-dd'T'HH:mm:ssXXX} %c{1.1.1.*} %-5p : %m%n" />
 		</Console>
 	</Appenders>
 	<Loggers>

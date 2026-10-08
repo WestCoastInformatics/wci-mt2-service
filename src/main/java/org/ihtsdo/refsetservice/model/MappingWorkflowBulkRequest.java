@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
 
 /**
  * Request body for bulk per-concept mapping workflow actions.
@@ -43,7 +44,7 @@ public class MappingWorkflowBulkRequest {
      *
      * @return the concept codes
      */
-    @Schema(description = "Source concept codes to apply the workflow action to.", required = true)
+    @Schema(description = "Source concept codes to apply the workflow action to.", requiredMode = RequiredMode.REQUIRED)
     public List<String> getConceptCodes() {
 
         return conceptCodes;

@@ -29,7 +29,7 @@ import org.ihtsdo.refsetservice.util.StringUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.amazonaws.services.s3.AmazonS3;
+import software.amazon.awssdk.services.s3.S3Client;
 
 /**
  * Generically represents an algorithm for object searching.
@@ -66,7 +66,7 @@ public class ExportHandler {
      * @return <code>true</code> if so, <code>false</code> otherwise
      * @throws Exception the exception
      */
-    public boolean isRequestedFileOnS3(final Refset refset, final AmazonS3 s3Client, final String type, final Set<String> dates) throws Exception {
+    public boolean isRequestedFileOnS3(final Refset refset, final S3Client s3Client, final String type, final Set<String> dates) throws Exception {
 
         // Check if date lives on s3
         return false;

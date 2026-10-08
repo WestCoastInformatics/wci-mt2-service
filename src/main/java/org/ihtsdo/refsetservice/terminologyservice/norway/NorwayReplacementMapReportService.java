@@ -570,12 +570,12 @@ public class NorwayReplacementMapReportService {
                     conceptInactivationIndicators.put(conceptId, inactivationIndicator);
 
                     final JsonNode associationTargetsNode = conceptNode.findValue("associationTargets");
-                    if (associationTargetsNode == null || associationTargetsNode.size() == 0 || associationTargetsNode.fields() == null) {
+                    if (associationTargetsNode == null || !associationTargetsNode.isEmpty()) {
                         conceptAssociationTargets.put(conceptId, null);
                         continue;
                     }
 
-                    final Entry<String, JsonNode> entry = associationTargetsNode.fields().next();
+                    final Entry<String, JsonNode> entry = associationTargetsNode.properties().iterator().next();
                     final String associationType = entry.getKey().replaceAll("_", " ") + " association reference set";
                     String values = entry.getValue().toString();
                     if (values.contains("[")) {
@@ -669,7 +669,7 @@ public class NorwayReplacementMapReportService {
                     final String lang = conceptNode.get("lang").asText();
 
                     final JsonNode acceptabilityMapNode = conceptNode.findValue("acceptabilityMap");
-                    if (acceptabilityMapNode == null || acceptabilityMapNode.size() == 0 || acceptabilityMapNode.fields() == null) {
+                    if (acceptabilityMapNode == null || !acceptabilityMapNode.isEmpty()) {
                         conceptAssociationTargets.put(conceptId, null);
                         continue;
                     }

@@ -11,7 +11,6 @@ package org.ihtsdo.refsetservice.rest.client;
 
 import java.io.ByteArrayInputStream;
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
@@ -127,10 +126,9 @@ public class CrowdAPIClient extends CrowdClientAbstract {
             throw new Exception("User name cannot be empty or null. Received username: " + userName);
         }
 
-        final HttpClient httpClient = HttpClient.newBuilder().build();
         final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(getBaseUrl() + GET_USER + "?username=" + userName)).GET()
             .header("Accept", MediaType.APPLICATION_JSON).header("Authorization", getBasicAuthHeader()).build();
-        final HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
+        final HttpResponse<String> response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
 
         // 200 OK.
         // 404 the user could not be found.
@@ -229,13 +227,12 @@ public class CrowdAPIClient extends CrowdClientAbstract {
             throw new Exception("User name cannot be empty or null. Received username: " + username);
         }
         final String url = getBaseUrl() + GET_AVATAR_FOR_USER + username;
-        final HttpClient httpClient = HttpClient.newBuilder().build();
         final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().header("Accept", MediaType.APPLICATION_JSON)
             .header("Authorization", getBasicAuthHeader()).build();
 
         LOG.debug("CROWD API GET Url: {}", url);
 
-        final HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
+        final HttpResponse<String> response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
 
         // 303 - The uri for the user's avatar (in the location header)
         // 404 - The user doesn't exist, or doesn't have an avatar defined
@@ -426,13 +423,12 @@ public class CrowdAPIClient extends CrowdClientAbstract {
      */
     private static String get(final String url, final String mediaType) throws Exception {
 
-        final HttpClient httpClient = HttpClient.newBuilder().build();
         final HttpRequest request =
             HttpRequest.newBuilder().uri(URI.create(url)).GET().header("Authorization", getBasicAuthHeader()).header("Accept", mediaType).build();
 
         LOG.debug("CROWD API GET Url: {}", url);
 
-        final HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
+        final HttpResponse<String> response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
 
         if (response.statusCode() == 200) {
 

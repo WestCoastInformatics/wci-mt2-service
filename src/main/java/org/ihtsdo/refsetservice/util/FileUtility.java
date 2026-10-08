@@ -22,7 +22,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URL;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -458,7 +458,7 @@ public final class FileUtility {
                 return IOUtils.toString(in, StandardCharsets.UTF_8);
             }
         } else {
-            try (final InputStream in = new URL(uri).openStream()) {
+            try (final InputStream in = URI.create(uri).toURL().openStream()) {
                 return IOUtils.toString(new BufferedInputStream(in), StandardCharsets.UTF_8);
             }
         }

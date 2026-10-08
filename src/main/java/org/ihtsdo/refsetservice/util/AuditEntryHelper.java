@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.ihtsdo.refsetservice.model.AdditionalMapEntryInfo;
 import org.ihtsdo.refsetservice.model.AuditEntry;
 import org.ihtsdo.refsetservice.model.DiscussionThread;
@@ -1267,10 +1268,10 @@ public final class AuditEntryHelper {
         if (!Objects.equals(oldEntry.getToName(), newEntry.getToName())) {
             changesArray.add(String.format(template, "Target Name", oldEntry.getToName(), newEntry.getToName()));
         }
-        if (!StringUtils.equalsIgnoreCase(oldEntry.getRelation(), newEntry.getRelation())) {
+        if (!Strings.CI.equals(oldEntry.getRelation(), newEntry.getRelation())) {
             changesArray.add(String.format(template, "Relation", oldEntry.getRelation(), newEntry.getRelation()));
         }
-        if (!StringUtils.equalsIgnoreCase(oldEntry.getRelationCode(), newEntry.getRelationCode())) {
+        if (!Strings.CI.equals(oldEntry.getRelationCode(), newEntry.getRelationCode())) {
             changesArray.add(String.format(template, "Relation Code", oldEntry.getRelationCode(), newEntry.getRelationCode()));
         }
         if (!Objects.equals(oldEntry.getRule(), newEntry.getRule())) {

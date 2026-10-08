@@ -2,6 +2,7 @@
 package org.ihtsdo.refsetservice.model;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
 
 /**
  * Generically represents something that has an id.
@@ -13,7 +14,7 @@ public interface HasId {
      *
      * @return the id
      */
-    @Schema(description = "unique identifier", required = true, format = "uuid")
+    @Schema(description = "unique identifier", requiredMode = RequiredMode.REQUIRED, format = "uuid")
     public String getId();
 
     /**

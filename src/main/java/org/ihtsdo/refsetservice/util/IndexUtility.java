@@ -42,6 +42,7 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status.Family;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
@@ -85,6 +86,9 @@ public final class IndexUtility {
 
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(IndexUtility.class);
+
+    /** Default fetch size when PFS is unset; callers that need more must pass an explicit limit. */
+    private static final int DEFAULT_UNPAGED_FETCH_LIMIT = 1000;
 
     /** The sort field analyzed map. */
     private static Map<String, Map<String, Boolean>> sortFieldAnalyzedMap = new HashMap<>();
@@ -708,12 +712,12 @@ public final class IndexUtility {
                     dateRangeQueryString += dateSegment.getValue() + " , ";
                 }
 
-                dateRangeQueryString = StringUtils.removeEnd(dateRangeQueryString, " , ");
+                dateRangeQueryString = Strings.CS.removeEnd(dateRangeQueryString, " , ");
 
                 // Remove leading AND OR and clear out empty query_string
                 dateFreeQueryString = dateFreeQueryString.replace("() AND", "").replace("( AND", " (").replace("( OR", " (").replace("() OR", "");
-                dateFreeQueryString = StringUtils.removeStart(dateFreeQueryString, " AND ");
-                dateFreeQueryString = StringUtils.removeStart(dateFreeQueryString, " OR ");
+                dateFreeQueryString = Strings.CS.removeStart(dateFreeQueryString, " AND ");
+                dateFreeQueryString = Strings.CS.removeStart(dateFreeQueryString, " OR ");
 
                 final String queryString = "{\"query_string\":{\"default_operator\": \"AND\", \"analyze_wildcard\": true, \"query\":\""
                     + StringEscapeUtils.escapeJson(dateFreeQueryString) + "\"}}";
@@ -724,8 +728,8 @@ public final class IndexUtility {
 
                 // Remove leading AND OR and clear out empty query_string
                 finalQuery = finalQuery.replace("() AND", "").replace("( AND", " (").replace("( OR", " (").replace("() OR", "");
-                finalQuery = StringUtils.removeStart(finalQuery, " AND ");
-                finalQuery = StringUtils.removeStart(finalQuery, " OR ");
+                finalQuery = Strings.CS.removeStart(finalQuery, " AND ");
+                finalQuery = Strings.CS.removeStart(finalQuery, " OR ");
 
                 fullQueryString = "{\"query_string\":{\"default_operator\": \"AND\", \"analyze_wildcard\": true, \"query\":\""
                     + StringEscapeUtils.escapeJson(finalQuery) + "\"}}";
@@ -862,7 +866,11 @@ public final class IndexUtility {
         if (pfs != null && pfs.getOffset() >= 0 && pfs.getLimit() >= 0) {
             result = searchQuery.fetch(pfs.getOffset(), pfs.getLimit());
         } else {
-            result = searchQuery.fetch(0, 200000);
+            result = searchQuery.fetch(0, DEFAULT_UNPAGED_FETCH_LIMIT);
+            if (result.total().hitCount() > DEFAULT_UNPAGED_FETCH_LIMIT) {
+                LOG.warn("Hibernate Search unpaged fetch capped at {} of {} hits for {}; pass PfsParameter with an explicit limit",
+                    DEFAULT_UNPAGED_FETCH_LIMIT, result.total().hitCount(), clazz.getSimpleName());
+            }
         }
 
         return result;

@@ -16,6 +16,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.MediaType;
 
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.RestException;
@@ -262,7 +263,7 @@ public class TeamController extends BaseController {
             service.setTransactionPerOperation(false);
             service.beginTransaction();
 
-            if (team == null || !org.apache.commons.lang3.StringUtils.equals(id, team.getId())) {
+            if (team == null || !Strings.CS.equals(id, team.getId())) {
 
                 final String errorMessage = "Team is null or team id does not match id in URL.";
                 LOG.error(errorMessage);

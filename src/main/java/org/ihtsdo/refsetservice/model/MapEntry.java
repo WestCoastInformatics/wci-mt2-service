@@ -25,7 +25,7 @@ import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.hibernate.search.engine.backend.types.Projectable;
@@ -494,9 +494,9 @@ public class MapEntry extends AbstractHasModified {
         }
         // ignore timestamps from super and check active.
         return Objects.equals(this.advices, other.advices) && Objects.equals(this.additionalMapEntryInfos, other.additionalMapEntryInfos)
-            && Objects.equals(this.toCode, other.toCode) && Objects.equals(this.toName, other.toName) && StringUtils.equalsIgnoreCase(this.rule, other.rule)
-            && Objects.equals(this.priority, other.priority) && StringUtils.equalsIgnoreCase(this.relation, other.relation)
-            && StringUtils.equalsIgnoreCase(this.relationCode, other.relationCode) && Objects.equals(this.block, other.block)
+            && Objects.equals(this.toCode, other.toCode) && Objects.equals(this.toName, other.toName) && Strings.CI.equals(this.rule, other.rule)
+            && Objects.equals(this.priority, other.priority) && Strings.CI.equals(this.relation, other.relation)
+            && Strings.CI.equals(this.relationCode, other.relationCode) && Objects.equals(this.block, other.block)
             && Objects.equals(this.group, other.group) && Objects.equals(this.moduleId, other.moduleId) && Objects.equals(this.released, other.released)
             && Objects.equals(this.isActive(), other.isActive());
     }

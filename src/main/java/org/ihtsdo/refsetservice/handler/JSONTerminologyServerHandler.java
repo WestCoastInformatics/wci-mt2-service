@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status.Family;
 
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnomedConstants;
@@ -718,7 +719,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             bodyConceptIds += "\"" + moduleId + "\",";
         }
 
-        bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",") + "]";
+        bodyConceptIds = Strings.CS.removeEnd(bodyConceptIds, ",") + "]";
 
         final String searchBody = bodyBase + bodyConceptIds + "}";
         LOG.debug("getModuleNames URL: " + conceptSearchUrl);
@@ -1084,7 +1085,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 }
             }
 
-            final String conceptIdToRemoves = StringUtils.removeEnd(conceptsToInactivate.toString(), ",");
+            final String conceptIdToRemoves = Strings.CS.removeEnd(conceptsToInactivate.toString(), ",");
             RefsetMemberService.removeRefsetMembers(service, user, refset, conceptIdToRemoves);
             final BranchInformation refsetBranchInfo =
                 new BranchInformation(refset.getEditionBranch(), refset.getRefsetId(), editBranchId, refsetBranchId, refset.isLocalSet());
@@ -1480,7 +1481,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             }
         }
 
-        snowstormQuery = StringUtils.removeEnd(snowstormQuery, " AND ");
+        snowstormQuery = Strings.CS.removeEnd(snowstormQuery, " AND ");
 
         for (final String branchPath : nonPublishedBranchPaths) {
             bodyPaths.add(branchPath);
@@ -3100,7 +3101,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             }
 
             LOG.debug("addRefsetMembers searchIndex :: loopNumber :: batch size: " + searchIndex + " :: " + loopNumber + " :: " + (searchIndex / loopNumber));
-            bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",") + "]";
+            bodyConceptIds = Strings.CS.removeEnd(bodyConceptIds, ",") + "]";
 
             // verify the concept IDs if a bulk add is going to be used
             if (!conceptIds.isEmpty()) {
@@ -3180,7 +3181,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     bodyConceptIds += conceptId + ",";
                 }
 
-                bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",");
+                bodyConceptIds = Strings.CS.removeEnd(bodyConceptIds, ",");
                 final String memberSearchBody = memberSearchBodyBase + bodyConceptIds + "]}";
                 // LOG.debug("addRefsetMembers member search body: " +
                 // memberSearchBody);
@@ -3489,7 +3490,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             }
 
-            bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",");
+            bodyConceptIds = Strings.CS.removeEnd(bodyConceptIds, ",");
 
             final String memberSearchUrl = memberSearchUrlBase + bodyConceptIds;
             Iterator<JsonNode> iterator = null;
@@ -3971,7 +3972,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
         }
 
-        inactiveConceptIds = StringUtils.removeEnd(inactiveConceptIds, ", ");
+        inactiveConceptIds = Strings.CS.removeEnd(inactiveConceptIds, ", ");
         final String conceptDetailsBaseUrl = SnowstormConnection.getRestBaseUrl() + "browser/" + branchPath + "/concepts?conceptIds=";
         boolean searchAgain = true;
         int searchIndex = 0;
@@ -4013,7 +4014,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             }
 
-            bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",");
+            bodyConceptIds = Strings.CS.removeEnd(bodyConceptIds, ",");
 
             final String memberDetailsUrl = conceptDetailsBaseUrl + bodyConceptIds;
             Iterator<JsonNode> iterator = null;
@@ -4062,11 +4063,11 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                     final JsonNode associationTargets = conceptNode.get("associationTargets");
 
-                    if (associationTargets != null && associationTargets.size() != 0 && associationTargets.fields() != null) {
+                    if (associationTargets != null && !associationTargets.isEmpty()) {
 
                         LOG.debug("compileUpgradeData associationTargets: " + ModelUtility.toJson(associationTargets));
                         final Map<String, String> reasonMap = new HashMap<>();
-                        final Entry<String, JsonNode> entry = associationTargets.fields().next();
+                        final Entry<String, JsonNode> entry = associationTargets.properties().iterator().next();
                         final List<Concept> replacementConceptsToLookup = new ArrayList<>();
                         final String reason = entry.getKey();
                         String replacementConceptIds = entry.getValue().toString();
@@ -4087,7 +4088,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                             replacementBodyConceptIds += "\"" + replacementConceptId + "\",";
                         }
 
-                        final String threadReplacementBodyConceptIds = StringUtils.removeEnd(replacementBodyConceptIds, ",") + "]";
+                        final String threadReplacementBodyConceptIds = Strings.CS.removeEnd(replacementBodyConceptIds, ",") + "]";
 
                         LOG.debug("compileUpgradeData replacementConceptsToLookup: " + replacementConceptsToLookup);
 

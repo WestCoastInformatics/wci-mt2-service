@@ -17,6 +17,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.MediaType;
 
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Organization;
@@ -238,7 +239,7 @@ public class OrganizationController extends BaseController {
         LOG.info("Update organization: {}", organization);
         final User authUser = authorizeUser(request);
 
-        if (organization == null || !org.apache.commons.lang3.StringUtils.equals(id, organization.getId())) {
+        if (organization == null || !Strings.CS.equals(id, organization.getId())) {
 
             final String errorMessage = "Organization is null or organization id does not match id in URL.";
             throw new RestException(false, 404, "Not found", errorMessage);
@@ -623,7 +624,7 @@ public class OrganizationController extends BaseController {
             service.beginTransaction();
 
             final Organization organization = OrganizationService.getOrganization(service, authUser, id, false);
-            if (organization == null || !org.apache.commons.lang3.StringUtils.equals(id, organization.getId())) {
+            if (organization == null || !Strings.CS.equals(id, organization.getId())) {
                 throw new RestException(false, 417, "Expectation failed", "Organization is null or organization id does not match id in URL.");
             }
 

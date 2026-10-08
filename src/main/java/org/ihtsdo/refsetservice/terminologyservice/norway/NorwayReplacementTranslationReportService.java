@@ -231,12 +231,12 @@ public class NorwayReplacementTranslationReportService {
                     conceptInactivationIndicators.put(conceptId, inactivationIndicator);
 
                     JsonNode associationTargetsNode = conceptNode.findValue("associationTargets");
-                    if (associationTargetsNode == null || associationTargetsNode.size() == 0 || associationTargetsNode.fields() == null) {
+                    if (associationTargetsNode == null || !associationTargetsNode.isEmpty()) {
                         conceptAssociationTargets.put(conceptId, null);
                         continue;
                     }
 
-                    Entry<String, JsonNode> entry = associationTargetsNode.fields().next();
+                    Entry<String, JsonNode> entry = associationTargetsNode.properties().iterator().next();
                     String associationType = entry.getKey().replaceAll("_", " ") + " association reference set";
                     String values = entry.getValue().toString();
                     if (values.contains("[")) {
@@ -314,7 +314,7 @@ public class NorwayReplacementTranslationReportService {
                     String lang = conceptNode.get("lang").asText();
 
                     JsonNode acceptabilityMapNode = conceptNode.findValue("acceptabilityMap");
-                    if (acceptabilityMapNode == null || acceptabilityMapNode.size() == 0 || acceptabilityMapNode.fields() == null) {
+                    if (acceptabilityMapNode == null || !acceptabilityMapNode.isEmpty()) {
                         conceptAssociationTargets.put(conceptId, null);
                         continue;
                     }

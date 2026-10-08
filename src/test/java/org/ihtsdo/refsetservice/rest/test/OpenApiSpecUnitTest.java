@@ -52,10 +52,10 @@ public class OpenApiSpecUnitTest extends BaseTest {
 
         boolean sawMapAdvicePostBody = false;
         boolean sawConceptGetContent = false;
-        final Iterator<Entry<String, JsonNode>> paths = root.path("paths").fields();
+        final Iterator<Entry<String, JsonNode>> paths = root.path("paths").properties().iterator();
         while (paths.hasNext()) {
             final Entry<String, JsonNode> path = paths.next();
-            final Iterator<Entry<String, JsonNode>> methods = path.getValue().fields();
+            final Iterator<Entry<String, JsonNode>> methods = path.getValue().properties().iterator();
             while (methods.hasNext()) {
                 final Entry<String, JsonNode> method = methods.next();
                 if (!method.getValue().isObject()) {

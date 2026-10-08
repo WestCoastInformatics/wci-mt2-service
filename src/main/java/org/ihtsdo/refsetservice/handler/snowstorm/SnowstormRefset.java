@@ -23,6 +23,7 @@ import java.util.Map;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status.Family;
 
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.BranchInformation;
 import org.ihtsdo.refsetservice.model.Concept;
@@ -303,7 +304,7 @@ public class SnowstormRefset extends SnowstormAbstract {
                 }
             }
 
-            final String conceptIdToRemoves = StringUtils.removeEnd(conceptsToInactivate.toString(), ",");
+            final String conceptIdToRemoves = Strings.CS.removeEnd(conceptsToInactivate.toString(), ",");
             RefsetMemberService.removeRefsetMembers(service, user, refset, conceptIdToRemoves);
 
             // BranchService.promoteEditIntoRefsetBranch(refset.getEditionBranch(), refset.getRefsetId(), editBranchId, refsetBranchId,

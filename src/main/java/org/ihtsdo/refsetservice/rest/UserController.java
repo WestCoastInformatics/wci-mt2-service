@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.core.MediaType;
 
+import org.apache.commons.lang3.Strings;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.Team;
@@ -143,7 +144,7 @@ public class UserController extends BaseController {
         LOG.info("Update user: {}", user);
         final User authUser = authorizeUser(request);
 
-        if (user == null || !org.apache.commons.lang3.StringUtils.equals(id, user.getId())) {
+        if (user == null || !Strings.CS.equals(id, user.getId())) {
             LOG.info("User is null or user id does not match id in URL.");
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
@@ -186,7 +187,7 @@ public class UserController extends BaseController {
         try (final TerminologyService service = new TerminologyService()) {
 
             final User user = UserService.getUser(service, id, false);
-            if (user == null || !org.apache.commons.lang3.StringUtils.equals(id, user.getId())) {
+            if (user == null || !Strings.CS.equals(id, user.getId())) {
                 LOG.info("User is null or user id does not match id in URL.");
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }

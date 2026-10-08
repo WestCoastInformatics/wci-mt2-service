@@ -2,6 +2,7 @@ package org.ihtsdo.refsetservice.rest;
 
 import jakarta.ws.rs.core.MediaType;
 
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.MapAdvice;
@@ -180,7 +181,7 @@ public class MapAdviceController extends BaseController {
     public @ResponseBody ResponseEntity<MapAdvice> updateMapAdvice(@PathVariable(value = "id") final String id,
         @org.springframework.web.bind.annotation.RequestBody final MapAdvice mapAdvice) throws Exception {
 
-        if (mapAdvice == null || !StringUtils.equals(id, mapAdvice.getId())) {
+        if (mapAdvice == null || !Strings.CS.equals(id, mapAdvice.getId())) {
 
             final String errorMessage = "Map advice is null or mapAdvice id does not match id in URL.";
             throw new RestException(false, 404, "Not found", errorMessage);

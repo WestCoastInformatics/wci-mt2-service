@@ -16,6 +16,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.MediaType;
 
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.IdName;
@@ -338,7 +339,7 @@ public class ProjectController extends BaseController {
         LOG.info("Update project: {}", project);
         final User authUser = authorizeUser(request);
 
-        if (project == null || !org.apache.commons.lang3.StringUtils.equals(id, project.getId())) {
+        if (project == null || !Strings.CS.equals(id, project.getId())) {
             final String errorMessage = "Project is null or project id does not match id in URL.";
             LOG.error(errorMessage);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);

@@ -11,17 +11,14 @@ package org.ihtsdo.refsetservice.util;
 
 import java.util.TimeZone;
 
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
 /**
- * Supply object mapper per thread.
+ * Supply a shared, thread-safe object mapper.
  */
 public final class ThreadLocalMapper {
-
-    /** The Constant mapper. */
-    private static final ThreadLocal<ObjectMapper> MAPPER = ThreadLocal.withInitial(ThreadLocalMapper::newMapper);
 
     /**
      * Instantiates a new thread local mapper.
@@ -31,6 +28,9 @@ public final class ThreadLocalMapper {
         // n/a
     }
 
+    /** The shared mapper. */
+    private static final ObjectMapper MAPPER = newMapper();
+
     /**
      * New mapper.
      *
@@ -39,19 +39,19 @@ public final class ThreadLocalMapper {
     public static ObjectMapper newMapper() {
 
         final ObjectMapper mapper = new ObjectMapper();
-        mapper.setSerializationInclusion(Include.NON_EMPTY);
+        mapper.setDefaultPropertyInclusion(JsonInclude.Value.construct(JsonInclude.Include.NON_EMPTY, JsonInclude.Include.NON_EMPTY));
         mapper.findAndRegisterModules().configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
         mapper.setTimeZone(TimeZone.getDefault());
         return mapper;
     }
 
     /**
-     * Gets the mapper.
+     * Gets the shared mapper.
      *
      * @return the object mapper
      */
     public static ObjectMapper get() {
 
-        return MAPPER.get();
+        return MAPPER;
     }
 }

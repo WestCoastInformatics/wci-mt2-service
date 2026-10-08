@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 SNOMED International - All Rights Reserved.
+ * Copyright 2026 SNOMED International - All Rights Reserved.
  *
  * NOTICE:  All information contained herein is, and remains the property of SNOMED International
  * The intellectual and technical concepts contained herein are proprietary to
@@ -9,33 +9,36 @@
  */
 package org.ihtsdo.refsetservice.terminologyservice;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.amazonaws.SdkClientException;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.InstanceProfileCredentialsProvider;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.DeleteObjectsRequest;
-import com.amazonaws.services.s3.model.DeleteObjectsRequest.KeyVersion;
-import com.amazonaws.services.s3.model.DeleteObjectsResult;
-import com.amazonaws.services.s3.model.ListObjectsV2Request;
-import com.amazonaws.services.s3.model.ListObjectsV2Result;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectInputStream;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.Delete;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsResponse;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetUrlRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
 /**
  * Class to handle making calls to Amazon S3.
@@ -55,7 +58,7 @@ public final class S3ConnectionWrapper {
     private static String awsBucket;
 
     /** The region. */
-    private static Regions awsRegion;
+    private static Region awsRegion;
 
     /** The project directory. */
     private static String projectDir;
@@ -67,7 +70,7 @@ public final class S3ConnectionWrapper {
     private static String artifactDir;
 
     /** The S3 client. */
-    private static AmazonS3 s3Client;
+    private static S3Client s3Client;
 
     /** The S3 SEPARATOR character. */
     private static final String SEPARATOR = "/";
@@ -75,19 +78,12 @@ public final class S3ConnectionWrapper {
     public static void loadConfigurationFromProperties() {
 
         awsBucket = PropertyUtility.getProperty("aws.bucket");
-        awsRegion = Regions.fromName(PropertyUtility.getProperty("aws.region"));
+        awsRegion = Region.of(PropertyUtility.getProperty("aws.region"));
         projectDir = PropertyUtility.getProperty("aws.project.base.dir");
         iconDir = PropertyUtility.getProperty("aws.icon.dir");
         artifactDir = PropertyUtility.getProperty("aws.artifact.dir");
         awsAccessKeyId = PropertyUtility.getProperty("aws.access.key.id");
         awsSecretAccessKey = PropertyUtility.getProperty("aws.secret.access.key");
-    }
-
-    private static void ensureConfigured() {
-
-        if (awsBucket == null) {
-            loadConfigurationFromProperties();
-        }
     }
 
     /**
@@ -99,41 +95,39 @@ public final class S3ConnectionWrapper {
     }
 
     /**
+     * Load S3 properties once after PropertyUtility is ready.
+     */
+    private static void ensureConfigured() {
+
+        if (awsRegion != null) {
+            loadConfigurationFromProperties();
+        }
+    }
+
+    /**
      * Connect to amazon S 3.
      */
-    @SuppressWarnings("resource")
     private static void connectToAmazonS3() {
 
+        ensureConfigured();
         if (s3Client != null) {
             return;
         }
 
         try {
 
-            // Connect to server using instance profile credentials
-            s3Client = AmazonS3ClientBuilder.standard().withRegion(awsRegion).withCredentials(new InstanceProfileCredentialsProvider(false)).build();
-
-            // Check if connection was successful. If not, try to connect with static keys instead
-            try {
-                s3Client.listBuckets();
-
-            } catch (final SdkClientException e) {
-
-                // Connect to server with static keys
-                AmazonS3ClientBuilder clientBuilder = AmazonS3ClientBuilder.standard().withRegion(awsRegion);
-
-                if (awsAccessKeyId != null && !awsAccessKeyId.equals("") && !awsAccessKeyId.equals("none") && !awsAccessKeyId.equals("change_me")) {
-
-                    final BasicAWSCredentials awsCreds = new BasicAWSCredentials(awsAccessKeyId, awsSecretAccessKey);
-                    clientBuilder = clientBuilder.withCredentials(new AWSStaticCredentialsProvider(awsCreds));
-                }
-
-                s3Client = clientBuilder.build();
+            // Prefer static keys when configured; otherwise use the default chain (instance profile, env, etc.)
+            final AwsCredentialsProvider credentialsProvider;
+            if (hasStaticCredentials()) {
+                credentialsProvider =
+                    StaticCredentialsProvider.create(AwsBasicCredentials.create(awsAccessKeyId, awsSecretAccessKey));
+            } else {
+                credentialsProvider = DefaultCredentialsProvider.builder().build();
             }
 
-            if (s3Client == null) {
-                throw new NullPointerException("Client returned was null");
-            }
+            final S3Client client = S3Client.builder().region(awsRegion).credentialsProvider(credentialsProvider).build();
+            client.listBuckets();
+            s3Client = client;
 
             LOG.info("Connected to S3 in region: " + awsRegion);
 
@@ -142,6 +136,17 @@ public final class S3ConnectionWrapper {
             LOG.error("Couldn't connect to AWS S3", ex);
             throw ex;
         }
+    }
+
+    /**
+     * Indicates whether static AWS credentials are configured.
+     *
+     * @return true if static credentials are usable
+     */
+    private static boolean hasStaticCredentials() {
+
+        return awsAccessKeyId != null && !awsAccessKeyId.equals("") && !awsAccessKeyId.equals("none")
+            && !awsAccessKeyId.equals("change_me");
     }
 
     /**
@@ -180,14 +185,9 @@ public final class S3ConnectionWrapper {
         try {
             connectToAmazonS3();
 
-            // Upload a file as a new object with ContentType and title specified.
-            final PutObjectRequest request =
-                new PutObjectRequest(S3ConnectionWrapper.awsBucket, filePath + fileName, new File(localFilePath + File.separator + fileName));
-            final ObjectMetadata metadata = new ObjectMetadata();
-            metadata.setContentType("plain/text");
-            metadata.addUserMetadata("title", fileName);
-            request.setMetadata(metadata);
-            s3Client.putObject(request);
+            final PutObjectRequest request = PutObjectRequest.builder().bucket(awsBucket).key(filePath + fileName)
+                .contentType("plain/text").metadata(Map.of("title", fileName)).build();
+            s3Client.putObject(request, Path.of(localFilePath + File.separator + fileName));
         } catch (final Exception e) {
             throw new Exception("Failed to upload the file: " + fileName + " locally at: " + localFilePath + " to the awsPath: " + filePath, e);
         }
@@ -205,9 +205,19 @@ public final class S3ConnectionWrapper {
 
         connectToAmazonS3();
         final String filePath = getCorrectAwsFilePath(awsPath);
-        return (s3Client.doesObjectExist(awsBucket, filePath + fileName));
-    }
 
+        try {
+            s3Client.headObject(HeadObjectRequest.builder().bucket(awsBucket).key(filePath + fileName).build());
+            return true;
+        } catch (final NoSuchKeyException e) {
+            return false;
+        } catch (final S3Exception e) {
+            if (e.statusCode() == 404) {
+                return false;
+            }
+            throw e;
+        }
+    }
     /**
      * Checks if the file exists in S3 cache and downloads it if it does.
      *
@@ -245,7 +255,7 @@ public final class S3ConnectionWrapper {
         final String filePath = getCorrectAwsFilePath(awsFilePath);
 
         try {
-            return s3Client.getUrl(awsBucket, filePath + fileName).toExternalForm();
+            return s3Client.utilities().getUrl(GetUrlRequest.builder().bucket(awsBucket).key(filePath + fileName).build()).toExternalForm();
         } catch (final Exception e) {
             throw new Exception("Failed to get the file: " + fileName + " at the expected S3 Path: " + awsFilePath, e);
         }
@@ -264,23 +274,8 @@ public final class S3ConnectionWrapper {
         connectToAmazonS3();
         final String filePath = getCorrectAwsFilePath(awsPath);
 
-        LOG.info("downloadFileFromS3: awsPath: {}, fileName: {}, downloadLocation: {}, filePath: {}", awsPath, awsFileName, downloadLocation, filePath);
-
-        try (final S3Object s3Object = s3Client.getObject(awsBucket, filePath + awsFileName)) {
-
-            try (final S3ObjectInputStream s3InputStream = s3Object.getObjectContent()) {
-
-                try (final FileOutputStream fos = new FileOutputStream(new File(downloadLocation))) {
-
-                    final byte[] readBuf = new byte[1024];
-                    int readLen = 0;
-
-                    while ((readLen = s3InputStream.read(readBuf)) > 0) {
-                        fos.write(readBuf, 0, readLen);
-                    }
-                }
-            }
-        }
+        final GetObjectRequest request = GetObjectRequest.builder().bucket(awsBucket).key(filePath + awsFileName).build();
+        s3Client.getObject(request, Path.of(downloadLocation));
     }
 
     /**
@@ -292,29 +287,28 @@ public final class S3ConnectionWrapper {
     public static boolean deleteObjectFromAws(final String awsPath) {
 
         connectToAmazonS3();
-        LOG.debug("deleteObjectFromAws: awsPath: {}", awsPath);
+        LOG.debug("deleteObjectFromAws: awsPath: " + awsPath);
 
-        final ListObjectsV2Request listRequest = new ListObjectsV2Request().withBucketName(awsBucket).withPrefix(awsPath);
-        final ListObjectsV2Result listing = s3Client.listObjectsV2(listRequest);
+        final ListObjectsV2Response listing =
+            s3Client.listObjectsV2(ListObjectsV2Request.builder().bucket(awsBucket).prefix(awsPath).build());
 
-        final ArrayList<KeyVersion> keys = new ArrayList<>();
+        final List<ObjectIdentifier> keys = new ArrayList<>();
 
-        for (final S3ObjectSummary obj : listing.getObjectSummaries()) {
+        for (final S3Object obj : listing.contents()) {
 
-            keys.add(new KeyVersion(obj.getKey()));
-            LOG.debug("deleteObjectFromAws: object to delete: {}", obj.getKey());
+            keys.add(ObjectIdentifier.builder().key(obj.key()).build());
+            LOG.debug("deleteObjectFromAws: object to delete: " + obj.key());
         }
 
         if (keys.isEmpty()) {
             return true;
         }
-        final DeleteObjectsRequest deleteRequest = new DeleteObjectsRequest(awsBucket).withKeys(keys).withQuiet(false);
 
-        s3Client.deleteObjects(deleteRequest);
-        final DeleteObjectsResult delObjRes = s3Client.deleteObjects(deleteRequest);
+        final DeleteObjectsResponse delObjRes = s3Client.deleteObjects(DeleteObjectsRequest.builder().bucket(awsBucket)
+            .delete(Delete.builder().objects(keys).quiet(false).build()).build());
 
-        final int successfulDeletes = delObjRes.getDeletedObjects().size();
-        LOG.debug("deleteObjectFromAws: {} objects successfully deleted.", successfulDeletes);
+        final int successfulDeletes = delObjRes.deleted().size();
+        LOG.debug("deleteObjectFromAws: " + successfulDeletes + " objects successfully deleted.");
 
         return successfulDeletes > 0;
     }
@@ -330,12 +324,12 @@ public final class S3ConnectionWrapper {
         LOG.debug("getDirectoryListing: awsPath: " + awsPath);
         connectToAmazonS3();
 
-        final ListObjectsV2Request listRequest = new ListObjectsV2Request().withBucketName(awsBucket).withPrefix(awsPath);
-        final ListObjectsV2Result listing = s3Client.listObjectsV2(listRequest);
-        final List<String> files = new ArrayList<String>();
+        final ListObjectsV2Response listing =
+            s3Client.listObjectsV2(ListObjectsV2Request.builder().bucket(awsBucket).prefix(awsPath).build());
+        final List<String> files = new ArrayList<>();
 
-        for (final S3ObjectSummary obj : listing.getObjectSummaries()) {
-            files.add(obj.getKey());
+        for (final S3Object obj : listing.contents()) {
+            files.add(obj.key());
         }
 
         return files;
@@ -368,6 +362,7 @@ public final class S3ConnectionWrapper {
      */
     public static String getAwsProjectPath() throws Exception {
 
+        ensureConfigured();
         return projectDir + SEPARATOR;
     }
 

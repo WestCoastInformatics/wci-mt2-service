@@ -2,6 +2,7 @@ package org.ihtsdo.refsetservice.rest;
 
 import jakarta.ws.rs.core.MediaType;
 
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.MapRelation;
@@ -182,7 +183,7 @@ public class MapRelationController extends BaseController {
     public @ResponseBody ResponseEntity<MapRelation> updateMapRelation(@PathVariable(value = "id") final String id,
         @org.springframework.web.bind.annotation.RequestBody final MapRelation mapRelation) throws Exception {
 
-        if (mapRelation == null || !StringUtils.equals(id, mapRelation.getId())) {
+        if (mapRelation == null || !Strings.CS.equals(id, mapRelation.getId())) {
 
             final String errorMessage = "Map relation is null or mapRelation id does not match id in URL.";
             throw new RestException(false, 404, "Not found", errorMessage);

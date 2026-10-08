@@ -25,7 +25,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.core.MediaType;
 
 import org.apache.commons.cli.MissingArgumentException;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.Concept;
@@ -396,7 +396,7 @@ public class RefsetController extends BaseController {
                     error += unaddedConcept + ", ";
                 }
 
-                error = StringUtils.removeEnd(error, ", ");
+                error = Strings.CS.removeEnd(error, ", ");
             }
 
             // service.commit();
@@ -516,7 +516,7 @@ public class RefsetController extends BaseController {
                     error += unremovedConcept + ", ";
                 }
 
-                error = StringUtils.removeEnd(error, ", ");
+                error = Strings.CS.removeEnd(error, ", ");
             }
 
             if (error.equals("")) {
@@ -1103,7 +1103,7 @@ public class RefsetController extends BaseController {
                     error += unremovedConcept + ", ";
                 }
 
-                error = StringUtils.removeEnd(error, ", ");
+                error = Strings.CS.removeEnd(error, ", ");
             }
 
             if (!error.isEmpty()) {
@@ -1164,7 +1164,7 @@ public class RefsetController extends BaseController {
             return new ResponseEntity<>(mae.getMessage(), HttpStatus.EXPECTATION_FAILED);
         } catch (final RuntimeException re) {
 
-            return new ResponseEntity<>("{\"error\": \"" + re.getMessage() + "\"}", HttpStatus.UNPROCESSABLE_ENTITY);
+            return new ResponseEntity<>("{\"error\": \"" + re.getMessage() + "\"}", HttpStatus.UNPROCESSABLE_CONTENT);
 
         } catch (final Exception e) {
             handleException(e);
@@ -1298,7 +1298,7 @@ public class RefsetController extends BaseController {
                     error += unremovedConcept + ", ";
                 }
 
-                error = StringUtils.removeEnd(error, ", ");
+                error = Strings.CS.removeEnd(error, ", ");
             }
 
             if (!error.isEmpty()) {

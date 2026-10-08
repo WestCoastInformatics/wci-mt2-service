@@ -46,7 +46,7 @@ public class Job extends AbstractHasModified {
     private static final long serialVersionUID = 1L;
 
     static {
-        ThreadLocalMapper.get().setSerializationInclusion(JsonInclude.Include.ALWAYS);
+        ThreadLocalMapper.get().setDefaultPropertyInclusion(JsonInclude.Include.ALWAYS);
     }
 
     /** The job type. */

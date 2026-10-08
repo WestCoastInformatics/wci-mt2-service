@@ -865,7 +865,7 @@ public class SyncRefsetAgent extends SyncAgent {
         final Map<String, Integer> refsetCountMap = new HashMap<>();
 
         final JsonNode refsetCountsMap = refsetMembersRoot.get("memberCountsByReferenceSet");
-        final Iterator<Entry<String, JsonNode>> refsetCountsIterator = refsetCountsMap.fields();
+        final Iterator<Entry<String, JsonNode>> refsetCountsIterator = refsetCountsMap.properties().iterator();
 
         while (refsetCountsIterator != null && refsetCountsIterator.hasNext()) {
 

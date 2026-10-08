@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status.Family;
 
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.model.Concept;
@@ -368,7 +369,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
             bodyConceptIds += "\"" + moduleId + "\",";
         }
 
-        bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",") + "]";
+        bodyConceptIds = Strings.CS.removeEnd(bodyConceptIds, ",") + "]";
 
         final String searchBody = bodyBase + bodyConceptIds + "}";
         LOG.debug("getModuleNames URL: " + conceptSearchUrl);
@@ -1414,7 +1415,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
         }
 
-        inactiveConceptIds = StringUtils.removeEnd(inactiveConceptIds, ", ");
+        inactiveConceptIds = Strings.CS.removeEnd(inactiveConceptIds, ", ");
         final String conceptDetailsBaseUrl = SnowstormConnection.getRestBaseUrl() + "browser/" + branchPath + "/concepts?conceptIds=";
         boolean searchAgain = true;
         int searchIndex = 0;
@@ -1456,7 +1457,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
             }
 
-            bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",");
+            bodyConceptIds = Strings.CS.removeEnd(bodyConceptIds, ",");
 
             final String memberDetailsUrl = conceptDetailsBaseUrl + bodyConceptIds;
             Iterator<JsonNode> iterator = null;
@@ -1505,11 +1506,11 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
                     final JsonNode associationTargets = conceptNode.get("associationTargets");
 
-                    if (associationTargets != null && associationTargets.size() != 0 && associationTargets.fields() != null) {
+                    if (associationTargets != null && !associationTargets.isEmpty()) {
 
                         LOG.debug("compileUpgradeData associationTargets: " + ModelUtility.toJson(associationTargets));
                         final Map<String, String> reasonMap = new HashMap<>();
-                        final Entry<String, JsonNode> entry = associationTargets.fields().next();
+                        final Entry<String, JsonNode> entry = associationTargets.properties().iterator().next();
                         final List<Concept> replacementConceptsToLookup = new ArrayList<>();
                         final String reason = entry.getKey();
                         String replacementConceptIds = entry.getValue().toString();
@@ -1530,7 +1531,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                             replacementBodyConceptIds += "\"" + replacementConceptId + "\",";
                         }
 
-                        final String threadReplacementBodyConceptIds = StringUtils.removeEnd(replacementBodyConceptIds, ",") + "]";
+                        final String threadReplacementBodyConceptIds = Strings.CS.removeEnd(replacementBodyConceptIds, ",") + "]";
 
                         LOG.debug("compileUpgradeData replacementConceptsToLookup: {}", replacementConceptsToLookup);
 

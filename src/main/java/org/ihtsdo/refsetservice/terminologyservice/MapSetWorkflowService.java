@@ -28,6 +28,7 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status.Family;
 
 import org.apache.commons.cli.MissingArgumentException;
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.model.BranchInformation;
@@ -274,7 +275,7 @@ public final class MapSetWorkflowService {
                 error += mapSetNotUpdated + ", ";
             }
 
-            error = StringUtils.removeEnd(error, ", ");
+            error = Strings.CS.removeEnd(error, ", ");
         }
 
         if (!error.isEmpty()) {

@@ -29,6 +29,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
@@ -218,11 +219,11 @@ public class RefsetService {
 
         }
 
-        ecl = StringUtils.removeEnd(additiveEcl, " OR ");
+        ecl = Strings.CS.removeEnd(additiveEcl, " OR ");
 
         if (!negatedEcl.equals("")) {
 
-            ecl = "(" + ecl + ") MINUS (" + StringUtils.removeEnd(negatedEcl, " OR ") + ")";
+            ecl = "(" + ecl + ") MINUS (" + Strings.CS.removeEnd(negatedEcl, " OR ") + ")";
         }
 
         return ecl;
@@ -262,13 +263,13 @@ public class RefsetService {
 
         if (!additiveEcl.equals("")) {
 
-            additiveEcl = StringUtils.removeEnd(additiveEcl, " OR ");
+            additiveEcl = Strings.CS.removeEnd(additiveEcl, " OR ");
             inclusionList = RefsetMemberService.getConceptIdsFromEcl(branchPath, additiveEcl);
         }
 
         if (!negatedEcl.equals("")) {
 
-            negatedEcl = StringUtils.removeEnd(negatedEcl, " OR ");
+            negatedEcl = Strings.CS.removeEnd(negatedEcl, " OR ");
             exclusionList = RefsetMemberService.getConceptIdsFromEcl(branchPath, negatedEcl);
         }
 
@@ -757,7 +758,7 @@ public class RefsetService {
                 statusMessage += unprocessedConcept + ", ";
             }
 
-            statusMessage = StringUtils.removeEnd(statusMessage, ", ");
+            statusMessage = Strings.CS.removeEnd(statusMessage, ", ");
         }
 
         LOG.info("Refset {} definition successfully modified", refset.getRefsetId());
@@ -1438,10 +1439,10 @@ public class RefsetService {
             if (termQuery.length() > 0) {
 
                 final Set<String> refsetIdsFromTermServer = new HashSet<>();
-                if (StringUtils.endsWith(termQuery.toString().trim(), "AND")) {
+                if (Strings.CS.endsWith(termQuery.toString().trim(), "AND")) {
                     termQuery.setLength(termQuery.length() - 5);
                 }
-                if (StringUtils.endsWith(termQueryForRt2.toString().trim(), "AND")) {
+                if (Strings.CS.endsWith(termQueryForRt2.toString().trim(), "AND")) {
                     termQueryForRt2.setLength(termQueryForRt2.length() - 5);
                 }
                 // if it was requested search member concepts
@@ -1546,7 +1547,7 @@ public class RefsetService {
 
         }
 
-        query += StringUtils.removeEnd(projectFilter, " OR ") + ")";
+        query += Strings.CS.removeEnd(projectFilter, " OR ") + ")";
 
         if (user.getUserName().equals(SecurityService.GUEST_USERNAME)) {
 
@@ -2052,7 +2053,7 @@ public class RefsetService {
         }
 
         // set the query appropriately based on what was passed in
-        if (NumberUtils.isNumber(searchParameters.getQuery())) {
+        if (NumberUtils.isCreatable(searchParameters.getQuery())) {
 
             searchParameters.setQuery("refsetId:" + searchParameters.getQuery());
         } else {

@@ -10,12 +10,12 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.CaseUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.common.base.CaseFormat;
 
 /**
  * Utility class for interacting with Strings.
@@ -228,7 +228,7 @@ public final class StringUtility {
      */
     public static String camelCase(final String str) {
 
-        return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, str.replaceAll(" ", "_"));
+        return CaseUtils.toCamelCase(str, true, ' ', '_');
     }
 
     /**

@@ -19,14 +19,15 @@ import java.net.http.HttpTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.util.LocalException;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * HTTP client for Norway Snowstorm used by Norway reports. Base URL comes from {@code norway.snowstorm.url}.
@@ -44,9 +45,6 @@ public final class NorwaySnowstormClient implements AutoCloseable {
 
     /** Max attempts for a single GET (initial try + retries). */
     private static final int MAX_ATTEMPTS = 5;
-
-    /** JSON mapper. */
-    private final ObjectMapper mapper = new ObjectMapper();
 
     /** HTTP client. */
     private final HttpClient httpClient;
@@ -96,7 +94,7 @@ public final class NorwaySnowstormClient implements AutoCloseable {
                 final String body = response.body() == null ? "" : response.body();
                 final int status = response.statusCode();
                 if (status >= 200 && status < 300) {
-                    return mapper.readTree(body);
+                    return ThreadLocalMapper.get().readTree(body);
                 }
                 if (isRetryableStatus(status) && attempt < MAX_ATTEMPTS) {
                     LOG.warn("Retryable HTTP {} from Norway Snowstorm (attempt {}/{}): {}", status, attempt, MAX_ATTEMPTS, url);
@@ -187,6 +185,6 @@ public final class NorwaySnowstormClient implements AutoCloseable {
         if (StringUtils.isBlank(configured) || "none".equalsIgnoreCase(configured)) {
             return DEFAULT_BASE_URL;
         }
-        return StringUtils.removeEnd(configured.trim(), "/");
+        return Strings.CS.removeEnd(configured.trim(), "/");
     }
 }

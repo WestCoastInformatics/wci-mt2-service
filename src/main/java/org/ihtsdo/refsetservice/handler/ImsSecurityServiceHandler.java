@@ -169,7 +169,9 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 
         final Client client = ClientBuilder.newClient();
         final WebTarget target = client.target(url);
-        final jakarta.ws.rs.core.Cookie newCookie = new jakarta.ws.rs.core.Cookie(imsCookie.getName(), imsCookie.getValue());
+        final jakarta.ws.rs.core.Cookie newCookie = new jakarta.ws.rs.core.Cookie.Builder(imsCookie.getName())
+            .value(imsCookie.getValue())
+            .build();
 
         try (Response response = target.request(MediaType.APPLICATION_JSON).cookie(newCookie).get()) {
 

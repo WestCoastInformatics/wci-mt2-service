@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status.Family;
 
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Refset;
@@ -724,7 +725,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
             }
 
             LOG.debug("addRefsetMembers searchIndex :: loopNumber :: batch size: " + searchIndex + " :: " + loopNumber + " :: " + (searchIndex / loopNumber));
-            bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",") + "]";
+            bodyConceptIds = Strings.CS.removeEnd(bodyConceptIds, ",") + "]";
 
             // verify the concept IDs if a bulk add is going to be used
             if (conceptIds.size() > 0) {
@@ -804,7 +805,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
                     bodyConceptIds += conceptId + ",";
                 }
 
-                bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",");
+                bodyConceptIds = Strings.CS.removeEnd(bodyConceptIds, ",");
                 final String memberSearchBody = memberSearchBodyBase + bodyConceptIds + "]}";
                 // LOG.debug("addRefsetMembers member search body: " +
                 // memberSearchBody);
@@ -1110,7 +1111,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
 
             }
 
-            bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",");
+            bodyConceptIds = Strings.CS.removeEnd(bodyConceptIds, ",");
 
             final String memberSearchUrl = memberSearchUrlBase + bodyConceptIds;
             Iterator<JsonNode> iterator = null;

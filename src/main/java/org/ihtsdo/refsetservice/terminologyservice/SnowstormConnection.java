@@ -9,7 +9,6 @@
  */
 package org.ihtsdo.refsetservice.terminologyservice;
 
-import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -85,6 +84,9 @@ public final class SnowstormConnection {
 
     /** Cached RESTEasy client – created once, reused for all Snowstorm calls. */
     private static volatile Client sharedClient;
+
+    /** Shared JDK client for binary archive downloads (follows 3xx except https→http). */
+    private static final HttpClient FILE_DOWNLOAD_CLIENT = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
 
     /** Max redirects for Snowstorm GET; RESTEasy does not follow 3xx by default (merge job polls would loop forever on 307). */
     private static final int SNOWSTORM_GET_MAX_REDIRECTS = 16;
@@ -450,16 +452,19 @@ public final class SnowstormConnection {
         final HttpRequest request = requestBuilder.GET().build();
 
         // NORMAL follows 3xx except https→http; needed for client Snowstorm proxies that redirect archive URLs
-        final HttpClient httpClient = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
-        final HttpResponse<byte[]> response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
+        final HttpResponse<InputStream> response = FILE_DOWNLOAD_CLIENT.send(request, HttpResponse.BodyHandlers.ofInputStream());
+        final InputStream body = response.body();
 
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            if (body != null) {
+                body.close();
+            }
             final String errorMsg = "Failed to download file. Status: " + response.statusCode() + " for " + response.uri();
             LOG.error(errorMsg);
             throw new LocalException(errorMsg);
         }
 
-        return new ByteArrayInputStream(response.body());
+        return body;
     }
 
     /**

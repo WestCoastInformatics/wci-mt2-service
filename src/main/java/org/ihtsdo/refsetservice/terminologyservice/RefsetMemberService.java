@@ -50,6 +50,7 @@ import java.util.zip.ZipOutputStream;
 
 import jakarta.persistence.Query;
 
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.handler.ExportHandler;
 import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
@@ -568,7 +569,7 @@ public final class RefsetMemberService {
 
         }
 
-        snowstormQuery = StringUtils.removeEnd(snowstormQuery, " AND ");
+        snowstormQuery = Strings.CS.removeEnd(snowstormQuery, " AND ");
         return getDirectoryMembers(snowstormQuery);
     }
 
@@ -3068,7 +3069,7 @@ public final class RefsetMemberService {
             ecl += conceptId + " OR ";
         }
 
-        return StringUtils.removeEnd(ecl, " OR ");
+        return Strings.CS.removeEnd(ecl, " OR ");
     }
 
     /**
@@ -3238,7 +3239,7 @@ public final class RefsetMemberService {
                 conceptIdsToChange += inactiveConcept.getCode() + ",";
             }
 
-            conceptIdsToChange = StringUtils.removeEnd(conceptIdsToChange, ",");
+            conceptIdsToChange = Strings.CS.removeEnd(conceptIdsToChange, ",");
 
             // remove the concepts as members from the refset
             unchangedConcepts = RefsetMemberService.removeRefsetMembers(service, user, refset, conceptIdsToChange);
@@ -3327,7 +3328,7 @@ public final class RefsetMemberService {
             unaddedConcepts = RefsetMemberService.addRefsetMembers(service, user, refset, conceptIdsToAdd);
 
             // remove the inactive concepts from the refset
-            conceptIdsToRemove = StringUtils.removeEnd(conceptIdsToRemove, ",");
+            conceptIdsToRemove = Strings.CS.removeEnd(conceptIdsToRemove, ",");
             unremovedConcepts = RefsetMemberService.removeRefsetMembers(service, user, refset, conceptIdsToRemove);
 
             // to make searching easier

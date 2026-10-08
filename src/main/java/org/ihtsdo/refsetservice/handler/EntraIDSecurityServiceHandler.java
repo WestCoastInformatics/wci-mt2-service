@@ -9,7 +9,7 @@
  */
 package org.ihtsdo.refsetservice.handler;
 
-import java.net.URL;
+import java.net.URI;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Date;
 import java.util.HashSet;
@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
@@ -209,13 +210,13 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
         LOG.debug("EntraID validateToken: decoded header, keyId (kid)={}", kid);
 
         LOG.debug("EntraID validateToken: fetching JWK from {}", jwksEndpoint);
-        final JwkProvider provider = new UrlJwkProvider(new URL(jwksEndpoint));
+        final JwkProvider provider = new UrlJwkProvider(URI.create(jwksEndpoint).toURL());
         final Jwk jwk = provider.get(jwt.getKeyId());
         LOG.debug("EntraID validateToken: JWK resolved for kid={}", kid);
 
         final Algorithm algorithm = Algorithm.RSA256((RSAPublicKey) jwk.getPublicKey(), null);
 
-        final JWTVerifier verifier = JWT.require(algorithm).acceptLeeway(1).withIssuer(authority).withAudience(clientId).build();
+        final JWTVerifier verifier = JWT.require(algorithm).acceptLeeway(2).withIssuer(authority).withAudience(clientId).build();
 
         LOG.debug("EntraID validateToken: verifying signature, issuer must equal authority, audience must contain clientId");
         final DecodedJWT verified = verifier.verify(token);
@@ -504,7 +505,7 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
         if (StringUtils.isBlank(callback.getCode())) {
             throw new BrowserLoginException("missing_code");
         }
-        if (StringUtils.isNotBlank(callback.getExpectedState()) && !StringUtils.equals(callback.getExpectedState(), callback.getState())) {
+        if (StringUtils.isNotBlank(callback.getExpectedState()) && !Strings.CS.equals(callback.getExpectedState(), callback.getState())) {
             LOG.warn("Entra OAuth state mismatch");
             throw new BrowserLoginException("state_mismatch");
         }

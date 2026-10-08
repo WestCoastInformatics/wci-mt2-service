@@ -13,7 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.MediaType;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapUser;
@@ -351,7 +351,7 @@ public class MapProjectController extends BaseController {
 
         // final User authUser = authorizeUser(request);
 
-        if (mapProject == null || !StringUtils.equals(id, mapProject.getId())) {
+        if (mapProject == null || !Strings.CS.equals(id, mapProject.getId())) {
 
             final String errorMessage = "Map project is null or mapProject id does not match id in URL.";
             throw new RestException(false, 404, "Not found", errorMessage);

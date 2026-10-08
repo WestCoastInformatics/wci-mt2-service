@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RefsetMemberComparison;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
@@ -659,7 +659,7 @@ public class EditUnitTestUtilities {
             urlConceptIds += conceptId + ",";
         }
 
-        urlConceptIds = StringUtils.removeEnd(urlConceptIds, ",");
+        urlConceptIds = Strings.CS.removeEnd(urlConceptIds, ",");
 
         try (final TerminologyService service = new TerminologyService()) {
 

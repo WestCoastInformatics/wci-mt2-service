@@ -9,6 +9,7 @@ import java.util.Set;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status.Family;
 
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.util.SearchParameters;
@@ -108,7 +109,7 @@ public class SnowstormMultiSearch extends SnowstormAbstract {
             }
         }
 
-        snowstormQuery = StringUtils.removeEnd(snowstormQuery, " AND ");
+        snowstormQuery = Strings.CS.removeEnd(snowstormQuery, " AND ");
 
         final ArrayNode bodyPaths = ThreadLocalMapper.get().createArrayNode();
         for (final String branchPath : nonPublishedBranchPaths) {

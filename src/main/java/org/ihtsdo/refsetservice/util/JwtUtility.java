@@ -1,7 +1,7 @@
 package org.ihtsdo.refsetservice.util;
 
 import java.io.IOException;
-import java.net.URL;
+import java.net.URI;
 import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Calendar;
@@ -220,7 +220,7 @@ public final class JwtUtility {
      */
     private static PublicKey getPublicKey(final DecodedJWT djwt, final String url) throws Exception {
 
-        final UrlJwkProvider provider = new UrlJwkProvider(new URL(url), null, null);
+        final UrlJwkProvider provider = new UrlJwkProvider(URI.create(url).toURL(), null, null);
         Jwk jwk = null;
         // IF "kid" is specified in JWT, use it
         if (djwt.getKeyId() != null) {
