@@ -22,12 +22,14 @@ import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormConcept;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.GenerateAutomapsRequest;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormMapping;
+import org.ihtsdo.refsetservice.model.MapEntry;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.MapWorkflowStatus;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingWorkflow;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
+import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
@@ -40,7 +42,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
- * Generates unsaved map records from the automap service.
+ * Generates map records from the automap service and saves them.
  */
 public final class AutomapService {
 
@@ -68,16 +70,26 @@ public final class AutomapService {
     }
 
     /**
-     * Looks up source terms, asks automap for targets, and returns unsaved map records. Nothing is written to Snowstorm.
+     * Looks up source terms, asks automap for targets, and saves the resulting map records.
+     *
+     * <p>
+     * A no-target row on a map to SNOMED CT is returned but not saved. That reference set stores the SNOMED concept as the member, so there is nowhere to
+     * write an empty target.
+     * </p>
      *
      * @param service the terminology service
      * @param mapSetInternalId the map set internal id
      * @param request the request
+     * @param user the signed-in user recorded as the modifier
      * @return the map records for codes that resolved, plus any concept codes that did not
      * @throws Exception the exception
      */
     public static ResultListMapping generateAutomaps(final TerminologyService service, final String mapSetInternalId,
-        final GenerateAutomapsRequest request) throws Exception {
+        final GenerateAutomapsRequest request, final User user) throws Exception {
+
+        if (user == null || StringUtils.isBlank(user.getUserName())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication is required.");
+        }
 
         if (request == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required.");
@@ -123,9 +135,10 @@ public final class AutomapService {
                 mapSetId, validCodes.size(), invalidConceptIds.size(), AutomapTerm.TO_TERMINOLOGY, entityType, minConfidence);
             final JsonNode automapTask = AutomapClient.mapTerms(automapTerms, minConfidence);
             mappings = AutomapMappingBuilder.buildMappings(mapSet, validCodes, termsByCode, automapTask);
+            saveGeneratedMappings(mapSet, branch, mappings, user);
             SnowstormMapping.attachDescriptions(branch, mappings, fromTerminology, AutomapTerm.TO_TERMINOLOGY);
             MapNoteService.attachNotes(service, mapSet, mappings);
-            attachReviewNeeded(mapSet, mappings);
+            saveEditingDoneWorkflows(service, mapSet, mappings);
         }
 
         final ResultListMapping result = new ResultListMapping(mappings);
@@ -183,22 +196,152 @@ public final class AutomapService {
     }
 
     /**
-     * Attaches an unsaved workflow with status {@link MapWorkflowStatus#REVIEW_NEEDED}. No workflow row is written.
+     * Saves generated map records with the same update used by Save Mappings.
      *
      * @param mapSet the map set
-     * @param mappings the mappings
+     * @param branch the branch
+     * @param mappings the generated mappings
+     * @param user the signed-in user
+     * @throws Exception the exception
      */
-    private static void attachReviewNeeded(final MapSet mapSet, final List<Mapping> mappings) {
+    private static void saveGeneratedMappings(final MapSet mapSet, final String branch, final List<Mapping> mappings, final User user) throws Exception {
 
+        final List<Mapping> toSave = mappingsToSave(mapSet, mappings);
+        if (toSave.isEmpty()) {
+            return;
+        }
+        if (mapSet.getMapProject() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Map set " + mapSet.getRefSetCode() + " is not on a map project.");
+        }
+        if (StringUtils.isBlank(mapSet.getRefSetCode())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Map set " + mapSet.getId() + " does not have a reference set code.");
+        }
+        LOG.info("generateAutomaps saving {} mappings on mapSet={}", toSave.size(), mapSet.getRefSetCode());
+        MappingService.updateMappings(mapSet.getMapProject(), branch, mapSet.getRefSetCode(), toSave, mapSet, user);
+    }
+
+    /**
+     * Mappings that can be written to Snowstorm. A map to SNOMED CT with no target concept is omitted.
+     *
+     * @param mapSet the map set
+     * @param mappings the generated mappings
+     * @return the mappings to save
+     */
+    static List<Mapping> mappingsToSave(final MapSet mapSet, final List<Mapping> mappings) {
+
+        final List<Mapping> toSave = new ArrayList<>();
+        if (mappings == null) {
+            return toSave;
+        }
+        final boolean mapToSnomed = isMapToSnomed(mapSet);
+        for (final Mapping mapping : mappings) {
+            if (mapping == null) {
+                continue;
+            }
+            if (mapToSnomed && !hasTarget(mapping)) {
+                LOG.info("generateAutomaps left {} unsaved. A map to SNOMED CT needs a target concept, so a no-target row is not stored.",
+                    mapping.getCode());
+                continue;
+            }
+            toSave.add(mapping);
+        }
+        return toSave;
+    }
+
+    /**
+     * True when the map set maps a non-SNOMED source onto a SNOMED CT target.
+     *
+     * @param mapSet the map set
+     * @return true when SNOMED CT is the destination and not the source
+     */
+    private static boolean isMapToSnomed(final MapSet mapSet) {
+
+        if (mapSet == null) {
+            return false;
+        }
+        final String source = fromTerminology(mapSet);
+        final String target = toTerminology(mapSet);
+        return isSnomedCt(target) && StringUtils.isNotBlank(source) && !isSnomedCt(source);
+    }
+
+    /**
+     * True when the terminology name is a SNOMED CT edition.
+     *
+     * @param terminology the terminology
+     * @return true when the name starts with SNOMEDCT
+     */
+    private static boolean isSnomedCt(final String terminology) {
+
+        return StringUtils.isNotBlank(terminology) && terminology.trim().toUpperCase().startsWith("SNOMEDCT");
+    }
+
+    /**
+     * Returns the destination terminology.
+     *
+     * @param mapSet the map set
+     * @return the destination terminology
+     */
+    private static String toTerminology(final MapSet mapSet) {
+
+        if (StringUtils.isNotBlank(mapSet.getToTerminology())) {
+            return mapSet.getToTerminology().trim();
+        }
+        final MapProject mapProject = mapSet.getMapProject();
+        return mapProject == null ? "" : StringUtils.trimToEmpty(mapProject.getDestinationTerminology());
+    }
+
+    /**
+     * True when the mapping has a non-blank target code.
+     *
+     * @param mapping the mapping
+     * @return true when a target code is present
+     */
+    private static boolean hasTarget(final Mapping mapping) {
+
+        if (mapping.getMapEntries() == null) {
+            return false;
+        }
+        for (final MapEntry entry : mapping.getMapEntries()) {
+            if (entry != null && StringUtils.isNotBlank(entry.getToCode())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Stores each automap as Edit Complete ({@link MapWorkflowStatus#EDITING_DONE}) so a lead can approve it or send it to review.
+     *
+     * <p>
+     * A missing row is created. An existing queue row ({@code NEW} or {@code PUBLISHED}) is moved to Edit Complete. A row already in another phase is left
+     * unchanged and returned as-is.
+     * </p>
+     *
+     * @param service the terminology service
+     * @param mapSet the map set
+     * @param mappings the mappings
+     * @throws Exception the exception
+     */
+    private static void saveEditingDoneWorkflows(final TerminologyService service, final MapSet mapSet, final List<Mapping> mappings) throws Exception {
+
+        final MapProject mapProject = MappingWorkflowService.loadMapProject(service, mapSet);
         for (final Mapping mapping : mappings) {
             if (mapping == null || StringUtils.isBlank(mapping.getCode())) {
                 continue;
             }
-            final MappingWorkflow workflow = new MappingWorkflow();
-            workflow.setSourceConceptCode(mapping.getCode());
-            workflow.setWorkflowStatus(MapWorkflowStatus.REVIEW_NEEDED);
-            workflow.setSpecialistSlot(1);
-            workflow.setMapSet(mapSet);
+            MappingWorkflow workflow = MappingWorkflowService.findWorkflowForConcept(service, mapSet, mapping.getCode());
+            if (workflow == null) {
+                workflow = new MappingWorkflow();
+                workflow.setSourceConceptCode(mapping.getCode());
+                workflow.setWorkflowStatus(MapWorkflowStatus.EDITING_DONE);
+                workflow.setSpecialistSlot(1);
+                workflow.setMapSet(mapSet);
+                workflow.setMapProject(mapProject);
+                workflow = service.add(workflow);
+            } else if (workflow.getWorkflowStatus() == MapWorkflowStatus.NEW || workflow.getWorkflowStatus() == MapWorkflowStatus.PUBLISHED) {
+                workflow.setWorkflowStatus(MapWorkflowStatus.EDITING_DONE);
+                workflow = service.update(workflow);
+            }
             mapping.setMappingWorkflow(workflow);
         }
     }
