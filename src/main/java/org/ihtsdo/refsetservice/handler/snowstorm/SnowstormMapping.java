@@ -184,9 +184,9 @@ public class SnowstormMapping extends SnowstormAbstract {
             final JsonNode mapSetNode = itemIterator.next();
 
             // TEMPORARY - only keep ICD10NO (447562003), ICPC2NO (68101000202102)
-            // and reverse ICD10NO to SNOMED (123456789)maps//
+            // reverse ICD10NO to SNOMED (12345678901)maps, and local to SNOMED (12345678902)//
             final String refsetId = mapSetNode.get("conceptId").asText();
-            if (!(refsetId.equals("447562003") || refsetId.equals("68101000202102") || refsetId.equals("123456789"))) {
+            if (!(refsetId.equals("447562003") || refsetId.equals("68101000202102") || refsetId.equals("12345678901") || refsetId.equals("12345678902"))) {
                 continue;
             }
             // TEMPORARY//
@@ -648,8 +648,7 @@ public class SnowstormMapping extends SnowstormAbstract {
             }
         }
 
-        final Edition edition = new Edition();
-        edition.setBranch(branch);
+        final Edition edition = descriptionEdition(branch);
 
         final long descriptionsStartMs = System.currentTimeMillis();
         attachSourceDescriptions(edition, conceptIdToMappingMap.values(), fromTerminology);
@@ -2689,6 +2688,44 @@ public class SnowstormMapping extends SnowstormAbstract {
         }
         stored.setGroup(submitted.getGroup());
         stored.setPriority(submitted.getPriority());
+    }
+
+    /**
+     * Attaches source and target descriptions the same way mapping lookup does.
+     *
+     * @param branch the branch
+     * @param mappings the mappings
+     * @param fromTerminology the source terminology
+     * @param toTerminology the destination terminology
+     */
+    public static void attachDescriptions(final String branch, final Collection<Mapping> mappings, final String fromTerminology,
+        final String toTerminology) {
+
+        if (mappings == null || mappings.isEmpty()) {
+            return;
+        }
+        final Edition edition = descriptionEdition(branch);
+        attachSourceDescriptions(edition, mappings, fromTerminology);
+        attachTargetDescriptions(edition, mappings, toTerminology);
+    }
+
+    /**
+     * Returns the edition used to select descriptions for a branch.
+     *
+     * @param branch the branch
+     * @return the edition
+     */
+    private static Edition descriptionEdition(final String branch) {
+
+        final Edition edition = new Edition();
+        edition.setActive(true);
+        edition.setAbbreviation("NO");
+        edition.setDefaultLanguageCode("no");
+        edition.getDefaultLanguageRefsets().add("61000202103");
+        edition.getDefaultLanguageRefsets().add("900000000000509007");
+        edition.setShortName("SNOMEDCT-NO");
+        edition.setBranch(branch);
+        return edition;
     }
 
     /**

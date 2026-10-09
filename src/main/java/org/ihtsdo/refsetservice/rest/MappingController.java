@@ -26,6 +26,7 @@ import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
+import org.ihtsdo.refsetservice.model.GenerateAutomapsRequest;
 import org.ihtsdo.refsetservice.model.MapNote;
 import org.ihtsdo.refsetservice.model.MapNoteImportResult;
 import org.ihtsdo.refsetservice.model.MapProject;
@@ -42,6 +43,7 @@ import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.enums.MappingWorkflowAction;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.terminologyservice.AutomapService;
 import org.ihtsdo.refsetservice.terminologyservice.BranchService;
 import org.ihtsdo.refsetservice.terminologyservice.MapNoteService;
 import org.ihtsdo.refsetservice.terminologyservice.MapProjectService;
@@ -600,6 +602,48 @@ public class MappingController extends BaseController {
         } catch (final Exception e) {
 
             handleException(e);
+            return null;
+        }
+    }
+
+    /**
+     * Generates unsaved map records for the supplied concept codes. Nothing is written to Snowstorm.
+     *
+     * @param mapSetInternalId the map set internal id
+     * @param requestBody the concept codes
+     * @param request the request
+     * @return the generated map records
+     * @throws Exception the exception
+     */
+    @PostMapping(value = "/mapset/{mapSetInternalId}/generateAutomaps", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Generate unsaved automap suggestions for concept codes. This call requires authentication.", tags = {
+        "mapping"
+    }, responses = {
+        @ApiResponse(responseCode = "200",
+            description = "Generated map records, not yet saved. Unresolved concept codes are returned in invalidConceptIds."),
+        @ApiResponse(responseCode = "400", description = "Bad request"), @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "404", description = "Map set not found"),
+        @ApiResponse(responseCode = "502", description = "Automap or concept lookup failed")
+    })
+    @Parameters({
+        @Parameter(name = "mapSetInternalId", description = "Mapset internal id, e.g. &lt;uuid&gt;", required = true),
+        @Parameter(name = "requestBody", description = "Source concept codes", required = true)
+    })
+    @RecordMetric
+    public @ResponseBody ResponseEntity<ResultListMapping> generateAutomaps(@PathVariable final String mapSetInternalId,
+        @RequestBody final GenerateAutomapsRequest requestBody, final HttpServletRequest request) throws Exception {
+
+        requireAuthenticatedUser(request);
+        LOG.info("generateAutomaps mapSet={} concepts={}", mapSetInternalId,
+            requestBody == null || requestBody.getConceptCodes() == null ? 0 : requestBody.getConceptCodes().size());
+
+        try (final TerminologyService service = new TerminologyService()) {
+            final ResultListMapping mappings = AutomapService.generateAutomaps(service, mapSetInternalId, requestBody);
+            return new ResponseEntity<>(mappings, HttpStatus.OK);
+
+        } catch (final Exception e) {
+
+            rethrowHandled(e);
             return null;
         }
     }
