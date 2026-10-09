@@ -383,6 +383,9 @@ public class Edition extends AbstractHasModified {
                 languageCode = LanguageUtility.UNKNOWN_LANGUAGE_CODE;
             }
 
+            final String safeLanguageCode = languageCode != null ? languageCode : "";
+            final String languageLabel = resolveLanguageLabel(languageRefsetCode, getBranch(), safeLanguageCode);
+
             // Create language refset details
             final Map<String, String> languageDetails = new HashMap<>();
             languageDetails.put("languageRefset", languageRefsetCode);
@@ -390,6 +393,7 @@ public class Edition extends AbstractHasModified {
             languageDetails.put("qualifiedLanguageRefset", languageRefsetCode + "PT");
             languageDetails.put("qualifiedLanguageCode", languageCode == null ? "" : languageCode.toUpperCase() + " (PT)");
             languageDetails.put("qualifiedLanguageDialectCode", LanguageUtility.identifyCountryCode(languageRefsetCode) + "-" + languageCode.toUpperCase());
+            languageDetails.put("languageLabel", languageLabel);
 
             // if this is the default language code make sure it is first and
             // add a FSN version
@@ -404,10 +408,15 @@ public class Edition extends AbstractHasModified {
 
                 if (languageCode.equalsIgnoreCase("en")) {
 
-                    qualifiedLanguageList.add(1,
-                        Map.of("languageRefset", languageRefsetCode, "languageCode", languageCode, "qualifiedLanguageRefset", languageRefsetCode + "FSN",
-                            "qualifiedLanguageCode", languageCode.toUpperCase() + " (FSN)", "qualifiedLanguageDialectCode",
-                            LanguageUtility.identifyCountryCode(languageRefsetCode) + "-" + languageCode.toUpperCase()));
+                    final Map<String, String> fsnDetails = new HashMap<>();
+                    fsnDetails.put("languageRefset", languageRefsetCode);
+                    fsnDetails.put("languageCode", languageCode);
+                    fsnDetails.put("qualifiedLanguageRefset", languageRefsetCode + "FSN");
+                    fsnDetails.put("qualifiedLanguageCode", languageCode.toUpperCase() + " (FSN)");
+                    fsnDetails.put("qualifiedLanguageDialectCode",
+                        LanguageUtility.identifyCountryCode(languageRefsetCode) + "-" + languageCode.toUpperCase());
+                    fsnDetails.put("languageLabel", languageLabel);
+                    qualifiedLanguageList.add(1, fsnDetails);
                 }
 
             } else {
@@ -418,8 +427,52 @@ public class Edition extends AbstractHasModified {
 
         }
 
+        addLanguageTermDescriptions(qualifiedLanguageList, getBranch());
         return qualifiedLanguageList;
     }
+
+    /**
+     * Prefer the Snowstorm optional label, then a cleaned FSN, then the dialect name, then the language code.
+     *
+     * @param languageRefsetCode the language refset SCTID
+     * @param branchPath the branch
+     * @param safeLanguageCode the language code
+     * @return the language label
+     */
+    private String resolveLanguageLabel(final String languageRefsetCode, final String branchPath, final String safeLanguageCode) {
+
+        final String fromMeta = LanguageUtility.getLanguageRefsetLabel(languageRefsetCode, branchPath);
+        if (fromMeta != null && !fromMeta.isEmpty()) {
+            return fromMeta;
+        }
+        final String fsn = LanguageUtility.getLanguageRefsetConceptFsn(languageRefsetCode, branchPath);
+        final String cleaned = LanguageUtility.cleanLanguageRefsetFsnForLabel(fsn);
+        if (cleaned != null && !cleaned.isEmpty()) {
+            return cleaned;
+        }
+        final String dialectName = LanguageUtility.getLanguageRefsetDialectName(languageRefsetCode, branchPath);
+        if (dialectName != null && !dialectName.isEmpty()) {
+            return dialectName;
+        }
+        return safeLanguageCode != null ? safeLanguageCode.toUpperCase() : "";
+    }
+
+    /**
+     * Preferred term (FSN) of the language refset concept. Clients that need {@code SCTID | term} can join
+     * {@code languageRefset} to this with {@code " | "}.
+     */
+    private static void addLanguageTermDescriptions(final List<Map<String, String>> qualifiedLanguageList, final String branchPath) {
+
+        for (final Map<String, String> m : qualifiedLanguageList) {
+            final String ref = m.get("languageRefset");
+            if (ref == null) {
+                continue;
+            }
+            final String fsn = LanguageUtility.getLanguageRefsetConceptFsn(ref, branchPath);
+            m.put("languageTermDescription", fsn);
+        }
+    }
+
 
     /**
      * This is solely for bean validation, method does nothing.

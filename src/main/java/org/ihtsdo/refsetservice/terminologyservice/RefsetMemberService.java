@@ -1288,7 +1288,16 @@ public final class RefsetMemberService {
 
                 if (languageId.equals(defaultLanguages.get("qualifiedLanguageRefset"))) {
 
-                    fw.write(extractedLine + "\t" + defaultLanguages.get("qualifiedLanguageCode") + "\n");
+                    final String ref = defaultLanguages.get("languageRefset");
+                    final String termDesc = defaultLanguages.get("languageTermDescription");
+                    final String displayHeader;
+                    if (termDesc != null && !termDesc.isEmpty()) {
+                        displayHeader = ref != null && !ref.isEmpty() ? ref + " | " + termDesc : termDesc;
+                    } else {
+                        final String dialectLabel = languageDialectTermTypeLabel(defaultLanguages);
+                        displayHeader = dialectLabel != null && !dialectLabel.isEmpty() ? dialectLabel : defaultLanguages.get("qualifiedLanguageCode");
+                    }
+                    fw.write(extractedLine + "\t" + displayHeader + "\n");
                 }
 
             }
@@ -1368,6 +1377,22 @@ public final class RefsetMemberService {
         return terminologyHandler.getMemberSctIds(refsetId, limit, searchAfter, branchPath);
 
     }
+
+    /**
+     * Same short label as previously sent as {@code languageDialectTermType}: dialect plus {@code (PT)} or {@code (FSN)} from
+     * {@code qualifiedLanguageRefset}.
+     */
+    private static String languageDialectTermTypeLabel(final Map<String, String> languageMap) {
+
+        final String dialect = languageMap.get("qualifiedLanguageDialectCode");
+        final String qlr = languageMap.get("qualifiedLanguageRefset");
+        if (dialect == null || dialect.isEmpty()) {
+            return null;
+        }
+        final String type = qlr != null && qlr.endsWith("FSN") ? "FSN" : "PT";
+        return dialect + " (" + type + ")";
+    }
+
 
     /**
      * Returns the member Snomed codes.
