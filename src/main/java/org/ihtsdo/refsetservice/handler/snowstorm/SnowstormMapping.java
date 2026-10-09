@@ -640,10 +640,6 @@ public class SnowstormMapping extends SnowstormAbstract {
         }
 
         populateMappingsNamesFromConceptMap(conceptIdToMappingMap.values(), fromTerminology, toTerminology, terminologyConceptMap);
-        final List<String> conceptIds = new ArrayList<>();
-        for (final Mapping mapping : conceptIdToMappingMap.values()) {
-            conceptIds.add(mapping.getCode());
-        }
 
         // Handle edition-precedence in the map entries
         if (!showOverriddenEntries) {
@@ -655,9 +651,10 @@ public class SnowstormMapping extends SnowstormAbstract {
         final Edition edition = descriptionEdition(branch);
 
         final long descriptionsStartMs = System.currentTimeMillis();
-        final Map<String, List<Description>> descriptions = sourceDescriptions(edition, conceptIds, fromTerminology);
+        attachSourceDescriptions(edition, conceptIdToMappingMap.values(), fromTerminology);
         attachTargetDescriptions(edition, conceptIdToMappingMap.values(), toTerminology);
-        LOG.info("getMappings phase=descriptions {}ms conceptCount={}", System.currentTimeMillis() - descriptionsStartMs, conceptIds.size());
+        LOG.info("getMappings phase=descriptions {}ms conceptCount={}", System.currentTimeMillis() - descriptionsStartMs,
+            conceptIdToMappingMap.size());
 
         if (mapToSnomed) {
             for (final Mapping mapping : conceptIdToMappingMap.values()) {
@@ -668,7 +665,6 @@ public class SnowstormMapping extends SnowstormAbstract {
         // Sort all of the map entries in Group/Priority order
         for (final Mapping mapping : conceptIdToMappingMap.values()) {
             MapEntryUtility.sortMapEntries(mapping);
-            mapping.setDescriptions(descriptions.get(mapping.getCode()));
         }
 
         // Once the file is completed parsed, return mappings as list (member encounter order)
@@ -1718,19 +1714,10 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         // Get descriptions for mapping
         final Edition edition = new Edition();
-        edition.setActive(true);
-        edition.setAbbreviation("NO");
-        edition.setDefaultLanguageCode("no");
-        edition.getDefaultLanguageRefsets().add("61000202103");
-        edition.getDefaultLanguageRefsets().add("900000000000509007");
-        edition.setShortName("SNOMEDCT-NO");
         edition.setBranch(branch);
 
-        if (includeDescriptions && isSnomedTerminology(mapSetForConcept.getFromTerminology())) {
-            final Map<String, List<Description>> descriptions = SnowstormDescription.getDescriptions(edition, List.of(mapping.getCode()));
-            mapping.setDescriptions(descriptions.get(mapping.getCode()));
-        }
         if (includeDescriptions) {
+            attachSourceDescriptions(edition, List.of(mapping), mapSetForConcept.getFromTerminology());
             attachTargetDescriptions(edition, List.of(mapping), mapSetForConcept.getToTerminology());
         }
 
@@ -1751,23 +1738,18 @@ public class SnowstormMapping extends SnowstormAbstract {
         throws Exception {
 
         final List<Mapping> newMappings = new ArrayList<>();
-        final List<String> conceptIds = new ArrayList<>();
 
         for (final Mapping mapping : mappings) {
 
             final Mapping newMapping = createMapping(mapProject, branch, mapSetCode, mapping);
             newMappings.add(newMapping);
-            conceptIds.add(newMapping.getCode());
 
         }
 
         warmEclResultsCacheAsync(branch, mapSetCode);
 
-        final Map<String, List<Description>> descriptions = sourceDescriptions(mapProject.getEdition(), conceptIds, mapProject.getSourceTerminology());
+        attachSourceDescriptions(mapProject.getEdition(), newMappings, mapProject.getSourceTerminology());
         attachTargetDescriptions(mapProject.getEdition(), newMappings, mapProject.getDestinationTerminology());
-        for (final Mapping mapping : newMappings) {
-            mapping.setDescriptions(descriptions.get(mapping.getCode()));
-        }
 
         return newMappings;
 
@@ -1852,26 +1834,19 @@ public class SnowstormMapping extends SnowstormAbstract {
         final MapSet mapSet, final User user) throws Exception {
 
         final List<Mapping> updatedMappings = new ArrayList<>();
-        final List<String> conceptIds = new ArrayList<>();
 
         for (final Mapping mapping : mappings) {
             final Mapping updatedMapping = updateMapping(mapProject, branch, mapSetCode, mapping, mapSet, user);
             updatedMappings.add(updatedMapping);
-            conceptIds.add(updatedMapping.getCode());
         }
 
         warmEclResultsCacheAsync(branch, mapSetCode);
 
         // add descriptions to mappings to be returned
-        final Map<String, List<Description>> descriptions = sourceDescriptions(mapProject.getEdition(), conceptIds, mapProject.getSourceTerminology());
         final String toTerminology = mapSet != null && StringUtils.isNotBlank(mapSet.getToTerminology()) ? mapSet.getToTerminology()
             : mapProject.getDestinationTerminology();
+        attachSourceDescriptions(mapProject.getEdition(), updatedMappings, mapProject.getSourceTerminology());
         attachTargetDescriptions(mapProject.getEdition(), updatedMappings, toTerminology);
-
-        // Sort all of the map entries in Group/Priority order
-        for (final Mapping mapping : updatedMappings) {
-            mapping.setDescriptions(descriptions.get(mapping.getCode()));
-        }
 
         return updatedMappings;
     }
@@ -2730,21 +2705,8 @@ public class SnowstormMapping extends SnowstormAbstract {
             return;
         }
         final Edition edition = descriptionEdition(branch);
-        final List<String> conceptIds = new ArrayList<>();
-        for (final Mapping mapping : mappings) {
-            if (mapping != null && StringUtils.isNotBlank(mapping.getCode())) {
-                conceptIds.add(mapping.getCode());
-            }
-        }
-        final Map<String, List<Description>> descriptions = sourceDescriptions(edition, conceptIds, fromTerminology);
+        attachSourceDescriptions(edition, mappings, fromTerminology);
         attachTargetDescriptions(edition, mappings, toTerminology);
-        for (final Mapping mapping : mappings) {
-            if (mapping == null || StringUtils.isBlank(mapping.getCode())) {
-                continue;
-            }
-            final List<Description> sourceDescriptions = descriptions.get(mapping.getCode());
-            mapping.setDescriptions(sourceDescriptions != null ? sourceDescriptions : new ArrayList<>());
-        }
     }
 
     /**
@@ -2767,7 +2729,8 @@ public class SnowstormMapping extends SnowstormAbstract {
     }
 
     /**
-     * SNOMED CT descriptions for target concepts, attached to each map entry. Source descriptions stay on the mapping.
+     * Descriptions for target concepts, attached to each map entry. Source descriptions stay on the mapping.
+     * SNOMED CT targets use language-refset descriptions. Other targets get one description whose term is the concept name.
      *
      * @param edition the edition whose branch and language refsets select the descriptions
      * @param mappings the mappings
@@ -2775,7 +2738,11 @@ public class SnowstormMapping extends SnowstormAbstract {
      */
     private static void attachTargetDescriptions(final Edition edition, final Collection<Mapping> mappings, final String toTerminology) {
 
-        if (!isSnomedTerminology(toTerminology) || mappings == null || mappings.isEmpty()) {
+        if (mappings == null || mappings.isEmpty()) {
+            return;
+        }
+        if (!isSnomedTerminology(toTerminology)) {
+            applySingleTermTargetDescriptions(mappings);
             return;
         }
         final LinkedHashSet<String> targetIds = new LinkedHashSet<>();
@@ -2821,19 +2788,99 @@ public class SnowstormMapping extends SnowstormAbstract {
     }
 
     /**
-     * SNOMED CT descriptions for source concepts. Map-to-SNOMED source codes are not SNOMED concept ids.
+     * Descriptions for source concepts, attached to each mapping. SNOMED CT sources use language-refset descriptions.
+     * Other sources get one description whose term is the concept name, so the list is present beside the target descriptions.
      *
      * @param edition the edition
-     * @param conceptIds the source codes
+     * @param mappings the mappings
      * @param sourceTerminology the source terminology
-     * @return descriptions, or an empty map when the source is not SNOMED CT
      */
-    private static Map<String, List<Description>> sourceDescriptions(final Edition edition, final List<String> conceptIds, final String sourceTerminology) {
+    private static void attachSourceDescriptions(final Edition edition, final Collection<Mapping> mappings, final String sourceTerminology) {
 
-        if (!isSnomedTerminology(sourceTerminology)) {
-            return new HashMap<>();
+        if (mappings == null || mappings.isEmpty()) {
+            return;
         }
-        return SnowstormDescription.getDescriptions(edition, conceptIds);
+        if (!isSnomedTerminology(sourceTerminology)) {
+            applySingleTermSourceDescriptions(mappings);
+            return;
+        }
+        final List<String> conceptIds = new ArrayList<>();
+        for (final Mapping mapping : mappings) {
+            if (mapping != null && StringUtils.isNotBlank(mapping.getCode())) {
+                conceptIds.add(mapping.getCode());
+            }
+        }
+        final Map<String, List<Description>> descriptions = SnowstormDescription.getDescriptions(edition, conceptIds);
+        for (final Mapping mapping : mappings) {
+            if (mapping == null) {
+                continue;
+            }
+            mapping.setDescriptions(descriptions.get(mapping.getCode()));
+        }
+    }
+
+    /**
+     * One description per non-SNOMED source concept. The UI reads {@code descriptions[languageIndex].term}.
+     *
+     * @param mappings the mappings
+     */
+    static void applySingleTermSourceDescriptions(final Collection<Mapping> mappings) {
+
+        if (mappings == null) {
+            return;
+        }
+        for (final Mapping mapping : mappings) {
+            if (mapping == null || StringUtils.isBlank(mapping.getCode())) {
+                continue;
+            }
+            mapping.setDescriptions(singleTermDescriptions(mapping.getCode(), mapping.getName()));
+        }
+    }
+
+    /**
+     * One description per non-SNOMED target concept. Blank targets stay without descriptions.
+     *
+     * @param mappings the mappings
+     */
+    static void applySingleTermTargetDescriptions(final Collection<Mapping> mappings) {
+
+        if (mappings == null) {
+            return;
+        }
+        for (final Mapping mapping : mappings) {
+            if (mapping == null) {
+                continue;
+            }
+            for (final MapEntry entry : mapping.getMapEntries()) {
+                if (entry == null || StringUtils.isBlank(entry.getToCode())) {
+                    continue;
+                }
+                entry.setDescriptions(singleTermDescriptions(entry.getToCode(), entry.getToName()));
+            }
+        }
+    }
+
+    /**
+     * A single preferred-term description. Non-SNOMED terminologies do not carry SNOMED language-refset metadata.
+     *
+     * @param conceptId the concept code
+     * @param term the display name
+     * @return one description, or an empty list when there is no concept id
+     */
+    static List<Description> singleTermDescriptions(final String conceptId, final String term) {
+
+        final List<Description> descriptions = new ArrayList<>();
+        if (StringUtils.isBlank(conceptId)) {
+            return descriptions;
+        }
+        final Description description = new Description();
+        description.setActive(true);
+        description.setConceptId(conceptId);
+        description.setTerm(StringUtils.isNotBlank(term) ? term : conceptId);
+        description.setType("SYNONYM");
+        description.setTypeName("PT");
+        descriptions.add(description);
+        return descriptions;
     }
 
     /**
@@ -3319,13 +3366,11 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         final List<Mapping> mappings = getMappingsFromFile(mappingFile, mapProject);
         final List<Mapping> updatedRF2Mappings = new ArrayList<>();
-        final List<String> conceptIds = new ArrayList<>();
         LOG.info("importMappings -RF2 Mapping obj  : {}", mappings);
         for (final Mapping mapping : mappings) {
 
             final Mapping updatedRF2Mapping = updateMapping(mapProject, branch, mapping.getMapSetId(), mapping, mapSet, user);
             updatedRF2Mappings.add(updatedRF2Mapping);
-            conceptIds.add(updatedRF2Mapping.getCode());
         }
 
         String warmupMapSetCode = mapSet != null ? mapSet.getRefSetCode() : null;
@@ -3335,15 +3380,10 @@ public class SnowstormMapping extends SnowstormAbstract {
         warmEclResultsCacheAsync(branch, warmupMapSetCode);
 
         // add descriptions to mappings to be returned
-        final Map<String, List<Description>> descriptions = sourceDescriptions(mapProject.getEdition(), conceptIds, mapProject.getSourceTerminology());
         final String toTerminology = mapSet != null && StringUtils.isNotBlank(mapSet.getToTerminology()) ? mapSet.getToTerminology()
             : mapProject.getDestinationTerminology();
+        attachSourceDescriptions(mapProject.getEdition(), updatedRF2Mappings, mapProject.getSourceTerminology());
         attachTargetDescriptions(mapProject.getEdition(), updatedRF2Mappings, toTerminology);
-
-        // Sort all of the map entries in Group/Priority order
-        for (final Mapping mapping : updatedRF2Mappings) {
-            mapping.setDescriptions(descriptions.get(mapping.getCode()));
-        }
 
         return updatedRF2Mappings;
     }

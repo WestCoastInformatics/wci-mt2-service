@@ -174,6 +174,37 @@ public class SnowstormMapToSnomedMemberTest {
         assertFalse(entries.get(1).has("descriptions"));
     }
 
+    @Test
+    public void nonSnomedSideKeepsASingleDescription() throws Exception {
+
+        final Mapping mapping = new Mapping();
+        mapping.setCode("K03.0");
+        mapping.setName("Tannattrisjon");
+        final MapEntry target = mapEntry("10017004");
+        target.setToName("Occlusal wear of teeth");
+        final MapEntry blank = mapEntry("");
+        mapping.setMapEntries(List.of(target, blank));
+
+        SnowstormMapping.applySingleTermSourceDescriptions(List.of(mapping));
+        SnowstormMapping.applySingleTermTargetDescriptions(List.of(mapping));
+
+        assertEquals(1, mapping.getDescriptions().size());
+        assertEquals("Tannattrisjon", mapping.getDescriptions().get(0).getTerm());
+        assertEquals("K03.0", mapping.getDescriptions().get(0).getConceptId());
+        assertEquals("PT", mapping.getDescriptions().get(0).getTypeName());
+        assertEquals(1, target.getDescriptions().size());
+        assertEquals("Occlusal wear of teeth", target.getDescriptions().get(0).getTerm());
+        assertEquals("10017004", target.getDescriptions().get(0).getConceptId());
+        assertTrue(blank.getDescriptions().isEmpty());
+
+        final ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new Hibernate5Module());
+        final JsonNode node = mapper.readTree(mapper.writeValueAsString(mapping));
+        assertEquals("Tannattrisjon", node.get("descriptions").get(0).get("term").asText());
+        assertEquals("Occlusal wear of teeth", node.get("mapEntries").get(0).get("descriptions").get(0).get("term").asText());
+        assertFalse(node.get("mapEntries").get(1).has("descriptions"));
+    }
+
     private static MapSet mapToSnomedSet() {
 
         final MapSet mapSet = new MapSet();

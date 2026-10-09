@@ -66,7 +66,10 @@ public class Mapping extends AbstractHasModified {
     @Transient
     private MappingWorkflow mappingWorkflow;
 
-    /** The descriptions. */
+    /**
+     * Source concept descriptions. SNOMED CT sources use language-refset descriptions. Other sources use one
+     * description whose term is the concept name. Not stored on the mapping.
+     */
     @Transient
     private List<Description> descriptions = new ArrayList<>();
 

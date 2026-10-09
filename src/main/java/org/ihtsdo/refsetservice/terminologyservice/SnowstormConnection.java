@@ -16,13 +16,16 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.Calendar;
+import java.util.concurrent.TimeUnit;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation.Builder;
 import javax.ws.rs.client.WebTarget;
@@ -86,6 +89,16 @@ public final class SnowstormConnection {
     /** Max redirects for Snowstorm GET; RESTEasy does not follow 3xx by default (merge job polls would loop forever on 307). */
     private static final int SNOWSTORM_GET_MAX_REDIRECTS = 16;
 
+    /** Has connection to Snowstorm. */
+    private static boolean HAS_CONNECTION = false;
+
+    /** The Constant CHECK_CONNECTION_INTERVAL. */
+    private static final int CHECK_CONNECTION_INTERVAL = 60;
+
+    /** The last connection check. */
+    private static LocalDateTime LAST_CONNECTION_CHECK = LocalDateTime.now().minusSeconds(2 * CHECK_CONNECTION_INTERVAL);
+
+
     /**
      * The Enum SnowstormAuthMode.
      */
@@ -119,6 +132,88 @@ public final class SnowstormConnection {
         authMode = resolveSnowstormAuthMode(authTypeProperty, authUrl);
         genericUserCookie = null;
         genericUserCookieExpirationDate = null;
+    }
+
+    /**
+     * Instantiates an empty {@link SnowstormConnection}.
+     */
+    private SnowstormConnection() {
+
+        // n/a
+    }
+
+    /**
+     * Check connection.
+     *
+     * @throws Exception the exception
+     */
+    public static void checkConnection() throws Exception {
+
+        if (!hasConnection()) {
+            LOG.error("Cannot connect to Snowstorm! Check if {} is offline.", getRestBaseUrl());
+            throw new Exception("Cannot connect to Snowstorm.");
+        }
+    }
+
+    /**
+     * Checks for connection.
+     *
+     * @return true, if successful
+     */
+    private static boolean hasConnection() {
+
+        if (LocalDateTime.now().minusSeconds(CHECK_CONNECTION_INTERVAL).isAfter(LAST_CONNECTION_CHECK)) {
+            HAS_CONNECTION = getConnection();
+            LAST_CONNECTION_CHECK = LocalDateTime.now();
+        }
+        return HAS_CONNECTION;
+    }
+
+    /**
+     * Get connection status.
+     *
+     * @return true, if successful
+     */
+    private static boolean getConnection() {
+
+        final Client client = ClientBuilder.newBuilder().connectTimeout(5, TimeUnit.SECONDS).readTimeout(1, TimeUnit.SECONDS).build();
+        Response response = null;
+        boolean firstRun = true;
+        boolean run = true;
+
+        try {
+
+            final WebTarget target = client.target(getRestBaseUrl() + "version");
+            String cookie = getGenericUserCookie(false);
+
+            while (run) {
+
+                run = false;
+
+                response = target.request(ACCEPT).header("Cookie", cookie).get();
+
+                if (firstRun && response.getStatus() == Response.Status.FORBIDDEN.getStatusCode()) {
+
+                    run = true;
+                    firstRun = false;
+                    cookie = getGenericUserCookie(true);
+                    // close the response because we're going to make another
+                    response.close();
+                }
+            }
+            return true;
+        } catch (Exception e) {
+            LOG.error("Error connecting to Snowstorm.", e);
+            return false;
+
+        } finally {
+            if (response != null) {
+                response.close();
+            }
+            if (client != null) {
+                client.close();
+            }
+        }
     }
 
     /**
@@ -220,14 +315,6 @@ public final class SnowstormConnection {
         if (sessionCookie != null && !sessionCookie.isEmpty()) {
             builder.header("Cookie", sessionCookie);
         }
-    }
-
-    /**
-     * Instantiates an empty {@link SnowstormConnection}.
-     */
-    private SnowstormConnection() {
-
-        // n/a
     }
 
     /**
