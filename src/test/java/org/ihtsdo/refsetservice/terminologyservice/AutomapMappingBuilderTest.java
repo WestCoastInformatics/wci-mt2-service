@@ -133,6 +133,29 @@ public class AutomapMappingBuilderTest {
     }
 
     @Test
+    public void mapToSnomedNoTargetIsNotStored() {
+
+        final MapSet mapSet = mapSet();
+        mapSet.setFromTerminology("ICD10NO");
+        mapSet.setToTerminology("SNOMEDCT");
+        final Mapping target = mapping("A00", "22298006");
+        final Mapping noTarget = mapping("A01", "");
+
+        assertEquals(List.of(target), AutomapService.mappingsToSave(mapSet, List.of(target, noTarget)));
+    }
+
+    @Test
+    public void noTargetIsStoredWhenTheTargetIsNotSnomed() {
+
+        final MapSet mapSet = mapSet();
+        mapSet.setFromTerminology("SNOMEDCT");
+        mapSet.setToTerminology("ICD10NO");
+        final Mapping noTarget = mapping("22298006", "");
+
+        assertEquals(List.of(noTarget), AutomapService.mappingsToSave(mapSet, List.of(noTarget)));
+    }
+
+    @Test
     public void defaultsAndValidation() {
 
         assertEquals(0.5d, AutomapService.resolveMinConfidence(0.5d));
@@ -154,6 +177,23 @@ public class AutomapMappingBuilderTest {
 
         final JsonNode epochSeconds = ThreadLocalMapper.get().readTree("{\"expires_on\":2000000000}");
         assertEquals(1_999_999_970_000L, AutomapClient.expiresAt(epochSeconds));
+    }
+
+    /**
+     * Returns a mapping with one map entry.
+     *
+     * @param code the source code
+     * @param toCode the target code
+     * @return the mapping
+     */
+    private Mapping mapping(final String code, final String toCode) {
+
+        final MapEntry entry = new MapEntry();
+        entry.setToCode(toCode);
+        final Mapping mapping = new Mapping();
+        mapping.setCode(code);
+        mapping.getMapEntries().add(entry);
+        return mapping;
     }
 
     /**

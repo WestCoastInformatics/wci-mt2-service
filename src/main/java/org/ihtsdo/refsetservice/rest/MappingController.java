@@ -607,7 +607,7 @@ public class MappingController extends BaseController {
     }
 
     /**
-     * Generates unsaved map records for the supplied concept codes. Nothing is written to Snowstorm.
+     * Generates map records for the supplied concept codes and saves them.
      *
      * @param mapSetInternalId the map set internal id
      * @param requestBody the concept codes
@@ -616,11 +616,11 @@ public class MappingController extends BaseController {
      * @throws Exception the exception
      */
     @PostMapping(value = "/mapset/{mapSetInternalId}/generateAutomaps", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
-    @Operation(summary = "Generate unsaved automap suggestions for concept codes. This call requires authentication.", tags = {
+    @Operation(summary = "Generate automap suggestions for concept codes and save them. This call requires authentication.", tags = {
         "mapping"
     }, responses = {
         @ApiResponse(responseCode = "200",
-            description = "Generated map records, not yet saved. Unresolved concept codes are returned in invalidConceptIds."),
+            description = "Generated map records, saved to the map set. Unresolved concept codes are returned in invalidConceptIds."),
         @ApiResponse(responseCode = "400", description = "Bad request"), @ApiResponse(responseCode = "401", description = "Unauthorized"),
         @ApiResponse(responseCode = "404", description = "Map set not found"),
         @ApiResponse(responseCode = "502", description = "Automap or concept lookup failed")
@@ -633,12 +633,14 @@ public class MappingController extends BaseController {
     public @ResponseBody ResponseEntity<ResultListMapping> generateAutomaps(@PathVariable final String mapSetInternalId,
         @RequestBody final GenerateAutomapsRequest requestBody, final HttpServletRequest request) throws Exception {
 
-        requireAuthenticatedUser(request);
+        final User user = requireAuthenticatedUser(request);
         LOG.info("generateAutomaps mapSet={} concepts={}", mapSetInternalId,
             requestBody == null || requestBody.getConceptCodes() == null ? 0 : requestBody.getConceptCodes().size());
 
         try (final TerminologyService service = new TerminologyService()) {
-            final ResultListMapping mappings = AutomapService.generateAutomaps(service, mapSetInternalId, requestBody);
+            service.setModifiedBy(user.getUserName());
+            service.setModifiedFlag(true);
+            final ResultListMapping mappings = AutomapService.generateAutomaps(service, mapSetInternalId, requestBody, user);
             return new ResponseEntity<>(mappings, HttpStatus.OK);
 
         } catch (final Exception e) {
