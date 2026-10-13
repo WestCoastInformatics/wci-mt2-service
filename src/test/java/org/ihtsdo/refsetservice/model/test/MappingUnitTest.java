@@ -15,9 +15,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.hibernate7.Hibernate7Module;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.datatype.hibernate7.Hibernate7Module;
 
 /**
  * Unit test for {@link Mapping}.
@@ -140,10 +140,8 @@ public class MappingUnitTest extends BaseTest {
      *
      * @return the object mapper
      */
-    private static ObjectMapper hibernateObjectMapper() {
+    private static JsonMapper hibernateObjectMapper() {
 
-        final ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new Hibernate7Module());
-        return mapper;
+        return JsonMapper.builder().addModule(new Hibernate7Module()).build();
     }
 }

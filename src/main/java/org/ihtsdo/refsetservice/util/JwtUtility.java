@@ -24,7 +24,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.JWTVerifier;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
 
 /**
  * Utility for interacting with JWT tokens.
@@ -300,10 +300,10 @@ public final class JwtUtility {
      *
      * @param payload the payload
      * @return the user id
-     * @throws JsonProcessingException the json processing exception
+     * @throws JacksonException the json processing exception
      * @throws IOException Signals that an I/O exception has occurred.
      */
-    public static String getUserId(final String payload) throws JsonProcessingException, IOException {
+    public static String getUserId(final String payload) throws JacksonException, IOException {
 
         if (payload.contains(Claims.ID.getValue())) {
             return payload.replaceFirst(".*" + StringUtility.escapeRegex(Claims.ID.getValue()) + "\"\\s*:\\s*\"([0-9a-zA-Z-]+)\".*", "$1");

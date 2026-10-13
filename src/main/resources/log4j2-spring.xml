@@ -76,10 +76,6 @@
 		<Logger name="org.flywaydb" level="info" additivity="false">
 			<AppenderRef ref="Console" />
 		</Logger>
-		<Logger name="org.jboss.resteasy.client.jaxrs.i18n"
-			level="error" additivity="false">
-			<AppenderRef ref="Console" />
-		</Logger>
 		<Logger name="net.sf.ehcache" level="warn" additivity="false">
 			<AppenderRef ref="Console" />
 		</Logger>

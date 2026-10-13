@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
 
 /**
  * Service for managing asynchronous jobs.
@@ -65,7 +65,7 @@ public final class JobService {
                 final ExportJobParameters params = new ExportJobParameters(mapSet, mapProject, request);
                 job.setParameters(ThreadLocalMapper.get().writeValueAsString(params));
 
-            } catch (JsonProcessingException e) {
+            } catch (JacksonException e) {
                 LOG.error("Failed to serialize export parameters", e);
                 job.setErrorMessage("Failed to serialize export parameters: " + e.getMessage());
             }

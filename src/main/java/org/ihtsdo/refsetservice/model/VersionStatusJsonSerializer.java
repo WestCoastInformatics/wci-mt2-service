@@ -9,18 +9,17 @@
  */
 package org.ihtsdo.refsetservice.model;
 
-import java.io.IOException;
-
 import org.ihtsdo.refsetservice.model.enums.VersionStatus;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueSerializer;
 
 /**
  * The Class VersionStatusJsonSerializer.
  */
-public class VersionStatusJsonSerializer extends JsonSerializer<VersionStatus> {
+public class VersionStatusJsonSerializer extends ValueSerializer<VersionStatus> {
 
     /**
      * Serialize.
@@ -28,10 +27,10 @@ public class VersionStatusJsonSerializer extends JsonSerializer<VersionStatus> {
      * @param value the value
      * @param gsonGenerator the gson generator
      * @param serializers the serializers
-     * @throws IOException Signals that an I/O exception has occurred.
+     * @throws JacksonException the jackson exception
      */
     @Override
-    public void serialize(final VersionStatus value, final JsonGenerator gsonGenerator, final SerializerProvider serializers) throws IOException {
+    public void serialize(final VersionStatus value, final JsonGenerator gsonGenerator, final SerializationContext serializers) throws JacksonException {
 
         if (value != null) {
             gsonGenerator.writeString(value.getLabel());

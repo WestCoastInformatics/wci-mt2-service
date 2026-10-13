@@ -38,16 +38,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Table(name = "jobs")
 @Schema(description = "Represents an asynchronous job")
 @JsonIgnoreProperties(ignoreUnknown = true)
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonInclude(JsonInclude.Include.ALWAYS)
 @Indexed
 public class Job extends AbstractHasModified {
 
     /** The Constant serialVersionUID. */
     private static final long serialVersionUID = 1L;
-
-    static {
-        ThreadLocalMapper.get().setDefaultPropertyInclusion(JsonInclude.Include.ALWAYS);
-    }
 
     /** The job type. */
     @Column(nullable = false)

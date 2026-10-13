@@ -24,9 +24,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -36,6 +35,7 @@ import jakarta.ws.rs.core.Response.Status.Family;
 import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
+import org.ihtsdo.refsetservice.util.BoundedExecutors;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.ConceptRef;
 import org.ihtsdo.refsetservice.model.Edition;
@@ -68,8 +68,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * The Class SnowstormConcept.
@@ -1425,9 +1425,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
             return status;
         }
 
-        // Change the numbers to '1's to avoid threading
-        final ExecutorService executor =
-            new ThreadPoolExecutor(30, 30, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(30), new ThreadPoolExecutor.CallerRunsPolicy());
+        final BoundedExecutors.Batch batch = BoundedExecutors.fanoutBatch();
 
         // use /browser/MAIN/concepts/bulk-load POST call to get the inactive
         // concept
@@ -1538,7 +1536,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                         // process descriptions of any replacement concepts
                         if (!replacementConceptsToLookup.isEmpty()) {
 
-                            executor.submit(new Runnable() {
+                            batch.submit(new Runnable() {
 
                                 /* see superclass */
                                 @Override
@@ -1642,8 +1640,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
         }
 
-        executor.shutdown();
-        executor.awaitTermination(600, TimeUnit.SECONDS);
+        batch.await(600, TimeUnit.SECONDS);
 
         return status;
     }
@@ -2332,45 +2329,27 @@ public final class SnowstormConcept extends SnowstormAbstract {
             return;
         }
 
-        final int threadPoolSize = Math.min(10, conceptRefs.size());
-        final ExecutorService executor = new ThreadPoolExecutor(threadPoolSize, threadPoolSize, 0L, TimeUnit.MILLISECONDS,
-            new ArrayBlockingQueue<>(threadPoolSize), new ThreadPoolExecutor.CallerRunsPolicy());
+        final ExecutorService executor = BoundedExecutors.fanout();
+        final List<Future<Boolean>> futures = new ArrayList<>();
 
-        try {
-            // Submit tasks for each concept to check if it has children
-            final List<java.util.concurrent.Future<Boolean>> futures = new ArrayList<>();
-
-            for (final ConceptRef conceptRef : conceptRefs) {
-                futures.add(executor.submit(() -> {
-                    try {
-                        return checkConceptHasChildren(codeSystem, conceptRef);
-                    } catch (Exception e) {
-                        LOG.error("Error checking children for concept: {}", conceptRef.getCode(), e);
-                        return false;
-                    }
-                }));
-            }
-
-            // Wait for all tasks to complete and update the ConceptRef objects
-            for (int i = 0; i < conceptRefs.size(); i++) {
+        for (final ConceptRef conceptRef : conceptRefs) {
+            futures.add(executor.submit(() -> {
                 try {
-                    final boolean hasChildren = futures.get(i).get(30, TimeUnit.SECONDS);
-                    conceptRefs.get(i).setHasChildren(hasChildren);
+                    return checkConceptHasChildren(codeSystem, conceptRef);
                 } catch (Exception e) {
-                    LOG.error("Error getting result for concept: {}", conceptRefs.get(i).getCode(), e);
-                    conceptRefs.get(i).setHasChildren(false);
+                    LOG.error("Error checking children for concept: {}", conceptRef.getCode(), e);
+                    return false;
                 }
-            }
+            }));
+        }
 
-        } finally {
-            executor.shutdown();
+        for (int i = 0; i < conceptRefs.size(); i++) {
             try {
-                if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
-                    executor.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                executor.shutdownNow();
-                Thread.currentThread().interrupt();
+                final boolean hasChildren = futures.get(i).get(30, TimeUnit.SECONDS);
+                conceptRefs.get(i).setHasChildren(hasChildren);
+            } catch (Exception e) {
+                LOG.error("Error getting result for concept: {}", conceptRefs.get(i).getCode(), e);
+                conceptRefs.get(i).setHasChildren(false);
             }
         }
     }

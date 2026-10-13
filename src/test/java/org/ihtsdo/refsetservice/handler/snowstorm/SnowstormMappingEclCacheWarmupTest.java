@@ -11,7 +11,7 @@ import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Tests ECL cache warmup after map saves and search wait behavior.

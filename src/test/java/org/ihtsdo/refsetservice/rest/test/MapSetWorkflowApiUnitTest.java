@@ -240,9 +240,8 @@ public class MapSetWorkflowApiUnitTest extends BaseTest {
         assertThat(currentMapSet).isNotNull();
         assertThat(currentMapSet.getWorkflowStatus()).isEqualTo(WorkflowStatus.READY_FOR_REVIEW);
         history = workflowUtil.getWorkflowHistory(currentMapSet.getId());
-        if (!history.isEmpty()) {
-            workflowUtil.validateRow(history.get(history.size() - 1), EXPECTED_USER_NAME, WorkflowAction.REQUEST_REVIEW, WorkflowStatus.READY_FOR_REVIEW, note);
-        }
+        workflowUtil.validateRow(workflowUtil.findHistoryRow(history, WorkflowAction.REQUEST_REVIEW, WorkflowStatus.READY_FOR_REVIEW), EXPECTED_USER_NAME,
+            WorkflowAction.REQUEST_REVIEW, WorkflowStatus.READY_FOR_REVIEW, note);
 
         // READY_FOR_REVIEW -> REVIEW -> IN_REVIEW
         note = "Starting review";
@@ -250,9 +249,8 @@ public class MapSetWorkflowApiUnitTest extends BaseTest {
         assertThat(currentMapSet).isNotNull();
         assertThat(currentMapSet.getWorkflowStatus()).isEqualTo(WorkflowStatus.IN_REVIEW);
         history = workflowUtil.getWorkflowHistory(currentMapSet.getId());
-        if (!history.isEmpty()) {
-            workflowUtil.validateRow(history.get(history.size() - 1), EXPECTED_USER_NAME, WorkflowAction.REVIEW, WorkflowStatus.IN_REVIEW, note);
-        }
+        workflowUtil.validateRow(workflowUtil.findHistoryRow(history, WorkflowAction.REVIEW, WorkflowStatus.IN_REVIEW), EXPECTED_USER_NAME,
+            WorkflowAction.REVIEW, WorkflowStatus.IN_REVIEW, note);
 
         // IN_REVIEW -> ACCEPT_REVIEW -> REVIEW_COMPLETED
         note = "Review approved";
@@ -260,9 +258,8 @@ public class MapSetWorkflowApiUnitTest extends BaseTest {
         assertThat(currentMapSet).isNotNull();
         assertThat(currentMapSet.getWorkflowStatus()).isEqualTo(WorkflowStatus.REVIEW_COMPLETED);
         history = workflowUtil.getWorkflowHistory(currentMapSet.getId());
-        if (!history.isEmpty()) {
-            workflowUtil.validateRow(history.get(history.size() - 1), EXPECTED_USER_NAME, WorkflowAction.ACCEPT_REVIEW, WorkflowStatus.REVIEW_COMPLETED, note);
-        }
+        workflowUtil.validateRow(workflowUtil.findHistoryRow(history, WorkflowAction.ACCEPT_REVIEW, WorkflowStatus.REVIEW_COMPLETED), EXPECTED_USER_NAME,
+            WorkflowAction.ACCEPT_REVIEW, WorkflowStatus.REVIEW_COMPLETED, note);
 
         // REVIEW_COMPLETED -> REQUEST_PUBLICATION -> READY_FOR_PUBLICATION
         note = "Requesting publication";
@@ -270,10 +267,8 @@ public class MapSetWorkflowApiUnitTest extends BaseTest {
         assertThat(currentMapSet).isNotNull();
         assertThat(currentMapSet.getWorkflowStatus()).isEqualTo(WorkflowStatus.READY_FOR_PUBLICATION);
         history = workflowUtil.getWorkflowHistory(currentMapSet.getId());
-        if (!history.isEmpty()) {
-            workflowUtil.validateRow(history.get(history.size() - 1), EXPECTED_USER_NAME, WorkflowAction.REQUEST_PUBLICATION,
-                WorkflowStatus.READY_FOR_PUBLICATION, note);
-        }
+        workflowUtil.validateRow(workflowUtil.findHistoryRow(history, WorkflowAction.REQUEST_PUBLICATION, WorkflowStatus.READY_FOR_PUBLICATION),
+            EXPECTED_USER_NAME, WorkflowAction.REQUEST_PUBLICATION, WorkflowStatus.READY_FOR_PUBLICATION, note);
 
         // READY_FOR_PUBLICATION -> FAILS_RVF -> READY_FOR_EDIT
         note = "RVF failed";
@@ -281,9 +276,8 @@ public class MapSetWorkflowApiUnitTest extends BaseTest {
         assertThat(currentMapSet).isNotNull();
         assertThat(currentMapSet.getWorkflowStatus()).isEqualTo(WorkflowStatus.READY_FOR_EDIT);
         history = workflowUtil.getWorkflowHistory(currentMapSet.getId());
-        if (!history.isEmpty()) {
-            workflowUtil.validateRow(history.get(history.size() - 1), EXPECTED_USER_NAME, WorkflowAction.FAILS_RVF, WorkflowStatus.READY_FOR_EDIT, note);
-        }
+        workflowUtil.validateRow(workflowUtil.findHistoryRow(history, WorkflowAction.FAILS_RVF, WorkflowStatus.READY_FOR_EDIT), EXPECTED_USER_NAME,
+            WorkflowAction.FAILS_RVF, WorkflowStatus.READY_FOR_EDIT, note);
     }
 
     /**
@@ -314,9 +308,10 @@ public class MapSetWorkflowApiUnitTest extends BaseTest {
         }
 
         final List<MapSetWorkflowHistory> history = workflowUtil.getWorkflowHistory(currentMapSet.getId());
-        if (noteUpdated && !history.isEmpty()) {
-            workflowUtil.validateRow(history.get(history.size() - 1), EXPECTED_USER_NAME, WorkflowAction.REVIEW, WorkflowStatus.IN_REVIEW,
-                "Updated note for review");
+        if (noteUpdated) {
+            // Assert the REVIEW row by action/status (not list position): note updates can bump modified on a stale indexed row
+            workflowUtil.validateRow(workflowUtil.findHistoryRow(history, WorkflowAction.REVIEW, WorkflowStatus.IN_REVIEW), EXPECTED_USER_NAME,
+                WorkflowAction.REVIEW, WorkflowStatus.IN_REVIEW, "Updated note for review");
         }
     }
 
@@ -371,10 +366,8 @@ public class MapSetWorkflowApiUnitTest extends BaseTest {
         assertThat(current.getWorkflowStatus()).isEqualTo(WorkflowStatus.READY_FOR_EDIT);
 
         final List<MapSetWorkflowHistory> history = workflowUtil.getWorkflowHistory(current.getId());
-        if (!history.isEmpty()) {
-            workflowUtil.validateRow(history.get(history.size() - 1), EXPECTED_USER_NAME, WorkflowAction.REJECT_REVIEW, WorkflowStatus.READY_FOR_EDIT,
-                "Rejecting - needs more work");
-        }
+        workflowUtil.validateRow(workflowUtil.findHistoryRow(history, WorkflowAction.REJECT_REVIEW, WorkflowStatus.READY_FOR_EDIT), EXPECTED_USER_NAME,
+            WorkflowAction.REJECT_REVIEW, WorkflowStatus.READY_FOR_EDIT, "Rejecting - needs more work");
     }
 
     /**

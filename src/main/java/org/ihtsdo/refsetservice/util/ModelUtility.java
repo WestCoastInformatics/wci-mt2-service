@@ -20,10 +20,10 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Utility for interacting with domain objects. TODO: clean this up and reconcile with NormUtility (push all logic here).
@@ -276,9 +276,9 @@ public final class ModelUtility {
      *
      * @param input the input
      * @return the string
-     * @throws JsonProcessingException the json processing exception
+     * @throws JacksonException the json processing exception
      */
-    public static String prettyFormatJson(final Object input) throws JsonProcessingException {
+    public static String prettyFormatJson(final Object input) throws JacksonException {
 
         return ThreadLocalMapper.get().writerWithDefaultPrettyPrinter().writeValueAsString(input);
     }

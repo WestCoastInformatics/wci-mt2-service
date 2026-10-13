@@ -39,11 +39,11 @@ import org.junit.jupiter.api.TestInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.boot.test.json.Jackson2Tester;
+import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.test.web.servlet.MvcResult;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Integration tests for MetadataController.
@@ -186,7 +186,7 @@ public class RefsetControllerIntegrationTests extends AbstractRefsetTests {
 
         // Setup Utility classes
         setObjectMapper(ThreadLocalMapper.get());
-        Jackson2Tester.initFields(this, getObjectMapper());
+        JacksonTester.initFields(this, getObjectMapper());
         setBaseUrl("/refset");
 
         if (firstTimeSetup) {

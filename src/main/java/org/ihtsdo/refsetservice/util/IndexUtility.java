@@ -28,18 +28,19 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.client.Client;
-import jakarta.ws.rs.client.ClientBuilder;
-import jakarta.ws.rs.client.Entity;
-import jakarta.ws.rs.client.WebTarget;
-import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.Response.Status.Family;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.Strings;
@@ -67,7 +68,6 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericFie
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmbedded;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordField;
 import org.ihtsdo.refsetservice.model.PfsParameter;
-import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,6 +89,9 @@ public final class IndexUtility {
 
     /** Default fetch size when PFS is unset; callers that need more must pass an explicit limit. */
     private static final int DEFAULT_UNPAGED_FETCH_LIMIT = 1000;
+
+    /** Shared HTTP client for Elasticsearch admin calls. */
+    private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build();
 
     /** The sort field analyzed map. */
     private static Map<String, Map<String, Boolean>> sortFieldAnalyzedMap = new HashMap<>();
@@ -950,34 +953,31 @@ public final class IndexUtility {
             final String esProtocol = PropertyUtility.getProperties().getProperty("spring.jpa.properties.hibernate.search.backend.protocol");
             final String esHost = PropertyUtility.getProperties().getProperty("spring.jpa.properties.hibernate.search.backend.hosts");
             final String esUrl = esProtocol + "://" + esHost + "/" + indexReadName + "/_search";
-            final Client client = ClientBuilder.newClient();
-            WebTarget target = client.target(esUrl);
-            try (Response response = target.request().get()) {
-                if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-                    final String resultString = SnowstormConnection.readEntityAsString(response);
+            final HttpRequest getRequest = HttpRequest.newBuilder().uri(URI.create(esUrl)).GET().build();
+            final HttpResponse<String> getResponse = HTTP_CLIENT.send(getRequest, HttpResponse.BodyHandlers.ofString());
+            if (getResponse.statusCode() < 200 || getResponse.statusCode() >= 300) {
+                final String resultString = getResponse.body() == null ? "" : getResponse.body();
 
-                    // if the index isn't found it then just log it and exit the
-                    // function
-                    if (resultString.contains("index_not_found_exception")) {
-                        LOG.warn("Elastic Search index not found = " + index);
-                        return;
-                    }
-
-                    LOG.error("Unexpected attempt to search index = " + index);
-                    throw new WebApplicationException(SnowstormConnection.readEntityAsString(response), response.getStatus());
+                // if the index isn't found it then just log it and exit the
+                // function
+                if (resultString.contains("index_not_found_exception")) {
+                    LOG.warn("Elastic Search index not found = " + index);
+                    return;
                 }
+
+                LOG.error("Unexpected attempt to search index = " + index);
+                throw new WebApplicationException(resultString, getResponse.statusCode());
             }
 
-            // Then, POST to make the max result window change
+            // Then, PUT to make the max result window change
             final String postUrl = esProtocol + "://" + esHost + "/" + indexWriteName + "/_settings";
             final String requestBody = "{\"index\" : {\"max_result_window\" : 2500000}}";
-            target = client.target(postUrl);
-
-            try (Response response = target.request().put(Entity.json(requestBody))) {
-                if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-                    LOG.error("Unexpected attempt to set max index size = " + index);
-                    throw new WebApplicationException(SnowstormConnection.readEntityAsString(response), response.getStatus());
-                }
+            final HttpRequest putRequest = HttpRequest.newBuilder().uri(URI.create(postUrl)).header("Content-Type", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8)).build();
+            final HttpResponse<String> putResponse = HTTP_CLIENT.send(putRequest, HttpResponse.BodyHandlers.ofString());
+            if (putResponse.statusCode() < 200 || putResponse.statusCode() >= 300) {
+                LOG.error("Unexpected attempt to set max index size = " + index);
+                throw new WebApplicationException(putResponse.body(), putResponse.statusCode());
             }
         }
     }

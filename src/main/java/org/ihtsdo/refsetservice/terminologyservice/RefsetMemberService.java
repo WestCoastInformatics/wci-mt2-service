@@ -37,9 +37,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -69,6 +67,7 @@ import org.ihtsdo.refsetservice.model.enums.VersionStatus;
 import org.ihtsdo.refsetservice.model.enums.WorkflowStatus;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.util.BoundedExecutors;
 import org.ihtsdo.refsetservice.util.ConceptLookupParameters;
 import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.FileUtility;
@@ -82,9 +81,9 @@ import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Service class to get refset member concept information from a terminology
@@ -159,25 +158,25 @@ public final class RefsetMemberService {
     private static final String EXPORT_DOWNLOAD_URL = "export/download/";
 
     /** A list of refset actively being updated. */
-    public static final Set<String> REFSETS_BEING_UPDATED = new HashSet<>();
+    public static final Set<String> REFSETS_BEING_UPDATED = ConcurrentHashMap.newKeySet();
 
     /** A list of refset actively being updated. */
-    public static final Map<String, Map<String, Map<String, String>>> REFSETS_UPDATED_MEMBERS = new HashMap<>();
+    public static final Map<String, Map<String, Map<String, String>>> REFSETS_UPDATED_MEMBERS = new ConcurrentHashMap<>();
 
     /** A cache of the members returned for a specific URL. */
-    public static final Map<String, Map<String, ResultListConcept>> CONCEPTS_CALL_CACHE = new HashMap<>();
+    public static final Map<String, Map<String, ResultListConcept>> CONCEPTS_CALL_CACHE = new ConcurrentHashMap<>();
 
     /** A cache of the details for any concept. */
-    public static final Map<String, Map<String, Concept>> CONCEPT_DETAILS_CACHE = new HashMap<>();
+    public static final Map<String, Map<String, Concept>> CONCEPT_DETAILS_CACHE = new ConcurrentHashMap<>();
 
     /** A cache of the taxonomy ancestor path for concepts. */
-    public static final Map<String, Map<String, Concept>> TAXONOMY_SEARCH_ANCESTORS_CACHE = new HashMap<>();
+    public static final Map<String, Map<String, Concept>> TAXONOMY_SEARCH_ANCESTORS_CACHE = new ConcurrentHashMap<>();
 
     /** A cache of the children for each tree node. */
-    private static final Map<String, Map<String, ResultListConcept>> TREE_CACHE = new HashMap<>();
+    private static final Map<String, Map<String, ResultListConcept>> TREE_CACHE = new ConcurrentHashMap<>();
 
     /** A cache of the children for each tree node. */
-    public static final Map<String, Map<String, Set<String>>> ANCESTORS_CACHE = new HashMap<>();
+    public static final Map<String, Map<String, Set<String>>> ANCESTORS_CACHE = new ConcurrentHashMap<>();
 
     /** The Constant CONCEPT_DESCRIPTIONS_PER_CALL. */
     public static final int CONCEPT_DESCRIPTIONS_PER_CALL = 250;
@@ -200,7 +199,7 @@ public final class RefsetMemberService {
     public static final String PREFERRED_TERM_EN = "900000000000509007PT";
 
     /** The Constant REFSET_TO_PUBLISHED_VERSION_MAP. */
-    public static final Map<String, List<Long>> REFSET_TO_PUBLISHED_VERSION_MAP = new HashMap<>();
+    public static final Map<String, List<Long>> REFSET_TO_PUBLISHED_VERSION_MAP = new ConcurrentHashMap<>();
 
     static {
 
@@ -2090,7 +2089,7 @@ public final class RefsetMemberService {
             return TREE_CACHE.get(branchPath);
         } else {
 
-            return new HashMap<>();
+            return new ConcurrentHashMap<>();
         }
 
     }
@@ -2109,7 +2108,7 @@ public final class RefsetMemberService {
             return ANCESTORS_CACHE.get(branchPath);
         } else {
 
-            return new HashMap<>();
+            return new ConcurrentHashMap<>();
         }
 
     }
@@ -2128,7 +2127,7 @@ public final class RefsetMemberService {
             return TAXONOMY_SEARCH_ANCESTORS_CACHE.get(branchPath);
         } else {
 
-            return new HashMap<>();
+            return new ConcurrentHashMap<>();
         }
 
     }
@@ -2147,7 +2146,7 @@ public final class RefsetMemberService {
             return CONCEPT_DETAILS_CACHE.get(branchPath);
         } else {
 
-            return new HashMap<>();
+            return new ConcurrentHashMap<>();
         }
 
     }
@@ -2166,7 +2165,7 @@ public final class RefsetMemberService {
             return CONCEPTS_CALL_CACHE.get(branchPath);
         } else {
 
-            return new HashMap<>();
+            return new ConcurrentHashMap<>();
         }
 
     }
@@ -3512,13 +3511,11 @@ public final class RefsetMemberService {
         // remove any existing comparison data for this refset
         SecurityService.removeFromSession("refsetMemberComparison_" + activeRefsetInternalId);
 
-        // Change the numbers to '1's to avoid threading
-        final ExecutorService executor =
-            new ThreadPoolExecutor(30, 30, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(30), new ThreadPoolExecutor.CallerRunsPolicy());
+        final BoundedExecutors.Batch batch = BoundedExecutors.fanoutBatch();
 
         for (final String refsetType : Arrays.asList("active", "comparison")) {
 
-            executor.submit(new Runnable() {
+            batch.submit(new Runnable() {
 
                 /* see superclass */
                 @Override
@@ -3562,8 +3559,7 @@ public final class RefsetMemberService {
             });
         }
 
-        executor.shutdown();
-        executor.awaitTermination(10, TimeUnit.MINUTES);
+        batch.await(10, TimeUnit.MINUTES);
 
         refsetMemberComparison.setActiveRefsetMemberTotal(activeRefsetMembers.size());
         refsetMemberComparison.setComparisonRefsetMemberTotal(comparisonRefsetMembers.size());

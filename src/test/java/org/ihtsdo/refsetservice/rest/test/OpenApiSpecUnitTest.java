@@ -19,8 +19,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Validates the generated OpenAPI 3 document.
@@ -44,7 +44,7 @@ public class OpenApiSpecUnitTest extends BaseTest {
     public void openApiDocumentIsValid() throws Exception {
 
         final String json = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
-        final JsonNode root = new ObjectMapper().readTree(json);
+        final JsonNode root = new JsonMapper().readTree(json);
 
         assertTrue(root.path("openapi").asText().startsWith("3."), "openapi version");
         assertTrue(root.path("paths").size() > 0, "paths present");

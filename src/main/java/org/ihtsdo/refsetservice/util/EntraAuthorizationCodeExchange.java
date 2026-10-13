@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Stateless helpers for the OAuth2 authorization code flow against Microsoft Entra ID: token exchange and authorize URL construction. Not a Spring bean; all

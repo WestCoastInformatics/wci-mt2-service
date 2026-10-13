@@ -16,6 +16,7 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericFie
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
@@ -65,6 +66,7 @@ public class MapNote extends AbstractHasModified {
      * @param mapNote the map note
      * @param keepIds whether to copy ids
      */
+    @JsonIgnore
     public MapNote(final MapNote mapNote, final boolean keepIds) {
 
         if (keepIds && mapNote.getId() != null) {

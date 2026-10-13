@@ -9,8 +9,13 @@
  */
 package org.ihtsdo.refsetservice.handler;
 
+import java.net.URI;
 import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -21,11 +26,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import jakarta.servlet.http.Cookie;
-import jakarta.ws.rs.client.Client;
-import jakarta.ws.rs.client.ClientBuilder;
-import jakarta.ws.rs.client.WebTarget;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.RestException;
@@ -37,8 +37,7 @@ import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.JsonNode;
-// import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Implements a security handler that authorizes via IHTSDO authentication.
@@ -47,6 +46,9 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(ImsSecurityServiceHandler.class);
+
+    /** Shared HTTP client for IMS account checks. */
+    private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
 
     /** The Constant LOG. */
     private static final String RT2_ROLE_PREFIX = "rt2-";
@@ -167,17 +169,15 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
             return false;
         }
 
-        final Client client = ClientBuilder.newClient();
-        final WebTarget target = client.target(url);
-        final jakarta.ws.rs.core.Cookie newCookie = new jakarta.ws.rs.core.Cookie.Builder(imsCookie.getName())
-            .value(imsCookie.getValue())
-            .build();
+        final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).header("Accept", "application/json")
+            .header("Cookie", imsCookie.getName() + "=" + imsCookie.getValue()).GET().build();
 
-        try (Response response = target.request(MediaType.APPLICATION_JSON).cookie(newCookie).get()) {
+        try {
+            final HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
 
-            if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+            if (response.statusCode() == 200) {
 
-                final String resultString = response.readEntity(String.class);
+                final String resultString = response.body();
                 final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
                 final String imsUserName = root.get("login").asText();
 

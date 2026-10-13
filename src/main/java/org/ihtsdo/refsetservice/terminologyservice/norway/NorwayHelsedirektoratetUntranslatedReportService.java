@@ -26,7 +26,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Report of Helsedirektoratet refset concepts that lack a Bokmål translation, including ICD-10 / ICPC map targets. Nynorsk, Bokmål GP, and Nynorsk GP flags are

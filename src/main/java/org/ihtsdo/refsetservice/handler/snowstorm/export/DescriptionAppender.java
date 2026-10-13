@@ -20,15 +20,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.ihtsdo.refsetservice.handler.snowstorm.SnomedConstants;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormDescription;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Edition;
+import org.ihtsdo.refsetservice.util.BoundedExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,10 +41,6 @@ public class DescriptionAppender {
     /** The Constant CONCEPT_DESCRIPTIONS_PER_CALL. */
     // limited because of URL length
     private static final int CONCEPT_DESCRIPTIONS_PER_CALL = 230;
-
-    /** The Constant DESCRIPTION_EXECUTOR_SIZE. */
-    // Use a bounded thread pool with a reasonable size
-    private static final int DESCRIPTION_EXECUTOR_SIZE = 10;
 
     /**
      * Instantiates a new description appender.
@@ -98,9 +92,7 @@ public class DescriptionAppender {
 
         // Create a thread-safe map to store results
         final Map<String, Concept> members = Collections.synchronizedMap(new HashMap<>());
-        LOG.info("Using executor size: {}", DESCRIPTION_EXECUTOR_SIZE);
-        final ExecutorService executor = Executors.newFixedThreadPool(DESCRIPTION_EXECUTOR_SIZE);
-        final List<Future<?>> futures = new ArrayList<>();
+        final BoundedExecutors.Batch fanoutBatch = BoundedExecutors.fanoutBatch();
 
         final long startTime = System.currentTimeMillis();
         int batchCount = 0;
@@ -112,7 +104,7 @@ public class DescriptionAppender {
             }
             batchCount++;
             final int currentBatchNumber = batchCount;
-            futures.add(executor.submit(() -> {
+            fanoutBatch.submit(() -> {
                 try {
                     LOG.debug("Processing batch {} of {} with {} concepts", currentBatchNumber, conceptBatches.size(), batch.size());
                     final List<Concept> concepts = new ArrayList<>();
@@ -133,24 +125,14 @@ public class DescriptionAppender {
                     LOG.error("Error processing batch {} of {}: {}", currentBatchNumber, conceptBatches.size(), e.getMessage(), e);
                     throw new RuntimeException("Failed to process batch " + currentBatchNumber, e);
                 }
-            }));
+            });
         }
 
-        // Wait for all tasks to complete
-        for (final Future<?> future : futures) {
-            try {
-                future.get(5, TimeUnit.MINUTES); // Add timeout to prevent hanging
-            } catch (final Exception e) {
-                LOG.error("Error waiting for task completion: {}", e.getMessage(), e);
-                executor.shutdownNow(); // Force shutdown on error
-                throw new RuntimeException("Failed to complete all batches", e);
-            }
-        }
-
-        executor.shutdown();
-        if (!executor.awaitTermination(1, TimeUnit.MINUTES)) {
-            LOG.warn("Executor did not terminate within timeout");
-            executor.shutdownNow();
+        try {
+            fanoutBatch.await(5, TimeUnit.MINUTES);
+        } catch (final Exception e) {
+            LOG.error("Error waiting for task completion: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to complete all batches", e);
         }
 
         final long endTime = System.currentTimeMillis();

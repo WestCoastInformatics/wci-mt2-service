@@ -18,9 +18,9 @@ import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
 
 /**
  * Automates JUnit testing XML/JSON Serialization.
@@ -50,10 +50,9 @@ public class SerializationTester extends ProxyTester {
 
         LOG.debug("Test json serialization - {}", getClazz().getName());
         final Object obj = createObject(1);
-        final ObjectMapper objectMapper = ThreadLocalMapper.newMapper();
         final SimpleModule module = new SimpleModule();
         module.addDeserializer(VersionStatus.class, new VersionStatusDeserializer());
-        objectMapper.registerModule(module);
+        final JsonMapper objectMapper = ThreadLocalMapper.newMapper().rebuild().addModule(module).build();
         LOG.debug("  {}", obj);
         final String json = objectMapper.writeValueAsString(obj);
         LOG.info("json = {}", json);

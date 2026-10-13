@@ -32,8 +32,9 @@ public class RequestLoggingFilter extends AbstractRequestLoggingFilter {
 
         setIncludeClientInfo(false);
         setIncludeQueryString(true);
-        setIncludePayload(true);
-        setMaxPayloadLength(50000);
+        // Payload logging is expensive and can leak secrets; keep off in normal traffic.
+        setIncludePayload(false);
+        setMaxPayloadLength(0);
         setIncludeHeaders(false);
     }
 

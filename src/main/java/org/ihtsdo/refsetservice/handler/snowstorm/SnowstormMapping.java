@@ -39,9 +39,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
-import jakarta.ws.rs.client.Client;
-import jakarta.ws.rs.client.WebTarget;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status.Family;
 
@@ -74,9 +71,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * The Class SnowstormMapping.
@@ -85,9 +82,6 @@ public class SnowstormMapping extends SnowstormAbstract {
 
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(SnowstormMapping.class);
-
-    /** The Constant DEFAULT_ACCEPT. */
-    private static final String DEFAULT_ACCEPT = MediaType.APPLICATION_JSON;
 
     /**
      * Dummy term used to warm Snowstorm's ECL results cache after map member writes. User filtered searches send {@code termFilter} plus
@@ -118,26 +112,6 @@ public class SnowstormMapping extends SnowstormAbstract {
     /** Keys that need another warmup after the current one because another save landed while it was running. */
     private static final Set<String> ECL_CACHE_WARMUP_AGAIN = ConcurrentHashMap.newKeySet();
 
-    /** The client. */
-    private static ThreadLocal<Client> clients = new ThreadLocal<>() {
-
-        @Override
-        public Client initialValue() {
-
-            return SnowstormConnection.getClient();
-        }
-    };
-
-    /**
-     * Returns the clients.
-     *
-     * @return the clients
-     */
-    private static ThreadLocal<Client> getClients() {
-
-        return clients;
-    }
-
     /**
      * Gets the map sets.
      *
@@ -148,9 +122,6 @@ public class SnowstormMapping extends SnowstormAbstract {
     public static List<MapSet> getMapSets(final String branch) throws Exception {
 
         final ArrayList<MapSet> mapSets = new ArrayList<>();
-
-        // Connect to snowstorm
-        final Client client = getClients().get();
 
         String searchAfter = null;
 
@@ -166,58 +137,56 @@ public class SnowstormMapping extends SnowstormAbstract {
                 + limit + (searchAfter != null ? "&searchAfter=" + searchAfter : "");
         LOG.info("getSnowstormMapsets url: " + targetUri);
 
-        final WebTarget target = client.target(targetUri);
-        final Response response = target.request(DEFAULT_ACCEPT)
-            // .header("Cookie", ConfigUtility.getGenericUserCookie())
-            .get();
-        if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-            final String body = SnowstormConnection.readEntityAsStringSafe(response);
-            final String message = StringUtils.isNotBlank(body) ? SnowstormAbstract.formatErrorMessageFromBody(body) : "(response body not available)";
-            throw new Exception("Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + message);
-        }
-        final String resultString = SnowstormConnection.readEntityAsString(response);
-
-        final JsonNode doc = ThreadLocalMapper.get().readTree(resultString);
-        final JsonNode mappingsBatch = doc.get("items");
-
-        final Iterator<JsonNode> itemIterator = mappingsBatch.iterator();
-
-        // parse items to retrieve matching concept
-        while (itemIterator.hasNext()) {
-
-            final JsonNode mapSetNode = itemIterator.next();
-
-            // TEMPORARY - only keep ICD10NO (447562003), ICPC2NO (68101000202102)
-            // reverse ICD10NO to SNOMED (12345678901)maps, and local to SNOMED (12345678902)//
-            final String refsetId = mapSetNode.get("conceptId").asText();
-            if (!(refsetId.equals("447562003") || refsetId.equals("68101000202102") || refsetId.equals("12345678901") || refsetId.equals("12345678902"))) {
-                continue;
+        try (final Response response = SnowstormConnection.getResponse(targetUri)) {
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                final String body = SnowstormConnection.readEntityAsStringSafe(response);
+                final String message = StringUtils.isNotBlank(body) ? SnowstormAbstract.formatErrorMessageFromBody(body) : "(response body not available)";
+                throw new Exception("Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + message);
             }
-            // TEMPORARY//
+            final String resultString = SnowstormConnection.readEntityAsString(response);
 
-            final MapSet mapSet = new MapSet();
-            mapSet.setRefSetCode(mapSetNode.get("conceptId").asText());
-            mapSet.setModuleId(mapSetNode.get("moduleId").asText());
+            final JsonNode doc = ThreadLocalMapper.get().readTree(resultString);
+            final JsonNode mappingsBatch = doc.get("items");
 
-            // Set refset name to FSN if it exists, defaulting to PT if not.
-            if (mapSetNode.has("pt")) {
-                mapSet.setRefSetName(mapSetNode.get("pt").get("term").asText());
+            final Iterator<JsonNode> itemIterator = mappingsBatch.iterator();
+
+            // parse items to retrieve matching concept
+            while (itemIterator.hasNext()) {
+
+                final JsonNode mapSetNode = itemIterator.next();
+
+                // TEMPORARY - only keep ICD10NO (447562003), ICPC2NO (68101000202102)
+                // reverse ICD10NO to SNOMED (12345678901)maps, and local to SNOMED (12345678902)//
+                final String refsetId = mapSetNode.get("conceptId").asText();
+                if (!(refsetId.equals("447562003") || refsetId.equals("68101000202102") || refsetId.equals("12345678901") || refsetId.equals("12345678902"))) {
+                    continue;
+                }
+                // TEMPORARY//
+
+                final MapSet mapSet = new MapSet();
+                mapSet.setRefSetCode(mapSetNode.get("conceptId").asText());
+                mapSet.setModuleId(mapSetNode.get("moduleId").asText());
+
+                // Set refset name to FSN if it exists, defaulting to PT if not.
+                if (mapSetNode.has("pt")) {
+                    mapSet.setRefSetName(mapSetNode.get("pt").get("term").asText());
+                }
+
+                if (mapSetNode.has("fsn") && mapSetNode.get("fsn").has("term")) {
+                    mapSet.setRefSetName(mapSetNode.get("fsn").get("term").asText());
+                }
+
+                final JsonNode additionalFields = mapSetNode.get("additionalFields");
+                // deriveBranchAndVersionFromBranch(mapSet, branch);
+                mapSet.setVersionStatus(VersionStatus.PUBLISHED);
+                mapSet.setVersion(mapSet.getFromVersion());
+                // mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse(mapSet.getFromVersion()));
+                if (mapSetNode.has("effectiveTime") && !mapSetNode.get("effectiveTime").isNull()) {
+                    mapSet.setModified(new SimpleDateFormat("yyyyMMdd").parse(mapSetNode.get("effectiveTime").asText()));
+                }
+
+                mapSets.add(mapSet);
             }
-
-            if (mapSetNode.has("fsn") && mapSetNode.get("fsn").has("term")) {
-                mapSet.setRefSetName(mapSetNode.get("fsn").get("term").asText());
-            }
-
-            final JsonNode additionalFields = mapSetNode.get("additionalFields");
-            // deriveBranchAndVersionFromBranch(mapSet, branch);
-            mapSet.setVersionStatus(VersionStatus.PUBLISHED);
-            mapSet.setVersion(mapSet.getFromVersion());
-            // mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse(mapSet.getFromVersion()));
-            if (mapSetNode.has("effectiveTime") && !mapSetNode.get("effectiveTime").isNull()) {
-                mapSet.setModified(new SimpleDateFormat("yyyyMMdd").parse(mapSetNode.get("effectiveTime").asText()));
-            }
-
-            mapSets.add(mapSet);
         }
 
         return mapSets;
@@ -233,8 +202,6 @@ public class SnowstormMapping extends SnowstormAbstract {
      */
     public static MapSet getMapSet(final String branch, final String code) throws Exception {
 
-        final Client client = getClients().get();
-
         final SearchParameters searchParameters = new SearchParameters();
         searchParameters.setLimit(50);
         searchParameters.setSearchAfter(null);
@@ -244,15 +211,13 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         LOG.info("getSnowstormMapset url: {}", targetUri);
 
-        final WebTarget target = client.target(targetUri);
-
-        final Response response = target.request(DEFAULT_ACCEPT)
-            // .header("Cookie", ConfigUtility.getGenericUserCookie())
-            .get();
-        final String resultString = SnowstormConnection.readEntityAsString(response);
-        if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-            throw new Exception(
-                "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
+        final String resultString;
+        try (final Response response = SnowstormConnection.getResponse(targetUri)) {
+            resultString = SnowstormConnection.readEntityAsString(response);
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                throw new Exception(
+                    "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
+            }
         }
 
         final JsonNode doc = ThreadLocalMapper.get().readTree(resultString);
@@ -1649,9 +1614,8 @@ public class SnowstormMapping extends SnowstormAbstract {
     public static Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode, final String moduleId, final boolean activeOnly,
         final boolean showOverriddenEntries, final boolean includeDescriptions, final MapSet dbMapSet) throws Exception {
 
-        // Connect to snowstorm. Page until every member for this concept is loaded.
+        // Page until every member for this concept is loaded.
         // A single page can omit a later group/priority (1/2) and leave that Norwegian member active.
-        final Client client = getClients().get();
         final int limit = 100;
         String searchAfter = null;
         final Set<String> seenMemberIds = new HashSet<>();
@@ -1666,7 +1630,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         while (true) {
             final JsonNode data = mapToSnomed
                 ? searchMembersByMapSource(branch, mapSetCode, conceptCode, moduleId, activeOnly, searchAfter, limit)
-                : getMembersByReferencedComponent(client, branch, mapSetCode, conceptCode, moduleId, activeOnly, searchAfter, limit);
+                : getMembersByReferencedComponent(branch, mapSetCode, conceptCode, moduleId, activeOnly, searchAfter, limit);
             final JsonNode mappingsBatch = data.get("items");
             if (mappingsBatch == null || !mappingsBatch.iterator().hasNext()) {
                 break;
@@ -2913,7 +2877,6 @@ public class SnowstormMapping extends SnowstormAbstract {
     /**
      * Loads one page of members for a SNOMED source concept.
      *
-     * @param client the client
      * @param branch the branch
      * @param mapSetCode the map set code
      * @param conceptCode the SNOMED source concept
@@ -2924,16 +2887,15 @@ public class SnowstormMapping extends SnowstormAbstract {
      * @return the Snowstorm page
      * @throws Exception the exception
      */
-    private static JsonNode getMembersByReferencedComponent(final Client client, final String branch, final String mapSetCode, final String conceptCode,
-        final String moduleId, final boolean activeOnly, final String searchAfter, final int limit) throws Exception {
+    private static JsonNode getMembersByReferencedComponent(final String branch, final String mapSetCode, final String conceptCode, final String moduleId,
+        final boolean activeOnly, final String searchAfter, final int limit) throws Exception {
 
         final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members?referenceSet=" + mapSetCode + "&referencedComponentId=" + conceptCode
-            + (moduleId != null ? "&module=" + moduleId : "") + (activeOnly == false ? "" : "&active=true") + "&limit=" + limit
+            + (moduleId != null ? "&module=" + moduleId : "") + (!activeOnly ? "" : "&active=true") + "&limit=" + limit
             + (searchAfter != null ? "&searchAfter=" + searchAfter : "") + "&" + SnowstormApiPaging.getMemberSortQueryString();
         LOG.info("getSnowstormMapping url: " + targetUri);
 
-        final WebTarget target = client.target(targetUri);
-        try (final Response response = target.request(DEFAULT_ACCEPT).get()) {
+        try (final Response response = SnowstormConnection.getResponse(targetUri)) {
             final String resultString = SnowstormConnection.readEntityAsString(response);
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
                 throw new Exception(

@@ -15,37 +15,27 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.Calendar;
-import java.util.concurrent.TimeUnit;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import jakarta.ws.rs.client.Client;
-import jakarta.ws.rs.client.ClientBuilder;
-import jakarta.ws.rs.client.Entity;
-import jakarta.ws.rs.client.Invocation.Builder;
-import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.NewCookie;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status.Family;
 
 import org.ihtsdo.refsetservice.util.LocalException;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
-import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
-import org.jboss.resteasy.plugins.providers.ByteArrayProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 
-import com.fasterxml.jackson.jakarta.rs.json.JacksonJsonProvider;
-
 /**
- * Class to handle making calls to Snowstorm.
+ * Class to handle making calls to Snowstorm via JDK {@link HttpClient}.
  */
 public final class SnowstormConnection {
 
@@ -82,14 +72,11 @@ public final class SnowstormConnection {
     /** The default English language acceptance strings. */
     public static final String DEFAULT_ACCECPT_LANGUAGES = "en-X-900000000000509007,en-X-900000000000508004,en";
 
-    /** Cached RESTEasy client – created once, reused for all Snowstorm calls. */
-    private static volatile Client sharedClient;
-
-    /** Shared JDK client for binary archive downloads (follows 3xx except https→http). */
-    private static final HttpClient FILE_DOWNLOAD_CLIENT = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
-
-    /** Max redirects for Snowstorm GET; RESTEasy does not follow 3xx by default (merge job polls would loop forever on 307). */
-    private static final int SNOWSTORM_GET_MAX_REDIRECTS = 16;
+    /**
+     * Shared JDK client for Snowstorm JSON and archive downloads. NORMAL follows 3xx except https→http (needed for client proxies).
+     */
+    private static final HttpClient HTTP_CLIENT =
+        HttpClient.newBuilder().connectTimeout(Duration.ofMinutes(2)).followRedirects(HttpClient.Redirect.NORMAL).build();
 
     /** Has connection to Snowstorm. */
     private static boolean HAS_CONNECTION = false;
@@ -172,43 +159,29 @@ public final class SnowstormConnection {
      */
     private static boolean getConnection() {
 
-        final Client client = ClientBuilder.newBuilder().connectTimeout(5, TimeUnit.SECONDS).readTimeout(1, TimeUnit.SECONDS).build();
-        Response response = null;
-        boolean firstRun = true;
-        boolean run = true;
-
         try {
-
-            final WebTarget target = client.target(getRestBaseUrl() + "version");
-            String cookie = getGenericUserCookie(false);
-
-            while (run) {
-
-                run = false;
-
-                response = target.request(ACCEPT).header("Cookie", cookie).get();
-
-                if (firstRun && response.getStatus() == Response.Status.FORBIDDEN.getStatusCode()) {
-
-                    run = true;
+            ensureConfigured();
+            String cookie = "";
+            if (authMode == SnowstormAuthMode.COOKIE) {
+                cookie = getGenericUserCookie(false);
+            }
+            boolean firstRun = true;
+            while (true) {
+                final HttpRequest.Builder requestBuilder = HttpRequest.newBuilder().uri(URI.create(getRestBaseUrl() + "version"))
+                    .timeout(Duration.ofSeconds(5)).header("Accept", ACCEPT).GET();
+                applySnowstormAuthHeaders(requestBuilder, cookie);
+                final SnowstormHttpResponse response =
+                    SnowstormHttpResponse.from(HTTP_CLIENT.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofString()));
+                if (firstRun && authMode == SnowstormAuthMode.COOKIE && response.getStatus() == Response.Status.FORBIDDEN.getStatusCode()) {
                     firstRun = false;
                     cookie = getGenericUserCookie(true);
-                    // close the response because we're going to make another
-                    response.close();
+                    continue;
                 }
+                return true;
             }
-            return true;
-        } catch (Exception e) {
+        } catch (final Exception e) {
             LOG.error("Error connecting to Snowstorm.", e);
             return false;
-
-        } finally {
-            if (response != null) {
-                response.close();
-            }
-            if (client != null) {
-                client.close();
-            }
         }
     }
 
@@ -297,18 +270,18 @@ public final class SnowstormConnection {
     /**
      * Apply snowstorm auth headers.
      *
-     * @param builder the builder
+     * @param requestBuilder the request builder
      * @param sessionCookie the session cookie
      * @throws Exception the exception
      */
-    private static void applySnowstormAuthHeaders(final Builder builder, final String sessionCookie) throws Exception {
+    private static void applySnowstormAuthHeaders(final HttpRequest.Builder requestBuilder, final String sessionCookie) throws Exception {
 
         final String basicHeader = snowstormBasicAuthorizationHeader();
         if (basicHeader != null) {
-            builder.header(HttpHeaders.AUTHORIZATION, basicHeader);
+            requestBuilder.header(HttpHeaders.AUTHORIZATION, basicHeader);
         }
         if (sessionCookie != null && !sessionCookie.isEmpty()) {
-            builder.header("Cookie", sessionCookie);
+            requestBuilder.header("Cookie", sessionCookie);
         }
     }
 
@@ -332,7 +305,7 @@ public final class SnowstormConnection {
      */
     public static String getBaseUrl() {
 
-        return restBaseUrl;
+        return getRestBaseUrl();
     }
 
     /**
@@ -343,6 +316,9 @@ public final class SnowstormConnection {
      */
     public static String getFhirBaseUrl() {
 
+        if (restBaseUrl == null) {
+            loadConfigurationFromProperties();
+        }
         if (fhirBaseUrl == null || fhirBaseUrl.isBlank() || "none".equalsIgnoreCase(fhirBaseUrl.trim())) {
             return restBaseUrl;
         }
@@ -360,59 +336,28 @@ public final class SnowstormConnection {
     public static Response getResponse(final String url, final String language) throws Exception {
 
         rejectRemoteCallFromUnitTest();
+        ensureConfigured();
         final long requestStartMs = System.currentTimeMillis();
-        final Client client = getClient();
         String cookie = "";
         if (authMode == SnowstormAuthMode.COOKIE) {
             cookie = getGenericUserCookie(false);
         }
         boolean firstRun = true;
-        String currentUrl = url;
+        while (true) {
+            final HttpRequest.Builder requestBuilder =
+                HttpRequest.newBuilder().uri(URI.create(url)).header("Accept", ACCEPT).header(HttpHeaders.ACCEPT_LANGUAGE, language).GET();
+            applySnowstormAuthHeaders(requestBuilder, cookie);
+            final SnowstormHttpResponse response = SnowstormHttpResponse.from(HTTP_CLIENT.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofString()));
 
-        for (int redirectHop = 0; redirectHop < SNOWSTORM_GET_MAX_REDIRECTS; redirectHop++) {
-            Response response = null;
-            boolean authRetry = true;
-            while (authRetry) {
-                authRetry = false;
-                final WebTarget target = client.target(currentUrl);
-                final Builder builder = target.request(ACCEPT).header(HttpHeaders.ACCEPT_LANGUAGE, language);
-                applySnowstormAuthHeaders(builder, cookie);
-
-                response = builder.get();
-
-                if (firstRun && authMode == SnowstormAuthMode.COOKIE && response.getStatus() == Response.Status.FORBIDDEN.getStatusCode()) {
-                    authRetry = true;
-                    firstRun = false;
-                    cookie = getGenericUserCookie(true);
-                    response.close();
-                }
-            }
-
-            final int status = response.getStatus();
-            if (isRedirectingStatus(status)) {
-                final URI location = response.getLocation();
-                if (location == null) {
-                    LOG.warn("Snowstorm GET returned {} without Location for {}", status, currentUrl);
-                    logSnowstormHttpComplete("GET", currentUrl, null, requestStartMs, status);
-                    return response;
-                }
-                final URI resolved = URI.create(currentUrl).resolve(location);
-                LOG.info("Snowstorm GET redirect {} -> {} (hop {})", currentUrl, resolved, redirectHop + 1);
-                response.close();
-                currentUrl = resolved.toString();
+            if (firstRun && authMode == SnowstormAuthMode.COOKIE && response.getStatus() == Response.Status.FORBIDDEN.getStatusCode()) {
+                firstRun = false;
+                cookie = getGenericUserCookie(true);
                 continue;
             }
 
-            logSnowstormHttpComplete("GET", currentUrl, null, requestStartMs, status);
+            logSnowstormHttpComplete("GET", url, null, requestStartMs, response.getStatus());
             return response;
         }
-
-        throw new LocalException("Exceeded " + SNOWSTORM_GET_MAX_REDIRECTS + " redirects for Snowstorm GET starting at " + url);
-    }
-
-    private static boolean isRedirectingStatus(final int status) {
-
-        return status == 301 || status == 302 || status == 303 || status == 307 || status == 308;
     }
 
     /**
@@ -428,8 +373,7 @@ public final class SnowstormConnection {
     }
 
     /**
-     * Downloads a file from the given URL. Uses Java HttpClient to bypass RESTEasy, which fails on binary responses when the server omits Content-Type or
-     * returns a generic type. Follows redirects (e.g. prod proxies that 307 http→https); HttpClient defaults to NEVER.
+     * Downloads a file from the given URL. Uses Java HttpClient for binary responses. Follows redirects (e.g. prod proxies that 307 http→https).
      *
      * @param url The Snowstorm archive URL to download
      * @return The file content as an InputStream
@@ -438,6 +382,7 @@ public final class SnowstormConnection {
     public static InputStream getFileDownload(final String url) throws Exception {
 
         rejectRemoteCallFromUnitTest();
+        ensureConfigured();
         final HttpRequest.Builder requestBuilder =
             HttpRequest.newBuilder().uri(URI.create(url)).header("Accept", "application/zip").header(HttpHeaders.ACCEPT_LANGUAGE, DEFAULT_ACCECPT_LANGUAGES);
         final String basicHeader = snowstormBasicAuthorizationHeader();
@@ -449,10 +394,7 @@ public final class SnowstormConnection {
                 requestBuilder.header("Cookie", cookie);
             }
         }
-        final HttpRequest request = requestBuilder.GET().build();
-
-        // NORMAL follows 3xx except https→http; needed for client Snowstorm proxies that redirect archive URLs
-        final HttpResponse<InputStream> response = FILE_DOWNLOAD_CLIENT.send(request, HttpResponse.BodyHandlers.ofInputStream());
+        final HttpResponse<InputStream> response = HTTP_CLIENT.send(requestBuilder.GET().build(), HttpResponse.BodyHandlers.ofInputStream());
         final InputStream body = response.body();
 
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
@@ -478,26 +420,21 @@ public final class SnowstormConnection {
     public static Response postResponse(final String url, final String entity) throws Exception {
 
         rejectRemoteCallFromUnitTest();
+        ensureConfigured();
         final long requestStartMs = System.currentTimeMillis();
-        final Client client = getClient();
-        final WebTarget target = client.target(url);
-        final Builder builder = target.request(MediaType.APPLICATION_JSON).header(HttpHeaders.ACCEPT_LANGUAGE, DEFAULT_ACCECPT_LANGUAGES);
-
+        final String body = entity == null ? "" : entity;
+        final HttpRequest.Builder requestBuilder = HttpRequest.newBuilder().uri(URI.create(url)).header("Accept", ACCEPT)
+            .header(HttpHeaders.ACCEPT_LANGUAGE, DEFAULT_ACCECPT_LANGUAGES).header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+            .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8));
         final String cookie = authMode == SnowstormAuthMode.COOKIE ? getGenericUserCookie(false) : "";
-        applySnowstormAuthHeaders(builder, cookie);
-
-        // Convert the JSON string to a Map so JacksonJsonProvider can serialize it as JSON
-        final Map<String, Object> entityMap = jsonToMap(entity);
-
-        // Send Map so JacksonJsonProvider can write application/json correctly
-        final Response response = builder.post(Entity.entity(entityMap, MediaType.APPLICATION_JSON));
-
+        applySnowstormAuthHeaders(requestBuilder, cookie);
+        final SnowstormHttpResponse response = SnowstormHttpResponse.from(HTTP_CLIENT.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofString()));
         logSnowstormHttpComplete("POST", url, entity, requestStartMs, response.getStatus());
         return response;
     }
 
     /**
-     * Post response.
+     * Put response.
      *
      * @param url the url
      * @param entity the entity
@@ -507,20 +444,18 @@ public final class SnowstormConnection {
     public static Response putResponse(final String url, final String entity) throws Exception {
 
         rejectRemoteCallFromUnitTest();
-        final Client client = getClient();
-        final WebTarget target = client.target(url);
-        final Builder builder = target.request(MediaType.APPLICATION_JSON).header(HttpHeaders.ACCEPT_LANGUAGE, DEFAULT_ACCECPT_LANGUAGES);
-
+        ensureConfigured();
+        final String body = entity == null ? "" : entity;
+        final HttpRequest.Builder requestBuilder = HttpRequest.newBuilder().uri(URI.create(url)).header("Accept", ACCEPT)
+            .header(HttpHeaders.ACCEPT_LANGUAGE, DEFAULT_ACCECPT_LANGUAGES).header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
+            .PUT(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8));
         final String cookie = authMode == SnowstormAuthMode.COOKIE ? getGenericUserCookie(false) : "";
-        applySnowstormAuthHeaders(builder, cookie);
-
-        final Response response = builder.put(Entity.entity(entity, MediaType.APPLICATION_JSON));
-
-        return response;
+        applySnowstormAuthHeaders(requestBuilder, cookie);
+        return SnowstormHttpResponse.from(HTTP_CLIENT.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofString()));
     }
 
     /**
-     * Calls a Snowstorm DELETE URL and returns the response.
+     * Calls a Snowstorm DELETE URL and returns the response. Supports DELETE with a JSON body (member bulk remove).
      *
      * @param url The Snowstorm URL to call
      * @param entity the entity
@@ -530,24 +465,18 @@ public final class SnowstormConnection {
     public static Response deleteResponse(final String url, final String entity) throws Exception {
 
         rejectRemoteCallFromUnitTest();
-        final Client client = getClient();
-        final WebTarget target = client.target(url);
-        final Builder builder = target.request(ACCEPT).header(HttpHeaders.ACCEPT_LANGUAGE, DEFAULT_ACCECPT_LANGUAGES);
-
-        final String cookie = authMode == SnowstormAuthMode.COOKIE ? getGenericUserCookie(false) : "";
-        applySnowstormAuthHeaders(builder, cookie);
-
-        Response response;
-
-        // TODO: we shouldn't return a response here and leave it open
-        // we should get its payload and return that and then make sure the response is closed.
+        ensureConfigured();
+        final HttpRequest.Builder requestBuilder =
+            HttpRequest.newBuilder().uri(URI.create(url)).header("Accept", ACCEPT).header(HttpHeaders.ACCEPT_LANGUAGE, DEFAULT_ACCECPT_LANGUAGES);
         if (entity == null) {
-            response = builder.delete();
+            requestBuilder.DELETE();
         } else {
-            response = builder.build("DELETE", Entity.entity(entity, MediaType.APPLICATION_JSON)).invoke(Response.class);
+            requestBuilder.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON).method("DELETE",
+                HttpRequest.BodyPublishers.ofString(entity, StandardCharsets.UTF_8));
         }
-
-        return response;
+        final String cookie = authMode == SnowstormAuthMode.COOKIE ? getGenericUserCookie(false) : "";
+        applySnowstormAuthHeaders(requestBuilder, cookie);
+        return SnowstormHttpResponse.from(HTTP_CLIENT.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofString()));
     }
 
     /**
@@ -560,6 +489,7 @@ public final class SnowstormConnection {
     public static String getGenericUserCookie(final boolean forceReload) throws Exception {
 
         rejectRemoteCallFromUnitTest();
+        ensureConfigured();
         if (authMode != SnowstormAuthMode.COOKIE) {
             return "";
         }
@@ -588,33 +518,29 @@ public final class SnowstormConnection {
         }
 
         // Login the generic user, then save and return the cookie
-        final Client client = getClient();
-        final WebTarget target = client.target(authUrl + "authenticate");
-        final Builder builder = target.request(MediaType.APPLICATION_JSON);
-
-        // Create a map for the login credentials
         final Map<String, String> loginData = new HashMap<>();
         loginData.put("login", userName);
         loginData.put("password", password);
+        final String loginJson = ThreadLocalMapper.get().writeValueAsString(loginData);
+        final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(authUrl + "authenticate")).header("Accept", MediaType.APPLICATION_JSON)
+            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON).POST(HttpRequest.BodyPublishers.ofString(loginJson, StandardCharsets.UTF_8)).build();
 
-        try (final Response response = builder.post(Entity.entity(loginData, MediaType.APPLICATION_JSON))) {
+        try {
+            final SnowstormHttpResponse response = SnowstormHttpResponse.from(HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString()));
 
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
                 throw new LocalException("Authentication of generic user failed. " + " Status: " + Integer.toString(response.getStatus()) + ". Error: "
                     + response.getStatusInfo().getReasonPhrase());
             }
 
-            final Map<String, NewCookie> genericUserCookies = response.getCookies();
-            final StringBuilder sb = new StringBuilder();
-
-            for (final String key : genericUserCookies.keySet()) {
-
-                sb.append(genericUserCookies.get(key));
-                sb.append(";");
+            final String cookieHeader = response.toCookieHeader();
+            if (cookieHeader.isEmpty()) {
+                throw new LocalException("Authentication of generic user failed. No Set-Cookie headers returned.");
             }
+            genericUserCookie = cookieHeader.endsWith(";") ? cookieHeader : cookieHeader + ";";
 
-            genericUserCookie = sb.toString();
-
+        } catch (final LocalException e) {
+            throw e;
         } catch (final Exception e) {
             LOG.error("Authentication of generic user failed. {}", e.getMessage(), e);
             throw new LocalException("Authentication of generic user failed. " + e.getMessage());
@@ -624,51 +550,13 @@ public final class SnowstormConnection {
     }
 
     /**
-     * Creates a RESTEasy client with all providers needed for Snowstorm API (DELETE with body, JSON, binary). Uses ResteasyClientBuilderImpl to ensure RESTEasy
-     * is used (not Jersey) when both are on the classpath.
-     *
-     * @param client the client
-     * @return the client
+     * Ensure configured.
      */
-    public static Client configClient(final Client client) {
+    private static void ensureConfigured() {
 
-        client.register(ByteArrayProvider.class);
-        client.register(JacksonJsonProvider.class);
-        return client;
-    }
-
-    /**
-     * Returns the shared RESTEasy client for Snowstorm calls. Created once, reused for all requests. Uses ResteasyClientBuilderImpl to ensure RESTEasy (with
-     * DELETE+body support) is used when Jersey is also on the classpath.
-     *
-     * @return the client
-     */
-    public static Client getClient() {
-
-        if (restBaseUrl == null) {
+        if (restBaseUrl == null || authMode == null) {
             loadConfigurationFromProperties();
         }
-        if (sharedClient == null) {
-            synchronized (SnowstormConnection.class) {
-                if (sharedClient == null) {
-                    sharedClient = configClient(new ResteasyClientBuilderImpl().build());
-                }
-            }
-        }
-        return sharedClient;
-    }
-
-    /**
-     * Converts a JSON string to a Map that can be passed to Entity.entity().
-     *
-     * @param jsonString the JSON string to convert
-     * @return the Map representation of the JSON
-     * @throws Exception if there is an error parsing the JSON
-     */
-    @SuppressWarnings("unchecked")
-    private static Map<String, Object> jsonToMap(final String jsonString) throws Exception {
-
-        return ThreadLocalMapper.get().readValue(jsonString, Map.class);
     }
 
     /**

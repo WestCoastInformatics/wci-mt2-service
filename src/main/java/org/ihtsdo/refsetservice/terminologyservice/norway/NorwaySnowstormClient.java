@@ -27,7 +27,7 @@ import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 /**
  * HTTP client for Norway Snowstorm used by Norway reports. Base URL comes from {@code norway.snowstorm.url}.

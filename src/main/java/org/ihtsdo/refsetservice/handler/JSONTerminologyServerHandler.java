@@ -31,9 +31,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -43,6 +40,7 @@ import jakarta.ws.rs.core.Response.Status.Family;
 import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
+import org.ihtsdo.refsetservice.util.BoundedExecutors;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnomedConstants;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormApiPaging;
 import org.ihtsdo.refsetservice.model.BranchInformation;
@@ -92,10 +90,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Implements a terminology handler that reads terminology information from pregenerated .json files
@@ -1430,11 +1428,9 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             if (root.get("buckets") != null) {
 
-                final Iterator<String> membershipIterator = root.get("buckets").get("membership").fieldNames();
+                for (final String membershipId : root.get("buckets").get("membership").propertyNames()) {
 
-                while (membershipIterator.hasNext()) {
-
-                    refsetIds.add(membershipIterator.next());
+                    refsetIds.add(membershipId);
                 }
 
             }
@@ -2238,9 +2234,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             int snowstormCallCount = 0;
             final boolean doNotSearch = notSearching;
 
-            // Change the numbers to '1's to avoid threading
-            final ExecutorService executor =
-                new ThreadPoolExecutor(30, 30, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(30), new ThreadPoolExecutor.CallerRunsPolicy());
+            final BoundedExecutors.Batch batch = BoundedExecutors.fanoutBatch();
 
             // add the descriptions to the children concepts in batches
             for (int i = 0; i < currentList.getItems().size(); i++) {
@@ -2254,7 +2248,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     final List<Concept> threadConcepts = new ArrayList<Concept>();
                     threadConcepts.addAll(conceptsToProcess);
 
-                    executor.submit(new Runnable() {
+                    batch.submit(new Runnable() {
 
                         /* see superclass */
                         @Override
@@ -2287,8 +2281,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             }
 
-            executor.shutdown();
-            executor.awaitTermination(600, TimeUnit.SECONDS);
+            batch.await(600, TimeUnit.SECONDS);
 
             LOG.debug("getMemberList snowstormCallCount: " + snowstormCallCount);
 
@@ -2503,9 +2496,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         String conceptIds = "";
         int snowstormCallCount = 0;
 
-        // Change the '30's to '1's to avoid threading
-        final ExecutorService executor =
-            new ThreadPoolExecutor(30, 30, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(30), new ThreadPoolExecutor.CallerRunsPolicy());
+        final BoundedExecutors.Batch batch = BoundedExecutors.fanoutBatch();
 
         // add the descriptions to the children concepts in batches
         for (int i = 0; i < concepts.size(); i++) {
@@ -2522,7 +2513,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 final List<Concept> threadConcepts = new ArrayList<Concept>();
                 threadConcepts.addAll(conceptsToProcess);
 
-                executor.submit(new Runnable() {
+                batch.submit(new Runnable() {
 
                     /* see superclass */
                     @Override
@@ -2568,8 +2559,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
         }
 
-        executor.shutdown();
-        executor.awaitTermination(600, TimeUnit.SECONDS);
+        batch.await(600, TimeUnit.SECONDS);
 
         LOG.debug("populateMembershipInformation snowstormCallCount: " + snowstormCallCount);
     }
@@ -2945,9 +2935,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             + ")&limit=1000&offset=";
         final List<Set<String>> ancestorsSetBatches = new ArrayList<>(Collections.nCopies(10, new HashSet<>()));
 
-        // Change the '10's to '1's to avoid threading
-        final ExecutorService executor =
-            new ThreadPoolExecutor(10, 10, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(10), new ThreadPoolExecutor.CallerRunsPolicy());
+        final BoundedExecutors.Batch batch = BoundedExecutors.fanoutBatch();
 
         // add the descriptions to the children concepts in batches
         for (int i = 0; i < ancestorsSetBatches.size(); i++) {
@@ -2956,7 +2944,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             final int offset = 1000 * i;
             LOG.debug("cacheMemberAncestors URL: " + url + offset);
 
-            executor.submit(new Runnable() {
+            batch.submit(new Runnable() {
 
                 /* see superclass */
                 @Override
@@ -3000,8 +2988,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             });
         }
 
-        executor.shutdown();
-        executor.awaitTermination(120, TimeUnit.SECONDS);
+        batch.await(120, TimeUnit.SECONDS);
 
         final Set<String> ancestorsSet = new HashSet<>();
 
@@ -3982,9 +3969,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             return status;
         }
 
-        // Change the numbers to '1's to avoid threading
-        final ExecutorService executor =
-            new ThreadPoolExecutor(30, 30, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(30), new ThreadPoolExecutor.CallerRunsPolicy());
+        final BoundedExecutors.Batch batch = BoundedExecutors.fanoutBatch();
 
         // use /browser/MAIN/concepts/bulk-load POST call to get the inactive
         // concept
@@ -4095,7 +4080,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                         // process descriptions of any replacement concepts
                         if (!replacementConceptsToLookup.isEmpty()) {
 
-                            executor.submit(new Runnable() {
+                            batch.submit(new Runnable() {
 
                                 /* see superclass */
                                 @Override
@@ -4199,8 +4184,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
         }
 
-        executor.shutdown();
-        executor.awaitTermination(600, TimeUnit.SECONDS);
+        batch.await(600, TimeUnit.SECONDS);
 
         return status;
     }

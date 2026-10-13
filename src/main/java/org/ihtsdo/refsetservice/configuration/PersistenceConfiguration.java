@@ -28,9 +28,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.session.jdbc.config.annotation.SpringSessionDataSource;
 import org.springframework.transaction.PlatformTransactionManager;
+
+import com.zaxxer.hikari.HikariDataSource;
 
 /**
  * Set up the migration strategy and JDBC DataSource used by Spring Session.
@@ -69,13 +70,17 @@ public class PersistenceConfiguration {
         final String password = properties.getProperty("spring.datasource.password");
         final String driver = properties.getProperty("spring.datasource.driver-class-name");
 
-        LOG.info("Creating Spring DataSource for url={}", url);
+        LOG.info("Creating Spring Hikari DataSource for url={}", url);
 
-        final DriverManagerDataSource dataSource = new DriverManagerDataSource();
-        dataSource.setDriverClassName(driver);
-        dataSource.setUrl(url);
+        final HikariDataSource dataSource = new HikariDataSource();
+        dataSource.setPoolName("spring-session");
+        dataSource.setJdbcUrl(url);
         dataSource.setUsername(username);
         dataSource.setPassword(password);
+        dataSource.setDriverClassName(driver);
+        dataSource.setMinimumIdle(Integer.parseInt(properties.getProperty("spring.datasource.hikari.minimum-idle", "2")));
+        dataSource.setMaximumPoolSize(Integer.parseInt(properties.getProperty("spring.datasource.hikari.maximum-pool-size", "10")));
+        dataSource.setIdleTimeout(Long.parseLong(properties.getProperty("spring.datasource.hikari.idle-timeout", "300000")));
         return dataSource;
     }
 

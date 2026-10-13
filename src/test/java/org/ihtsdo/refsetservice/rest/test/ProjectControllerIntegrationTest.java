@@ -40,13 +40,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.json.Jackson2Tester;
+import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import tools.jackson.core.type.TypeReference;
 
 /**
  * The Class ProjectControllerIntegrationTest.
@@ -160,7 +160,7 @@ public class ProjectControllerIntegrationTest extends BaseTest {
     @BeforeEach
     public void setUp() {
 
-        Jackson2Tester.initFields(this, ThreadLocalMapper.get());
+        JacksonTester.initFields(this, ThreadLocalMapper.get());
         baseUrl = "/project";
 
         url = null;

@@ -13,7 +13,7 @@ import java.util.Set;
 
 import org.ihtsdo.refsetservice.model.Edition;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 /**
  * The Class SyncRefsetMetadata.

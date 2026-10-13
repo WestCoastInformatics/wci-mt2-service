@@ -34,14 +34,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.json.Jackson2Tester;
+import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * The Class UserControllerIntegrationTest.
@@ -64,7 +64,7 @@ public class UserControllerIntegrationTest extends AbstractRefsetTests {
     // private Properties testProperties;
 
     /** The object mapper. */
-    private ObjectMapper objectMapper;
+    private JsonMapper objectMapper;
 
     /** The base url. */
     private String baseUrl = "";
@@ -98,7 +98,7 @@ public class UserControllerIntegrationTest extends AbstractRefsetTests {
     public void setUp() {
 
         objectMapper = ThreadLocalMapper.get();
-        Jackson2Tester.initFields(this, objectMapper);
+        JacksonTester.initFields(this, objectMapper);
         baseUrl = "/user";
     }
 
@@ -218,7 +218,7 @@ public class UserControllerIntegrationTest extends AbstractRefsetTests {
         content = result.getResponse().getContentAsString();
         LOG.info(" content = {}", content);
 
-        final User newUser = new ObjectMapper().readValue(content, User.class);
+        final User newUser = ThreadLocalMapper.get().readValue(content, User.class);
         assertThat(compareUsers(testUser, newUser, false)).isTrue();
     }
 
@@ -246,7 +246,7 @@ public class UserControllerIntegrationTest extends AbstractRefsetTests {
         result = mvc.perform(put(url).content(testUser.toString()).contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
 
-        final User updatedUser = new ObjectMapper().readValue(content, User.class);
+        final User updatedUser = ThreadLocalMapper.get().readValue(content, User.class);
         assertThat(compareUsers(testUser, updatedUser, false)).isTrue();
 
     }
@@ -266,7 +266,7 @@ public class UserControllerIntegrationTest extends AbstractRefsetTests {
         result = mvc.perform(get(url).queryParam("query", "userName:" + testUser.getUserName()).queryParam("includeOrganizations", "false")
             .queryParam("includeTeams", "false").contentType(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
         content = result.getResponse().getContentAsString();
-        final ResultList<User> userNameResultList = new ObjectMapper().readValue(content, (new TypeReference<ResultList<User>>() {
+        final ResultList<User> userNameResultList = ThreadLocalMapper.get().readValue(content, (new TypeReference<ResultList<User>>() {
         }));
 
         assertThat(userNameResultList).isNotNull();

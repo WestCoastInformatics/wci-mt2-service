@@ -1,12 +1,11 @@
 package org.ihtsdo.refsetservice.util.test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import jakarta.ws.rs.client.Client;
-import jakarta.ws.rs.client.ClientBuilder;
-import jakarta.ws.rs.client.WebTarget;
-import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.Response.Status.Family;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -37,11 +36,9 @@ public class SpringBootUnitTest {
     public void testConnectability() throws Exception {
 
         LOG.info("TEST");
-        final Client client = ClientBuilder.newClient();
-        final WebTarget target = client.target("https://www.google.com");
-
-        try (Response response = target.request("application/json").get()) {
-            assertEquals(Family.SUCCESSFUL, response.getStatusInfo().getFamily());
-        }
+        final HttpClient client = HttpClient.newHttpClient();
+        final HttpRequest request = HttpRequest.newBuilder().uri(URI.create("https://www.google.com")).GET().build();
+        final HttpResponse<Void> response = client.send(request, HttpResponse.BodyHandlers.discarding());
+        assertTrue(response.statusCode() >= 200 && response.statusCode() < 300);
     }
 }

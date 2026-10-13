@@ -13,7 +13,7 @@ import java.util.Properties;
 import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 
 import com.auth0.jwt.JWT;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 

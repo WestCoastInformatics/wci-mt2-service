@@ -15,6 +15,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.Comparator;
 import java.util.List;
 
 import org.ihtsdo.refsetservice.model.MapSet;
@@ -30,9 +31,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
 
 /**
  * Utilities for MapSet workflow API integration tests.
@@ -52,12 +53,11 @@ public class MapSetWorkflowUnitTestUtilities {
     public static final String MAPSET_BASE_URL = "/mapset";
 
     /** ObjectMapper that deserializes VersionStatus from label (e.g. IN DEVELOPMENT). */
-    private static final ObjectMapper MAPPER;
+    private static final JsonMapper MAPPER;
     static {
-        MAPPER = ThreadLocalMapper.newMapper();
         final SimpleModule module = new SimpleModule();
         module.addDeserializer(VersionStatus.class, new VersionStatusDeserializer());
-        MAPPER.registerModule(module);
+        MAPPER = ThreadLocalMapper.newMapper().rebuild().addModule(module).build();
     }
 
     /**
@@ -155,7 +155,7 @@ public class MapSetWorkflowUnitTestUtilities {
      */
     public List<MapSetWorkflowHistory> getWorkflowHistory(final String mapSetInternalId) throws Exception {
 
-        final String url = baseUrl + "/" + mapSetInternalId + "/workflowHistory?limit=500&offset=0&sort=modified";
+        final String url = baseUrl + "/" + mapSetInternalId + "/workflowHistory?limit=500&offset=0&sort=modified&sortAscending=true";
 
         final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         final String content = result.getResponse().getContentAsString();
@@ -164,6 +164,24 @@ public class MapSetWorkflowUnitTestUtilities {
         assertThat(resultList).isNotNull();
 
         return resultList.getItems();
+    }
+
+    /**
+     * Find a workflow history row by action and status. Prefer newest by modified when duplicates exist.
+     *
+     * @param history the history items
+     * @param action the action
+     * @param status the status
+     * @return the matching row, or null if none
+     */
+    public MapSetWorkflowHistory findHistoryRow(final List<MapSetWorkflowHistory> history, final WorkflowAction action, final WorkflowStatus status) {
+
+        if (history == null || history.isEmpty()) {
+            return null;
+        }
+
+        return history.stream().filter(row -> action.equals(row.getWorkflowAction()) && status.equals(row.getWorkflowStatus()))
+            .max(Comparator.comparing(MapSetWorkflowHistory::getModified, Comparator.nullsFirst(Comparator.naturalOrder()))).orElse(null);
     }
 
     /**
@@ -178,6 +196,7 @@ public class MapSetWorkflowUnitTestUtilities {
     public void validateRow(final MapSetWorkflowHistory workflowHistory, final String expectedUserName, final WorkflowAction action,
         final WorkflowStatus status, final String note) {
 
+        assertThat(workflowHistory).isNotNull();
         assertThat(workflowHistory.getUserName()).isEqualTo(expectedUserName);
         assertThat(workflowHistory.getWorkflowAction()).isEqualTo(action);
         assertThat(workflowHistory.getWorkflowStatus()).isEqualTo(status);

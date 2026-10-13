@@ -61,8 +61,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * The Class SyncUtilities.
@@ -267,9 +267,7 @@ public class SyncUtilities {
             throw new Exception("All Code Systems must have lanaguages set filled in. " + editionName + " does not");
         }
 
-        final Iterator<String> languages = codeSystem.get("languages").fieldNames();
-
-        return languages.next();
+        return codeSystem.get("languages").propertyNames().iterator().next();
     }
 
     /**

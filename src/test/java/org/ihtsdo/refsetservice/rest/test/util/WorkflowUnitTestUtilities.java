@@ -34,9 +34,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * The Class WorkflowUnitTestUtilities.
@@ -241,7 +241,7 @@ public class WorkflowUnitTestUtilities {
 
         final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         final String content = result.getResponse().getContentAsString();
-        final ResultList<RefsetWorkflowHistory> resultList = new ObjectMapper().readValue(content, (new TypeReference<ResultList<RefsetWorkflowHistory>>() {
+        final ResultList<RefsetWorkflowHistory> resultList = ThreadLocalMapper.get().readValue(content, (new TypeReference<ResultList<RefsetWorkflowHistory>>() {
         }));
         assertThat(resultList).isNotNull();
 

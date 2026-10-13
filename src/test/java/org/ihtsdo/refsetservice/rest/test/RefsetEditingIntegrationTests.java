@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RefsetMemberComparison;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
@@ -37,10 +38,9 @@ import org.junit.jupiter.api.TestInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.boot.test.json.Jackson2Tester;
+import org.springframework.boot.test.json.JacksonTester;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Integration tests for MetadataController.
@@ -72,8 +72,8 @@ public class RefsetEditingIntegrationTests extends AbstractRefsetTests {
             setWorkflowUtil(new WorkflowUnitTestUtilities(getMvc(), getBaseUrl(), REFSET_FILE_PATH));
         }
 
-        setObjectMapper(new ObjectMapper());
-        Jackson2Tester.initFields(this, getObjectMapper());
+        setObjectMapper(ThreadLocalMapper.newMapper());
+        JacksonTester.initFields(this, getObjectMapper());
         setBaseUrl("/refset");
 
         if (firstTimeSetup) {

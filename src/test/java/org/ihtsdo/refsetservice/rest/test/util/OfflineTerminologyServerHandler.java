@@ -41,8 +41,8 @@ import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
 
 /**
  * Terminology handler for unit tests. Does not call Snowstorm or any other remote server.

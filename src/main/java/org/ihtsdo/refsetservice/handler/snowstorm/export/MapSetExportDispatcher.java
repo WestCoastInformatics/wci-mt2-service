@@ -20,6 +20,7 @@ import org.ihtsdo.refsetservice.model.MapSetExportRequest;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.terminologyservice.BranchService;
 import org.ihtsdo.refsetservice.terminologyservice.JobService;
+import org.ihtsdo.refsetservice.util.BoundedExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,7 +113,7 @@ public class MapSetExportDispatcher {
                     LOG.error("Failed to update job status for job {} with status {}", job.getId(), Job.Status.FAILED, ex);
                 }
             }
-        });
+        }, BoundedExecutors.background());
         return job.getId();
 
     }

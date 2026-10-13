@@ -15,7 +15,7 @@ import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
 
 /**
  * Utility class for interacting with Strings.
@@ -488,7 +488,7 @@ public final class StringUtility {
         try {
             ThreadLocalMapper.get().readTree(str);
             return true;
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             return false;
         }
     }

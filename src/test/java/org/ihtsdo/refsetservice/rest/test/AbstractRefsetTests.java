@@ -51,8 +51,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Integration tests for MetadataController.
@@ -166,7 +166,7 @@ public abstract class AbstractRefsetTests extends BaseTest {
     private MockMvc mvc;
 
     /** The object mapper. */
-    private static ObjectMapper objectMapper;
+    private static JsonMapper objectMapper;
 
     /** The base url. */
     private static String baseUrl = "/refset";
@@ -208,7 +208,7 @@ public abstract class AbstractRefsetTests extends BaseTest {
      *
      * @return the objectMapper
      */
-    protected static ObjectMapper getObjectMapper() {
+    protected static JsonMapper getObjectMapper() {
 
         return objectMapper;
     }
@@ -218,7 +218,7 @@ public abstract class AbstractRefsetTests extends BaseTest {
      *
      * @param objectMapper the objectMapper to set
      */
-    protected static void setObjectMapper(final ObjectMapper objectMapper) {
+    protected static void setObjectMapper(final JsonMapper objectMapper) {
 
         AbstractRefsetTests.objectMapper = objectMapper;
     }

@@ -2,7 +2,6 @@ package org.ihtsdo.refsetservice.handler.snowstorm;
 
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -18,10 +17,10 @@ import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 // import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 public class SnowstormMultiSearch extends SnowstormAbstract {
 
@@ -64,11 +63,9 @@ public class SnowstormMultiSearch extends SnowstormAbstract {
 
             if (root.get("buckets") != null) {
 
-                final Iterator<String> membershipIterator = root.get("buckets").get("membership").fieldNames();
+                for (final String membershipId : root.get("buckets").get("membership").propertyNames()) {
 
-                while (membershipIterator.hasNext()) {
-
-                    refsetIds.add(membershipIterator.next());
+                    refsetIds.add(membershipId);
                 }
 
             }
