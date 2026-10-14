@@ -13,6 +13,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -156,8 +158,13 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         final int limit = 50;
 
+        // Stated descendants of 609331003 |Extended map type reference set| and
+        // 1193543008 |Simple map with correlation to SNOMED CT type reference set|.
+        // statedEcl reads the hierarchy saved with the concept, so a new refset is visible without classification.
+        final String ecl = URLEncoder.encode("(<609331003 OR <1193543008)", StandardCharsets.UTF_8);
         final String targetUri =
-            SnowstormConnection.getBaseUrl() + branch + "/concepts?activeFilter=true&ecl=%3C609331003&includeLeafFlag=false&form=inferred&offset=0&limit="
+            SnowstormConnection.getBaseUrl() + branch + "/concepts?activeFilter=true&statedEcl=" + ecl
+                + "&includeLeafFlag=false&offset=0&limit="
                 + limit + (searchAfter != null ? "&searchAfter=" + searchAfter : "");
         LOG.info("getSnowstormMapsets url: " + targetUri);
 
