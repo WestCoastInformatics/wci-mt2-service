@@ -828,7 +828,8 @@ public final class BranchService {
 
                 final String error =
                     "review branch change report process not recognizing status: " + status + " for " + reviewId + "merge from source: " + sourceBranch
-                        + " to target: " + targetBranch + ". Message: " + formatErrorMessage(resultString) + "Job failed with: " + root.get("message").asString();
+                        + " to target: " + targetBranch + ". Message: " + formatErrorMessage(resultString) + "Job failed with: "
+                        + root.get("message").asString();
                 LOG.error(error);
                 throw new Exception(error);
             }

@@ -1144,7 +1144,8 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
 
                     final ObjectNode memberBody = ThreadLocalMapper.get().createObjectNode().put("active", false)
                         .put("effectiveTime", conceptNode.get("effectiveTime").asString()).put("memberId", membershipId)
-                        .put("moduleId", conceptNode.get("moduleId").asString()).put("referencedComponentId", conceptNode.get("referencedComponentId").asString())
+                        .put("moduleId", conceptNode.get("moduleId").asString())
+                        .put("referencedComponentId", conceptNode.get("referencedComponentId").asString())
                         .put("refsetId", conceptNode.get("refsetId").asString()).put("released", released)
                         .put("releasedEffectiveTime", conceptNode.get("releasedEffectiveTime").asInt())
                         .set("additionalFields", conceptNode.get("additionalFields"));

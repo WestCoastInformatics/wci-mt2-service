@@ -3519,10 +3519,12 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 // array
                 else {
 
-                    final ObjectNode memberBody = mapper.createObjectNode().put("active", false).put("effectiveTime", conceptNode.get("effectiveTime").asString())
-                        .put("memberId", membershipId).put("moduleId", conceptNode.get("moduleId").asString())
-                        .put("referencedComponentId", conceptNode.get("referencedComponentId").asString()).put("refsetId", conceptNode.get("refsetId").asString())
-                        .put("released", released).put("releasedEffectiveTime", conceptNode.get("releasedEffectiveTime").asInt())
+                    final ObjectNode memberBody = mapper.createObjectNode().put("active", false)
+                        .put("effectiveTime", conceptNode.get("effectiveTime").asString()).put("memberId", membershipId)
+                        .put("moduleId", conceptNode.get("moduleId").asString())
+                        .put("referencedComponentId", conceptNode.get("referencedComponentId").asString())
+                        .put("refsetId", conceptNode.get("refsetId").asString()).put("released", released)
+                        .put("releasedEffectiveTime", conceptNode.get("releasedEffectiveTime").asInt())
                         .set("additionalFields", conceptNode.get("additionalFields"));
 
                     memberUpdateArray.add(memberBody);
