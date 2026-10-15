@@ -139,8 +139,8 @@ public class CrowdAPIClient extends CrowdClientAbstract {
             final JsonNode root = mapper.readTree(jsonString);
 
             final User user = new User();
-            user.setName(root.get("display-name").asText());
-            user.setEmail(root.get("email").asText());
+            user.setName(root.get("display-name").asString());
+            user.setEmail(root.get("email").asString());
             user.setUserName(userName);
 
             return user;
@@ -466,7 +466,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         final JsonNode groups = root.get("groups");
         if (groups != null && !groups.isEmpty()) {
             groups.forEach(groupName -> {
-                final String name = groupName.findValue("name").asText();
+                final String name = groupName.findValue("name").asString();
                 if (name.startsWith(APP_PREFIX)) {
                     userGroups.add(name);
                 }
@@ -620,7 +620,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
                 "Found multiple users with email of " + email + ". Can't determine which user to create.");
         }
 
-        final String name = users.get(0).findValue("name").asText();
+        final String name = users.get(0).findValue("name").asString();
         return (StringUtils.isNotBlank(name)) ? getUser(name) : null;
 
     }
@@ -645,7 +645,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         final JsonNode users = root.get("users");
         if (users != null && !users.isEmpty()) {
             users.forEach(user -> {
-                final String name = user.findValue("name").asText();
+                final String name = user.findValue("name").asString();
                 usernames.add(name);
             });
         }
@@ -714,7 +714,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         final JsonNode groups = root.get("groups");
         if (groups != null && !groups.isEmpty()) {
             groups.forEach(groupName -> {
-                final String name = groupName.findValue("name").asText();
+                final String name = groupName.findValue("name").asString();
                 if (name.startsWith(APP_PREFIX)) {
                     groupList.add(name);
                 }

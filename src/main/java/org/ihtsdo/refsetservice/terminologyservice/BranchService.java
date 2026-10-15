@@ -193,7 +193,7 @@ public final class BranchService {
 
             if (rootNode.has("path")) {
 
-                refsetBranchPath = rootNode.get("path").asText();
+                refsetBranchPath = rootNode.get("path").asString();
             }
 
             LOG.info("Created branch {}. Time: {}", refsetBranchPath, (System.currentTimeMillis() - start));
@@ -682,7 +682,7 @@ public final class BranchService {
 
             try {
                 final JsonNode json = mapper.readTree(jsonResponse);
-                updatedJsonResponse = json.has("message") ? json.get("message").asText() : "";
+                updatedJsonResponse = json.has("message") ? json.get("message").asString() : "";
             } catch (final Exception e) {
                 LOG.error("formatErrorMessage jsonResponse:{}", updatedJsonResponse, e);
             }
@@ -796,7 +796,7 @@ public final class BranchService {
             final String resultString = SnowstormConnection.readEntityAsString(response);
             logResponseBodyBeforeJsonParse("mergePollingChangeReview", response.getStatus(), resultString);
             final JsonNode root = mapper.readTree(resultString);
-            final String status = root.get("status").asText();
+            final String status = root.get("status").asString();
 
             // in a rebase that has changes clear all the caches for the target branch
 
@@ -811,7 +811,7 @@ public final class BranchService {
             } else if (status.equalsIgnoreCase("failed")) {
 
                 final String error = "Could not review branch change report for " + reviewId + "merge from source: " + sourceBranch + " to target: "
-                    + targetBranch + ". Message: " + formatErrorMessage(resultString) + "Job failed with: " + root.get("message").asText();
+                    + targetBranch + ". Message: " + formatErrorMessage(resultString) + "Job failed with: " + root.get("message").asString();
                 LOG.error(error);
                 throw new Exception(error);
 
@@ -828,7 +828,7 @@ public final class BranchService {
 
                 final String error =
                     "review branch change report process not recognizing status: " + status + " for " + reviewId + "merge from source: " + sourceBranch
-                        + " to target: " + targetBranch + ". Message: " + formatErrorMessage(resultString) + "Job failed with: " + root.get("message").asText();
+                        + " to target: " + targetBranch + ". Message: " + formatErrorMessage(resultString) + "Job failed with: " + root.get("message").asString();
                 LOG.error(error);
                 throw new Exception(error);
             }
@@ -928,7 +928,7 @@ public final class BranchService {
                 throw new Exception("determineBranchStatus - Branch doesn't exist: " + branch);
             }
 
-            final String branchStatus = organizationJsonRootNode.get("state").asText();
+            final String branchStatus = organizationJsonRootNode.get("state").asString();
 
             LOG.info("branch merge necessitated status result: " + branchStatus);
 
@@ -1115,13 +1115,13 @@ public final class BranchService {
                     final String resultString = SnowstormConnection.readEntityAsString(mergeInfoResponse);
                     logResponseBodyBeforeJsonParse("mergeBranch merge job poll", mergeInfoResponse.getStatus(), resultString);
                     final JsonNode root = mapper.readTree(resultString);
-                    final String status = root.get("status").asText();
+                    final String status = root.get("status").asString();
 
                     LOG.info("Merge status for source: {} to target: {} is: {}", sourceBranchPath, targetBranchPath, status);
 
                     if (status.equals("FAILED")) {
 
-                        final String message = root.get("message").asText();
+                        final String message = root.get("message").asString();
                         jobDone = true;
 
                         if (!message.contains("is not meaningful")) {
@@ -1196,7 +1196,7 @@ public final class BranchService {
 
                                     final String stateResultString = SnowstormConnection.readEntityAsString(stateResponse);
                                     final JsonNode stateRoot = mapper.readTree(stateResultString);
-                                    final String state = stateRoot.get("state").asText();
+                                    final String state = stateRoot.get("state").asString();
 
                                     LOG.info("Promoted branch state is: {}", state);
 
@@ -1285,7 +1285,7 @@ public final class BranchService {
                 final String resultString = SnowstormConnection.readEntityAsString(response);
                 logResponseBodyBeforeJsonParse("mergeRebaseReview job poll", response.getStatus(), resultString);
                 final JsonNode root = mapper.readTree(resultString);
-                final String status = root.get("status").asText();
+                final String status = root.get("status").asString();
                 LOG.info("merge review status: {}, source:{}, target:{}", status, sourceBranchPath, targetBranchPath);
 
                 if ("pending".equalsIgnoreCase(status)) {
@@ -1300,7 +1300,7 @@ public final class BranchService {
 
                 } else if ("failed".equalsIgnoreCase(status)) {
 
-                    final String error = errorPrefix + "Job failed with: " + root.get("message").asText();
+                    final String error = errorPrefix + "Job failed with: " + root.get("message").asString();
                     LOG.error(error);
                     throw new Exception(error);
 

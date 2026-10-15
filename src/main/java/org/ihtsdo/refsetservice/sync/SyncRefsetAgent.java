@@ -770,7 +770,7 @@ public class SyncRefsetAgent extends SyncAgent {
                     // Check if should process Refset
                     if (refsetNode != null) {
 
-                        final String refsetId = refsetNode.get("conceptId").asText();
+                        final String refsetId = refsetNode.get("conceptId").asString();
 
                         if (getTestingRefset() != null && !refsetId.equals(getTestingRefset())) {
 
@@ -839,7 +839,7 @@ public class SyncRefsetAgent extends SyncAgent {
 
                 final JsonNode branchNode = branchIterator.next();
 
-                final String path = branchNode.get("path").asText();
+                final String path = branchNode.get("path").asString();
 
                 if (path.toLowerCase().endsWith("refsets")) {
                     return path;
@@ -1014,15 +1014,15 @@ public class SyncRefsetAgent extends SyncAgent {
 
                 final JsonNode descriptionNode = descriptionIterator.next();
 
-                if (descriptionNode.get("type").asText().equals("SYNONYM")
-                    && LanguageUtility.ENGLISH_LANGUAGE_CODE.equals(descriptionNode.get("lang").asText())) {
+                if (descriptionNode.get("type").asString().equals("SYNONYM")
+                    && LanguageUtility.ENGLISH_LANGUAGE_CODE.equals(descriptionNode.get("lang").asString())) {
 
                     final JsonNode acceptabilityMap = descriptionNode.get("acceptabilityMap");
 
                     if (!acceptabilityMap.isEmpty() && acceptabilityMap.has(LanguageUtility.DEFAULT_LANGUAGE_REFSET_US)
-                        && LanguageUtility.PREFERRED_TERM_EN.equals(acceptabilityMap.get(LanguageUtility.DEFAULT_LANGUAGE_REFSET_US).asText())) {
+                        && LanguageUtility.PREFERRED_TERM_EN.equals(acceptabilityMap.get(LanguageUtility.DEFAULT_LANGUAGE_REFSET_US).asString())) {
 
-                        return descriptionNode.get("term").asText();
+                        return descriptionNode.get("term").asString();
                     }
 
                 }
@@ -1253,7 +1253,7 @@ public class SyncRefsetAgent extends SyncAgent {
                 final ObjectMapper mapper = ThreadLocalMapper.get();
                 final JsonNode refsetJson = mapper.readTree(refsetJsonString);
 
-                final long rttDataRefsetVersion = sdf.parse(refsetJson.get("version").asText()).getTime();
+                final long rttDataRefsetVersion = sdf.parse(refsetJson.get("version").asString()).getTime();
 
                 if (rttDataRefsetVersion < 0 || rttDataRefsetVersion == refset.getVersionDate().getTime()) {
 
@@ -1343,15 +1343,15 @@ public class SyncRefsetAgent extends SyncAgent {
 
         for (final JsonNode codeSystem : codeSystems) {
 
-            final String editionName = codeSystem.has("name") ? codeSystem.get("name").asText() : "";
-            final String shortName = codeSystem.has("shortName") ? codeSystem.get("shortName").asText() : "";
+            final String editionName = codeSystem.has("name") ? codeSystem.get("name").asString() : "";
+            final String shortName = codeSystem.has("shortName") ? codeSystem.get("shortName").asString() : "";
 
             // Only process code systems that are now active in RT2.
             if (dbActiveEditions.stream().noneMatch(e -> e.getShortName().equals(shortName))) {
                 continue;
             }
 
-            final String parentBranchPath = codeSystem.has("branchPath") ? codeSystem.get("branchPath").asText() : "";
+            final String parentBranchPath = codeSystem.has("branchPath") ? codeSystem.get("branchPath").asString() : "";
 
             LOG.info("Identifying CodeSystem branches for: " + editionName);
 
@@ -1373,7 +1373,7 @@ public class SyncRefsetAgent extends SyncAgent {
                 while (branchIterator.hasNext()) {
 
                     final JsonNode child = branchIterator.next();
-                    final String childBranch = child.get("path").asText();
+                    final String childBranch = child.get("path").asString();
                     String childDate = childBranch.replace(parentBranchPath, "");
 
                     if (childDate.startsWith("/")) {

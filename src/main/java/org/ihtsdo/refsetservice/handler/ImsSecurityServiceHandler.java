@@ -179,7 +179,7 @@ public class ImsSecurityServiceHandler implements SecurityServiceHandler {
 
                 final String resultString = response.body();
                 final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
-                final String imsUserName = root.get("login").asText();
+                final String imsUserName = root.get("login").asString();
 
                 // make sure that the passed in user name is the same as what IMS has
                 // authenticated

@@ -472,7 +472,7 @@ public final class AutomapService {
                         termsByCode.put(code, term);
                     }
                 }
-                searchAfter = result.hasNonNull("searchAfter") ? result.get("searchAfter").asText() : "";
+                searchAfter = result.hasNonNull("searchAfter") ? result.get("searchAfter").asString() : "";
                 if (StringUtils.isBlank(searchAfter) || termsByCode.keySet().containsAll(batch)) {
                     break;
                 }

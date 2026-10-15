@@ -290,7 +290,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                 if (conceptNodeBatch.size() < ELASTICSEARCH_MAX_RECORD_LENGTH) {
                     done = true;
                 } else {
-                    searchAfter = (doc.has("searchAfter") ? doc.get("searchAfter").asText() : "");
+                    searchAfter = (doc.has("searchAfter") ? doc.get("searchAfter").asString() : "");
                 }
             }
         }
@@ -391,11 +391,11 @@ public final class SnowstormConcept extends SnowstormAbstract {
             while (iterator != null && iterator.hasNext()) {
 
                 final JsonNode conceptNode = iterator.next();
-                final String conceptId = conceptNode.get("conceptId").asText();
+                final String conceptId = conceptNode.get("conceptId").asString();
                 String name = "";
 
                 if (conceptNode.get("fsn") != null && conceptNode.get("fsn").get("term") != null) {
-                    name = conceptNode.get("fsn").get("term").asText();
+                    name = conceptNode.get("fsn").get("term").asString();
                 }
 
                 moduleNames.put(conceptId, name);
@@ -415,12 +415,12 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
         final ConceptRef conceptRef = new ConceptRef();
         conceptRef.setActive(conceptNode.get("active").asBoolean());
-        conceptRef.setId(conceptNode.get("id").asText());
-        conceptRef.setCode(conceptNode.get("id").asText());
-        conceptRef.setDefined(!"PRIMITIVE".equals(conceptNode.get("definitionStatus").asText()));
+        conceptRef.setId(conceptNode.get("id").asString());
+        conceptRef.setCode(conceptNode.get("id").asString());
+        conceptRef.setDefined(!"PRIMITIVE".equals(conceptNode.get("definitionStatus").asString()));
 
         if (conceptNode.has("pt") && conceptNode.get("pt").has("term")) {
-            conceptRef.setName(conceptNode.get("pt").get("term").asText());
+            conceptRef.setName(conceptNode.get("pt").get("term").asString());
         }
 
         return conceptRef;
@@ -436,16 +436,16 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
         final Concept concept = new Concept();
         concept.setActive(conceptNode.get("active").asBoolean());
-        concept.setId(conceptNode.get("id").asText());
-        concept.setCode(conceptNode.get("id").asText());
-        concept.setDefined(!"PRIMITIVE".equals(conceptNode.get("definitionStatus").asText()));
+        concept.setId(conceptNode.get("id").asString());
+        concept.setCode(conceptNode.get("id").asString());
+        concept.setDefined(!"PRIMITIVE".equals(conceptNode.get("definitionStatus").asString()));
 
         if (conceptNode.has("pt") && conceptNode.get("pt").has("term")) {
-            concept.setName(conceptNode.get("pt").get("term").asText());
+            concept.setName(conceptNode.get("pt").get("term").asString());
         }
 
         if (conceptNode.has("fsn") && conceptNode.get("fsn").has("term")) {
-            concept.setFsn(conceptNode.get("fsn").get("term").asText());
+            concept.setFsn(conceptNode.get("fsn").get("term").asString());
         }
 
         return concept;
@@ -519,7 +519,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
                 final JsonNode conceptNode = iterator.next();
                 final Concept concept = new Concept();
-                final String conceptId = conceptNode.get("conceptId").asText();
+                final String conceptId = conceptNode.get("conceptId").asString();
 
                 // if this isn't for a parent concept and the refset already exists then
                 // skip it
@@ -528,7 +528,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                 }
 
                 concept.setCode(conceptId);
-                concept.setName(conceptNode.get("pt").get("term").asText());
+                concept.setName(conceptNode.get("pt").get("term").asString());
                 concept.setTerminology("SNOMEDCT");
 
                 results.getItems().add(concept);
@@ -708,7 +708,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
                 final JsonNode conceptNode = conceptIterator.next();
 
-                final String conceptId = conceptNode.get("conceptId").asText();
+                final String conceptId = conceptNode.get("conceptId").asString();
                 conceptNodes.put(conceptId, conceptNode);
             }
 
@@ -786,7 +786,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
             while (iterator.hasNext()) {
 
                 final JsonNode conceptNode = iterator.next();
-                // final String nodeConceptId = conceptNode.get("conceptId").asText();
+                // final String nodeConceptId = conceptNode.get("conceptId").asString();
                 final JsonNode ancestorPathNode = conceptNode.get("ancestorPath");
 
                 // get the ancestor list and reverse the order so the taxonomy
@@ -935,7 +935,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
                 if (limitReturnNumber < 0 && root.get("searchAfter") != null) {
 
-                    searchAfter = "&searchAfter=" + root.get("searchAfter").asText();
+                    searchAfter = "&searchAfter=" + root.get("searchAfter").asString();
                 }
 
                 // if the search returned results set the total
@@ -968,10 +968,10 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
                         final Concept concept = new Concept();
                         concept.setActive(conceptNode.get("active").asBoolean());
-                        concept.setId(conceptNode.get("id").asText());
-                        concept.setCode(conceptNode.get("id").asText());
+                        concept.setId(conceptNode.get("id").asString());
+                        concept.setCode(conceptNode.get("id").asString());
 
-                        if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
+                        if (!conceptNode.get("definitionStatus").asString().equals("PRIMITIVE")) {
 
                             concept.setDefined(true);
                         } else {
@@ -981,12 +981,12 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
                         if (conceptNode.get("pt") != null) {
 
-                            concept.setName(conceptNode.get("pt").get("term").asText());
+                            concept.setName(conceptNode.get("pt").get("term").asString());
                         }
 
                         if (conceptNode.get("fsn") != null && conceptNode.get("fsn").get("term") != null) {
 
-                            concept.setFsn(conceptNode.get("fsn").get("term").asText());
+                            concept.setFsn(conceptNode.get("fsn").get("term").asString());
                         }
 
                         if (conceptNode.has("isLeafInferred")) {
@@ -1262,7 +1262,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                     keepSearching = false;
                 } else {
 
-                    searchAfter = "&searchAfter=" + root.get("searchAfter").asText();
+                    searchAfter = "&searchAfter=" + root.get("searchAfter").asString();
                 }
 
                 LOG.debug("getConceptIdsFromEcl totalReturned so far: " + totalReturned);
@@ -1271,7 +1271,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                 while (iterator != null && iterator.hasNext()) {
 
                     final JsonNode conceptNode = iterator.next();
-                    final String conceptId = conceptNode.get("conceptId").asText();
+                    final String conceptId = conceptNode.get("conceptId").asString();
 
                     if (concepts.contains(conceptId)) {
 
@@ -1387,7 +1387,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
                 if (root.get("searchAfter") != null) {
 
-                    searchAfter = "&searchAfter=" + root.get("searchAfter").asText();
+                    searchAfter = "&searchAfter=" + root.get("searchAfter").asString();
                 }
 
                 if (conceptNodeBatch.size() == 0 || conceptNodeBatch.size() + inactiveMemberList.size() >= memberTotal) {
@@ -1483,7 +1483,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                 while (iterator != null && iterator.hasNext()) {
 
                     final JsonNode conceptNode = iterator.next();
-                    final UpgradeInactiveConcept inactiveConcept = inactiveData.get(conceptNode.get("conceptId").asText());
+                    final UpgradeInactiveConcept inactiveConcept = inactiveData.get(conceptNode.get("conceptId").asString());
 
                     if (conceptNode.get("descriptions") != null) {
 
@@ -1496,7 +1496,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
                     if (inactivationIndicatorNode != null) {
 
-                        inactiveConcept.setInactivationReason(inactivationIndicatorNode.asText());
+                        inactiveConcept.setInactivationReason(inactivationIndicatorNode.asString());
                     } else {
 
                         inactiveConcept.setInactivationReason("NOT SPECIFIED");
@@ -1572,7 +1572,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                                             while (iterator != null && iterator.hasNext()) {
 
                                                 final JsonNode conceptNode = iterator.next();
-                                                replacementThatAreMembers.add(conceptNode.get("conceptId").asText());
+                                                replacementThatAreMembers.add(conceptNode.get("conceptId").asString());
                                             }
 
                                         }
@@ -1830,8 +1830,8 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
                             if (iterator.hasNext()) {
                                 final JsonNode conceptNode = iterator.next();
-                                if (conceptNode.get("referencedComponentId").asText().equals(conceptIdToChange)) {
-                                    upgradeReplacementConcept.setMemberId(conceptNode.get("memberId").asText());
+                                if (conceptNode.get("referencedComponentId").asString().equals(conceptIdToChange)) {
+                                    upgradeReplacementConcept.setMemberId(conceptNode.get("memberId").asString());
                                 } else {
                                     throw new Exception("There was a problem getting the member ID");
                                 }
@@ -2226,7 +2226,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
             final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
 
             // Check if this is a Parameters resource (FHIR lookup response)
-            if (!root.has("resourceType") || !"Parameters".equals(root.get("resourceType").asText())) {
+            if (!root.has("resourceType") || !"Parameters".equals(root.get("resourceType").asString())) {
                 LOG.warn("Unexpected response format for FHIR lookup. Expected Parameters resource.");
                 return null;
             }
@@ -2245,14 +2245,14 @@ public final class SnowstormConcept extends SnowstormAbstract {
             final JsonNode parametersNode = root.get("parameter");
             if (parametersNode.isArray()) {
                 for (final JsonNode parameterNode : parametersNode) {
-                    final String name = parameterNode.get("name").asText();
+                    final String name = parameterNode.get("name").asString();
 
                     switch (name) {
                         case "display":
-                            concept.setName(parameterNode.get("valueString").asText());
+                            concept.setName(parameterNode.get("valueString").asString());
                             break;
                         case "version":
-                            concept.setVersion(parameterNode.get("valueString").asText());
+                            concept.setVersion(parameterNode.get("valueString").asString());
                             break;
                         case "property":
                             // Handle parent/child relationships
@@ -2263,17 +2263,17 @@ public final class SnowstormConcept extends SnowstormAbstract {
                                 String propertyDisplay = null;
 
                                 for (final JsonNode partNode : partArray) {
-                                    final String partName = partNode.get("name").asText();
+                                    final String partName = partNode.get("name").asString();
 
                                     switch (partName) {
                                         case "code":
-                                            propertyCode = partNode.get("valueCode").asText();
+                                            propertyCode = partNode.get("valueCode").asString();
                                             break;
                                         case "value":
                                             final JsonNode valueCoding = partNode.get("valueCoding");
                                             if (valueCoding != null) {
-                                                propertyValue = valueCoding.get("code").asText();
-                                                propertyDisplay = valueCoding.get("display").asText();
+                                                propertyValue = valueCoding.get("code").asString();
+                                                propertyDisplay = valueCoding.get("display").asString();
                                             }
                                             break;
                                         default:
@@ -2384,7 +2384,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
             final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
 
             // Check if this is a Parameters resource (FHIR lookup response)
-            if (!root.has("resourceType") || !"Parameters".equals(root.get("resourceType").asText())) {
+            if (!root.has("resourceType") || !"Parameters".equals(root.get("resourceType").asString())) {
                 return false;
             }
 
@@ -2396,11 +2396,11 @@ public final class SnowstormConcept extends SnowstormAbstract {
                         String propertyCode = null;
 
                         for (final JsonNode partNode : partArray) {
-                            final String partName = partNode.get("name").asText();
+                            final String partName = partNode.get("name").asString();
 
                             switch (partName) {
                                 case "code":
-                                    propertyCode = partNode.get("valueCode").asText();
+                                    propertyCode = partNode.get("valueCode").asString();
                                     break;
                                 default:
                                     break;
@@ -2479,9 +2479,9 @@ public final class SnowstormConcept extends SnowstormAbstract {
                 for (final JsonNode conceptNode : containsNode) {
 
                     final ConceptRef conceptRef = new ConceptRef();
-                    conceptRef.setId(conceptNode.get("code").asText());
-                    conceptRef.setCode(conceptNode.get("code").asText());
-                    conceptRef.setName(conceptNode.get("display").asText());
+                    conceptRef.setId(conceptNode.get("code").asString());
+                    conceptRef.setCode(conceptNode.get("code").asString());
+                    conceptRef.setName(conceptNode.get("display").asString());
                     conceptRef.setTerminology(terminology);
                     conceptRef.setVersion(version);
                     conceptRefs.add(conceptRef);
@@ -2558,9 +2558,9 @@ public final class SnowstormConcept extends SnowstormAbstract {
                 for (final JsonNode conceptNode : containsNode) {
 
                     final Concept concept = new Concept();
-                    concept.setId(conceptNode.get("code").asText());
-                    concept.setCode(conceptNode.get("code").asText());
-                    concept.setName(conceptNode.get("display").asText());
+                    concept.setId(conceptNode.get("code").asString());
+                    concept.setCode(conceptNode.get("code").asString());
+                    concept.setName(conceptNode.get("display").asString());
                     concept.setTerminology(terminology);
                     concept.setVersion(version);
                     concepts.add(concept);
@@ -2594,38 +2594,38 @@ public final class SnowstormConcept extends SnowstormAbstract {
             for (final JsonNode node : entryNode) {
 
                 final SnowstormFhirCodeSystem codeSystem = new SnowstormFhirCodeSystem();
-                codeSystem.setFullUrl(node.get("fullUrl").asText());
+                codeSystem.setFullUrl(node.get("fullUrl").asString());
 
                 final JsonNode resourceNode = node.get("resource");
                 if (resourceNode.has("resourceType")) {
-                    codeSystem.setResourceType(resourceNode.get("resourceType").asText());
+                    codeSystem.setResourceType(resourceNode.get("resourceType").asString());
                 }
                 if (resourceNode.has("id")) {
-                    codeSystem.setId(resourceNode.get("id").asText());
+                    codeSystem.setId(resourceNode.get("id").asString());
                 }
                 if (resourceNode.has("url")) {
-                    codeSystem.setUrl(resourceNode.get("url").asText());
+                    codeSystem.setUrl(resourceNode.get("url").asString());
                 }
                 if (resourceNode.has("version")) {
-                    codeSystem.setVersion(resourceNode.get("version").asText());
+                    codeSystem.setVersion(resourceNode.get("version").asString());
                 }
                 if (resourceNode.has("name")) {
-                    codeSystem.setName(resourceNode.get("name").asText());
+                    codeSystem.setName(resourceNode.get("name").asString());
                 }
                 if (resourceNode.has("status")) {
-                    codeSystem.setStatus(resourceNode.get("status").asText());
+                    codeSystem.setStatus(resourceNode.get("status").asString());
                 }
                 if (resourceNode.has("publisher")) {
-                    codeSystem.setPublisher(resourceNode.get("publisher").asText());
+                    codeSystem.setPublisher(resourceNode.get("publisher").asString());
                 }
                 if (resourceNode.has("hierarchyMeaning")) {
-                    codeSystem.setHierarchyMeaning(resourceNode.get("hierarchyMeaning").asText());
+                    codeSystem.setHierarchyMeaning(resourceNode.get("hierarchyMeaning").asString());
                 }
                 if (resourceNode.has("compositional")) {
                     codeSystem.setCompositional(resourceNode.get("compositional").asBoolean());
                 }
                 if (resourceNode.has("content")) {
-                    codeSystem.setContent(resourceNode.get("content").asText());
+                    codeSystem.setContent(resourceNode.get("content").asString());
                 }
 
                 codeSystems.put(codeSystem.getName() + "_" + codeSystem.getVersion(), codeSystem);

@@ -155,7 +155,7 @@ public class NorwayHelsedirektoratetUntranslatedReportService {
             if (referencedComponentId == null || referencedComponentId.isNull()) {
                 return;
             }
-            final String conceptId = referencedComponentId.asText();
+            final String conceptId = referencedComponentId.asString();
             if (StringUtils.isBlank(conceptId)) {
                 return;
             }
@@ -164,7 +164,7 @@ public class NorwayHelsedirektoratetUntranslatedReportService {
             if (referencedComponent != null && referencedComponent.has("fsn")) {
                 final JsonNode fsnNode = referencedComponent.get("fsn");
                 if (fsnNode != null && fsnNode.has("term")) {
-                    conceptIdToFsn.put(conceptId, fsnNode.get("term").asText());
+                    conceptIdToFsn.put(conceptId, fsnNode.get("term").asString());
                 }
             }
         });
@@ -185,7 +185,7 @@ public class NorwayHelsedirektoratetUntranslatedReportService {
         pageMembers(client, refsetId, true, member -> {
             final JsonNode referencedComponent = member.get("referencedComponent");
             if (referencedComponent != null && referencedComponent.has("conceptId")) {
-                conceptIds.add(referencedComponent.get("conceptId").asText());
+                conceptIds.add(referencedComponent.get("conceptId").asString());
             }
         });
         return conceptIds;
@@ -211,7 +211,7 @@ public class NorwayHelsedirektoratetUntranslatedReportService {
             if (referencedComponentId == null || referencedComponentId.isNull()) {
                 return;
             }
-            final String conceptId = referencedComponentId.asText();
+            final String conceptId = referencedComponentId.asString();
             if (!conceptIds.contains(conceptId)) {
                 return;
             }
@@ -219,11 +219,11 @@ public class NorwayHelsedirektoratetUntranslatedReportService {
             if (additionalFields == null || additionalFields.get("mapTarget") == null) {
                 return;
             }
-            final String mapTarget = additionalFields.get("mapTarget").asText();
+            final String mapTarget = additionalFields.get("mapTarget").asString();
             if (StringUtils.isBlank(mapTarget)) {
                 return;
             }
-            final String moduleId = member.has("moduleId") ? member.get("moduleId").asText() : "";
+            final String moduleId = member.has("moduleId") ? member.get("moduleId").asString() : "";
             if (NorwayReplacementReportSupport.NORWAY_MODULE.equals(moduleId)) {
                 norwayTargets.computeIfAbsent(conceptId, key -> new TreeSet<>()).add(mapTarget);
             } else if (NorwayReplacementReportSupport.INTERNATIONAL_MODULE.equals(moduleId)) {
@@ -286,7 +286,7 @@ public class NorwayHelsedirektoratetUntranslatedReportService {
                 if (conceptNode.get("conceptId") == null || conceptNode.get("fsn") == null || conceptNode.get("fsn").get("term") == null) {
                     continue;
                 }
-                conceptIdToFsn.put(conceptNode.get("conceptId").asText(), conceptNode.get("fsn").get("term").asText());
+                conceptIdToFsn.put(conceptNode.get("conceptId").asString(), conceptNode.get("fsn").get("term").asString());
             }
         }
     }
@@ -328,7 +328,7 @@ public class NorwayHelsedirektoratetUntranslatedReportService {
             }
 
             final JsonNode searchAfterNode = doc.get("searchAfter");
-            searchAfter = searchAfterNode == null || searchAfterNode.isNull() ? null : searchAfterNode.asText();
+            searchAfter = searchAfterNode == null || searchAfterNode.isNull() ? null : searchAfterNode.asString();
             if (returnedCount < limit || StringUtils.isBlank(searchAfter)) {
                 break;
             }

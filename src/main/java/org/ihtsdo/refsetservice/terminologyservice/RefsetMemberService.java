@@ -1469,7 +1469,7 @@ public final class RefsetMemberService {
 
                 if (root.get("searchAfter") != null) {
 
-                    searchAfter = root.get("searchAfter").asText();
+                    searchAfter = root.get("searchAfter").asString();
                 } else {
 
                     searchAfter = "";
@@ -1487,7 +1487,7 @@ public final class RefsetMemberService {
                 while (iterator.hasNext()) {
 
                     final JsonNode item = iterator.next();
-                    final String conceptId = (item.get("referencedComponentId").asText());
+                    final String conceptId = (item.get("referencedComponentId").asString());
                     fileLines.append(conceptId + "\n");
                 }
 
@@ -2035,7 +2035,7 @@ public final class RefsetMemberService {
 
                 if (acceptabilityMap.has(langRefsetId)) {
 
-                    acceptability = acceptabilityMap.get(langRefsetId).asText();
+                    acceptability = acceptabilityMap.get(langRefsetId).asString();
                     languageId = langRefsetId;
                     break;
                 }
@@ -2044,10 +2044,10 @@ public final class RefsetMemberService {
 
             if (acceptability != null && (nonDefaultPreferredTerms.isEmpty() || "PREFERRED".equals(acceptability))) {
 
-                if ("900000000000003001".equals(descriptionNode.get("typeId").asText())) {
+                if ("900000000000003001".equals(descriptionNode.get("typeId").asString())) {
 
                     typeName = "FSN";
-                } else if ("900000000000550004".equals(descriptionNode.get("typeId").asText())) {
+                } else if ("900000000000550004".equals(descriptionNode.get("typeId").asString())) {
 
                     typeName = "DEF";
                 } else {
@@ -2062,13 +2062,13 @@ public final class RefsetMemberService {
 
                 }
 
-                descriptionAttributesMap.put(DESCRIPTION_TERM, descriptionNode.get("term").asText());
+                descriptionAttributesMap.put(DESCRIPTION_TERM, descriptionNode.get("term").asString());
                 descriptionAttributesMap.put(DESCRIPTION_TYPE, typeName);
-                descriptionAttributesMap.put(DESCRIPTION_ID, descriptionNode.get("descriptionId").asText());
+                descriptionAttributesMap.put(DESCRIPTION_ID, descriptionNode.get("descriptionId").asString());
                 descriptionAttributesMap.put(LANGUAGE_CODE, languageId);
                 descriptionAttributesMap.put(LANGUAGE_ID, languageId + typeName);
-                descriptionAttributesMap.put(LANGUAGE_NAME, descriptionNode.get("lang").asText().toUpperCase() + " (" + typeName + ")");
-                descriptionAttributesMap.put(DESCRIPTION_LANGUAGE, descriptionNode.get("lang").asText());
+                descriptionAttributesMap.put(LANGUAGE_NAME, descriptionNode.get("lang").asString().toUpperCase() + " (" + typeName + ")");
+                descriptionAttributesMap.put(DESCRIPTION_LANGUAGE, descriptionNode.get("lang").asString());
 
                 descriptions.add(descriptionAttributesMap);
             }
@@ -2537,7 +2537,7 @@ public final class RefsetMemberService {
 
         if (root.get("searchAfter") != null) {
 
-            searchAfter = root.get("searchAfter").asText();
+            searchAfter = root.get("searchAfter").asString();
         }
 
         if (!lookupParameters.isGetMembershipInformation()) {
@@ -2559,11 +2559,11 @@ public final class RefsetMemberService {
 
             if (conceptNode.has("referencedComponent")) {
 
-                conceptId = conceptNode.get("referencedComponent").get("conceptId").asText();
+                conceptId = conceptNode.get("referencedComponent").get("conceptId").asString();
 
             } else if (conceptNode.has("conceptId")) {
 
-                conceptId = conceptNode.get("conceptId").asText();
+                conceptId = conceptNode.get("conceptId").asString();
             } else {
 
                 throw new Exception("Unable to process the conceptNode: " + conceptNode);
@@ -2585,12 +2585,12 @@ public final class RefsetMemberService {
                 // Read member-representation of basic concept content
                 if (referencedComponent.get("pt") != null && referencedComponent.get("pt").get("term") != null) {
 
-                    name = referencedComponent.get("pt").get("term").asText();
+                    name = referencedComponent.get("pt").get("term").asString();
                 } else {
 
                     if (referencedComponent.get("term") != null) {
 
-                        name = referencedComponent.get("term").asText();
+                        name = referencedComponent.get("term").asString();
                     }
 
                 }
@@ -2600,7 +2600,7 @@ public final class RefsetMemberService {
 
                     if (referencedComponent.get("fsn") != null && referencedComponent.get("fsn").get("term") != null) {
 
-                        concept.setFsn(referencedComponent.get("fsn").get("term").asText());
+                        concept.setFsn(referencedComponent.get("fsn").get("term").asString());
                     } else {
 
                         concept.setFsn(name);
@@ -2617,13 +2617,13 @@ public final class RefsetMemberService {
 
                 if (conceptNode.has("memberId")) {
 
-                    concept.setMemberId(conceptNode.get("memberId").asText());
+                    concept.setMemberId(conceptNode.get("memberId").asString());
                 }
 
                 // if the member has been released get the effective time
                 if (conceptNode.has("releasedEffectiveTime")) {
 
-                    concept.setMemberEffectiveTime(simpleDateFormat.parse(conceptNode.get("releasedEffectiveTime").asText()));
+                    concept.setMemberEffectiveTime(simpleDateFormat.parse(conceptNode.get("releasedEffectiveTime").asString()));
                 }
 
             } else if (conceptNode.has("conceptId")) {
@@ -2632,11 +2632,11 @@ public final class RefsetMemberService {
                 // general-representation of basic concept content
                 if (conceptNode.get("pt") != null && conceptNode.get("pt").get("term") != null) {
 
-                    name = conceptNode.get("pt").get("term").asText();
+                    name = conceptNode.get("pt").get("term").asString();
 
                 } else if (conceptNode.get("term") != null) {
 
-                    name = conceptNode.get("term").asText();
+                    name = conceptNode.get("term").asString();
                 }
 
                 // Add FSN if required
@@ -2644,7 +2644,7 @@ public final class RefsetMemberService {
 
                     if (conceptNode.get("fsn") != null && conceptNode.get("fsn").get("term") != null) {
 
-                        concept.setFsn(conceptNode.get("fsn").get("term").asText());
+                        concept.setFsn(conceptNode.get("fsn").get("term").asString());
                     } else {
 
                         concept.setFsn(name);
@@ -2653,12 +2653,12 @@ public final class RefsetMemberService {
                 }
 
                 // grab other concept information
-                if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
+                if (!conceptNode.get("definitionStatus").asString().equals("PRIMITIVE")) {
 
                     defined = true;
                 }
 
-                if (branchCache.containsKey(cacheString) && branchCache.get(cacheString).contains(conceptNode.get("conceptId").asText())) {
+                if (branchCache.containsKey(cacheString) && branchCache.get(cacheString).contains(conceptNode.get("conceptId").asString())) {
 
                     concept.setHasDescendantRefsetMembers(true);
                 }
@@ -2694,7 +2694,7 @@ public final class RefsetMemberService {
 
                 } else if (conceptNode.get("fsn") != null) {
 
-                    final String fsn = conceptNode.get("fsn").get("term").asText();
+                    final String fsn = conceptNode.get("fsn").get("term").asString();
                     final Map<String, String> descMap = new HashMap<>();
                     descMap.put("fsn", fsn);
                     final List<Map<String, String>> list = new ArrayList<>();
@@ -2732,7 +2732,7 @@ public final class RefsetMemberService {
 
                 if (conceptNode.get("releasedEffectiveTime") != null) {
 
-                    concept.setMemberEffectiveTime(simpleDateFormat.parse(conceptNode.get("releasedEffectiveTime").asText()));
+                    concept.setMemberEffectiveTime(simpleDateFormat.parse(conceptNode.get("releasedEffectiveTime").asString()));
                 }
 
             }
@@ -2844,7 +2844,7 @@ public final class RefsetMemberService {
 
             final JsonNode relationship = iterator.next();
 
-            if (relationship.get("active").asBoolean() && "INFERRED_RELATIONSHIP".equals(relationship.get("characteristicType").asText())) {
+            if (relationship.get("active").asBoolean() && "INFERRED_RELATIONSHIP".equals(relationship.get("characteristicType").asString())) {
 
                 final int groupId = relationship.get("groupId").asInt();
 
@@ -2853,11 +2853,11 @@ public final class RefsetMemberService {
                     roleGroups.put(groupId, new ArrayList<String>());
                 }
 
-                final String type = relationship.get("type").get("pt").get("term").asText();
+                final String type = relationship.get("type").get("pt").get("term").asString();
 
                 if (!"Is a".equals(type)) {
 
-                    final String target = relationship.get("target").get("pt").get("term").asText();
+                    final String target = relationship.get("target").get("pt").get("term").asString();
                     roleGroups.get(groupId).add(type + " -> " + target);
                 }
 

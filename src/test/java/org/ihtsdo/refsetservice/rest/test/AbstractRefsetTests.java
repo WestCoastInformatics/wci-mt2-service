@@ -504,7 +504,7 @@ public abstract class AbstractRefsetTests extends BaseTest {
     protected void validateExportFiles(final JsonNode root, final String expectedFilePath) throws IOException {
 
         // Get Zipped File
-        final String fileUrl = (root.get("url")).asText();
+        final String fileUrl = (root.get("url")).asString();
         LOG.info("File Url: " + fileUrl);
         final String zipFileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
         final String exportRefsetPath = getTestProperties().getProperty("REFSET_EXPORT_DIR");

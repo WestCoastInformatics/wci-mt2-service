@@ -180,7 +180,7 @@ public class SnowstormRefset extends SnowstormAbstract {
 
                 if (conceptNode.has("conceptId")) {
 
-                    refsetConceptId = conceptNode.get("conceptId").asText();
+                    refsetConceptId = conceptNode.get("conceptId").asString();
                 } else {
 
                     throw new Exception("Unable to create new reference set concept.");
@@ -369,7 +369,7 @@ public class SnowstormRefset extends SnowstormAbstract {
             final JsonNode conceptNode = root;
 
             if (conceptNode.has("conceptId")) {
-                refsetConceptId = conceptNode.get("conceptId").asText();
+                refsetConceptId = conceptNode.get("conceptId").asString();
             }
 
             BranchService.deleteBranch(tempBranchPath);
@@ -433,7 +433,7 @@ public class SnowstormRefset extends SnowstormAbstract {
                 final JsonNode root = mapper.readTree(resultString);
                 final JsonNode conceptNodeBatch = root.get("items");
 
-                searchAfter = (root.get("searchAfter") != null ? "&searchAfter=" + root.get("searchAfter").asText() : "");
+                searchAfter = (root.get("searchAfter") != null ? "&searchAfter=" + root.get("searchAfter").asString() : "");
 
                 if (conceptNodeBatch.size() == 0 || conceptNodeBatch.size() < limit) {
 
@@ -457,7 +457,7 @@ public class SnowstormRefset extends SnowstormAbstract {
 
                     if (memberNode.has("releasedEffectiveTime")) {
 
-                        final long memberEffectiveTime = simpleDateFormat.parse(memberNode.get("releasedEffectiveTime").asText()).getTime();
+                        final long memberEffectiveTime = simpleDateFormat.parse(memberNode.get("releasedEffectiveTime").asString()).getTime();
 
                         if (versionLatestTime < memberEffectiveTime) {
 
@@ -545,7 +545,7 @@ public class SnowstormRefset extends SnowstormAbstract {
 
             if (conceptNode.has("releasedEffectiveTime")) {
 
-                return simpleDateFormat.parse(conceptNode.get("releasedEffectiveTime").asText()).getTime();
+                return simpleDateFormat.parse(conceptNode.get("releasedEffectiveTime").asString()).getTime();
             }
 
             return null;
@@ -585,7 +585,7 @@ public class SnowstormRefset extends SnowstormAbstract {
                 final String resultString = SnowstormConnection.readEntityAsString(response);
                 final JsonNode conceptNode = mapper.readTree(resultString);
 
-                return conceptNode.get("pt").get("term").asText();
+                return conceptNode.get("pt").get("term").asString();
             }
 
         } else {

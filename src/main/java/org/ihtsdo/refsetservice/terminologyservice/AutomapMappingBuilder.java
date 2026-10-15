@@ -338,7 +338,7 @@ public final class AutomapMappingBuilder {
         if (node == null || !node.hasNonNull(field)) {
             return "";
         }
-        return StringUtils.trimToEmpty(node.get(field).asText());
+        return StringUtils.trimToEmpty(node.get(field).asString());
     }
 
     /**

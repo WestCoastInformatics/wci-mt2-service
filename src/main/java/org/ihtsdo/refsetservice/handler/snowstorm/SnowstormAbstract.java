@@ -58,7 +58,7 @@ public abstract class SnowstormAbstract {
         if (StringUtility.isJson(snowstormErrorMessage)) {
             try {
                 final JsonNode json = ThreadLocalMapper.get().readTree(snowstormErrorMessage);
-                snowstormErrorMessage = json.has("message") ? json.get("message").asText() : "";
+                snowstormErrorMessage = json.has("message") ? json.get("message").asString() : "";
             } catch (final Exception e) {
                 LOG.error("formatErrorMessage snowstormErrorMessage:{}", snowstormErrorMessage, e);
             }

@@ -94,7 +94,7 @@ public class SyncCodeSystemDeterminer {
         filteredCodeSystems.addAll(filterValidCodeSystems(service, organizationJsonRootNode, ignoredReasonsEditionMap, syncUtilities));
 
         LOG.info("Will be processing these " + filteredCodeSystems.size() + " Code Systems found on the term server: ");
-        filteredCodeSystems.stream().forEach(c -> LOG.info(c.get("shortName").asText()));
+        filteredCodeSystems.stream().forEach(c -> LOG.info(c.get("shortName").asString()));
 
         // Stats
         statistics.setCodeSystemsSynced(countCodeSystems(organizationJsonRootNode));
@@ -116,7 +116,7 @@ public class SyncCodeSystemDeterminer {
         // Determine Snow edition-to-orgName map
         for (final JsonNode codeSystem : filteredCodeSystems) {
 
-            final String shortName = codeSystem.get("shortName").asText();
+            final String shortName = codeSystem.get("shortName").asString();
             final String owner = determineOrganizationName(codeSystem);
 
             termServerShortNameToOwnerMap.put(shortName, owner);
@@ -157,8 +157,8 @@ public class SyncCodeSystemDeterminer {
                     continue;
                 }
 
-                final String editionShortName = codeSystem.get("shortName").asText();
-                final String organizationName = codeSystem.has("owner") ? codeSystem.get("owner").asText() : "";
+                final String editionShortName = codeSystem.get("shortName").asString();
+                final String organizationName = codeSystem.has("owner") ? codeSystem.get("owner").asString() : "";
 
                 final String maintainerType = syncUtilities.identifyMaintainerType(codeSystem, editionShortName);
 
@@ -270,7 +270,7 @@ public class SyncCodeSystemDeterminer {
                     continue;
                 }
 
-                final String editionShortName = codeSystem.get("shortName").asText();
+                final String editionShortName = codeSystem.get("shortName").asString();
 
                 if (!ignoredEditions.contains(editionShortName)) {
 
@@ -357,13 +357,13 @@ public class SyncCodeSystemDeterminer {
     private static String determineOrganizationName(final JsonNode codeSystem) {
 
         // If owner defined, return it as organization name
-        if (codeSystem.has("owner") && !codeSystem.get("owner").asText().trim().isBlank()) {
+        if (codeSystem.has("owner") && !codeSystem.get("owner").asString().trim().isBlank()) {
 
-            return codeSystem.get("owner").asText();
+            return codeSystem.get("owner").asString();
         }
 
         // Create generic organization name
-        final String editionName = codeSystem.has("name") ? codeSystem.get("name").asText() : "";
+        final String editionName = codeSystem.has("name") ? codeSystem.get("name").asString() : "";
         return DEFAULT_ORGANIZATION_PREFACE + editionName;
     }
 

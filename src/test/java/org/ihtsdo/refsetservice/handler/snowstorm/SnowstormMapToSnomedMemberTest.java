@@ -53,9 +53,9 @@ public class SnowstormMapToSnomedMemberTest {
         final String json = SnowstormMapping.mapEntryToSnowstormMap(new MapProject(), "999", "A01", "Abdominal pain", mapEntry, mapSet);
         final JsonNode member = ThreadLocalMapper.get().readTree(json);
 
-        assertEquals("22298006", member.get("referencedComponentId").asText());
-        assertEquals("A01", member.get("additionalFields").get("mapSource").asText());
-        assertEquals(SnomedConstants.MAP_TO_SNOMED_EXACT_MATCH, member.get("additionalFields").get("correlationId").asText());
+        assertEquals("22298006", member.get("referencedComponentId").asString());
+        assertEquals("A01", member.get("additionalFields").get("mapSource").asString());
+        assertEquals(SnomedConstants.MAP_TO_SNOMED_EXACT_MATCH, member.get("additionalFields").get("correlationId").asString());
         assertFalse(member.get("additionalFields").has("mapTarget"));
         assertFalse(member.get("additionalFields").has("mapGroup"));
         assertFalse(member.get("additionalFields").has("mapRule"));
@@ -78,8 +78,8 @@ public class SnowstormMapToSnomedMemberTest {
         final String json = SnowstormMapping.mapEntryToSnowstormMap(new MapProject(), "447562003", "22298006", "Pain", mapEntry, mapSet);
         final JsonNode member = ThreadLocalMapper.get().readTree(json);
 
-        assertEquals("22298006", member.get("referencedComponentId").asText());
-        assertEquals("R07.4", member.get("additionalFields").get("mapTarget").asText());
+        assertEquals("22298006", member.get("referencedComponentId").asString());
+        assertEquals("R07.4", member.get("additionalFields").get("mapTarget").asString());
         assertFalse(member.get("additionalFields").has("mapSource"));
     }
 
@@ -110,9 +110,9 @@ public class SnowstormMapToSnomedMemberTest {
 
         final JsonNode body = ThreadLocalMapper.get().readTree(SnowstormMapping.mapToSnomedMemberSearchBody("999", List.of("A01", "R07.4")));
 
-        assertEquals("999", body.get("referenceSet").asText());
-        assertEquals("A01", body.get("additionalFieldSets").get("mapSource").get(0).asText());
-        assertEquals("R07.4", body.get("additionalFieldSets").get("mapSource").get(1).asText());
+        assertEquals("999", body.get("referenceSet").asString());
+        assertEquals("A01", body.get("additionalFieldSets").get("mapSource").get(0).asString());
+        assertEquals("R07.4", body.get("additionalFieldSets").get("mapSource").get(1).asString());
         assertFalse(body.has("referencedComponentIds"));
     }
 
@@ -170,7 +170,7 @@ public class SnowstormMapToSnomedMemberTest {
         final JsonNode node = mapper.readTree(mapper.writeValueAsString(mapping));
         assertFalse(node.has("descriptions"));
         final JsonNode entries = node.get("mapEntries");
-        assertEquals("Radiating chest pain", entries.get(0).get("descriptions").get(0).get("term").asText());
+        assertEquals("Radiating chest pain", entries.get(0).get("descriptions").get(0).get("term").asString());
         assertFalse(entries.get(1).has("descriptions"));
     }
 
@@ -199,8 +199,8 @@ public class SnowstormMapToSnomedMemberTest {
 
         final JsonMapper mapper = hibernateObjectMapper();
         final JsonNode node = mapper.readTree(mapper.writeValueAsString(mapping));
-        assertEquals("Tannattrisjon", node.get("descriptions").get(0).get("term").asText());
-        assertEquals("Occlusal wear of teeth", node.get("mapEntries").get(0).get("descriptions").get(0).get("term").asText());
+        assertEquals("Tannattrisjon", node.get("descriptions").get(0).get("term").asString());
+        assertEquals("Occlusal wear of teeth", node.get("mapEntries").get(0).get("descriptions").get(0).get("term").asString());
         assertFalse(node.get("mapEntries").get(1).has("descriptions"));
     }
 

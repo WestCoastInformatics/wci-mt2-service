@@ -148,7 +148,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             if (rootNode.has("path")) {
 
-                refsetBranchPath = rootNode.get("path").asText();
+                refsetBranchPath = rootNode.get("path").asString();
             }
 
             LOG.info("Created branch " + refsetBranchPath + ". Time: " + (System.currentTimeMillis() - start));
@@ -256,7 +256,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             if (iterator.hasNext()) {
 
                 final JsonNode childNode = iterator.next();
-                childBranchPaths.add(childNode.get("path").asText());
+                childBranchPaths.add(childNode.get("path").asString());
             }
         }
 
@@ -316,13 +316,13 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                     final String resultString = mergeInfoResponse.readEntity(String.class);
                     final JsonNode root = mapper.readTree(resultString);
-                    final String status = root.get("status").asText();
+                    final String status = root.get("status").asString();
 
                     LOG.info("Merge status is: " + status);
 
                     if (status.equals("FAILED")) {
 
-                        final String message = root.get("message").asText();
+                        final String message = root.get("message").asString();
                         jobDone = true;
 
                         if (!message.contains("is not meaningful")) {
@@ -376,7 +376,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                                     final String stateResultString = stateResponse.readEntity(String.class);
                                     final JsonNode stateRoot = mapper.readTree(stateResultString.toString());
-                                    final String state = stateRoot.get("state").asText();
+                                    final String state = stateRoot.get("state").asString();
 
                                     LOG.info("Promoted branch state is: " + state);
 
@@ -453,7 +453,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                 final String resultString = response.readEntity(String.class);
                 final JsonNode root = mapper.readTree(resultString);
-                final String status = root.get("status").asText();
+                final String status = root.get("status").asString();
                 LOG.debug("merge review status: " + status);
 
                 if (status.equalsIgnoreCase("PENDING")) {
@@ -468,7 +468,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                 } else if (status.equalsIgnoreCase("failed")) {
 
-                    error += "Job failed with: " + root.get("message").asText();
+                    error += "Job failed with: " + root.get("message").asString();
                     LOG.error(error);
                     throw new Exception(error);
 
@@ -538,7 +538,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             if (conceptNode.has("conceptId")) {
 
-                refsetConceptId = conceptNode.get("conceptId").asText();
+                refsetConceptId = conceptNode.get("conceptId").asString();
             } else {
 
                 throw new Exception("Unable to create new refset concept.");
@@ -588,7 +588,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             while (branchIterator.hasNext()) {
 
                 final JsonNode child = branchIterator.next();
-                final String childBranch = child.get("path").asText();
+                final String childBranch = child.get("path").asString();
                 String childDate = childBranch.replace(editionPath, "");
 
                 if (childDate.startsWith("/")) {
@@ -740,11 +740,11 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             while (iterator != null && iterator.hasNext()) {
 
                 final JsonNode conceptNode = iterator.next();
-                final String conceptId = conceptNode.get("conceptId").asText();
+                final String conceptId = conceptNode.get("conceptId").asString();
                 String name = "";
 
                 if (conceptNode.get("fsn") != null && conceptNode.get("fsn").get("term") != null) {
-                    name = conceptNode.get("fsn").get("term").asText();
+                    name = conceptNode.get("fsn").get("term").asString();
                 }
 
                 moduleNames.put(conceptId, name);
@@ -789,7 +789,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                         continue;
                     }
 
-                    final String editionShortName = codeSystem.get("shortName").asText();
+                    final String editionShortName = codeSystem.get("shortName").asString();
                     final String maintainerType = syncUtilities.identifyMaintainerType(codeSystem, editionShortName);
 
                     // Skip inactive code systems
@@ -814,8 +814,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                         continue;
                     }
 
-                    final String editionName = codeSystem.get("name").asText();
-                    final String branch = codeSystem.get("branchPath").asText();
+                    final String editionName = codeSystem.get("name").asString();
+                    final String branch = codeSystem.get("branchPath").asString();
                     final String defaultLanguageCode = syncUtilities.identifyDefaultLanguageCode(codeSystem, editionName);
                     final Set<String> defaultLanguageRefsets = syncUtilities.identifyEditionLanguageRefsets(codeSystem, editionShortName, branch);
 
@@ -959,7 +959,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                 if (conceptNode.has("conceptId")) {
 
-                    refsetConceptId = conceptNode.get("conceptId").asText();
+                    refsetConceptId = conceptNode.get("conceptId").asString();
                 } else {
 
                     throw new Exception("Unable to create new reference set concept.");
@@ -1182,7 +1182,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                 final JsonNode conceptNode = iterator.next();
                 final Concept concept = new Concept();
-                final String conceptId = conceptNode.get("conceptId").asText();
+                final String conceptId = conceptNode.get("conceptId").asString();
 
                 // if this isn't for a parent concept and the refset already exists then
                 // skip it
@@ -1192,7 +1192,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 }
 
                 concept.setCode(conceptId);
-                concept.setName(conceptNode.get("pt").get("term").asText());
+                concept.setName(conceptNode.get("pt").get("term").asString());
                 concept.setTerminology("SNOMEDCT");
 
                 results.getItems().add(concept);
@@ -1375,7 +1375,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             final ResultListConcept conceptList = RefsetMemberService.populateConcepts(root, refset, lookupParameters);
             concepts.addAll(conceptList.getItems());
 
-            final String newSearchAfter = (root.get("searchAfter") != null ? root.get("searchAfter").asText() : "");
+            final String newSearchAfter = (root.get("searchAfter") != null ? root.get("searchAfter").asString() : "");
             if (StringUtils.isNoneBlank(newSearchAfter)) {
 
                 getAllRefsetMembers(service, refsetInternalId, newSearchAfter, concepts);
@@ -1510,7 +1510,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 if (itemsNode.isArray()) {
 
                     for (final JsonNode itemNode : itemsNode) {
-                        conceptIds.add(itemNode.get("concept").get("conceptId").asText());
+                        conceptIds.add(itemNode.get("concept").get("conceptId").asString());
                     }
 
                 }
@@ -1600,7 +1600,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                 if (descriptionNode.get("active").asBoolean()) {
 
-                    final String conceptId = descriptionNode.get("conceptId").asText();
+                    final String conceptId = descriptionNode.get("conceptId").asString();
 
                     if (!conceptDescriptionNodes.containsKey(conceptId)) {
 
@@ -1730,7 +1730,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                 final JsonNode conceptNode = conceptIterator.next();
 
-                final String conceptId = conceptNode.get("conceptId").asText();
+                final String conceptId = conceptNode.get("conceptId").asString();
                 conceptNodes.put(conceptId, conceptNode);
             }
 
@@ -1810,7 +1810,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             while (iterator.hasNext()) {
 
                 final JsonNode conceptNode = iterator.next();
-                // final String nodeConceptId = conceptNode.get("conceptId").asText();
+                // final String nodeConceptId = conceptNode.get("conceptId").asString();
                 final JsonNode ancestorPathNode = conceptNode.get("ancestorPath");
 
                 // get the ancestor list and reverse the order so the taxonomy
@@ -1961,7 +1961,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                 if (limitReturnNumber < 0 && root.get("searchAfter") != null) {
 
-                    searchAfter = "&searchAfter=" + root.get("searchAfter").asText();
+                    searchAfter = "&searchAfter=" + root.get("searchAfter").asString();
                 }
 
                 // if the search returned results set the total
@@ -1994,10 +1994,10 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                         final Concept concept = new Concept();
                         concept.setActive(conceptNode.get("active").asBoolean());
-                        concept.setId(conceptNode.get("id").asText());
-                        concept.setCode(conceptNode.get("id").asText());
+                        concept.setId(conceptNode.get("id").asString());
+                        concept.setCode(conceptNode.get("id").asString());
 
-                        if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
+                        if (!conceptNode.get("definitionStatus").asString().equals("PRIMITIVE")) {
 
                             concept.setDefined(true);
                         } else {
@@ -2007,12 +2007,12 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                         if (conceptNode.get("pt") != null) {
 
-                            concept.setName(conceptNode.get("pt").get("term").asText());
+                            concept.setName(conceptNode.get("pt").get("term").asString());
                         }
 
                         if (conceptNode.get("fsn") != null && conceptNode.get("fsn").get("term") != null) {
 
-                            concept.setFsn(conceptNode.get("fsn").get("term").asText());
+                            concept.setFsn(conceptNode.get("fsn").get("term").asString());
                         }
 
                         if (conceptNode.has("isLeafInferred")) {
@@ -2210,7 +2210,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                         if (root.get("searchAfter") != null) {
 
-                            searchAfter = "&searchAfter=" + root.get("searchAfter").asText();
+                            searchAfter = "&searchAfter=" + root.get("searchAfter").asString();
                         }
 
                         if (conceptNodeBatch.size() == 0 || conceptNodeBatch.size() + currentList.getItems().size() >= currentList.getTotal()) {
@@ -2616,7 +2616,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 final JsonNode root = mapper.readTree(resultString);
                 final JsonNode conceptNodeBatch = root.get("items");
 
-                searchAfter = (root.get("searchAfter") != null ? "&searchAfter=" + root.get("searchAfter").asText() : "");
+                searchAfter = (root.get("searchAfter") != null ? "&searchAfter=" + root.get("searchAfter").asString() : "");
 
                 if (conceptNodeBatch.size() == 0 || conceptNodeBatch.size() < limit) {
 
@@ -2640,7 +2640,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                     if (memberNode.has("releasedEffectiveTime")) {
 
-                        final long memberEffectiveTime = simpleDateFormat.parse(memberNode.get("releasedEffectiveTime").asText()).getTime();
+                        final long memberEffectiveTime = simpleDateFormat.parse(memberNode.get("releasedEffectiveTime").asString()).getTime();
 
                         if (versionLatestTime < memberEffectiveTime) {
 
@@ -2729,7 +2729,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             if (conceptNode.has("releasedEffectiveTime")) {
 
-                return simpleDateFormat.parse(conceptNode.get("releasedEffectiveTime").asText()).getTime();
+                return simpleDateFormat.parse(conceptNode.get("releasedEffectiveTime").asString()).getTime();
             }
 
             return null;
@@ -2800,7 +2800,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                     // Calculate the version date and ensure it has
                     // proper format yyyy-mm-dd
-                    currentVersionDate = memberNode.get("releasedEffectiveTime").asText();
+                    currentVersionDate = memberNode.get("releasedEffectiveTime").asString();
                     currentVersionDate = currentVersionDate.substring(0, 4) + "-" + currentVersionDate.substring(4, 6) + "-" + currentVersionDate.substring(6);
 
                     if (memberNode.has("active")) {
@@ -2975,7 +2975,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                                 throw new Exception("Result wasn't as expected with resultNode: " + resultNode);
                             }
 
-                            ancestorsSet.add(resultNode.get("conceptId").asText());
+                            ancestorsSet.add(resultNode.get("conceptId").asString());
                         }
 
                     } catch (final Exception e) {
@@ -3114,20 +3114,20 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     while (iterator != null && iterator.hasNext()) {
 
                         final JsonNode conceptNode = iterator.next();
-                        final String conceptId = conceptNode.get("conceptId").asText();
+                        final String conceptId = conceptNode.get("conceptId").asString();
                         String name = "";
                         validatedConcepts.add(conceptId);
 
                         if (conceptNode.get("pt") != null && conceptNode.get("pt").get("term") != null) {
 
-                            name = conceptNode.get("pt").get("term").asText();
+                            name = conceptNode.get("pt").get("term").asString();
                         }
 
                         final Map<String, String> status = new HashMap<>();
                         status.put("operation", "Added");
                         status.put("status", "Success");
                         status.put("name", name);
-                        status.put("active", conceptNode.get("active").asText());
+                        status.put("active", conceptNode.get("active").asString());
                         conceptsStatus.put(conceptId, status);
                     }
 
@@ -3191,7 +3191,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     while (iterator != null && iterator.hasNext()) {
 
                         final JsonNode conceptNode = iterator.next();
-                        final String conceptId = conceptNode.get("referencedComponentId").asText();
+                        final String conceptId = conceptNode.get("referencedComponentId").asString();
                         final boolean active = conceptNode.get("active").asBoolean();
 
                         // if active remove from the list to add, else update the membership
@@ -3211,15 +3211,15 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                             conceptIds.remove(conceptId);
 
-                            final ObjectNode memberBody = mapper.createObjectNode().put("active", true).put("memberId", conceptNode.get("memberId").asText())
-                                .put("moduleId", conceptNode.get("moduleId").asText())
-                                .put("referencedComponentId", conceptNode.get("referencedComponentId").asText())
-                                .put("refsetId", conceptNode.get("refsetId").asText()).put("released", conceptNode.get("released").asBoolean())
+                            final ObjectNode memberBody = mapper.createObjectNode().put("active", true).put("memberId", conceptNode.get("memberId").asString())
+                                .put("moduleId", conceptNode.get("moduleId").asString())
+                                .put("referencedComponentId", conceptNode.get("referencedComponentId").asString())
+                                .put("refsetId", conceptNode.get("refsetId").asString()).put("released", conceptNode.get("released").asBoolean())
                                 .put("releasedEffectiveTime", conceptNode.get("releasedEffectiveTime").asInt())
                                 .set("additionalFields", conceptNode.get("additionalFields"));
 
                             if (conceptNode.get("effectiveTime") != null) {
-                                memberBody.put("effectiveTime", conceptNode.get("effectiveTime").asText());
+                                memberBody.put("effectiveTime", conceptNode.get("effectiveTime").asString());
                             }
 
                             memberUpdateArray.add(memberBody);
@@ -3382,7 +3382,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     final JsonNode root = mapper.readTree(resultString);
 
                     // LOG.debug("addRefsetMembers job status response: " + root);
-                    final String status = root.get("status").asText();
+                    final String status = root.get("status").asString();
 
                     if (status.equalsIgnoreCase("COMPLETED")) {
 
@@ -3392,7 +3392,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                         jobDone = true;
                         LOG.error(errorMessage + " Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
-                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage + root.get("message").asText());
+                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage + root.get("message").asString());
                     } else {
 
                         LOG.debug("Bulk member add hasn't finished yet...");
@@ -3505,9 +3505,9 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                 final JsonNode conceptNode = iterator.next();
                 final boolean released = conceptNode.get("released").asBoolean();
-                final String membershipId = conceptNode.get("memberId").asText();
+                final String membershipId = conceptNode.get("memberId").asString();
                 String name = "";
-                members.add(conceptNode.get("referencedComponentId").asText());
+                members.add(conceptNode.get("referencedComponentId").asString());
 
                 // if the member has not been released then remove the membership
                 if (!released) {
@@ -3519,9 +3519,9 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 // array
                 else {
 
-                    final ObjectNode memberBody = mapper.createObjectNode().put("active", false).put("effectiveTime", conceptNode.get("effectiveTime").asText())
-                        .put("memberId", membershipId).put("moduleId", conceptNode.get("moduleId").asText())
-                        .put("referencedComponentId", conceptNode.get("referencedComponentId").asText()).put("refsetId", conceptNode.get("refsetId").asText())
+                    final ObjectNode memberBody = mapper.createObjectNode().put("active", false).put("effectiveTime", conceptNode.get("effectiveTime").asString())
+                        .put("memberId", membershipId).put("moduleId", conceptNode.get("moduleId").asString())
+                        .put("referencedComponentId", conceptNode.get("referencedComponentId").asString()).put("refsetId", conceptNode.get("refsetId").asString())
                         .put("released", released).put("releasedEffectiveTime", conceptNode.get("releasedEffectiveTime").asInt())
                         .set("additionalFields", conceptNode.get("additionalFields"));
 
@@ -3532,15 +3532,15 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                 if (referencedComponent.get("pt") != null && referencedComponent.get("pt").get("term") != null) {
 
-                    name = referencedComponent.get("pt").get("term").asText();
+                    name = referencedComponent.get("pt").get("term").asString();
                 }
 
                 final Map<String, String> status = new HashMap<>();
                 status.put("operation", "Removed");
                 status.put("status", "Success");
                 status.put("name", name);
-                status.put("active", referencedComponent.get("active").asText());
-                conceptsStatus.put(conceptNode.get("referencedComponentId").asText(), status);
+                status.put("active", referencedComponent.get("active").asString());
+                conceptsStatus.put(conceptNode.get("referencedComponentId").asString(), status);
             }
 
         }
@@ -3593,7 +3593,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             if (memberUpdateArray.size() == 1) {
 
                 final JsonNode memberBody = memberUpdateArray.get(0);
-                unremovedConcepts = callUpdateMemberSingle(refsetId, url + "/" + memberBody.get("memberId").asText(), memberBody);
+                unremovedConcepts = callUpdateMemberSingle(refsetId, url + "/" + memberBody.get("memberId").asString(), memberBody);
 
             } else if (memberUpdateArray.size() > 1) {
 
@@ -3643,8 +3643,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             // Only process payload if Rest call is successful
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
-                final String memberId = memberBody.get("memberId").asText();
-                final String conceptId = memberBody.get("referencedComponentId").asText();
+                final String memberId = memberBody.get("memberId").asString();
+                final String conceptId = memberBody.get("referencedComponentId").asString();
 
                 LOG.error("Inactivate Reference Set Member call to url '" + url + "' for Reference Set '" + refsetId + "' and concept '" + conceptId
                     + "' and member '" + memberId + "' wasn't successful. " + " Status: " + response.getStatus() + " Message: "
@@ -3723,7 +3723,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     final JsonNode root = mapper.readTree(resultString);
 
                     // LOG.debug("addRefsetMembers job status response: " + root);
-                    final String status = root.get("status").asText();
+                    final String status = root.get("status").asString();
 
                     if (status.equalsIgnoreCase("COMPLETED")) {
 
@@ -3732,8 +3732,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     } else if (status.equalsIgnoreCase("failed")) {
 
                         jobDone = true;
-                        LOG.error(errorMessage + root.get("message").asText());
-                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage + root.get("message").asText());
+                        LOG.error(errorMessage + root.get("message").asString());
+                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage + root.get("message").asString());
 
                     } else {
 
@@ -3811,7 +3811,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     keepSearching = false;
                 } else {
 
-                    searchAfter = "&searchAfter=" + root.get("searchAfter").asText();
+                    searchAfter = "&searchAfter=" + root.get("searchAfter").asString();
                 }
 
                 LOG.debug("getConceptIdsFromEcl totalReturned so far: " + totalReturned);
@@ -3820,7 +3820,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 while (iterator != null && iterator.hasNext()) {
 
                     final JsonNode conceptNode = iterator.next();
-                    final String conceptId = conceptNode.get("conceptId").asText();
+                    final String conceptId = conceptNode.get("conceptId").asString();
 
                     if (concepts.contains(conceptId)) {
 
@@ -3931,7 +3931,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                 if (root.get("searchAfter") != null) {
 
-                    searchAfter = "&searchAfter=" + root.get("searchAfter").asText();
+                    searchAfter = "&searchAfter=" + root.get("searchAfter").asString();
                 }
 
                 if (conceptNodeBatch.size() == 0 || conceptNodeBatch.size() + inactiveMemberList.size() >= memberTotal) {
@@ -4027,7 +4027,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 while (iterator != null && iterator.hasNext()) {
 
                     final JsonNode conceptNode = iterator.next();
-                    final UpgradeInactiveConcept inactiveConcept = inactiveData.get(conceptNode.get("conceptId").asText());
+                    final UpgradeInactiveConcept inactiveConcept = inactiveData.get(conceptNode.get("conceptId").asString());
 
                     if (conceptNode.get("descriptions") != null) {
 
@@ -4040,7 +4040,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                     if (inactivationIndicatorNode != null) {
 
-                        inactiveConcept.setInactivationReason(inactivationIndicatorNode.asText());
+                        inactiveConcept.setInactivationReason(inactivationIndicatorNode.asString());
                     } else {
 
                         inactiveConcept.setInactivationReason("NOT SPECIFIED");
@@ -4116,7 +4116,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                                             while (iterator != null && iterator.hasNext()) {
 
                                                 final JsonNode conceptNode = iterator.next();
-                                                replacementThatAreMembers.add(conceptNode.get("conceptId").asText());
+                                                replacementThatAreMembers.add(conceptNode.get("conceptId").asString());
                                             }
 
                                         }
@@ -4380,9 +4380,9 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                                 final JsonNode conceptNode = iterator.next();
 
-                                if (conceptNode.get("referencedComponentId").asText().equals(conceptIdToChange)) {
+                                if (conceptNode.get("referencedComponentId").asString().equals(conceptIdToChange)) {
 
-                                    upgradeReplacementConcept.setMemberId(conceptNode.get("memberId").asText());
+                                    upgradeReplacementConcept.setMemberId(conceptNode.get("memberId").asString());
                                 } else {
 
                                     throw new Exception("There was a problem getting the member ID");
@@ -4531,27 +4531,27 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             final JsonNode mapSetNode = itemIterator.next();
 
             final MapSet mapSet = new MapSet();
-            mapSet.setRefSetCode(mapSetNode.get("id").asText());
-            mapSet.setModuleId(mapSetNode.get("moduleId").asText());
+            mapSet.setRefSetCode(mapSetNode.get("id").asString());
+            mapSet.setModuleId(mapSetNode.get("moduleId").asString());
 
             // Set refset name to FSN if it exists, defaulting to PT if not.
             if (mapSetNode.get("pt") != null) {
 
-                mapSet.setRefSetName(mapSetNode.get("pt").get("term").asText());
+                mapSet.setRefSetName(mapSetNode.get("pt").get("term").asString());
             }
             if (mapSetNode.get("fsn") != null && mapSetNode.get("fsn").get("term") != null) {
 
-                mapSet.setRefSetName(mapSetNode.get("fsn").get("term").asText());
+                mapSet.setRefSetName(mapSetNode.get("fsn").get("term").asString());
             }
 
             final JsonNode additionalFields = mapSetNode.get("additionalFields");
 
-            final VersionStatus versionStatus = VersionStatus.valueOf(additionalFields.get("versionStatus").asText());
+            final VersionStatus versionStatus = VersionStatus.valueOf(additionalFields.get("versionStatus").asString());
             mapSet.setVersionStatus(versionStatus);
-            mapSet.setVersion(additionalFields.get("version").asText());
-            mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse(additionalFields.get("lastModified").asText()));
-            mapSet.setFromTerminology(additionalFields.get("fromTerminology").asText());
-            mapSet.setToTerminology(additionalFields.get("toTerminology").asText());
+            mapSet.setVersion(additionalFields.get("version").asString());
+            mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse(additionalFields.get("lastModified").asString()));
+            mapSet.setFromTerminology(additionalFields.get("fromTerminology").asString());
+            mapSet.setToTerminology(additionalFields.get("toTerminology").asString());
 
             mapSets.add(mapSet);
         }
@@ -4589,32 +4589,32 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             final JsonNode mapSetNode = itemIterator.next();
 
             // Pull the requested mapSet
-            if (!(mapSetNode.get("conceptId").asText().equals(code))) {
+            if (!(mapSetNode.get("conceptId").asString().equals(code))) {
                 continue;
             }
 
             final MapSet mapSet = new MapSet();
-            mapSet.setRefSetCode(mapSetNode.get("id").asText());
-            mapSet.setModuleId(mapSetNode.get("moduleId").asText());
+            mapSet.setRefSetCode(mapSetNode.get("id").asString());
+            mapSet.setModuleId(mapSetNode.get("moduleId").asString());
 
             // Set refset name to FSN if it exists, defaulting to PT if not.
             if (mapSetNode.get("pt") != null) {
 
-                mapSet.setRefSetName(mapSetNode.get("pt").get("term").asText());
+                mapSet.setRefSetName(mapSetNode.get("pt").get("term").asString());
             }
             if (mapSetNode.get("fsn") != null && mapSetNode.get("fsn").get("term") != null) {
 
-                mapSet.setRefSetName(mapSetNode.get("fsn").get("term").asText());
+                mapSet.setRefSetName(mapSetNode.get("fsn").get("term").asString());
             }
 
             final JsonNode additionalFields = mapSetNode.get("additionalFields");
 
-            final VersionStatus versionStatus = VersionStatus.valueOf(additionalFields.get("versionStatus").asText());
+            final VersionStatus versionStatus = VersionStatus.valueOf(additionalFields.get("versionStatus").asString());
             mapSet.setVersionStatus(versionStatus);
-            mapSet.setVersion(additionalFields.get("version").asText());
-            mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse(additionalFields.get("lastModified").asText()));
-            mapSet.setFromTerminology(additionalFields.get("fromTerminology").asText());
-            mapSet.setToTerminology(additionalFields.get("toTerminology").asText());
+            mapSet.setVersion(additionalFields.get("version").asString());
+            mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse(additionalFields.get("lastModified").asString()));
+            mapSet.setFromTerminology(additionalFields.get("fromTerminology").asString());
+            mapSet.setToTerminology(additionalFields.get("toTerminology").asString());
 
             return mapSet;
         }
@@ -4663,36 +4663,36 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             final JsonNode mappingNode = itemIterator.next();
 
             // Only process active mappings from the correct mapset
-            if (!(mappingNode.get("refsetId").asText().equals(mapSet.getRefSetCode()) && mappingNode.get("active").asText().equals("true"))) {
+            if (!(mappingNode.get("refsetId").asString().equals(mapSet.getRefSetCode()) && mappingNode.get("active").asString().equals("true"))) {
                 continue;
             }
 
             // If this is the first time a fromConcept is encountered, set up the
             // mapping and add it to the tracker
-            if (!conceptIdToMappingMap.containsKey(mappingNode.get("referencedComponentId").asText())) {
+            if (!conceptIdToMappingMap.containsKey(mappingNode.get("referencedComponentId").asString())) {
                 final Mapping mapping = new Mapping();
-                mapping.setCode(mappingNode.get("referencedComponentId").asText());
+                mapping.setCode(mappingNode.get("referencedComponentId").asString());
                 mapping.setName(getConcept(/* branch, */ mapSet.getFromTerminology(), "", mapping.getCode()).getName());
                 mapping.setMapSetId(mapSet.getId());
                 mapping.setMapEntries(new ArrayList<>());
 
-                conceptIdToMappingMap.put(mappingNode.get("referencedComponentId").asText(), mapping);
+                conceptIdToMappingMap.put(mappingNode.get("referencedComponentId").asString(), mapping);
             }
 
             // Add an entry to the mapping
-            final Mapping mapping = conceptIdToMappingMap.get(mappingNode.get("referencedComponentId").asText());
+            final Mapping mapping = conceptIdToMappingMap.get(mappingNode.get("referencedComponentId").asString());
             final MapEntry mapEntry = new MapEntry();
 
-            mapEntry.setModified(new SimpleDateFormat("yyyyMMdd").parse(mappingNode.get("effectiveTime").asText()));
+            mapEntry.setModified(new SimpleDateFormat("yyyyMMdd").parse(mappingNode.get("effectiveTime").asString()));
 
             final JsonNode additionalFields = mappingNode.get("additionalFields");
 
-            mapEntry.setRule(additionalFields.get("mapRule").asText());
+            mapEntry.setRule(additionalFields.get("mapRule").asString());
             mapEntry.setPriority(additionalFields.get("mapPriority").asInt());
             mapEntry.setGroup(additionalFields.get("mapGroup").asInt());
 
             final Set<String> advices = new HashSet<>();
-            String mapAdviceString = additionalFields.get("mapAdvice").asText();
+            String mapAdviceString = additionalFields.get("mapAdvice").asString();
             // Store each pipe-delimited section of the map advice string as a
             // separate map advice
             for (String mapAdvice : mapAdviceString.split("\\|")) {
@@ -4700,16 +4700,16 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             }
             mapEntry.setAdvices(advices);
 
-            final Concept relationConcept = getConcept(/* branch, */ mapSet.getFromTerminology(), "", additionalFields.get("mapCategoryId").asText());
+            final Concept relationConcept = getConcept(/* branch, */ mapSet.getFromTerminology(), "", additionalFields.get("mapCategoryId").asString());
             if (relationConcept != null) {
                 mapEntry.setRelation(relationConcept.getName());
             } else {
                 mapEntry.setRelation(mapEntry.getToCode() + " DOES NOT EXIST");
             }
 
-            mapEntry.setToCode(additionalFields.get("mapTarget").asText());
+            mapEntry.setToCode(additionalFields.get("mapTarget").asString());
 
-            final Concept toConcept = getConcept(/* branch, */ mapSet.getToTerminology(), "", additionalFields.get("mapTarget").asText());
+            final Concept toConcept = getConcept(/* branch, */ mapSet.getToTerminology(), "", additionalFields.get("mapTarget").asString());
 
             if (toConcept != null) {
                 mapEntry.setToName(toConcept.getName());
@@ -4806,19 +4806,19 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             final JsonNode mappingNode = itemIterator.next();
 
             // Only process active mappings from the correct mapset
-            if (!(mappingNode.get("refsetId").asText().equals(mapSetForLookup.getRefSetCode()) && mappingNode.get("active").asText().equals("true"))) {
+            if (!(mappingNode.get("refsetId").asString().equals(mapSetForLookup.getRefSetCode()) && mappingNode.get("active").asString().equals("true"))) {
                 continue;
             }
 
             // Only process the requested concept
-            if (!mappingNode.get("referencedComponentId").asText().equals(conceptCode)) {
+            if (!mappingNode.get("referencedComponentId").asString().equals(conceptCode)) {
                 continue;
             }
 
             // If this is the first time the fromConcept is encountered, set up the
             // mapping
             if (mapping.getCode() == null || mapping.getCode().isEmpty()) {
-                mapping.setCode(mappingNode.get("referencedComponentId").asText());
+                mapping.setCode(mappingNode.get("referencedComponentId").asString());
                 mapping.setName(getConcept(/* branch, */ mapSetForLookup.getFromTerminology(),
                     mapSetForLookup.getFromVersion() != null ? mapSetForLookup.getFromVersion() : "", mapping.getCode()).getName());
                 mapping.setMapSetId(mapSetForLookup.getId());
@@ -4828,16 +4828,16 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             // Add an entry to the mapping
             final MapEntry mapEntry = new MapEntry();
 
-            mapEntry.setModified(new SimpleDateFormat("yyyyMMdd").parse(mappingNode.get("effectiveTime").asText()));
+            mapEntry.setModified(new SimpleDateFormat("yyyyMMdd").parse(mappingNode.get("effectiveTime").asString()));
 
             final JsonNode additionalFields = mappingNode.get("additionalFields");
 
-            mapEntry.setRule(additionalFields.get("mapRule").asText());
+            mapEntry.setRule(additionalFields.get("mapRule").asString());
             mapEntry.setPriority(additionalFields.get("mapPriority").asInt());
             mapEntry.setGroup(additionalFields.get("mapGroup").asInt());
 
             final Set<String> advices = new HashSet<>();
-            String mapAdviceString = additionalFields.get("mapAdvice").asText();
+            String mapAdviceString = additionalFields.get("mapAdvice").asString();
             // Store each pipe-delimited section of the map advice string as a
             // separate map advice
             for (String mapAdvice : mapAdviceString.split("\\|")) {
@@ -4845,16 +4845,16 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             }
             mapEntry.setAdvices(advices);
 
-            final Concept relationConcept = getConcept(/* branch, */ mapSet.getFromTerminology(), "", additionalFields.get("mapCategoryId").asText());
+            final Concept relationConcept = getConcept(/* branch, */ mapSet.getFromTerminology(), "", additionalFields.get("mapCategoryId").asString());
             if (relationConcept != null) {
                 mapEntry.setRelation(relationConcept.getName());
             } else {
                 mapEntry.setRelation(mapEntry.getToCode() + " DOES NOT EXIST");
             }
 
-            mapEntry.setToCode(additionalFields.get("mapTarget").asText());
+            mapEntry.setToCode(additionalFields.get("mapTarget").asString());
 
-            final Concept toConcept = getConcept(/* branch, */ mapSet.getToTerminology(), "", additionalFields.get("mapTarget").asText());
+            final Concept toConcept = getConcept(/* branch, */ mapSet.getToTerminology(), "", additionalFields.get("mapTarget").asString());
 
             if (toConcept != null) {
                 mapEntry.setToName(toConcept.getName());
@@ -4902,16 +4902,16 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             final JsonNode conceptNode = itemIterator.next();
 
             // Pull the requested, active concept
-            if (!(conceptNode.get("conceptId").asText().equals(code) && conceptNode.get("active").asText().equals("true"))) {
+            if (!(conceptNode.get("conceptId").asString().equals(code) && conceptNode.get("active").asString().equals("true"))) {
                 continue;
             }
 
             final Concept concept = new Concept();
             concept.setActive(conceptNode.get("active").asBoolean());
-            concept.setId(conceptNode.get("id").asText());
-            concept.setCode(conceptNode.get("id").asText());
+            concept.setId(conceptNode.get("id").asString());
+            concept.setCode(conceptNode.get("id").asString());
 
-            if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
+            if (!conceptNode.get("definitionStatus").asString().equals("PRIMITIVE")) {
 
                 concept.setDefined(true);
             } else {
@@ -4921,12 +4921,12 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             if (conceptNode.get("pt") != null) {
 
-                concept.setName(conceptNode.get("pt").get("term").asText());
+                concept.setName(conceptNode.get("pt").get("term").asString());
             }
 
             if (conceptNode.get("fsn") != null && conceptNode.get("fsn").get("term") != null) {
 
-                concept.setFsn(conceptNode.get("fsn").get("term").asText());
+                concept.setFsn(conceptNode.get("fsn").get("term").asString());
             }
 
             return concept;

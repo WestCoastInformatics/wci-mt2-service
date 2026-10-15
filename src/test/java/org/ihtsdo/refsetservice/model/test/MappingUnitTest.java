@@ -117,7 +117,7 @@ public class MappingUnitTest extends BaseTest {
         assertTrue(node.has("mapNotes"), node.toString());
         assertTrue(node.get("mapNotes").isArray());
         assertEquals(1, node.get("mapNotes").size());
-        assertTrue(node.get("mapNotes").get(0).get("note").asText().contains("This is a note I'm adding"));
+        assertTrue(node.get("mapNotes").get(0).get("note").asString().contains("This is a note I'm adding"));
     }
 
     /**

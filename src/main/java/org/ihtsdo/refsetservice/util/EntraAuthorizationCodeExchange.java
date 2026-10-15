@@ -114,7 +114,7 @@ public final class EntraAuthorizationCodeExchange {
         if (n == null || n.isNull()) {
             return null;
         }
-        return n.asText(null);
+        return n.asString(null);
     }
 
     /**

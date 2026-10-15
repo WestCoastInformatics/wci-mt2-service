@@ -109,7 +109,7 @@ public final class AutomapClient {
                 "Automap mapping task failed. Status " + response.statusCode() + ". " + abbreviate(response.body()));
         }
         final JsonNode task = ThreadLocalMapper.get().readTree(response.body());
-        if (task != null && "error".equalsIgnoreCase(task.path("status").asText())) {
+        if (task != null && "error".equalsIgnoreCase(task.path("status").asString())) {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Automap mapping task failed. " + abbreviate(response.body()));
         }
         return task;
@@ -193,7 +193,7 @@ public final class AutomapClient {
                     "Automap login failed. Status " + response.statusCode() + ". " + abbreviate(response.body()));
             }
             final JsonNode auth = ThreadLocalMapper.get().readTree(response.body());
-            final String token = auth.path("access_token").asText(null);
+            final String token = auth.path("access_token").asString(null);
             if (StringUtils.isBlank(token)) {
                 throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Automap login did not return an access token.");
             }

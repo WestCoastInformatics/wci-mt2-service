@@ -89,7 +89,7 @@ public class SnowstormDescription extends SnowstormAbstract {
 
                 if (descriptionNode.get("active").asBoolean()) {
 
-                    final String conceptId = descriptionNode.get("conceptId").asText();
+                    final String conceptId = descriptionNode.get("conceptId").asString();
 
                     if (!conceptDescriptionNodes.containsKey(conceptId)) {
 
@@ -203,7 +203,7 @@ public class SnowstormDescription extends SnowstormAbstract {
 
                 final JsonNode descriptionNode = descriptionIterator.next();
                 if (descriptionNode.get("active").asBoolean()) {
-                    final String conceptId = descriptionNode.get("conceptId").asText();
+                    final String conceptId = descriptionNode.get("conceptId").asString();
                     if (!conceptDescriptionNodes.containsKey(conceptId)) {
                         conceptDescriptionNodes.put(conceptId, new HashSet<>());
                     }
@@ -313,7 +313,7 @@ public class SnowstormDescription extends SnowstormAbstract {
                     final JsonNode descriptionNode = descriptionIterator.next();
                     if (descriptionNode.get("active").asBoolean()) {
 
-                        final String conceptId = descriptionNode.get("conceptId").asText();
+                        final String conceptId = descriptionNode.get("conceptId").asString();
 
                         if (!conceptDescriptionNodes.containsKey(conceptId)) {
                             conceptDescriptionNodes.put(conceptId, new HashSet<JsonNode>());
@@ -361,7 +361,7 @@ public class SnowstormDescription extends SnowstormAbstract {
                 final Iterator<String> languageRefsetIds = acceptabilityMap.propertyNames().iterator();
                 while (languageRefsetIds.hasNext()) {
                     final String languageRefsetId = languageRefsetIds.next();
-                    descriptions.add(toDescription(descriptionNode, languageRefsetId, acceptabilityMap.get(languageRefsetId).asText()));
+                    descriptions.add(toDescription(descriptionNode, languageRefsetId, acceptabilityMap.get(languageRefsetId).asString()));
                 }
             } else {
                 descriptions.add(toDescription(descriptionNode, "", ""));
@@ -440,7 +440,7 @@ public class SnowstormDescription extends SnowstormAbstract {
     private static String textValue(final JsonNode node, final Description.Field field) {
 
         final JsonNode value = fieldNode(node, field);
-        return hasValue(value) ? value.asText() : "";
+        return hasValue(value) ? value.asString() : "";
     }
 
 }

@@ -88,8 +88,8 @@ public final class NorwayReplacementReportSupport {
             throw new LocalException("No codesystem items returned for MAIN/SNOMEDCT-NO/REFSETS");
         }
         final JsonNode node = items.get(0);
-        final String currentBranch = node.get("branchPath").asText();
-        final String previousVersionBranch = node.get("latestVersion").get("branchPath").asText();
+        final String currentBranch = node.get("branchPath").asString();
+        final String previousVersionBranch = node.get("latestVersion").get("branchPath").asString();
         return new String[] {
             currentBranch, previousVersionBranch
         };

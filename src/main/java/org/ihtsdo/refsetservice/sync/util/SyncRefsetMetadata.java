@@ -76,7 +76,7 @@ public class SyncRefsetMetadata {
      */
     public String getRefsetId() {
 
-        return refsetNode.get("conceptId").asText();
+        return refsetNode.get("conceptId").asString();
     }
 
     /**

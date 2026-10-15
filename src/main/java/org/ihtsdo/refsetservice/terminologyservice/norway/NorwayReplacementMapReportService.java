@@ -93,11 +93,11 @@ public class NorwayReplacementMapReportService {
                 // get total amount
                 // Get concepts returned in this call (up to 1000)
                 for (final JsonNode conceptNode : doc.get("items")) {
-                    helseplattformensConceptIds.add(conceptNode.get("referencedComponentId").asText());
+                    helseplattformensConceptIds.add(conceptNode.get("referencedComponentId").asString());
                     returnedConceptsCount++;
                 }
 
-                searchAfter = doc.get("searchAfter").asText();
+                searchAfter = doc.get("searchAfter").asString();
                 // if we don't get a full page of results, we've processed the final
                 // page
                 if (returnedConceptsCount < limit) {
@@ -138,10 +138,10 @@ public class NorwayReplacementMapReportService {
             JsonNode doc = client.getJson("/codesystems?forBranch=MAIN%2FSNOMEDCT-NO%2FREFSETS");
 
             for (final JsonNode node : doc.get("items")) {
-                currentBranch = node.get("branchPath").asText();
+                currentBranch = node.get("branchPath").asString();
 
                 final JsonNode latestVersionNode = node.get("latestVersion");
-                previousVersionBranch = latestVersionNode.get("branchPath").asText();
+                previousVersionBranch = latestVersionNode.get("branchPath").asString();
 
                 // We're only interested in the first node
                 break;
@@ -173,13 +173,13 @@ public class NorwayReplacementMapReportService {
                 final JsonNode conceptIds = doc.get("items");
 
                 for (int i = 0; i < conceptIds.size(); i++) {
-                    final String activeConceptId = conceptIds.get(i).asText();
+                    final String activeConceptId = conceptIds.get(i).asString();
                     activeInPreviousBranchScopeConcepts.add(activeConceptId);
 
                     returnedConceptsCount++;
                 }
 
-                searchAfter = doc.get("searchAfter").asText();
+                searchAfter = doc.get("searchAfter").asString();
                 // if we don't get a full page of results, we've processed the final
                 // page
                 if (returnedConceptsCount < limit) {
@@ -205,7 +205,7 @@ public class NorwayReplacementMapReportService {
                 for (int i = 0; i < inactiveConceptIds.size(); i++) {
                     returnedConceptsCount++;
 
-                    final String inactiveConceptId = inactiveConceptIds.get(i).asText();
+                    final String inactiveConceptId = inactiveConceptIds.get(i).asString();
                     // Don't include "garbage SCTIDs", defined as concepts that contain
                     // "10002" as the
                     // 7th through 11th characters.
@@ -234,7 +234,7 @@ public class NorwayReplacementMapReportService {
 
                 }
 
-                searchAfter = doc.get("searchAfter").asText();
+                searchAfter = doc.get("searchAfter").asString();
                 // if we don't get a full page of results, we've processed the final
                 // page
                 if (returnedConceptsCount < limit) {
@@ -303,9 +303,9 @@ public class NorwayReplacementMapReportService {
                 // get total amount
                 // Get concepts returned in this call (up to 10000)
                 for (final JsonNode mapNode : doc.get("items")) {
-                    final String conceptId = mapNode.get("referencedComponentId").asText();
-                    final String module = mapNode.get("moduleId").asText();
-                    final String active = mapNode.get("active").asText();
+                    final String conceptId = mapNode.get("referencedComponentId").asString();
+                    final String module = mapNode.get("moduleId").asString();
+                    final String active = mapNode.get("active").asString();
 
                     // If the mapped concept is one of the ones recently inactivated,
                     // track it
@@ -322,17 +322,17 @@ public class NorwayReplacementMapReportService {
                         }
                         final JsonNode additionalFieldsNode = mapNode.get("additionalFields");
                         if (additionalFieldsNode != null && additionalFieldsNode.findValue("mapTarget") != null) {
-                            final String mapTarget = additionalFieldsNode.get("mapTarget").asText();
+                            final String mapTarget = additionalFieldsNode.get("mapTarget").asString();
                             if (active.equals("true")) {
                                 final Set<String> targetSet = internationalMappedConceptsAndTargetsActive.get(conceptId);
                                 if (mapTarget != null && !mapTarget.isEmpty()) {
-                                    targetSet.add(additionalFieldsNode.get("mapTarget").asText());
+                                    targetSet.add(additionalFieldsNode.get("mapTarget").asString());
                                 }
                                 internationalMappedConceptsAndTargetsActive.put(conceptId, targetSet);
                             } else if (active.equals("false")) {
                                 final Set<String> targetSet = internationalMappedConceptsAndTargetsInactive.get(conceptId);
                                 if (mapTarget != null && !mapTarget.isEmpty()) {
-                                    targetSet.add(additionalFieldsNode.get("mapTarget").asText());
+                                    targetSet.add(additionalFieldsNode.get("mapTarget").asString());
                                 }
                                 internationalMappedConceptsAndTargetsInactive.put(conceptId, targetSet);
                             } else {
@@ -348,14 +348,14 @@ public class NorwayReplacementMapReportService {
                         final JsonNode additionalFieldsNode = mapNode.get("additionalFields");
                         if (additionalFieldsNode != null && additionalFieldsNode.findValue("mapTarget") != null) {
                             // String mapTarget =
-                            // additionalFieldsNode.get("mapTarget").asText();
+                            // additionalFieldsNode.get("mapTarget").asString();
                             if (active.equals("true")) {
                                 final Set<String> targetSet = norwayMappedConceptsAndTargetsActive.get(conceptId);
-                                targetSet.add(additionalFieldsNode.get("mapTarget").asText());
+                                targetSet.add(additionalFieldsNode.get("mapTarget").asString());
                                 norwayMappedConceptsAndTargetsActive.put(conceptId, targetSet);
                             } else if (active.equals("false")) {
                                 final Set<String> targetSet = norwayMappedConceptsAndTargetsInactive.get(conceptId);
-                                targetSet.add(additionalFieldsNode.get("mapTarget").asText());
+                                targetSet.add(additionalFieldsNode.get("mapTarget").asString());
                                 norwayMappedConceptsAndTargetsInactive.put(conceptId, targetSet);
                             } else {
                                 throw new Exception("active flag neither true nor false on map for concept " + conceptId);
@@ -367,7 +367,7 @@ public class NorwayReplacementMapReportService {
                     returnedMapsCount++;
                 }
 
-                searchAfter = doc.get("searchAfter").asText();
+                searchAfter = doc.get("searchAfter").asString();
                 // if we don't get a full page of results, we've processed the final
                 // page
                 if (returnedMapsCount < limit) {
@@ -435,9 +435,9 @@ public class NorwayReplacementMapReportService {
                 // get total amount
                 // Get concepts returned in this call (up to 10000)
                 for (final JsonNode mapNode : doc.get("items")) {
-                    final String conceptId = mapNode.get("referencedComponentId").asText();
-                    final String module = mapNode.get("moduleId").asText();
-                    final String active = mapNode.get("active").asText();
+                    final String conceptId = mapNode.get("referencedComponentId").asString();
+                    final String module = mapNode.get("moduleId").asString();
+                    final String active = mapNode.get("active").asString();
 
                     // Per Norway, they are only interested in ICPC mapped concepts that
                     // also contain an ICD-10 map, so we reuse the existing list of
@@ -456,17 +456,17 @@ public class NorwayReplacementMapReportService {
                         }
                         final JsonNode additionalFieldsNode = mapNode.get("additionalFields");
                         if (additionalFieldsNode != null && additionalFieldsNode.findValue("mapTarget") != null) {
-                            String mapTarget = additionalFieldsNode.get("mapTarget").asText();
+                            String mapTarget = additionalFieldsNode.get("mapTarget").asString();
                             if (active.equals("true")) {
                                 final Set<String> targetSet = internationalMappedConceptsAndICPCTargetsActive.get(conceptId);
                                 if (mapTarget != null && !mapTarget.isEmpty()) {
-                                    targetSet.add(additionalFieldsNode.get("mapTarget").asText());
+                                    targetSet.add(additionalFieldsNode.get("mapTarget").asString());
                                 }
                                 internationalMappedConceptsAndICPCTargetsActive.put(conceptId, targetSet);
                             } else if (active.equals("false")) {
                                 final Set<String> targetSet = internationalMappedConceptsAndICPCTargetsInactive.get(conceptId);
                                 if (mapTarget != null && !mapTarget.isEmpty()) {
-                                    targetSet.add(additionalFieldsNode.get("mapTarget").asText());
+                                    targetSet.add(additionalFieldsNode.get("mapTarget").asString());
                                 }
                                 internationalMappedConceptsAndICPCTargetsInactive.put(conceptId, targetSet);
                             } else {
@@ -482,14 +482,14 @@ public class NorwayReplacementMapReportService {
                         final JsonNode additionalFieldsNode = mapNode.get("additionalFields");
                         if (additionalFieldsNode != null && additionalFieldsNode.findValue("mapTarget") != null) {
                             // String mapTarget =
-                            // additionalFieldsNode.get("mapTarget").asText();
+                            // additionalFieldsNode.get("mapTarget").asString();
                             if (active.equals("true")) {
                                 final Set<String> targetSet = norwayMappedConceptsAndICPCTargetsActive.get(conceptId);
-                                targetSet.add(additionalFieldsNode.get("mapTarget").asText());
+                                targetSet.add(additionalFieldsNode.get("mapTarget").asString());
                                 norwayMappedConceptsAndICPCTargetsActive.put(conceptId, targetSet);
                             } else if (active.equals("false")) {
                                 final Set<String> targetSet = norwayMappedConceptsAndICPCTargetsInactive.get(conceptId);
-                                targetSet.add(additionalFieldsNode.get("mapTarget").asText());
+                                targetSet.add(additionalFieldsNode.get("mapTarget").asString());
                                 norwayMappedConceptsAndICPCTargetsInactive.put(conceptId, targetSet);
                             } else {
                                 throw new Exception("active flag neither true nor false on map for concept " + conceptId);
@@ -501,7 +501,7 @@ public class NorwayReplacementMapReportService {
                     returnedMapsCount++;
                 }
 
-                searchAfter = doc.get("searchAfter").asText();
+                searchAfter = doc.get("searchAfter").asString();
                 // if we don't get a full page of results, we've processed the final
                 // page
                 if (returnedMapsCount < limit) {
@@ -565,8 +565,8 @@ public class NorwayReplacementMapReportService {
                 // get total amount
                 // Get concepts returned in this call (up to 1000)
                 for (final JsonNode conceptNode : doc.get("items")) {
-                    final String conceptId = conceptNode.get("conceptId").asText();
-                    final String inactivationIndicator = conceptNode.get("inactivationIndicator").asText().replaceAll("_", " ");
+                    final String conceptId = conceptNode.get("conceptId").asString();
+                    final String inactivationIndicator = conceptNode.get("inactivationIndicator").asString().replaceAll("_", " ");
                     conceptInactivationIndicators.put(conceptId, inactivationIndicator);
 
                     final JsonNode associationTargetsNode = conceptNode.findValue("associationTargets");
@@ -652,21 +652,21 @@ public class NorwayReplacementMapReportService {
                 // get total amount
                 // Get concepts returned in this call (up to 1000)
                 for (final JsonNode conceptNode : doc.get("items")) {
-                    final String active = conceptNode.get("active").asText();
+                    final String active = conceptNode.get("active").asString();
                     if (active.equals("false")) {
                         continue;
                     }
 
-                    final String conceptId = conceptNode.get("conceptId").asText();
-                    final String type = conceptNode.get("type").asText();
-                    final String term = conceptNode.get("term").asText();
+                    final String conceptId = conceptNode.get("conceptId").asString();
+                    final String type = conceptNode.get("type").asString();
+                    final String term = conceptNode.get("term").asString();
 
                     if (type.equals("FSN")) {
                         conceptIdToFSN.put(conceptId, term);
                         continue;
                     }
 
-                    final String lang = conceptNode.get("lang").asText();
+                    final String lang = conceptNode.get("lang").asString();
 
                     final JsonNode acceptabilityMapNode = conceptNode.findValue("acceptabilityMap");
                     if (acceptabilityMapNode == null || !acceptabilityMapNode.isEmpty()) {
@@ -676,13 +676,13 @@ public class NorwayReplacementMapReportService {
 
                     // Grab American English preferred term
                     if (lang.equals("en") && acceptabilityMapNode.findValue("900000000000509007") != null
-                        && acceptabilityMapNode.findValue("900000000000509007").asText().equals("PREFERRED")) {
+                        && acceptabilityMapNode.findValue("900000000000509007").asString().equals("PREFERRED")) {
                         conceptIdToPTEN.put(conceptId, term);
                         continue;
                     }
                     // Grab Nynorsk preferred term
                     if (lang.equals("no") && acceptabilityMapNode.findValue("61000202103") != null
-                        && acceptabilityMapNode.findValue("61000202103").asText().equals("PREFERRED")) {
+                        && acceptabilityMapNode.findValue("61000202103").asString().equals("PREFERRED")) {
                         conceptIdToPTNO.put(conceptId, term);
                         continue;
                     }

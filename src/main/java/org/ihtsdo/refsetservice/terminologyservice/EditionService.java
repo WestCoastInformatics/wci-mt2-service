@@ -200,7 +200,7 @@ public class EditionService extends BaseService {
             final JsonNode codeSystemJsonRootNode = mapper.readTree(resultString);
 
             if (codeSystemJsonRootNode.has("dependantVersionEffectiveTime")) {
-                dependentVersion = codeSystemJsonRootNode.get("dependantVersionEffectiveTime").asText();
+                dependentVersion = codeSystemJsonRootNode.get("dependantVersionEffectiveTime").asString();
             }
 
         } catch (final Exception e) {
@@ -406,7 +406,7 @@ public class EditionService extends BaseService {
                 final ObjectMapper mapper = ThreadLocalMapper.get();
                 final JsonNode root = mapper.readTree(resultString);
 
-                final String dependentModuleVersion = root.get("dependencyRelease").asText();
+                final String dependentModuleVersion = root.get("dependencyRelease").asString();
                 final String targetVersionString =
                     SnomedConstants.BRANCH_DATE_FORMAT.format(SnomedConstants.BRANCH_DATE_FORMAT_ONLY_NUMBERS.parse(dependentModuleVersion));
                 final String snomedCoreName = targetVersionString + " SNOMED CT core";
@@ -454,10 +454,10 @@ public class EditionService extends BaseService {
                     final JsonNode dependency = moduleDependencyIterator.next();
 
                     if (dependency.has("referencedComponentId")) {
-                        final String moduleConceptId = dependency.get("referencedComponentId").asText();
+                        final String moduleConceptId = dependency.get("referencedComponentId").asString();
 
                         if (SNOMEDCT_CORE_MODULE.equals(moduleConceptId)) {
-                            final String targetVersion = dependency.get("additionalFields").get("targetEffectiveTime").asText();
+                            final String targetVersion = dependency.get("additionalFields").get("targetEffectiveTime").asString();
                             final String targetVersionString =
                                 targetVersion.substring(0, 4) + "-" + targetVersion.substring(4, 6) + "-" + targetVersion.substring(6);
                             final String snomedCoreName = targetVersionString + " SNOMED CT core";
@@ -514,7 +514,7 @@ public class EditionService extends BaseService {
             final ObjectMapper mapper = ThreadLocalMapper.get();
             try {
                 final JsonNode json = mapper.readTree(snowstormErrorMessage);
-                snowstormErrorMessage = json.has("message") ? json.get("message").asText() : "";
+                snowstormErrorMessage = json.has("message") ? json.get("message").asString() : "";
             } catch (final Exception e) {
                 LOG.error("formatErrorMessage snowstormErrorMessage:{}", snowstormErrorMessage, e);
             }

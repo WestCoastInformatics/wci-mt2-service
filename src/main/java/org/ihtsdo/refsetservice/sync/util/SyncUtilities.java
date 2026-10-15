@@ -221,7 +221,7 @@ public class SyncUtilities {
                 final JsonNode module = moduleIterator.next();
 
                 if (module.get("active").asBoolean()) {
-                    editionModules.add(module.get("conceptId").asText());
+                    editionModules.add(module.get("conceptId").asString());
                 }
 
             }
@@ -293,7 +293,7 @@ public class SyncUtilities {
 
             while (defaultLanguageReferencesSetIterator.hasNext()) {
 
-                languageRefsets.add(defaultLanguageReferencesSetIterator.next().asText());
+                languageRefsets.add(defaultLanguageReferencesSetIterator.next().asString());
                 languageRefsets.add(LanguageUtility.DEFAULT_LANGUAGE_REFSET_US);
 
                 return languageRefsets;
@@ -348,8 +348,8 @@ public class SyncUtilities {
                         LOG.error("Optional language refset must have a refsetId defined: " + refset);
                     } else {
 
-                        LOG.info("Optional language refset: " + refset.get("refsetId").asText());
-                        languageRefsets.add(refset.get("refsetId").asText());
+                        LOG.info("Optional language refset: " + refset.get("refsetId").asString());
+                        languageRefsets.add(refset.get("refsetId").asString());
                     }
 
                 }
@@ -397,11 +397,11 @@ public class SyncUtilities {
                 final JsonNode branchModules = branchMetadata.get("expectedExtensionModules");
 
                 for (int i = 0; i < branchModules.size(); i++) {
-                    extendedModules.add(branchModules.get(i).asText());
+                    extendedModules.add(branchModules.get(i).asString());
                 }
 
             } else if (branchMetadata.has("defaultModuleId")) {
-                final String branchModule = branchMetadata.get("defaultModuleId").asText();
+                final String branchModule = branchMetadata.get("defaultModuleId").asString();
                 extendedModules.add(branchModule);
             }
 
@@ -421,9 +421,9 @@ public class SyncUtilities {
     public String determineEditionShortName(final JsonNode codeSystem) throws Exception {
 
         // If owner defined, return it as organization name
-        if (codeSystem.has("shortName") && !codeSystem.get("shortName").asText().trim().isBlank()) {
+        if (codeSystem.has("shortName") && !codeSystem.get("shortName").asString().trim().isBlank()) {
 
-            return codeSystem.get("shortName").asText();
+            return codeSystem.get("shortName").asString();
         }
 
         throw new Exception("Code system " + codeSystem + " doesn't have a shortName");
@@ -692,7 +692,7 @@ public class SyncUtilities {
      */
     public String identifyMaintainerType(final JsonNode codeSystem, final String editionShortName) throws Exception {
 
-        String codeSystemType = codeSystem.has("maintainerType") ? codeSystem.get("maintainerType").asText() : "";
+        String codeSystemType = codeSystem.has("maintainerType") ? codeSystem.get("maintainerType").asString() : "";
 
         // SNOMED Core Edition are blank in Snowstorm, but we treat them identically to the Managed Service maintainerType
         if (codeSystemType.isBlank()) {

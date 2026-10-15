@@ -58,7 +58,7 @@ public class SnowstormCodeSystem extends SnowstormAbstract {
                         continue;
                     }
 
-                    final String editionShortName = codeSystem.get("shortName").asText();
+                    final String editionShortName = codeSystem.get("shortName").asString();
                     final String maintainerType = syncUtilities.identifyMaintainerType(codeSystem, editionShortName);
 
                     // Skip inactive code systems
@@ -83,8 +83,8 @@ public class SnowstormCodeSystem extends SnowstormAbstract {
                         continue;
                     }
 
-                    final String editionName = codeSystem.get("name").asText();
-                    final String branch = codeSystem.get("branchPath").asText();
+                    final String editionName = codeSystem.get("name").asString();
+                    final String branch = codeSystem.get("branchPath").asString();
                     final String defaultLanguageCode = syncUtilities.identifyDefaultLanguageCode(codeSystem, editionName);
                     final Set<String> defaultLanguageRefsets = syncUtilities.identifyEditionLanguageRefsets(codeSystem, editionShortName, branch);
 

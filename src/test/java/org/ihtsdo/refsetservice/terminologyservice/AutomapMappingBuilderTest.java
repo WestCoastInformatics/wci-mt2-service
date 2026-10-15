@@ -125,9 +125,9 @@ public class AutomapMappingBuilderTest {
 
         assertEquals(0.8d, task.get("minConfidence").asDouble());
         assertEquals(2, task.get("terms").size());
-        assertEquals("Heart attack", term.get("term").asText());
-        assertEquals("SNOMEDCT", term.get("toTerminology").asText());
-        assertEquals("condition", term.get("entityType").asText());
+        assertEquals("Heart attack", term.get("term").asString());
+        assertEquals("SNOMEDCT", term.get("toTerminology").asString());
+        assertEquals("condition", term.get("entityType").asString());
         assertFalse(term.has("code"));
         assertFalse(term.has("terminology"));
     }

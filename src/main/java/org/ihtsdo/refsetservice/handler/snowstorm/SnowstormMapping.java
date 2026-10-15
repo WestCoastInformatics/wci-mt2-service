@@ -157,23 +157,23 @@ public class SnowstormMapping extends SnowstormAbstract {
 
                 // TEMPORARY - only keep ICD10NO (447562003), ICPC2NO (68101000202102)
                 // reverse ICD10NO to SNOMED (12345678901)maps, and local to SNOMED (12345678902)//
-                final String refsetId = mapSetNode.get("conceptId").asText();
+                final String refsetId = mapSetNode.get("conceptId").asString();
                 if (!(refsetId.equals("447562003") || refsetId.equals("68101000202102") || refsetId.equals("12345678901") || refsetId.equals("12345678902"))) {
                     continue;
                 }
                 // TEMPORARY//
 
                 final MapSet mapSet = new MapSet();
-                mapSet.setRefSetCode(mapSetNode.get("conceptId").asText());
-                mapSet.setModuleId(mapSetNode.get("moduleId").asText());
+                mapSet.setRefSetCode(mapSetNode.get("conceptId").asString());
+                mapSet.setModuleId(mapSetNode.get("moduleId").asString());
 
                 // Set refset name to FSN if it exists, defaulting to PT if not.
                 if (mapSetNode.has("pt")) {
-                    mapSet.setRefSetName(mapSetNode.get("pt").get("term").asText());
+                    mapSet.setRefSetName(mapSetNode.get("pt").get("term").asString());
                 }
 
                 if (mapSetNode.has("fsn") && mapSetNode.get("fsn").has("term")) {
-                    mapSet.setRefSetName(mapSetNode.get("fsn").get("term").asText());
+                    mapSet.setRefSetName(mapSetNode.get("fsn").get("term").asString());
                 }
 
                 final JsonNode additionalFields = mapSetNode.get("additionalFields");
@@ -182,7 +182,7 @@ public class SnowstormMapping extends SnowstormAbstract {
                 mapSet.setVersion(mapSet.getFromVersion());
                 // mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse(mapSet.getFromVersion()));
                 if (mapSetNode.has("effectiveTime") && !mapSetNode.get("effectiveTime").isNull()) {
-                    mapSet.setModified(new SimpleDateFormat("yyyyMMdd").parse(mapSetNode.get("effectiveTime").asText()));
+                    mapSet.setModified(new SimpleDateFormat("yyyyMMdd").parse(mapSetNode.get("effectiveTime").asString()));
                 }
 
                 mapSets.add(mapSet);
@@ -230,16 +230,16 @@ public class SnowstormMapping extends SnowstormAbstract {
             final JsonNode mapSetNode = itemIterator.next();
 
             final MapSet mapSet = new MapSet();
-            mapSet.setRefSetCode(mapSetNode.get("conceptId").asText());
-            mapSet.setModuleId(mapSetNode.get("moduleId").asText());
+            mapSet.setRefSetCode(mapSetNode.get("conceptId").asString());
+            mapSet.setModuleId(mapSetNode.get("moduleId").asString());
 
             // Set refset name to FSN if it exists, defaulting to PT if not.
             if (mapSetNode.has("pt")) {
-                mapSet.setRefSetName(mapSetNode.get("pt").get("term").asText());
+                mapSet.setRefSetName(mapSetNode.get("pt").get("term").asString());
             }
 
             if (mapSetNode.has("fsn") && mapSetNode.get("fsn").has("term")) {
-                mapSet.setRefSetName(mapSetNode.get("fsn").get("term").asText());
+                mapSet.setRefSetName(mapSetNode.get("fsn").get("term").asString());
             }
 
             final JsonNode additionalFields = mapSetNode.get("additionalFields");
@@ -248,7 +248,7 @@ public class SnowstormMapping extends SnowstormAbstract {
             mapSet.setVersion(mapSet.getFromVersion());
             // mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse(mapSet.getFromVersion()));
             if (mapSetNode.has("effectiveTime") && !mapSetNode.get("effectiveTime").isNull()) {
-                mapSet.setModified(new SimpleDateFormat("yyyyMMdd").parse(mapSetNode.get("effectiveTime").asText()));
+                mapSet.setModified(new SimpleDateFormat("yyyyMMdd").parse(mapSetNode.get("effectiveTime").asString()));
             }
 
             return mapSet;
@@ -468,7 +468,7 @@ public class SnowstormMapping extends SnowstormAbstract {
                     offset = data.get("offset").asInt();
                 }
                 if (data.has("searchAfter")) {
-                    searchAfter = data.get("searchAfter").asText();
+                    searchAfter = data.get("searchAfter").asString();
                 }
 
                 final JsonNode mappingsBatch = data.get("items");
@@ -677,12 +677,12 @@ public class SnowstormMapping extends SnowstormAbstract {
         final MapEntry mapEntry = new MapEntry();
         final boolean mapToSnomed = isMapToSnomed(mapSet, mapProject);
 
-        if (mappingNode.hasNonNull("effectiveTime") && StringUtils.isNotBlank(mappingNode.get("effectiveTime").asText())) {
-            mapEntry.setModified(new SimpleDateFormat("yyyyMMdd").parse(mappingNode.get("effectiveTime").asText()));
+        if (mappingNode.hasNonNull("effectiveTime") && StringUtils.isNotBlank(mappingNode.get("effectiveTime").asString())) {
+            mapEntry.setModified(new SimpleDateFormat("yyyyMMdd").parse(mappingNode.get("effectiveTime").asString()));
         }
-        mapEntry.setId(mappingNode.get("memberId").asText());
+        mapEntry.setId(mappingNode.get("memberId").asString());
         mapEntry.setReleased(mappingNode.get("released").asBoolean());
-        mapEntry.setModuleId(mappingNode.get("moduleId").asText());
+        mapEntry.setModuleId(mappingNode.get("moduleId").asString());
 
         final JsonNode additionalFields = mappingNode.get("additionalFields");
 
@@ -694,7 +694,7 @@ public class SnowstormMapping extends SnowstormAbstract {
             mapEntry.setRelation("");
             mapEntry.setRelationCode("");
             mapEntry.setToName("");
-            mapEntry.setToCode(mappingNode.hasNonNull("referencedComponentId") ? mappingNode.get("referencedComponentId").asText() : "");
+            mapEntry.setToCode(mappingNode.hasNonNull("referencedComponentId") ? mappingNode.get("referencedComponentId").asString() : "");
         } else if (additionalFields == null || additionalFields.isNull() || additionalFields.isEmpty()) {
             mapEntry.setRule("");
             mapEntry.setPriority(1);
@@ -705,12 +705,12 @@ public class SnowstormMapping extends SnowstormAbstract {
             mapEntry.setToCode("");
             mapEntry.setToName("");
         } else {
-            mapEntry.setRule(additionalFields.get("mapRule").asText());
+            mapEntry.setRule(additionalFields.get("mapRule").asString());
             mapEntry.setPriority(additionalFields.get("mapPriority").asInt());
             mapEntry.setGroup(additionalFields.get("mapGroup").asInt());
 
             final Set<String> advices = new HashSet<>();
-            final String mapAdviceString = additionalFields.get("mapAdvice").asText();
+            final String mapAdviceString = additionalFields.get("mapAdvice").asString();
             // Store each pipe-delimited section of the map advice string as a
             // separate map advice
             for (final String mapAdvice : mapAdviceString.split("\\|")) {
@@ -719,14 +719,14 @@ public class SnowstormMapping extends SnowstormAbstract {
             mapEntry.setAdvices(advices);
 
             if (additionalFields.hasNonNull("mapCategoryId")) {
-                mapEntry.setRelationCode(additionalFields.get("mapCategoryId").asText());
+                mapEntry.setRelationCode(additionalFields.get("mapCategoryId").asString());
             } else {
                 mapEntry.setRelationCode("");
             }
             mapEntry.setRelation("");
 
             if (additionalFields.hasNonNull("mapTarget")) {
-                mapEntry.setToCode(additionalFields.get("mapTarget").asText());
+                mapEntry.setToCode(additionalFields.get("mapTarget").asString());
             } else {
                 mapEntry.setToCode("");
             }
@@ -943,11 +943,11 @@ public class SnowstormMapping extends SnowstormAbstract {
             if (conceptNodeBatch != null && conceptNodeBatch.isArray()) {
                 for (final JsonNode conceptNode : conceptNodeBatch) {
                     if (conceptNode.isTextual()) {
-                        conceptIds.add(conceptNode.asText());
+                        conceptIds.add(conceptNode.asString());
                     } else if (conceptNode.hasNonNull("id")) {
-                        conceptIds.add(conceptNode.get("id").asText());
+                        conceptIds.add(conceptNode.get("id").asString());
                     } else if (conceptNode.hasNonNull("conceptId")) {
-                        conceptIds.add(conceptNode.get("conceptId").asText());
+                        conceptIds.add(conceptNode.get("conceptId").asString());
                     }
                 }
             }
@@ -959,7 +959,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
             String nextSearchAfter = null;
             if (data.has("searchAfter") && !data.get("searchAfter").isNull()) {
-                nextSearchAfter = data.get("searchAfter").asText();
+                nextSearchAfter = data.get("searchAfter").asString();
             }
 
             LOG.info("fetchConceptSearchPageBatch {}ms ids={} total={}", System.currentTimeMillis() - batchStartMs, conceptIds.size(), total);
@@ -1191,7 +1191,7 @@ public class SnowstormMapping extends SnowstormAbstract {
             if (items != null && items.isArray()) {
                 for (final JsonNode item : items) {
                     if (item != null && item.hasNonNull("referencedComponentId")) {
-                        referencedComponentIds.add(item.get("referencedComponentId").asText());
+                        referencedComponentIds.add(item.get("referencedComponentId").asString());
                     }
                 }
             }
@@ -1438,10 +1438,10 @@ public class SnowstormMapping extends SnowstormAbstract {
                 final Iterator<JsonNode> itemIterator = conceptNodeBatch.iterator();
                 while (itemIterator.hasNext()) {
                     final JsonNode conceptNode = itemIterator.next();
-                    conceptCodes.add(conceptNode.asText());
+                    conceptCodes.add(conceptNode.asString());
                 }
                 if (data.has("searchAfter")) {
-                    searchAfter = data.get("searchAfter").asText();
+                    searchAfter = data.get("searchAfter").asString();
                 } else {
                     done = true;
                 }
@@ -1507,17 +1507,17 @@ public class SnowstormMapping extends SnowstormAbstract {
                 while (itemIterator.hasNext()) {
                     final JsonNode conceptNode = itemIterator.next();
                     if (conceptNode.isTextual()) {
-                        conceptCodes.add(conceptNode.asText());
+                        conceptCodes.add(conceptNode.asString());
                     } else if (conceptNode.hasNonNull("id")) {
-                        conceptCodes.add(conceptNode.get("id").asText());
+                        conceptCodes.add(conceptNode.get("id").asString());
                     } else if (conceptNode.hasNonNull("conceptId")) {
-                        conceptCodes.add(conceptNode.get("conceptId").asText());
+                        conceptCodes.add(conceptNode.get("conceptId").asString());
                     }
                 }
 
                 String nextSearchAfter = null;
                 if (data.has("searchAfter") && !data.get("searchAfter").isNull()) {
-                    nextSearchAfter = data.get("searchAfter").asText();
+                    nextSearchAfter = data.get("searchAfter").asString();
                 }
                 if (conceptNodeBatch.size() < 5000 || StringUtils.isBlank(nextSearchAfter) || nextSearchAfter.equals(searchAfter)) {
                     done = true;
@@ -1582,7 +1582,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
                 for (final JsonNode item : items) {
                     if (item != null && item.hasNonNull("referencedComponentId")) {
-                        referencedComponentIds.add(item.get("referencedComponentId").asText());
+                        referencedComponentIds.add(item.get("referencedComponentId").asString());
                     }
                 }
 
@@ -1639,7 +1639,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
             String nextSearchAfter = null;
             if (data.hasNonNull("searchAfter")) {
-                nextSearchAfter = data.get("searchAfter").asText();
+                nextSearchAfter = data.get("searchAfter").asString();
             }
 
             final Iterator<JsonNode> itemIterator = mappingsBatch.iterator();
@@ -1664,7 +1664,7 @@ public class SnowstormMapping extends SnowstormAbstract {
                     mapping.setMapEntries(new ArrayList<>());
                 }
 
-                final String memberId = mappingNode.hasNonNull("memberId") ? mappingNode.get("memberId").asText() : null;
+                final String memberId = mappingNode.hasNonNull("memberId") ? mappingNode.get("memberId").asString() : null;
                 if (StringUtils.isNotBlank(memberId) && !seenMemberIds.add(memberId)) {
                     continue;
                 }
@@ -2508,11 +2508,11 @@ public class SnowstormMapping extends SnowstormAbstract {
         if (mapToSnomed) {
             final JsonNode additionalFields = mappingNode.get("additionalFields");
             if (additionalFields != null && additionalFields.hasNonNull("mapSource")) {
-                return additionalFields.get("mapSource").asText();
+                return additionalFields.get("mapSource").asString();
             }
             return "";
         }
-        return mappingNode.hasNonNull("referencedComponentId") ? mappingNode.get("referencedComponentId").asText() : "";
+        return mappingNode.hasNonNull("referencedComponentId") ? mappingNode.get("referencedComponentId").asString() : "";
     }
 
     /**

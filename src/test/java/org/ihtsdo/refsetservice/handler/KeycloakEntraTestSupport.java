@@ -232,10 +232,10 @@ public final class KeycloakEntraTestSupport {
     private static String requireTokenField(final JsonNode root, final String field) {
 
         final JsonNode node = root.get(field);
-        if (node == null || node.isNull() || node.asText().isBlank()) {
+        if (node == null || node.isNull() || node.asString().isBlank()) {
             throw new IllegalStateException("Keycloak token response missing " + field);
         }
-        return node.asText();
+        return node.asString();
     }
 
     /**

@@ -92,10 +92,10 @@ public class NorwayReplacementTranslationReportService {
             doc = client.getJson("/codesystems?forBranch=MAIN%2FSNOMEDCT-NO%2FREFSETS");
 
             for (final JsonNode node : doc.get("items")) {
-                currentBranch = node.get("branchPath").asText();
+                currentBranch = node.get("branchPath").asString();
 
                 final JsonNode latestVersionNode = node.get("latestVersion");
-                previousVersionBranch = latestVersionNode.get("branchPath").asText();
+                previousVersionBranch = latestVersionNode.get("branchPath").asString();
 
                 // We're only interested in the first node
                 break;
@@ -127,7 +127,7 @@ public class NorwayReplacementTranslationReportService {
                 final JsonNode conceptIds = doc.get("items");
 
                 for (int i = 0; i < conceptIds.size(); i++) {
-                    String activeConceptId = conceptIds.get(i).asText();
+                    String activeConceptId = conceptIds.get(i).asString();
                     if (allLangRefsetsConceptIds.contains(activeConceptId)) {
                         activeInPreviousBranchScopeConcepts.add(activeConceptId);
                     }
@@ -135,7 +135,7 @@ public class NorwayReplacementTranslationReportService {
                     returnedConceptsCount++;
                 }
 
-                searchAfter = doc.get("searchAfter").asText();
+                searchAfter = doc.get("searchAfter").asString();
                 // if we don't get a full page of results, we've processed the final page
                 if (returnedConceptsCount < limit) {
                     break;
@@ -160,7 +160,7 @@ public class NorwayReplacementTranslationReportService {
                 for (int i = 0; i < inactiveConceptIds.size(); i++) {
                     returnedConceptsCount++;
 
-                    String inactiveConceptId = inactiveConceptIds.get(i).asText();
+                    String inactiveConceptId = inactiveConceptIds.get(i).asString();
                     // Don't include "garbage SCTIDs", defined as concepts that contain "10002" as the
                     // 7th through 11th characters.
                     // E.g. "1217661000202103"
@@ -182,7 +182,7 @@ public class NorwayReplacementTranslationReportService {
 
                 }
 
-                searchAfter = doc.get("searchAfter").asText();
+                searchAfter = doc.get("searchAfter").asString();
                 // if we don't get a full page of results, we've processed the final page
                 if (returnedConceptsCount < limit) {
                     break;
@@ -226,8 +226,8 @@ public class NorwayReplacementTranslationReportService {
                 // get total amount
                 // Get concepts returned in this call (up to 1000)
                 for (final JsonNode conceptNode : doc.get("items")) {
-                    String conceptId = conceptNode.get("conceptId").asText();
-                    String inactivationIndicator = conceptNode.get("inactivationIndicator").asText().replaceAll("_", " ");
+                    String conceptId = conceptNode.get("conceptId").asString();
+                    String inactivationIndicator = conceptNode.get("inactivationIndicator").asString().replaceAll("_", " ");
                     conceptInactivationIndicators.put(conceptId, inactivationIndicator);
 
                     JsonNode associationTargetsNode = conceptNode.findValue("associationTargets");
@@ -297,21 +297,21 @@ public class NorwayReplacementTranslationReportService {
                 // get total amount
                 // Get concepts returned in this call (up to 1000)
                 for (final JsonNode conceptNode : doc.get("items")) {
-                    String active = conceptNode.get("active").asText();
+                    String active = conceptNode.get("active").asString();
                     if (active.equals("false")) {
                         continue;
                     }
 
-                    String conceptId = conceptNode.get("conceptId").asText();
-                    String type = conceptNode.get("type").asText();
-                    String term = conceptNode.get("term").asText();
+                    String conceptId = conceptNode.get("conceptId").asString();
+                    String type = conceptNode.get("type").asString();
+                    String term = conceptNode.get("term").asString();
 
                     if (type.equals("FSN")) {
                         conceptIdToFSN.put(conceptId, term);
                         continue;
                     }
 
-                    String lang = conceptNode.get("lang").asText();
+                    String lang = conceptNode.get("lang").asString();
 
                     JsonNode acceptabilityMapNode = conceptNode.findValue("acceptabilityMap");
                     if (acceptabilityMapNode == null || !acceptabilityMapNode.isEmpty()) {
@@ -321,13 +321,13 @@ public class NorwayReplacementTranslationReportService {
 
                     // Grab American English preferred term
                     if (lang.equals("en") && acceptabilityMapNode.findValue("900000000000509007") != null
-                        && acceptabilityMapNode.findValue("900000000000509007").asText().equals("PREFERRED")) {
+                        && acceptabilityMapNode.findValue("900000000000509007").asString().equals("PREFERRED")) {
                         conceptIdToPTEN.put(conceptId, term);
                         continue;
                     }
                     // Grab Nynorsk preferred term
                     if (lang.equals("no") && acceptabilityMapNode.findValue("61000202103") != null
-                        && acceptabilityMapNode.findValue("61000202103").asText().equals("PREFERRED")) {
+                        && acceptabilityMapNode.findValue("61000202103").asString().equals("PREFERRED")) {
                         conceptIdToPTNO.put(conceptId, term);
                         continue;
                     }
@@ -422,12 +422,12 @@ public class NorwayReplacementTranslationReportService {
             for (final JsonNode conceptNode : doc.get("items")) {
                 final JsonNode referencedComponentNode = conceptNode.get("referencedComponent");
                 if (referencedComponentNode != null) {
-                    langRefsetsConceptIds.add(referencedComponentNode.get("conceptId").asText());
+                    langRefsetsConceptIds.add(referencedComponentNode.get("conceptId").asString());
                     returnedConceptsCount++;
                 }
             }
 
-            searchAfter = doc.get("searchAfter").asText();
+            searchAfter = doc.get("searchAfter").asString();
             // if we don't get a full page of results, we've processed the final page
             if (returnedConceptsCount < limit) {
                 break;

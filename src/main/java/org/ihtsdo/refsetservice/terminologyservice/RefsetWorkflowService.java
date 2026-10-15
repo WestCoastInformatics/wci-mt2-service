@@ -861,7 +861,7 @@ public final class RefsetWorkflowService {
             final JsonNode conceptNode = root;
 
             if (conceptNode.has("conceptId")) {
-                refsetConceptId = conceptNode.get("conceptId").asText();
+                refsetConceptId = conceptNode.get("conceptId").asString();
             }
 
             BranchService.deleteBranch(tempBranchPath);
@@ -1209,7 +1209,7 @@ public final class RefsetWorkflowService {
             final ObjectMapper mapper = ThreadLocalMapper.get();
             try {
                 final JsonNode json = mapper.readTree(snowstormErrorMessage);
-                snowstormErrorMessage = json.has("message") ? json.get("message").asText() : "";
+                snowstormErrorMessage = json.has("message") ? json.get("message").asString() : "";
             } catch (final Exception e) {
                 LOG.error("formatErrorMessage snowstormErrorMessage:{}", snowstormErrorMessage, e);
             }

@@ -169,8 +169,8 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
         // For helping later, identify each code system's country code from the term server's filtered code systems
         for (JsonNode codeSystem : filteredCodeSystems) {
-            final String shortName = codeSystem.get("shortName").asText();
-            final String countryCode = codeSystem.has("countryCode") ? codeSystem.get("countryCode").asText() : "";
+            final String shortName = codeSystem.get("shortName").asString();
+            final String countryCode = codeSystem.has("countryCode") ? codeSystem.get("countryCode").asString() : "";
 
             shortNameToCountryCodeMap.put(shortName, countryCode);
             termserverShortNameCodeSystemMap.put(shortName, codeSystem);
@@ -203,7 +203,7 @@ public class SyncCodeSystemAgent extends SyncAgent {
                     // Error in processing edition. Must remove it from filteredList
                     updatedFilteredCodeSystems.clear();
                     updatedFilteredCodeSystems
-                        .addAll(filteredCodeSystems.stream().filter(cs -> !cs.get("shortName").asText().equals(shortName)).collect(Collectors.toList()));
+                        .addAll(filteredCodeSystems.stream().filter(cs -> !cs.get("shortName").asString().equals(shortName)).collect(Collectors.toList()));
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -500,8 +500,8 @@ public class SyncCodeSystemAgent extends SyncAgent {
 
                 // Find values for Snowstorm Edition
                 final JsonNode codeSystem = termserverShortNameCodeSystemMap.get(shortName);
-                String snowStormEditionName = codeSystem.has("name") ? codeSystem.get("name").asText() : "";
-                final String snowStormBranch = codeSystem.has("branchPath") ? codeSystem.get("branchPath").asText() : "";
+                String snowStormEditionName = codeSystem.has("name") ? codeSystem.get("name").asString() : "";
+                final String snowStormBranch = codeSystem.has("branchPath") ? codeSystem.get("branchPath").asString() : "";
                 final String snowStormMaintainerType = getUtilities().identifyMaintainerType(codeSystem, snowStormEditionName);
                 final Set<String> snowStormEditionModules = SyncUtilities.determineExtendedModules(snowStormBranch);
 

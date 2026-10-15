@@ -69,7 +69,7 @@ public final class SnowstormBranch extends SnowstormAbstract {
             final JsonNode rootNode = root;
 
             if (rootNode.has("path")) {
-                refsetBranchPath = rootNode.get("path").asText();
+                refsetBranchPath = rootNode.get("path").asString();
             }
 
             LOG.info("Created branch " + refsetBranchPath + ". Time: " + (System.currentTimeMillis() - start));
@@ -170,7 +170,7 @@ public final class SnowstormBranch extends SnowstormAbstract {
             if (iterator.hasNext()) {
 
                 final JsonNode childNode = iterator.next();
-                childBranchPaths.add(childNode.get("path").asText());
+                childBranchPaths.add(childNode.get("path").asString());
             }
         }
 
@@ -228,13 +228,13 @@ public final class SnowstormBranch extends SnowstormAbstract {
 
                     final String resultString = SnowstormConnection.readEntityAsString(mergeInfoResponse);
                     final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
-                    final String status = root.get("status").asText();
+                    final String status = root.get("status").asString();
 
                     LOG.info("Merge status is: " + status);
 
                     if (status.equals("FAILED")) {
 
-                        final String message = root.get("message").asText();
+                        final String message = root.get("message").asString();
                         jobDone = true;
 
                         if (!message.contains("is not meaningful")) {
@@ -288,7 +288,7 @@ public final class SnowstormBranch extends SnowstormAbstract {
 
                                     final String stateResultString = SnowstormConnection.readEntityAsString(stateResponse);
                                     final JsonNode stateRoot = ThreadLocalMapper.get().readTree(stateResultString);
-                                    final String state = stateRoot.get("state").asText();
+                                    final String state = stateRoot.get("state").asString();
 
                                     LOG.info("Promoted branch state is: " + state);
 
@@ -363,7 +363,7 @@ public final class SnowstormBranch extends SnowstormAbstract {
 
                 final String resultString = SnowstormConnection.readEntityAsString(response);
                 final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
-                final String status = root.get("status").asText();
+                final String status = root.get("status").asString();
                 LOG.debug("merge review status: " + status);
 
                 if (status.equalsIgnoreCase("PENDING")) {
@@ -378,7 +378,7 @@ public final class SnowstormBranch extends SnowstormAbstract {
 
                 } else if (status.equalsIgnoreCase("failed")) {
 
-                    error += "Job failed with: " + root.get("message").asText();
+                    error += "Job failed with: " + root.get("message").asString();
                     LOG.error(error);
                     throw new Exception(error);
 
@@ -430,7 +430,7 @@ public final class SnowstormBranch extends SnowstormAbstract {
             while (branchIterator.hasNext()) {
 
                 final JsonNode child = branchIterator.next();
-                final String childBranch = child.get("path").asText();
+                final String childBranch = child.get("path").asString();
                 String childDate = childBranch.replace(editionPath, "");
 
                 if (childDate.startsWith("/")) {

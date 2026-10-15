@@ -137,7 +137,7 @@ public class SnowstormMultiSearch extends SnowstormAbstract {
                 final JsonNode itemsNode = root.get("items");
                 if (itemsNode.isArray()) {
                     for (final JsonNode itemNode : itemsNode) {
-                        conceptIds.add(itemNode.get("concept").get("conceptId").asText());
+                        conceptIds.add(itemNode.get("concept").get("conceptId").asString());
                     }
                 }
             }

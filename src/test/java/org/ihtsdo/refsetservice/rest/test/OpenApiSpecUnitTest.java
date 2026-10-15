@@ -46,7 +46,7 @@ public class OpenApiSpecUnitTest extends BaseTest {
         final String json = mvc.perform(get("/v3/api-docs")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         final JsonNode root = new JsonMapper().readTree(json);
 
-        assertTrue(root.path("openapi").asText().startsWith("3."), "openapi version");
+        assertTrue(root.path("openapi").asString().startsWith("3."), "openapi version");
         assertTrue(root.path("paths").size() > 0, "paths present");
         assertFalse(root.at("/components/securitySchemes/bearerAuth").isMissingNode(), "bearerAuth scheme");
 

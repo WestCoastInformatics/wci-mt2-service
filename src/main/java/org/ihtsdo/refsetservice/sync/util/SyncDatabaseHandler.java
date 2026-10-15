@@ -142,9 +142,9 @@ public class SyncDatabaseHandler {
     public Edition addEdition(final TerminologyService service, final JsonNode codeSystem, final String organizationName) throws Exception {
 
         // These have already been defined, so assume, don't check letting error handling play out instead
-        final String shortName = codeSystem.get("shortName").asText();
-        final String editionName = codeSystem.get("name").asText();
-        final String branch = codeSystem.get("branchPath").asText();
+        final String shortName = codeSystem.get("shortName").asString();
+        final String editionName = codeSystem.get("name").asString();
+        final String branch = codeSystem.get("branchPath").asString();
         final String maintainerType = utilities.identifyMaintainerType(codeSystem, shortName);
 
         // Identify Matching Organization
