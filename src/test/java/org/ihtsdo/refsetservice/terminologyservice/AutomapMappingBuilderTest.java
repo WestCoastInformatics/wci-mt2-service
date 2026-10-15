@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Automap result shaping. These tests do not call Snowstorm or the automap service.
@@ -163,7 +163,7 @@ public class AutomapMappingBuilderTest {
         assertEquals(List.of("22298006", "73211009"), AutomapMappingBuilder.distinctCodes(List.of(" 22298006 ", "", "22298006", "73211009")));
 
         final ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> AutomapService.resolveMinConfidence(1.5d));
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
     }
 
     @Test

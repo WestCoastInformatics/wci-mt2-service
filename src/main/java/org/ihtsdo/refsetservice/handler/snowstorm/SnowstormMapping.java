@@ -1205,7 +1205,7 @@ public class SnowstormMapping extends SnowstormAbstract {
      * wildcards when the filter looks like a target code; otherwise they are stripped.
      *
      * @param branch the branch
-     * @param mapSetCode the map set code
+     * @param mapSet the map set
      * @param trimmedFilter the trimmed filter
      * @return distinct concept ids in stable encounter order
      * @throws Exception the exception
@@ -1622,8 +1622,9 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         // Grab the specified mapSet (from Snowstorm for refset metadata; from DB for terminology/version)
         final MapSet mapSet = getMapSet(branch, mapSetCode);
-        final MapSet mapSetForConcept = (dbMapSet != null && StringUtils.isNotBlank(dbMapSet.getFromTerminology()) && StringUtils.isNotBlank(dbMapSet.getFromVersion()))
-            ? dbMapSet : mapSet;
+        final MapSet mapSetForConcept =
+            (dbMapSet != null && StringUtils.isNotBlank(dbMapSet.getFromTerminology()) && StringUtils.isNotBlank(dbMapSet.getFromVersion())) ? dbMapSet
+                : mapSet;
         final boolean mapToSnomed = isMapToSnomed(mapSetForConcept, null);
         final Mapping mapping = new Mapping();
 
@@ -1656,7 +1657,8 @@ public class SnowstormMapping extends SnowstormAbstract {
                     final String sourceCode = memberSourceCode(mappingNode, mapToSnomed);
                     mapping.setCode(StringUtils.isNotBlank(sourceCode) ? sourceCode : conceptCode);
                     if (StringUtils.isBlank(mapSetForConcept.getFromTerminology()) || StringUtils.isBlank(mapSetForConcept.getFromVersion())) {
-                        throw new LocalException("MapSet from database with fromTerminology and fromVersion is required for getMapping. mapSetCode: " + mapSetCode);
+                        throw new LocalException(
+                            "MapSet from database with fromTerminology and fromVersion is required for getMapping. mapSetCode: " + mapSetCode);
                     }
                     mapping.setMapSetId(mapSet.getId());
                     mapping.setMapEntries(new ArrayList<>());

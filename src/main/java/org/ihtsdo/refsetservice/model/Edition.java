@@ -460,6 +460,9 @@ public class Edition extends AbstractHasModified {
     /**
      * Preferred term (FSN) of the language refset concept. Clients that need {@code SCTID | term} can join
      * {@code languageRefset} to this with {@code " | "}.
+     *
+     * @param qualifiedLanguageList the qualified language list
+     * @param branchPath the branch path
      */
     private static void addLanguageTermDescriptions(final List<Map<String, String>> qualifiedLanguageList, final String branchPath) {
 

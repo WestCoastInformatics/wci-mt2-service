@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -221,7 +222,7 @@ public final class LanguageUtility {
             if (conceptDescriptions != null && conceptDescriptions.isArray()) {
                 for (final JsonNode description : conceptDescriptions) {
                     if (description.path("active").asBoolean(true) && description.has("term")) {
-                        allTerms.add(description.get("term").asText());
+                        allTerms.add(description.get("term").asString());
                     }
                 }
             }
@@ -508,11 +509,11 @@ public final class LanguageUtility {
             if (!d.path("active").asBoolean(true) || !d.has("term")) {
                 continue;
             }
-            if (DESCRIPTION_TYPE_FSN.equals(d.path("typeId").asText(""))) {
-                return d.get("term").asText();
+            if (DESCRIPTION_TYPE_FSN.equals(d.path("typeId").asString(""))) {
+                return d.get("term").asString();
             }
             if (anyTerm == null) {
-                anyTerm = d.get("term").asText();
+                anyTerm = d.get("term").asString();
             }
         }
         return anyTerm;
@@ -762,9 +763,9 @@ public final class LanguageUtility {
             }
             String dialectName = null;
             if (entry.has("dialectName") && !entry.get("dialectName").isNull()) {
-                dialectName = entry.get("dialectName").asText();
+                dialectName = entry.get("dialectName").asString();
             }
-            final java.util.Iterator<Map.Entry<String, JsonNode>> fields = entry.fields();
+            final Iterator<Map.Entry<String, JsonNode>> fields = entry.properties().iterator();
             while (fields.hasNext()) {
                 final Map.Entry<String, JsonNode> field = fields.next();
                 final String fieldName = field.getKey();
@@ -772,10 +773,10 @@ public final class LanguageUtility {
                     continue;
                 }
                 final JsonNode value = field.getValue();
-                if (value == null || !value.isTextual()) {
+                if (value == null || !value.isString()) {
                     continue;
                 }
-                final String refsetId = value.asText();
+                final String refsetId = value.asString();
                 if (refsetId == null || refsetId.isEmpty()) {
                     continue;
                 }
@@ -796,7 +797,7 @@ public final class LanguageUtility {
      */
     private static void parseRequiredLanguageRefsetFlatKeys(final JsonNode metadata, final Map<String, Map<String, String>> result) {
 
-        final java.util.Iterator<Map.Entry<String, JsonNode>> fields = metadata.fields();
+        final Iterator<Map.Entry<String, JsonNode>> fields = metadata.properties().iterator();
         while (fields.hasNext()) {
             final Map.Entry<String, JsonNode> field = fields.next();
             final String fieldName = field.getKey();
@@ -804,10 +805,10 @@ public final class LanguageUtility {
                 continue;
             }
             final JsonNode value = field.getValue();
-            if (value == null || !value.isTextual()) {
+            if (value == null || !value.isString()) {
                 continue;
             }
-            final String refsetId = value.asText();
+            final String refsetId = value.asString();
             if (refsetId == null || refsetId.isEmpty()) {
                 continue;
             }
@@ -833,19 +834,19 @@ public final class LanguageUtility {
                 LOG.error("Optional language refset must have a refsetId defined: {}", refset);
                 continue;
             }
-            final String refsetId = refset.get("refsetId").asText();
+            final String refsetId = refset.get("refsetId").asString();
             if (refsetId == null || refsetId.isEmpty()) {
                 continue;
             }
             final Map<String, String> meta = result.computeIfAbsent(refsetId, k -> new HashMap<>());
             if (refset.has("label") && !refset.get("label").isNull()) {
-                meta.put(META_LABEL, refset.get("label").asText());
+                meta.put(META_LABEL, refset.get("label").asString());
             }
             if (refset.has("key") && !refset.get("key").isNull()) {
-                meta.put(META_KEY, refset.get("key").asText());
+                meta.put(META_KEY, refset.get("key").asString());
             }
             if (refset.has("language") && !refset.get("language").isNull()) {
-                meta.put(META_LANGUAGE, refset.get("language").asText());
+                meta.put(META_LANGUAGE, refset.get("language").asString());
             }
         }
     }

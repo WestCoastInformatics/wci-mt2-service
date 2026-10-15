@@ -1382,6 +1382,9 @@ public final class RefsetMemberService {
     /**
      * Same short label as previously sent as {@code languageDialectTermType}: dialect plus {@code (PT)} or {@code (FSN)} from
      * {@code qualifiedLanguageRefset}.
+     *
+     * @param languageMap the language map
+     * @return the dialect term type label, or null when dialect is missing
      */
     private static String languageDialectTermTypeLabel(final Map<String, String> languageMap) {
 

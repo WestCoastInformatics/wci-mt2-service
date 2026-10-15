@@ -8,8 +8,8 @@ import java.util.Map;
 import org.ihtsdo.refsetservice.util.LanguageUtility;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Branch language-refset metadata used for fullyQualifiedLanguageRefsets.languageLabel.

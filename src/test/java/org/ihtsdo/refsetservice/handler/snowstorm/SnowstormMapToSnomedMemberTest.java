@@ -17,9 +17,10 @@ import org.ihtsdo.refsetservice.util.LocalException;
 import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.hibernate5.Hibernate5Module;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.datatype.hibernate7.Hibernate7Module;
 
 /**
  * Member JSON for maps to SNOMED CT (1193543008 |Simple map with correlation to SNOMED CT type reference set|).
@@ -87,7 +88,7 @@ public class SnowstormMapToSnomedMemberTest {
 
         final String json = SnowstormMapping.mapToSnomedMemberJson("999", "A01", mapEntry("22298006"), "51000202101");
         final JsonNode member = ThreadLocalMapper.get().readTree(json);
-        ((com.fasterxml.jackson.databind.node.ObjectNode) member).put("released", false);
+        ((ObjectNode) member).put("released", false);
 
         final MapEntry loaded = SnowstormMapping.convertSnowstormMemberToMapEntry(member, mapToSnomedSet(), null, null);
 
@@ -165,8 +166,7 @@ public class SnowstormMapToSnomedMemberTest {
         assertTrue(blank.getDescriptions().isEmpty());
         assertTrue(mapping.getDescriptions().isEmpty());
 
-        final ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new Hibernate5Module());
+        final JsonMapper mapper = hibernateObjectMapper();
         final JsonNode node = mapper.readTree(mapper.writeValueAsString(mapping));
         assertFalse(node.has("descriptions"));
         final JsonNode entries = node.get("mapEntries");
@@ -197,12 +197,16 @@ public class SnowstormMapToSnomedMemberTest {
         assertEquals("10017004", target.getDescriptions().get(0).getConceptId());
         assertTrue(blank.getDescriptions().isEmpty());
 
-        final ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new Hibernate5Module());
+        final JsonMapper mapper = hibernateObjectMapper();
         final JsonNode node = mapper.readTree(mapper.writeValueAsString(mapping));
         assertEquals("Tannattrisjon", node.get("descriptions").get(0).get("term").asText());
         assertEquals("Occlusal wear of teeth", node.get("mapEntries").get(0).get("descriptions").get(0).get("term").asText());
         assertFalse(node.get("mapEntries").get(1).has("descriptions"));
+    }
+
+    private static JsonMapper hibernateObjectMapper() {
+
+        return JsonMapper.builder().addModule(new Hibernate7Module()).build();
     }
 
     private static MapSet mapToSnomedSet() {

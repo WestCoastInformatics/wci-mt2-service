@@ -14,8 +14,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status.Family;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status.Family;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormConcept;
@@ -37,9 +37,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Generates map records from the automap service and saves them.

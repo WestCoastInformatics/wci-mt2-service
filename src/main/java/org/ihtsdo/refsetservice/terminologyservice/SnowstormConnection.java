@@ -79,13 +79,13 @@ public final class SnowstormConnection {
         HttpClient.newBuilder().connectTimeout(Duration.ofMinutes(2)).followRedirects(HttpClient.Redirect.NORMAL).build();
 
     /** Has connection to Snowstorm. */
-    private static boolean HAS_CONNECTION = false;
+    private static boolean hasConnectionFlag = false;
 
     /** The Constant CHECK_CONNECTION_INTERVAL. */
     private static final int CHECK_CONNECTION_INTERVAL = 60;
 
     /** The last connection check. */
-    private static LocalDateTime LAST_CONNECTION_CHECK = LocalDateTime.now().minusSeconds(2 * CHECK_CONNECTION_INTERVAL);
+    private static LocalDateTime lastConnectionCheck = LocalDateTime.now().minusSeconds(2 * CHECK_CONNECTION_INTERVAL);
 
 
     /**
@@ -145,11 +145,11 @@ public final class SnowstormConnection {
      */
     private static boolean hasConnection() {
 
-        if (LocalDateTime.now().minusSeconds(CHECK_CONNECTION_INTERVAL).isAfter(LAST_CONNECTION_CHECK)) {
-            HAS_CONNECTION = getConnection();
-            LAST_CONNECTION_CHECK = LocalDateTime.now();
+        if (LocalDateTime.now().minusSeconds(CHECK_CONNECTION_INTERVAL).isAfter(lastConnectionCheck)) {
+            hasConnectionFlag = getConnection();
+            lastConnectionCheck = LocalDateTime.now();
         }
-        return HAS_CONNECTION;
+        return hasConnectionFlag;
     }
 
     /**

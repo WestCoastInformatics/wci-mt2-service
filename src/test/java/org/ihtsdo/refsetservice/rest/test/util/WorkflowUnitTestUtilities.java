@@ -241,8 +241,9 @@ public class WorkflowUnitTestUtilities {
 
         final MvcResult result = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
         final String content = result.getResponse().getContentAsString();
-        final ResultList<RefsetWorkflowHistory> resultList = ThreadLocalMapper.get().readValue(content, (new TypeReference<ResultList<RefsetWorkflowHistory>>() {
-        }));
+        final ResultList<RefsetWorkflowHistory> resultList =
+            ThreadLocalMapper.get().readValue(content, (new TypeReference<ResultList<RefsetWorkflowHistory>>() {
+            }));
         assertThat(resultList).isNotNull();
 
         return resultList.getItems();

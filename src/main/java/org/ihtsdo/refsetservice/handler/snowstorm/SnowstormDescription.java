@@ -358,7 +358,7 @@ public class SnowstormDescription extends SnowstormAbstract {
 
             final JsonNode acceptabilityMap = descriptionNode.get(Description.Field.ACCEPTABILITY_MAP.getValue());
             if (acceptabilityMap != null && acceptabilityMap.isObject() && acceptabilityMap.size() > 0) {
-                final Iterator<String> languageRefsetIds = acceptabilityMap.fieldNames();
+                final Iterator<String> languageRefsetIds = acceptabilityMap.propertyNames().iterator();
                 while (languageRefsetIds.hasNext()) {
                     final String languageRefsetId = languageRefsetIds.next();
                     descriptions.add(toDescription(descriptionNode, languageRefsetId, acceptabilityMap.get(languageRefsetId).asText()));
