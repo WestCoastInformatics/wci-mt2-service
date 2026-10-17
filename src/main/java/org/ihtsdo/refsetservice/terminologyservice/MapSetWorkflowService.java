@@ -343,19 +343,7 @@ public final class MapSetWorkflowService {
             mapSet.setFromVersion(publicationDateString);
             mapSet.setInternationalContentVersion(EditionService.getDependencyModuleNameFromBranchMetadata(mapSet.getEditionShortName(), mapSet.getModuleId(),
                 publicationDate.getTime(), mapSetBranchPath));
-
-            // if (!mapSet.getEdition().isDerivative()) {
-            //
-            // mapSet.setBaseContentVersion(publicationDateString + mapSet.getBaseContentVersion().substring(mapSet.getBaseContentVersion().indexOf(" ")));
-            //
-            // } else {
-            // if the edition is a derivative (i.e. from Snomed International Edition, version date, content version and international content
-            // version are the same.
-            final String internationalContentVersionDate =
-                mapSet.getInternationalContentVersion().substring(0, mapSet.getInternationalContentVersion().indexOf(" "));
-            mapSet
-                .setBaseContentVersion(internationalContentVersionDate + mapSet.getBaseContentVersion().substring(mapSet.getBaseContentVersion().indexOf(" ")));
-            // }
+            applyPublishedSourceVersion(mapSet, publicationDateString);
 
             mapSet.setWorkflowStatus(WorkflowStatus.PUBLISHED);
             mapSet.setVersionStatus(VersionStatus.PUBLISHED);
@@ -1247,6 +1235,55 @@ public final class MapSetWorkflowService {
             }
         }
         return snowstormErrorMessage.replaceAll("[\\r\\n]+", " ");
+    }
+
+    /**
+     * Stamp the published source version onto a map set.
+     *
+     * The source branch path becomes the edition branch plus the publication date. Extensions use that same date as the base content version. Derivatives of the
+     * international edition keep the international dependency date, because that date is their content version.
+     *
+     * @param mapSet the map set being published
+     * @param publicationDateString the publication date in yyyy-MM-dd format
+     */
+    static void applyPublishedSourceVersion(final MapSet mapSet, final String publicationDateString) {
+
+        final String editionBranch = mapSet.getEditionBranch();
+        if (StringUtils.isNotBlank(editionBranch)) {
+            mapSet.setFromBranchPath(StringUtils.removeEnd(editionBranch, "/") + "/" + publicationDateString);
+        }
+
+        final String baseContentVersion = mapSet.getBaseContentVersion();
+        if (StringUtils.isBlank(baseContentVersion) || baseContentVersion.indexOf(" ") < 0) {
+            return;
+        }
+
+        final String baseContentSuffix = baseContentVersion.substring(baseContentVersion.indexOf(" "));
+        final Edition edition = editionFor(mapSet);
+        if (edition != null && edition.isDerivative()) {
+            final String internationalContentVersion = mapSet.getInternationalContentVersion();
+            final String internationalContentVersionDate = internationalContentVersion.substring(0, internationalContentVersion.indexOf(" "));
+            mapSet.setBaseContentVersion(internationalContentVersionDate + baseContentSuffix);
+        } else {
+            mapSet.setBaseContentVersion(publicationDateString + baseContentSuffix);
+        }
+    }
+
+    /**
+     * Returns the edition attached to the map set, preferring the map project.
+     *
+     * @param mapSet the map set
+     * @return the edition, or null when neither project has one
+     */
+    private static Edition editionFor(final MapSet mapSet) {
+
+        if (mapSet.getMapProject() != null && mapSet.getMapProject().getEdition() != null) {
+            return mapSet.getMapProject().getEdition();
+        }
+        if (mapSet.getProject() != null && mapSet.getProject().getEdition() != null) {
+            return mapSet.getProject().getEdition();
+        }
+        return null;
     }
 
     /**
