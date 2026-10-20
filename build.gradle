@@ -61,7 +61,7 @@ ext {
 	}
 
 	// ignore the build number if this is not a Snapshot version
-	if (versionTag != "-SNAPSHOT") {
+	if (versionTag != "") {
 		buildNumber = ""
 	}
 
