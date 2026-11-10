@@ -9,7 +9,9 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
-import javax.ws.rs.core.MediaType;
+import java.time.Instant;
+
+import jakarta.ws.rs.core.MediaType;
 
 import org.ihtsdo.refsetservice.model.ApplicationVersionInfo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,12 +25,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * The Class VersionController.
  */
 @RestController
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
+@Tag(name = "version", description = "Build version endpoints")
 public class VersionController {
 
     /** The build properties. */
@@ -52,6 +56,10 @@ public class VersionController {
             throw new IllegalStateException("Build properties are not present.");
         }
 
-        return new ResponseEntity<>(new ApplicationVersionInfo(buildProperties.getVersion(), buildProperties.getTime().toString()), HttpStatus.OK);
+        final Instant buildTime = buildProperties.getTime();
+        if (buildTime == null) {
+            throw new IllegalStateException("Build time is not present.");
+        }
+        return new ResponseEntity<>(new ApplicationVersionInfo(buildProperties.getVersion(), buildTime.toString()), HttpStatus.OK);
     }
 }

@@ -11,7 +11,7 @@ public interface HasActive {
      *
      * @return <code>true</code> if so, <code>false</code> otherwise
      */
-  public boolean isActive();
+    public boolean isActive();
 
     /**
      * Sets the active.

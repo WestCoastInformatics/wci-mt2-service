@@ -19,14 +19,25 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 public class DiscussionThreadUnitTest extends BaseTest {
 
+    /** The object. */
     private DiscussionThread object;
 
+    /**
+     * Setup.
+     *
+     * @throws Exception the exception
+     */
     @BeforeEach
     public void setup() throws Exception {
 
         object = new DiscussionThread();
     }
 
+    /**
+     * Test model get set.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelGetSet() throws Exception {
 
@@ -37,6 +48,11 @@ public class DiscussionThreadUnitTest extends BaseTest {
         tester.test();
     }
 
+    /**
+     * Test model equals hashcode.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelEqualsHashcode() throws Exception {
 
@@ -65,6 +81,11 @@ public class DiscussionThreadUnitTest extends BaseTest {
         assertTrue(tester.testIdentityFieldDifferentHashcode());
     }
 
+    /**
+     * Test model serialization.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelSerialization() throws Exception {
 

@@ -12,8 +12,8 @@ package org.ihtsdo.refsetservice.rest;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.MediaType;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.MediaType;
 
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
@@ -29,8 +29,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Cache endpoints.
@@ -38,6 +39,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 @RestController
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
 @Tag(name = "cache", description = "Cache management endpoints")
+@SecurityRequirement(name = "bearerAuth")
 public class CacheController extends BaseController {
 
     /** The Constant LOG. */
@@ -46,15 +48,29 @@ public class CacheController extends BaseController {
     /** Prevent multiple concurrent concept cache refreshes. */
     private static final Object CONCEPTS_CACHE_REFRESH_LOCK = new Object();
 
+    /** The Constant SNOWSTORM_CONCEPTS_CACHE. */
     private static final String SNOWSTORM_CONCEPTS_CACHE = "snowstorm_concepts";
+
+    /** The Constant SNOWSTORM_CONCEPT_REF_CACHE. */
     private static final String SNOWSTORM_CONCEPT_REF_CACHE = "snowstorm_concept_refs";
+
+    /** The Constant SNOWSTORM_TERMINOLOGY_CACHE. */
     private static final String SNOWSTORM_TERMINOLOGY_CACHE = "snowstorm_terminology";
 
+    /**
+     * Refresh concepts cache.
+     *
+     * @param request the request
+     * @return the response entity
+     * @throws Exception the exception
+     */
     @PostMapping(value = "/cache/concepts/refresh")
-    @Operation(summary = "Force refresh Snowstorm concepts cache", tags = { "cache" }, responses = {
+    @Operation(summary = "Force refresh Snowstorm concepts cache", tags = {
+        "cache"
+    }, responses = {
         @ApiResponse(responseCode = "200", description = "Concept caches were cleared and rebuilt"),
-        @ApiResponse(responseCode = "401", description = "Unauthorized"),
-        @ApiResponse(responseCode = "500", description = "Unexpected error refreshing caches") })
+        @ApiResponse(responseCode = "401", description = "Unauthorized"), @ApiResponse(responseCode = "500", description = "Unexpected error refreshing caches")
+    })
     public ResponseEntity<Map<String, Object>> refreshConceptsCache(final HttpServletRequest request) throws Exception {
 
         final long startedAt = System.currentTimeMillis();
@@ -93,4 +109,3 @@ public class CacheController extends BaseController {
         }
     }
 }
-

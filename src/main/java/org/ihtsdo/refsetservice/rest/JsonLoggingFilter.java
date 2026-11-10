@@ -11,13 +11,13 @@ package org.ihtsdo.refsetservice.rest;
 
 import java.io.IOException;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.logging.log4j.ThreadContext;
 import org.slf4j.Logger;
@@ -45,8 +45,7 @@ public class JsonLoggingFilter implements Filter {
      * @throws IOException Signals that an I/O exception has occurred.
      */
     @Override
-    public void doFilter(final ServletRequest req, final ServletResponse res,
-        final FilterChain chain) throws ServletException, IOException {
+    public void doFilter(final ServletRequest req, final ServletResponse res, final FilterChain chain) throws ServletException, IOException {
 
         final HttpServletRequest hreq = (HttpServletRequest) req;
         final HttpServletResponse hres = (HttpServletResponse) res;
@@ -60,8 +59,8 @@ public class JsonLoggingFilter implements Filter {
 
         // Handle things computed by RootServiceRestImpl
         for (final String key : new String[] {
-                "http-version", "remote-address", "correlation-id", "req-uri", "req-method",
-                "req-querystring", "user-id", "organization-id", "referer", "user-agent"
+            "http-version", "remote-address", "correlation-id", "req-uri", "req-method", "req-querystring", "user-id", "organization-id", "referer",
+            "user-agent"
         }) {
             if (ThreadContext.get(key) == null) {
                 ThreadContext.put(key, "");

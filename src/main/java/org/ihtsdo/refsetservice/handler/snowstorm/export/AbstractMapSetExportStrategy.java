@@ -34,7 +34,7 @@ public abstract class AbstractMapSetExportStrategy implements MapSetExportStrate
     protected static final String FILE_DOWNLOAD_URL = "/mapset/export/download/";
 
     /** The export handler. */
-    protected ExportHandler exportHandler;
+    private final ExportHandler exportHandler;
 
     /**
      * Instantiates a new abstract map set export strategy.
@@ -44,6 +44,16 @@ public abstract class AbstractMapSetExportStrategy implements MapSetExportStrate
     protected AbstractMapSetExportStrategy(final ExportHandler exportHandler) {
 
         this.exportHandler = exportHandler;
+    }
+
+    /**
+     * Returns the export handler.
+     *
+     * @return the export handler
+     */
+    protected ExportHandler getExportHandler() {
+
+        return exportHandler;
     }
 
     /**

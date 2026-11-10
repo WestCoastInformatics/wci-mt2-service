@@ -9,8 +9,8 @@
  */
 package org.ihtsdo.refsetservice.rest;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.MediaType;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.MediaType;
 
 import org.apache.commons.io.IOUtils;
 import org.ihtsdo.refsetservice.model.ApplicationMetadata;
@@ -24,13 +24,17 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * The Class SystemController.
  */
 @RestController
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
+@Tag(name = "application metadata", description = "Application metadata endpoints")
 public class SystemController extends BaseController {
 
     /** The Constant LOG. */
@@ -48,7 +52,8 @@ public class SystemController extends BaseController {
     @Operation(summary = "Get application metadata.", tags = {
         "application metadata"
     }, responses = {
-        @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = ApplicationMetadata.class))),
         @ApiResponse(responseCode = "404", description = "Resource not found")
     })
     public @ResponseBody ResponseEntity<ApplicationMetadata> getMetadata(final HttpServletRequest request) throws Exception {

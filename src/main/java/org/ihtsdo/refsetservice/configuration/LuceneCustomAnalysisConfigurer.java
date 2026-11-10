@@ -17,7 +17,11 @@ import org.hibernate.search.backend.lucene.analysis.LuceneAnalysisConfigurer;
  */
 public class LuceneCustomAnalysisConfigurer implements LuceneAnalysisConfigurer {
 
-    /* see superclass */
+    /**
+     * Configure.
+     *
+     * @param context the context
+     */
     @Override
     public void configure(final LuceneAnalysisConfigurationContext context) {
 

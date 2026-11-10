@@ -9,7 +9,7 @@
  */
 package org.ihtsdo.refsetservice.handler.snowstorm;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
@@ -18,12 +18,12 @@ import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 /**
  * The Class SnowstormAbstract.
  */
-public class SnowstormAbstract {
+public abstract class SnowstormAbstract {
 
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(SnowstormAbstract.class);
@@ -58,7 +58,7 @@ public class SnowstormAbstract {
         if (StringUtility.isJson(snowstormErrorMessage)) {
             try {
                 final JsonNode json = ThreadLocalMapper.get().readTree(snowstormErrorMessage);
-                snowstormErrorMessage = json.has("message") ? json.get("message").asText() : "";
+                snowstormErrorMessage = json.has("message") ? json.get("message").asString() : "";
             } catch (final Exception e) {
                 LOG.error("formatErrorMessage snowstormErrorMessage:{}", snowstormErrorMessage, e);
             }

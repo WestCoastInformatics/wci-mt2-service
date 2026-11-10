@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RefsetMemberComparison;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
@@ -40,10 +40,10 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
 // import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * The Class EditUnitTestUtilities.
@@ -133,7 +133,7 @@ public class EditUnitTestUtilities {
 
             assertThat(newVersionNode.has("refsetInternalId")).isTrue();
 
-            final String newRefsetVersionInternalId = newVersionNode.get("refsetInternalId").asText();
+            final String newRefsetVersionInternalId = newVersionNode.get("refsetInternalId").asString();
             assertThat(newRefsetVersionInternalId).isNotNull();
             return newRefsetVersionInternalId;
 
@@ -300,7 +300,7 @@ public class EditUnitTestUtilities {
             Refset refset = null;
 
             assertThat(refsetNode.has("refsetId")).isTrue();
-            final String refsetId = refsetNode.get("refsetId").asText();
+            final String refsetId = refsetNode.get("refsetId").asString();
 
             // verify the refset from a new concept in the RT2 DB
             try (final TerminologyService service = new TerminologyService()) {
@@ -388,7 +388,7 @@ public class EditUnitTestUtilities {
             final JsonNode membersNode = membersRoot;
 
             assertThat(membersNode.has("status")).isTrue();
-            assertThat(membersNode.get("status").asText().equals("All concepts added.")).isTrue();
+            assertThat(membersNode.get("status").asString().equals("All concepts added.")).isTrue();
 
             return membersNode;
         } catch (final Exception e) {
@@ -539,7 +539,7 @@ public class EditUnitTestUtilities {
                 final JsonNode removeNode = removeRoot;
 
                 assertThat(removeNode.has("status")).isTrue();
-                assertThat(removeNode.get("status").asText().equals("All concepts removed.")).isTrue();
+                assertThat(removeNode.get("status").asString().equals("All concepts removed.")).isTrue();
             }
 
         } catch (final Exception e) {
@@ -565,7 +565,7 @@ public class EditUnitTestUtilities {
             final JsonNode deleteNode = deleteRoot;
 
             assertThat(deleteNode.has("status")).isTrue();
-            assertThat(deleteNode.get("status").asText().equals("deleted")).isTrue();
+            assertThat(deleteNode.get("status").asString().equals("deleted")).isTrue();
 
         } catch (final Exception e) {
 
@@ -594,7 +594,7 @@ public class EditUnitTestUtilities {
                 final JsonNode deleteNode = deleteRoot;
 
                 assertThat(deleteNode.has("status")).isTrue();
-                assertThat(deleteNode.get("status").asText().equals(deleteStatus)).isTrue();
+                assertThat(deleteNode.get("status").asString().equals(deleteStatus)).isTrue();
             } else {
 
                 throw new Exception("Unable to identify refset to delete: " + refsetInternalId);
@@ -625,7 +625,7 @@ public class EditUnitTestUtilities {
             final JsonNode deleteNode = deleteRoot;
 
             assertThat(deleteNode.has("status")).isTrue();
-            assertThat(deleteNode.get("status").asText()).isEqualTo("deleted");
+            assertThat(deleteNode.get("status").asString()).isEqualTo("deleted");
 
             // verify the original refset is back to the latest version
 
@@ -659,7 +659,7 @@ public class EditUnitTestUtilities {
             urlConceptIds += conceptId + ",";
         }
 
-        urlConceptIds = StringUtils.removeEnd(urlConceptIds, ",");
+        urlConceptIds = Strings.CS.removeEnd(urlConceptIds, ",");
 
         try (final TerminologyService service = new TerminologyService()) {
 
@@ -673,7 +673,7 @@ public class EditUnitTestUtilities {
 
             final JsonNode root = ThreadLocalMapper.get().readTree(content);
             assertThat(root.has("status")).isTrue();
-            assertThat(root.get("status").asText()).isEqualTo("All concepts added.");
+            assertThat(root.get("status").asString()).isEqualTo("All concepts added.");
 
             return true;
         } catch (final Exception e) {

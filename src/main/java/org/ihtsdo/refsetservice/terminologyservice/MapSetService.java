@@ -15,8 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityTransaction;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
@@ -43,33 +43,29 @@ import org.slf4j.LoggerFactory;
 /**
  * Service class to handle getting and modifying internal mapset information.
  */
-public class MapSetService {
+public final class MapSetService {
 
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(MapSetService.class);
 
-    /** The config properties. */
-    protected static final Properties PROPERTIES = PropertyUtility.getProperties();
+    /**
+     *  The config properties.
+     *
+     * @return the config properties
+     */
+    protected static Properties getConfigProperties() {
 
-    /** The terminology handler. */
-    private static TerminologyServerHandler terminologyHandler;
+        return PropertyUtility.getProperties();
+    }
 
-    static {
+    /**
+     *  The terminology handler.
+     *
+     * @return the terminology handler
+     */
+    private static TerminologyServerHandler getTerminologyHandler() {
 
-        // Instantiate terminology handler
-        try {
-            final String key = "terminology.handler";
-            final String handlerName = PropertyUtility.getProperty(key);
-            if (handlerName.isEmpty()) {
-                throw new Exception("terminology.handler expected and does not exist.");
-            }
-
-            terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName, TerminologyServerHandler.class);
-
-        } catch (Exception e) {
-            LOG.error("Failed to initialize terminology.handler - serious error", e);
-            terminologyHandler = null;
-        }
+        return HandlerUtility.getOrCreateTerminologyHandler();
     }
 
     /**
@@ -96,8 +92,8 @@ public class MapSetService {
     }
 
     /**
-     * Finds MapSet by refSetCode (for workflow/tracking data).
-     * Uses search index; when multiple map_sets share the same refSetCode, returns the latest by version date.
+     * Finds MapSet by refSetCode (for workflow/tracking data). Uses search index; when multiple map_sets share the same refSetCode, returns the latest by
+     * version date.
      *
      * @param service the terminology service
      * @param refSetCode the ref set code
@@ -109,12 +105,13 @@ public class MapSetService {
         if (refSetCode == null || refSetCode.isBlank()) {
             return null;
         }
-        //Look for IN DEVELOPMENT version first
-        final ResultList<MapSet> results = service.find("refSetCode:" + QueryParserBase.escape(refSetCode) + " AND versionStatus:" + VersionStatus.IN_DEVELOPMENT.name(), null, MapSet.class, null);
+        // Look for IN DEVELOPMENT version first
+        final ResultList<MapSet> results = service
+            .find("refSetCode:" + QueryParserBase.escape(refSetCode) + " AND versionStatus:" + VersionStatus.IN_DEVELOPMENT.name(), null, MapSet.class, null);
         if (!results.getItems().isEmpty()) {
             return results.getItems().get(0);
         }
-        //If no IN DEVELOPMENT version, look for latest published version
+        // If no IN DEVELOPMENT version, look for latest published version
         final PfsParameter pfs = new PfsParameter();
         pfs.setSort("versionDate");
         pfs.setAscending(false);
@@ -124,9 +121,8 @@ public class MapSetService {
     }
 
     /**
-     * Finds a map set by branch path (branchPath or fromBranchPath).
-     * Used when only branch is known (e.g. import flow).
-     * When multiple match, returns the latest by version date.
+     * Finds a map set by branch path (branchPath or fromBranchPath). Used when only branch is known (e.g. import flow). When multiple match, returns the latest
+     * by version date.
      *
      * @param service the terminology service
      * @param branchPath the branch path
@@ -149,8 +145,7 @@ public class MapSetService {
     }
 
     /**
-     * Gets MapSet for workflow operations by id or refSetCode.
-     * Tries id first (JPA get), then refSetCode lookup.
+     * Gets MapSet for workflow operations by id or refSetCode. Tries id first (JPA get), then refSetCode lookup.
      *
      * @param service the terminology service
      * @param mapSetInternalId the map set id or ref set code
@@ -178,6 +173,14 @@ public class MapSetService {
         return mapSet;
     }
 
+    /**
+     * Find map set by id.
+     *
+     * @param service the service
+     * @param mapSetInternalId the map set internal id
+     * @return the map set
+     * @throws Exception the exception
+     */
     private static MapSet findMapSetById(final TerminologyService service, final String mapSetInternalId) throws Exception {
 
         final EntityManager manager = service.getEntityManager();
@@ -196,9 +199,8 @@ public class MapSetService {
     }
 
     /**
-     * Resolves branch path for map set operations from map_sets table.
-     * For a specific map set: uses that map set. For general operations: uses last modified active map set.
-     * Branch path is resolved by BranchService (stored or computed from components).
+     * Resolves branch path for map set operations from map_sets table. For a specific map set: uses that map set. For general operations: uses last modified
+     * active map set. Branch path is resolved by BranchService (stored or computed from components).
      *
      * @param service the terminology service
      * @param mapSetCode optional ref set code; if provided, uses that map set's branch
@@ -233,12 +235,10 @@ public class MapSetService {
         final Map<String, String> terminologyToVersion = new LinkedHashMap<>();
         final ResultList<MapSet> results = service.find("active:true", null, MapSet.class, null);
         for (final MapSet m : results.getItems()) {
-            if (m.getFromTerminology() != null && !m.getFromTerminology().isBlank()
-                && m.getFromVersion() != null && !m.getFromVersion().isBlank()) {
+            if (m.getFromTerminology() != null && !m.getFromTerminology().isBlank() && m.getFromVersion() != null && !m.getFromVersion().isBlank()) {
                 terminologyToVersion.putIfAbsent(m.getFromTerminology(), m.getFromVersion());
             }
-            if (m.getToTerminology() != null && !m.getToTerminology().isBlank()
-                && m.getToVersion() != null && !m.getToVersion().isBlank()) {
+            if (m.getToTerminology() != null && !m.getToTerminology().isBlank() && m.getToVersion() != null && !m.getToVersion().isBlank()) {
                 terminologyToVersion.putIfAbsent(m.getToTerminology(), m.getToVersion());
             }
         }
@@ -246,21 +246,17 @@ public class MapSetService {
     }
 
     /**
-     * Caches concepts for terminologies used in active map sets.
-     * Uses the configured terminology handler; may be no-op for handlers that do not support caching.
+     * Caches concepts for terminologies used in active map sets. Uses the configured terminology handler; may be no-op for handlers that do not support
+     * caching.
      *
      * @param service the terminology service
      * @throws Exception the exception
      */
     public static void cacheConceptsForActiveMapSets(final TerminologyService service) throws Exception {
 
-        if (terminologyHandler == null) {
-            LOG.warn("Terminology handler not configured; skipping concept cache");
-            return;
-        }
         final Map<String, String> terminologyToVersion = getTerminologyVersionsFromMapSets(service);
         if (!terminologyToVersion.isEmpty()) {
-            terminologyHandler.cacheConcepts(terminologyToVersion);
+            getTerminologyHandler().cacheConcepts(terminologyToVersion);
         }
     }
 
@@ -273,13 +269,12 @@ public class MapSetService {
      */
     public static List<MapSet> getMapSets(final String branch) throws Exception {
 
-        return terminologyHandler.getMapSets(branch);
+        return getTerminologyHandler().getMapSets(branch);
 
     }
 
     /**
-     * Search map sets in the database (Hibernate Search).
-     * Supports Lucene field queries such as {@code versionStatus:IN_DEVELOPMENT},
+     * Search map sets in the database (Hibernate Search). Supports Lucene field queries such as {@code versionStatus:IN_DEVELOPMENT},
      * {@code versionStatus:IN DEVELOPMENT} (JSON label form), and {@code workflowStatus:IN_EDIT}.
      *
      * @param service the terminology service
@@ -373,7 +368,7 @@ public class MapSetService {
         if (mapSet == null) {
             throw new IllegalArgumentException("MapSet is required for export. No fallback.");
         }
-        return terminologyHandler.exportMapSet(user, mapProject, mapSetExportRequest, mapSet);
+        return getTerminologyHandler().exportMapSet(user, mapProject, mapSetExportRequest, mapSet);
     }
 
     /**
@@ -450,8 +445,8 @@ public class MapSetService {
         // complete creates the next IN_EDIT copy in the same transaction, and the search index may
         // still show the just-published row as IN_DEVELOPMENT.
         final ResultList<MapSet> results =
-            service.find("versionStatus: (" + VersionStatus.IN_DEVELOPMENT.name() + ") AND refSetCode: " + QueryParserBase.escape(mapSet.getRefSetCode()),
-                null, MapSet.class, null);
+            service.find("versionStatus: (" + VersionStatus.IN_DEVELOPMENT.name() + ") AND refSetCode: " + QueryParserBase.escape(mapSet.getRefSetCode()), null,
+                MapSet.class, null);
 
         final boolean hasOtherInDevelopment = results.getItems().stream()
             .anyMatch(existing -> !existing.getId().equals(mapSet.getId()) && existing.getVersionStatus() == VersionStatus.IN_DEVELOPMENT);
@@ -518,7 +513,7 @@ public class MapSetService {
      */
     public static void clearAllRefsetCaches(final String branch) throws Exception {
 
-        terminologyHandler.clearAllRefsetCaches(branch);
+        getTerminologyHandler().clearAllRefsetCaches(branch);
     }
 
     /**
@@ -530,7 +525,7 @@ public class MapSetService {
      */
     public static String getBranchPath(final MapSet mapSet) throws Exception {
 
-        return terminologyHandler.getBranchPath(mapSet);
+        return getTerminologyHandler().getBranchPath(mapSet);
     }
 
     /**
@@ -542,7 +537,7 @@ public class MapSetService {
      */
     public static Date getRefsetDateFromFormattedString(final String publicationDateString) throws Exception {
 
-        return terminologyHandler.getRefsetDateFromFormattedString(publicationDateString);
+        return getTerminologyHandler().getRefsetDateFromFormattedString(publicationDateString);
     }
 
     /**
@@ -556,7 +551,7 @@ public class MapSetService {
      */
     public static List<String> setRoles(final User user, final Project project, final List<String> roles) throws Exception {
 
-        return terminologyHandler.setRoles(user, project, roles);
+        return getTerminologyHandler().setRoles(user, project, roles);
     }
 
     /**
@@ -568,7 +563,7 @@ public class MapSetService {
      */
     public static List<String> getBranchVersions(final String branch) throws Exception {
 
-        return terminologyHandler.getBranchVersions(branch);
+        return getTerminologyHandler().getBranchVersions(branch);
     }
 
     /**
@@ -580,7 +575,7 @@ public class MapSetService {
      */
     public static void removeMapSetEditHistory(final TerminologyService service, final String refsetCode) throws Exception {
 
-        terminologyHandler.removeMapSetEditHistory(service, refsetCode);
+        getTerminologyHandler().removeMapSetEditHistory(service, refsetCode);
     }
 
     /**
@@ -593,7 +588,7 @@ public class MapSetService {
      */
     public static void setMapSetMemberCount(final TerminologyService service, final MapSet mapSet, final boolean force) throws Exception {
 
-        terminologyHandler.setMapSetMemberCount(service, mapSet, force);
+        getTerminologyHandler().setMapSetMemberCount(service, mapSet, force);
     }
 
     /**
@@ -605,7 +600,7 @@ public class MapSetService {
      */
     public static void removeUpgradeData(final TerminologyService service, final MapSet mapSet) throws Exception {
 
-        terminologyHandler.removeUpgradeData(service, mapSet);
+        getTerminologyHandler().removeUpgradeData(service, mapSet);
     }
 
     /**
@@ -617,7 +612,7 @@ public class MapSetService {
      */
     public static void replaceMapSetWithEditHistory(final TerminologyService service, final MapSet mapSet) throws Exception {
 
-        terminologyHandler.replaceMapSetWithEditHistory(service, mapSet);
+        getTerminologyHandler().replaceMapSetWithEditHistory(service, mapSet);
     }
 
     /**
@@ -630,7 +625,7 @@ public class MapSetService {
      */
     public static MapSet setMapSetPermissions(final User user, final MapSet mapSet) throws Exception {
 
-        return terminologyHandler.setMapSetPermissions(user, mapSet);
+        return getTerminologyHandler().setMapSetPermissions(user, mapSet);
     }
 
 }

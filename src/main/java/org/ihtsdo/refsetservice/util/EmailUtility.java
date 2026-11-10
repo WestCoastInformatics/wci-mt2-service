@@ -15,20 +15,20 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.activation.DataHandler;
-import javax.activation.DataSource;
-import javax.activation.FileDataSource;
-import javax.mail.Authenticator;
-import javax.mail.BodyPart;
-import javax.mail.Message;
-import javax.mail.Multipart;
-import javax.mail.PasswordAuthentication;
-import javax.mail.Session;
-import javax.mail.Transport;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeBodyPart;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
+import jakarta.activation.DataHandler;
+import jakarta.activation.DataSource;
+import jakarta.activation.FileDataSource;
+import jakarta.mail.Authenticator;
+import jakarta.mail.BodyPart;
+import jakarta.mail.Message;
+import jakarta.mail.Multipart;
+import jakarta.mail.PasswordAuthentication;
+import jakarta.mail.Session;
+import jakarta.mail.Transport;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeBodyPart;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMultipart;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -60,13 +60,17 @@ public final class EmailUtility {
     private static final String EMAIL_VALIDATION_REGEX_PATTERN =
         "^(?=.{1,64}@)[\\p{L}0-9_+-]+(\\.[\\p{L}0-9_+-]+)*@[^-][\\p{L}0-9-]+(\\.[\\p{L}0-9-]+)*(\\.[\\p{L}]{2,})$";
 
-    /** Static initialization. */
-    static {
+    /**
+     * Ensure email config.
+     */
+    private static void ensureEmailConfig() {
 
-        smtpUser = PropertyUtility.getProperty("mail.smtp.user");
-        smtpPassword = PropertyUtility.getProperty("mail.smtp.password");
-        emailFrom = PropertyUtility.getProperty("mail.smtp.from");
-        emailEnabled = PropertyUtility.getProperty("mail.smtp.enabled");
+        if (emailEnabled == null) {
+            smtpUser = PropertyUtility.getProperty("mail.smtp.user");
+            smtpPassword = PropertyUtility.getProperty("mail.smtp.password");
+            emailFrom = PropertyUtility.getProperty("mail.smtp.from");
+            emailEnabled = PropertyUtility.getProperty("mail.smtp.enabled");
+        }
     }
 
     /**
@@ -81,12 +85,13 @@ public final class EmailUtility {
      * Sends email.
      *
      * @param subject the subject
-     * @param from the from
      * @param recipients the recipients
      * @param body the body
      * @throws Exception the exception
      */
     public static void sendEmail(final String subject, final Set<String> recipients, final String body) throws Exception {
+
+        ensureEmailConfig();
 
         if (recipients == null || recipients.isEmpty()) {
 
@@ -98,8 +103,7 @@ public final class EmailUtility {
         if (recipients.stream().anyMatch(r -> !r.matches(EMAIL_VALIDATION_REGEX_PATTERN))) {
 
             // invalid email address. Return 400
-            final List<String> failingEmailAddresses =
-                recipients.stream().filter(r -> !r.matches(EMAIL_VALIDATION_REGEX_PATTERN)).collect(Collectors.toList());
+            final List<String> failingEmailAddresses = recipients.stream().filter(r -> !r.matches(EMAIL_VALIDATION_REGEX_PATTERN)).collect(Collectors.toList());
 
             final String message = "Invalid email address requested for recipient(s): " + failingEmailAddresses;
             LOG.error(message);
@@ -166,8 +170,7 @@ public final class EmailUtility {
      * @param attachmentPath absolute path to the attachment file
      * @throws Exception the exception
      */
-    public static void sendEmailWithAttachment(final String subject, final String recipients, final String body, final String attachmentPath)
-        throws Exception {
+    public static void sendEmailWithAttachment(final String subject, final String recipients, final String body, final String attachmentPath) throws Exception {
 
         sendEmailWithAttachment(subject, parseRecipients(recipients), body, attachmentPath);
     }
@@ -184,6 +187,8 @@ public final class EmailUtility {
     public static void sendEmailWithAttachment(final String subject, final Set<String> recipients, final String body, final String attachmentPath)
         throws Exception {
 
+        ensureEmailConfig();
+
         if (recipients == null || recipients.isEmpty()) {
 
             final String message = "Email must have recipients";
@@ -193,8 +198,7 @@ public final class EmailUtility {
 
         if (recipients.stream().anyMatch(r -> !r.matches(EMAIL_VALIDATION_REGEX_PATTERN))) {
 
-            final List<String> failingEmailAddresses =
-                recipients.stream().filter(r -> !r.matches(EMAIL_VALIDATION_REGEX_PATTERN)).collect(Collectors.toList());
+            final List<String> failingEmailAddresses = recipients.stream().filter(r -> !r.matches(EMAIL_VALIDATION_REGEX_PATTERN)).collect(Collectors.toList());
             final String message = "Invalid email address requested for recipient(s): " + failingEmailAddresses;
             LOG.error(message);
             throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);

@@ -18,9 +18,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.handler.EntraMapBootstrap;
@@ -72,7 +72,6 @@ public class SecurityService implements AutoCloseable {
     /** The session key for the list of user projects. */
     public static final String SESSION_USER_PROJECTS = "RT2_USER_PROJECTS";
 
-    /** Session attribute for OAuth2 state when Entra login is started via {@code /authenticate/login}. */
     /** Session attribute for OAuth2 {@code state} during browser login (handler-agnostic). */
     public static final String SESSION_OAUTH_STATE_KEY = "OAUTH_STATE";
 
@@ -85,7 +84,7 @@ public class SecurityService implements AutoCloseable {
     public static final String GUEST_USERNAME = "nonLoggedInUser";
 
     /** The timeout. */
-    private static int timeout;
+    private static volatile int timeout;
 
     /**
      * Instantiates an empty {@link SecurityServiceJpa}.
@@ -684,7 +683,7 @@ public class SecurityService implements AutoCloseable {
      * @return the user
      * @throws Exception the exception
      */
-    public User addUser(User user) throws Exception {
+    public User addUser(final User user) throws Exception {
 
         LOG.debug("Security Service - add user {}", user);
 
@@ -739,7 +738,6 @@ public class SecurityService implements AutoCloseable {
      *
      * @throws Exception the exception
      */
-    /* see superclass */
     @Override
     public void close() throws Exception {
 

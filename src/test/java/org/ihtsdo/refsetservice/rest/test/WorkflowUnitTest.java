@@ -39,18 +39,24 @@ public class WorkflowUnitTest {
     private static final String ADMIN_USER = "ADMIN_USER";
 
     /** The statuses . */
-    private static final List<WorkflowStatus> statuses = WorkflowStatus.getValues();
+    private static final List<WorkflowStatus> STATUSES = WorkflowStatus.getValues();
 
     /** The users . */
-    private static final List<String> users = new ArrayList<>(Arrays.asList(AUTHOR_USER, REVIEWER_USER, ADMIN_USER));
+    private static final List<String> USERS = new ArrayList<>(Arrays.asList(AUTHOR_USER, REVIEWER_USER, ADMIN_USER));
 
+    /** The workflow util. */
     private WorkflowUnitTestUtilities workflowUtil;
 
+    /**
+     * Sets the up.
+     *
+     * @throws Exception the exception
+     */
     @BeforeEach
     public void setUp() throws Exception {
-        final String refsetFilePath = Paths.get(getClass().getClassLoader()
-            .getResource("refsetService/workflowPermutationsToFinalAction.txt").toURI())
-            .getParent().toString() + "/";
+
+        final String refsetFilePath =
+            Paths.get(getClass().getClassLoader().getResource("refsetService/workflowPermutationsToFinalAction.txt").toURI()).getParent().toString() + "/";
         workflowUtil = new WorkflowUnitTestUtilities(null, null, refsetFilePath);
     }
 
@@ -63,18 +69,17 @@ public class WorkflowUnitTest {
     @Test
     public void testAllRolesAndInitialStates() throws Exception {
 
-        for (final String user : users) {
+        for (final String user : USERS) {
 
             final String userRole = workflowUtil.getUserRole(user);
 
-            for (final WorkflowStatus initialStatus : statuses) {
+            for (final WorkflowStatus initialStatus : STATUSES) {
 
                 final Map<WorkflowAction, String> results = workflowUtil.getWorkflowActionPaths(user, initialStatus);
 
                 for (final WorkflowAction action : results.keySet()) {
 
-                    if (workflowUtil.getPermissiblePaths().containsKey(userRole)
-                        && workflowUtil.getPermissiblePaths().get(userRole).containsKey(initialStatus)
+                    if (workflowUtil.getPermissiblePaths().containsKey(userRole) && workflowUtil.getPermissiblePaths().get(userRole).containsKey(initialStatus)
                         && workflowUtil.getPermissiblePaths().get(userRole).get(initialStatus).containsKey(action)) {
 
                         assertThat(results.get(action)).isEqualTo(workflowUtil.getPermissiblePaths().get(userRole).get(initialStatus).get(action));

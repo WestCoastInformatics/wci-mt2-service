@@ -61,36 +61,36 @@ public class MapSetMetadataExporter {
             + StringUtility.capitalizeEachWord(mapProject.getEdition().getAbbreviation()) + "_" + transientEffectiveTime + "_metadata.txt";
 
         final String separator = "\t";
-        final String LINE_FEED = "\n";
+        final String lineFeed = "\n";
 
-        fileLines.append("Mapset ID" + separator + mapSet.getRefSetCode() + LINE_FEED);
-        fileLines.append("Mapset Name" + separator + mapSet.getRefSetName() + LINE_FEED);
-        fileLines.append("Edition Name" + separator + mapProject.getEdition().getShortName() + LINE_FEED);
-        fileLines.append("Edition Branch" + separator + branch + LINE_FEED);
-        fileLines.append("Organization" + separator + mapProject.getEdition().getOrganization().getName() + LINE_FEED);
-        fileLines.append("Project" + separator + mapProject.getName() + LINE_FEED);
-        fileLines.append("Module ID" + separator + mapSet.getModuleId() + LINE_FEED);
-        fileLines.append("Mapset Version Status" + separator + mapSet.getVersionStatus() + LINE_FEED); // PUBLISHED
+        fileLines.append("Mapset ID" + separator + mapSet.getRefSetCode() + lineFeed);
+        fileLines.append("Mapset Name" + separator + mapSet.getRefSetName() + lineFeed);
+        fileLines.append("Edition Name" + separator + mapProject.getEdition().getShortName() + lineFeed);
+        fileLines.append("Edition Branch" + separator + branch + lineFeed);
+        fileLines.append("Organization" + separator + mapProject.getEdition().getOrganization().getName() + lineFeed);
+        fileLines.append("Project" + separator + mapProject.getName() + lineFeed);
+        fileLines.append("Module ID" + separator + mapSet.getModuleId() + lineFeed);
+        fileLines.append("Mapset Version Status" + separator + mapSet.getVersionStatus() + lineFeed); // PUBLISHED
 
         if (mapSet.getModified() != null) { // Version Date
             fileLines
-                .append("MapSet Version Date" + separator + DateUtility.formatDate(mapSet.getModified(), DateUtility.DATE_FORMAT_REVERSE, null) + LINE_FEED);
+                .append("MapSet Version Date" + separator + DateUtility.formatDate(mapSet.getModified(), DateUtility.DATE_FORMAT_REVERSE, null) + lineFeed);
         } else {
-            fileLines.append("MapSet Version Date" + separator + LINE_FEED);
+            fileLines.append("MapSet Version Date" + separator + lineFeed);
         }
 
         fileLines
-            .append("MapSet Last Modified Date" + separator + DateUtility.formatDate(mapSet.getModified(), DateUtility.DATE_FORMAT_REVERSE, null) + LINE_FEED);
-        fileLines.append("MapSet Type" + separator + type + LINE_FEED);
+            .append("MapSet Last Modified Date" + separator + DateUtility.formatDate(mapSet.getModified(), DateUtility.DATE_FORMAT_REVERSE, null) + lineFeed);
+        fileLines.append("MapSet Type" + separator + type + lineFeed);
 
         if (mapSet.isActive()) {
-            fileLines.append("MapSet Status" + separator + "Active" + LINE_FEED);
+            fileLines.append("MapSet Status" + separator + "Active" + lineFeed);
         } else {
-            fileLines.append("MapSet Status" + separator + "Inactive" + LINE_FEED);
+            fileLines.append("MapSet Status" + separator + "Inactive" + lineFeed);
         }
 
         if (mapSet.getRefSetName() != null && !mapSet.getRefSetName().isEmpty()) { // getNarrative
-            fileLines.append("MapSet Narrative" + separator + mapSet.getRefSetName() + LINE_FEED);
+            fileLines.append("MapSet Narrative" + separator + mapSet.getRefSetName() + lineFeed);
         }
 
         try {

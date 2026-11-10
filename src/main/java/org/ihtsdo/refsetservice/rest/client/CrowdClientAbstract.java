@@ -21,7 +21,7 @@ import java.util.Base64;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
@@ -33,147 +33,153 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class CrowdClientAbstract {
 
-	/** The Constant LOG. */
-	private static final Logger LOG = LoggerFactory.getLogger(CrowdClientAbstract.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(CrowdClientAbstract.class);
 
-	/** Base URL for the Crowd API including HTTPS. */
-	private static String baseUrl;
+    /** Base URL for the Crowd API including HTTPS. */
+    private static String baseUrl;
 
-	/** User name for authentication to Crowd API. */
-	private static String username;
+    /** User name for authentication to Crowd API. */
+    private static String username;
 
-	/** User's password for authentication to Crowd API. */
-	private static String password;
+    /** User's password for authentication to Crowd API. */
+    private static String password;
 
-	/** initialization of required params */
-	static {
-		// make sure Crowd URL includes the context root
-		baseUrl = StringUtils.trim(PropertyUtility.getProperty("crowd.baseUrl"));
-		username = StringUtils.trim(PropertyUtility.getProperty("crowd.username"));
-		password = StringUtils.trim(PropertyUtility.getProperty("crowd.password"));
-	}
+    /** Shared HTTP client for Crowd calls. */
+    protected static final HttpClient HTTP_CLIENT = HttpClient.newBuilder().build();
 
-	/** The accept. */
-	private static final String ACCEPT_DEFAULT = MediaType.APPLICATION_JSON;
+    /* initialization of required params */
+    static {
+        baseUrl = null;
+    }
 
-	/** The Constant ROLES. */
-	protected static final Set<String> ROLES = new HashSet<String>() {
+    private static void ensureCrowdConfig() {
 
-		{
-			add("admin");
-			add("author");
-			add("reviewer");
-			add("viewer");
-		}
-	};
+        if (baseUrl == null) {
+            baseUrl = StringUtils.trim(PropertyUtility.getProperty("crowd.baseUrl"));
+            username = StringUtils.trim(PropertyUtility.getProperty("crowd.username"));
+            password = StringUtils.trim(PropertyUtility.getProperty("crowd.password"));
+        }
+    }
 
-	/**
-	 * Returns the base url.
-	 *
-	 * @return the base url
-	 */
-	protected static String getBaseUrl() {
+    /** The accept. */
+    private static final String ACCEPT_DEFAULT = MediaType.APPLICATION_JSON;
 
-		return baseUrl;
-	}
+    /** The Constant ROLES. */
+    protected static final Set<String> ROLES = new HashSet<String>() {
 
-	/**
-	 * Calls a Crowd URL and returns the response.
-	 *
-	 * @param url the url
-	 * @return the string
-	 * @throws Exception the exception
-	 */
+        {
+            add("admin");
+            add("author");
+            add("reviewer");
+            add("viewer");
+        }
+    };
 
-	protected static String get(final String url) throws Exception {
+    /**
+     * Returns the base url.
+     *
+     * @return the base url
+     */
+    protected static String getBaseUrl() {
 
-		final HttpClient httpClient = HttpClient.newBuilder().build();
-		final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET()
-				.header("Authorization", getBasicAuthHeader()).header("Accept", ACCEPT_DEFAULT).build();
+        ensureCrowdConfig();
+        return baseUrl;
+    }
 
-		LOG.debug("CROWD API GET Url: {}", url);
+    /**
+     * Calls a Crowd URL and returns the response.
+     *
+     * @param url the url
+     * @return the string
+     * @throws Exception the exception
+     */
 
-		final HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
+    protected static String get(final String url) throws Exception {
 
-		if (response.statusCode() == 200) {
+        final HttpRequest request =
+            HttpRequest.newBuilder().uri(URI.create(url)).GET().header("Authorization", getBasicAuthHeader()).header("Accept", ACCEPT_DEFAULT).build();
 
-			return response.body();
+        LOG.debug("CROWD API GET Url: {}", url);
 
-		}
+        final HttpResponse<String> response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
 
-		LOG.error("CROWD GET ERROR url: {} : response code: {}", url, response.statusCode());
-		throw new Exception("CROWD GET ERROR url: " + url);
+        if (response.statusCode() == 200) {
 
-	}
+            return response.body();
 
-	/**
-	 * HTTP Post.
-	 *
-	 * @param url    the url
-	 * @param entity the entity
-	 * @return the int HTTP status code
-	 * @throws Exception the exception
-	 */
-	protected static int post(final String url, final String entity) throws Exception {
+        }
 
-		final HttpClient httpClient = HttpClient.newBuilder().build();
-		final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url))
-				.POST(HttpRequest.BodyPublishers.ofString(entity)).header("Authorization", getBasicAuthHeader())
-				.header("Content-Type", ACCEPT_DEFAULT).build();
+        LOG.error("CROWD GET ERROR url: {} : response code: {}", url, response.statusCode());
+        throw new Exception("CROWD GET ERROR url: " + url);
 
-		LOG.debug("CROWD API POST Url: {}", url);
-		final HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
+    }
 
-		return response.statusCode();
+    /**
+     * HTTP Post.
+     *
+     * @param url the url
+     * @param entity the entity
+     * @return the int HTTP status code
+     * @throws Exception the exception
+     */
+    protected static int post(final String url, final String entity) throws Exception {
 
-	}
+        final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).POST(HttpRequest.BodyPublishers.ofString(entity))
+            .header("Authorization", getBasicAuthHeader()).header("Content-Type", ACCEPT_DEFAULT).build();
 
-	/**
-	 * HTTP Delete.
-	 *
-	 * @param url the url
-	 * @return the int HTTP status code
-	 * @throws Exception the exception
-	 */
-	protected static int delete(final String url) throws Exception {
+        LOG.debug("CROWD API POST Url: {}", url);
+        final HttpResponse<String> response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
 
-		final HttpClient httpClient = HttpClient.newBuilder().build();
-		final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).DELETE()
-				.header("Authorization", getBasicAuthHeader()).header("Accept", ACCEPT_DEFAULT).build();
+        return response.statusCode();
 
-		LOG.debug("CROWD API DELETE Url: {}", url);
+    }
 
-		final HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
+    /**
+     * HTTP Delete.
+     *
+     * @param url the url
+     * @return the int HTTP status code
+     * @throws Exception the exception
+     */
+    protected static int delete(final String url) throws Exception {
 
-		return response.statusCode();
+        final HttpRequest request =
+            HttpRequest.newBuilder().uri(URI.create(url)).DELETE().header("Authorization", getBasicAuthHeader()).header("Accept", ACCEPT_DEFAULT).build();
 
-	}
+        LOG.debug("CROWD API DELETE Url: {}", url);
 
-	/**
-	 * Url Encode a string.
-	 *
-	 * @param stringToEncode the string to encode
-	 * @return the string
-	 * @throws UnsupportedEncodingException the unsupported encoding exception
-	 */
-	protected static String urlEncode(final String stringToEncode) throws UnsupportedEncodingException {
+        final HttpResponse<String> response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
 
-		if (StringUtils.isBlank(stringToEncode)) {
-			return stringToEncode;
-		}
-		return URLEncoder.encode(stringToEncode, StandardCharsets.UTF_8.toString());
-	}
+        return response.statusCode();
 
-	/**
-	 * Returns the basic auth header.
-	 *
-	 * @return the basic auth header
-	 */
-	protected static String getBasicAuthHeader() {
+    }
 
-		final String auth = username + ":" + password;
-		final byte[] encodedAuth = Base64.getEncoder().encode(auth.getBytes(StandardCharsets.UTF_8));
-		final String headerValue = "Basic " + new String(encodedAuth, StandardCharsets.UTF_8);
-		return headerValue;
-	}
+    /**
+     * Url Encode a string.
+     *
+     * @param stringToEncode the string to encode
+     * @return the string
+     * @throws UnsupportedEncodingException the unsupported encoding exception
+     */
+    protected static String urlEncode(final String stringToEncode) throws UnsupportedEncodingException {
+
+        if (StringUtils.isBlank(stringToEncode)) {
+            return stringToEncode;
+        }
+        return URLEncoder.encode(stringToEncode, StandardCharsets.UTF_8.toString());
+    }
+
+    /**
+     * Returns the basic auth header.
+     *
+     * @return the basic auth header
+     */
+    protected static String getBasicAuthHeader() {
+
+        final String auth = username + ":" + password;
+        final byte[] encodedAuth = Base64.getEncoder().encode(auth.getBytes(StandardCharsets.UTF_8));
+        final String headerValue = "Basic " + new String(encodedAuth, StandardCharsets.UTF_8);
+        return headerValue;
+    }
 }

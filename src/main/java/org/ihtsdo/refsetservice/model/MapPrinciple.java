@@ -1,9 +1,9 @@
 package org.ihtsdo.refsetservice.model;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
@@ -169,7 +169,11 @@ public class MapPrinciple extends AbstractHasId {
 
     }
 
-    /* see superclass */
+    /**
+     * Hash code.
+     *
+     * @return the int
+     */
     @Override
     public int hashCode() {
 
@@ -182,7 +186,12 @@ public class MapPrinciple extends AbstractHasId {
         return result;
     }
 
-    /* see superclass */
+    /**
+     * Equals.
+     *
+     * @param obj the obj
+     * @return true, if successful
+     */
     @Override
     public boolean equals(final Object obj) {
 
@@ -227,7 +236,11 @@ public class MapPrinciple extends AbstractHasId {
         return true;
     }
 
-    /* see superclass */
+    /**
+     * To string.
+     *
+     * @return the string
+     */
     @Override
     public String toString() {
 

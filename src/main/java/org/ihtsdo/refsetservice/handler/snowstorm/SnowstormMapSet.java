@@ -106,8 +106,7 @@ public class SnowstormMapSet extends SnowstormAbstract {
         }
 
         if (currentStatus == null || currentStatus == WorkflowStatus.PUBLISHED) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                "MapSet is in final/published state. Create a new version before editing.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "MapSet is in final/published state. Create a new version before editing.");
         }
 
         mapSet = MapSetWorkflowService.setWorkflowStatusByAction(service, user, action, mapSet, notes);
@@ -209,7 +208,6 @@ public class SnowstormMapSet extends SnowstormAbstract {
      * Removes the map set edit history.
      *
      * @param service the service
-     * @param user the user
      * @param refsetCode the refset code
      * @throws Exception the exception
      */
@@ -332,7 +330,6 @@ public class SnowstormMapSet extends SnowstormAbstract {
     public static MapSet setMapSetPermissions(final User user, final MapSet mapSet) throws Exception {
 
         // TODO: permissions to be reviewed.
-
 
         // mapSet.setAvailableActions(MapSetWorkflowService.getAllowedActions(user, mapSet));
         //

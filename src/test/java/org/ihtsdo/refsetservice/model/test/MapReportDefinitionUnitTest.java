@@ -20,8 +20,14 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 public class MapReportDefinitionUnitTest extends BaseTest {
 
+    /** The object. */
     private MapReportDefinition object;
 
+    /**
+     * Setup.
+     *
+     * @throws Exception the exception
+     */
     @BeforeEach
     public void setup() throws Exception {
 
@@ -29,6 +35,11 @@ public class MapReportDefinitionUnitTest extends BaseTest {
         object.setFrequency(ReportFrequency.ON_DEMAND);
     }
 
+    /**
+     * Test model get set.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelGetSet() throws Exception {
 
@@ -36,6 +47,11 @@ public class MapReportDefinitionUnitTest extends BaseTest {
         tester.test();
     }
 
+    /**
+     * Test model equals hashcode.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelEqualsHashcode() throws Exception {
 
@@ -60,6 +76,11 @@ public class MapReportDefinitionUnitTest extends BaseTest {
         assertTrue(tester.testIdentityFieldDifferentHashcode());
     }
 
+    /**
+     * Test model serialization.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelSerialization() throws Exception {
 

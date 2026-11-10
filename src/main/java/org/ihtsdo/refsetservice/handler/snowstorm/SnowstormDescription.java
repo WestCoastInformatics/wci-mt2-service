@@ -18,8 +18,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status.Family;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status.Family;
 
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Description;
@@ -31,7 +31,7 @@ import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 /**
  * The Class SnowstormDescription.
@@ -89,7 +89,7 @@ public class SnowstormDescription extends SnowstormAbstract {
 
                 if (descriptionNode.get("active").asBoolean()) {
 
-                    final String conceptId = descriptionNode.get("conceptId").asText();
+                    final String conceptId = descriptionNode.get("conceptId").asString();
 
                     if (!conceptDescriptionNodes.containsKey(conceptId)) {
 
@@ -203,7 +203,7 @@ public class SnowstormDescription extends SnowstormAbstract {
 
                 final JsonNode descriptionNode = descriptionIterator.next();
                 if (descriptionNode.get("active").asBoolean()) {
-                    final String conceptId = descriptionNode.get("conceptId").asText();
+                    final String conceptId = descriptionNode.get("conceptId").asString();
                     if (!conceptDescriptionNodes.containsKey(conceptId)) {
                         conceptDescriptionNodes.put(conceptId, new HashSet<>());
                     }
@@ -285,8 +285,8 @@ public class SnowstormDescription extends SnowstormAbstract {
         for (final List<String> batch : conceptIdBatches) {
 
             // Create Snowstorm URL
-            final String fullSnowstormUrl = SnowstormConnection.getRestBaseUrl() + edition.getBranch() + "/descriptions?limit=" + ELASTICSEARCH_MAX_RECORD_LENGTH
-                + "&conceptIds=" + batch.stream().collect(Collectors.joining(","));
+            final String fullSnowstormUrl = SnowstormConnection.getRestBaseUrl() + edition.getBranch() + "/descriptions?limit="
+                + ELASTICSEARCH_MAX_RECORD_LENGTH + "&conceptIds=" + batch.stream().collect(Collectors.joining(","));
 
             LOG.info("getDescriptions batch conceptIds={}", batch.size());
             // Call Snowstorm
@@ -313,7 +313,7 @@ public class SnowstormDescription extends SnowstormAbstract {
                     final JsonNode descriptionNode = descriptionIterator.next();
                     if (descriptionNode.get("active").asBoolean()) {
 
-                        final String conceptId = descriptionNode.get("conceptId").asText();
+                        final String conceptId = descriptionNode.get("conceptId").asString();
 
                         if (!conceptDescriptionNodes.containsKey(conceptId)) {
                             conceptDescriptionNodes.put(conceptId, new HashSet<JsonNode>());
@@ -358,10 +358,10 @@ public class SnowstormDescription extends SnowstormAbstract {
 
             final JsonNode acceptabilityMap = descriptionNode.get(Description.Field.ACCEPTABILITY_MAP.getValue());
             if (acceptabilityMap != null && acceptabilityMap.isObject() && acceptabilityMap.size() > 0) {
-                final Iterator<String> languageRefsetIds = acceptabilityMap.fieldNames();
+                final Iterator<String> languageRefsetIds = acceptabilityMap.propertyNames().iterator();
                 while (languageRefsetIds.hasNext()) {
                     final String languageRefsetId = languageRefsetIds.next();
-                    descriptions.add(toDescription(descriptionNode, languageRefsetId, acceptabilityMap.get(languageRefsetId).asText()));
+                    descriptions.add(toDescription(descriptionNode, languageRefsetId, acceptabilityMap.get(languageRefsetId).asString()));
                 }
             } else {
                 descriptions.add(toDescription(descriptionNode, "", ""));
@@ -440,7 +440,7 @@ public class SnowstormDescription extends SnowstormAbstract {
     private static String textValue(final JsonNode node, final Description.Field field) {
 
         final JsonNode value = fieldNode(node, field);
-        return hasValue(value) ? value.asText() : "";
+        return hasValue(value) ? value.asString() : "";
     }
 
 }

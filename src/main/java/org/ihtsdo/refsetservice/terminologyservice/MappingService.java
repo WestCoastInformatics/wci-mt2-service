@@ -21,7 +21,6 @@ import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
-import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,35 +29,22 @@ import org.springframework.web.multipart.MultipartFile;
 /**
  * Service class to get refset member concept information from a terminology
  * service.
- */
-/**
- * @author jesseefron
  *
+ * @author jesseefron
  */
 public final class MappingService {
 
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(MappingService.class);
 
-    /** The terminology handler. */
-    private static TerminologyServerHandler terminologyHandler;
+    /**
+     *  The terminology handler.
+     *
+     * @return the terminology handler
+     */
+    private static TerminologyServerHandler getTerminologyHandler() {
 
-    static {
-
-        // Instantiate terminology handler
-        try {
-            String key = "terminology.handler";
-            String handlerName = PropertyUtility.getProperty(key);
-            if (handlerName.isEmpty()) {
-                throw new Exception("terminology.handler expected and does not exist.");
-            }
-
-            terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName, TerminologyServerHandler.class);
-
-        } catch (Exception e) {
-            LOG.error("Failed to initialize terminology.handler - serious error", e);
-            terminologyHandler = null;
-        }
+        return HandlerUtility.getOrCreateTerminologyHandler();
     }
 
     /**
@@ -127,7 +113,7 @@ public final class MappingService {
         if (mapSet == null) {
             throw new IllegalArgumentException("MapSet from database is required for getMappings. No fallback.");
         }
-        return terminologyHandler.getMappings(branch, mapSet, searchParameters, filter, showOverriddenEntries, conceptCodes, restrictToConceptCodes,
+        return getTerminologyHandler().getMappings(branch, mapSet, searchParameters, filter, showOverriddenEntries, conceptCodes, restrictToConceptCodes,
             excludeConceptCodes);
     }
 
@@ -141,10 +127,9 @@ public final class MappingService {
      * @return the mapping
      * @throws Exception the exception
      */
-    public static Mapping getMapping(final String branch, final String conceptCode, final boolean showOverriddenEntries,
-        final MapSet mapSet) throws Exception {
+    public static Mapping getMapping(final String branch, final String conceptCode, final boolean showOverriddenEntries, final MapSet mapSet) throws Exception {
 
-        return terminologyHandler.getMapping(branch, conceptCode, showOverriddenEntries, mapSet);
+        return getTerminologyHandler().getMapping(branch, conceptCode, showOverriddenEntries, mapSet);
     }
 
     /**
@@ -160,7 +145,7 @@ public final class MappingService {
     public static List<Mapping> createMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mappings)
         throws Exception {
 
-        return terminologyHandler.createMappings(mapProject, branch, mapSetCode, mappings);
+        return getTerminologyHandler().createMappings(mapProject, branch, mapSetCode, mappings);
     }
 
     /**
@@ -178,7 +163,7 @@ public final class MappingService {
     public static List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mapping,
         final MapSet mapSet, final User user) throws Exception {
 
-        return terminologyHandler.updateMappings(mapProject, branch, mapSetCode, mapping, mapSet, user);
+        return getTerminologyHandler().updateMappings(mapProject, branch, mapSetCode, mapping, mapSet, user);
     }
 
     /**
@@ -197,10 +182,9 @@ public final class MappingService {
         if (mapSet == null) {
             throw new IllegalArgumentException("MapSet from database is required for exportMappings. No fallback.");
         }
-        return terminologyHandler.exportMappings(branch, mapSetCode, mappingExportRequest, mapSet);
+        return getTerminologyHandler().exportMappings(branch, mapSetCode, mappingExportRequest, mapSet);
     }
 
-    
     /**
      * Import mappings.
      *
@@ -212,9 +196,10 @@ public final class MappingService {
      * @return the imported mappings
      * @throws Exception the exception
      */
-	public static List<Mapping> importMappings(MapProject mapProject, String branch, MultipartFile mappingFile, MapSet mapSet, User user) throws Exception {
+    public static List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile, final MapSet mapSet,
+        final User user) throws Exception {
 
-		return terminologyHandler.importMappings(mapProject, branch, mappingFile, mapSet, user);
-	}
-    
+        return getTerminologyHandler().importMappings(mapProject, branch, mappingFile, mapSet, user);
+    }
+
 }

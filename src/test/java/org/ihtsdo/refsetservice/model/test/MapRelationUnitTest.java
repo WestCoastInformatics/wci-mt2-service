@@ -17,10 +17,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+/**
+ * The Class MapRelationUnitTest.
+ */
 @SpringBootTest
 @ActiveProfiles("test")
 public class MapRelationUnitTest extends BaseTest {
 
+    /** The Constant LOG. */
     @SuppressWarnings("unused")
     private static final Logger LOG = LoggerFactory.getLogger(MapRelationUnitTest.class);
 

@@ -19,14 +19,25 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 public class AdditionalMapEntryInfoUnitTest extends BaseTest {
 
+    /** The object. */
     private AdditionalMapEntryInfo object;
 
+    /**
+     * Setup.
+     *
+     * @throws Exception the exception
+     */
     @BeforeEach
     public void setup() throws Exception {
 
         object = new AdditionalMapEntryInfo();
     }
 
+    /**
+     * Test model get set.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelGetSet() throws Exception {
 
@@ -34,6 +45,11 @@ public class AdditionalMapEntryInfoUnitTest extends BaseTest {
         tester.test();
     }
 
+    /**
+     * Test model equals hashcode.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelEqualsHashcode() throws Exception {
 
@@ -50,6 +66,11 @@ public class AdditionalMapEntryInfoUnitTest extends BaseTest {
         assertTrue(tester.testIdentityFieldDifferentHashcode());
     }
 
+    /**
+     * Test model serialization.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelSerialization() throws Exception {
 

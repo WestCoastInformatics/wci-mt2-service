@@ -14,33 +14,35 @@ package org.ihtsdo.refsetservice.helpers;
  */
 public enum RelationStyle {
 
-  /** The map category style. */
-  MAP_CATEGORY_STYLE("Map Category Style"),
+    /** The map category style. */
+    MAP_CATEGORY_STYLE("Map Category Style"),
 
-  /** The relationship style. */
-  RELATIONSHIP_STYLE("Relationship Style"),
+    /** The relationship style. */
+    RELATIONSHIP_STYLE("Relationship Style"),
 
-  /** For simple maps. */
-  NONE("No Relationships");
+    /** For simple maps. */
+    NONE("No Relationships");
 
-  /** The display name. */
-  private String displayName = null;
+    /** The display name. */
+    private String displayName = null;
 
-  /**
-   * Instantiates a {@link RelationStyle} from the specified parameters.
-   *
-   * @param displayName the display name
-   */
-  private RelationStyle(final String displayName) {
-    this.displayName = displayName;
-  }
+    /**
+     * Instantiates a {@link RelationStyle} from the specified parameters.
+     *
+     * @param displayName the display name
+     */
+    private RelationStyle(final String displayName) {
 
-  /**
-   * Returns the display name.
-   *
-   * @return the display name
-   */
-  public String getDisplayName() {
-    return displayName;
-  }
+        this.displayName = displayName;
+    }
+
+    /**
+     * Returns the display name.
+     *
+     * @return the display name
+     */
+    public String getDisplayName() {
+
+        return displayName;
+    }
 }

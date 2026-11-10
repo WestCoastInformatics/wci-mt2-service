@@ -17,8 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.NotFoundException;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotFoundException;
 
 import org.hibernate.Hibernate;
 import org.ihtsdo.refsetservice.handler.EntraMapBootstrap;
@@ -35,7 +35,6 @@ import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
 import org.ihtsdo.refsetservice.util.IndexUtility;
-import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
@@ -49,25 +48,14 @@ public class MapProjectService extends BaseService {
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(MapProjectService.class);
 
-    /** The terminology handler. */
-    private static TerminologyServerHandler terminologyHandler;
+    /**
+     *  The terminology handler.
+     *
+     * @return the terminology handler
+     */
+    private static TerminologyServerHandler getTerminologyHandler() {
 
-    static {
-
-        // Instantiate terminology handler
-        try {
-            String key = "terminology.handler";
-            String handlerName = PropertyUtility.getProperty(key);
-            if (handlerName.isEmpty()) {
-                throw new Exception("terminology.handler expected and does not exist.");
-            }
-
-            terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName, TerminologyServerHandler.class);
-
-        } catch (Exception e) {
-            LOG.error("Failed to initialize terminology.handler - serious error", e);
-            terminologyHandler = null;
-        }
+        return HandlerUtility.getOrCreateTerminologyHandler();
     }
 
     /**
@@ -147,8 +135,7 @@ public class MapProjectService extends BaseService {
     }
 
     /**
-     * Initialize lazy collections and add users whose application role is global
-     * ({@code all-all-all-*} = all organizations, all editions, all projects).
+     * Initialize lazy collections and add users whose application role is global ({@code all-all-all-*} = all organizations, all editions, all projects).
      *
      * @param service the terminology service
      * @param mapProject the map project
@@ -206,9 +193,8 @@ public class MapProjectService extends BaseService {
     }
 
     /**
-     * Add Entra {@code all-all-all-*} users to the response collections. Does not persist join rows.
-     * A user may appear in multiple lists when they hold multiple roles (for example admin and
-     * specialist, or lead and specialist). Admin membership populates {@code mapAdmins} only.
+     * Add Entra {@code all-all-all-*} users to the response collections. Does not persist join rows. A user may appear in multiple lists when they hold
+     * multiple roles (for example admin and specialist, or lead and specialist). Admin membership populates {@code mapAdmins} only.
      *
      * @param mapProject the map project
      * @param activeMapUsers active map users
@@ -501,7 +487,7 @@ public class MapProjectService extends BaseService {
      */
     public static Map<String, String> getModuleNames(final Edition edition) throws Exception {
 
-        return terminologyHandler.getModuleNames(edition);
+        return getTerminologyHandler().getModuleNames(edition);
 
     }
 
@@ -560,7 +546,6 @@ public class MapProjectService extends BaseService {
         // final Set<String> copyOfProjectTeams = (mapProject.getTeams() != null)
         // ? new HashSet<String>(mapProject.getTeams())
         // : new HashSet<String>();
-
 
         // // inactivate mapProjects, clear teams, and inactivate refsets
         // project.setActive(false);

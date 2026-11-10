@@ -18,16 +18,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status.Family;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status.Family;
 
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
+import org.ihtsdo.refsetservice.util.BoundedExecutors;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.ResultListConcept;
@@ -44,9 +43,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * The Class SnowstormRefsetMember.
@@ -97,7 +96,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
             final ResultListConcept conceptList = RefsetMemberService.populateConcepts(root, refset, lookupParameters);
             concepts.addAll(conceptList.getItems());
 
-            final String newSearchAfter = (root.get("searchAfter") != null ? root.get("searchAfter").asText() : "");
+            final String newSearchAfter = (root.get("searchAfter") != null ? root.get("searchAfter").asString() : "");
             if (StringUtils.isNoneBlank(newSearchAfter)) {
 
                 getAllRefsetMembers(service, refsetInternalId, newSearchAfter, concepts);
@@ -203,7 +202,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
 
                         if (root.get("searchAfter") != null) {
 
-                            searchAfter = "&searchAfter=" + root.get("searchAfter").asText();
+                            searchAfter = "&searchAfter=" + root.get("searchAfter").asString();
                         }
 
                         if (conceptNodeBatch.size() == 0 || conceptNodeBatch.size() + currentList.getItems().size() >= currentList.getTotal()) {
@@ -227,9 +226,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
             int snowstormCallCount = 0;
             final boolean doNotSearch = notSearching;
 
-            // Change the numbers to '1's to avoid threading
-            final ExecutorService executor =
-                new ThreadPoolExecutor(30, 30, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(30), new ThreadPoolExecutor.CallerRunsPolicy());
+            final BoundedExecutors.Batch batch = BoundedExecutors.fanoutBatch();
 
             // add the descriptions to the children concepts in batches
             for (int i = 0; i < currentList.getItems().size(); i++) {
@@ -243,7 +240,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
                     final List<Concept> threadConcepts = new ArrayList<Concept>();
                     threadConcepts.addAll(conceptsToProcess);
 
-                    executor.submit(new Runnable() {
+                    batch.submit(new Runnable() {
 
                         /* see superclass */
                         @Override
@@ -276,8 +273,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
 
             }
 
-            executor.shutdown();
-            executor.awaitTermination(600, TimeUnit.SECONDS);
+            batch.await(600, TimeUnit.SECONDS);
 
             LOG.debug("getMemberList snowstormCallCount: " + snowstormCallCount);
 
@@ -305,16 +301,14 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
      */
     public static void populateMembershipInformation(final Refset refset, final List<Concept> concepts) throws Exception {
 
-        final String baseUrl = SnowstormConnection.getRestBaseUrl() + RefsetMemberService.getBranchPath(refset) + "/members?referenceSet=" + refset.getRefsetId()
-            + "&active=true&limit=" + RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH + "&offset=0&"
+        final String baseUrl = SnowstormConnection.getRestBaseUrl() + RefsetMemberService.getBranchPath(refset) + "/members?referenceSet="
+            + refset.getRefsetId() + "&active=true&limit=" + RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH + "&offset=0&"
             + SnowstormApiPaging.getMemberSortQueryString() + "&referencedComponentId=";
         final List<Concept> conceptsToProcess = new ArrayList<>();
         String conceptIds = "";
         int snowstormCallCount = 0;
 
-        // Change the '30's to '1's to avoid threading
-        final ExecutorService executor =
-            new ThreadPoolExecutor(30, 30, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(30), new ThreadPoolExecutor.CallerRunsPolicy());
+        final BoundedExecutors.Batch batch = BoundedExecutors.fanoutBatch();
 
         // add the descriptions to the children concepts in batches
         for (int i = 0; i < concepts.size(); i++) {
@@ -331,7 +325,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
                 final List<Concept> threadConcepts = new ArrayList<Concept>();
                 threadConcepts.addAll(conceptsToProcess);
 
-                executor.submit(new Runnable() {
+                batch.submit(new Runnable() {
 
                     /* see superclass */
                     @Override
@@ -377,8 +371,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
 
         }
 
-        executor.shutdown();
-        executor.awaitTermination(600, TimeUnit.SECONDS);
+        batch.await(600, TimeUnit.SECONDS);
 
         LOG.debug("populateMembershipInformation snowstormCallCount: " + snowstormCallCount);
     }
@@ -441,7 +434,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
 
                     // Calculate the version date and ensure it has
                     // proper format yyyy-mm-dd
-                    currentVersionDate = memberNode.get("releasedEffectiveTime").asText();
+                    currentVersionDate = memberNode.get("releasedEffectiveTime").asString();
                     currentVersionDate = currentVersionDate.substring(0, 4) + "-" + currentVersionDate.substring(4, 6) + "-" + currentVersionDate.substring(6);
 
                     if (memberNode.has("active")) {
@@ -573,9 +566,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
             + ")&limit=1000&offset=";
         final List<Set<String>> ancestorsSetBatches = new ArrayList<>(Collections.nCopies(10, new HashSet<>()));
 
-        // Change the '10's to '1's to avoid threading
-        final ExecutorService executor =
-            new ThreadPoolExecutor(10, 10, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(10), new ThreadPoolExecutor.CallerRunsPolicy());
+        final BoundedExecutors.Batch batch = BoundedExecutors.fanoutBatch();
 
         // add the descriptions to the children concepts in batches
         for (int i = 0; i < ancestorsSetBatches.size(); i++) {
@@ -584,7 +575,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
             final int offset = 1000 * i;
             LOG.debug("cacheMemberAncestors URL: " + url + offset);
 
-            executor.submit(new Runnable() {
+            batch.submit(new Runnable() {
 
                 /* see superclass */
                 @Override
@@ -613,7 +604,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
                                 throw new Exception("Result wasn't as expected with resultNode: " + resultNode);
                             }
 
-                            ancestorsSet.add(resultNode.get("conceptId").asText());
+                            ancestorsSet.add(resultNode.get("conceptId").asString());
                         }
 
                     } catch (final Exception e) {
@@ -626,8 +617,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
             });
         }
 
-        executor.shutdown();
-        executor.awaitTermination(120, TimeUnit.SECONDS);
+        batch.await(120, TimeUnit.SECONDS);
 
         final Set<String> ancestorsSet = new HashSet<>();
 
@@ -678,8 +668,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
         // (though the concept itself can be inactive)
         final String conceptSearchUrl = SnowstormConnection.getRestBaseUrl() + branchPath + "/concepts/search";
         final String memberSearchUrl = SnowstormConnection.getRestBaseUrl() + branchPath + "/members/search?"
-            + SnowstormApiPaging.getMemberSearchPagingQueryString(
-                new SearchParameters(null, RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH, null));
+            + SnowstormApiPaging.getMemberSearchPagingQueryString(new SearchParameters(null, RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH, null));
         final String bodyBase = "{\"limit\": " + RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH + ", ";
         final String memberSearchBodyBase = "{\"referenceSet\":\"" + refsetId + "\", \"referencedComponentIds\":[";
         final List<String> permanentFullConceptList = new ArrayList<>(conceptIds);
@@ -725,7 +714,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
             }
 
             LOG.debug("addRefsetMembers searchIndex :: loopNumber :: batch size: " + searchIndex + " :: " + loopNumber + " :: " + (searchIndex / loopNumber));
-            bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",") + "]";
+            bodyConceptIds = Strings.CS.removeEnd(bodyConceptIds, ",") + "]";
 
             // verify the concept IDs if a bulk add is going to be used
             if (conceptIds.size() > 0) {
@@ -751,20 +740,20 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
                     while (iterator != null && iterator.hasNext()) {
 
                         final JsonNode conceptNode = iterator.next();
-                        final String conceptId = conceptNode.get("conceptId").asText();
+                        final String conceptId = conceptNode.get("conceptId").asString();
                         String name = "";
                         validatedConcepts.add(conceptId);
 
                         if (conceptNode.get("pt") != null && conceptNode.get("pt").get("term") != null) {
 
-                            name = conceptNode.get("pt").get("term").asText();
+                            name = conceptNode.get("pt").get("term").asString();
                         }
 
                         final Map<String, String> status = new HashMap<>();
                         status.put("operation", "Added");
                         status.put("status", "Success");
                         status.put("name", name);
-                        status.put("active", conceptNode.get("active").asText());
+                        status.put("active", conceptNode.get("active").asString());
                         conceptsStatus.put(conceptId, status);
                     }
 
@@ -805,7 +794,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
                     bodyConceptIds += conceptId + ",";
                 }
 
-                bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",");
+                bodyConceptIds = Strings.CS.removeEnd(bodyConceptIds, ",");
                 final String memberSearchBody = memberSearchBodyBase + bodyConceptIds + "]}";
                 // LOG.debug("addRefsetMembers member search body: " +
                 // memberSearchBody);
@@ -828,7 +817,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
                     while (iterator != null && iterator.hasNext()) {
 
                         final JsonNode conceptNode = iterator.next();
-                        final String conceptId = conceptNode.get("referencedComponentId").asText();
+                        final String conceptId = conceptNode.get("referencedComponentId").asString();
                         final boolean active = conceptNode.get("active").asBoolean();
 
                         // if active remove from the list to add, else update the membership
@@ -849,14 +838,14 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
                             conceptIds.remove(conceptId);
 
                             final ObjectNode memberBody = ThreadLocalMapper.get().createObjectNode().put("active", true)
-                                .put("memberId", conceptNode.get("memberId").asText()).put("moduleId", conceptNode.get("moduleId").asText())
-                                .put("referencedComponentId", conceptNode.get("referencedComponentId").asText())
-                                .put("refsetId", conceptNode.get("refsetId").asText()).put("released", conceptNode.get("released").asBoolean())
+                                .put("memberId", conceptNode.get("memberId").asString()).put("moduleId", conceptNode.get("moduleId").asString())
+                                .put("referencedComponentId", conceptNode.get("referencedComponentId").asString())
+                                .put("refsetId", conceptNode.get("refsetId").asString()).put("released", conceptNode.get("released").asBoolean())
                                 .put("releasedEffectiveTime", conceptNode.get("releasedEffectiveTime").asInt())
                                 .set("additionalFields", conceptNode.get("additionalFields"));
 
                             if (conceptNode.get("effectiveTime") != null) {
-                                memberBody.put("effectiveTime", conceptNode.get("effectiveTime").asText());
+                                memberBody.put("effectiveTime", conceptNode.get("effectiveTime").asString());
                             }
 
                             memberUpdateArray.add(memberBody);
@@ -1017,7 +1006,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
                     final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
 
                     // LOG.debug("addRefsetMembers job status response: " + root);
-                    final String status = root.get("status").asText();
+                    final String status = root.get("status").asString();
 
                     if (status.equalsIgnoreCase("COMPLETED")) {
 
@@ -1027,7 +1016,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
 
                         jobDone = true;
                         LOG.error(errorMessage + " Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
-                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage + root.get("message").asText());
+                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage + root.get("message").asString());
                     } else {
 
                         LOG.debug("Bulk member add hasn't finished yet...");
@@ -1079,9 +1068,9 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
         // when searching for members we only want concepts whose membership is
         // active
         // (though the concept itself can be inactive)
-        final String memberSearchUrlBase = SnowstormConnection.getRestBaseUrl() + branchPath + "/members?referenceSet=" + refset.getRefsetId()
-            + "&offset=0&active=true" + "&limit=" + RefsetMemberService.URL_MAX_CHAR_LENGTH + "&" + SnowstormApiPaging.getMemberSortQueryString()
-            + "&referencedComponentId=";
+        final String memberSearchUrlBase =
+            SnowstormConnection.getRestBaseUrl() + branchPath + "/members?referenceSet=" + refset.getRefsetId() + "&offset=0&active=true" + "&limit="
+                + RefsetMemberService.URL_MAX_CHAR_LENGTH + "&" + SnowstormApiPaging.getMemberSortQueryString() + "&referencedComponentId=";
         final ArrayNode memberDeleteArray = ThreadLocalMapper.get().createArrayNode();
         final ArrayNode memberUpdateArray = ThreadLocalMapper.get().createArrayNode();
         final List<String> permanentFullConceptList = Arrays.asList(conceptIds.split(","));
@@ -1111,7 +1100,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
 
             }
 
-            bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",");
+            bodyConceptIds = Strings.CS.removeEnd(bodyConceptIds, ",");
 
             final String memberSearchUrl = memberSearchUrlBase + bodyConceptIds;
             Iterator<JsonNode> iterator = null;
@@ -1139,9 +1128,9 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
 
                 final JsonNode conceptNode = iterator.next();
                 final boolean released = conceptNode.get("released").asBoolean();
-                final String membershipId = conceptNode.get("memberId").asText();
+                final String membershipId = conceptNode.get("memberId").asString();
                 String name = "";
-                members.add(conceptNode.get("referencedComponentId").asText());
+                members.add(conceptNode.get("referencedComponentId").asString());
 
                 // if the member has not been released then remove the membership
                 if (!released) {
@@ -1154,9 +1143,10 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
                 else {
 
                     final ObjectNode memberBody = ThreadLocalMapper.get().createObjectNode().put("active", false)
-                        .put("effectiveTime", conceptNode.get("effectiveTime").asText()).put("memberId", membershipId)
-                        .put("moduleId", conceptNode.get("moduleId").asText()).put("referencedComponentId", conceptNode.get("referencedComponentId").asText())
-                        .put("refsetId", conceptNode.get("refsetId").asText()).put("released", released)
+                        .put("effectiveTime", conceptNode.get("effectiveTime").asString()).put("memberId", membershipId)
+                        .put("moduleId", conceptNode.get("moduleId").asString())
+                        .put("referencedComponentId", conceptNode.get("referencedComponentId").asString())
+                        .put("refsetId", conceptNode.get("refsetId").asString()).put("released", released)
                         .put("releasedEffectiveTime", conceptNode.get("releasedEffectiveTime").asInt())
                         .set("additionalFields", conceptNode.get("additionalFields"));
 
@@ -1167,15 +1157,15 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
 
                 if (referencedComponent.get("pt") != null && referencedComponent.get("pt").get("term") != null) {
 
-                    name = referencedComponent.get("pt").get("term").asText();
+                    name = referencedComponent.get("pt").get("term").asString();
                 }
 
                 final Map<String, String> status = new HashMap<>();
                 status.put("operation", "Removed");
                 status.put("status", "Success");
                 status.put("name", name);
-                status.put("active", referencedComponent.get("active").asText());
-                conceptsStatus.put(conceptNode.get("referencedComponentId").asText(), status);
+                status.put("active", referencedComponent.get("active").asString());
+                conceptsStatus.put(conceptNode.get("referencedComponentId").asString(), status);
             }
 
         }
@@ -1228,7 +1218,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
             if (memberUpdateArray.size() == 1) {
 
                 final JsonNode memberBody = memberUpdateArray.get(0);
-                unremovedConcepts = callUpdateMemberSingle(refsetId, url + "/" + memberBody.get("memberId").asText(), memberBody);
+                unremovedConcepts = callUpdateMemberSingle(refsetId, url + "/" + memberBody.get("memberId").asString(), memberBody);
 
             } else if (memberUpdateArray.size() > 1) {
 
@@ -1277,8 +1267,8 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
             // Only process payload if Rest call is successful
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
-                final String memberId = memberBody.get("memberId").asText();
-                final String conceptId = memberBody.get("referencedComponentId").asText();
+                final String memberId = memberBody.get("memberId").asString();
+                final String conceptId = memberBody.get("referencedComponentId").asString();
 
                 LOG.error("Inactivate Reference Set Member call to url '" + url + "' for Reference Set '" + refsetId + "' and concept '" + conceptId
                     + "' and member '" + memberId + "' wasn't successful. " + " Status: " + response.getStatus() + " Message: "
@@ -1355,7 +1345,7 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
                     final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
 
                     // LOG.debug("addRefsetMembers job status response: " + root);
-                    final String status = root.get("status").asText();
+                    final String status = root.get("status").asString();
 
                     if (status.equalsIgnoreCase("COMPLETED")) {
 
@@ -1364,8 +1354,8 @@ public class SnowstormRefsetMember extends SnowstormAbstract {
                     } else if (status.equalsIgnoreCase("failed")) {
 
                         jobDone = true;
-                        LOG.error(errorMessage + root.get("message").asText());
-                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage + root.get("message").asText());
+                        LOG.error(errorMessage + root.get("message").asString());
+                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage + root.get("message").asString());
 
                     } else {
 

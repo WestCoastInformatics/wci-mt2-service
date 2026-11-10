@@ -49,17 +49,17 @@ public final class SnomedConstants {
     public static final String DESCRIPTION_LANGUAGE = "language";
 
     /** The description language. */
-    public  static final String DESCRIPTION_ID = "descriptionId";
+    public static final String DESCRIPTION_ID = "descriptionId";
 
     /** The description language code. */
-    public  static final String LANGUAGE_CODE = "languageCode";
+    public static final String LANGUAGE_CODE = "languageCode";
 
     /** The description language. */
-    public  static final String LANGUAGE_NAME = "languageName";
-    
+    public static final String LANGUAGE_NAME = "languageName";
+
     /** The Constant BRANCH_DATE_FORMAT. */
     public static final SimpleDateFormat BRANCH_DATE_FORMAT = new SimpleDateFormat(DateUtility.DATE_FORMAT_REVERSE);
-    
+
     /** The Constant BRANCH_DATE_FORMAT_ONLY_NUMBERS. */
     public static final SimpleDateFormat BRANCH_DATE_FORMAT_ONLY_NUMBERS = new SimpleDateFormat(DateUtility.DATE_FORMAT_REVERSE_ONLY_NUMBERS);
 

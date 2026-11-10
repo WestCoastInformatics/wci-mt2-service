@@ -21,16 +21,17 @@ import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.boot.autoconfigure.flyway.FlywayMigrationInitializer;
-import org.springframework.boot.autoconfigure.flyway.FlywayMigrationStrategy;
+import org.springframework.boot.flyway.autoconfigure.FlywayMigrationInitializer;
+import org.springframework.boot.flyway.autoconfigure.FlywayMigrationStrategy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.session.jdbc.config.annotation.SpringSessionDataSource;
 import org.springframework.transaction.PlatformTransactionManager;
+
+import com.zaxxer.hikari.HikariDataSource;
 
 /**
  * Set up the migration strategy and JDBC DataSource used by Spring Session.
@@ -54,8 +55,8 @@ public class PersistenceConfiguration {
     }
 
     /**
-     * Primary JDBC DataSource for Spring Session (and other Spring JDBC usage). Hibernate continues to use its own
-     * pool via persistence.xml / hibernate.connection.*; Flyway uses its own connection in {@link #customFlyway()}.
+     * Primary JDBC DataSource for Spring Session (and other Spring JDBC usage). Hibernate continues to use its own pool via persistence.xml /
+     * hibernate.connection.*; Flyway uses its own connection in {@link #customFlyway()}.
      *
      * @return the data source
      */
@@ -69,13 +70,17 @@ public class PersistenceConfiguration {
         final String password = properties.getProperty("spring.datasource.password");
         final String driver = properties.getProperty("spring.datasource.driver-class-name");
 
-        LOG.info("Creating Spring DataSource for url={}", url);
+        LOG.info("Creating Spring Hikari DataSource for url={}", url);
 
-        final DriverManagerDataSource dataSource = new DriverManagerDataSource();
-        dataSource.setDriverClassName(driver);
-        dataSource.setUrl(url);
+        final HikariDataSource dataSource = new HikariDataSource();
+        dataSource.setPoolName("spring-session");
+        dataSource.setJdbcUrl(url);
         dataSource.setUsername(username);
         dataSource.setPassword(password);
+        dataSource.setDriverClassName(driver);
+        dataSource.setMinimumIdle(Integer.parseInt(properties.getProperty("spring.datasource.hikari.minimum-idle", "2")));
+        dataSource.setMaximumPoolSize(Integer.parseInt(properties.getProperty("spring.datasource.hikari.maximum-pool-size", "10")));
+        dataSource.setIdleTimeout(Long.parseLong(properties.getProperty("spring.datasource.hikari.idle-timeout", "300000")));
         return dataSource;
     }
 

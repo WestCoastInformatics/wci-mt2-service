@@ -15,9 +15,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.hibernate5.Hibernate5Module;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.datatype.hibernate7.Hibernate7Module;
 
 /**
  * Unit test for {@link Mapping}.
@@ -26,14 +26,25 @@ import com.fasterxml.jackson.datatype.hibernate5.Hibernate5Module;
 @ActiveProfiles("test")
 public class MappingUnitTest extends BaseTest {
 
+    /** The object. */
     private Mapping object;
 
+    /**
+     * Setup.
+     *
+     * @throws Exception the exception
+     */
     @BeforeEach
     public void setup() throws Exception {
 
         object = new Mapping();
     }
 
+    /**
+     * Test model get set.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelGetSet() throws Exception {
 
@@ -44,6 +55,11 @@ public class MappingUnitTest extends BaseTest {
         tester.test();
     }
 
+    /**
+     * Test model equals hashcode.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelEqualsHashcode() throws Exception {
 
@@ -67,6 +83,11 @@ public class MappingUnitTest extends BaseTest {
         assertTrue(tester.testIdentityFieldDifferentHashcode());
     }
 
+    /**
+     * Test model serialization.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelSerialization() throws Exception {
 
@@ -78,8 +99,7 @@ public class MappingUnitTest extends BaseTest {
     }
 
     /**
-     * Hibernate5Module skips {@code @Transient} fields unless they have {@code @JsonGetter}.
-     * Hydrated map notes must still appear in API JSON.
+     * Hibernate5Module skips {@code @Transient} fields unless they have {@code @JsonGetter}. Hydrated map notes must still appear in API JSON.
      *
      * @throws Exception the exception
      */
@@ -97,7 +117,7 @@ public class MappingUnitTest extends BaseTest {
         assertTrue(node.has("mapNotes"), node.toString());
         assertTrue(node.get("mapNotes").isArray());
         assertEquals(1, node.get("mapNotes").size());
-        assertTrue(node.get("mapNotes").get(0).get("note").asText().contains("This is a note I'm adding"));
+        assertTrue(node.get("mapNotes").get(0).get("note").asString().contains("This is a note I'm adding"));
     }
 
     /**
@@ -120,10 +140,8 @@ public class MappingUnitTest extends BaseTest {
      *
      * @return the object mapper
      */
-    private static ObjectMapper hibernateObjectMapper() {
+    private static JsonMapper hibernateObjectMapper() {
 
-        final ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new Hibernate5Module());
-        return mapper;
+        return JsonMapper.builder().addModule(new Hibernate7Module()).build();
     }
 }

@@ -5,7 +5,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -31,7 +31,7 @@ public class MetricAdvice {
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(MetricAdvice.class);
 
-    /** The elastic server properties. */
+    /* The elastic server properties. */
     // @Autowired
     // private ElasticServerProperties elasticServerProperties;
 

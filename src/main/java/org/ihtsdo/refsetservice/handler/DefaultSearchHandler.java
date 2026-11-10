@@ -19,7 +19,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
@@ -103,7 +103,7 @@ public class DefaultSearchHandler implements SearchHandler {
             // [0,1]
             /*
              * TODO: Resolve this section final Double normScore = Math.min(5, Double.valueOf(score.toString())) / 5; t.setConfidence(normScore);
-             * 
+             *
              * // store the score scoreMap.put(t.getId(), normScore.floatValue());
              */
         }
@@ -261,7 +261,12 @@ public class DefaultSearchHandler implements SearchHandler {
         return new DefaultSearchHandler();
     }
 
-    /* see superclass */
+    /**
+     * Sets the properties.
+     *
+     * @param properties the new properties
+     * @throws Exception the exception
+     */
     @Override
     public void setProperties(final Properties properties) throws Exception {
 

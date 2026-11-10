@@ -339,6 +339,7 @@ public class RefsetEditParameters {
      * If this equals another object.
      *
      * @param obj the obj
+     * @return true, if successful
      */
     @Override
     public boolean equals(final Object obj) {
@@ -498,7 +499,11 @@ public class RefsetEditParameters {
         return result;
     }
 
-    /* see superclass */
+    /**
+     * To string.
+     *
+     * @return the string
+     */
     @Override
     public String toString() {
 

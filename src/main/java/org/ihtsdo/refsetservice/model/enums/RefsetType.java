@@ -3,12 +3,18 @@ package org.ihtsdo.refsetservice.model.enums;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * The Enum RefsetType.
+ */
 public enum RefsetType {
 
+    /** The intensional. */
     INTENSIONAL("Intensional"),
 
+    /** The extensional. */
     EXTENSIONAL("Extensional"),
 
+    /** The external. */
     EXTERNAL("External");
 
     /** The label. */
@@ -34,6 +40,12 @@ public enum RefsetType {
         return label;
     }
 
+    /**
+     * From string.
+     *
+     * @param text the text
+     * @return the refset type
+     */
     // convert string to enum
     public static RefsetType fromString(final String text) {
 

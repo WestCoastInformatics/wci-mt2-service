@@ -14,9 +14,9 @@ package org.ihtsdo.refsetservice.helpers;
  */
 public enum ReportResultType {
 
-  /** The concept. */
-  CONCEPT,
+    /** The concept. */
+    CONCEPT,
 
-  /** The map record. */
-  MAP_RECORD
+    /** The map record. */
+    MAP_RECORD
 }

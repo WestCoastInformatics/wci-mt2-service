@@ -1,0 +1,97 @@
+{
+  "id": "mt2-entra-test",
+  "realm": "mt2-entra-test",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": false,
+  "clients": [
+    {
+      "clientId": "mt2-service",
+      "name": "MT2 Entra stand-in",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "test-client-secret",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://127.0.0.1:8888/refsetservice/authenticate/callback"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "fullScopeAllowed": true,
+      "attributes": {
+        "post.logout.redirect.uris": "+",
+        "pkce.code.challenge.method": ""
+      },
+      "protocolMappers": [
+        {
+          "name": "email",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "email",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "email",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "name",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-full-name-mapper",
+          "consentRequired": false,
+          "config": {
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "mapper",
+      "email": "mapper@example.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Map",
+      "lastName": "Per",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "mapper-pass",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "admin.mapper",
+      "email": "admin.mapper@example.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Admin",
+      "lastName": "Mapper",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin-pass",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}

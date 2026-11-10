@@ -1,6 +1,6 @@
 package org.ihtsdo.refsetservice.model;
 
-import javax.persistence.MappedSuperclass;
+import jakarta.persistence.MappedSuperclass;
 
 import org.ihtsdo.refsetservice.util.ModelUtility;
 
@@ -10,22 +10,27 @@ import org.ihtsdo.refsetservice.util.ModelUtility;
 @MappedSuperclass
 public abstract class BaseModel {
 
-  /**
-   * Instantiates an empty {@link BaseModel}.
-   */
-  protected BaseModel() {
+    /**
+     * Instantiates an empty {@link BaseModel}.
+     */
+    protected BaseModel() {
 
-    // n/a
-  }
-
-  /* see superclass */
-  @Override
-  public String toString() {
-
-    try {
-      return ModelUtility.toJson(this);
-    } catch (final Exception e) {
-      return e.getMessage();
+        // n/a
     }
-  }
+
+    /**
+     * To string.
+     *
+     * @return the string
+     */
+    /* see superclass */
+    @Override
+    public String toString() {
+
+        try {
+            return ModelUtility.toJson(this);
+        } catch (final Exception e) {
+            return e.getMessage();
+        }
+    }
 }

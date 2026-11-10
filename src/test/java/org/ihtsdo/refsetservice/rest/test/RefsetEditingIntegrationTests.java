@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RefsetMemberComparison;
 import org.ihtsdo.refsetservice.model.UpgradeInactiveConcept;
@@ -36,11 +37,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.json.JacksonTester;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Integration tests for MetadataController.
@@ -72,7 +72,7 @@ public class RefsetEditingIntegrationTests extends AbstractRefsetTests {
             setWorkflowUtil(new WorkflowUnitTestUtilities(getMvc(), getBaseUrl(), REFSET_FILE_PATH));
         }
 
-        setObjectMapper(new ObjectMapper());
+        setObjectMapper(ThreadLocalMapper.newMapper());
         JacksonTester.initFields(this, getObjectMapper());
         setBaseUrl("/refset");
 
@@ -134,7 +134,7 @@ public class RefsetEditingIntegrationTests extends AbstractRefsetTests {
         getEditUtil().deleteUnversionedRefset(refsetInternalId, refsetConcept.get("refsetDeleteStatus"));
     }
 
-    /**
+    /*
      * earlier createRefsetFromExisting test public void testCreateRefsetFromExistingConcept() throws Exception { // TODO: Review purpose // the data to create
      * a refset from an existing concept (but can't be a // refset already in RT2) final Map<String, String> refsetExistingConcept = new HashMap<>();
      * refsetExistingConcept.put("refsetId", "762103008"); refsetExistingConcept.put("name", "OWL ontology reference set");

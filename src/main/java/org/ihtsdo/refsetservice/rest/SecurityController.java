@@ -15,8 +15,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Base64;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.MediaType;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
@@ -265,7 +265,7 @@ public class SecurityController extends BaseController {
      */
     private static void clearBrowserAuthSession(final HttpServletRequest httpRequest) {
 
-        final javax.servlet.http.HttpSession session = httpRequest.getSession(false);
+        final jakarta.servlet.http.HttpSession session = httpRequest.getSession(false);
         if (session == null) {
             return;
         }
@@ -298,7 +298,7 @@ public class SecurityController extends BaseController {
      */
     private static String resolvePostLoginRedirect(final HttpServletRequest httpRequest, final SecurityServiceHandler handler) throws Exception {
 
-        final javax.servlet.http.HttpSession session = httpRequest.getSession(false);
+        final jakarta.servlet.http.HttpSession session = httpRequest.getSession(false);
         if (session != null) {
             final Object returnUrlObj = session.getAttribute(SecurityService.SESSION_OAUTH_RETURN_URL_KEY);
             if (returnUrlObj != null) {
@@ -318,7 +318,7 @@ public class SecurityController extends BaseController {
      */
     private static void clearOAuthReturnUrl(final HttpServletRequest httpRequest) {
 
-        final javax.servlet.http.HttpSession session = httpRequest.getSession(false);
+        final jakarta.servlet.http.HttpSession session = httpRequest.getSession(false);
         if (session != null) {
             session.removeAttribute(SecurityService.SESSION_OAUTH_RETURN_URL_KEY);
         }

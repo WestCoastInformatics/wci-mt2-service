@@ -10,12 +10,12 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.CaseUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.common.base.CaseFormat;
+import tools.jackson.core.JacksonException;
 
 /**
  * Utility class for interacting with Strings.
@@ -37,7 +37,7 @@ public final class StringUtility {
 
     /** The Constant NORM_PUNCTUATION_REGEX. */
     public static final String NORM_PUNCTUATION_REGEX = "[ \\t\\-{}_!@#%&\\*\\\\:;,?/~+=|<>$`^]";
-    
+
     /**
      * Instantiates an empty {@link StringUtility}.
      */
@@ -228,7 +228,7 @@ public final class StringUtility {
      */
     public static String camelCase(final String str) {
 
-        return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, str.replaceAll(" ", "_"));
+        return CaseUtils.toCamelCase(str, true, ' ', '_');
     }
 
     /**
@@ -476,8 +476,7 @@ public final class StringUtility {
         }
         return sb2.toString();
     }
-    
-    
+
     /**
      * Indicates whether or not json is the case.
      *
@@ -485,10 +484,11 @@ public final class StringUtility {
      * @return <code>true</code> if so, <code>false</code> otherwise
      */
     public static boolean isJson(final String str) {
+
         try {
             ThreadLocalMapper.get().readTree(str);
             return true;
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             return false;
         }
     }

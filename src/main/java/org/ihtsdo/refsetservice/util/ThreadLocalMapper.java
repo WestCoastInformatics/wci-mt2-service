@@ -11,46 +11,46 @@ package org.ihtsdo.refsetservice.util;
 
 import java.util.TimeZone;
 
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Supply object mapper per thread.
+ * Supply a shared, thread-safe object mapper.
  */
 public final class ThreadLocalMapper {
-
-    /** The Constant mapper. */
-    private static final ThreadLocal<ObjectMapper> MAPPER = ThreadLocal.withInitial(ThreadLocalMapper::newMapper);
 
     /**
      * Instantiates a new thread local mapper.
      */
     private ThreadLocalMapper() {
+
         // n/a
     }
+
+    /** The shared mapper. */
+    private static final JsonMapper MAPPER = newMapper();
 
     /**
      * New mapper.
      *
-     * @return the object mapper
+     * @return the json mapper
      */
-    public static ObjectMapper newMapper() {
+    public static JsonMapper newMapper() {
 
-        final ObjectMapper mapper = new ObjectMapper();
-        mapper.setSerializationInclusion(Include.NON_EMPTY);
-        mapper.findAndRegisterModules().configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-        mapper.setTimeZone(TimeZone.getDefault());
-        return mapper;
+        return JsonMapper.builder()
+            .changeDefaultPropertyInclusion(incl -> JsonInclude.Value.construct(JsonInclude.Include.NON_EMPTY, JsonInclude.Include.NON_EMPTY))
+            .findAndAddModules().disable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS).defaultTimeZone(TimeZone.getDefault()).build();
     }
 
     /**
-     * Gets the mapper.
+     * Gets the shared mapper.
      *
-     * @return the object mapper
+     * @return the json mapper
      */
-    public static ObjectMapper get() {
+    public static JsonMapper get() {
 
-        return MAPPER.get();
+        return MAPPER;
     }
 }

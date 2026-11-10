@@ -17,21 +17,20 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Convert;
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
-import javax.persistence.OneToMany;
-import javax.persistence.OrderBy;
-import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
+import jakarta.persistence.Table;
 
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
@@ -77,17 +76,16 @@ public class RefsetEditHistory extends AbstractHasModified implements Comparable
 
     /** The version date. */
     @Column(nullable = true)
-    @Temporal(TemporalType.TIMESTAMP)
     private Date versionDate;
 
     /** The version narrative. */
     @Column(nullable = true, length = 10000)
-    @Type(type = "text")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String narrative;
 
     /** The version status. */
     @Column(nullable = true, length = 10000)
-    @Type(type = "text")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String versionNotes;
 
     /** The private flag. */

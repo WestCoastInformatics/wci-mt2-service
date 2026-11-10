@@ -47,8 +47,8 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * CRUD for map notes stored in MT2 DB and keyed by map set {@code refSetCode} + source concept code.
- * APIs take a map set version; persistence uses the shared product code so notes survive publication.
+ * CRUD for map notes stored in MT2 DB and keyed by map set {@code refSetCode} + source concept code. APIs take a map set version; persistence uses the shared
+ * product code so notes survive publication.
  */
 public final class MapNoteService {
 
@@ -60,16 +60,9 @@ public final class MapNoteService {
 
     /** Supported date formats for note import files. */
     private static final String[] IMPORT_DATE_FORMATS = {
-        DateUtility.DATE_FORMAT_REVERSE_WITH_24_HOUR_TIME,
-        DateUtility.DATE_FORMAT_REVERSE,
-        DateUtility.DATE_FORMAT_REVERSE_ONLY_NUMBERS,
-        DateUtility.DATE_FORMAT_US_STANDARD_WITH_24_HOUR_TIME,
-        DateUtility.DATE_FORMAT_US_STANDARD,
-        DateUtility.DATE_FORMAT_US_DASH_WITH_24_HOUR_TIME,
-        DateUtility.DATE_FORMAT_US_DASH,
-        "yyyy-MM-dd'T'HH:mm:ss",
-        "yyyy-MM-dd'T'HH:mm:ss.SSS",
-        "yyyy-MM-dd'T'HH:mm:ssXXX"
+        DateUtility.DATE_FORMAT_REVERSE_WITH_24_HOUR_TIME, DateUtility.DATE_FORMAT_REVERSE, DateUtility.DATE_FORMAT_REVERSE_ONLY_NUMBERS,
+        DateUtility.DATE_FORMAT_US_STANDARD_WITH_24_HOUR_TIME, DateUtility.DATE_FORMAT_US_STANDARD, DateUtility.DATE_FORMAT_US_DASH_WITH_24_HOUR_TIME,
+        DateUtility.DATE_FORMAT_US_DASH, "yyyy-MM-dd'T'HH:mm:ss", "yyyy-MM-dd'T'HH:mm:ss.SSS", "yyyy-MM-dd'T'HH:mm:ssXXX"
     };
 
     /**
@@ -96,9 +89,7 @@ public final class MapNoteService {
         return service.getEntityManager()
             .createQuery("from MapNote n where n.refSetCode = :refSetCode and n.sourceConceptCode = :sourceConceptCode"
                 + " and n.active = true order by n.timestamp asc", MapNote.class)
-            .setParameter("refSetCode", mapSet.getRefSetCode())
-            .setParameter("sourceConceptCode", sourceConceptCode)
-            .getResultList();
+            .setParameter("refSetCode", mapSet.getRefSetCode()).setParameter("sourceConceptCode", sourceConceptCode).getResultList();
     }
 
     /**
@@ -111,8 +102,7 @@ public final class MapNoteService {
      * @return the note
      * @throws Exception the exception
      */
-    public static MapNote getNote(final TerminologyService service, final MapSet mapSet, final String sourceConceptCode, final String noteId)
-        throws Exception {
+    public static MapNote getNote(final TerminologyService service, final MapSet mapSet, final String sourceConceptCode, final String noteId) throws Exception {
 
         validateKey(mapSet, sourceConceptCode);
         if (StringUtils.isBlank(noteId)) {
@@ -197,8 +187,7 @@ public final class MapNoteService {
      * @param noteId the note id
      * @throws Exception the exception
      */
-    public static void deleteNote(final TerminologyService service, final MapSet mapSet, final String sourceConceptCode, final String noteId)
-        throws Exception {
+    public static void deleteNote(final TerminologyService service, final MapSet mapSet, final String sourceConceptCode, final String noteId) throws Exception {
 
         final MapNote note = getNote(service, mapSet, sourceConceptCode, noteId);
         service.remove(note);
@@ -207,14 +196,12 @@ public final class MapNoteService {
     /**
      * Imports map notes from a pipe-delimited file.
      * <p>
-     * Expected format (optional header row):
-     * {@code conceptCode|User name|Date|Map note text}
+     * Expected format (optional header row): {@code conceptCode|User name|Date|Map note text}
      * </p>
-     * Validates the entire file first. If invalid, returns a failed result with preview details and
-     * imports nothing. Unknown usernames are not auto-created unless {@code createMissingUsers} is true.
-     * When created, they are attribution-only {@link MapUser} records (VIEWER), not login accounts.
-     * Note text is stored as a JSON string literal so the notes modal {@code JSON.parse} can display it,
-     * and {@code created}/{@code modified} are set to the file timestamp (the modal dates from {@code modified}).
+     * Validates the entire file first. If invalid, returns a failed result with preview details and imports nothing. Unknown usernames are not auto-created
+     * unless {@code createMissingUsers} is true. When created, they are attribution-only {@link MapUser} records (VIEWER), not login accounts. Note text is
+     * stored as a JSON string literal so the notes modal {@code JSON.parse} can display it, and {@code created}/{@code modified} are set to the file timestamp
+     * (the modal dates from {@code modified}).
      *
      * @param service the terminology service
      * @param importingUser the authenticated user performing the import
@@ -393,8 +380,7 @@ public final class MapNoteService {
             row.mapUser = mapUsersByUserName.get(row.userName);
         }
 
-        preview.setValid(preview.getErrors().isEmpty() && preview.getTotalRows() > 0
-            && (preview.getUnknownUsers().isEmpty() || createMissingUsers));
+        preview.setValid(preview.getErrors().isEmpty() && preview.getTotalRows() > 0 && (preview.getUnknownUsers().isEmpty() || createMissingUsers));
         if (preview.getTotalRows() == 0 && preview.getErrors().isEmpty()) {
             preview.getErrors().add("Notes file contains no data rows.");
             preview.setValid(false);
@@ -420,11 +406,8 @@ public final class MapNoteService {
             return null;
         }
 
-        final List<MapUser> existing = service.getEntityManager()
-            .createQuery("from MapUser u where u.userName = :userName", MapUser.class)
-            .setParameter("userName", userName)
-            .setMaxResults(1)
-            .getResultList();
+        final List<MapUser> existing = service.getEntityManager().createQuery("from MapUser u where u.userName = :userName", MapUser.class)
+            .setParameter("userName", userName).setMaxResults(1).getResultList();
         return existing.isEmpty() ? null : existing.get(0);
     }
 
@@ -481,11 +464,9 @@ public final class MapNoteService {
         }
 
         final List<MapNote> notes = service.getEntityManager()
-            .createQuery("from MapNote n where n.refSetCode = :refSetCode and n.sourceConceptCode in :codes"
-                + " and n.active = true order by n.timestamp asc", MapNote.class)
-            .setParameter("refSetCode", mapSet.getRefSetCode())
-            .setParameter("codes", conceptCodes)
-            .getResultList();
+            .createQuery("from MapNote n where n.refSetCode = :refSetCode and n.sourceConceptCode in :codes" + " and n.active = true order by n.timestamp asc",
+                MapNote.class)
+            .setParameter("refSetCode", mapSet.getRefSetCode()).setParameter("codes", conceptCodes).getResultList();
 
         final Map<String, Set<MapNote>> notesByConcept = new HashMap<>();
         for (final MapNote note : notes) {
@@ -546,8 +527,7 @@ public final class MapNoteService {
     }
 
     /**
-     * Parse a note import date. Accepts ISO-8601 instants (including {@code Z} and fractional
-     * seconds) and the formats in {@link #IMPORT_DATE_FORMATS}.
+     * Parse a note import date. Accepts ISO-8601 instants (including {@code Z} and fractional seconds) and the formats in {@link #IMPORT_DATE_FORMATS}.
      *
      * @param dateText the date text
      * @return the date
@@ -569,8 +549,7 @@ public final class MapNoteService {
     }
 
     /**
-     * Encode note text the same way the Angular notes modal saves it ({@code JSON.stringify(text)}),
-     * so {@code JSON.parse(item.note)} in the UI succeeds.
+     * Encode note text the same way the Angular notes modal saves it ({@code JSON.stringify(text)}), so {@code JSON.parse(item.note)} in the UI succeeds.
      *
      * @param noteText the plain note text from the import file
      * @return a JSON string literal, e.g. {@code "hello"}

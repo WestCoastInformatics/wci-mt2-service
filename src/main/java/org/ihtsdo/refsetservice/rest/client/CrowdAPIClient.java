@@ -11,7 +11,6 @@ package org.ihtsdo.refsetservice.rest.client;
 
 import java.io.ByteArrayInputStream;
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
@@ -22,7 +21,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -39,8 +38,8 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Integration to Atlassian's Crowd API.
@@ -106,7 +105,8 @@ public class CrowdAPIClient extends CrowdClientAbstract {
     private static final Set<String> SUPER_USERS_CACHE = new HashSet<>();
 
     /** The super users cache refresh datetime. */
-    private static LocalDateTime SUPER_USERS_CACHE_REFRESH_DATETIME = LocalDateTime.now();
+    // superUsersCacheRefreshDateTime
+    private static LocalDateTime superUsersCacheRefreshDateTime = LocalDateTime.now();
 
     /** The super users cache expire in seconds. */
     private static final int SUPER_USERS_CACHE_EXPIRE = 5 * 60;
@@ -126,10 +126,9 @@ public class CrowdAPIClient extends CrowdClientAbstract {
             throw new Exception("User name cannot be empty or null. Received username: " + userName);
         }
 
-        final HttpClient httpClient = HttpClient.newBuilder().build();
         final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(getBaseUrl() + GET_USER + "?username=" + userName)).GET()
             .header("Accept", MediaType.APPLICATION_JSON).header("Authorization", getBasicAuthHeader()).build();
-        final HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
+        final HttpResponse<String> response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
 
         // 200 OK.
         // 404 the user could not be found.
@@ -140,8 +139,8 @@ public class CrowdAPIClient extends CrowdClientAbstract {
             final JsonNode root = mapper.readTree(jsonString);
 
             final User user = new User();
-            user.setName(root.get("display-name").asText());
-            user.setEmail(root.get("email").asText());
+            user.setName(root.get("display-name").asString());
+            user.setEmail(root.get("email").asString());
             user.setUserName(userName);
 
             return user;
@@ -228,13 +227,12 @@ public class CrowdAPIClient extends CrowdClientAbstract {
             throw new Exception("User name cannot be empty or null. Received username: " + username);
         }
         final String url = getBaseUrl() + GET_AVATAR_FOR_USER + username;
-        final HttpClient httpClient = HttpClient.newBuilder().build();
         final HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().header("Accept", MediaType.APPLICATION_JSON)
             .header("Authorization", getBasicAuthHeader()).build();
 
         LOG.debug("CROWD API GET Url: {}", url);
 
-        final HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
+        final HttpResponse<String> response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
 
         // 303 - The uri for the user's avatar (in the location header)
         // 404 - The user doesn't exist, or doesn't have an avatar defined
@@ -336,7 +334,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
      * @return the map
      * @throws Exception the exception
      */
-    private static Map<String, Set<String>> processCrowdRuleMembersResponse(String xmlString) throws Exception {
+    private static Map<String, Set<String>> processCrowdRuleMembersResponse(final String xmlString) throws Exception {
 
         final Map<String, Set<String>> groupMemberMap = new HashMap<>();
 
@@ -425,13 +423,12 @@ public class CrowdAPIClient extends CrowdClientAbstract {
      */
     private static String get(final String url, final String mediaType) throws Exception {
 
-        final HttpClient httpClient = HttpClient.newBuilder().build();
         final HttpRequest request =
             HttpRequest.newBuilder().uri(URI.create(url)).GET().header("Authorization", getBasicAuthHeader()).header("Accept", mediaType).build();
 
         LOG.debug("CROWD API GET Url: {}", url);
 
-        final HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
+        final HttpResponse<String> response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
 
         if (response.statusCode() == 200) {
 
@@ -469,7 +466,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         final JsonNode groups = root.get("groups");
         if (groups != null && !groups.isEmpty()) {
             groups.forEach(groupName -> {
-                final String name = groupName.findValue("name").asText();
+                final String name = groupName.findValue("name").asString();
                 if (name.startsWith(APP_PREFIX)) {
                     userGroups.add(name);
                 }
@@ -623,7 +620,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
                 "Found multiple users with email of " + email + ". Can't determine which user to create.");
         }
 
-        final String name = users.get(0).findValue("name").asText();
+        final String name = users.get(0).findValue("name").asString();
         return (StringUtils.isNotBlank(name)) ? getUser(name) : null;
 
     }
@@ -637,9 +634,6 @@ public class CrowdAPIClient extends CrowdClientAbstract {
      */
     public static Set<String> getUsers(final String groupName) throws Exception {
 
-        if (StringUtils.isBlank(groupName)) {
-
-        }
         final Set<String> usernames = new HashSet<>();
         final String jsonString = get(getBaseUrl() + GET_USERS_FROM_GROUP + groupName);
 
@@ -651,7 +645,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         final JsonNode users = root.get("users");
         if (users != null && !users.isEmpty()) {
             users.forEach(user -> {
-                final String name = user.findValue("name").asText();
+                final String name = user.findValue("name").asString();
                 usernames.add(name);
             });
         }
@@ -668,14 +662,14 @@ public class CrowdAPIClient extends CrowdClientAbstract {
      */
     public static Set<String> getCrowdSuperUsers() throws Exception {
 
-        if (!SUPER_USERS_CACHE.isEmpty() && LocalDateTime.now().isBefore(SUPER_USERS_CACHE_REFRESH_DATETIME)) {
+        if (!SUPER_USERS_CACHE.isEmpty() && LocalDateTime.now().isBefore(superUsersCacheRefreshDateTime)) {
             return SUPER_USERS_CACHE;
         }
 
         LOG.debug("Get RT2 super users");
         setSuperUserGroups();
 
-        SUPER_USERS_CACHE_REFRESH_DATETIME = LocalDateTime.now().plusSeconds(SUPER_USERS_CACHE_EXPIRE);
+        superUsersCacheRefreshDateTime = LocalDateTime.now().plusSeconds(SUPER_USERS_CACHE_EXPIRE);
         SUPER_USERS_CACHE.clear();
 
         for (final String groupName : SUPER_USER_GROUPNAME_CACHE) {
@@ -720,7 +714,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
         final JsonNode groups = root.get("groups");
         if (groups != null && !groups.isEmpty()) {
             groups.forEach(groupName -> {
-                final String name = groupName.findValue("name").asText();
+                final String name = groupName.findValue("name").asString();
                 if (name.startsWith(APP_PREFIX)) {
                     groupList.add(name);
                 }
@@ -737,6 +731,7 @@ public class CrowdAPIClient extends CrowdClientAbstract {
      * @throws Exception the exception
      */
     public static boolean isRt2GroupName(final String groupName) throws Exception {
+
         if (StringUtils.isBlank(groupName)) {
             return false;
         }

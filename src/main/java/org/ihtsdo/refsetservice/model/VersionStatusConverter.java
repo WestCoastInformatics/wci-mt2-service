@@ -9,8 +9,8 @@
  */
 package org.ihtsdo.refsetservice.model;
 
-import javax.persistence.AttributeConverter;
-import javax.persistence.Converter;
+import jakarta.persistence.AttributeConverter;
+import jakarta.persistence.Converter;
 
 import org.ihtsdo.refsetservice.model.enums.VersionStatus;
 
@@ -20,18 +20,30 @@ import org.ihtsdo.refsetservice.model.enums.VersionStatus;
 @Converter
 public class VersionStatusConverter implements AttributeConverter<VersionStatus, String> {
 
-    /* see superclass */
+    /**
+     * Convert to database column.
+     *
+     * @param attribute the attribute
+     * @return the string
+     */
     @Override
     public String convertToDatabaseColumn(final VersionStatus attribute) {
+
         if (attribute == null) {
             return null;
         }
         return attribute.getLabel();
     }
 
-    /* see superclass */
+    /**
+     * Convert to entity attribute.
+     *
+     * @param dbData the db data
+     * @return the version status
+     */
     @Override
     public VersionStatus convertToEntityAttribute(final String dbData) {
+
         if (dbData == null) {
             return null;
         }

@@ -12,8 +12,8 @@ package org.ihtsdo.refsetservice.rest;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.MediaType;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.MediaType;
 
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.terminologyservice.norway.NorwayReplacementReportDispatcher;
@@ -28,6 +28,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * REST endpoints to kick off Norway reports (email results asynchronously).
@@ -39,14 +41,14 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
  * <li>{@code POST /report/norway/replacement-translation} — start translation report; returns 202</li>
  * <li>{@code POST /report/norway/helsedirektoratet-untranslated} — start Helsedirektoratet untranslated report; returns 202</li>
  * </ul>
- * All require an authenticated session. Recipients come from env-backed properties (not committed):
- * {@code NORWAY_REPLACEMENT_MAP_REPORT_USERS} /
- * {@code NORWAY_REPLACEMENT_TRANSLATION_REPORT_USERS} /
- * {@code NORWAY_HELSEDIREKTORATET_UNTRANSLATED_REPORT_USERS}. Response body is JSON
- * {@code { "status": "STARTED", "report": "..." }}. Concurrent duplicate starts return 409.
+ * All require an authenticated session. Recipients come from env-backed properties (not committed): {@code NORWAY_REPLACEMENT_MAP_REPORT_USERS} /
+ * {@code NORWAY_REPLACEMENT_TRANSLATION_REPORT_USERS} / {@code NORWAY_HELSEDIREKTORATET_UNTRANSLATED_REPORT_USERS}. Response body is JSON {@code { "status":
+ * "STARTED", "report": "..." }}. Concurrent duplicate starts return 409.
  */
 @RestController
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
+@Tag(name = "report", description = "Report service endpoints")
+@SecurityRequirement(name = "bearerAuth")
 public class NorwayReportController extends BaseController {
 
     /** The Constant LOG. */

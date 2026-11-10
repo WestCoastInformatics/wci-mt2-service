@@ -7,7 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import org.ihtsdo.refsetservice.model.Edition;
 import org.ihtsdo.refsetservice.sync.util.SyncDatabaseHandler;
@@ -18,7 +18,7 @@ import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 public class SnowstormCodeSystem extends SnowstormAbstract {
 
@@ -58,7 +58,7 @@ public class SnowstormCodeSystem extends SnowstormAbstract {
                         continue;
                     }
 
-                    final String editionShortName = codeSystem.get("shortName").asText();
+                    final String editionShortName = codeSystem.get("shortName").asString();
                     final String maintainerType = syncUtilities.identifyMaintainerType(codeSystem, editionShortName);
 
                     // Skip inactive code systems
@@ -83,8 +83,8 @@ public class SnowstormCodeSystem extends SnowstormAbstract {
                         continue;
                     }
 
-                    final String editionName = codeSystem.get("name").asText();
-                    final String branch = codeSystem.get("branchPath").asText();
+                    final String editionName = codeSystem.get("name").asString();
+                    final String branch = codeSystem.get("branchPath").asString();
                     final String defaultLanguageCode = syncUtilities.identifyDefaultLanguageCode(codeSystem, editionName);
                     final Set<String> defaultLanguageRefsets = syncUtilities.identifyEditionLanguageRefsets(codeSystem, editionShortName, branch);
 

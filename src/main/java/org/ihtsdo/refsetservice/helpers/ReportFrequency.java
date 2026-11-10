@@ -14,40 +14,40 @@ package org.ihtsdo.refsetservice.helpers;
  */
 public enum ReportFrequency {
 
-  /** The daily. */
-  DAILY,
+    /** The daily. */
+    DAILY,
 
-  /** The monday. */
-  MONDAY,
+    /** The monday. */
+    MONDAY,
 
-  /** The tuesday. */
-  TUESDAY,
+    /** The tuesday. */
+    TUESDAY,
 
-  /** The wednesday. */
-  WEDNESDAY,
+    /** The wednesday. */
+    WEDNESDAY,
 
-  /** The thursday. */
-  THURSDAY,
+    /** The thursday. */
+    THURSDAY,
 
-  /** The friday. */
-  FRIDAY,
+    /** The friday. */
+    FRIDAY,
 
-  /** The saturday. */
-  SATURDAY,
+    /** The saturday. */
+    SATURDAY,
 
-  /** The sunday. */
-  SUNDAY,
+    /** The sunday. */
+    SUNDAY,
 
-  /** The first of month. */
-  FIRST_OF_MONTH,
+    /** The first of month. */
+    FIRST_OF_MONTH,
 
-  /** The mid month. */
-  MID_MONTH,
+    /** The mid month. */
+    MID_MONTH,
 
-  /** The last of month. */
-  LAST_OF_MONTH,
+    /** The last of month. */
+    LAST_OF_MONTH,
 
-  /** On demand. */
-  ON_DEMAND
+    /** On demand. */
+    ON_DEMAND
 
 }

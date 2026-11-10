@@ -9,19 +9,18 @@
  */
 package org.ihtsdo.refsetservice.rest.test.util;
 
-import java.io.IOException;
-
 import org.ihtsdo.refsetservice.model.enums.VersionStatus;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
 
 /**
  * Deserializer for VersionStatus that accepts both enum name (IN_DEVELOPMENT) and label (IN DEVELOPMENT). The API serializes using VersionStatusJsonSerializer
  * which outputs the label.
  */
-public class VersionStatusDeserializer extends JsonDeserializer<VersionStatus> {
+public class VersionStatusDeserializer extends ValueDeserializer<VersionStatus> {
 
     /**
      * Deserialize.
@@ -29,12 +28,12 @@ public class VersionStatusDeserializer extends JsonDeserializer<VersionStatus> {
      * @param p the JsonParser
      * @param ctxt the DeserializationContext
      * @return the version status
-     * @throws IOException Signals that an I/O exception has occurred.
+     * @throws JacksonException the jackson exception
      */
     @Override
-    public VersionStatus deserialize(final JsonParser p, final DeserializationContext ctxt) throws IOException {
+    public VersionStatus deserialize(final JsonParser p, final DeserializationContext ctxt) throws JacksonException {
 
-        final String value = p.getText();
+        final String value = p.getString();
         if (value == null || value.isEmpty()) {
             return null;
         }

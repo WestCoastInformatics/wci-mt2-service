@@ -271,7 +271,6 @@ public class MapSetExportRequest {
      *
      * @return the int
      */
-    /* see superclass */
     @Override
     public int hashCode() {
 
@@ -285,16 +284,18 @@ public class MapSetExportRequest {
      * @param obj the obj
      * @return true, if successful
      */
-    /* see superclass */
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
 
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         MapSetExportRequest other = (MapSetExportRequest) obj;
         return Objects.equals(branch, other.branch) && exportMetadata == other.exportMetadata && fileExportType == other.fileExportType
             && Objects.equals(fileNameDate, other.fileNameDate) && fileFormatType == other.fileFormatType && Objects.equals(languageId, other.languageId)
@@ -307,7 +308,6 @@ public class MapSetExportRequest {
      *
      * @return the string
      */
-    /* see superclass */
     @Override
     public String toString() {
 

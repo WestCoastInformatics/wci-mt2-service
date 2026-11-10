@@ -12,10 +12,11 @@ package org.ihtsdo.refsetservice.rest;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.core.MediaType;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.MediaType;
 
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
 import org.ihtsdo.refsetservice.model.IdName;
@@ -26,7 +27,6 @@ import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.ProjectService;
 import org.ihtsdo.refsetservice.terminologyservice.TeamService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
-import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
@@ -50,12 +50,16 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * Controller for /project endpoints.
  */
 @RestController
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
+@Tag(name = "project", description = "Project service endpoints")
+@SecurityRequirement(name = "bearerAuth")
 public class ProjectController extends BaseController {
 
     /** The Constant LOG. */
@@ -72,7 +76,7 @@ public class ProjectController extends BaseController {
     private static String crowdUnitTestSkip;
 
     static {
-        crowdUnitTestSkip = PropertyUtility.getProperty("crowd.unit.test.skip");
+        crowdUnitTestSkip = null;
     }
 
     /**
@@ -335,7 +339,7 @@ public class ProjectController extends BaseController {
         LOG.info("Update project: {}", project);
         final User authUser = authorizeUser(request);
 
-        if (project == null || !org.apache.commons.lang3.StringUtils.equals(id, project.getId())) {
+        if (project == null || !Strings.CS.equals(id, project.getId())) {
             final String errorMessage = "Project is null or project id does not match id in URL.";
             LOG.error(errorMessage);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorMessage);

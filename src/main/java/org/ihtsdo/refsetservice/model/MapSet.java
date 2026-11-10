@@ -14,22 +14,21 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import javax.persistence.Column;
-import javax.persistence.Convert;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
-import javax.persistence.Transient;
-import javax.persistence.UniqueConstraint;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
+import jakarta.persistence.UniqueConstraint;
 
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
@@ -41,7 +40,7 @@ import org.ihtsdo.refsetservice.model.enums.WorkflowStatus;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.annotation.JsonSerialize;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -92,7 +91,6 @@ public class MapSet extends AbstractHasModified {
 
     /** The version date. */
     @Column(nullable = true)
-    @Temporal(TemporalType.TIMESTAMP)
     private Date versionDate;
 
     /** The last refset published release upon which the refset's content is based on. */
@@ -105,7 +103,7 @@ public class MapSet extends AbstractHasModified {
 
     /** The version narrative. */
     @Column(nullable = true, length = 10000)
-    @Type(type = "text")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String narrative;
 
     /** The branch path. */
@@ -225,7 +223,7 @@ public class MapSet extends AbstractHasModified {
 
     /** The upgrade versions candidate. */
     @Transient
-    public List<String> upgradeVersionsCandidate;
+    private List<String> upgradeVersionsCandidate;
 
     // /** The value to use for the 'INCLUSION' intensional definition exception type. */
     // @Transient
@@ -769,6 +767,27 @@ public class MapSet extends AbstractHasModified {
     }
 
     /**
+     * Gets the upgrade versions candidate.
+     *
+     * @return the upgrade versions candidate
+     */
+    @JsonGetter()
+    public List<String> getUpgradeVersionsCandidate() {
+
+        return upgradeVersionsCandidate;
+    }
+
+    /**
+     * Sets the upgrade versions candidate.
+     *
+     * @param upgradeVersionsCandidate the new upgrade versions candidate
+     */
+    public void setUpgradeVersionsCandidate(final List<String> upgradeVersionsCandidate) {
+
+        this.upgradeVersionsCandidate = upgradeVersionsCandidate;
+    }
+
+    /**
      * Gets the edition branch.
      *
      * @return the edition branch
@@ -831,22 +850,42 @@ public class MapSet extends AbstractHasModified {
         return "";
     }
 
+    /**
+     * Checks if is in upgrade.
+     *
+     * @return true, if is in upgrade
+     */
     public boolean isInUpgrade() {
 
         return false;
     }
 
-    public void setInUpgrade(boolean inUpgrade) {
+    /**
+     * Sets the in upgrade.
+     *
+     * @param inUpgrade the new in upgrade
+     */
+    public void setInUpgrade(final boolean inUpgrade) {
 
         // n/a
     }
 
+    /**
+     * Checks if is in inactivate.
+     *
+     * @return true, if is in inactivate
+     */
     public boolean isInInactivate() {
 
         return false;
     }
 
-    public void setInInactivate(boolean inInactivate) {
+    /**
+     * Sets the in inactivate.
+     *
+     * @param inInactivate the new in inactivate
+     */
+    public void setInInactivate(final boolean inInactivate) {
 
         // n/a
     }

@@ -3,13 +3,11 @@ package org.ihtsdo.refsetservice.model;
 import java.util.Date;
 import java.util.Objects;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
@@ -18,12 +16,12 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericFie
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
- * A note attached to a mapping, keyed by map set {@code refSetCode} and source concept code
- * (Snowstorm mappings are not DB entities). Notes are shared across all versions of the same map
- * product.
+ * A note attached to a mapping, keyed by map set {@code refSetCode} and source concept code (Snowstorm mappings are not DB entities). Notes are shared across
+ * all versions of the same map product.
  */
 @Entity
 @Table(name = "map_notes")
@@ -51,7 +49,6 @@ public class MapNote extends AbstractHasModified {
     private String note;
 
     /** When the note was authored. */
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(nullable = false)
     private Date timestamp = new Date();
 
@@ -69,6 +66,7 @@ public class MapNote extends AbstractHasModified {
      * @param mapNote the map note
      * @param keepIds whether to copy ids
      */
+    @JsonIgnore
     public MapNote(final MapNote mapNote, final boolean keepIds) {
 
         if (keepIds && mapNote.getId() != null) {
@@ -187,12 +185,20 @@ public class MapNote extends AbstractHasModified {
         this.timestamp = timestamp;
     }
 
+    /**
+     * Lazy init.
+     */
     @Override
     public void lazyInit() {
 
         // n/a
     }
 
+    /**
+     * To string.
+     *
+     * @return the string
+     */
     @Override
     public String toString() {
 
@@ -203,12 +209,23 @@ public class MapNote extends AbstractHasModified {
         }
     }
 
+    /**
+     * Hash code.
+     *
+     * @return the int
+     */
     @Override
     public int hashCode() {
 
         return Objects.hash(note, user);
     }
 
+    /**
+     * Equals.
+     *
+     * @param obj the obj
+     * @return true, if successful
+     */
     @Override
     public boolean equals(final Object obj) {
 

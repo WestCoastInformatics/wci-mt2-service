@@ -17,23 +17,22 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import javax.persistence.CollectionTable;
-import javax.persistence.Column;
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
-import javax.persistence.Transient;
-import javax.persistence.UniqueConstraint;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
+import jakarta.persistence.UniqueConstraint;
 
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.hibernate.search.engine.backend.types.Projectable;
@@ -49,7 +48,6 @@ import org.ihtsdo.refsetservice.util.ModelUtility;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-import io.micrometer.core.instrument.util.StringUtils;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
@@ -123,12 +121,10 @@ public class MapProject extends AbstractHasModified implements Copyable<MapProje
     private String refSetName;
 
     /** The editing cycle begin date. */
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(nullable = true)
     private Date editingCycleBeginDate;
 
     /** The latest publication date. */
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(nullable = true)
     private Date latestPublicationDate;
 
@@ -206,8 +202,7 @@ public class MapProject extends AbstractHasModified implements Copyable<MapProje
 
     /** The allowable map advices for this MapProject. */
     @ManyToMany(targetEntity = MapAdvice.class, fetch = FetchType.LAZY)
-    @JoinTable(name = "map_projects_map_advices", joinColumns = @JoinColumn(name = "map_projects_id"),
-        inverseJoinColumns = @JoinColumn(name = "mapAdvices_id"))
+    @JoinTable(name = "map_projects_map_advices", joinColumns = @JoinColumn(name = "map_projects_id"), inverseJoinColumns = @JoinColumn(name = "mapAdvices_id"))
     // @IndexedEmbedded
     private Set<MapAdvice> mapAdvices = new HashSet<>();
 
@@ -1538,14 +1533,17 @@ public class MapProject extends AbstractHasModified implements Copyable<MapProje
      * @return true, if successful
      */
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
 
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (!super.equals(obj))
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         MapProject other = (MapProject) obj;
         return Objects.equals(additionalMapEntryInfos, other.additionalMapEntryInfos) && Objects.equals(description, other.description)
             && Objects.equals(destinationTerminology, other.destinationTerminology)
@@ -1589,7 +1587,6 @@ public class MapProject extends AbstractHasModified implements Copyable<MapProje
      *
      * @return the string
      */
-    /* see superclass */
     @Override
     public String toString() {
 
@@ -1606,7 +1603,6 @@ public class MapProject extends AbstractHasModified implements Copyable<MapProje
     /**
      * Lazy init.
      */
-    /* see superclass */
     @Override
     public void lazyInit() {
 
@@ -1619,7 +1615,6 @@ public class MapProject extends AbstractHasModified implements Copyable<MapProje
      *
      * @throws Exception the exception
      */
-    /* see superclass */
     @Override
     public void validateAdd() throws Exception {
 
@@ -1646,7 +1641,6 @@ public class MapProject extends AbstractHasModified implements Copyable<MapProje
      * @param other the other
      * @throws Exception the exception
      */
-    /* see superclass */
     @Override
     public void validateUpdate(final MapProject other) throws Exception {
 
@@ -1672,7 +1666,6 @@ public class MapProject extends AbstractHasModified implements Copyable<MapProje
      *
      * @throws Exception the exception
      */
-    /* see superclass */
     @Override
     public void validateDelete() throws Exception {
 

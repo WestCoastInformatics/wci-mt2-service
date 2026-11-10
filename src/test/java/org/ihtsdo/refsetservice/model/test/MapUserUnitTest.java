@@ -23,8 +23,14 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 public class MapUserUnitTest extends BaseTest {
 
+    /** The object. */
     private MapUser object;
 
+    /**
+     * Setup.
+     *
+     * @throws Exception the exception
+     */
     @BeforeEach
     public void setup() throws Exception {
 
@@ -32,6 +38,11 @@ public class MapUserUnitTest extends BaseTest {
         object.setApplicationRole(MapUserRole.LEAD);
     }
 
+    /**
+     * Test model get set.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelGetSet() throws Exception {
 
@@ -40,6 +51,11 @@ public class MapUserUnitTest extends BaseTest {
         tester.test();
     }
 
+    /**
+     * Test model equals hashcode.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelEqualsHashcode() throws Exception {
 
@@ -63,6 +79,11 @@ public class MapUserUnitTest extends BaseTest {
         assertTrue(tester.testIdentityFieldDifferentHashcode());
     }
 
+    /**
+     * Test model copy.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelCopy() throws Exception {
 
@@ -75,6 +96,11 @@ public class MapUserUnitTest extends BaseTest {
         assertTrue(tester.testCopyConstructor(MapUser.class));
     }
 
+    /**
+     * Test model serialization.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelSerialization() throws Exception {
 
@@ -83,6 +109,11 @@ public class MapUserUnitTest extends BaseTest {
         assertTrue(tester.testJsonSerialization());
     }
 
+    /**
+     * Test persistence.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testPersistence() throws Exception {
 

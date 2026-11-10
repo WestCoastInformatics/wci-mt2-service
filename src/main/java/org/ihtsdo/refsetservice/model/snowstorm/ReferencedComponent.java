@@ -2,130 +2,178 @@ package org.ihtsdo.refsetservice.model.snowstorm;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+/**
+ * The Class ReferencedComponent.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ReferencedComponent {
-    
+
+    /** The concept id. */
     private String conceptId;
+
+    /** The active. */
     private Boolean active;
+
+    /** The definition status. */
     private String definitionStatus;
+
+    /** The module id. */
     private String moduleId;
+
+    /** The fsn. */
     private ReferenceComponentDescription fsn;
+
+    /** The pt. */
     private ReferenceComponentDescription pt;
+
+    /** The id. */
     private String id;
-    
+
     /**
+     * Gets the concept id.
+     *
      * @return the conceptId
      */
     public String getConceptId() {
-    
+
         return conceptId;
     }
-    
+
     /**
+     * Sets the concept id.
+     *
      * @param conceptId the conceptId to set
      */
     public void setConceptId(final String conceptId) {
-    
+
         this.conceptId = conceptId;
     }
-    
+
     /**
+     * Gets the active.
+     *
      * @return the active
      */
     public Boolean getActive() {
-    
+
         return active;
     }
-    
+
     /**
+     * Sets the active.
+     *
      * @param active the active to set
      */
     public void setActive(final Boolean active) {
-    
+
         this.active = active;
     }
-    
+
     /**
+     * Gets the definition status.
+     *
      * @return the definitionStatus
      */
     public String getDefinitionStatus() {
-    
+
         return definitionStatus;
     }
-    
+
     /**
+     * Sets the definition status.
+     *
      * @param definitionStatus the definitionStatus to set
      */
     public void setDefinitionStatus(final String definitionStatus) {
-    
+
         this.definitionStatus = definitionStatus;
     }
-    
+
     /**
+     * Gets the module id.
+     *
      * @return the moduleId
      */
     public String getModuleId() {
-    
+
         return moduleId;
     }
-    
+
     /**
+     * Sets the module id.
+     *
      * @param moduleId the moduleId to set
      */
     public void setModuleId(final String moduleId) {
-    
+
         this.moduleId = moduleId;
     }
-    
+
     /**
+     * Gets the fsn.
+     *
      * @return the fsn (Fully Specified Name)
      */
     public ReferenceComponentDescription getFsn() {
-    
+
         return fsn;
     }
-    
+
     /**
+     * Sets the fsn.
+     *
      * @param fsn the fsn to set (Fully Specified Name)
      */
     public void setFsn(final ReferenceComponentDescription fsn) {
-    
+
         this.fsn = fsn;
     }
-    
+
     /**
+     * Gets the pt.
+     *
      * @return the pt (Preferred Term)
      */
     public ReferenceComponentDescription getPt() {
-    
+
         return pt;
     }
-    
+
     /**
+     * Sets the pt.
+     *
      * @param pt the pt to set (Preferred Term)
      */
     public void setPt(final ReferenceComponentDescription pt) {
-    
+
         this.pt = pt;
     }
-    
+
     /**
+     * Gets the id.
+     *
      * @return the id
      */
     public String getId() {
-    
+
         return id;
     }
-    
+
     /**
+     * Sets the id.
+     *
      * @param id the id to set
      */
-    public void setId(String id) {
-    
+    public void setId(final String id) {
+
         this.id = id;
     }
 
-    /* see superclass */
+    /**
+     * Hash code.
+     *
+     * @return the int
+     */
     @Override
     public int hashCode() {
 
@@ -141,9 +189,14 @@ public class ReferencedComponent {
         return result;
     }
 
-    /* see superclass */
+    /**
+     * Equals.
+     *
+     * @param obj the obj
+     * @return true, if successful
+     */
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
 
         if (this == obj) {
             return true;
@@ -204,15 +257,16 @@ public class ReferencedComponent {
         return true;
     }
 
-    /* see superclass */
+    /**
+     * To string.
+     *
+     * @return the string
+     */
     @Override
     public String toString() {
 
         return "ReferencedComponent [conceptId=" + conceptId + ", active=" + active + ", definitionStatus=" + definitionStatus + ", moduleId=" + moduleId
             + ", fsn=" + fsn + ", pt=" + pt + ", id=" + id + "]";
     }
-    
-    
-    
-    
+
 }

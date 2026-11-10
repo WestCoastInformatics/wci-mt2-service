@@ -1,12 +1,11 @@
 package org.ihtsdo.refsetservice.util.test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status.Family;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -25,23 +24,21 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @Disabled
 public class SpringBootUnitTest {
 
-	/** The Constant LOG. */
-	private static final Logger LOG = LoggerFactory.getLogger(SpringBootUnitTest.class);
+    /** The Constant LOG. */
+    private static final Logger LOG = LoggerFactory.getLogger(SpringBootUnitTest.class);
 
-	/**
-	 * Test connectability.
-	 *
-	 * @throws Exception the exception
-	 */
-	@Test
-	public void testConnectability() throws Exception {
+    /**
+     * Test connectability.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testConnectability() throws Exception {
 
-		LOG.info("TEST");
-		final Client client = ClientBuilder.newClient();
-		final WebTarget target = client.target("https://www.google.com");
-
-		try (Response response = target.request("application/json").get()) {
-			assertEquals(Family.SUCCESSFUL, response.getStatusInfo().getFamily());
-		}
-	}
+        LOG.info("TEST");
+        final HttpClient client = HttpClient.newHttpClient();
+        final HttpRequest request = HttpRequest.newBuilder().uri(URI.create("https://www.google.com")).GET().build();
+        final HttpResponse<Void> response = client.send(request, HttpResponse.BodyHandlers.discarding());
+        assertTrue(response.statusCode() >= 200 && response.statusCode() < 300);
+    }
 }

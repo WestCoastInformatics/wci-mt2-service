@@ -28,8 +28,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status.Family;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status.Family;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.Edition;
@@ -61,8 +61,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * The Class SyncUtilities.
@@ -75,6 +75,7 @@ public class SyncUtilities {
     /** The db handler. */
     private final SyncDatabaseHandler dbHandler;
 
+    /** The Constant ORGANIZATION_TO_ADMIN_TEAM_CACHE. */
     private static final Map<String, Team> ORGANIZATION_TO_ADMIN_TEAM_CACHE = new HashMap<>();
 
     /** The Constant PROPERTY_READER. */
@@ -92,12 +93,14 @@ public class SyncUtilities {
     /** The Constant DEVELOPER_ORGANIZATION_NAME_KEYWORD. */
     protected static final String DEVELOPER_ORGANIZATION_NAME_KEYWORD = "wci";
 
+    /** The Constant MODULED_ID_CONCEPT. */
     protected static final String MODULED_ID_CONCEPT = "900000000000445007";
 
     /** The Constant EDITION_MODULES_MAP. */
     // Edition shortName to Set<Module SctIds>
     private static final Map<String, Set<String>> EDITION_MODULES_FROM_DESCENDANTS_MAP = new HashMap<>();
 
+    /** The Constant EDITION_MODULE_FROM_METADATA_MAP. */
     private static final Map<String, String> EDITION_MODULE_FROM_METADATA_MAP = new HashMap<>();
 
     /** The Constant FEEDBACK_TESTING_USER_NAME. */
@@ -181,9 +184,7 @@ public class SyncUtilities {
      * Identify modules via the concept desendants call.
      *
      * @param shortName the short name
-     * @param editionName the edition name
      * @param editionBranch the edition branch
-     * @param codeSystem the code system
      * @return the sets the
      * @throws Exception the exception
      */
@@ -220,7 +221,7 @@ public class SyncUtilities {
                 final JsonNode module = moduleIterator.next();
 
                 if (module.get("active").asBoolean()) {
-                    editionModules.add(module.get("conceptId").asText());
+                    editionModules.add(module.get("conceptId").asString());
                 }
 
             }
@@ -266,9 +267,7 @@ public class SyncUtilities {
             throw new Exception("All Code Systems must have lanaguages set filled in. " + editionName + " does not");
         }
 
-        final Iterator<String> languages = codeSystem.get("languages").fieldNames();
-
-        return languages.next();
+        return codeSystem.get("languages").propertyNames().iterator().next();
     }
 
     /**
@@ -294,7 +293,7 @@ public class SyncUtilities {
 
             while (defaultLanguageReferencesSetIterator.hasNext()) {
 
-                languageRefsets.add(defaultLanguageReferencesSetIterator.next().asText());
+                languageRefsets.add(defaultLanguageReferencesSetIterator.next().asString());
                 languageRefsets.add(LanguageUtility.DEFAULT_LANGUAGE_REFSET_US);
 
                 return languageRefsets;
@@ -307,7 +306,7 @@ public class SyncUtilities {
 
             return languageRefsets;
 
-            //            languageRefsets.addAll(undefinedDefaultLanguageRefsets.get(shortName));
+            // languageRefsets.addAll(undefinedDefaultLanguageRefsets.get(shortName));
         }
 
         if (languageRefsets.isEmpty()) {
@@ -349,8 +348,8 @@ public class SyncUtilities {
                         LOG.error("Optional language refset must have a refsetId defined: " + refset);
                     } else {
 
-                        LOG.info("Optional language refset: " + refset.get("refsetId").asText());
-                        languageRefsets.add(refset.get("refsetId").asText());
+                        LOG.info("Optional language refset: " + refset.get("refsetId").asString());
+                        languageRefsets.add(refset.get("refsetId").asString());
                     }
 
                 }
@@ -398,11 +397,11 @@ public class SyncUtilities {
                 final JsonNode branchModules = branchMetadata.get("expectedExtensionModules");
 
                 for (int i = 0; i < branchModules.size(); i++) {
-                    extendedModules.add(branchModules.get(i).asText());
+                    extendedModules.add(branchModules.get(i).asString());
                 }
 
             } else if (branchMetadata.has("defaultModuleId")) {
-                final String branchModule = branchMetadata.get("defaultModuleId").asText();
+                final String branchModule = branchMetadata.get("defaultModuleId").asString();
                 extendedModules.add(branchModule);
             }
 
@@ -422,9 +421,9 @@ public class SyncUtilities {
     public String determineEditionShortName(final JsonNode codeSystem) throws Exception {
 
         // If owner defined, return it as organization name
-        if (codeSystem.has("shortName") && !codeSystem.get("shortName").asText().trim().isBlank()) {
+        if (codeSystem.has("shortName") && !codeSystem.get("shortName").asString().trim().isBlank()) {
 
-            return codeSystem.get("shortName").asText();
+            return codeSystem.get("shortName").asString();
         }
 
         throw new Exception("Code system " + codeSystem + " doesn't have a shortName");
@@ -442,7 +441,8 @@ public class SyncUtilities {
 
             return "Organizational administrators can update this edition's default description via the Dashboard's Organization-Configuration page.";
         } else {
-            return "Organizational administrators can update this edition's default name and default description via the Dashboard's Organization-Configuration page.";
+            return "Organizational administrators can update this edition's default name and default description "
+                + "via the Dashboard's Organization-Configuration page.";
         }
     }
 
@@ -588,6 +588,13 @@ public class SyncUtilities {
 
     }
 
+    /**
+     * Email results.
+     *
+     * @param service the service
+     * @param results the results
+     * @throws Exception the exception
+     */
     public void emailResults(final TerminologyService service, final String results) throws Exception {
 
         if (!PropertyUtility.getProperties().containsKey("refset.service.env")) {
@@ -685,7 +692,7 @@ public class SyncUtilities {
      */
     public String identifyMaintainerType(final JsonNode codeSystem, final String editionShortName) throws Exception {
 
-        String codeSystemType = codeSystem.has("maintainerType") ? codeSystem.get("maintainerType").asText() : "";
+        String codeSystemType = codeSystem.has("maintainerType") ? codeSystem.get("maintainerType").asString() : "";
 
         // SNOMED Core Edition are blank in Snowstorm, but we treat them identically to the Managed Service maintainerType
         if (codeSystemType.isBlank()) {

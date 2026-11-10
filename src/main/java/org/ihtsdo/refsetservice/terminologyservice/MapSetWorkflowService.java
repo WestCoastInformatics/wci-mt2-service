@@ -23,11 +23,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status.Family;
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status.Family;
 
 import org.apache.commons.cli.MissingArgumentException;
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.model.BranchInformation;
@@ -59,8 +60,8 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Utility class for workflow processes.
@@ -147,7 +148,7 @@ public final class MapSetWorkflowService {
 
         final List<String> mapSetsNotUpdated = new ArrayList<>();
         final String query = "workflowStatus: " + WorkflowStatus.READY_FOR_PUBLICATION;
-		// + " AND editionShortName: " + editionShortName + " AND localSet: false";
+        // + " AND editionShortName: " + editionShortName + " AND localSet: false";
 
         final ResultList<MapSet> results = service.find(query, null, MapSet.class, null);
 
@@ -223,7 +224,7 @@ public final class MapSetWorkflowService {
         final String branchPath = edition.getBranch();
 
         final String query = "workflowStatus: " + WorkflowStatus.IN_PUBLICATION;
-		// + " AND editionShortName: " + editionShortName;
+        // + " AND editionShortName: " + editionShortName;
 
         // Find snowstorm's version date of the latest version of all mapSets in ready_to_published state. Ensure all identical
         final List<String> mapSetsNotUpdated = new ArrayList<>();
@@ -274,7 +275,7 @@ public final class MapSetWorkflowService {
                 error += mapSetNotUpdated + ", ";
             }
 
-            error = StringUtils.removeEnd(error, ", ");
+            error = Strings.CS.removeEnd(error, ", ");
         }
 
         if (!error.isEmpty()) {
@@ -495,8 +496,7 @@ public final class MapSetWorkflowService {
         }
 
         if (nextStatus == null) {
-            LOG.warn(
-                "Workflow action requested but no permutation: refSetCode={}, mapSetId={}, workflowStatus={}, action={}, user={}, rolesTried={}, file={}",
+            LOG.warn("Workflow action requested but no permutation: refSetCode={}, mapSetId={}, workflowStatus={}, action={}, user={}, rolesTried={}, file={}",
                 mapSet.getRefSetCode(), mapSet.getId(), mapSet.getWorkflowStatus(), action, user.getUserName(), roles, WORKFLOW_PERMUTATIONS_FILE_NAME);
             throw new RestException(false, HttpStatus.BAD_REQUEST, "Bad Request",
                 "Invalid workflow action " + action + " from status " + mapSet.getWorkflowStatus());
@@ -868,7 +868,7 @@ public final class MapSetWorkflowService {
             final JsonNode conceptNode = root;
 
             if (conceptNode.has("conceptId")) {
-                mapSetConceptId = conceptNode.get("conceptId").asText();
+                mapSetConceptId = conceptNode.get("conceptId").asString();
             }
 
             BranchService.deleteBranch(tempBranchPath);
@@ -1168,6 +1168,7 @@ public final class MapSetWorkflowService {
     }
 
     private static boolean isDevBypassEnabled() {
+
         final String bypass = PropertyUtility.getProperty("auth.dev.bypass");
         if ("true".equalsIgnoreCase(bypass)) {
             return true;
@@ -1229,7 +1230,7 @@ public final class MapSetWorkflowService {
             final ObjectMapper mapper = ThreadLocalMapper.get();
             try {
                 final JsonNode json = mapper.readTree(snowstormErrorMessage);
-                snowstormErrorMessage = json.has("message") ? json.get("message").asText() : "";
+                snowstormErrorMessage = json.has("message") ? json.get("message").asString() : "";
             } catch (final Exception e) {
                 LOG.error("formatErrorMessage snowstormErrorMessage:{}", snowstormErrorMessage, e);
             }

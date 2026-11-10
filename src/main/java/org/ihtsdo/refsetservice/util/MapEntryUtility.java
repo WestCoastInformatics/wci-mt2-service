@@ -21,7 +21,7 @@ import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapRelation;
 import org.ihtsdo.refsetservice.model.Mapping;
 
-public class MapEntryUtility {
+public final class MapEntryUtility {
 
     /**
      * Instantiates a new map entry utility.
@@ -128,13 +128,13 @@ public class MapEntryUtility {
     /**
      * If two map entries have the same group, priority, target, and rule, then they represent the same object (i.e. will have the same UUID in snowstorm). This
      * determines whether changes should update an existing map entry, or create a new one.
-     * 
+     *
      *
      * @param mapEntry1 the map entry 1
      * @param mapEntry2 the map entry 2
      * @return the boolean
      */
-    public static Boolean doMapEntriesShareUUID(MapEntry mapEntry1, MapEntry mapEntry2) {
+    public static Boolean doMapEntriesShareUUID(final MapEntry mapEntry1, final MapEntry mapEntry2) {
 
         Boolean mapEntriesShareUUID = true;
 
@@ -156,13 +156,13 @@ public class MapEntryUtility {
 
     /**
      * Update an existing map entry with the non-defining content of the submitted map entry This can only be done on map entries that share a UUID
-     * 
+     *
      *
      * @param existingMapEntry the existing map entry
      * @param submittedMapEntry the submitted map entry
      * @return the map entry
      */
-    public static MapEntry updateExistingMapEntry(MapEntry existingMapEntry, MapEntry submittedMapEntry) throws Exception {
+    public static MapEntry updateExistingMapEntry(final MapEntry existingMapEntry, final MapEntry submittedMapEntry) throws Exception {
 
         if (!doMapEntriesShareUUID(existingMapEntry, submittedMapEntry)) {
             throw new Exception("You cannot update an existing map entry with a non UUID-sharing new entry");

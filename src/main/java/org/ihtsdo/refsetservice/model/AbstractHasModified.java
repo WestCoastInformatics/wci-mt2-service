@@ -3,10 +3,8 @@ package org.ihtsdo.refsetservice.model;
 
 import java.util.Date;
 
-import javax.persistence.Column;
-import javax.persistence.MappedSuperclass;
-import javax.persistence.Temporal;
-import javax.persistence.TemporalType;
+import jakarta.persistence.Column;
+import jakarta.persistence.MappedSuperclass;
 
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
@@ -27,12 +25,10 @@ public abstract class AbstractHasModified extends AbstractHasId implements HasMo
 
     /** The modified. */
     @Column(nullable = false)
-    @Temporal(TemporalType.TIMESTAMP)
     private Date modified;
 
     /** The created. */
     @Column(nullable = false)
-    @Temporal(TemporalType.TIMESTAMP)
     private Date created;
 
     /** The modified by. */
@@ -75,25 +71,38 @@ public abstract class AbstractHasModified extends AbstractHasId implements HasMo
             modified = other.getModified();
             modifiedBy = other.getModifiedBy();
         }
-    active = other.isActive();
+        active = other.isActive();
     }
 
-  /* see superclass */
-  @Override
-  @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
-  public boolean isActive() {
+    /**
+     * Checks if is active.
+     *
+     * @return true, if is active
+     */
+    /* see superclass */
+    @Override
+    @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
+    public boolean isActive() {
 
         return active;
     }
 
-    /* see superclass */
+    /**
+     * Sets the active.
+     *
+     * @param active the new active
+     */
     @Override
     public void setActive(final Boolean active) {
 
         this.active = active;
     }
 
-    /* see superclass */
+    /**
+     * Gets the modified.
+     *
+     * @return the modified
+     */
     @Override
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     // @DateBridge(resolution = Resolution.SECOND, encoding = EncodingType.STRING)
@@ -102,14 +111,22 @@ public abstract class AbstractHasModified extends AbstractHasId implements HasMo
         return modified;
     }
 
-    /* see superclass */
+    /**
+     * Sets the modified.
+     *
+     * @param modified the new modified
+     */
     @Override
     public void setModified(final Date modified) {
 
         this.modified = modified;
     }
 
-    /* see superclass */
+    /**
+     * Gets the created.
+     *
+     * @return the created
+     */
     @Override
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public Date getCreated() {
@@ -117,14 +134,22 @@ public abstract class AbstractHasModified extends AbstractHasId implements HasMo
         return created;
     }
 
-    /* see superclass */
+    /**
+     * Sets the created.
+     *
+     * @param created the new created
+     */
     @Override
     public void setCreated(final Date created) {
 
         this.created = created;
     }
 
-    /* see superclass */
+    /**
+     * Gets the modified by.
+     *
+     * @return the modified by
+     */
     @Override
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     public String getModifiedBy() {
@@ -132,7 +157,11 @@ public abstract class AbstractHasModified extends AbstractHasId implements HasMo
         return modifiedBy;
     }
 
-    /* see superclass */
+    /**
+     * Sets the modified by.
+     *
+     * @param modifiedBy the new modified by
+     */
     @Override
     public void setModifiedBy(final String modifiedBy) {
 

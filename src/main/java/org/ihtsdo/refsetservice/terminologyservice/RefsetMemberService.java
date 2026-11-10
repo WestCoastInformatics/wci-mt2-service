@@ -37,9 +37,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -48,8 +46,9 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
-import javax.persistence.Query;
+import jakarta.persistence.Query;
 
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.handler.ExportHandler;
 import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
@@ -68,6 +67,7 @@ import org.ihtsdo.refsetservice.model.enums.VersionStatus;
 import org.ihtsdo.refsetservice.model.enums.WorkflowStatus;
 import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.util.BoundedExecutors;
 import org.ihtsdo.refsetservice.util.ConceptLookupParameters;
 import org.ihtsdo.refsetservice.util.DateUtility;
 import org.ihtsdo.refsetservice.util.FileUtility;
@@ -81,25 +81,30 @@ import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Service class to get refset member concept information from a terminology
  * service.
- */
-/**
- * @author jesseefron
  *
+ * @author jesseefron
  */
 public final class RefsetMemberService {
 
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(RefsetMemberService.class);
 
-    /** The terminology handler. */
-    private static TerminologyServerHandler terminologyHandler;
+    /**
+     *  The terminology handler.
+     *
+     * @return the terminology handler
+     */
+    private static TerminologyServerHandler getTerminologyHandler() {
+
+        return HandlerUtility.getOrCreateTerminologyHandler();
+    }
 
     /** The simple date format. */
     public static final String DATE_FORMAT = "yyyyMMdd";
@@ -153,25 +158,25 @@ public final class RefsetMemberService {
     private static final String EXPORT_DOWNLOAD_URL = "export/download/";
 
     /** A list of refset actively being updated. */
-    public static final Set<String> REFSETS_BEING_UPDATED = new HashSet<>();
+    public static final Set<String> REFSETS_BEING_UPDATED = ConcurrentHashMap.newKeySet();
 
     /** A list of refset actively being updated. */
-    public static final Map<String, Map<String, Map<String, String>>> REFSETS_UPDATED_MEMBERS = new HashMap<>();
+    public static final Map<String, Map<String, Map<String, String>>> REFSETS_UPDATED_MEMBERS = new ConcurrentHashMap<>();
 
     /** A cache of the members returned for a specific URL. */
-    public static final Map<String, Map<String, ResultListConcept>> CONCEPTS_CALL_CACHE = new HashMap<>();
+    public static final Map<String, Map<String, ResultListConcept>> CONCEPTS_CALL_CACHE = new ConcurrentHashMap<>();
 
     /** A cache of the details for any concept. */
-    public static final Map<String, Map<String, Concept>> CONCEPT_DETAILS_CACHE = new HashMap<>();
+    public static final Map<String, Map<String, Concept>> CONCEPT_DETAILS_CACHE = new ConcurrentHashMap<>();
 
     /** A cache of the taxonomy ancestor path for concepts. */
-    public static final Map<String, Map<String, Concept>> TAXONOMY_SEARCH_ANCESTORS_CACHE = new HashMap<>();
+    public static final Map<String, Map<String, Concept>> TAXONOMY_SEARCH_ANCESTORS_CACHE = new ConcurrentHashMap<>();
 
     /** A cache of the children for each tree node. */
-    private static final Map<String, Map<String, ResultListConcept>> TREE_CACHE = new HashMap<>();
+    private static final Map<String, Map<String, ResultListConcept>> TREE_CACHE = new ConcurrentHashMap<>();
 
     /** A cache of the children for each tree node. */
-    public static final Map<String, Map<String, Set<String>>> ANCESTORS_CACHE = new HashMap<>();
+    public static final Map<String, Map<String, Set<String>>> ANCESTORS_CACHE = new ConcurrentHashMap<>();
 
     /** The Constant CONCEPT_DESCRIPTIONS_PER_CALL. */
     public static final int CONCEPT_DESCRIPTIONS_PER_CALL = 250;
@@ -194,11 +199,9 @@ public final class RefsetMemberService {
     public static final String PREFERRED_TERM_EN = "900000000000509007PT";
 
     /** The Constant REFSET_TO_PUBLISHED_VERSION_MAP. */
-    public static final Map<String, List<Long>> REFSET_TO_PUBLISHED_VERSION_MAP = new HashMap<>();
+    public static final Map<String, List<Long>> REFSET_TO_PUBLISHED_VERSION_MAP = new ConcurrentHashMap<>();
 
     static {
-
-        exportFileDir = PropertyUtility.getProperty("export.fileDir") + File.separator;
 
         // TODO: Remove once Edition updated
         REFSET_TO_LANGUAGES_MAP.put("450828004", "es");
@@ -212,21 +215,19 @@ public final class RefsetMemberService {
         REFSET_TO_LANGUAGES_MAP.put("21000220103", "en");
         REFSET_TO_LANGUAGES_MAP.put("61000202103", "no");
         REFSET_TO_LANGUAGES_MAP.put("46011000052107", "sv");
+    }
 
-        // Instantiate terminology handler
-        try {
-            String key = "terminology.handler";
-            String handlerName = PropertyUtility.getProperty(key);
-            if (handlerName.isEmpty()) {
-                throw new Exception("terminology.handler expected and does not exist.");
-            }
+    /**
+     * Gets the export file dir.
+     *
+     * @return the export file dir
+     */
+    private static String getExportFileDir() {
 
-            terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName, TerminologyServerHandler.class);
-
-        } catch (Exception e) {
-            LOG.error("Failed to initialize terminology.handler - serious error", e);
-            terminologyHandler = null;
+        if (exportFileDir == null) {
+            exportFileDir = PropertyUtility.getProperty("export.fileDir") + File.separator;
         }
+        return exportFileDir;
     }
 
     /**
@@ -309,7 +310,7 @@ public final class RefsetMemberService {
     public static List<Concept> getAllRefsetMembers(final TerminologyService service, final String refsetInternalId, final String searchAfter,
         final List<Concept> concepts) throws Exception {
 
-        return terminologyHandler.getAllRefsetMembers(service, refsetInternalId, searchAfter, concepts);
+        return getTerminologyHandler().getAllRefsetMembers(service, refsetInternalId, searchAfter, concepts);
     }
 
     /**
@@ -354,7 +355,7 @@ public final class RefsetMemberService {
      *
      * @param conceptId the concept id
      * @param descriptions the descriptions
-     * @param refset the refset
+     * @param edition the edition
      * @param nonDefaultPreferredTerms the non-default preferred terms
      * @return the map
      * @throws Exception the exception
@@ -567,7 +568,7 @@ public final class RefsetMemberService {
 
         }
 
-        snowstormQuery = StringUtils.removeEnd(snowstormQuery, " AND ");
+        snowstormQuery = Strings.CS.removeEnd(snowstormQuery, " AND ");
         return getDirectoryMembers(snowstormQuery);
     }
 
@@ -580,7 +581,7 @@ public final class RefsetMemberService {
      */
     private static Set<String> getDirectoryMembers(final String snowstormQuery) throws Exception {
 
-        return terminologyHandler.getDirectoryMembers(snowstormQuery);
+        return getTerminologyHandler().getDirectoryMembers(snowstormQuery);
     }
 
     /**
@@ -595,7 +596,7 @@ public final class RefsetMemberService {
     public static Set<String> searchMultisearchDescriptions(final SearchParameters searchParameters, final String ecl,
         final Set<String> nonPublishedBranchPaths) throws Exception {
 
-        return terminologyHandler.searchMultisearchDescriptions(searchParameters, ecl, nonPublishedBranchPaths);
+        return getTerminologyHandler().searchMultisearchDescriptions(searchParameters, ecl, nonPublishedBranchPaths);
 
     }
 
@@ -648,7 +649,7 @@ public final class RefsetMemberService {
 
                         final String fileName = exportRefsetRf2File(service, refset.getId(), type, languageId, fileNameDate, null, versionDate.replace("-", ""),
                             exportMetadata, withNames);
-                        refsetFiles.add(exportFileDir + fileName);
+                        refsetFiles.add(getExportFileDir() + fileName);
                     }
 
                 }
@@ -658,7 +659,7 @@ public final class RefsetMemberService {
             // add all files into a zip file
             final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyymmdd-hhmmss");
             final String zipFileName = String.format("RT2-Downloaded-refsets-%s.zip", dateFormat.format(new Date()));
-            zipFiles(refsetFiles, exportFileDir + zipFileName);
+            zipFiles(refsetFiles, getExportFileDir() + zipFileName);
             return EXPORT_DOWNLOAD_URL + zipFileName;
 
         } catch (final Exception ex) {
@@ -782,21 +783,21 @@ public final class RefsetMemberService {
                 // export file
                 generateRt2ExportFile(refset, localSnowGeneratedFilePath, rt2VersionFileName, exportMetadata, withNames, languageId);
 
-                S3ConnectionWrapper.uploadToS3(awsVersionedPath, exportFileDir, rt2VersionFileName);
+                S3ConnectionWrapper.uploadToS3(awsVersionedPath, getExportFileDir(), rt2VersionFileName);
 
                 FileUtility.deleteDirectory(localSnowGeneratedTempDir.toFile());
 
             } else {
 
-                if (!Files.exists(Path.of(exportFileDir + rt2VersionFileName))) {
+                if (!Files.exists(Path.of(getExportFileDir() + rt2VersionFileName))) {
 
                     LOG.debug("Downloading RT2 genned file from S3");
-                    S3ConnectionWrapper.downloadFileFromS3(awsVersionedPath, rt2VersionFileName, exportFileDir + rt2VersionFileName);
+                    S3ConnectionWrapper.downloadFileFromS3(awsVersionedPath, rt2VersionFileName, getExportFileDir() + rt2VersionFileName);
                 }
 
             }
 
-            LOG.debug("Final Export File Path: " + exportFileDir + rt2VersionFileName);
+            LOG.debug("Final Export File Path: " + getExportFileDir() + rt2VersionFileName);
 
             return rt2VersionFileName;
 
@@ -825,7 +826,7 @@ public final class RefsetMemberService {
      */
     public static String exportRefsetRf2Delta(final TerminologyService service, final User user, final String refsetInternalId, final String type,
         final String languageId, final String fileNameDate, final String startEffectiveTime, final String transientEffectiveTime, final boolean exportMetadata,
-        boolean withNames) throws Exception {
+        final boolean withNames) throws Exception {
 
         boolean lWithNames = withNames;
 
@@ -1061,15 +1062,15 @@ public final class RefsetMemberService {
                 LOG.debug("uploading snowstorm genned file to S3");
 
                 // store file on s3
-                S3ConnectionWrapper.uploadToS3(deltaAwsVersionedPath, exportFileDir, deltaRt2VersionFileName);
+                S3ConnectionWrapper.uploadToS3(deltaAwsVersionedPath, getExportFileDir(), deltaRt2VersionFileName);
                 FileUtility.deleteDirectory(localSnowGeneratedTempDir.toFile());
 
             } else {
 
-                if (!Files.exists(Path.of(exportFileDir + deltaRt2VersionFileName))) {
+                if (!Files.exists(Path.of(getExportFileDir() + deltaRt2VersionFileName))) {
 
                     LOG.debug("Downloading RT2 snapshot genned file from S3");
-                    S3ConnectionWrapper.downloadFileFromS3(deltaAwsVersionedPath, deltaRt2VersionFileName, exportFileDir + deltaRt2VersionFileName);
+                    S3ConnectionWrapper.downloadFileFromS3(deltaAwsVersionedPath, deltaRt2VersionFileName, getExportFileDir() + deltaRt2VersionFileName);
                 }
 
             }
@@ -1157,12 +1158,12 @@ public final class RefsetMemberService {
         LOG.debug("ready to be zipped source files: {}", ModelUtility.toJson(sourceFiles));
 
         // zip the files together
-        zipFiles(sourceFiles, exportFileDir + rt2VersionFileName);
+        zipFiles(sourceFiles, getExportFileDir() + rt2VersionFileName);
 
         // Delete directory structure and original zip
         FileUtility.deleteDirectory(builderDirectoryTempDir.toFile());
 
-        return exportFileDir;
+        return getExportFileDir();
     }
 
     /**
@@ -1374,13 +1375,16 @@ public final class RefsetMemberService {
      */
     private static String getMemberSctIds(final String refsetId, final int limit, final String searchAfter, final String branchPath) throws Exception {
 
-        return terminologyHandler.getMemberSctIds(refsetId, limit, searchAfter, branchPath);
+        return getTerminologyHandler().getMemberSctIds(refsetId, limit, searchAfter, branchPath);
 
     }
 
     /**
      * Same short label as previously sent as {@code languageDialectTermType}: dialect plus {@code (PT)} or {@code (FSN)} from
      * {@code qualifiedLanguageRefset}.
+     *
+     * @param languageMap the language map
+     * @return the dialect term type label, or null when dialect is missing
      */
     private static String languageDialectTermTypeLabel(final Map<String, String> languageMap) {
 
@@ -1404,7 +1408,7 @@ public final class RefsetMemberService {
      */
     public static List<String> getMemberSctCodes(final String refsetId, final String branchPath) throws Exception {
 
-        return terminologyHandler.getMemberSctCodes(refsetId, branchPath);
+        return getTerminologyHandler().getMemberSctCodes(refsetId, branchPath);
 
     }
 
@@ -1422,7 +1426,7 @@ public final class RefsetMemberService {
         final int limit = ELASTICSEARCH_MAX_RECORD_LENGTH;
         boolean hasMorePages = true;
         final StringBuilder fileLines = new StringBuilder();
-        String zipOutputPath = exportFileDir;
+        String zipOutputPath = getExportFileDir();
         String refsetFileName = "";
         String sctidsFilePath = "";
         final List<String> sourceFiles = new ArrayList<>();
@@ -1465,7 +1469,7 @@ public final class RefsetMemberService {
 
                 if (root.get("searchAfter") != null) {
 
-                    searchAfter = root.get("searchAfter").asText();
+                    searchAfter = root.get("searchAfter").asString();
                 } else {
 
                     searchAfter = "";
@@ -1483,7 +1487,7 @@ public final class RefsetMemberService {
                 while (iterator.hasNext()) {
 
                     final JsonNode item = iterator.next();
-                    final String conceptId = (item.get("referencedComponentId").asText());
+                    final String conceptId = (item.get("referencedComponentId").asString());
                     fileLines.append(conceptId + "\n");
                 }
 
@@ -1532,7 +1536,7 @@ public final class RefsetMemberService {
 
         final StringBuilder fileLines = new StringBuilder();
         String sctidsOutputPath = "";
-        String zipOutputPath = exportFileDir;
+        String zipOutputPath = getExportFileDir();
         String refsetFileName = "";
         final List<String> sourceFiles = new ArrayList<>();
         Path tempDirectoryPath = null;
@@ -1894,7 +1898,7 @@ public final class RefsetMemberService {
      */
     public static void populateAllLanguageDescriptions(final Refset refset, final List<Concept> conceptsToProcess) throws Exception {
 
-        terminologyHandler.populateAllLanguageDescriptions(refset, conceptsToProcess);
+        getTerminologyHandler().populateAllLanguageDescriptions(refset, conceptsToProcess);
 
     }
 
@@ -1907,7 +1911,7 @@ public final class RefsetMemberService {
      */
     public static void populateConceptLeafStatus(final Refset refset, final List<Concept> conceptsToProcess) throws Exception {
 
-        terminologyHandler.populateConceptLeafStatus(refset, conceptsToProcess);
+        getTerminologyHandler().populateConceptLeafStatus(refset, conceptsToProcess);
 
     }
 
@@ -1985,7 +1989,7 @@ public final class RefsetMemberService {
      */
     public static Concept getConceptAncestors(final Refset refset, final String conceptId) throws Exception {
 
-        return terminologyHandler.getConceptAncestors(refset, conceptId);
+        return getTerminologyHandler().getConceptAncestors(refset, conceptId);
     }
 
     /**
@@ -2002,7 +2006,7 @@ public final class RefsetMemberService {
     public static ResultListConcept searchConcepts(final Refset refset, final SearchParameters searchParameters, final String searchMembersMode,
         final int limitReturnNumber) throws Exception {
 
-        return terminologyHandler.searchConcepts(refset, searchParameters, searchMembersMode, limitReturnNumber);
+        return getTerminologyHandler().searchConcepts(refset, searchParameters, searchMembersMode, limitReturnNumber);
 
     }
 
@@ -2031,7 +2035,7 @@ public final class RefsetMemberService {
 
                 if (acceptabilityMap.has(langRefsetId)) {
 
-                    acceptability = acceptabilityMap.get(langRefsetId).asText();
+                    acceptability = acceptabilityMap.get(langRefsetId).asString();
                     languageId = langRefsetId;
                     break;
                 }
@@ -2040,10 +2044,10 @@ public final class RefsetMemberService {
 
             if (acceptability != null && (nonDefaultPreferredTerms.isEmpty() || "PREFERRED".equals(acceptability))) {
 
-                if ("900000000000003001".equals(descriptionNode.get("typeId").asText())) {
+                if ("900000000000003001".equals(descriptionNode.get("typeId").asString())) {
 
                     typeName = "FSN";
-                } else if ("900000000000550004".equals(descriptionNode.get("typeId").asText())) {
+                } else if ("900000000000550004".equals(descriptionNode.get("typeId").asString())) {
 
                     typeName = "DEF";
                 } else {
@@ -2058,13 +2062,13 @@ public final class RefsetMemberService {
 
                 }
 
-                descriptionAttributesMap.put(DESCRIPTION_TERM, descriptionNode.get("term").asText());
+                descriptionAttributesMap.put(DESCRIPTION_TERM, descriptionNode.get("term").asString());
                 descriptionAttributesMap.put(DESCRIPTION_TYPE, typeName);
-                descriptionAttributesMap.put(DESCRIPTION_ID, descriptionNode.get("descriptionId").asText());
+                descriptionAttributesMap.put(DESCRIPTION_ID, descriptionNode.get("descriptionId").asString());
                 descriptionAttributesMap.put(LANGUAGE_CODE, languageId);
                 descriptionAttributesMap.put(LANGUAGE_ID, languageId + typeName);
-                descriptionAttributesMap.put(LANGUAGE_NAME, descriptionNode.get("lang").asText().toUpperCase() + " (" + typeName + ")");
-                descriptionAttributesMap.put(DESCRIPTION_LANGUAGE, descriptionNode.get("lang").asText());
+                descriptionAttributesMap.put(LANGUAGE_NAME, descriptionNode.get("lang").asString().toUpperCase() + " (" + typeName + ")");
+                descriptionAttributesMap.put(DESCRIPTION_LANGUAGE, descriptionNode.get("lang").asString());
 
                 descriptions.add(descriptionAttributesMap);
             }
@@ -2088,7 +2092,7 @@ public final class RefsetMemberService {
             return TREE_CACHE.get(branchPath);
         } else {
 
-            return new HashMap<>();
+            return new ConcurrentHashMap<>();
         }
 
     }
@@ -2107,7 +2111,7 @@ public final class RefsetMemberService {
             return ANCESTORS_CACHE.get(branchPath);
         } else {
 
-            return new HashMap<>();
+            return new ConcurrentHashMap<>();
         }
 
     }
@@ -2126,7 +2130,7 @@ public final class RefsetMemberService {
             return TAXONOMY_SEARCH_ANCESTORS_CACHE.get(branchPath);
         } else {
 
-            return new HashMap<>();
+            return new ConcurrentHashMap<>();
         }
 
     }
@@ -2145,7 +2149,7 @@ public final class RefsetMemberService {
             return CONCEPT_DETAILS_CACHE.get(branchPath);
         } else {
 
-            return new HashMap<>();
+            return new ConcurrentHashMap<>();
         }
 
     }
@@ -2164,7 +2168,7 @@ public final class RefsetMemberService {
             return CONCEPTS_CALL_CACHE.get(branchPath);
         } else {
 
-            return new HashMap<>();
+            return new ConcurrentHashMap<>();
         }
 
     }
@@ -2301,7 +2305,7 @@ public final class RefsetMemberService {
      */
     public static int getMemberCount(final Refset refset) throws Exception {
 
-        return terminologyHandler.getMemberCount(refset);
+        return getTerminologyHandler().getMemberCount(refset);
     }
 
     /**
@@ -2316,7 +2320,7 @@ public final class RefsetMemberService {
     public static ResultListConcept getMemberList(final Refset refset, final List<String> nonDefaultPreferredTerms, final SearchParameters searchParameters)
         throws Exception {
 
-        return terminologyHandler.getMemberList(refset, nonDefaultPreferredTerms, searchParameters);
+        return getTerminologyHandler().getMemberList(refset, nonDefaultPreferredTerms, searchParameters);
     }
 
     /**
@@ -2451,7 +2455,7 @@ public final class RefsetMemberService {
      */
     public static Concept getConceptDetails(final String conceptId, final Refset refset) throws Exception {
 
-        return terminologyHandler.getConceptDetails(conceptId, refset);
+        return getTerminologyHandler().getConceptDetails(conceptId, refset);
 
     }
 
@@ -2466,7 +2470,7 @@ public final class RefsetMemberService {
      */
     protected static ResultListConcept getParents(final String conceptId, final Refset refset, final String language) throws Exception {
 
-        return terminologyHandler.getParents(conceptId, refset, language);
+        return getTerminologyHandler().getParents(conceptId, refset, language);
 
     }
 
@@ -2481,7 +2485,7 @@ public final class RefsetMemberService {
      */
     protected static ResultListConcept getChildren(final String conceptId, final Refset refset, final String language) throws Exception {
 
-        return terminologyHandler.getChildren(conceptId, refset, language);
+        return getTerminologyHandler().getChildren(conceptId, refset, language);
 
     }
 
@@ -2498,7 +2502,7 @@ public final class RefsetMemberService {
     protected static ResultListConcept getConceptsFromSnowstorm(final String url, final Refset refset, final ConceptLookupParameters lookupParameters,
         final String language) throws Exception {
 
-        return terminologyHandler.getConceptsFromSnowstorm(url, refset, lookupParameters, language);
+        return getTerminologyHandler().getConceptsFromSnowstorm(url, refset, lookupParameters, language);
 
     }
 
@@ -2533,7 +2537,7 @@ public final class RefsetMemberService {
 
         if (root.get("searchAfter") != null) {
 
-            searchAfter = root.get("searchAfter").asText();
+            searchAfter = root.get("searchAfter").asString();
         }
 
         if (!lookupParameters.isGetMembershipInformation()) {
@@ -2555,11 +2559,11 @@ public final class RefsetMemberService {
 
             if (conceptNode.has("referencedComponent")) {
 
-                conceptId = conceptNode.get("referencedComponent").get("conceptId").asText();
+                conceptId = conceptNode.get("referencedComponent").get("conceptId").asString();
 
             } else if (conceptNode.has("conceptId")) {
 
-                conceptId = conceptNode.get("conceptId").asText();
+                conceptId = conceptNode.get("conceptId").asString();
             } else {
 
                 throw new Exception("Unable to process the conceptNode: " + conceptNode);
@@ -2581,12 +2585,12 @@ public final class RefsetMemberService {
                 // Read member-representation of basic concept content
                 if (referencedComponent.get("pt") != null && referencedComponent.get("pt").get("term") != null) {
 
-                    name = referencedComponent.get("pt").get("term").asText();
+                    name = referencedComponent.get("pt").get("term").asString();
                 } else {
 
                     if (referencedComponent.get("term") != null) {
 
-                        name = referencedComponent.get("term").asText();
+                        name = referencedComponent.get("term").asString();
                     }
 
                 }
@@ -2596,7 +2600,7 @@ public final class RefsetMemberService {
 
                     if (referencedComponent.get("fsn") != null && referencedComponent.get("fsn").get("term") != null) {
 
-                        concept.setFsn(referencedComponent.get("fsn").get("term").asText());
+                        concept.setFsn(referencedComponent.get("fsn").get("term").asString());
                     } else {
 
                         concept.setFsn(name);
@@ -2613,13 +2617,13 @@ public final class RefsetMemberService {
 
                 if (conceptNode.has("memberId")) {
 
-                    concept.setMemberId(conceptNode.get("memberId").asText());
+                    concept.setMemberId(conceptNode.get("memberId").asString());
                 }
 
                 // if the member has been released get the effective time
                 if (conceptNode.has("releasedEffectiveTime")) {
 
-                    concept.setMemberEffectiveTime(simpleDateFormat.parse(conceptNode.get("releasedEffectiveTime").asText()));
+                    concept.setMemberEffectiveTime(simpleDateFormat.parse(conceptNode.get("releasedEffectiveTime").asString()));
                 }
 
             } else if (conceptNode.has("conceptId")) {
@@ -2628,11 +2632,11 @@ public final class RefsetMemberService {
                 // general-representation of basic concept content
                 if (conceptNode.get("pt") != null && conceptNode.get("pt").get("term") != null) {
 
-                    name = conceptNode.get("pt").get("term").asText();
+                    name = conceptNode.get("pt").get("term").asString();
 
                 } else if (conceptNode.get("term") != null) {
 
-                    name = conceptNode.get("term").asText();
+                    name = conceptNode.get("term").asString();
                 }
 
                 // Add FSN if required
@@ -2640,7 +2644,7 @@ public final class RefsetMemberService {
 
                     if (conceptNode.get("fsn") != null && conceptNode.get("fsn").get("term") != null) {
 
-                        concept.setFsn(conceptNode.get("fsn").get("term").asText());
+                        concept.setFsn(conceptNode.get("fsn").get("term").asString());
                     } else {
 
                         concept.setFsn(name);
@@ -2649,12 +2653,12 @@ public final class RefsetMemberService {
                 }
 
                 // grab other concept information
-                if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
+                if (!conceptNode.get("definitionStatus").asString().equals("PRIMITIVE")) {
 
                     defined = true;
                 }
 
-                if (branchCache.containsKey(cacheString) && branchCache.get(cacheString).contains(conceptNode.get("conceptId").asText())) {
+                if (branchCache.containsKey(cacheString) && branchCache.get(cacheString).contains(conceptNode.get("conceptId").asString())) {
 
                     concept.setHasDescendantRefsetMembers(true);
                 }
@@ -2690,7 +2694,7 @@ public final class RefsetMemberService {
 
                 } else if (conceptNode.get("fsn") != null) {
 
-                    final String fsn = conceptNode.get("fsn").get("term").asText();
+                    final String fsn = conceptNode.get("fsn").get("term").asString();
                     final Map<String, String> descMap = new HashMap<>();
                     descMap.put("fsn", fsn);
                     final List<Map<String, String>> list = new ArrayList<>();
@@ -2728,7 +2732,7 @@ public final class RefsetMemberService {
 
                 if (conceptNode.get("releasedEffectiveTime") != null) {
 
-                    concept.setMemberEffectiveTime(simpleDateFormat.parse(conceptNode.get("releasedEffectiveTime").asText()));
+                    concept.setMemberEffectiveTime(simpleDateFormat.parse(conceptNode.get("releasedEffectiveTime").asString()));
                 }
 
             }
@@ -2840,7 +2844,7 @@ public final class RefsetMemberService {
 
             final JsonNode relationship = iterator.next();
 
-            if (relationship.get("active").asBoolean() && "INFERRED_RELATIONSHIP".equals(relationship.get("characteristicType").asText())) {
+            if (relationship.get("active").asBoolean() && "INFERRED_RELATIONSHIP".equals(relationship.get("characteristicType").asString())) {
 
                 final int groupId = relationship.get("groupId").asInt();
 
@@ -2849,11 +2853,11 @@ public final class RefsetMemberService {
                     roleGroups.put(groupId, new ArrayList<String>());
                 }
 
-                final String type = relationship.get("type").get("pt").get("term").asText();
+                final String type = relationship.get("type").get("pt").get("term").asString();
 
                 if (!"Is a".equals(type)) {
 
-                    final String target = relationship.get("target").get("pt").get("term").asText();
+                    final String target = relationship.get("target").get("pt").get("term").asString();
                     roleGroups.get(groupId).add(type + " -> " + target);
                 }
 
@@ -2907,7 +2911,7 @@ public final class RefsetMemberService {
      */
     private static void populateMembershipInformation(final Refset refset, final List<Concept> concepts) throws Exception {
 
-        terminologyHandler.populateMembershipInformation(refset, concepts);
+        getTerminologyHandler().populateMembershipInformation(refset, concepts);
     }
 
     /**
@@ -2916,7 +2920,6 @@ public final class RefsetMemberService {
      * @param refset the refset
      * @param concept the concept
      * @return the string
-     * @throws Exception the exception
      */
     public static String processIntensionalDefinitionException(final Refset refset, final Concept concept) {
 
@@ -2965,7 +2968,7 @@ public final class RefsetMemberService {
      */
     public static Long getLatestChangedVersionDate(final String branch, final String refsetId) throws Exception {
 
-        return terminologyHandler.getLatestChangedVersionDate(branch, refsetId);
+        return getTerminologyHandler().getLatestChangedVersionDate(branch, refsetId);
 
     }
 
@@ -2981,7 +2984,7 @@ public final class RefsetMemberService {
     public static List<Map<String, String>> getMemberHistory(final TerminologyService service, final String referencedComponentId,
         final List<Map<String, String>> versions) throws Exception {
 
-        return terminologyHandler.getMemberHistory(service, referencedComponentId, versions);
+        return getTerminologyHandler().getMemberHistory(service, referencedComponentId, versions);
     }
 
     /**
@@ -3049,7 +3052,7 @@ public final class RefsetMemberService {
      */
     public static boolean cacheMemberAncestors(final Refset refset) throws Exception {
 
-        return terminologyHandler.cacheMemberAncestors(refset);
+        return getTerminologyHandler().cacheMemberAncestors(refset);
     }
 
     /**
@@ -3068,7 +3071,7 @@ public final class RefsetMemberService {
             ecl += conceptId + " OR ";
         }
 
-        return StringUtils.removeEnd(ecl, " OR ");
+        return Strings.CS.removeEnd(ecl, " OR ");
     }
 
     /**
@@ -3084,7 +3087,7 @@ public final class RefsetMemberService {
     public static List<String> addRefsetMembers(final TerminologyService service, final User user, final Refset refset, final List<String> conceptIds)
         throws Exception {
 
-        return terminologyHandler.addRefsetMembers(service, user, refset, conceptIds);
+        return getTerminologyHandler().addRefsetMembers(service, user, refset, conceptIds);
     }
 
     /**
@@ -3100,7 +3103,7 @@ public final class RefsetMemberService {
     public static List<String> removeRefsetMembers(final TerminologyService service, final User user, final Refset refset, final String conceptIds)
         throws Exception {
 
-        return terminologyHandler.removeRefsetMembers(service, user, refset, conceptIds);
+        return getTerminologyHandler().removeRefsetMembers(service, user, refset, conceptIds);
 
     }
 
@@ -3114,7 +3117,7 @@ public final class RefsetMemberService {
      */
     public static List<String> getConceptIdsFromEcl(final String branch, final String ecl) throws Exception {
 
-        return terminologyHandler.getConceptIdsFromEcl(branch, ecl);
+        return getTerminologyHandler().getConceptIdsFromEcl(branch, ecl);
 
     }
 
@@ -3129,7 +3132,7 @@ public final class RefsetMemberService {
      */
     public static String compileUpgradeData(final TerminologyService service, final User user, final String refsetInternalId) throws Exception {
 
-        return terminologyHandler.compileUpgradeData(service, user, refsetInternalId);
+        return getTerminologyHandler().compileUpgradeData(service, user, refsetInternalId);
 
     }
 
@@ -3178,7 +3181,7 @@ public final class RefsetMemberService {
      *
      * @param service the Terminology Service
      * @param user the user
-     * @param refsetInternalId the internal refset ID
+     * @param refset the refset
      * @throws Exception the exception
      */
     public static void removeUpgradeData(final TerminologyService service, final User user, final Refset refset) throws Exception {
@@ -3208,7 +3211,7 @@ public final class RefsetMemberService {
     public static String modifyUpgradeConcept(final TerminologyService service, final User user, final Refset refset, final String inactiveConceptId,
         final String replacementConceptId, final UpgradeReplacementConcept manualReplacementConcept, final String changed) throws Exception {
 
-        return terminologyHandler.modifyUpgradeConcept(service, user, refset, inactiveConceptId, replacementConceptId, manualReplacementConcept, changed);
+        return getTerminologyHandler().modifyUpgradeConcept(service, user, refset, inactiveConceptId, replacementConceptId, manualReplacementConcept, changed);
 
     }
 
@@ -3238,7 +3241,7 @@ public final class RefsetMemberService {
                 conceptIdsToChange += inactiveConcept.getCode() + ",";
             }
 
-            conceptIdsToChange = StringUtils.removeEnd(conceptIdsToChange, ",");
+            conceptIdsToChange = Strings.CS.removeEnd(conceptIdsToChange, ",");
 
             // remove the concepts as members from the refset
             unchangedConcepts = RefsetMemberService.removeRefsetMembers(service, user, refset, conceptIdsToChange);
@@ -3327,7 +3330,7 @@ public final class RefsetMemberService {
             unaddedConcepts = RefsetMemberService.addRefsetMembers(service, user, refset, conceptIdsToAdd);
 
             // remove the inactive concepts from the refset
-            conceptIdsToRemove = StringUtils.removeEnd(conceptIdsToRemove, ",");
+            conceptIdsToRemove = Strings.CS.removeEnd(conceptIdsToRemove, ",");
             unremovedConcepts = RefsetMemberService.removeRefsetMembers(service, user, refset, conceptIdsToRemove);
 
             // to make searching easier
@@ -3511,13 +3514,11 @@ public final class RefsetMemberService {
         // remove any existing comparison data for this refset
         SecurityService.removeFromSession("refsetMemberComparison_" + activeRefsetInternalId);
 
-        // Change the numbers to '1's to avoid threading
-        final ExecutorService executor =
-            new ThreadPoolExecutor(30, 30, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(30), new ThreadPoolExecutor.CallerRunsPolicy());
+        final BoundedExecutors.Batch batch = BoundedExecutors.fanoutBatch();
 
         for (final String refsetType : Arrays.asList("active", "comparison")) {
 
-            executor.submit(new Runnable() {
+            batch.submit(new Runnable() {
 
                 /* see superclass */
                 @Override
@@ -3561,8 +3562,7 @@ public final class RefsetMemberService {
             });
         }
 
-        executor.shutdown();
-        executor.awaitTermination(10, TimeUnit.MINUTES);
+        batch.await(10, TimeUnit.MINUTES);
 
         refsetMemberComparison.setActiveRefsetMemberTotal(activeRefsetMembers.size());
         refsetMemberComparison.setComparisonRefsetMemberTotal(comparisonRefsetMembers.size());

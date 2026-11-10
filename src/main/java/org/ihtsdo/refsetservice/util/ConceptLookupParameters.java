@@ -331,7 +331,6 @@ public class ConceptLookupParameters {
      *
      * @return the string
      */
-    /* see superclass */
     @Override
     public String toString() {
 

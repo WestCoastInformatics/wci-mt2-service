@@ -15,10 +15,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-import org.springframework.web.util.UrlPathHelper;
 
 /**
  * Set up the web settings.
@@ -30,25 +28,29 @@ public class WebConfiguration implements WebMvcConfigurer {
     @SuppressWarnings("unused")
     private static final Logger LOG = LoggerFactory.getLogger(WebConfiguration.class);
 
+    /** The allowed origins. */
     @Value("${cors.allowed-origins:*}")
     private String[] allowedOrigins;
 
-    /* see superclass */
+    /**
+     * Adds the cors mappings.
+     *
+     * @param registry the registry
+     */
     @Override
     public void addCorsMappings(final CorsRegistry registry) {
 
         LOG.info("allowedOrigins: {}", (Object[]) allowedOrigins);
 
-        registry.addMapping("/**")
-                .allowedOrigins(allowedOrigins)
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("*")
-                .exposedHeaders(HttpHeaders.CONTENT_DISPOSITION, HttpHeaders.CONTENT_TYPE, HttpHeaders.CONTENT_LENGTH)
-                .allowCredentials(true)
-                .maxAge(3600);
+        registry.addMapping("/**").allowedOrigins(allowedOrigins).allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS").allowedHeaders("*")
+            .exposedHeaders(HttpHeaders.CONTENT_DISPOSITION, HttpHeaders.CONTENT_TYPE, HttpHeaders.CONTENT_LENGTH).allowCredentials(true).maxAge(3600);
     }
 
-    /* see superclass */
+    /**
+     * Adds the view controllers.
+     *
+     * @param registry the registry
+     */
     @Override
     public void addViewControllers(final ViewControllerRegistry registry) {
 
@@ -56,16 +58,5 @@ public class WebConfiguration implements WebMvcConfigurer {
         registry.addRedirectViewController("/swagger", "/swagger-ui/index.html");
         registry.addRedirectViewController("/swagger/", "/swagger-ui/index.html");
         registry.addRedirectViewController("/swagger/index.html", "/swagger-ui/index.html");
-    }
-
-    /* see superclass */
-    @Override
-    public void configurePathMatch(PathMatchConfigurer configurer) {
-
-        UrlPathHelper urlPathHelper = new UrlPathHelper();
-        // Don't decode the URL
-        urlPathHelper.setUrlDecode(false);
-        urlPathHelper.setRemoveSemicolonContent(false);
-        configurer.setUrlPathHelper(urlPathHelper);
     }
 }

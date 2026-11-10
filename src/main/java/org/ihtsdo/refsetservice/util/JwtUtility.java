@@ -1,7 +1,7 @@
 package org.ihtsdo.refsetservice.util;
 
 import java.io.IOException;
-import java.net.URL;
+import java.net.URI;
 import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Calendar;
@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import javax.ws.rs.WebApplicationException;
+import jakarta.ws.rs.WebApplicationException;
 
 import org.apache.logging.log4j.ThreadContext;
 import org.slf4j.Logger;
@@ -24,7 +24,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.JWTVerifier;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
 
 /**
  * Utility for interacting with JWT tokens.
@@ -220,7 +220,7 @@ public final class JwtUtility {
      */
     private static PublicKey getPublicKey(final DecodedJWT djwt, final String url) throws Exception {
 
-        final UrlJwkProvider provider = new UrlJwkProvider(new URL(url), null, null);
+        final UrlJwkProvider provider = new UrlJwkProvider(URI.create(url).toURL(), null, null);
         Jwk jwk = null;
         // IF "kid" is specified in JWT, use it
         if (djwt.getKeyId() != null) {
@@ -300,10 +300,10 @@ public final class JwtUtility {
      *
      * @param payload the payload
      * @return the user id
-     * @throws JsonProcessingException the json processing exception
+     * @throws JacksonException the json processing exception
      * @throws IOException Signals that an I/O exception has occurred.
      */
-    public static String getUserId(final String payload) throws JsonProcessingException, IOException {
+    public static String getUserId(final String payload) throws JacksonException, IOException {
 
         if (payload.contains(Claims.ID.getValue())) {
             return payload.replaceFirst(".*" + StringUtility.escapeRegex(Claims.ID.getValue()) + "\"\\s*:\\s*\"([0-9a-zA-Z-]+)\".*", "$1");
@@ -482,7 +482,6 @@ public final class JwtUtility {
      * @param userId the user id
      * @param organizationId the organization id
      * @param role the role
-     * @param jwtSecret the jwt secret
      * @param expiresIn the expires in
      * @param claims the claims
      * @return the string

@@ -44,8 +44,12 @@ public class Rf2SnapshotExportStrategy extends AbstractMapSetExportStrategy {
     /** The Constant FILE_SEPARATOR. */
     private static final String FILE_SEPARATOR = System.getProperty("file.separator");
 
-    static {
-        exportFileDir = PropertyUtility.getProperty("mapexport.fileDir");
+    private static String getExportFileDir() {
+
+        if (exportFileDir == null) {
+            exportFileDir = PropertyUtility.getProperty("mapexport.fileDir");
+        }
+        return exportFileDir;
     }
 
     /**
@@ -110,12 +114,12 @@ public class Rf2SnapshotExportStrategy extends AbstractMapSetExportStrategy {
                 LOG.info("Snowstorm export request: {}", exportRequestParameters);
 
                 // Generate on Snowstorm
-                final String snowGeneratedFileUrl = exportHandler.generateSnowVersionFile(exportRequestParameters);
+                final String snowGeneratedFileUrl = getExportHandler().generateSnowVersionFile(exportRequestParameters);
 
                 LOG.info("Downloading file from snowstorm : {}", snowGeneratedFileUrl);
 
                 // Download file from Snowstorm
-                exportHandler.downloadSnowGeneratedFile(snowGeneratedFileUrl, localSnowGeneratedFilePath);
+                getExportHandler().downloadSnowGeneratedFile(snowGeneratedFileUrl, localSnowGeneratedFilePath);
 
                 // store file one s3
                 LOG.info("uploading snowstorm generated file to S3");
@@ -132,13 +136,13 @@ public class Rf2SnapshotExportStrategy extends AbstractMapSetExportStrategy {
             // export file
             generateMt2ExportFile(mapProject, mapSet, localSnowGeneratedFilePath, mt2VersionFileName, request);
 
-            S3ConnectionWrapper.uploadToS3(awsVersionedPath, exportFileDir, mt2VersionFileName);
+            S3ConnectionWrapper.uploadToS3(awsVersionedPath, getExportFileDir(), mt2VersionFileName);
 
             FileUtility.deleteDirectory(localSnowGeneratedTempDir.toFile());
 
         } else {
 
-            final Path exportFilePath = Paths.get(exportFileDir, mt2VersionFileName);
+            final Path exportFilePath = Paths.get(getExportFileDir(), mt2VersionFileName);
 
             if (!Files.exists(exportFilePath)) {
 
@@ -147,7 +151,7 @@ public class Rf2SnapshotExportStrategy extends AbstractMapSetExportStrategy {
             }
         }
 
-        LOG.info("Final Export File Path: {}", Paths.get(exportFileDir, mt2VersionFileName));
+        LOG.info("Final Export File Path: {}", Paths.get(getExportFileDir(), mt2VersionFileName));
         return FILE_DOWNLOAD_URL + mt2VersionFileName;
     }
 
@@ -221,12 +225,12 @@ public class Rf2SnapshotExportStrategy extends AbstractMapSetExportStrategy {
         LOG.info("ready to be zipped source files: {}", sourceFiles);
 
         // zip the files together
-        FileUtility.zipFiles(sourceFiles, Paths.get(exportFileDir, mt2ZipFileName));
+        FileUtility.zipFiles(sourceFiles, Paths.get(getExportFileDir(), mt2ZipFileName));
 
         // Delete directory structure and original zip
         FileUtility.deleteDirectory(builderDirectoryTempDir.toFile());
 
-        return exportFileDir;
+        return getExportFileDir();
     }
 
 }

@@ -15,15 +15,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.xml.bind.annotation.XmlTransient;
+import jakarta.xml.bind.annotation.XmlTransient;
 
 import org.ihtsdo.refsetservice.model.Collection;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * Represents a list of results. Aligns with "collection".
  *
  * @param <T> the type parameter
  */
+@Schema(description = "Paged list of search or find results")
 public class ResultList<T> implements Collection<T> {
 
     /** The total count. */
@@ -44,7 +47,7 @@ public class ResultList<T> implements Collection<T> {
     /** A miscellaneous field for other counts that might be needed. */
     private int miscCountB;
 
-    /**  The searchAfter. */
+    /** The searchAfter. */
     private String searchAfter;
 
     /** The offset. */
@@ -150,6 +153,7 @@ public class ResultList<T> implements Collection<T> {
      * @return the objects transient
      */
     @Override
+    @Schema(description = "Result items for this page")
     public List<T> getItems() {
 
         if (items == null) {
@@ -182,8 +186,13 @@ public class ResultList<T> implements Collection<T> {
         this.scoreMap = scoreMap;
     }
 
-    /* see superclass */
+    /**
+     * Gets the total.
+     *
+     * @return the total
+     */
     @Override
+    @Schema(description = "Total number of matching results")
     public int getTotal() {
 
         return total;
@@ -209,21 +218,34 @@ public class ResultList<T> implements Collection<T> {
         this.totalKnown = totalKnown;
     }
 
-    /* see superclass */
+    /**
+     * Sets the total.
+     *
+     * @param total the new total
+     */
     @Override
     public void setTotal(final int total) {
 
         this.total = total;
     }
 
-    /* see superclass */
+    /**
+     * Gets the limit.
+     *
+     * @return the limit
+     */
     @Override
+    @Schema(description = "Maximum number of items in this page")
     public int getLimit() {
 
         return limit;
     }
 
-    /* see superclass */
+    /**
+     * Sets the limit.
+     *
+     * @param limit the new limit
+     */
     @Override
     public void setLimit(final int limit) {
 
@@ -270,14 +292,23 @@ public class ResultList<T> implements Collection<T> {
         this.miscCountB = miscCountB;
     }
 
-    /* see superclass */
+    /**
+     * Gets the offset.
+     *
+     * @return the offset
+     */
     @Override
+    @Schema(description = "Start index of this page")
     public int getOffset() {
 
         return offset;
     }
 
-    /* see superclass */
+    /**
+     * Sets the offset.
+     *
+     * @param offset the new offset
+     */
     @Override
     public void setOffset(final int offset) {
 
@@ -344,7 +375,11 @@ public class ResultList<T> implements Collection<T> {
         this.parameters = parameters;
     }
 
-    /* see superclass */
+    /**
+     * Hash code.
+     *
+     * @return the int
+     */
     @Override
     public int hashCode() {
 
@@ -364,6 +399,12 @@ public class ResultList<T> implements Collection<T> {
         return result;
     }
 
+    /**
+     * Equals.
+     *
+     * @param obj the obj
+     * @return true, if successful
+     */
     /* see superclass */
     @SuppressWarnings("rawtypes")
     @Override
@@ -435,7 +476,11 @@ public class ResultList<T> implements Collection<T> {
         return true;
     }
 
-    /* see superclass */
+    /**
+     * To string.
+     *
+     * @return the string
+     */
     @Override
     public String toString() {
 

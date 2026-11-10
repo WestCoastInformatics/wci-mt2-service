@@ -41,7 +41,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.json.JacksonTester;
@@ -50,7 +50,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import tools.jackson.core.type.TypeReference;
 
 /**
  * The Class TeamControllerIntegrationTest.
@@ -151,7 +151,7 @@ public class TeamControllerIntegrationTest extends AbstractRefsetTests {
 
             assertThat(organization).isNotNull();
             assertThat(organization.getId()).isNotNull();
-    
+
             final Project tempProject = new Project();
             tempProject.setId(null);
             tempProject.setName("Unit Test Create");
@@ -166,7 +166,7 @@ public class TeamControllerIntegrationTest extends AbstractRefsetTests {
             tempProject.getRoles().add("reviewer");
 
             project = ProjectService.addProject(service, testUser, tempProject);
-            
+
             service.commit();
         } catch (final Exception e) {
             LOG.error("ERROR {}", e.getMessage(), e);

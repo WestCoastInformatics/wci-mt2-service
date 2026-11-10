@@ -28,8 +28,8 @@ public class ApplicationStartupListener {
     private static final Logger LOG = LoggerFactory.getLogger(ApplicationStartupListener.class);
 
     /**
-     * Reindex from the database, clear sessions, and optionally prewarm caches once the application is ready.
-     * The first {@link TerminologyService} construction runs the one-shot startup reindex.
+     * Reindex from the database, clear sessions, and optionally prewarm caches once the application is ready. The first {@link TerminologyService} construction
+     * runs the one-shot startup reindex.
      *
      * @throws Exception the exception
      */
@@ -38,6 +38,9 @@ public class ApplicationStartupListener {
 
         try (final TerminologyService service = new TerminologyService()) {
             service.clearUserSessions();
+
+            org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection.loadConfigurationFromProperties();
+            org.ihtsdo.refsetservice.terminologyservice.S3ConnectionWrapper.loadConfigurationFromProperties();
 
             final String cacheConceptsEnabled = PropertyUtility.getProperty("cache.terminology.prewarm.enabled");
             final boolean shouldCacheConcepts = cacheConceptsEnabled == null || "true".equalsIgnoreCase(cacheConceptsEnabled);

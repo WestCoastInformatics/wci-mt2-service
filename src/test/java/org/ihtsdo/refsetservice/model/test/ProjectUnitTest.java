@@ -44,7 +44,7 @@ public class ProjectUnitTest extends BaseTest {
 
     /** The edition. */
     @SuppressWarnings("unused")
-	private Edition edition;
+    private Edition edition;
 
     /**
      * Setup.

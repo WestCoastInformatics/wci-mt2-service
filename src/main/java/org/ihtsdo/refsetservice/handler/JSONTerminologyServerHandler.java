@@ -31,17 +31,16 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status.Family;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status.Family;
 
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
+import org.ihtsdo.refsetservice.util.BoundedExecutors;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnomedConstants;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnowstormApiPaging;
 import org.ihtsdo.refsetservice.model.BranchInformation;
@@ -91,10 +90,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Implements a terminology handler that reads terminology information from pregenerated .json files
@@ -113,7 +112,14 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
      *
      */
 
-    /* see superclass */
+    /**
+     * Creates the branch.
+     *
+     * @param parentBranchPath the parent branch path
+     * @param branchName the branch name
+     * @return the string
+     * @throws Exception the exception
+     */
     @Override
     public String createBranch(final String parentBranchPath, final String branchName) throws Exception {
 
@@ -142,7 +148,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             if (rootNode.has("path")) {
 
-                refsetBranchPath = rootNode.get("path").asText();
+                refsetBranchPath = rootNode.get("path").asString();
             }
 
             LOG.info("Created branch " + refsetBranchPath + ". Time: " + (System.currentTimeMillis() - start));
@@ -151,7 +157,13 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return refsetBranchPath;
     }
 
-    /* see superclass */
+    /**
+     * Delete branch.
+     *
+     * @param branchPath the branch path
+     * @return true, if successful
+     * @throws Exception the exception
+     */
     @Override
     public boolean deleteBranch(final String branchPath) throws Exception {
 
@@ -176,7 +188,13 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         }
     }
 
-    /* see superclass */
+    /**
+     * Does branch exist.
+     *
+     * @param branchPath the branch path
+     * @return true, if successful
+     * @throws Exception the exception
+     */
     @Override
     public boolean doesBranchExist(final String branchPath) throws Exception {
 
@@ -201,7 +219,13 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         }
     }
 
-    /* see superclass */
+    /**
+     * Gets the branch children.
+     *
+     * @param branchPath the branch path
+     * @return the branch children
+     * @throws Exception the exception
+     */
     @Override
     public List<String> getBranchChildren(final String branchPath) throws Exception {
 
@@ -232,14 +256,22 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             if (iterator.hasNext()) {
 
                 final JsonNode childNode = iterator.next();
-                childBranchPaths.add(childNode.get("path").asText());
+                childBranchPaths.add(childNode.get("path").asString());
             }
         }
 
         return childBranchPaths;
     }
 
-    /* see superclass */
+    /**
+     * Merge branch.
+     *
+     * @param sourceBranchPath the source branch path
+     * @param targetBranchPath the target branch path
+     * @param comment the comment
+     * @param rebase the rebase
+     * @throws Exception the exception
+     */
     @Override
     public void mergeBranch(final String sourceBranchPath, final String targetBranchPath, final String comment, final boolean rebase) throws Exception {
 
@@ -284,13 +316,13 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                     final String resultString = mergeInfoResponse.readEntity(String.class);
                     final JsonNode root = mapper.readTree(resultString);
-                    final String status = root.get("status").asText();
+                    final String status = root.get("status").asString();
 
                     LOG.info("Merge status is: " + status);
 
                     if (status.equals("FAILED")) {
 
-                        final String message = root.get("message").asText();
+                        final String message = root.get("message").asString();
                         jobDone = true;
 
                         if (!message.contains("is not meaningful")) {
@@ -344,7 +376,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                                     final String stateResultString = stateResponse.readEntity(String.class);
                                     final JsonNode stateRoot = mapper.readTree(stateResultString.toString());
-                                    final String state = stateRoot.get("state").asText();
+                                    final String state = stateRoot.get("state").asString();
 
                                     LOG.info("Promoted branch state is: " + state);
 
@@ -372,7 +404,14 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         }
     }
 
-    /* see superclass */
+    /**
+     * Merge rebase review.
+     *
+     * @param sourceBranchPath the source branch path
+     * @param targetBranchPath the target branch path
+     * @return the string
+     * @throws Exception the exception
+     */
     @Override
     public String mergeRebaseReview(final String sourceBranchPath, final String targetBranchPath) throws Exception {
 
@@ -414,7 +453,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                 final String resultString = response.readEntity(String.class);
                 final JsonNode root = mapper.readTree(resultString);
-                final String status = root.get("status").asText();
+                final String status = root.get("status").asString();
                 LOG.debug("merge review status: " + status);
 
                 if (status.equalsIgnoreCase("PENDING")) {
@@ -429,7 +468,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                 } else if (status.equalsIgnoreCase("failed")) {
 
-                    error += "Job failed with: " + root.get("message").asText();
+                    error += "Job failed with: " + root.get("message").asString();
                     LOG.error(error);
                     throw new Exception(error);
 
@@ -447,7 +486,13 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return reviewId;
     }
 
-    /* see superclass */
+    /**
+     * Gets the new refset id.
+     *
+     * @param editionBranchPath the edition branch path
+     * @return the new refset id
+     * @throws Exception the exception
+     */
     @Override
     public String getNewRefsetId(final String editionBranchPath) throws Exception {
 
@@ -493,7 +538,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             if (conceptNode.has("conceptId")) {
 
-                refsetConceptId = conceptNode.get("conceptId").asText();
+                refsetConceptId = conceptNode.get("conceptId").asString();
             } else {
 
                 throw new Exception("Unable to create new refset concept.");
@@ -505,7 +550,13 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return refsetConceptId;
     }
 
-    /* see superclass */
+    /**
+     * Gets the branch versions.
+     *
+     * @param editionPath the edition path
+     * @return the branch versions
+     * @throws Exception the exception
+     */
     @Override
     public List<String> getBranchVersions(final String editionPath) throws Exception {
 
@@ -537,7 +588,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             while (branchIterator.hasNext()) {
 
                 final JsonNode child = branchIterator.next();
-                final String childBranch = child.get("path").asText();
+                final String childBranch = child.get("path").asString();
                 String childDate = childBranch.replace(editionPath, "");
 
                 if (childDate.startsWith("/")) {
@@ -574,7 +625,13 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return branchCache;
     }
 
-    /* see superclass */
+    /**
+     * Generate version file.
+     *
+     * @param entityString the entity string
+     * @return the string
+     * @throws Exception the exception
+     */
     @Override
     public String generateVersionFile(final String entityString) throws Exception {
         /*-
@@ -614,7 +671,13 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return snowVersionFileUrl;
     }
 
-    /* see superclass */
+    /**
+     * Download generated file.
+     *
+     * @param snowVersionFileUrl the snow version file url
+     * @param localSnowVersionPath the local snow version path
+     * @throws Exception the exception
+     */
     @Override
     public void downloadGeneratedFile(final String snowVersionFileUrl, final String localSnowVersionPath) throws Exception {
 
@@ -633,7 +696,13 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         }
     }
 
-    /* see superclass */
+    /**
+     * Gets the module names.
+     *
+     * @param edition the edition
+     * @return the module names
+     * @throws Exception the exception
+     */
     @Override
     public Map<String, String> getModuleNames(final Edition edition) throws Exception {
 
@@ -648,7 +717,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             bodyConceptIds += "\"" + moduleId + "\",";
         }
 
-        bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",") + "]";
+        bodyConceptIds = Strings.CS.removeEnd(bodyConceptIds, ",") + "]";
 
         final String searchBody = bodyBase + bodyConceptIds + "}";
         LOG.debug("getModuleNames URL: " + conceptSearchUrl);
@@ -671,11 +740,11 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             while (iterator != null && iterator.hasNext()) {
 
                 final JsonNode conceptNode = iterator.next();
-                final String conceptId = conceptNode.get("conceptId").asText();
+                final String conceptId = conceptNode.get("conceptId").asString();
                 String name = "";
 
                 if (conceptNode.get("fsn") != null && conceptNode.get("fsn").get("term") != null) {
-                    name = conceptNode.get("fsn").get("term").asText();
+                    name = conceptNode.get("fsn").get("term").asString();
                 }
 
                 moduleNames.put(conceptId, name);
@@ -685,7 +754,12 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return moduleNames;
     }
 
-    /* see superclass */
+    /**
+     * Gets the affiliate edition list.
+     *
+     * @return the affiliate edition list
+     * @throws Exception the exception
+     */
     @Override
     public List<Edition> getAffiliateEditionList() throws Exception {
 
@@ -715,7 +789,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                         continue;
                     }
 
-                    final String editionShortName = codeSystem.get("shortName").asText();
+                    final String editionShortName = codeSystem.get("shortName").asString();
                     final String maintainerType = syncUtilities.identifyMaintainerType(codeSystem, editionShortName);
 
                     // Skip inactive code systems
@@ -740,8 +814,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                         continue;
                     }
 
-                    final String editionName = codeSystem.get("name").asText();
-                    final String branch = codeSystem.get("branchPath").asText();
+                    final String editionName = codeSystem.get("name").asString();
+                    final String branch = codeSystem.get("branchPath").asString();
                     final String defaultLanguageCode = syncUtilities.identifyDefaultLanguageCode(codeSystem, editionName);
                     final Set<String> defaultLanguageRefsets = syncUtilities.identifyEditionLanguageRefsets(codeSystem, editionShortName, branch);
 
@@ -770,7 +844,15 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return editionList;
     }
 
-    /* see superclass */
+    /**
+     * Creates the refset.
+     *
+     * @param service the service
+     * @param user the user
+     * @param newRefsetParameters the new refset parameters
+     * @return the object
+     * @throws Exception the exception
+     */
     @Override
     public Object createRefset(final TerminologyService service, final User user, final Refset newRefsetParameters) throws Exception {
 
@@ -877,7 +959,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                 if (conceptNode.has("conceptId")) {
 
-                    refsetConceptId = conceptNode.get("conceptId").asText();
+                    refsetConceptId = conceptNode.get("conceptId").asString();
                 } else {
 
                     throw new Exception("Unable to create new reference set concept.");
@@ -942,7 +1024,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         service.add(refset);
         newInternalRefsetId = refset.getId();
 
-        BranchService.createEditBranch(refset.toBranchDetails() , editBranchId);
+        BranchService.createEditBranch(refset.toBranchDetails(), editBranchId);
 
         // Add a workflow history entry for CREATE and then update the workflow to IN_EDIT
         RefsetWorkflowService.addWorkflowHistory(service, user, WorkflowAction.CREATE, refset, "");
@@ -1001,7 +1083,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 }
             }
 
-            final String conceptIdToRemoves = StringUtils.removeEnd(conceptsToInactivate.toString(), ",");
+            final String conceptIdToRemoves = Strings.CS.removeEnd(conceptsToInactivate.toString(), ",");
             RefsetMemberService.removeRefsetMembers(service, user, refset, conceptIdToRemoves);
             final BranchInformation refsetBranchInfo =
                 new BranchInformation(refset.getEditionBranch(), refset.getRefsetId(), editBranchId, refsetBranchId, refset.isLocalSet());
@@ -1016,7 +1098,15 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return refset;
     }
 
-    /* see superclass */
+    /**
+     * Gets the refset concepts.
+     *
+     * @param service the service
+     * @param branch the branch
+     * @param areParentConcepts the are parent concepts
+     * @return the refset concepts
+     * @throws Exception the exception
+     */
     @Override
     public ResultListConcept getRefsetConcepts(final TerminologyService service, final String branch, final boolean areParentConcepts) throws Exception {
 
@@ -1052,7 +1142,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         if (!areParentConcepts) {
 
             // get all the existing refsets for latest branch version
-            final String query = "(latestPublishedVersion: true AND hasVersionInDevelopment: false) OR versionStatus: (" + VersionStatus.IN_DEVELOPMENT.name() + ")";
+            final String query =
+                "(latestPublishedVersion: true AND hasVersionInDevelopment: false) OR versionStatus: (" + VersionStatus.IN_DEVELOPMENT.name() + ")";
             final ResultList<Refset> refsets = service.find(query, null, Refset.class, null);
 
             for (final Refset refset : refsets.getItems()) {
@@ -1091,7 +1182,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                 final JsonNode conceptNode = iterator.next();
                 final Concept concept = new Concept();
-                final String conceptId = conceptNode.get("conceptId").asText();
+                final String conceptId = conceptNode.get("conceptId").asString();
 
                 // if this isn't for a parent concept and the refset already exists then
                 // skip it
@@ -1101,7 +1192,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 }
 
                 concept.setCode(conceptId);
-                concept.setName(conceptNode.get("pt").get("term").asText());
+                concept.setName(conceptNode.get("pt").get("term").asString());
                 concept.setTerminology("SNOMEDCT");
 
                 results.getItems().add(concept);
@@ -1114,7 +1205,14 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return results;
     }
 
-    /* see superclass */
+    /**
+     * Update refset concept.
+     *
+     * @param refset the refset
+     * @param active the active
+     * @param moduleId the module id
+     * @throws Exception the exception
+     */
     @Override
     public void updateRefsetConcept(final Refset refset, final boolean active, final String moduleId) throws Exception {
 
@@ -1233,7 +1331,16 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
     /* Refset Member Service calls */
 
-    /* see superclass */
+    /**
+     * Gets the all refset members.
+     *
+     * @param service the service
+     * @param refsetInternalId the refset internal id
+     * @param searchAfter the search after
+     * @param concepts the concepts
+     * @return the all refset members
+     * @throws Exception the exception
+     */
     @Override
     public List<Concept> getAllRefsetMembers(final TerminologyService service, final String refsetInternalId, final String searchAfter,
         final List<Concept> concepts) throws Exception {
@@ -1268,7 +1375,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             final ResultListConcept conceptList = RefsetMemberService.populateConcepts(root, refset, lookupParameters);
             concepts.addAll(conceptList.getItems());
 
-            final String newSearchAfter = (root.get("searchAfter") != null ? root.get("searchAfter").asText() : "");
+            final String newSearchAfter = (root.get("searchAfter") != null ? root.get("searchAfter").asString() : "");
             if (StringUtils.isNoneBlank(newSearchAfter)) {
 
                 getAllRefsetMembers(service, refsetInternalId, newSearchAfter, concepts);
@@ -1281,7 +1388,13 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return concepts;
     }
 
-    /* see superclass */
+    /**
+     * Gets the directory members.
+     *
+     * @param snowstormQuery the snowstorm query
+     * @return the directory members
+     * @throws Exception the exception
+     */
     @Override
     public Set<String> getDirectoryMembers(final String snowstormQuery) throws Exception {
 
@@ -1315,11 +1428,9 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             if (root.get("buckets") != null) {
 
-                final Iterator<String> membershipIterator = root.get("buckets").get("membership").fieldNames();
+                for (final String membershipId : root.get("buckets").get("membership").propertyNames()) {
 
-                while (membershipIterator.hasNext()) {
-
-                    refsetIds.add(membershipIterator.next());
+                    refsetIds.add(membershipId);
                 }
 
             }
@@ -1333,7 +1444,15 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return refsetIds;
     }
 
-    /* see superclass */
+    /**
+     * Search multisearch descriptions.
+     *
+     * @param searchParameters the search parameters
+     * @param ecl the ecl
+     * @param nonPublishedBranchPaths the non published branch paths
+     * @return the sets the
+     * @throws Exception the exception
+     */
     @Override
     public Set<String> searchMultisearchDescriptions(final SearchParameters searchParameters, final String ecl, final Set<String> nonPublishedBranchPaths)
         throws Exception {
@@ -1358,7 +1477,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             }
         }
 
-        snowstormQuery = StringUtils.removeEnd(snowstormQuery, " AND ");
+        snowstormQuery = Strings.CS.removeEnd(snowstormQuery, " AND ");
 
         for (final String branchPath : nonPublishedBranchPaths) {
             bodyPaths.add(branchPath);
@@ -1391,7 +1510,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 if (itemsNode.isArray()) {
 
                     for (final JsonNode itemNode : itemsNode) {
-                        conceptIds.add(itemNode.get("concept").get("conceptId").asText());
+                        conceptIds.add(itemNode.get("concept").get("conceptId").asString());
                     }
 
                 }
@@ -1402,7 +1521,16 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         }
     }
 
-    /* see superclass */
+    /**
+     * Gets the member sct ids.
+     *
+     * @param refsetId the refset id
+     * @param limit the limit
+     * @param searchAfter the search after
+     * @param branchPath the branch path
+     * @return the member sct ids
+     * @throws Exception the exception
+     */
     @Override
     public String getMemberSctIds(final String refsetId, final int limit, final String searchAfter, final String branchPath) throws Exception {
 
@@ -1429,7 +1557,13 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         }
     }
 
-    /* see superclass */
+    /**
+     * Populate all language descriptions.
+     *
+     * @param refset the refset
+     * @param conceptsToProcess the concepts to process
+     * @throws Exception the exception
+     */
     @Override
     public void populateAllLanguageDescriptions(final Refset refset, final List<Concept> conceptsToProcess) throws Exception {
 
@@ -1466,7 +1600,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                 if (descriptionNode.get("active").asBoolean()) {
 
-                    final String conceptId = descriptionNode.get("conceptId").asText();
+                    final String conceptId = descriptionNode.get("conceptId").asString();
 
                     if (!conceptDescriptionNodes.containsKey(conceptId)) {
 
@@ -1540,7 +1674,13 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         }
     }
 
-    /* see superclass */
+    /**
+     * Populate concept leaf status.
+     *
+     * @param refset the refset
+     * @param conceptsToProcess the concepts to process
+     * @throws Exception the exception
+     */
     @Override
     public void populateConceptLeafStatus(final Refset refset, final List<Concept> conceptsToProcess) throws Exception {
 
@@ -1590,7 +1730,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                 final JsonNode conceptNode = conceptIterator.next();
 
-                final String conceptId = conceptNode.get("conceptId").asText();
+                final String conceptId = conceptNode.get("conceptId").asString();
                 conceptNodes.put(conceptId, conceptNode);
             }
 
@@ -1619,7 +1759,14 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         }
     }
 
-    /* see superclass */
+    /**
+     * Gets the concept ancestors.
+     *
+     * @param refset the refset
+     * @param conceptId the concept id
+     * @return the concept ancestors
+     * @throws Exception the exception
+     */
     @Override
     public Concept getConceptAncestors(final Refset refset, final String conceptId) throws Exception {
 
@@ -1663,7 +1810,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             while (iterator.hasNext()) {
 
                 final JsonNode conceptNode = iterator.next();
-                // final String nodeConceptId = conceptNode.get("conceptId").asText();
+                // final String nodeConceptId = conceptNode.get("conceptId").asString();
                 final JsonNode ancestorPathNode = conceptNode.get("ancestorPath");
 
                 // get the ancestor list and reverse the order so the taxonomy
@@ -1682,7 +1829,16 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return concept;
     }
 
-    /* see superclass */
+    /**
+     * Search concepts.
+     *
+     * @param refset the refset
+     * @param searchParameters the search parameters
+     * @param searchMembersMode the search members mode
+     * @param limitReturnNumber the limit return number
+     * @return the result list concept
+     * @throws Exception the exception
+     */
     @Override
     public ResultListConcept searchConcepts(final Refset refset, final SearchParameters searchParameters, final String searchMembersMode,
         final int limitReturnNumber) throws Exception {
@@ -1805,7 +1961,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                 if (limitReturnNumber < 0 && root.get("searchAfter") != null) {
 
-                    searchAfter = "&searchAfter=" + root.get("searchAfter").asText();
+                    searchAfter = "&searchAfter=" + root.get("searchAfter").asString();
                 }
 
                 // if the search returned results set the total
@@ -1838,10 +1994,10 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                         final Concept concept = new Concept();
                         concept.setActive(conceptNode.get("active").asBoolean());
-                        concept.setId(conceptNode.get("id").asText());
-                        concept.setCode(conceptNode.get("id").asText());
+                        concept.setId(conceptNode.get("id").asString());
+                        concept.setCode(conceptNode.get("id").asString());
 
-                        if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
+                        if (!conceptNode.get("definitionStatus").asString().equals("PRIMITIVE")) {
 
                             concept.setDefined(true);
                         } else {
@@ -1851,12 +2007,12 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                         if (conceptNode.get("pt") != null) {
 
-                            concept.setName(conceptNode.get("pt").get("term").asText());
+                            concept.setName(conceptNode.get("pt").get("term").asString());
                         }
 
                         if (conceptNode.get("fsn") != null && conceptNode.get("fsn").get("term") != null) {
 
-                            concept.setFsn(conceptNode.get("fsn").get("term").asText());
+                            concept.setFsn(conceptNode.get("fsn").get("term").asString());
                         }
 
                         if (conceptNode.has("isLeafInferred")) {
@@ -1914,7 +2070,13 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return returnConcepts;
     }
 
-    /* see superclass */
+    /**
+     * Gets the member count.
+     *
+     * @param refset the refset
+     * @return the member count
+     * @throws Exception the exception
+     */
     @Override
     public int getMemberCount(final Refset refset) throws Exception {
 
@@ -1952,7 +2114,15 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return count;
     }
 
-    /* see superclass */
+    /**
+     * Gets the member list.
+     *
+     * @param refset the refset
+     * @param nonDefaultPreferredTerms the non default preferred terms
+     * @param searchParameters the search parameters
+     * @return the member list
+     * @throws Exception the exception
+     */
     @Override
     public ResultListConcept getMemberList(final Refset refset, final List<String> nonDefaultPreferredTerms, final SearchParameters searchParameters)
         throws Exception {
@@ -2040,7 +2210,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                         if (root.get("searchAfter") != null) {
 
-                            searchAfter = "&searchAfter=" + root.get("searchAfter").asText();
+                            searchAfter = "&searchAfter=" + root.get("searchAfter").asString();
                         }
 
                         if (conceptNodeBatch.size() == 0 || conceptNodeBatch.size() + currentList.getItems().size() >= currentList.getTotal()) {
@@ -2064,9 +2234,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             int snowstormCallCount = 0;
             final boolean doNotSearch = notSearching;
 
-            // Change the numbers to '1's to avoid threading
-            final ExecutorService executor =
-                new ThreadPoolExecutor(30, 30, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(30), new ThreadPoolExecutor.CallerRunsPolicy());
+            final BoundedExecutors.Batch batch = BoundedExecutors.fanoutBatch();
 
             // add the descriptions to the children concepts in batches
             for (int i = 0; i < currentList.getItems().size(); i++) {
@@ -2080,7 +2248,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     final List<Concept> threadConcepts = new ArrayList<Concept>();
                     threadConcepts.addAll(conceptsToProcess);
 
-                    executor.submit(new Runnable() {
+                    batch.submit(new Runnable() {
 
                         /* see superclass */
                         @Override
@@ -2113,8 +2281,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             }
 
-            executor.shutdown();
-            executor.awaitTermination(600, TimeUnit.SECONDS);
+            batch.await(600, TimeUnit.SECONDS);
 
             LOG.debug("getMemberList snowstormCallCount: " + snowstormCallCount);
 
@@ -2133,7 +2300,14 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return members;
     }
 
-    /* see superclass */
+    /**
+     * Gets the concept details.
+     *
+     * @param conceptId the concept id
+     * @param refset the refset
+     * @return the concept details
+     * @throws Exception the exception
+     */
     @Override
     public Concept getConceptDetails(final String conceptId, final Refset refset) throws Exception {
 
@@ -2186,7 +2360,15 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         }
     }
 
-    /* see superclass */
+    /**
+     * Gets the parents.
+     *
+     * @param conceptId the concept id
+     * @param refset the refset
+     * @param language the language
+     * @return the parents
+     * @throws Exception the exception
+     */
     @Override
     public ResultListConcept getParents(final String conceptId, final Refset refset, final String language) throws Exception {
 
@@ -2217,7 +2399,15 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         }
     }
 
-    /* see superclass */
+    /**
+     * Gets the children.
+     *
+     * @param conceptId the concept id
+     * @param refset the refset
+     * @param language the language
+     * @return the children
+     * @throws Exception the exception
+     */
     @Override
     public ResultListConcept getChildren(final String conceptId, final Refset refset, final String language) throws Exception {
 
@@ -2243,7 +2433,16 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         }
     }
 
-    /* see superclass */
+    /**
+     * Gets the concepts from snowstorm.
+     *
+     * @param url the url
+     * @param refset the refset
+     * @param lookupParameters the lookup parameters
+     * @param language the language
+     * @return the concepts from snowstorm
+     * @throws Exception the exception
+     */
     @Override
     public ResultListConcept getConceptsFromSnowstorm(final String url, final Refset refset, final ConceptLookupParameters lookupParameters,
         final String language) throws Exception {
@@ -2280,20 +2479,24 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         }
     }
 
-    /* see superclass */
+    /**
+     * Populate membership information.
+     *
+     * @param refset the refset
+     * @param concepts the concepts
+     * @throws Exception the exception
+     */
     @Override
     public void populateMembershipInformation(final Refset refset, final List<Concept> concepts) throws Exception {
 
-        final String baseUrl = SnowstormConnection.getRestBaseUrl() + RefsetMemberService.getBranchPath(refset) + "/members?referenceSet=" + refset.getRefsetId()
-            + "&active=true&limit=" + RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH + "&offset=0&"
+        final String baseUrl = SnowstormConnection.getRestBaseUrl() + RefsetMemberService.getBranchPath(refset) + "/members?referenceSet="
+            + refset.getRefsetId() + "&active=true&limit=" + RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH + "&offset=0&"
             + SnowstormApiPaging.getMemberSortQueryString() + "&referencedComponentId=";
         final List<Concept> conceptsToProcess = new ArrayList<>();
         String conceptIds = "";
         int snowstormCallCount = 0;
 
-        // Change the '30's to '1's to avoid threading
-        final ExecutorService executor =
-            new ThreadPoolExecutor(30, 30, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(30), new ThreadPoolExecutor.CallerRunsPolicy());
+        final BoundedExecutors.Batch batch = BoundedExecutors.fanoutBatch();
 
         // add the descriptions to the children concepts in batches
         for (int i = 0; i < concepts.size(); i++) {
@@ -2310,7 +2513,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 final List<Concept> threadConcepts = new ArrayList<Concept>();
                 threadConcepts.addAll(conceptsToProcess);
 
-                executor.submit(new Runnable() {
+                batch.submit(new Runnable() {
 
                     /* see superclass */
                     @Override
@@ -2356,13 +2559,19 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
         }
 
-        executor.shutdown();
-        executor.awaitTermination(600, TimeUnit.SECONDS);
+        batch.await(600, TimeUnit.SECONDS);
 
         LOG.debug("populateMembershipInformation snowstormCallCount: " + snowstormCallCount);
     }
 
-    /* see superclass */
+    /**
+     * Gets the latest changed version date.
+     *
+     * @param branch the branch
+     * @param refsetId the refset id
+     * @return the latest changed version date
+     * @throws Exception the exception
+     */
     @Override
     public Long getLatestChangedVersionDate(final String branch, final String refsetId) throws Exception {
         // Get all members
@@ -2407,7 +2616,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 final JsonNode root = mapper.readTree(resultString);
                 final JsonNode conceptNodeBatch = root.get("items");
 
-                searchAfter = (root.get("searchAfter") != null ? "&searchAfter=" + root.get("searchAfter").asText() : "");
+                searchAfter = (root.get("searchAfter") != null ? "&searchAfter=" + root.get("searchAfter").asString() : "");
 
                 if (conceptNodeBatch.size() == 0 || conceptNodeBatch.size() < limit) {
 
@@ -2431,7 +2640,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                     if (memberNode.has("releasedEffectiveTime")) {
 
-                        final long memberEffectiveTime = simpleDateFormat.parse(memberNode.get("releasedEffectiveTime").asText()).getTime();
+                        final long memberEffectiveTime = simpleDateFormat.parse(memberNode.get("releasedEffectiveTime").asString()).getTime();
 
                         if (versionLatestTime < memberEffectiveTime) {
 
@@ -2478,7 +2687,14 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         }
     }
 
-    /* see superclass */
+    /**
+     * Gets the refset concept release date.
+     *
+     * @param refsetId the refset id
+     * @param branch the branch
+     * @return the refset concept release date
+     * @throws Exception the exception
+     */
     @Override
     public Long getRefsetConceptReleaseDate(final String refsetId, final String branch) throws Exception {
 
@@ -2513,7 +2729,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             if (conceptNode.has("releasedEffectiveTime")) {
 
-                return simpleDateFormat.parse(conceptNode.get("releasedEffectiveTime").asText()).getTime();
+                return simpleDateFormat.parse(conceptNode.get("releasedEffectiveTime").asString()).getTime();
             }
 
             return null;
@@ -2524,7 +2740,15 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         }
     }
 
-    /* see superclass */
+    /**
+     * Gets the member history.
+     *
+     * @param service the service
+     * @param referencedComponentId the referenced component id
+     * @param versions the versions
+     * @return the member history
+     * @throws Exception the exception
+     */
     @Override
     public List<Map<String, String>> getMemberHistory(final TerminologyService service, final String referencedComponentId,
         final List<Map<String, String>> versions) throws Exception {
@@ -2576,7 +2800,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                     // Calculate the version date and ensure it has
                     // proper format yyyy-mm-dd
-                    currentVersionDate = memberNode.get("releasedEffectiveTime").asText();
+                    currentVersionDate = memberNode.get("releasedEffectiveTime").asString();
                     currentVersionDate = currentVersionDate.substring(0, 4) + "-" + currentVersionDate.substring(4, 6) + "-" + currentVersionDate.substring(6);
 
                     if (memberNode.has("active")) {
@@ -2652,7 +2876,13 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return memberHistory;
     }
 
-    /* see superclass */
+    /**
+     * Cache member ancestors.
+     *
+     * @param refset the refset
+     * @return true, if successful
+     * @throws Exception the exception
+     */
     @Override
     public boolean cacheMemberAncestors(final Refset refset) throws Exception {
 
@@ -2705,9 +2935,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             + ")&limit=1000&offset=";
         final List<Set<String>> ancestorsSetBatches = new ArrayList<>(Collections.nCopies(10, new HashSet<>()));
 
-        // Change the '10's to '1's to avoid threading
-        final ExecutorService executor =
-            new ThreadPoolExecutor(10, 10, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(10), new ThreadPoolExecutor.CallerRunsPolicy());
+        final BoundedExecutors.Batch batch = BoundedExecutors.fanoutBatch();
 
         // add the descriptions to the children concepts in batches
         for (int i = 0; i < ancestorsSetBatches.size(); i++) {
@@ -2716,7 +2944,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             final int offset = 1000 * i;
             LOG.debug("cacheMemberAncestors URL: " + url + offset);
 
-            executor.submit(new Runnable() {
+            batch.submit(new Runnable() {
 
                 /* see superclass */
                 @Override
@@ -2747,7 +2975,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                                 throw new Exception("Result wasn't as expected with resultNode: " + resultNode);
                             }
 
-                            ancestorsSet.add(resultNode.get("conceptId").asText());
+                            ancestorsSet.add(resultNode.get("conceptId").asString());
                         }
 
                     } catch (final Exception e) {
@@ -2760,8 +2988,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             });
         }
 
-        executor.shutdown();
-        executor.awaitTermination(120, TimeUnit.SECONDS);
+        batch.await(120, TimeUnit.SECONDS);
 
         final Set<String> ancestorsSet = new HashSet<>();
 
@@ -2779,7 +3006,16 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return true;
     }
 
-    /* see superclass */
+    /**
+     * Adds the refset members.
+     *
+     * @param service the service
+     * @param user the user
+     * @param refset the refset
+     * @param conceptIds the concept ids
+     * @return the list
+     * @throws Exception the exception
+     */
     @Override
     public List<String> addRefsetMembers(final TerminologyService service, final User user, final Refset refset, final List<String> conceptIds)
         throws Exception {
@@ -2806,8 +3042,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         // (though the concept itself can be inactive)
         final String conceptSearchUrl = SnowstormConnection.getRestBaseUrl() + branchPath + "/concepts/search";
         final String memberSearchUrl = SnowstormConnection.getRestBaseUrl() + branchPath + "/members/search?"
-            + SnowstormApiPaging.getMemberSearchPagingQueryString(
-                new SearchParameters(null, RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH, null));
+            + SnowstormApiPaging.getMemberSearchPagingQueryString(new SearchParameters(null, RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH, null));
         final String bodyBase = "{\"limit\": " + RefsetMemberService.ELASTICSEARCH_MAX_RECORD_LENGTH + ", ";
         final String memberSearchBodyBase = "{\"referenceSet\":\"" + refsetId + "\", \"referencedComponentIds\":[";
         final List<String> permanentFullConceptList = new ArrayList<>(conceptIds);
@@ -2853,7 +3088,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             }
 
             LOG.debug("addRefsetMembers searchIndex :: loopNumber :: batch size: " + searchIndex + " :: " + loopNumber + " :: " + (searchIndex / loopNumber));
-            bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",") + "]";
+            bodyConceptIds = Strings.CS.removeEnd(bodyConceptIds, ",") + "]";
 
             // verify the concept IDs if a bulk add is going to be used
             if (!conceptIds.isEmpty()) {
@@ -2879,20 +3114,20 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     while (iterator != null && iterator.hasNext()) {
 
                         final JsonNode conceptNode = iterator.next();
-                        final String conceptId = conceptNode.get("conceptId").asText();
+                        final String conceptId = conceptNode.get("conceptId").asString();
                         String name = "";
                         validatedConcepts.add(conceptId);
 
                         if (conceptNode.get("pt") != null && conceptNode.get("pt").get("term") != null) {
 
-                            name = conceptNode.get("pt").get("term").asText();
+                            name = conceptNode.get("pt").get("term").asString();
                         }
 
                         final Map<String, String> status = new HashMap<>();
                         status.put("operation", "Added");
                         status.put("status", "Success");
                         status.put("name", name);
-                        status.put("active", conceptNode.get("active").asText());
+                        status.put("active", conceptNode.get("active").asString());
                         conceptsStatus.put(conceptId, status);
                     }
 
@@ -2933,7 +3168,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     bodyConceptIds += conceptId + ",";
                 }
 
-                bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",");
+                bodyConceptIds = Strings.CS.removeEnd(bodyConceptIds, ",");
                 final String memberSearchBody = memberSearchBodyBase + bodyConceptIds + "]}";
                 // LOG.debug("addRefsetMembers member search body: " +
                 // memberSearchBody);
@@ -2956,7 +3191,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     while (iterator != null && iterator.hasNext()) {
 
                         final JsonNode conceptNode = iterator.next();
-                        final String conceptId = conceptNode.get("referencedComponentId").asText();
+                        final String conceptId = conceptNode.get("referencedComponentId").asString();
                         final boolean active = conceptNode.get("active").asBoolean();
 
                         // if active remove from the list to add, else update the membership
@@ -2976,15 +3211,15 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                             conceptIds.remove(conceptId);
 
-                            final ObjectNode memberBody = mapper.createObjectNode().put("active", true).put("memberId", conceptNode.get("memberId").asText())
-                                .put("moduleId", conceptNode.get("moduleId").asText())
-                                .put("referencedComponentId", conceptNode.get("referencedComponentId").asText())
-                                .put("refsetId", conceptNode.get("refsetId").asText()).put("released", conceptNode.get("released").asBoolean())
+                            final ObjectNode memberBody = mapper.createObjectNode().put("active", true).put("memberId", conceptNode.get("memberId").asString())
+                                .put("moduleId", conceptNode.get("moduleId").asString())
+                                .put("referencedComponentId", conceptNode.get("referencedComponentId").asString())
+                                .put("refsetId", conceptNode.get("refsetId").asString()).put("released", conceptNode.get("released").asBoolean())
                                 .put("releasedEffectiveTime", conceptNode.get("releasedEffectiveTime").asInt())
                                 .set("additionalFields", conceptNode.get("additionalFields"));
 
                             if (conceptNode.get("effectiveTime") != null) {
-                                memberBody.put("effectiveTime", conceptNode.get("effectiveTime").asText());
+                                memberBody.put("effectiveTime", conceptNode.get("effectiveTime").asString());
                             }
 
                             memberUpdateArray.add(memberBody);
@@ -3035,7 +3270,16 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return unaddedConcepts;
     }
 
-    /* see superclass */
+    /**
+     * Call add member single.
+     *
+     * @param refsetId the refset id
+     * @param url the url
+     * @param conceptId the concept id
+     * @param moduleId the module id
+     * @return the list
+     * @throws Exception the exception
+     */
     @Override
     public List<String> callAddMemberSingle(final String refsetId, final String url, final String conceptId, final String moduleId) throws Exception {
 
@@ -3062,7 +3306,16 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return unaddedConcepts;
     }
 
-    /* see superclass */
+    /**
+     * Call add members bulk.
+     *
+     * @param refsetId the refset id
+     * @param url the url
+     * @param conceptIds the concept ids
+     * @param moduleId the module id
+     * @return the list
+     * @throws Exception the exception
+     */
     @Override
     public List<String> callAddMembersBulk(final String refsetId, final String url, final List<String> conceptIds, final String moduleId) throws Exception {
 
@@ -3129,7 +3382,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     final JsonNode root = mapper.readTree(resultString);
 
                     // LOG.debug("addRefsetMembers job status response: " + root);
-                    final String status = root.get("status").asText();
+                    final String status = root.get("status").asString();
 
                     if (status.equalsIgnoreCase("COMPLETED")) {
 
@@ -3139,7 +3392,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                         jobDone = true;
                         LOG.error(errorMessage + " Status: " + response.getStatus() + " Message: " + response.getStatusInfo().getReasonPhrase());
-                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage + root.get("message").asText());
+                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage + root.get("message").asString());
                     } else {
 
                         LOG.debug("Bulk member add hasn't finished yet...");
@@ -3163,7 +3416,16 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return unaddedConcepts;
     }
 
-    /* see superclass */
+    /**
+     * Removes the refset members.
+     *
+     * @param service the service
+     * @param user the user
+     * @param refset the refset
+     * @param conceptIds the concept ids
+     * @return the list
+     * @throws Exception the exception
+     */
     @Override
     public List<String> removeRefsetMembers(final TerminologyService service, final User user, final Refset refset, final String conceptIds) throws Exception {
 
@@ -3183,9 +3445,9 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         // when searching for members we only want concepts whose membership is
         // active
         // (though the concept itself can be inactive)
-        final String memberSearchUrlBase = SnowstormConnection.getRestBaseUrl() + branchPath + "/members?referenceSet=" + refset.getRefsetId()
-            + "&offset=0&active=true" + "&limit=" + RefsetMemberService.URL_MAX_CHAR_LENGTH + "&" + SnowstormApiPaging.getMemberSortQueryString()
-            + "&referencedComponentId=";
+        final String memberSearchUrlBase =
+            SnowstormConnection.getRestBaseUrl() + branchPath + "/members?referenceSet=" + refset.getRefsetId() + "&offset=0&active=true" + "&limit="
+                + RefsetMemberService.URL_MAX_CHAR_LENGTH + "&" + SnowstormApiPaging.getMemberSortQueryString() + "&referencedComponentId=";
         final ArrayNode memberDeleteArray = mapper.createArrayNode();
         final ArrayNode memberUpdateArray = mapper.createArrayNode();
         final List<String> permanentFullConceptList = Arrays.asList(conceptIds.split(","));
@@ -3215,7 +3477,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             }
 
-            bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",");
+            bodyConceptIds = Strings.CS.removeEnd(bodyConceptIds, ",");
 
             final String memberSearchUrl = memberSearchUrlBase + bodyConceptIds;
             Iterator<JsonNode> iterator = null;
@@ -3243,9 +3505,9 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                 final JsonNode conceptNode = iterator.next();
                 final boolean released = conceptNode.get("released").asBoolean();
-                final String membershipId = conceptNode.get("memberId").asText();
+                final String membershipId = conceptNode.get("memberId").asString();
                 String name = "";
-                members.add(conceptNode.get("referencedComponentId").asText());
+                members.add(conceptNode.get("referencedComponentId").asString());
 
                 // if the member has not been released then remove the membership
                 if (!released) {
@@ -3257,10 +3519,12 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 // array
                 else {
 
-                    final ObjectNode memberBody = mapper.createObjectNode().put("active", false).put("effectiveTime", conceptNode.get("effectiveTime").asText())
-                        .put("memberId", membershipId).put("moduleId", conceptNode.get("moduleId").asText())
-                        .put("referencedComponentId", conceptNode.get("referencedComponentId").asText()).put("refsetId", conceptNode.get("refsetId").asText())
-                        .put("released", released).put("releasedEffectiveTime", conceptNode.get("releasedEffectiveTime").asInt())
+                    final ObjectNode memberBody = mapper.createObjectNode().put("active", false)
+                        .put("effectiveTime", conceptNode.get("effectiveTime").asString()).put("memberId", membershipId)
+                        .put("moduleId", conceptNode.get("moduleId").asString())
+                        .put("referencedComponentId", conceptNode.get("referencedComponentId").asString())
+                        .put("refsetId", conceptNode.get("refsetId").asString()).put("released", released)
+                        .put("releasedEffectiveTime", conceptNode.get("releasedEffectiveTime").asInt())
                         .set("additionalFields", conceptNode.get("additionalFields"));
 
                     memberUpdateArray.add(memberBody);
@@ -3270,15 +3534,15 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                 if (referencedComponent.get("pt") != null && referencedComponent.get("pt").get("term") != null) {
 
-                    name = referencedComponent.get("pt").get("term").asText();
+                    name = referencedComponent.get("pt").get("term").asString();
                 }
 
                 final Map<String, String> status = new HashMap<>();
                 status.put("operation", "Removed");
                 status.put("status", "Success");
                 status.put("name", name);
-                status.put("active", referencedComponent.get("active").asText());
-                conceptsStatus.put(conceptNode.get("referencedComponentId").asText(), status);
+                status.put("active", referencedComponent.get("active").asString());
+                conceptsStatus.put(conceptNode.get("referencedComponentId").asString(), status);
             }
 
         }
@@ -3331,7 +3595,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             if (memberUpdateArray.size() == 1) {
 
                 final JsonNode memberBody = memberUpdateArray.get(0);
-                unremovedConcepts = callUpdateMemberSingle(refsetId, url + "/" + memberBody.get("memberId").asText(), memberBody);
+                unremovedConcepts = callUpdateMemberSingle(refsetId, url + "/" + memberBody.get("memberId").asString(), memberBody);
 
             } else if (memberUpdateArray.size() > 1) {
 
@@ -3359,7 +3623,15 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return unremovedConcepts;
     }
 
-    /* see superclass */
+    /**
+     * Call update member single.
+     *
+     * @param refsetId the refset id
+     * @param url the url
+     * @param memberBody the member body
+     * @return the list
+     * @throws Exception the exception
+     */
     @Override
     public List<String> callUpdateMemberSingle(final String refsetId, final String url, final JsonNode memberBody) throws Exception {
 
@@ -3373,8 +3645,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             // Only process payload if Rest call is successful
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
 
-                final String memberId = memberBody.get("memberId").asText();
-                final String conceptId = memberBody.get("referencedComponentId").asText();
+                final String memberId = memberBody.get("memberId").asString();
+                final String conceptId = memberBody.get("referencedComponentId").asString();
 
                 LOG.error("Inactivate Reference Set Member call to url '" + url + "' for Reference Set '" + refsetId + "' and concept '" + conceptId
                     + "' and member '" + memberId + "' wasn't successful. " + " Status: " + response.getStatus() + " Message: "
@@ -3387,7 +3659,15 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return unchangedConcepts;
     }
 
-    /* see superclass */
+    /**
+     * Call update members bulk.
+     *
+     * @param refsetId the refset id
+     * @param url the url
+     * @param memberBodies the member bodies
+     * @return the list
+     * @throws Exception the exception
+     */
     @Override
     public List<String> callUpdateMembersBulk(final String refsetId, final String url, final ArrayNode memberBodies) throws Exception {
 
@@ -3445,7 +3725,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     final JsonNode root = mapper.readTree(resultString);
 
                     // LOG.debug("addRefsetMembers job status response: " + root);
-                    final String status = root.get("status").asText();
+                    final String status = root.get("status").asString();
 
                     if (status.equalsIgnoreCase("COMPLETED")) {
 
@@ -3454,8 +3734,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     } else if (status.equalsIgnoreCase("failed")) {
 
                         jobDone = true;
-                        LOG.error(errorMessage + root.get("message").asText());
-                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage + root.get("message").asText());
+                        LOG.error(errorMessage + root.get("message").asString());
+                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage + root.get("message").asString());
 
                     } else {
 
@@ -3480,7 +3760,14 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return unchangedConcepts;
     }
 
-    /* see superclass */
+    /**
+     * Gets the concept ids from ecl.
+     *
+     * @param branch the branch
+     * @param ecl the ecl
+     * @return the concept ids from ecl
+     * @throws Exception the exception
+     */
     @Override
     public List<String> getConceptIdsFromEcl(final String branch, final String ecl) throws Exception {
 
@@ -3526,7 +3813,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                     keepSearching = false;
                 } else {
 
-                    searchAfter = "&searchAfter=" + root.get("searchAfter").asText();
+                    searchAfter = "&searchAfter=" + root.get("searchAfter").asString();
                 }
 
                 LOG.debug("getConceptIdsFromEcl totalReturned so far: " + totalReturned);
@@ -3535,7 +3822,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 while (iterator != null && iterator.hasNext()) {
 
                     final JsonNode conceptNode = iterator.next();
-                    final String conceptId = conceptNode.get("conceptId").asText();
+                    final String conceptId = conceptNode.get("conceptId").asString();
 
                     if (concepts.contains(conceptId)) {
 
@@ -3553,7 +3840,15 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return concepts;
     }
 
-    /* see superclass */
+    /**
+     * Compile upgrade data.
+     *
+     * @param service the service
+     * @param user the user
+     * @param refsetInternalId the refset internal id
+     * @return the string
+     * @throws Exception the exception
+     */
     @Override
     public String compileUpgradeData(final TerminologyService service, final User user, final String refsetInternalId) throws Exception {
 
@@ -3638,7 +3933,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                 if (root.get("searchAfter") != null) {
 
-                    searchAfter = "&searchAfter=" + root.get("searchAfter").asText();
+                    searchAfter = "&searchAfter=" + root.get("searchAfter").asString();
                 }
 
                 if (conceptNodeBatch.size() == 0 || conceptNodeBatch.size() + inactiveMemberList.size() >= memberTotal) {
@@ -3666,7 +3961,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
         }
 
-        inactiveConceptIds = StringUtils.removeEnd(inactiveConceptIds, ", ");
+        inactiveConceptIds = Strings.CS.removeEnd(inactiveConceptIds, ", ");
         final String conceptDetailsBaseUrl = SnowstormConnection.getRestBaseUrl() + "browser/" + branchPath + "/concepts?conceptIds=";
         boolean searchAgain = true;
         int searchIndex = 0;
@@ -3676,9 +3971,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             return status;
         }
 
-        // Change the numbers to '1's to avoid threading
-        final ExecutorService executor =
-            new ThreadPoolExecutor(30, 30, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(30), new ThreadPoolExecutor.CallerRunsPolicy());
+        final BoundedExecutors.Batch batch = BoundedExecutors.fanoutBatch();
 
         // use /browser/MAIN/concepts/bulk-load POST call to get the inactive
         // concept
@@ -3708,7 +4001,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             }
 
-            bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",");
+            bodyConceptIds = Strings.CS.removeEnd(bodyConceptIds, ",");
 
             final String memberDetailsUrl = conceptDetailsBaseUrl + bodyConceptIds;
             Iterator<JsonNode> iterator = null;
@@ -3736,7 +4029,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                 while (iterator != null && iterator.hasNext()) {
 
                     final JsonNode conceptNode = iterator.next();
-                    final UpgradeInactiveConcept inactiveConcept = inactiveData.get(conceptNode.get("conceptId").asText());
+                    final UpgradeInactiveConcept inactiveConcept = inactiveData.get(conceptNode.get("conceptId").asString());
 
                     if (conceptNode.get("descriptions") != null) {
 
@@ -3749,7 +4042,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                     if (inactivationIndicatorNode != null) {
 
-                        inactiveConcept.setInactivationReason(inactivationIndicatorNode.asText());
+                        inactiveConcept.setInactivationReason(inactivationIndicatorNode.asString());
                     } else {
 
                         inactiveConcept.setInactivationReason("NOT SPECIFIED");
@@ -3757,11 +4050,11 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                     final JsonNode associationTargets = conceptNode.get("associationTargets");
 
-                    if (associationTargets != null && associationTargets.size() != 0 && associationTargets.fields() != null) {
+                    if (associationTargets != null && !associationTargets.isEmpty()) {
 
                         LOG.debug("compileUpgradeData associationTargets: " + ModelUtility.toJson(associationTargets));
                         final Map<String, String> reasonMap = new HashMap<>();
-                        final Entry<String, JsonNode> entry = associationTargets.fields().next();
+                        final Entry<String, JsonNode> entry = associationTargets.properties().iterator().next();
                         final List<Concept> replacementConceptsToLookup = new ArrayList<>();
                         final String reason = entry.getKey();
                         String replacementConceptIds = entry.getValue().toString();
@@ -3782,14 +4075,14 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                             replacementBodyConceptIds += "\"" + replacementConceptId + "\",";
                         }
 
-                        final String threadReplacementBodyConceptIds = StringUtils.removeEnd(replacementBodyConceptIds, ",") + "]";
+                        final String threadReplacementBodyConceptIds = Strings.CS.removeEnd(replacementBodyConceptIds, ",") + "]";
 
                         LOG.debug("compileUpgradeData replacementConceptsToLookup: " + replacementConceptsToLookup);
 
                         // process descriptions of any replacement concepts
                         if (!replacementConceptsToLookup.isEmpty()) {
 
-                            executor.submit(new Runnable() {
+                            batch.submit(new Runnable() {
 
                                 /* see superclass */
                                 @Override
@@ -3825,7 +4118,7 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
                                             while (iterator != null && iterator.hasNext()) {
 
                                                 final JsonNode conceptNode = iterator.next();
-                                                replacementThatAreMembers.add(conceptNode.get("conceptId").asText());
+                                                replacementThatAreMembers.add(conceptNode.get("conceptId").asString());
                                             }
 
                                         }
@@ -3893,13 +4186,24 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
         }
 
-        executor.shutdown();
-        executor.awaitTermination(600, TimeUnit.SECONDS);
+        batch.await(600, TimeUnit.SECONDS);
 
         return status;
     }
 
-    /* see superclass */
+    /**
+     * Modify upgrade concept.
+     *
+     * @param service the service
+     * @param user the user
+     * @param refset the refset
+     * @param inactiveConceptId the inactive concept id
+     * @param replacementConceptId the replacement concept id
+     * @param manualReplacementConcept the manual replacement concept
+     * @param changed the changed
+     * @return the string
+     * @throws Exception the exception
+     */
     @Override
     public String modifyUpgradeConcept(final TerminologyService service, final User user, final Refset refset, final String inactiveConceptId,
         final String replacementConceptId, final UpgradeReplacementConcept manualReplacementConcept, final String changed) throws Exception {
@@ -4078,9 +4382,9 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
                                 final JsonNode conceptNode = iterator.next();
 
-                                if (conceptNode.get("referencedComponentId").asText().equals(conceptIdToChange)) {
+                                if (conceptNode.get("referencedComponentId").asString().equals(conceptIdToChange)) {
 
-                                    upgradeReplacementConcept.setMemberId(conceptNode.get("memberId").asText());
+                                    upgradeReplacementConcept.setMemberId(conceptNode.get("memberId").asString());
                                 } else {
 
                                     throw new Exception("There was a problem getting the member ID");
@@ -4198,7 +4502,13 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
      *
      */
 
-    /* see superclass */
+    /**
+     * Gets the map sets.
+     *
+     * @param branch the branch
+     * @return the map sets
+     * @throws Exception the exception
+     */
     @Override
     public List<MapSet> getMapSets(final String branch) throws Exception {
 
@@ -4223,27 +4533,27 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             final JsonNode mapSetNode = itemIterator.next();
 
             final MapSet mapSet = new MapSet();
-            mapSet.setRefSetCode(mapSetNode.get("id").asText());
-            mapSet.setModuleId(mapSetNode.get("moduleId").asText());
+            mapSet.setRefSetCode(mapSetNode.get("id").asString());
+            mapSet.setModuleId(mapSetNode.get("moduleId").asString());
 
             // Set refset name to FSN if it exists, defaulting to PT if not.
             if (mapSetNode.get("pt") != null) {
 
-                mapSet.setRefSetName(mapSetNode.get("pt").get("term").asText());
+                mapSet.setRefSetName(mapSetNode.get("pt").get("term").asString());
             }
             if (mapSetNode.get("fsn") != null && mapSetNode.get("fsn").get("term") != null) {
 
-                mapSet.setRefSetName(mapSetNode.get("fsn").get("term").asText());
+                mapSet.setRefSetName(mapSetNode.get("fsn").get("term").asString());
             }
 
             final JsonNode additionalFields = mapSetNode.get("additionalFields");
 
-            final VersionStatus versionStatus = VersionStatus.valueOf(additionalFields.get("versionStatus").asText());
+            final VersionStatus versionStatus = VersionStatus.valueOf(additionalFields.get("versionStatus").asString());
             mapSet.setVersionStatus(versionStatus);
-            mapSet.setVersion(additionalFields.get("version").asText());
-            mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse(additionalFields.get("lastModified").asText()));
-            mapSet.setFromTerminology(additionalFields.get("fromTerminology").asText());
-            mapSet.setToTerminology(additionalFields.get("toTerminology").asText());
+            mapSet.setVersion(additionalFields.get("version").asString());
+            mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse(additionalFields.get("lastModified").asString()));
+            mapSet.setFromTerminology(additionalFields.get("fromTerminology").asString());
+            mapSet.setToTerminology(additionalFields.get("toTerminology").asString());
 
             mapSets.add(mapSet);
         }
@@ -4251,7 +4561,14 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return mapSets;
     }
 
-    /* see superclass */
+    /**
+     * Gets the map set.
+     *
+     * @param branch the branch
+     * @param code the code
+     * @return the map set
+     * @throws Exception the exception
+     */
     @Override
     public MapSet getMapSet(final String branch, final String code) throws Exception {
 
@@ -4274,32 +4591,32 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             final JsonNode mapSetNode = itemIterator.next();
 
             // Pull the requested mapSet
-            if (!(mapSetNode.get("conceptId").asText().equals(code))) {
+            if (!(mapSetNode.get("conceptId").asString().equals(code))) {
                 continue;
             }
 
             final MapSet mapSet = new MapSet();
-            mapSet.setRefSetCode(mapSetNode.get("id").asText());
-            mapSet.setModuleId(mapSetNode.get("moduleId").asText());
+            mapSet.setRefSetCode(mapSetNode.get("id").asString());
+            mapSet.setModuleId(mapSetNode.get("moduleId").asString());
 
             // Set refset name to FSN if it exists, defaulting to PT if not.
             if (mapSetNode.get("pt") != null) {
 
-                mapSet.setRefSetName(mapSetNode.get("pt").get("term").asText());
+                mapSet.setRefSetName(mapSetNode.get("pt").get("term").asString());
             }
             if (mapSetNode.get("fsn") != null && mapSetNode.get("fsn").get("term") != null) {
 
-                mapSet.setRefSetName(mapSetNode.get("fsn").get("term").asText());
+                mapSet.setRefSetName(mapSetNode.get("fsn").get("term").asString());
             }
 
             final JsonNode additionalFields = mapSetNode.get("additionalFields");
 
-            final VersionStatus versionStatus = VersionStatus.valueOf(additionalFields.get("versionStatus").asText());
+            final VersionStatus versionStatus = VersionStatus.valueOf(additionalFields.get("versionStatus").asString());
             mapSet.setVersionStatus(versionStatus);
-            mapSet.setVersion(additionalFields.get("version").asText());
-            mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse(additionalFields.get("lastModified").asText()));
-            mapSet.setFromTerminology(additionalFields.get("fromTerminology").asText());
-            mapSet.setToTerminology(additionalFields.get("toTerminology").asText());
+            mapSet.setVersion(additionalFields.get("version").asString());
+            mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse(additionalFields.get("lastModified").asString()));
+            mapSet.setFromTerminology(additionalFields.get("fromTerminology").asString());
+            mapSet.setToTerminology(additionalFields.get("toTerminology").asString());
 
             return mapSet;
         }
@@ -4307,7 +4624,18 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return null;
     }
 
-    /* see superclass */
+    /**
+     * Gets the mappings.
+     *
+     * @param branch the branch
+     * @param mapSet the map set
+     * @param searchParameters the search parameters
+     * @param filter the filter
+     * @param showOverriddenEntries the show overridden entries
+     * @param conceptCodes the concept codes
+     * @return the mappings
+     * @throws Exception the exception
+     */
     @Override
     public ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter,
         final boolean showOverriddenEntries, final List<String> conceptCodes) throws Exception {
@@ -4337,36 +4665,36 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             final JsonNode mappingNode = itemIterator.next();
 
             // Only process active mappings from the correct mapset
-            if (!(mappingNode.get("refsetId").asText().equals(mapSet.getRefSetCode()) && mappingNode.get("active").asText().equals("true"))) {
+            if (!(mappingNode.get("refsetId").asString().equals(mapSet.getRefSetCode()) && mappingNode.get("active").asString().equals("true"))) {
                 continue;
             }
 
             // If this is the first time a fromConcept is encountered, set up the
             // mapping and add it to the tracker
-            if (!conceptIdToMappingMap.containsKey(mappingNode.get("referencedComponentId").asText())) {
+            if (!conceptIdToMappingMap.containsKey(mappingNode.get("referencedComponentId").asString())) {
                 final Mapping mapping = new Mapping();
-                mapping.setCode(mappingNode.get("referencedComponentId").asText());
+                mapping.setCode(mappingNode.get("referencedComponentId").asString());
                 mapping.setName(getConcept(/* branch, */ mapSet.getFromTerminology(), "", mapping.getCode()).getName());
                 mapping.setMapSetId(mapSet.getId());
                 mapping.setMapEntries(new ArrayList<>());
 
-                conceptIdToMappingMap.put(mappingNode.get("referencedComponentId").asText(), mapping);
+                conceptIdToMappingMap.put(mappingNode.get("referencedComponentId").asString(), mapping);
             }
 
             // Add an entry to the mapping
-            final Mapping mapping = conceptIdToMappingMap.get(mappingNode.get("referencedComponentId").asText());
+            final Mapping mapping = conceptIdToMappingMap.get(mappingNode.get("referencedComponentId").asString());
             final MapEntry mapEntry = new MapEntry();
 
-            mapEntry.setModified(new SimpleDateFormat("yyyyMMdd").parse(mappingNode.get("effectiveTime").asText()));
+            mapEntry.setModified(new SimpleDateFormat("yyyyMMdd").parse(mappingNode.get("effectiveTime").asString()));
 
             final JsonNode additionalFields = mappingNode.get("additionalFields");
 
-            mapEntry.setRule(additionalFields.get("mapRule").asText());
+            mapEntry.setRule(additionalFields.get("mapRule").asString());
             mapEntry.setPriority(additionalFields.get("mapPriority").asInt());
             mapEntry.setGroup(additionalFields.get("mapGroup").asInt());
 
             final Set<String> advices = new HashSet<>();
-            String mapAdviceString = additionalFields.get("mapAdvice").asText();
+            String mapAdviceString = additionalFields.get("mapAdvice").asString();
             // Store each pipe-delimited section of the map advice string as a
             // separate map advice
             for (String mapAdvice : mapAdviceString.split("\\|")) {
@@ -4374,16 +4702,16 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             }
             mapEntry.setAdvices(advices);
 
-            final Concept relationConcept = getConcept(/* branch, */ mapSet.getFromTerminology(), "", additionalFields.get("mapCategoryId").asText());
+            final Concept relationConcept = getConcept(/* branch, */ mapSet.getFromTerminology(), "", additionalFields.get("mapCategoryId").asString());
             if (relationConcept != null) {
                 mapEntry.setRelation(relationConcept.getName());
             } else {
                 mapEntry.setRelation(mapEntry.getToCode() + " DOES NOT EXIST");
             }
 
-            mapEntry.setToCode(additionalFields.get("mapTarget").asText());
+            mapEntry.setToCode(additionalFields.get("mapTarget").asString());
 
-            final Concept toConcept = getConcept(/* branch, */ mapSet.getToTerminology(), "", additionalFields.get("mapTarget").asText());
+            final Concept toConcept = getConcept(/* branch, */ mapSet.getToTerminology(), "", additionalFields.get("mapTarget").asString());
 
             if (toConcept != null) {
                 mapEntry.setToName(toConcept.getName());
@@ -4406,7 +4734,19 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return mappings;
     }
 
-    /* see superclass */
+    /**
+     * Gets the mappings.
+     *
+     * @param branch the branch
+     * @param mapSet the map set
+     * @param searchParameters the search parameters
+     * @param filter the filter
+     * @param showOverriddenEntries the show overridden entries
+     * @param conceptCodes the concept codes
+     * @param restrictToConceptCodes the restrict to concept codes
+     * @return the mappings
+     * @throws Exception the exception
+     */
     @Override
     public ResultListMapping getMappings(final String branch, final MapSet mapSet, final SearchParameters searchParameters, final String filter,
         final boolean showOverriddenEntries, final List<String> conceptCodes, final Collection<String> restrictToConceptCodes) throws Exception {
@@ -4426,10 +4766,18 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return mappings;
     }
 
-    /* see superclass */
+    /**
+     * Gets the mapping.
+     *
+     * @param branch the branch
+     * @param conceptCode the concept code
+     * @param showOverriddenEntries the show overridden entries
+     * @param mapSet the map set
+     * @return the mapping
+     * @throws Exception the exception
+     */
     @Override
-    public Mapping getMapping(final String branch, final String conceptCode, final boolean showOverriddenEntries, final MapSet mapSet)
-        throws Exception {
+    public Mapping getMapping(final String branch, final String conceptCode, final boolean showOverriddenEntries, final MapSet mapSet) throws Exception {
 
         final File f = new File(handlerProperties.getProperty("dir") + "/Mappings.json");
         if (!f.exists()) {
@@ -4442,8 +4790,8 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         }
 
         // Grab the specified mapSet (use param if provided and has terminology/version, else from JSON)
-        final MapSet mapSetForLookup = (mapSet.getFromTerminology() != null && mapSet.getFromVersion() != null)
-            ? mapSet : getMapSet(branch, mapSet.getRefSetCode());
+        final MapSet mapSetForLookup =
+            (mapSet.getFromTerminology() != null && mapSet.getFromVersion() != null) ? mapSet : getMapSet(branch, mapSet.getRefSetCode());
 
         final Mapping mapping = new Mapping();
 
@@ -4460,19 +4808,19 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             final JsonNode mappingNode = itemIterator.next();
 
             // Only process active mappings from the correct mapset
-            if (!(mappingNode.get("refsetId").asText().equals(mapSetForLookup.getRefSetCode()) && mappingNode.get("active").asText().equals("true"))) {
+            if (!(mappingNode.get("refsetId").asString().equals(mapSetForLookup.getRefSetCode()) && mappingNode.get("active").asString().equals("true"))) {
                 continue;
             }
 
             // Only process the requested concept
-            if (!mappingNode.get("referencedComponentId").asText().equals(conceptCode)) {
+            if (!mappingNode.get("referencedComponentId").asString().equals(conceptCode)) {
                 continue;
             }
 
             // If this is the first time the fromConcept is encountered, set up the
             // mapping
             if (mapping.getCode() == null || mapping.getCode().isEmpty()) {
-                mapping.setCode(mappingNode.get("referencedComponentId").asText());
+                mapping.setCode(mappingNode.get("referencedComponentId").asString());
                 mapping.setName(getConcept(/* branch, */ mapSetForLookup.getFromTerminology(),
                     mapSetForLookup.getFromVersion() != null ? mapSetForLookup.getFromVersion() : "", mapping.getCode()).getName());
                 mapping.setMapSetId(mapSetForLookup.getId());
@@ -4482,16 +4830,16 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             // Add an entry to the mapping
             final MapEntry mapEntry = new MapEntry();
 
-            mapEntry.setModified(new SimpleDateFormat("yyyyMMdd").parse(mappingNode.get("effectiveTime").asText()));
+            mapEntry.setModified(new SimpleDateFormat("yyyyMMdd").parse(mappingNode.get("effectiveTime").asString()));
 
             final JsonNode additionalFields = mappingNode.get("additionalFields");
 
-            mapEntry.setRule(additionalFields.get("mapRule").asText());
+            mapEntry.setRule(additionalFields.get("mapRule").asString());
             mapEntry.setPriority(additionalFields.get("mapPriority").asInt());
             mapEntry.setGroup(additionalFields.get("mapGroup").asInt());
 
             final Set<String> advices = new HashSet<>();
-            String mapAdviceString = additionalFields.get("mapAdvice").asText();
+            String mapAdviceString = additionalFields.get("mapAdvice").asString();
             // Store each pipe-delimited section of the map advice string as a
             // separate map advice
             for (String mapAdvice : mapAdviceString.split("\\|")) {
@@ -4499,16 +4847,16 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             }
             mapEntry.setAdvices(advices);
 
-            final Concept relationConcept = getConcept(/* branch, */ mapSet.getFromTerminology(), "", additionalFields.get("mapCategoryId").asText());
+            final Concept relationConcept = getConcept(/* branch, */ mapSet.getFromTerminology(), "", additionalFields.get("mapCategoryId").asString());
             if (relationConcept != null) {
                 mapEntry.setRelation(relationConcept.getName());
             } else {
                 mapEntry.setRelation(mapEntry.getToCode() + " DOES NOT EXIST");
             }
 
-            mapEntry.setToCode(additionalFields.get("mapTarget").asText());
+            mapEntry.setToCode(additionalFields.get("mapTarget").asString());
 
-            final Concept toConcept = getConcept(/* branch, */ mapSet.getToTerminology(), "", additionalFields.get("mapTarget").asText());
+            final Concept toConcept = getConcept(/* branch, */ mapSet.getToTerminology(), "", additionalFields.get("mapTarget").asString());
 
             if (toConcept != null) {
                 mapEntry.setToName(toConcept.getName());
@@ -4525,7 +4873,15 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return mapping;
     }
 
-    /* see superclass */
+    /**
+     * Gets the concept.
+     *
+     * @param terminology the terminology
+     * @param version the version
+     * @param code the code
+     * @return the concept
+     * @throws Exception the exception
+     */
     @Override
     public Concept getConcept(/* final String branch, */ final String terminology, final String version, final String code) throws Exception {
 
@@ -4548,16 +4904,16 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             final JsonNode conceptNode = itemIterator.next();
 
             // Pull the requested, active concept
-            if (!(conceptNode.get("conceptId").asText().equals(code) && conceptNode.get("active").asText().equals("true"))) {
+            if (!(conceptNode.get("conceptId").asString().equals(code) && conceptNode.get("active").asString().equals("true"))) {
                 continue;
             }
 
             final Concept concept = new Concept();
             concept.setActive(conceptNode.get("active").asBoolean());
-            concept.setId(conceptNode.get("id").asText());
-            concept.setCode(conceptNode.get("id").asText());
+            concept.setId(conceptNode.get("id").asString());
+            concept.setCode(conceptNode.get("id").asString());
 
-            if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
+            if (!conceptNode.get("definitionStatus").asString().equals("PRIMITIVE")) {
 
                 concept.setDefined(true);
             } else {
@@ -4567,12 +4923,12 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             if (conceptNode.get("pt") != null) {
 
-                concept.setName(conceptNode.get("pt").get("term").asText());
+                concept.setName(conceptNode.get("pt").get("term").asString());
             }
 
             if (conceptNode.get("fsn") != null && conceptNode.get("fsn").get("term") != null) {
 
-                concept.setFsn(conceptNode.get("fsn").get("term").asText());
+                concept.setFsn(conceptNode.get("fsn").get("term").asString());
             }
 
             return concept;
@@ -4582,7 +4938,15 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         return null;
     }
 
-    /* see superclass */
+    /**
+     * Find concepts.
+     *
+     * @param terminology the terminology
+     * @param version the version
+     * @param searchParameters the search parameters
+     * @return the result list concept
+     * @throws Exception the exception
+     */
     @Override
     public ResultListConcept findConcepts(final String terminology, final String version, final SearchParameters searchParameters) throws Exception {
 
@@ -4590,35 +4954,66 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         throw new UnsupportedOperationException("Method not implemented");
     }
 
-    /* see superclass */
+    /**
+     * Auto complete.
+     *
+     * @param terminology the terminology
+     * @param version the version
+     * @param searchParameters the search parameters
+     * @return the result list concept ref
+     * @throws Exception the exception
+     */
     @Override
     public ResultListConceptRef autoComplete(final String terminology, final String version, final SearchParameters searchParameters) throws Exception {
 
         throw new UnsupportedOperationException("Method not implemented");
     }
 
-    /* see superclass */
+    /**
+     * Cache concepts.
+     *
+     * @param terminologyToVersion the terminology to version
+     * @throws Exception the exception
+     */
     @Override
     public void cacheConcepts(final Map<String, String> terminologyToVersion) throws Exception {
 
         // JSON handler does not support concept caching; no-op
     }
 
-    /* see superclass */
+    /**
+     * Gets the name.
+     *
+     * @return the name
+     */
     @Override
     public String getName() {
 
         return ModelUtility.getNameFromClass(JSONTerminologyServerHandler.class);
     }
 
-    /* see superclass */
+    /**
+     * Sets the properties.
+     *
+     * @param properties the new properties
+     * @throws Exception the exception
+     */
     @Override
     public void setProperties(final Properties properties) throws Exception {
 
         handlerProperties.putAll(properties);
     }
 
-    /* see superclass */
+    /**
+     * Creates the mappings.
+     *
+     * @param mapProject the map project
+     * @param branch the branch
+     * @param mapSetCode the map set code
+     * @param mappings the mappings
+     * @return the list
+     * @throws Exception the exception
+     */
     @Override
     public List<Mapping> createMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mappings)
         throws Exception {
@@ -4627,7 +5022,18 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         throw new UnsupportedOperationException("Method not implemented");
     }
 
-    /* see superclass */
+    /**
+     * Update mappings.
+     *
+     * @param mapProject the map project
+     * @param branch the branch
+     * @param mapSetCode the map set code
+     * @param mappings the mappings
+     * @param mapSet the map set
+     * @param user the user
+     * @return the list
+     * @throws Exception the exception
+     */
     @Override
     public List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mappings,
         final MapSet mapSet, final User user) throws Exception {
@@ -4636,7 +5042,16 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         throw new UnsupportedOperationException("Method not implemented");
     }
 
-    /* see superclass */
+    /**
+     * Export mappings.
+     *
+     * @param branch the branch
+     * @param mapSetCode the map set code
+     * @param mappingExportRequest the mapping export request
+     * @param mapSet the map set
+     * @return the file
+     * @throws Exception the exception
+     */
     @Override
     public File exportMappings(final String branch, final String mapSetCode, final MappingExportRequest mappingExportRequest, final MapSet mapSet)
         throws Exception {
@@ -4645,7 +5060,17 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         throw new UnsupportedOperationException("Method not implemented");
     }
 
-    /* see superclass */
+    /**
+     * Import mappings.
+     *
+     * @param mapProject the map project
+     * @param branch the branch
+     * @param mappingFile the mapping file
+     * @param mapSet the map set
+     * @param user the user
+     * @return the list
+     * @throws Exception the exception
+     */
     @Override
     public List<Mapping> importMappings(final MapProject mapProject, final String branch, final MultipartFile mappingFile, final MapSet mapSet, final User user)
         throws Exception {
@@ -4654,7 +5079,16 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         throw new UnsupportedOperationException("Method not implemented");
     }
 
-    /* see superclass */
+    /**
+     * Export map set.
+     *
+     * @param user the user
+     * @param mapProject the map project
+     * @param mapSetExportRequest the map set export request
+     * @param mapSet the map set
+     * @return the string
+     * @throws Exception the exception
+     */
     @Override
     public String exportMapSet(final User user, final MapProject mapProject, final MapSetExportRequest mapSetExportRequest, final MapSet mapSet)
         throws Exception {
@@ -4663,7 +5097,14 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         throw new UnsupportedOperationException("Method not implemented");
     }
 
-    /* see superclass */
+    /**
+     * Gets the member sct codes.
+     *
+     * @param refsetId the refset id
+     * @param branchPath the branch path
+     * @return the member sct codes
+     * @throws Exception the exception
+     */
     @Override
     public List<String> getMemberSctCodes(final String refsetId, final String branchPath) throws Exception {
 
@@ -4671,7 +5112,13 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         throw new UnsupportedOperationException("Method not implemented");
     }
 
-    /* see superclass */
+    /**
+     * Identify refset name.
+     *
+     * @param refset the refset
+     * @return the string
+     * @throws Exception the exception
+     */
     @Override
     public String identifyRefsetName(final Refset refset) throws Exception {
 
@@ -4679,7 +5126,17 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         throw new UnsupportedOperationException("Method not implemented");
     }
 
-    /* see superclass */
+    /**
+     * Sets the workflow status.
+     *
+     * @param service the service
+     * @param user the user
+     * @param mapSetInternalId the map set internal id
+     * @param action the action
+     * @param notes the notes
+     * @return the map set
+     * @throws Exception the exception
+     */
     @Override
     public MapSet setWorkflowStatus(final TerminologyService service, final User user, final String mapSetInternalId, final WorkflowAction action,
         final String notes) throws Exception {
@@ -4688,7 +5145,12 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         throw new UnsupportedOperationException("Method not implemented");
     }
 
-    /* see superclass */
+    /**
+     * Clear all refset caches.
+     *
+     * @param branch the branch
+     * @throws Exception the exception
+     */
     @Override
     public void clearAllRefsetCaches(final String branch) throws Exception {
 
@@ -4697,7 +5159,13 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
     }
 
-    /* see superclass */
+    /**
+     * Gets the branch path.
+     *
+     * @param mapSet the map set
+     * @return the branch path
+     * @throws Exception the exception
+     */
     @Override
     public String getBranchPath(final MapSet mapSet) throws Exception {
 
@@ -4705,7 +5173,13 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         throw new UnsupportedOperationException("Method not implemented");
     }
 
-    /* see superclass */
+    /**
+     * Gets the refset date from formatted string.
+     *
+     * @param publicationDateString the publication date string
+     * @return the refset date from formatted string
+     * @throws Exception the exception
+     */
     @Override
     public Date getRefsetDateFromFormattedString(final String publicationDateString) throws Exception {
 
@@ -4713,7 +5187,15 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         throw new UnsupportedOperationException("Method not implemented");
     }
 
-    /* see superclass */
+    /**
+     * Sets the roles.
+     *
+     * @param user the user
+     * @param project the project
+     * @param roles the roles
+     * @return the list
+     * @throws Exception the exception
+     */
     @Override
     public List<String> setRoles(final User user, final Project project, final List<String> roles) throws Exception {
 
@@ -4721,7 +5203,13 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         throw new UnsupportedOperationException("Method not implemented");
     }
 
-    /* see superclass */
+    /**
+     * Removes the map set edit history.
+     *
+     * @param service the service
+     * @param refsetCode the refset code
+     * @throws Exception the exception
+     */
     @Override
     public void removeMapSetEditHistory(final TerminologyService service, final String refsetCode) throws Exception {
 
@@ -4729,7 +5217,15 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         throw new UnsupportedOperationException("Method not implemented");
     }
 
-    /* see superclass */
+    /**
+     * Sets the map set member count.
+     *
+     * @param service the service
+     * @param mapSet the map set
+     * @param force the force
+     * @return true, if successful
+     * @throws Exception the exception
+     */
     @Override
     public boolean setMapSetMemberCount(final TerminologyService service, final MapSet mapSet, final boolean force) throws Exception {
 
@@ -4737,7 +5233,13 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         throw new UnsupportedOperationException("Method not implemented");
     }
 
-    /* see superclass */
+    /**
+     * Removes the upgrade data.
+     *
+     * @param service the service
+     * @param mapSet the map set
+     * @throws Exception the exception
+     */
     @Override
     public void removeUpgradeData(final TerminologyService service, final MapSet mapSet) throws Exception {
 
@@ -4745,7 +5247,12 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         throw new UnsupportedOperationException("Method not implemented");
     }
 
-    /* see superclass */
+    /**
+     * Replace map set with edit history.
+     *
+     * @param service the service
+     * @param mapSet the map set
+     */
     @Override
     public void replaceMapSetWithEditHistory(final TerminologyService service, final MapSet mapSet) {
 
@@ -4753,7 +5260,13 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
         throw new UnsupportedOperationException("Method not implemented");
     }
 
-    /* see superclass */
+    /**
+     * Sets the map set permissions.
+     *
+     * @param user the user
+     * @param mapSet the map set
+     * @return the map set
+     */
     @Override
     public MapSet setMapSetPermissions(final User user, final MapSet mapSet) {
 

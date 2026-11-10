@@ -22,7 +22,7 @@ public class MapSetExportException extends Exception {
      *
      * @param message the message
      */
-    public MapSetExportException(String message) {
+    public MapSetExportException(final String message) {
 
         super(message);
     }
@@ -33,7 +33,7 @@ public class MapSetExportException extends Exception {
      * @param message the message
      * @param cause the cause
      */
-    public MapSetExportException(String message, Throwable cause) {
+    public MapSetExportException(final String message, final Throwable cause) {
 
         super(message, cause);
     }

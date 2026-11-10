@@ -9,6 +9,9 @@
  */
 package org.ihtsdo.refsetservice.model.enums;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
 /**
  * The Enum VersionStatus.
  */
@@ -38,8 +41,29 @@ public enum VersionStatus {
      *
      * @return the label
      */
+    @JsonValue
     public String getLabel() {
 
         return label;
+    }
+
+    /**
+     * Resolves a status from its JSON label or enum name.
+     *
+     * @param value the JSON value
+     * @return the version status
+     */
+    @JsonCreator
+    public static VersionStatus fromJson(final String value) {
+
+        if (value == null) {
+            return null;
+        }
+        for (final VersionStatus status : values()) {
+            if (status.name().equals(value) || status.label.equals(value)) {
+                return status;
+            }
+        }
+        throw new IllegalArgumentException("Unknown version status: " + value);
     }
 }

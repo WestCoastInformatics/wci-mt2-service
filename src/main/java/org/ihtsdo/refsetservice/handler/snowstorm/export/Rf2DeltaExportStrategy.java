@@ -49,8 +49,12 @@ public class Rf2DeltaExportStrategy extends AbstractMapSetExportStrategy {
     /** The export file dir. */
     private static String exportFileDir;
 
-    static {
-        exportFileDir = PropertyUtility.getProperty("mapexport.fileDir");
+    private static String getExportFileDir() {
+
+        if (exportFileDir == null) {
+            exportFileDir = PropertyUtility.getProperty("mapexport.fileDir");
+        }
+        return exportFileDir;
     }
 
     /**
@@ -94,10 +98,10 @@ public class Rf2DeltaExportStrategy extends AbstractMapSetExportStrategy {
             }
 
             final String projectDir = PropertyUtility.getProperty("aws.project.base.dir");
-            final String deltaSnowGeneratedFileName = exportHandler.generateMt2SnowVersionFileName(mapProject, mapSet, FileFormatType.DELTA,
+            final String deltaSnowGeneratedFileName = getExportHandler().generateMt2SnowVersionFileName(mapProject, mapSet, FileFormatType.DELTA,
                 request.getTransientEffectiveTime(), request.getStartEffectiveTime());
-            final String deltaAwsVersionedPath = exportHandler.generateAwsMt2BaseVersionPath(mapSet, request, projectDir, null);
-            final String deltaMt2VersionFileName = exportHandler.generateMt2VersionFileName(mapProject, mapSet, request);
+            final String deltaAwsVersionedPath = getExportHandler().generateAwsMt2BaseVersionPath(mapSet, request, projectDir, null);
+            final String deltaMt2VersionFileName = getExportHandler().generateMt2VersionFileName(mapProject, mapSet, request);
 
             // Check if delta file already exists
             if (!S3ConnectionWrapper.isInS3Cache(deltaAwsVersionedPath, deltaMt2VersionFileName)) {
@@ -140,10 +144,10 @@ public class Rf2DeltaExportStrategy extends AbstractMapSetExportStrategy {
 
                     transientEffectiveTime = versionInScope.replace("-", "");
 
-                    final String awsVersionedPath = exportHandler.generateAwsMt2BaseVersionPath(mapSet, request, projectDir, "DELTA-SNAPSHOT");
+                    final String awsVersionedPath = getExportHandler().generateAwsMt2BaseVersionPath(mapSet, request, projectDir, "DELTA-SNAPSHOT");
 
                     // Snowstorm generated RF2 file
-                    final String snowGeneratedFileName = exportHandler.generateMt2SnowVersionFileName(mapProject, mapSet, FileFormatType.SNAPSHOT,
+                    final String snowGeneratedFileName = getExportHandler().generateMt2SnowVersionFileName(mapProject, mapSet, FileFormatType.SNAPSHOT,
                         request.getStartEffectiveTime(), request.getTransientEffectiveTime());
 
                     // Local Snowstorm generated Rf2 file name
@@ -157,9 +161,9 @@ public class Rf2DeltaExportStrategy extends AbstractMapSetExportStrategy {
                         // .withBranchPath(mapSet.getBranchPath()).withConceptsAndRelationshipsOnly(false).withFilenameEffectiveDate(transientEffectiveTime)
                         // .withLegacyZipNaming(false).withType(FileFormatType.SNAPSHOT).withUnpromotedChangesOnly(false).withModuleIds(moduleIds)
                         // .withStartEffectiveTime(transientEffectiveTime).withTransientEffectiveTime(transientEffectiveTime);
-                        final ExportRequestBuilder builder = new ExportRequestBuilder().withRefsetId(mapSet.getRefSetCode())
-                            .withBranchPath(request.getBranch()).withConceptsAndRelationshipsOnly(false).withFilenameEffectiveDate(transientEffectiveTime)
-                            .withLegacyZipNaming(false).withType(FileFormatType.SNAPSHOT).withUnpromotedChangesOnly(false).withModuleIds(moduleIds)
+                        final ExportRequestBuilder builder = new ExportRequestBuilder().withRefsetId(mapSet.getRefSetCode()).withBranchPath(request.getBranch())
+                            .withConceptsAndRelationshipsOnly(false).withFilenameEffectiveDate(transientEffectiveTime).withLegacyZipNaming(false)
+                            .withType(FileFormatType.SNAPSHOT).withUnpromotedChangesOnly(false).withModuleIds(moduleIds)
                             .withStartEffectiveTime(request.getStartEffectiveTime()).withTransientEffectiveTime(transientEffectiveTime).withStartExport(false);
 
                         final String exportRequestParameters = builder.build();
@@ -167,11 +171,11 @@ public class Rf2DeltaExportStrategy extends AbstractMapSetExportStrategy {
                         LOG.info("generating file from snowstorm with: {}", exportRequestParameters);
 
                         // Generate on SnowS
-                        final String snowGeneratedFileUrl = exportHandler.generateSnowVersionFile(exportRequestParameters);
+                        final String snowGeneratedFileUrl = getExportHandler().generateSnowVersionFile(exportRequestParameters);
                         LOG.info("Downloading file from snowstorm: {}", localSnowGeneratedFilePath);
 
                         // Download file from SnowS
-                        exportHandler.downloadSnowGeneratedFile(snowGeneratedFileUrl, localSnowGeneratedFilePath);
+                        getExportHandler().downloadSnowGeneratedFile(snowGeneratedFileUrl, localSnowGeneratedFilePath);
                         LOG.info("uploading snowstorm generated file to S3");
 
                         // store file on s3
@@ -271,12 +275,12 @@ public class Rf2DeltaExportStrategy extends AbstractMapSetExportStrategy {
                 LOG.info("uploading snowstorm generated file to S3");
 
                 // store file on s3
-                S3ConnectionWrapper.uploadToS3(deltaAwsVersionedPath, exportFileDir, deltaMt2VersionFileName);
+                S3ConnectionWrapper.uploadToS3(deltaAwsVersionedPath, getExportFileDir(), deltaMt2VersionFileName);
                 FileUtility.deleteDirectory(localSnowGeneratedTempDir.toFile());
 
             } else {
 
-                final Path exportFilePath = Paths.get(exportFileDir, deltaMt2VersionFileName);
+                final Path exportFilePath = Paths.get(getExportFileDir(), deltaMt2VersionFileName);
                 if (!Files.exists(exportFilePath)) {
                     LOG.info("Downloading MT2 delta generated file from S3");
                     S3ConnectionWrapper.downloadFileFromS3(deltaAwsVersionedPath, deltaMt2VersionFileName, exportFilePath.toString());
@@ -356,11 +360,11 @@ public class Rf2DeltaExportStrategy extends AbstractMapSetExportStrategy {
         LOG.info("ready to be zipped source files: {}", sourceFiles);
 
         // zip the files together
-        FileUtility.zipFiles(sourceFiles, Paths.get(exportFileDir, mt2ZipFileName));
+        FileUtility.zipFiles(sourceFiles, Paths.get(getExportFileDir(), mt2ZipFileName));
 
         // Delete directory structure and original zip
         FileUtility.deleteDirectory(builderDirectoryTempDir.toFile());
 
-        return exportFileDir;
+        return getExportFileDir();
     }
 }

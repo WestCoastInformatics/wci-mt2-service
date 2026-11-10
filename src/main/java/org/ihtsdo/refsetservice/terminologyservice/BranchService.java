@@ -14,7 +14,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.BranchInformation;
@@ -28,9 +28,9 @@ import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Utility class for workflow processes.
@@ -76,7 +76,23 @@ public final class BranchService {
     private static final List<String> SETTLED_PROMOTION_TARGET_STATES = List.of("FORWARD", "DIVERGED", "UP_TO_DATE", "CURRENT");
 
     /** The app url root. */
-    private static final boolean USE_MANAGE_SERVICE_INITIALS = "true".equals(PropertyUtility.getProperties().getProperty("mapset.use.manage.service.initials"));
+    private static Boolean useManageServiceInitials;
+
+    /**
+     * Instantiates an empty {@link BranchService}.
+     */
+    private BranchService() {
+
+        // n/a
+    }
+
+    private static boolean useManageServiceInitials() {
+
+        if (useManageServiceInitials == null) {
+            useManageServiceInitials = Boolean.valueOf("true".equals(PropertyUtility.getProperties().getProperty("mapset.use.manage.service.initials")));
+        }
+        return useManageServiceInitials.booleanValue();
+    }
 
     /**
      * Merge the project branch into the edition branch.
@@ -177,7 +193,7 @@ public final class BranchService {
 
             if (rootNode.has("path")) {
 
-                refsetBranchPath = rootNode.get("path").asText();
+                refsetBranchPath = rootNode.get("path").asString();
             }
 
             LOG.info("Created branch {}. Time: {}", refsetBranchPath, (System.currentTimeMillis() - start));
@@ -488,7 +504,7 @@ public final class BranchService {
             return "WCI" + PROJECT_BRANCH_NAME;
         }
 
-        if (USE_MANAGE_SERVICE_INITIALS) {
+        if (useManageServiceInitials()) {
             final int initialsLocationIndex = editionBranchPath.lastIndexOf("-");
             if (initialsLocationIndex > 0) {
                 return editionBranchPath.substring(initialsLocationIndex + 1, editionBranchPath.length()) + PROJECT_BRANCH_NAME;
@@ -666,7 +682,7 @@ public final class BranchService {
 
             try {
                 final JsonNode json = mapper.readTree(jsonResponse);
-                updatedJsonResponse = json.has("message") ? json.get("message").asText() : "";
+                updatedJsonResponse = json.has("message") ? json.get("message").asString() : "";
             } catch (final Exception e) {
                 LOG.error("formatErrorMessage jsonResponse:{}", updatedJsonResponse, e);
             }
@@ -690,11 +706,17 @@ public final class BranchService {
         // https://github.com/IHTSDO/snowstorm/blob/master/src/test/java/org/snomed/snowstorm/core/data/services/BranchMergeServiceTest.java
 
         /*-
-        1)        So for the authoring platform specifically - we call https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/retrieveBranch - to ascertain the branch status - a branch needs to be DIVERGED, BEHIND or STALE in order to be rebased, and we only allow promotion in the case that the branch is FORWARD.
-        2)            For a rebase we then call: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/createMergeReview - with the source being the parent branch, and the target the branch we want to rebase -- for DIVERGED OR STALE
-        3)            We then poll: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/getMergeReview to get the status of the review, using the id provided by the response on the prior post - looking for status ‘CURRENT’  -- for DIVERGED OR STALE
-        4)            Next we call https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/getMergeReviewConflictingConcepts - and hope that it’s empty - I presume for RT2 it almost always (or always) is -- for DIVERGED OR STALE
-        5)            Then finally we call: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/mergeBranch with the same source and target as the merge-review, and the ID of the above current merge-review
+        1) So for the authoring platform specifically - we call
+        https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/retrieveBranch - to ascertain the branch status - a branch
+        needs to be DIVERGED, BEHIND or STALE in order to be rebased, and we only allow promotion in the case that the branch is FORWARD.
+        2) For a rebase we then call: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/createMergeReview - with the
+        source being the parent branch, and the target the branch we want to rebase -- for DIVERGED OR STALE
+        3) We then poll: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/getMergeReview to get the status of the
+        review, using the id provided by the response on the prior post - looking for status ‘CURRENT’ -- for DIVERGED OR STALE
+        4) Next we call https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/getMergeReviewConflictingConcepts - and hope
+        that it’s empty - I presume for RT2 it almost always (or always) is -- for DIVERGED OR STALE
+        5) Then finally we call: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/mergeBranch with the same source and
+        target as the merge-review, and the ID of the above current merge-review
          */
 
         final long start = System.currentTimeMillis();
@@ -774,7 +796,7 @@ public final class BranchService {
             final String resultString = SnowstormConnection.readEntityAsString(response);
             logResponseBodyBeforeJsonParse("mergePollingChangeReview", response.getStatus(), resultString);
             final JsonNode root = mapper.readTree(resultString);
-            final String status = root.get("status").asText();
+            final String status = root.get("status").asString();
 
             // in a rebase that has changes clear all the caches for the target branch
 
@@ -789,7 +811,7 @@ public final class BranchService {
             } else if (status.equalsIgnoreCase("failed")) {
 
                 final String error = "Could not review branch change report for " + reviewId + "merge from source: " + sourceBranch + " to target: "
-                    + targetBranch + ". Message: " + formatErrorMessage(resultString) + "Job failed with: " + root.get("message").asText();
+                    + targetBranch + ". Message: " + formatErrorMessage(resultString) + "Job failed with: " + root.get("message").asString();
                 LOG.error(error);
                 throw new Exception(error);
 
@@ -806,7 +828,8 @@ public final class BranchService {
 
                 final String error =
                     "review branch change report process not recognizing status: " + status + " for " + reviewId + "merge from source: " + sourceBranch
-                        + " to target: " + targetBranch + ". Message: " + formatErrorMessage(resultString) + "Job failed with: " + root.get("message").asText();
+                        + " to target: " + targetBranch + ". Message: " + formatErrorMessage(resultString) + "Job failed with: "
+                        + root.get("message").asString();
                 LOG.error(error);
                 throw new Exception(error);
             }
@@ -839,9 +862,9 @@ public final class BranchService {
     /**
      * Whether a promotion target's Snowstorm {@code state} is settled enough to stop polling.
      * <p>
-     * Snowstorm reports a branch's state relative to <em>its</em> parent, not the source that was just merged in. After promoting an edit branch into a
-     * map-set branch, the map-set branch commonly stays {@code DIVERGED} when the edition or project branch has also moved. That is a stable outcome, not cache
-     * lag, and must not be retried indefinitely.
+     * Snowstorm reports a branch's state relative to <em>its</em> parent, not the source that was just merged in. After promoting an edit branch into a map-set
+     * branch, the map-set branch commonly stays {@code DIVERGED} when the edition or project branch has also moved. That is a stable outcome, not cache lag,
+     * and must not be retried indefinitely.
      *
      * @param state the branch state from Snowstorm
      * @return true if polling can stop
@@ -906,7 +929,7 @@ public final class BranchService {
                 throw new Exception("determineBranchStatus - Branch doesn't exist: " + branch);
             }
 
-            final String branchStatus = organizationJsonRootNode.get("state").asText();
+            final String branchStatus = organizationJsonRootNode.get("state").asString();
 
             LOG.info("branch merge necessitated status result: " + branchStatus);
 
@@ -1018,11 +1041,17 @@ public final class BranchService {
     public static void mergeBranch(final String sourceBranchPath, final String targetBranchPath, final String comment, final boolean rebase) throws Exception {
 
         /*-
-        1) So for the authoring platform specifically - we call https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/retrieveBranch - to ascertain the branch status - a branch needs to be DIVERGED, BEHIND or STALE in order to be rebased, and we only allow promotion in the case that the branch is FORWARD.
-        2) For a rebase we then call: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/createMergeReview - with the source being the parent branch, and the target the branch we want to rebase -- for DIVERGED OR STALE
-        3) We then poll: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/getMergeReview to get the status of the review, using the id provided by the response on the prior post - looking for status ‘CURRENT’  -- for DIVERGED OR STALE
-        4) Next we call https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/getMergeReviewConflictingConcepts - and hope that it’s empty - I presume for RT2 it almost always (or always) is -- for DIVERGED OR STALE
-        5) Then finally we call: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/mergeBranch with the same source and target as the merge-review, and the ID of the above current merge-review
+        1) So for the authoring platform specifically - we call
+        https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/retrieveBranch - to ascertain the branch status - a branch
+        needs to be DIVERGED, BEHIND or STALE in order to be rebased, and we only allow promotion in the case that the branch is FORWARD.
+        2) For a rebase we then call: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/createMergeReview - with the
+        source being the parent branch, and the target the branch we want to rebase -- for DIVERGED OR STALE
+        3) We then poll: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/getMergeReview to get the status of the
+        review, using the id provided by the response on the prior post - looking for status ‘CURRENT’ -- for DIVERGED OR STALE
+        4) Next we call https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/getMergeReviewConflictingConcepts - and hope
+        that it’s empty - I presume for RT2 it almost always (or always) is -- for DIVERGED OR STALE
+        5) Then finally we call: https://dev-snowstorm.ihtsdotools.org/snowstorm/snomed-ct/swagger-ui/index.html#/Branching/mergeBranch with the same source and
+        target as the merge-review, and the ID of the above current merge-review
          */
 
         final long start = System.currentTimeMillis();
@@ -1087,13 +1116,13 @@ public final class BranchService {
                     final String resultString = SnowstormConnection.readEntityAsString(mergeInfoResponse);
                     logResponseBodyBeforeJsonParse("mergeBranch merge job poll", mergeInfoResponse.getStatus(), resultString);
                     final JsonNode root = mapper.readTree(resultString);
-                    final String status = root.get("status").asText();
+                    final String status = root.get("status").asString();
 
                     LOG.info("Merge status for source: {} to target: {} is: {}", sourceBranchPath, targetBranchPath, status);
 
                     if (status.equals("FAILED")) {
 
-                        final String message = root.get("message").asText();
+                        final String message = root.get("message").asString();
                         jobDone = true;
 
                         if (!message.contains("is not meaningful")) {
@@ -1168,7 +1197,7 @@ public final class BranchService {
 
                                     final String stateResultString = SnowstormConnection.readEntityAsString(stateResponse);
                                     final JsonNode stateRoot = mapper.readTree(stateResultString);
-                                    final String state = stateRoot.get("state").asText();
+                                    final String state = stateRoot.get("state").asString();
 
                                     LOG.info("Promoted branch state is: {}", state);
 
@@ -1176,8 +1205,7 @@ public final class BranchService {
                                         stateGood = true;
 
                                     } else if (System.currentTimeMillis() >= statePollDeadline) {
-                                        LOG.warn(
-                                            "Promoted branch {} still in state {} after merge completed; continuing because merge job already succeeded",
+                                        LOG.warn("Promoted branch {} still in state {} after merge completed; continuing because merge job already succeeded",
                                             targetBranchPath, state);
                                         break;
 
@@ -1258,7 +1286,7 @@ public final class BranchService {
                 final String resultString = SnowstormConnection.readEntityAsString(response);
                 logResponseBodyBeforeJsonParse("mergeRebaseReview job poll", response.getStatus(), resultString);
                 final JsonNode root = mapper.readTree(resultString);
-                final String status = root.get("status").asText();
+                final String status = root.get("status").asString();
                 LOG.info("merge review status: {}, source:{}, target:{}", status, sourceBranchPath, targetBranchPath);
 
                 if ("pending".equalsIgnoreCase(status)) {
@@ -1273,7 +1301,7 @@ public final class BranchService {
 
                 } else if ("failed".equalsIgnoreCase(status)) {
 
-                    final String error = errorPrefix + "Job failed with: " + root.get("message").asText();
+                    final String error = errorPrefix + "Job failed with: " + root.get("message").asString();
                     LOG.error(error);
                     throw new Exception(error);
 

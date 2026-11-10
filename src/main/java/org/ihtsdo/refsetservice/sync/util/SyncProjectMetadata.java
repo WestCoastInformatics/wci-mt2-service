@@ -36,8 +36,10 @@ public class SyncProjectMetadata {
      * @param organizationCrowdId the organization crowd Id
      * @param name the name name
      * @param description the name description
+     * @param editionShortName the edition short name
      */
-    public SyncProjectMetadata(final String rttId, final String organizationCrowdId, final String name, final String description, final String editionShortName) {
+    public SyncProjectMetadata(final String rttId, final String organizationCrowdId, final String name, final String description,
+        final String editionShortName) {
 
         this.rttId = rttId;
         this.organizationCrowdId = organizationCrowdId;

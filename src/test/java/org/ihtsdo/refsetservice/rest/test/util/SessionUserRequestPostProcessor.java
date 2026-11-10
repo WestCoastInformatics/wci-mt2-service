@@ -11,6 +11,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
  */
 public final class SessionUserRequestPostProcessor implements RequestPostProcessor {
 
+    /** The user. */
     private final User user;
 
     /**
@@ -23,6 +24,12 @@ public final class SessionUserRequestPostProcessor implements RequestPostProcess
         this.user = user;
     }
 
+    /**
+     * Post process request.
+     *
+     * @param request the request
+     * @return the mock http servlet request
+     */
     @Override
     public MockHttpServletRequest postProcessRequest(final MockHttpServletRequest request) {
 

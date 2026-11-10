@@ -29,6 +29,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
@@ -86,8 +87,15 @@ public class RefsetService {
     /** Group name prefix for RT2 application. */
     private static final String APP_PREFIX = "rt2-";
 
-    /** The terminology handler. */
-    private static TerminologyServerHandler terminologyHandler;
+    /**
+     *  The terminology handler.
+     *
+     * @return the terminology handler
+     */
+    private static TerminologyServerHandler getTerminologyHandler() {
+
+        return HandlerUtility.getOrCreateTerminologyHandler();
+    }
 
     /** The refset to language map. */
     private static final Map<String, String> REFSET_TO_LANGUAGE_MAP = new HashMap<>();
@@ -132,8 +140,8 @@ public class RefsetService {
     /** The Constant AND_SUFFIX. */
     private static final String AND_SUFFIX = " AND ";
 
-    /** The Constant rttIntensionalRefsets. */
-    private static final Set<String> rttIntensionalRefsets = new HashSet<>();
+    /** The Constant RTT_INTENSIONAL_REFSETS. */
+    private static final Set<String> RTT_INTENSIONAL_REFSETS = new HashSet<>();
 
     static {
 
@@ -157,23 +165,17 @@ public class RefsetService {
     /** The app url root. */
     private static String appUrlRoot;
 
-    static {
-        appUrlRoot = PropertyUtility.getProperties().getProperty("app.url.root");
+    /**
+     * Gets the app url root.
+     *
+     * @return the app url root
+     */
+    private static String getAppUrlRoot() {
 
-        // Instantiate terminology handler
-        try {
-            String key = "terminology.handler";
-            String handlerName = PropertyUtility.getProperty(key);
-            if (handlerName.isEmpty()) {
-                throw new Exception("terminology.handler expected and does not exist.");
-            }
-
-            terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName, TerminologyServerHandler.class);
-
-        } catch (Exception e) {
-            LOG.error("Failed to initialize terminology.handler - serious error", e);
-            terminologyHandler = null;
+        if (appUrlRoot == null) {
+            appUrlRoot = PropertyUtility.getProperties().getProperty("app.url.root");
         }
+        return appUrlRoot;
     }
 
     /**
@@ -187,7 +189,7 @@ public class RefsetService {
      */
     public static Object createRefset(final TerminologyService service, final User user, final Refset refsetEditParameters) throws Exception {
 
-        return terminologyHandler.createRefset(service, user, refsetEditParameters);
+        return getTerminologyHandler().createRefset(service, user, refsetEditParameters);
 
     }
 
@@ -217,11 +219,11 @@ public class RefsetService {
 
         }
 
-        ecl = StringUtils.removeEnd(additiveEcl, " OR ");
+        ecl = Strings.CS.removeEnd(additiveEcl, " OR ");
 
         if (!negatedEcl.equals("")) {
 
-            ecl = "(" + ecl + ") MINUS (" + StringUtils.removeEnd(negatedEcl, " OR ") + ")";
+            ecl = "(" + ecl + ") MINUS (" + Strings.CS.removeEnd(negatedEcl, " OR ") + ")";
         }
 
         return ecl;
@@ -261,13 +263,13 @@ public class RefsetService {
 
         if (!additiveEcl.equals("")) {
 
-            additiveEcl = StringUtils.removeEnd(additiveEcl, " OR ");
+            additiveEcl = Strings.CS.removeEnd(additiveEcl, " OR ");
             inclusionList = RefsetMemberService.getConceptIdsFromEcl(branchPath, additiveEcl);
         }
 
         if (!negatedEcl.equals("")) {
 
-            negatedEcl = StringUtils.removeEnd(negatedEcl, " OR ");
+            negatedEcl = Strings.CS.removeEnd(negatedEcl, " OR ");
             exclusionList = RefsetMemberService.getConceptIdsFromEcl(branchPath, negatedEcl);
         }
 
@@ -756,7 +758,7 @@ public class RefsetService {
                 statusMessage += unprocessedConcept + ", ";
             }
 
-            statusMessage = StringUtils.removeEnd(statusMessage, ", ");
+            statusMessage = Strings.CS.removeEnd(statusMessage, ", ");
         }
 
         LOG.info("Refset {} definition successfully modified", refset.getRefsetId());
@@ -789,8 +791,8 @@ public class RefsetService {
 
             final List<String> newMembers = new ArrayList<>();
             final boolean useCompareBranch = !(Arrays.asList(WorkflowStatus.IN_EDIT, WorkflowStatus.IN_UPGRADE).contains(refset.getWorkflowStatus()));
-            final String refsetBranch = (useCompareBranch) ? BranchService.createCompareBranch(refset.toBranchDetails()) : BranchService
-                .getEditBranchPath(refset.toBranchDetails());
+            final String refsetBranch =
+                (useCompareBranch) ? BranchService.createCompareBranch(refset.toBranchDetails()) : BranchService.getEditBranchPath(refset.toBranchDetails());
             final String conceptsBranchPath = (useCompareBranch) ? refsetBranch.substring(0, refsetBranch.lastIndexOf("REFSETS/")) + "REFSETS" : refsetBranch;
 
             try {
@@ -899,7 +901,7 @@ public class RefsetService {
      */
     private static void updateRefsetConcept(final Refset refset, final boolean active, final String moduleId) throws Exception {
 
-        terminologyHandler.updateRefsetConcept(refset, active, moduleId);
+        getTerminologyHandler().updateRefsetConcept(refset, active, moduleId);
     }
 
     /**
@@ -1020,7 +1022,7 @@ public class RefsetService {
      */
     public static ResultListConcept getRefsetConcepts(final TerminologyService service, final String branch, final boolean areParentConcepts) throws Exception {
 
-        return terminologyHandler.getRefsetConcepts(service, branch, areParentConcepts);
+        return getTerminologyHandler().getRefsetConcepts(service, branch, areParentConcepts);
 
     }
 
@@ -1437,10 +1439,10 @@ public class RefsetService {
             if (termQuery.length() > 0) {
 
                 final Set<String> refsetIdsFromTermServer = new HashSet<>();
-                if (StringUtils.endsWith(termQuery.toString().trim(), "AND")) {
+                if (Strings.CS.endsWith(termQuery.toString().trim(), "AND")) {
                     termQuery.setLength(termQuery.length() - 5);
                 }
-                if (StringUtils.endsWith(termQueryForRt2.toString().trim(), "AND")) {
+                if (Strings.CS.endsWith(termQueryForRt2.toString().trim(), "AND")) {
                     termQueryForRt2.setLength(termQueryForRt2.length() - 5);
                 }
                 // if it was requested search member concepts
@@ -1545,7 +1547,7 @@ public class RefsetService {
 
         }
 
-        query += StringUtils.removeEnd(projectFilter, " OR ") + ")";
+        query += Strings.CS.removeEnd(projectFilter, " OR ") + ")";
 
         if (user.getUserName().equals(SecurityService.GUEST_USERNAME)) {
 
@@ -1597,8 +1599,8 @@ public class RefsetService {
                 try {
                     final Date baseContentVersionDate =
                         SnomedConstants.BRANCH_DATE_FORMAT_ONLY_NUMBERS.parse(r.getBaseContentVersion().substring(0, r.getBaseContentVersion().indexOf(' ')));
-                    final Date intlContentVersionDate =
-                        SnomedConstants.BRANCH_DATE_FORMAT_ONLY_NUMBERS.parse(r.getInternationalContentVersion().substring(0, r.getInternationalContentVersion().indexOf(' ')));
+                    final Date intlContentVersionDate = SnomedConstants.BRANCH_DATE_FORMAT_ONLY_NUMBERS
+                        .parse(r.getInternationalContentVersion().substring(0, r.getInternationalContentVersion().indexOf(' ')));
                     final Date latestBaseVersionDate = SnomedConstants.BRANCH_DATE_FORMAT_ONLY_NUMBERS.parse(editionBaseVersionDates.get(0));
                     return (baseContentVersionDate.before(latestBaseVersionDate) || intlContentVersionDate.before(latestBaseVersionDate));
                 } catch (final Exception e) {
@@ -1827,8 +1829,7 @@ public class RefsetService {
                 if (Arrays.asList(WorkflowStatus.IN_EDIT, WorkflowStatus.IN_UPGRADE).contains(refset.getWorkflowStatus())) {
                     branchPath = BranchService.getEditBranchPath(refset.toBranchDetails());
                 } else {
-                    branchPath =
-                        BranchService.getRefsetBranchPath(refset.toBranchDetails());
+                    branchPath = BranchService.getRefsetBranchPath(refset.toBranchDetails());
                 }
             }
         } else {
@@ -1837,20 +1838,17 @@ public class RefsetService {
             if (Arrays.asList(WorkflowStatus.IN_EDIT, WorkflowStatus.IN_UPGRADE).contains(refset.getWorkflowStatus())) {
                 branchPath = BranchService.getEditBranchPath(refset.toBranchDetails());
             } else {
-                branchPath =
-                    BranchService.getRefsetBranchPath(refset.toBranchDetails());
+                branchPath = BranchService.getRefsetBranchPath(refset.toBranchDetails());
             }
         }
 
         return branchPath;
     }
 
-
     /**
      * Get all the descriptions for a refset.
      *
      * @param refset the refset
-     * @return the refset with descriptions
      * @throws Exception the exception
      */
     public static void populateRefsetDescriptions(final Refset refset) throws Exception {
@@ -1989,6 +1987,7 @@ public class RefsetService {
      * @param refset the refset
      * @param service the Terminology Service
      * @param sortAscending should the versions be sorted in ascending order
+     * @param user the user
      * @return the list of version dates sorted in descending order
      * @throws Exception the exception
      */
@@ -2054,7 +2053,7 @@ public class RefsetService {
         }
 
         // set the query appropriately based on what was passed in
-        if (NumberUtils.isNumber(searchParameters.getQuery())) {
+        if (NumberUtils.isCreatable(searchParameters.getQuery())) {
 
             searchParameters.setQuery("refsetId:" + searchParameters.getQuery());
         } else {
@@ -2207,7 +2206,7 @@ public class RefsetService {
      */
     public static List<String> getBranchVersions(final String editionPath) throws Exception {
 
-        return terminologyHandler.getBranchVersions(editionPath);
+        return getTerminologyHandler().getBranchVersions(editionPath);
 
     }
 
@@ -2328,7 +2327,7 @@ public class RefsetService {
             final String version =
                 (refset.getVersionDate() != null) ? refset.getVersionDate().toString().substring(0, 10) : refset.getVersionStatus().toString();
 
-            final String refsetUrl = appUrlRoot + "/details/" + refset.getRefsetId() + "/" + StringUtility.encodeValue(version).replace("+", "%20");
+            final String refsetUrl = getAppUrlRoot() + "/details/" + refset.getRefsetId() + "/" + StringUtility.encodeValue(version).replace("+", "%20");
 
             // Title
             emailBody.append("Hello, ").append(recipient).append(LanguageUtility.COMMA_SPLIT_CHARACTER).append(System.getProperty("line.separator"))
@@ -2452,7 +2451,7 @@ public class RefsetService {
                 throw new ResponseStatusException(HttpStatus.EXPECTATION_FAILED, message);
             }
 
-            /** Create Email **/
+            // Create Email
             final StringBuilder emailBody = new StringBuilder();
 
             // Greeting
@@ -2474,7 +2473,7 @@ public class RefsetService {
             emailBody.append("Users can be added and configured through the SNOMED CT Reference Set Tool Team pages. ")
                 .append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
 
-            emailBody.append("Go to the Reference Set Tool: ").append(appUrlRoot).append(System.getProperty("line.separator"))
+            emailBody.append("Go to the Reference Set Tool: ").append(getAppUrlRoot()).append(System.getProperty("line.separator"))
                 .append(System.getProperty("line.separator"));
 
             emailBody.append(System.getProperty("line.separator")).append(System.getProperty("line.separator")).append(System.getProperty("line.separator"));
@@ -2737,8 +2736,8 @@ public class RefsetService {
             service.setModifiedBy(authUser.getUserName());
             service.add(request);
 
-            final String acceptUrl = appUrlRoot + "/invite/response?ir=" + request.getId() + "&r=true";
-            final String declineUrl = appUrlRoot + "/invite/response?ir=" + request.getId() + "&r=false";
+            final String acceptUrl = getAppUrlRoot() + "/invite/response?ir=" + request.getId() + "&r=true";
+            final String declineUrl = getAppUrlRoot() + "/invite/response?ir=" + request.getId() + "&r=false";
 
             final String ahrefStyle = "'padding: 8px 12px; border: 1px solid #c3e7fe;border-radius: 2px;"
                 + "font-family: Helvetica, Arial, sans-serif;font-size: 14px; color: #000000;"
@@ -2874,7 +2873,7 @@ public class RefsetService {
 
             // Go to app
             emailBody.append("    <span style='width: 400px; display: inline-block'>")
-                .append(button.replace("{{BUTTION_LINK}}", appUrlRoot).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
+                .append(button.replace("{{BUTTION_LINK}}", getAppUrlRoot()).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
 
             emailBody.append("</div>");
             emailBody.append("</body>");
@@ -2910,7 +2909,7 @@ public class RefsetService {
 
             // Go to app
             emailBody.append("    <span style='width: 400px; display: inline-block'>")
-                .append(button.replace("{{BUTTION_LINK}}", appUrlRoot).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
+                .append(button.replace("{{BUTTION_LINK}}", getAppUrlRoot()).replace("{{BUTTON_TEXT}}", "Go to the Reference Set Tool")).append("</span>");
 
             emailBody.append("</div>");
             emailBody.append("</body>");
@@ -2998,7 +2997,7 @@ public class RefsetService {
      */
     public static String identifyRefsetName(final Refset dbRefset) throws Exception {
 
-        return terminologyHandler.identifyRefsetName(dbRefset);
+        return getTerminologyHandler().identifyRefsetName(dbRefset);
 
     }
 
@@ -3010,7 +3009,7 @@ public class RefsetService {
      */
     public static Set<String> getRttIntensionalRefsets() throws Exception {
 
-        return rttIntensionalRefsets;
+        return RTT_INTENSIONAL_REFSETS;
     }
 
 }

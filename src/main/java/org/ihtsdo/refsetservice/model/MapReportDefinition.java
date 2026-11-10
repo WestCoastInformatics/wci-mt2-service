@@ -11,12 +11,12 @@ package org.ihtsdo.refsetservice.model;
 
 import java.util.Objects;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.ihtsdo.refsetservice.helpers.MapUserRole;
@@ -121,7 +121,7 @@ public class MapReportDefinition extends AbstractHasId {
 
     /**
      * Gets the report name.
-     * 
+     *
      * @return the report name
      */
 
@@ -132,7 +132,7 @@ public class MapReportDefinition extends AbstractHasId {
 
     /**
      * Sets the report name.
-     * 
+     *
      * @param name the new report name
      */
 
@@ -378,12 +378,15 @@ public class MapReportDefinition extends AbstractHasId {
     @Override
     public boolean equals(final Object obj) {
 
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         final MapReportDefinition other = (MapReportDefinition) obj;
         return Objects.equals(description, other.description) && Objects.equals(diffReportDefinitionName, other.diffReportDefinitionName)
             && frequency == other.frequency && isDiffReport == other.isDiffReport && isQACheck == other.isQACheck && Objects.equals(name, other.name)

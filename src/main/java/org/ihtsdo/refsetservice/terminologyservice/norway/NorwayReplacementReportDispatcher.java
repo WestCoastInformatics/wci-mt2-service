@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.RestException;
+import org.ihtsdo.refsetservice.util.BoundedExecutors;
 import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +63,7 @@ public final class NorwayReplacementReportDispatcher {
             } finally {
                 MAP_RUNNING.set(false);
             }
-        });
+        }, BoundedExecutors.background());
     }
 
     /**
@@ -84,7 +85,7 @@ public final class NorwayReplacementReportDispatcher {
             } finally {
                 TRANSLATION_RUNNING.set(false);
             }
-        });
+        }, BoundedExecutors.background());
     }
 
     /**
@@ -106,7 +107,7 @@ public final class NorwayReplacementReportDispatcher {
             } finally {
                 HELSEDIREKTORATET_UNTRANSLATED_RUNNING.set(false);
             }
-        });
+        }, BoundedExecutors.background());
     }
 
     /**

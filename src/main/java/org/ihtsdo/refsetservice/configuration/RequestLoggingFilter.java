@@ -11,7 +11,7 @@ package org.ihtsdo.refsetservice.configuration;
 
 import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.AbstractRequestLoggingFilter;
@@ -32,8 +32,9 @@ public class RequestLoggingFilter extends AbstractRequestLoggingFilter {
 
         setIncludeClientInfo(false);
         setIncludeQueryString(true);
-        setIncludePayload(true);
-        setMaxPayloadLength(50000);
+        // Payload logging is expensive and can leak secrets; keep off in normal traffic.
+        setIncludePayload(false);
+        setMaxPayloadLength(0);
         setIncludeHeaders(false);
     }
 

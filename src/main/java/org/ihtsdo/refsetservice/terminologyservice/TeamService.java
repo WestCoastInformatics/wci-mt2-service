@@ -57,8 +57,12 @@ public class TeamService extends BaseService {
     /** The crowd unit test skip. */
     private static String crowdUnitTestSkip;
 
-    static {
-        crowdUnitTestSkip = PropertyUtility.getProperty("crowd.unit.test.skip");
+    private static String getCrowdUnitTestSkip() {
+
+        if (crowdUnitTestSkip == null) {
+            crowdUnitTestSkip = PropertyUtility.getProperty("crowd.unit.test.skip");
+        }
+        return crowdUnitTestSkip;
     }
 
     /**
@@ -464,7 +468,7 @@ public class TeamService extends BaseService {
         setUserRoles(userToAdd, updatedTeam, updatedTeam.getUserRoles());
 
         // add user to crowd groups
-        if (crowdUnitTestSkip == null || !"true".equalsIgnoreCase(crowdUnitTestSkip)) {
+        if (getCrowdUnitTestSkip() == null || !"true".equalsIgnoreCase(getCrowdUnitTestSkip())) {
 
             LOG.info("CALLING CROWD API");
             if (TeamType.PROJECT.getText().equalsIgnoreCase(team.getType())) {
@@ -608,7 +612,7 @@ public class TeamService extends BaseService {
         service.add(AuditEntryHelper.removeUserFromTeamEntry(updatedTeam, userToRemove));
 
         // remove user from crowd groups
-        if (crowdUnitTestSkip != null && "true".equalsIgnoreCase(crowdUnitTestSkip)) {
+        if (getCrowdUnitTestSkip() != null && "true".equalsIgnoreCase(getCrowdUnitTestSkip())) {
             LOG.info("SKIP CALLING CROWD API");
             return updatedTeam;
         }
@@ -722,7 +726,7 @@ public class TeamService extends BaseService {
         service.add(AuditEntryHelper.addRoleToTeamEntry(updatedTeam, role));
 
         // add user to crowd groups if team is assigned to projects.
-        if (crowdUnitTestSkip == null || !"true".equalsIgnoreCase(crowdUnitTestSkip)) {
+        if (getCrowdUnitTestSkip() == null || !"true".equalsIgnoreCase(getCrowdUnitTestSkip())) {
             LOG.info("CALLING CROWD API from TeamService addRoleToTeam");
 
             if (team.getType().equalsIgnoreCase(TeamType.ORGANIZATION.getText())) {
@@ -807,7 +811,7 @@ public class TeamService extends BaseService {
         service.add(AuditEntryHelper.removeRoleFromTeamEntry(team, role));
 
         // remove users from team if team assigned to projects.
-        if (crowdUnitTestSkip == null || !"true".equalsIgnoreCase(crowdUnitTestSkip)) {
+        if (getCrowdUnitTestSkip() == null || !"true".equalsIgnoreCase(getCrowdUnitTestSkip())) {
             LOG.info("CALLING CROWD API from TeamService removeRoleFromTeam");
 
             if (team.getType().equalsIgnoreCase(TeamType.ORGANIZATION.getText())) {

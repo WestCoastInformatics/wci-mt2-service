@@ -30,7 +30,7 @@ public enum FileFormatType {
      *
      * @param name the name
      */
-    FileFormatType(String name) {
+    FileFormatType(final String name) {
 
         this.name = name;
     }

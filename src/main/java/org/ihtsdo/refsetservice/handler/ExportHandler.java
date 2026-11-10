@@ -29,44 +29,31 @@ import org.ihtsdo.refsetservice.util.StringUtility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.amazonaws.services.s3.AmazonS3;
+import software.amazon.awssdk.services.s3.S3Client;
 
 /**
  * Generically represents an algorithm for object searching.
- */
-/**
- * @author jesseefron
  *
+ * @author jesseefron
  */
 public class ExportHandler {
 
-    /** The Constant TOP_LEVEL_AWS_FOLDER. */
-    private static final String TOP_LEVEL_AWS_FOLDER = S3ConnectionWrapper.getProjectDirectory() + "/";
+    private static String getTopLevelAwsFolder() {
+
+        return S3ConnectionWrapper.getProjectDirectory() + "/";
+    }
 
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(ExportHandler.class);
 
-    /** The config properties. */
-    protected static final Properties PROPERTIES = PropertyUtility.getProperties();
+    protected static Properties getConfigProperties() {
 
-    /** The terminology handler. */
-    private static TerminologyServerHandler terminologyHandler;
+        return PropertyUtility.getProperties();
+    }
 
-    static {
-        // Instantiate terminology handler
-        try {
-            String key = "terminology.handler";
-            String handlerName = PropertyUtility.getProperty(key);
-            if (handlerName.isEmpty()) {
-                throw new Exception("terminology.handler expected and does not exist.");
-            }
+    private static TerminologyServerHandler getTerminologyHandler() {
 
-            terminologyHandler = HandlerUtility.newStandardHandlerInstanceWithConfiguration(key, handlerName, TerminologyServerHandler.class);
-
-        } catch (Exception e) {
-            LOG.error("Failed to initialize terminology.handler - serious error", e);
-            terminologyHandler = null;
-        }
+        return HandlerUtility.getOrCreateTerminologyHandler();
     }
 
     /**
@@ -79,7 +66,7 @@ public class ExportHandler {
      * @return <code>true</code> if so, <code>false</code> otherwise
      * @throws Exception the exception
      */
-    public boolean isRequestedFileOnS3(final Refset refset, final AmazonS3 s3Client, final String type, final Set<String> dates) throws Exception {
+    public boolean isRequestedFileOnS3(final Refset refset, final S3Client s3Client, final String type, final Set<String> dates) throws Exception {
 
         // Check if date lives on s3
         return false;
@@ -178,7 +165,7 @@ public class ExportHandler {
      */
     public String getAwsBranchPath(final Refset refset) throws Exception {
 
-        return TOP_LEVEL_AWS_FOLDER + RefsetService.getBranchPath(refset);
+        return getTopLevelAwsFolder() + RefsetService.getBranchPath(refset);
     }
 
     /**
@@ -207,7 +194,7 @@ public class ExportHandler {
      */
     public String getTopLevelAwsPath() {
 
-        return TOP_LEVEL_AWS_FOLDER;
+        return getTopLevelAwsFolder();
     }
 
     /**
@@ -231,7 +218,7 @@ public class ExportHandler {
      */
     public String generateSnowVersionFile(final String entityString) throws Exception {
 
-        return terminologyHandler.generateVersionFile(entityString);
+        return getTerminologyHandler().generateVersionFile(entityString);
 
     }
 
@@ -244,7 +231,7 @@ public class ExportHandler {
      */
     public void downloadSnowGeneratedFile(final String snowVersionFileUrl, final String localSnowVersionPath) throws Exception {
 
-        terminologyHandler.downloadGeneratedFile(snowVersionFileUrl, localSnowVersionPath);
+        getTerminologyHandler().downloadGeneratedFile(snowVersionFileUrl, localSnowVersionPath);
     }
 
     /**

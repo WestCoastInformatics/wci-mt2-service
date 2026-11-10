@@ -26,9 +26,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
 
 /**
  * Utilities for per-concept mapping workflow API tests.
@@ -36,12 +36,11 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 public class MappingWorkflowUnitTestUtilities {
 
     /** ObjectMapper that deserializes VersionStatus from label (e.g. IN DEVELOPMENT). */
-    private static final ObjectMapper MAPPER;
+    private static final JsonMapper MAPPER;
     static {
-        MAPPER = ThreadLocalMapper.newMapper();
         final SimpleModule module = new SimpleModule();
         module.addDeserializer(VersionStatus.class, new VersionStatusDeserializer());
-        MAPPER.registerModule(module);
+        MAPPER = ThreadLocalMapper.newMapper().rebuild().addModule(module).build();
     }
 
     /** The mvc. */
@@ -143,8 +142,7 @@ public class MappingWorkflowUnitTestUtilities {
 
         final String url = baseUrl + "/" + mapSetId + "/mappings/workflowStatus?conceptCodes=" + String.join(",", conceptCodes);
         final MvcResult result = mvc.perform(withUser(get(url), asUser).accept(MediaType.APPLICATION_JSON)).andExpect(status().isOk()).andReturn();
-        return MAPPER.readValue(result.getResponse().getContentAsString(),
-            MAPPER.getTypeFactory().constructCollectionType(List.class, MappingWorkflow.class));
+        return MAPPER.readValue(result.getResponse().getContentAsString(), MAPPER.getTypeFactory().constructCollectionType(List.class, MappingWorkflow.class));
     }
 
     /**
@@ -175,8 +173,7 @@ public class MappingWorkflowUnitTestUtilities {
         final User asUser) throws Exception {
 
         final String url = workflowStatusUrl(mapSetId, conceptCode, action, note, null);
-        mvc.perform(withUser(post(url), asUser).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().isForbidden());
+        mvc.perform(withUser(post(url), asUser).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isForbidden());
     }
 
     /**
@@ -193,8 +190,7 @@ public class MappingWorkflowUnitTestUtilities {
         final User asUser) throws Exception {
 
         final String url = workflowStatusUrl(mapSetId, conceptCode, action, note, null);
-        mvc.perform(withUser(post(url), asUser).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().isConflict());
+        mvc.perform(withUser(post(url), asUser).contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)).andExpect(status().isConflict());
     }
 
     /**
@@ -289,7 +285,6 @@ public class MappingWorkflowUnitTestUtilities {
      *
      * @param asUser the session user
      * @param queryString query string without leading '?'
-     * @return the assigned workflows expect bad request
      * @throws Exception the exception
      */
     public void getAssignedWorkflowsExpectBadRequest(final User asUser, final String queryString) throws Exception {
@@ -319,7 +314,6 @@ public class MappingWorkflowUnitTestUtilities {
      *
      * @param asUser the session user
      * @param queryString query string without leading '?'
-     * @return the recently modified workflows expect bad request
      * @throws Exception the exception
      */
     public void getRecentlyModifiedWorkflowsExpectBadRequest(final User asUser, final String queryString) throws Exception {

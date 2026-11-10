@@ -9,7 +9,7 @@
  */
 package org.ihtsdo.refsetservice.handler;
 
-import java.net.URL;
+import java.net.URI;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Date;
 import java.util.HashSet;
@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
@@ -209,13 +210,13 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
         LOG.debug("EntraID validateToken: decoded header, keyId (kid)={}", kid);
 
         LOG.debug("EntraID validateToken: fetching JWK from {}", jwksEndpoint);
-        final JwkProvider provider = new UrlJwkProvider(new URL(jwksEndpoint));
+        final JwkProvider provider = new UrlJwkProvider(URI.create(jwksEndpoint).toURL());
         final Jwk jwk = provider.get(jwt.getKeyId());
         LOG.debug("EntraID validateToken: JWK resolved for kid={}", kid);
 
         final Algorithm algorithm = Algorithm.RSA256((RSAPublicKey) jwk.getPublicKey(), null);
 
-        final JWTVerifier verifier = JWT.require(algorithm).withIssuer(authority).withAudience(clientId).build();
+        final JWTVerifier verifier = JWT.require(algorithm).acceptLeeway(2).withIssuer(authority).withAudience(clientId).build();
 
         LOG.debug("EntraID validateToken: verifying signature, issuer must equal authority, audience must contain clientId");
         final DecodedJWT verified = verifier.verify(token);
@@ -349,7 +350,6 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
      * @param user the user
      * @return true, if successful
      */
-    /* see superclass */
     @Override
     public boolean timeoutUser(final String user) {
 
@@ -363,7 +363,6 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
      * @param user the user
      * @return the string
      */
-    /* see superclass */
     @Override
     public String computeTokenForUser(final String user) {
 
@@ -375,7 +374,6 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
      *
      * @param properties the new properties
      */
-    /* see superclass */
     @Override
     public void setProperties(final Properties properties) {
 
@@ -393,7 +391,6 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
      *
      * @return the name
      */
-    /* see superclass */
     @Override
     public String getName() {
 
@@ -406,7 +403,6 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
      * @return the authenticate url
      * @throws Exception the exception
      */
-    /* see superclass */
     @Override
     public String getAuthenticateUrl() throws Exception {
 
@@ -424,21 +420,35 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
         return authority;
     }
 
-    /* see superclass */
+    /**
+     * Requires browser login state.
+     *
+     * @return true, if successful
+     */
     @Override
     public boolean requiresBrowserLoginState() {
 
         return true;
     }
 
-    /* see superclass */
+    /**
+     * Supports browser callback.
+     *
+     * @return true, if successful
+     */
     @Override
     public boolean supportsBrowserCallback() {
 
         return true;
     }
 
-    /* see superclass */
+    /**
+     * Builds the browser login url.
+     *
+     * @param oauthState the oauth state
+     * @return the string
+     * @throws Exception the exception
+     */
     @Override
     public String buildBrowserLoginUrl(final String oauthState) throws Exception {
 
@@ -456,7 +466,12 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
         return EntraAuthorizationCodeExchange.buildAuthorizeUrl(authorizationEndpoint, clientId, redirectUri.trim(), scopeResolved, oauthState);
     }
 
-    /* see superclass */
+    /**
+     * Gets the post login redirect uri.
+     *
+     * @return the post login redirect uri
+     * @throws Exception the exception
+     */
     @Override
     public String getPostLoginRedirectUri() throws Exception {
 
@@ -470,7 +485,13 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
         return url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
     }
 
-    /* see superclass */
+    /**
+     * Complete browser login.
+     *
+     * @param callback the callback
+     * @return the user
+     * @throws Exception the exception
+     */
     @Override
     public User completeBrowserLogin(final BrowserLoginCallback callback) throws Exception {
 
@@ -484,7 +505,7 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
         if (StringUtils.isBlank(callback.getCode())) {
             throw new BrowserLoginException("missing_code");
         }
-        if (StringUtils.isNotBlank(callback.getExpectedState()) && !StringUtils.equals(callback.getExpectedState(), callback.getState())) {
+        if (StringUtils.isNotBlank(callback.getExpectedState()) && !Strings.CS.equals(callback.getExpectedState(), callback.getState())) {
             LOG.warn("Entra OAuth state mismatch");
             throw new BrowserLoginException("state_mismatch");
         }
@@ -520,7 +541,6 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
      * @return the logout url
      * @throws Exception the exception
      */
-    /* see superclass */
     @Override
     public String getLogoutUrl() throws Exception {
 
@@ -553,7 +573,6 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
      * @return the system admin user names
      * @throws Exception the exception
      */
-    /* see superclass */
     @Override
     public Set<String> getSystemAdminUserNames() throws Exception {
 
@@ -568,7 +587,6 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
      * @return the system author user names
      * @throws Exception the exception
      */
-    /* see superclass */
     @Override
     public Set<String> getSystemAuthorUserNames() throws Exception {
 
@@ -583,7 +601,6 @@ public class EntraIDSecurityServiceHandler implements SecurityServiceHandler {
      * @return the system reviewer user names
      * @throws Exception the exception
      */
-    /* see superclass */
     @Override
     public Set<String> getSystemReviewerUserNames() throws Exception {
 

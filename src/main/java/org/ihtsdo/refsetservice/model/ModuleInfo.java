@@ -136,15 +136,18 @@ public class ModuleInfo {
      * @return true, if successful
      */
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
 
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
-        ModuleInfo other = (ModuleInfo) obj;
+        }
+        final ModuleInfo other = (ModuleInfo) obj;
         return Objects.equals(countryCode, other.countryCode) && Objects.equals(id, other.id) && Objects.equals(name, other.name);
     }
 

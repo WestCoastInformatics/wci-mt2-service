@@ -23,11 +23,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status.Family;
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status.Family;
 
 import org.apache.commons.cli.MissingArgumentException;
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
 import org.ihtsdo.refsetservice.handler.snowstorm.SnomedConstants;
@@ -57,8 +58,8 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Utility class for workflow processes.
@@ -80,7 +81,6 @@ public final class RefsetWorkflowService {
     /** The workflow actions by user and step. */
     // Map<user, Map<currentStatus, Map<action, resultingState>>>
     private static final Map<String, Map<WorkflowStatus, Map<WorkflowAction, WorkflowStatus>>> WORKFLOW_PERMUTATIONS = new HashMap<>();
-
 
     static {
 
@@ -146,6 +146,7 @@ public final class RefsetWorkflowService {
      *
      * @param service the Terminology Service
      * @param editionShortName an code system to limit the refset to
+     * @param authUser the auth user
      * @return A list of concepts that were unable to be promoted
      * @throws Exception the exception
      */
@@ -172,13 +173,12 @@ public final class RefsetWorkflowService {
 
             try {
 
-                final String refsetBranchPath =
-                    BranchService.getRefsetBranchPath(refset.toBranchDetails());
+                final String refsetBranchPath = BranchService.getRefsetBranchPath(refset.toBranchDetails());
 
                 BranchService.mergeBranch(projectBranchPath, refsetBranchPath, "Rebasing refset branch to latest changes", true);
                 refset.setEditionBranch(editionBranch);
-                final boolean success = BranchService.promoteRefsetToProjectBranch(refset.toBranchDetails(),
-                    "Preparing for publication - promoting refset to project branch");
+                final boolean success =
+                    BranchService.promoteRefsetToProjectBranch(refset.toBranchDetails(), "Preparing for publication - promoting refset to project branch");
 
                 if (!success) {
 
@@ -278,7 +278,7 @@ public final class RefsetWorkflowService {
                 error += refsetNotUpdated + ", ";
             }
 
-            error = StringUtils.removeEnd(error, ", ");
+            error = Strings.CS.removeEnd(error, ", ");
         }
 
         if (!error.isEmpty()) {
@@ -500,8 +500,7 @@ public final class RefsetWorkflowService {
         }
 
         if (nextStatus == null) {
-            LOG.warn(
-                "Workflow action requested but no permutation: refsetId={}, refsetDbId={}, workflowStatus={}, action={}, user={}, rolesTried={}, file={}",
+            LOG.warn("Workflow action requested but no permutation: refsetId={}, refsetDbId={}, workflowStatus={}, action={}, user={}, rolesTried={}, file={}",
                 refset.getRefsetId(), refset.getId(), refset.getWorkflowStatus(), action, user.getUserName(), roles, WORKFLOW_PERMUTATIONS_FILE_NAME);
         }
 
@@ -525,8 +524,7 @@ public final class RefsetWorkflowService {
 
                 refset.setEditBranchId(null);
                 if (currentStatus.equals(WorkflowStatus.IN_UPGRADE) && Arrays.asList(WorkflowAction.FINISH_UPGRADE).contains(action)) {
-                    RefsetMemberService.clearAllMemberCaches(
-                        BranchService.getRefsetBranchPath(refset.toBranchDetails()));
+                    RefsetMemberService.clearAllMemberCaches(BranchService.getRefsetBranchPath(refset.toBranchDetails()));
                 }
 
                 RefsetService.removeRefsetEditHistory(service, user, refset.getRefsetId());
@@ -715,7 +713,8 @@ public final class RefsetWorkflowService {
         pfs.setAscending(false);
         pfs.setLimit(1);
 
-        final ResultList<RefsetWorkflowHistory> results = service.find("refsetId:" + QueryParserBase.escape(refset.getId()) + "", pfs, RefsetWorkflowHistory.class, null);
+        final ResultList<RefsetWorkflowHistory> results =
+            service.find("refsetId:" + QueryParserBase.escape(refset.getId()) + "", pfs, RefsetWorkflowHistory.class, null);
 
         if (results.getItems().size() == 0) {
 
@@ -734,8 +733,8 @@ public final class RefsetWorkflowService {
      * @return the current workflow object
      * @throws Exception the exception
      */
-    public static ResultList<RefsetWorkflowHistory> getWorkflowHistory(final TerminologyService service, final Refset refset, final SearchParameters searchParameters)
-        throws Exception {
+    public static ResultList<RefsetWorkflowHistory> getWorkflowHistory(final TerminologyService service, final Refset refset,
+        final SearchParameters searchParameters) throws Exception {
 
         final PfsParameter pfs = new PfsParameter();
         String query = "";
@@ -862,7 +861,7 @@ public final class RefsetWorkflowService {
             final JsonNode conceptNode = root;
 
             if (conceptNode.has("conceptId")) {
-                refsetConceptId = conceptNode.get("conceptId").asText();
+                refsetConceptId = conceptNode.get("conceptId").asString();
             }
 
             BranchService.deleteBranch(tempBranchPath);
@@ -909,7 +908,7 @@ public final class RefsetWorkflowService {
         final Project project = refset.getProject();
 
         // Authors can start an edit cycle on Published refsets
-        if (refset.getVersionStatus().equals(WorkflowStatus.PUBLISHED)) {
+        if (VersionStatus.PUBLISHED.equals(refset.getVersionStatus())) {
 
             if (user.doesUserHavePermission(User.ROLE_AUTHOR, project)) {
 
@@ -1210,7 +1209,7 @@ public final class RefsetWorkflowService {
             final ObjectMapper mapper = ThreadLocalMapper.get();
             try {
                 final JsonNode json = mapper.readTree(snowstormErrorMessage);
-                snowstormErrorMessage = json.has("message") ? json.get("message").asText() : "";
+                snowstormErrorMessage = json.has("message") ? json.get("message").asString() : "";
             } catch (final Exception e) {
                 LOG.error("formatErrorMessage snowstormErrorMessage:{}", snowstormErrorMessage, e);
             }

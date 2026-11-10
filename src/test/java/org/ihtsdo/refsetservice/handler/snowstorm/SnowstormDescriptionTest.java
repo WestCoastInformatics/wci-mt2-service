@@ -11,7 +11,7 @@ import org.ihtsdo.refsetservice.model.Description;
 import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Mapping descriptions include every active description and language refset.

@@ -20,14 +20,25 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 public class DefinitionClauseEditHistoryUnitTest extends BaseTest {
 
+    /** The object. */
     private DefinitionClauseEditHistory object;
 
+    /**
+     * Setup.
+     *
+     * @throws Exception the exception
+     */
     @BeforeEach
     public void setup() throws Exception {
 
         object = new DefinitionClauseEditHistory();
     }
 
+    /**
+     * Test model get set.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelGetSet() throws Exception {
 
@@ -35,6 +46,11 @@ public class DefinitionClauseEditHistoryUnitTest extends BaseTest {
         tester.test();
     }
 
+    /**
+     * Test model equals hashcode.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelEqualsHashcode() throws Exception {
 
@@ -54,6 +70,11 @@ public class DefinitionClauseEditHistoryUnitTest extends BaseTest {
         assertTrue(tester.testIdentityFieldDifferentHashcode());
     }
 
+    /**
+     * Test model copy.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelCopy() throws Exception {
 
@@ -61,6 +82,11 @@ public class DefinitionClauseEditHistoryUnitTest extends BaseTest {
         assertTrue(tester.testCopyConstructor(DefinitionClauseEditHistory.class));
     }
 
+    /**
+     * Test model serialization.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelSerialization() throws Exception {
 

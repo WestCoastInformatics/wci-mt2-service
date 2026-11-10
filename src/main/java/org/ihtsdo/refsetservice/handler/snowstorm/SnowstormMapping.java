@@ -39,11 +39,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status.Family;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status.Family;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.AuditEntry;
@@ -74,9 +71,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * The Class SnowstormMapping.
@@ -86,23 +83,18 @@ public class SnowstormMapping extends SnowstormAbstract {
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(SnowstormMapping.class);
 
-    /** The Constant DEFAULT_ACCEPT. */
-    private static final String DEFAULT_ACCEPT = MediaType.APPLICATION_JSON;
-
     /**
-     * Dummy term used to warm Snowstorm's ECL results cache after map member writes.
-     * User filtered searches send {@code termFilter} plus {@code eclFilter: ^refsetId}; that path caches the full
-     * member-of result under a null page request. A term-less ECL search uses a different cache key and would not help.
+     * Dummy term used to warm Snowstorm's ECL results cache after map member writes. User filtered searches send {@code termFilter} plus
+     * {@code eclFilter: ^refsetId}; that path caches the full member-of result under a null page request. A term-less ECL search uses a different cache key and
+     * would not help.
      */
     static final String ECL_CACHE_WARMUP_TERM = "___mt2EclWarmup___";
 
     /** Shown when a search arrives while Snowstorm is still filling the ECL cache. */
-    static final String ECL_CACHE_UPDATING_MESSAGE =
-        "The map index is still updating after a recent save. Please try the search again in a minute.";
+    static final String ECL_CACHE_UPDATING_MESSAGE = "The map index is still updating after a recent save. Please try the search again in a minute.";
 
     /**
-     * How long a user search will wait for an in-flight warmup before returning 503 so the UI can explain
-     * the delay instead of sitting on a spinner.
+     * How long a user search will wait for an in-flight warmup before returning 503 so the UI can explain the delay instead of sitting on a spinner.
      */
     static final long SEARCH_WAIT_FOR_WARMUP_MS = 5_000L;
 
@@ -120,26 +112,6 @@ public class SnowstormMapping extends SnowstormAbstract {
     /** Keys that need another warmup after the current one because another save landed while it was running. */
     private static final Set<String> ECL_CACHE_WARMUP_AGAIN = ConcurrentHashMap.newKeySet();
 
-    /** The client. */
-    private static ThreadLocal<Client> clients = new ThreadLocal<>() {
-
-        @Override
-        public Client initialValue() {
-
-            return SnowstormConnection.getClient();
-        }
-    };
-
-    /**
-     * Returns the clients.
-     *
-     * @return the clients
-     */
-    private static ThreadLocal<Client> getClients() {
-
-        return clients;
-    }
-
     /**
      * Gets the map sets.
      *
@@ -150,9 +122,6 @@ public class SnowstormMapping extends SnowstormAbstract {
     public static List<MapSet> getMapSets(final String branch) throws Exception {
 
         final ArrayList<MapSet> mapSets = new ArrayList<>();
-
-        // Connect to snowstorm
-        final Client client = getClients().get();
 
         String searchAfter = null;
 
@@ -168,59 +137,56 @@ public class SnowstormMapping extends SnowstormAbstract {
                 + limit + (searchAfter != null ? "&searchAfter=" + searchAfter : "");
         LOG.info("getSnowstormMapsets url: " + targetUri);
 
-        final WebTarget target = client.target(targetUri);
-        final Response response = target.request(DEFAULT_ACCEPT)
-            // .header("Cookie", ConfigUtility.getGenericUserCookie())
-            .get();
-        if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-            final String body = SnowstormConnection.readEntityAsStringSafe(response);
-            final String message = StringUtils.isNotBlank(body) ? SnowstormAbstract.formatErrorMessageFromBody(body) : "(response body not available)";
-            throw new Exception(
-                "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + message);
-        }
-        final String resultString = SnowstormConnection.readEntityAsString(response);
-
-        final JsonNode doc = ThreadLocalMapper.get().readTree(resultString);
-        final JsonNode mappingsBatch = doc.get("items");
-
-        final Iterator<JsonNode> itemIterator = mappingsBatch.iterator();
-
-        // parse items to retrieve matching concept
-        while (itemIterator.hasNext()) {
-
-            final JsonNode mapSetNode = itemIterator.next();
-
-            // TEMPORARY - only keep ICD10NO (447562003), ICPC2NO (68101000202102)
-            // reverse ICD10NO to SNOMED (12345678901)maps, and local to SNOMED (12345678902)//
-            final String refsetId = mapSetNode.get("conceptId").asText();
-            if (!(refsetId.equals("447562003") || refsetId.equals("68101000202102") || refsetId.equals("12345678901") || refsetId.equals("12345678902"))) {
-                continue;
+        try (final Response response = SnowstormConnection.getResponse(targetUri)) {
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                final String body = SnowstormConnection.readEntityAsStringSafe(response);
+                final String message = StringUtils.isNotBlank(body) ? SnowstormAbstract.formatErrorMessageFromBody(body) : "(response body not available)";
+                throw new Exception("Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + message);
             }
-            // TEMPORARY//
+            final String resultString = SnowstormConnection.readEntityAsString(response);
 
-            final MapSet mapSet = new MapSet();
-            mapSet.setRefSetCode(mapSetNode.get("conceptId").asText());
-            mapSet.setModuleId(mapSetNode.get("moduleId").asText());
+            final JsonNode doc = ThreadLocalMapper.get().readTree(resultString);
+            final JsonNode mappingsBatch = doc.get("items");
 
-            // Set refset name to FSN if it exists, defaulting to PT if not.
-            if (mapSetNode.has("pt")) {
-                mapSet.setRefSetName(mapSetNode.get("pt").get("term").asText());
+            final Iterator<JsonNode> itemIterator = mappingsBatch.iterator();
+
+            // parse items to retrieve matching concept
+            while (itemIterator.hasNext()) {
+
+                final JsonNode mapSetNode = itemIterator.next();
+
+                // TEMPORARY - only keep ICD10NO (447562003), ICPC2NO (68101000202102)
+                // reverse ICD10NO to SNOMED (12345678901)maps, and local to SNOMED (12345678902)//
+                final String refsetId = mapSetNode.get("conceptId").asString();
+                if (!(refsetId.equals("447562003") || refsetId.equals("68101000202102") || refsetId.equals("12345678901") || refsetId.equals("12345678902"))) {
+                    continue;
+                }
+                // TEMPORARY//
+
+                final MapSet mapSet = new MapSet();
+                mapSet.setRefSetCode(mapSetNode.get("conceptId").asString());
+                mapSet.setModuleId(mapSetNode.get("moduleId").asString());
+
+                // Set refset name to FSN if it exists, defaulting to PT if not.
+                if (mapSetNode.has("pt")) {
+                    mapSet.setRefSetName(mapSetNode.get("pt").get("term").asString());
+                }
+
+                if (mapSetNode.has("fsn") && mapSetNode.get("fsn").has("term")) {
+                    mapSet.setRefSetName(mapSetNode.get("fsn").get("term").asString());
+                }
+
+                final JsonNode additionalFields = mapSetNode.get("additionalFields");
+                // deriveBranchAndVersionFromBranch(mapSet, branch);
+                mapSet.setVersionStatus(VersionStatus.PUBLISHED);
+                mapSet.setVersion(mapSet.getFromVersion());
+                // mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse(mapSet.getFromVersion()));
+                if (mapSetNode.has("effectiveTime") && !mapSetNode.get("effectiveTime").isNull()) {
+                    mapSet.setModified(new SimpleDateFormat("yyyyMMdd").parse(mapSetNode.get("effectiveTime").asString()));
+                }
+
+                mapSets.add(mapSet);
             }
-
-            if (mapSetNode.has("fsn") && mapSetNode.get("fsn").has("term")) {
-                mapSet.setRefSetName(mapSetNode.get("fsn").get("term").asText());
-            }
-
-            final JsonNode additionalFields = mapSetNode.get("additionalFields");
-//            deriveBranchAndVersionFromBranch(mapSet, branch);
-            mapSet.setVersionStatus(VersionStatus.PUBLISHED);
-            mapSet.setVersion(mapSet.getFromVersion());
-            // mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse(mapSet.getFromVersion()));
-            if (mapSetNode.has("effectiveTime") && !mapSetNode.get("effectiveTime").isNull()) {
-                mapSet.setModified(new SimpleDateFormat("yyyyMMdd").parse(mapSetNode.get("effectiveTime").asText()));
-            }
-
-            mapSets.add(mapSet);
         }
 
         return mapSets;
@@ -236,8 +202,6 @@ public class SnowstormMapping extends SnowstormAbstract {
      */
     public static MapSet getMapSet(final String branch, final String code) throws Exception {
 
-        final Client client = getClients().get();
-
         final SearchParameters searchParameters = new SearchParameters();
         searchParameters.setLimit(50);
         searchParameters.setSearchAfter(null);
@@ -247,15 +211,13 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         LOG.info("getSnowstormMapset url: {}", targetUri);
 
-        final WebTarget target = client.target(targetUri);
-
-        final Response response = target.request(DEFAULT_ACCEPT)
-            // .header("Cookie", ConfigUtility.getGenericUserCookie())
-            .get();
-        final String resultString = SnowstormConnection.readEntityAsString(response);
-        if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-            throw new Exception(
-                "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
+        final String resultString;
+        try (final Response response = SnowstormConnection.getResponse(targetUri)) {
+            resultString = SnowstormConnection.readEntityAsString(response);
+            if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
+                throw new Exception(
+                    "Call to URL '" + targetUri + "' wasn't successful. Status: " + response.getStatus() + " Message: " + formatErrorMessage(response));
+            }
         }
 
         final JsonNode doc = ThreadLocalMapper.get().readTree(resultString);
@@ -268,25 +230,25 @@ public class SnowstormMapping extends SnowstormAbstract {
             final JsonNode mapSetNode = itemIterator.next();
 
             final MapSet mapSet = new MapSet();
-            mapSet.setRefSetCode(mapSetNode.get("conceptId").asText());
-            mapSet.setModuleId(mapSetNode.get("moduleId").asText());
+            mapSet.setRefSetCode(mapSetNode.get("conceptId").asString());
+            mapSet.setModuleId(mapSetNode.get("moduleId").asString());
 
             // Set refset name to FSN if it exists, defaulting to PT if not.
             if (mapSetNode.has("pt")) {
-                mapSet.setRefSetName(mapSetNode.get("pt").get("term").asText());
+                mapSet.setRefSetName(mapSetNode.get("pt").get("term").asString());
             }
 
             if (mapSetNode.has("fsn") && mapSetNode.get("fsn").has("term")) {
-                mapSet.setRefSetName(mapSetNode.get("fsn").get("term").asText());
+                mapSet.setRefSetName(mapSetNode.get("fsn").get("term").asString());
             }
 
             final JsonNode additionalFields = mapSetNode.get("additionalFields");
-//             deriveBranchAndVersionFromBranch(mapSet, branch);
+            // deriveBranchAndVersionFromBranch(mapSet, branch);
             mapSet.setVersionStatus(VersionStatus.PUBLISHED);
             mapSet.setVersion(mapSet.getFromVersion());
             // mapSet.setModified(new SimpleDateFormat("yyyy-MM-dd").parse(mapSet.getFromVersion()));
             if (mapSetNode.has("effectiveTime") && !mapSetNode.get("effectiveTime").isNull()) {
-                mapSet.setModified(new SimpleDateFormat("yyyyMMdd").parse(mapSetNode.get("effectiveTime").asText()));
+                mapSet.setModified(new SimpleDateFormat("yyyyMMdd").parse(mapSetNode.get("effectiveTime").asString()));
             }
 
             return mapSet;
@@ -299,7 +261,7 @@ public class SnowstormMapping extends SnowstormAbstract {
      * Gets the mappings.
      *
      * @param branch the branch
-     * @param mapSetCode the map set code
+     * @param mapSet the map set
      * @param searchParameters the search parameters
      * @param filter the filter
      * @param showOverriddenEntries the show overridden entries
@@ -359,10 +321,8 @@ public class SnowstormMapping extends SnowstormAbstract {
         final SearchParameters paging = searchParameters != null ? searchParameters : new SearchParameters();
 
         LOG.info("getMappings start mapSet={} refSet={} branch={} filter='{}' limit={} offset={} searchAfter={} conceptCodes={} restrictTo={} exclude={}",
-            mapSet.getId(), mapSet.getRefSetCode(), branch, filter,
-            paging.getLimit(), paging.getOffset(), paging.getSearchAfter(),
-            conceptCodes != null ? conceptCodes.size() : 0,
-            restrictToConceptCodes != null ? restrictToConceptCodes.size() : 0,
+            mapSet.getId(), mapSet.getRefSetCode(), branch, filter, paging.getLimit(), paging.getOffset(), paging.getSearchAfter(),
+            conceptCodes != null ? conceptCodes.size() : 0, restrictToConceptCodes != null ? restrictToConceptCodes.size() : 0,
             excludeConceptCodes != null ? excludeConceptCodes.size() : 0);
 
         final boolean explicitConceptCodes = conceptCodes != null && !conceptCodes.isEmpty();
@@ -375,8 +335,8 @@ public class SnowstormMapping extends SnowstormAbstract {
             final String trimmedFilter = filter.trim();
             final long conceptSearchStartMs = System.currentTimeMillis();
             filteredConceptSet.addAll(resolveFilteredConceptIds(branch, mapSet, trimmedFilter));
-            LOG.info("getMappings phase=conceptSearch {}ms filter='{}' matchingConcepts={}",
-                System.currentTimeMillis() - conceptSearchStartMs, trimmedFilter, filteredConceptSet.size());
+            LOG.info("getMappings phase=conceptSearch {}ms filter='{}' matchingConcepts={}", System.currentTimeMillis() - conceptSearchStartMs, trimmedFilter,
+                filteredConceptSet.size());
         }
 
         if (restrictToConceptCodes != null) {
@@ -470,8 +430,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         final int pageLimit = paging.getLimit() != null && paging.getLimit() > 0 ? paging.getLimit() : 100;
         final int pageOffset = paging.getOffset() != null && paging.getOffset() > 0 ? paging.getOffset() : 0;
         final boolean unscopedExclude = !excludeCodes.isEmpty() && filteredConceptList.isEmpty();
-        final ExcludeAwarePageCollector collector =
-            unscopedExclude ? new ExcludeAwarePageCollector(excludeCodes, pageLimit, pageOffset) : null;
+        final ExcludeAwarePageCollector collector = unscopedExclude ? new ExcludeAwarePageCollector(excludeCodes, pageLimit, pageOffset) : null;
 
         // Text filter: resolve all matching source concepts, then page map entries via member search.
         final SearchParameters memberSearchPaging = new SearchParameters(paging);
@@ -486,8 +445,8 @@ public class SnowstormMapping extends SnowstormAbstract {
         final int maxSnowstormPages = unscopedExclude ? 500 : 2;
         while (!done) {
 
-            final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/search?"
-                + SnowstormApiPaging.getMemberSearchPagingQueryString(memberSearchPaging);
+            final String targetUri =
+                SnowstormConnection.getBaseUrl() + branch + "/members/search?" + SnowstormApiPaging.getMemberSearchPagingQueryString(memberSearchPaging);
             LOG.info("getMappings phase=memberSearch request referencedComponentIds={}", filteredConceptList.size());
 
             try (final Response response = SnowstormConnection.postResponse(targetUri, requestBody.toString())) {
@@ -509,7 +468,7 @@ public class SnowstormMapping extends SnowstormAbstract {
                     offset = data.get("offset").asInt();
                 }
                 if (data.has("searchAfter")) {
-                    searchAfter = data.get("searchAfter").asText();
+                    searchAfter = data.get("searchAfter").asString();
                 }
 
                 final JsonNode mappingsBatch = data.get("items");
@@ -533,8 +492,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
                     if (collector != null) {
                         final ExcludeAwarePageCollector.Decision decision = collector.decide(mapCode);
-                        if (decision != ExcludeAwarePageCollector.Decision.ACCEPT_NEW
-                            && decision != ExcludeAwarePageCollector.Decision.ACCEPT_EXISTING) {
+                        if (decision != ExcludeAwarePageCollector.Decision.ACCEPT_NEW && decision != ExcludeAwarePageCollector.Decision.ACCEPT_EXISTING) {
                             continue;
                         }
                     } else if (!excludeCodes.isEmpty() && excludeCodes.contains(mapCode)) {
@@ -602,7 +560,8 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         if (explicitConceptCodes) {
             // Identify concepts that were requested where no mappings were found
-            // Check all concepts.  If they are invalid, add them to the invalid list.  If they are valid, create an empty Group 1, Priority 1 map object for them.
+            // Check all concepts. If they are invalid, add them to the invalid list.
+            // If they are valid, create an empty Group 1, Priority 1 map object for them.
             noMapConceptIds = new HashSet<>(requestedConcepts);
             noMapConceptIds.removeAll(conceptIdToMappingMap.keySet());
 
@@ -686,7 +645,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         mappings.setOffset(paging.getOffset() != null ? paging.getOffset() : offset);
 
         // Add the invalid concept ids to the result list
-        if(!invalidConceptIds.isEmpty()) {
+        if (!invalidConceptIds.isEmpty()) {
             mappings.setInvalidConceptIds(invalidConceptIds);
         }
 
@@ -718,12 +677,12 @@ public class SnowstormMapping extends SnowstormAbstract {
         final MapEntry mapEntry = new MapEntry();
         final boolean mapToSnomed = isMapToSnomed(mapSet, mapProject);
 
-        if (mappingNode.hasNonNull("effectiveTime") && StringUtils.isNotBlank(mappingNode.get("effectiveTime").asText())) {
-            mapEntry.setModified(new SimpleDateFormat("yyyyMMdd").parse(mappingNode.get("effectiveTime").asText()));
+        if (mappingNode.hasNonNull("effectiveTime") && StringUtils.isNotBlank(mappingNode.get("effectiveTime").asString())) {
+            mapEntry.setModified(new SimpleDateFormat("yyyyMMdd").parse(mappingNode.get("effectiveTime").asString()));
         }
-        mapEntry.setId(mappingNode.get("memberId").asText());
+        mapEntry.setId(mappingNode.get("memberId").asString());
         mapEntry.setReleased(mappingNode.get("released").asBoolean());
-        mapEntry.setModuleId(mappingNode.get("moduleId").asText());
+        mapEntry.setModuleId(mappingNode.get("moduleId").asString());
 
         final JsonNode additionalFields = mappingNode.get("additionalFields");
 
@@ -735,7 +694,7 @@ public class SnowstormMapping extends SnowstormAbstract {
             mapEntry.setRelation("");
             mapEntry.setRelationCode("");
             mapEntry.setToName("");
-            mapEntry.setToCode(mappingNode.hasNonNull("referencedComponentId") ? mappingNode.get("referencedComponentId").asText() : "");
+            mapEntry.setToCode(mappingNode.hasNonNull("referencedComponentId") ? mappingNode.get("referencedComponentId").asString() : "");
         } else if (additionalFields == null || additionalFields.isNull() || additionalFields.isEmpty()) {
             mapEntry.setRule("");
             mapEntry.setPriority(1);
@@ -746,12 +705,12 @@ public class SnowstormMapping extends SnowstormAbstract {
             mapEntry.setToCode("");
             mapEntry.setToName("");
         } else {
-            mapEntry.setRule(additionalFields.get("mapRule").asText());
+            mapEntry.setRule(additionalFields.get("mapRule").asString());
             mapEntry.setPriority(additionalFields.get("mapPriority").asInt());
             mapEntry.setGroup(additionalFields.get("mapGroup").asInt());
 
             final Set<String> advices = new HashSet<>();
-            final String mapAdviceString = additionalFields.get("mapAdvice").asText();
+            final String mapAdviceString = additionalFields.get("mapAdvice").asString();
             // Store each pipe-delimited section of the map advice string as a
             // separate map advice
             for (final String mapAdvice : mapAdviceString.split("\\|")) {
@@ -760,14 +719,14 @@ public class SnowstormMapping extends SnowstormAbstract {
             mapEntry.setAdvices(advices);
 
             if (additionalFields.hasNonNull("mapCategoryId")) {
-                mapEntry.setRelationCode(additionalFields.get("mapCategoryId").asText());
+                mapEntry.setRelationCode(additionalFields.get("mapCategoryId").asString());
             } else {
                 mapEntry.setRelationCode("");
             }
             mapEntry.setRelation("");
 
             if (additionalFields.hasNonNull("mapTarget")) {
-                mapEntry.setToCode(additionalFields.get("mapTarget").asText());
+                mapEntry.setToCode(additionalFields.get("mapTarget").asString());
             } else {
                 mapEntry.setToCode("");
             }
@@ -782,10 +741,22 @@ public class SnowstormMapping extends SnowstormAbstract {
      */
     private static final class ConceptSearchPage {
 
+        /** The concept ids. */
         private final List<String> conceptIds;
+
+        /** The total. */
         private final int total;
+
+        /** The search after. */
         private final String searchAfter;
 
+        /**
+         * Instantiates a new concept search page.
+         *
+         * @param conceptIds the concept ids
+         * @param total the total
+         * @param searchAfter the search after
+         */
         private ConceptSearchPage(final List<String> conceptIds, final int total, final String searchAfter) {
 
             this.conceptIds = conceptIds;
@@ -822,8 +793,8 @@ public class SnowstormMapping extends SnowstormAbstract {
     }
 
     /**
-     * True when the filter is a map-target glob (ICD-style code plus {@code *}), e.g. {@code R07*} or {@code K14.*}.
-     * Digit-only prefixes such as {@code 42586*} are treated as terms/ids, not map targets.
+     * True when the filter is a map-target glob (ICD-style code plus {@code *}), e.g. {@code R07*} or {@code K14.*}. Digit-only prefixes such as {@code 42586*}
+     * are treated as terms/ids, not map targets.
      *
      * @param filter the filter
      * @return true if ECL {@code wild:} mapTarget search should run
@@ -869,8 +840,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         final int pageLimit = searchParameters.getLimit() != null && searchParameters.getLimit() > 0 ? searchParameters.getLimit() : 100;
         final int pageOffset = searchParameters.getOffset() != null && searchParameters.getOffset() > 0 ? searchParameters.getOffset() : 0;
 
-        LOG.info("searchConceptsPage filter='{}' limit={} offset={} searchAfter={}", searchString, pageLimit, pageOffset,
-            searchParameters.getSearchAfter());
+        LOG.info("searchConceptsPage filter='{}' limit={} offset={} searchAfter={}", searchString, pageLimit, pageOffset, searchParameters.getSearchAfter());
 
         if (StringUtils.isNotBlank(searchParameters.getSearchAfter())) {
             return fetchConceptSearchPageBatch(branch, mapSetCode, searchString, pageLimit, searchParameters.getSearchAfter());
@@ -931,8 +901,16 @@ public class SnowstormMapping extends SnowstormAbstract {
     }
 
     /**
-     * One batch of concept ids matching term search within a map set (ECL ^refset).
-     * Uses POST /concepts/search with returnIdOnly (faster than GET /concepts on this Snowstorm for ECL+term).
+     * One batch of concept ids matching term search within a map set (ECL ^refset). Uses POST /concepts/search with returnIdOnly (faster than GET /concepts on
+     * this Snowstorm for ECL+term).
+     *
+     * @param branch the branch
+     * @param mapSetCode the map set code
+     * @param searchString the search string
+     * @param pageLimit the page limit
+     * @param searchAfter the search after
+     * @return the concept search page
+     * @throws Exception the exception
      */
     private static ConceptSearchPage fetchConceptSearchPageBatch(final String branch, final String mapSetCode, final String searchString, final int pageLimit,
         final String searchAfter) throws Exception {
@@ -965,11 +943,11 @@ public class SnowstormMapping extends SnowstormAbstract {
             if (conceptNodeBatch != null && conceptNodeBatch.isArray()) {
                 for (final JsonNode conceptNode : conceptNodeBatch) {
                     if (conceptNode.isTextual()) {
-                        conceptIds.add(conceptNode.asText());
+                        conceptIds.add(conceptNode.asString());
                     } else if (conceptNode.hasNonNull("id")) {
-                        conceptIds.add(conceptNode.get("id").asText());
+                        conceptIds.add(conceptNode.get("id").asString());
                     } else if (conceptNode.hasNonNull("conceptId")) {
-                        conceptIds.add(conceptNode.get("conceptId").asText());
+                        conceptIds.add(conceptNode.get("conceptId").asString());
                     }
                 }
             }
@@ -981,7 +959,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
             String nextSearchAfter = null;
             if (data.has("searchAfter") && !data.get("searchAfter").isNull()) {
-                nextSearchAfter = data.get("searchAfter").asText();
+                nextSearchAfter = data.get("searchAfter").asString();
             }
 
             LOG.info("fetchConceptSearchPageBatch {}ms ids={} total={}", System.currentTimeMillis() - batchStartMs, conceptIds.size(), total);
@@ -990,8 +968,8 @@ public class SnowstormMapping extends SnowstormAbstract {
     }
 
     /**
-     * Starts a background concept search so Snowstorm can refill the branch ECL results cache after map member writes.
-     * Does not wait for Snowstorm; save remains fast even when the cache fill itself is slow.
+     * Starts a background concept search so Snowstorm can refill the branch ECL results cache after map member writes. Does not wait for Snowstorm; save
+     * remains fast even when the cache fill itself is slow.
      *
      * @param branch the branch whose head just changed
      * @param mapSetCode the map reference set id used in later {@code ^refset} searches
@@ -1194,8 +1172,8 @@ public class SnowstormMapping extends SnowstormAbstract {
         final LinkedHashSet<String> referencedComponentIds = new LinkedHashSet<>();
         int total = 0;
         final SearchParameters mapTargetPaging = new SearchParameters(null, limit, offset);
-        final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/search?"
-            + SnowstormApiPaging.getMemberSearchPagingQueryString(mapTargetPaging);
+        final String targetUri =
+            SnowstormConnection.getBaseUrl() + branch + "/members/search?" + SnowstormApiPaging.getMemberSearchPagingQueryString(mapTargetPaging);
 
         try (final Response response = SnowstormConnection.postResponse(targetUri, requestBody.toString())) {
 
@@ -1213,7 +1191,7 @@ public class SnowstormMapping extends SnowstormAbstract {
             if (items != null && items.isArray()) {
                 for (final JsonNode item : items) {
                     if (item != null && item.hasNonNull("referencedComponentId")) {
-                        referencedComponentIds.add(item.get("referencedComponentId").asText());
+                        referencedComponentIds.add(item.get("referencedComponentId").asString());
                     }
                 }
             }
@@ -1223,11 +1201,11 @@ public class SnowstormMapping extends SnowstormAbstract {
     }
 
     /**
-     * Resolves all source concept ids matching a map set text filter (term search, optional map target, optional concept id).
-     * Asterisks are map-target wildcards when the filter looks like a target code; otherwise they are stripped.
+     * Resolves all source concept ids matching a map set text filter (term search, optional map target, optional concept id). Asterisks are map-target
+     * wildcards when the filter looks like a target code; otherwise they are stripped.
      *
      * @param branch the branch
-     * @param mapSetCode the map set code
+     * @param mapSet the map set
      * @param trimmedFilter the trimmed filter
      * @return distinct concept ids in stable encounter order
      * @throws Exception the exception
@@ -1460,10 +1438,10 @@ public class SnowstormMapping extends SnowstormAbstract {
                 final Iterator<JsonNode> itemIterator = conceptNodeBatch.iterator();
                 while (itemIterator.hasNext()) {
                     final JsonNode conceptNode = itemIterator.next();
-                    conceptCodes.add(conceptNode.asText());
+                    conceptCodes.add(conceptNode.asString());
                 }
                 if (data.has("searchAfter")) {
-                    searchAfter = data.get("searchAfter").asText();
+                    searchAfter = data.get("searchAfter").asString();
                 } else {
                     done = true;
                 }
@@ -1529,17 +1507,17 @@ public class SnowstormMapping extends SnowstormAbstract {
                 while (itemIterator.hasNext()) {
                     final JsonNode conceptNode = itemIterator.next();
                     if (conceptNode.isTextual()) {
-                        conceptCodes.add(conceptNode.asText());
+                        conceptCodes.add(conceptNode.asString());
                     } else if (conceptNode.hasNonNull("id")) {
-                        conceptCodes.add(conceptNode.get("id").asText());
+                        conceptCodes.add(conceptNode.get("id").asString());
                     } else if (conceptNode.hasNonNull("conceptId")) {
-                        conceptCodes.add(conceptNode.get("conceptId").asText());
+                        conceptCodes.add(conceptNode.get("conceptId").asString());
                     }
                 }
 
                 String nextSearchAfter = null;
                 if (data.has("searchAfter") && !data.get("searchAfter").isNull()) {
-                    nextSearchAfter = data.get("searchAfter").asText();
+                    nextSearchAfter = data.get("searchAfter").asString();
                 }
                 if (conceptNodeBatch.size() < 5000 || StringUtils.isBlank(nextSearchAfter) || nextSearchAfter.equals(searchAfter)) {
                     done = true;
@@ -1553,8 +1531,8 @@ public class SnowstormMapping extends SnowstormAbstract {
     }
 
     /**
-     * Finds referenced component (source) concept ids for members of {@code mapSetCode} whose {@code mapTarget}
-     * additional field matches {@code mapTargetFilter} (e.g. ICD-10 code {@code R07.4}).
+     * Finds referenced component (source) concept ids for members of {@code mapSetCode} whose {@code mapTarget} additional field matches
+     * {@code mapTargetFilter} (e.g. ICD-10 code {@code R07.4}).
      *
      * @param branch the branch path
      * @param mapSetCode the reference set identifier
@@ -1584,8 +1562,8 @@ public class SnowstormMapping extends SnowstormAbstract {
         while (!done) {
 
             final SearchParameters mapTargetPagePaging = new SearchParameters(null, pageLimit, offset);
-            final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members/search?"
-                + SnowstormApiPaging.getMemberSearchPagingQueryString(mapTargetPagePaging);
+            final String targetUri =
+                SnowstormConnection.getBaseUrl() + branch + "/members/search?" + SnowstormApiPaging.getMemberSearchPagingQueryString(mapTargetPagePaging);
 
             try (final Response response = SnowstormConnection.postResponse(targetUri, requestBody.toString())) {
 
@@ -1604,7 +1582,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
                 for (final JsonNode item : items) {
                     if (item != null && item.hasNonNull("referencedComponentId")) {
-                        referencedComponentIds.add(item.get("referencedComponentId").asText());
+                        referencedComponentIds.add(item.get("referencedComponentId").asString());
                     }
                 }
 
@@ -1629,30 +1607,31 @@ public class SnowstormMapping extends SnowstormAbstract {
      * @param activeOnly the active only
      * @param showOverriddenEntries the show overridden entries
      * @param includeDescriptions the include descriptions
+     * @param dbMapSet the db map set
      * @return the mapping
      * @throws Exception the exception
      */
     public static Mapping getMapping(final String branch, final String mapSetCode, final String conceptCode, final String moduleId, final boolean activeOnly,
         final boolean showOverriddenEntries, final boolean includeDescriptions, final MapSet dbMapSet) throws Exception {
 
-        // Connect to snowstorm. Page until every member for this concept is loaded.
+        // Page until every member for this concept is loaded.
         // A single page can omit a later group/priority (1/2) and leave that Norwegian member active.
-        final Client client = getClients().get();
         final int limit = 100;
         String searchAfter = null;
         final Set<String> seenMemberIds = new HashSet<>();
 
         // Grab the specified mapSet (from Snowstorm for refset metadata; from DB for terminology/version)
         final MapSet mapSet = getMapSet(branch, mapSetCode);
-        final MapSet mapSetForConcept = (dbMapSet != null && StringUtils.isNotBlank(dbMapSet.getFromTerminology()) && StringUtils.isNotBlank(dbMapSet.getFromVersion()))
-            ? dbMapSet : mapSet;
+        final MapSet mapSetForConcept =
+            (dbMapSet != null && StringUtils.isNotBlank(dbMapSet.getFromTerminology()) && StringUtils.isNotBlank(dbMapSet.getFromVersion())) ? dbMapSet
+                : mapSet;
         final boolean mapToSnomed = isMapToSnomed(mapSetForConcept, null);
         final Mapping mapping = new Mapping();
 
         while (true) {
             final JsonNode data = mapToSnomed
                 ? searchMembersByMapSource(branch, mapSetCode, conceptCode, moduleId, activeOnly, searchAfter, limit)
-                : getMembersByReferencedComponent(client, branch, mapSetCode, conceptCode, moduleId, activeOnly, searchAfter, limit);
+                : getMembersByReferencedComponent(branch, mapSetCode, conceptCode, moduleId, activeOnly, searchAfter, limit);
             final JsonNode mappingsBatch = data.get("items");
             if (mappingsBatch == null || !mappingsBatch.iterator().hasNext()) {
                 break;
@@ -1660,7 +1639,7 @@ public class SnowstormMapping extends SnowstormAbstract {
 
             String nextSearchAfter = null;
             if (data.hasNonNull("searchAfter")) {
-                nextSearchAfter = data.get("searchAfter").asText();
+                nextSearchAfter = data.get("searchAfter").asString();
             }
 
             final Iterator<JsonNode> itemIterator = mappingsBatch.iterator();
@@ -1678,13 +1657,14 @@ public class SnowstormMapping extends SnowstormAbstract {
                     final String sourceCode = memberSourceCode(mappingNode, mapToSnomed);
                     mapping.setCode(StringUtils.isNotBlank(sourceCode) ? sourceCode : conceptCode);
                     if (StringUtils.isBlank(mapSetForConcept.getFromTerminology()) || StringUtils.isBlank(mapSetForConcept.getFromVersion())) {
-                        throw new LocalException("MapSet from database with fromTerminology and fromVersion is required for getMapping. mapSetCode: " + mapSetCode);
+                        throw new LocalException(
+                            "MapSet from database with fromTerminology and fromVersion is required for getMapping. mapSetCode: " + mapSetCode);
                     }
                     mapping.setMapSetId(mapSet.getId());
                     mapping.setMapEntries(new ArrayList<>());
                 }
 
-                final String memberId = mappingNode.hasNonNull("memberId") ? mappingNode.get("memberId").asText() : null;
+                final String memberId = mappingNode.hasNonNull("memberId") ? mappingNode.get("memberId").asString() : null;
                 if (StringUtils.isNotBlank(memberId) && !seenMemberIds.add(memberId)) {
                     continue;
                 }
@@ -1874,7 +1854,8 @@ public class SnowstormMapping extends SnowstormAbstract {
         final MapSet mapSet, final User user) throws Exception {
 
         if (mapSet == null || StringUtils.isAnyBlank(mapSet.getFromTerminology(), mapSet.getFromVersion(), mapSet.getToTerminology(), mapSet.getToVersion())) {
-            throw new LocalException("MapSet from database with fromTerminology, fromVersion, toTerminology and toVersion is required for updateMapping. mapSetCode: " + mapSetCode);
+            throw new LocalException("MapSet from database with fromTerminology, fromVersion, toTerminology and toVersion is required "
+                + "for updateMapping. mapSetCode: " + mapSetCode);
         }
 
         final boolean mapToSnomed = isMapToSnomed(mapSet, mapProject);
@@ -1928,7 +1909,9 @@ public class SnowstormMapping extends SnowstormAbstract {
             // If the mapping only has one empty entry, don't save it to snowstorm.
             // This is a special case for mappings brought in to batch edit via list of concept ids, and
             // if no map information was added we don't want to create a new, empty map.
-            if (submittedMapping.getMapEntries().size() == 1 && submittedMapping.getMapEntries().get(0).getToCode().isEmpty() && submittedMapping.getMapEntries().get(0).getToName().isEmpty() && (submittedMapping.getMapEntries().get(0).getRelation() == null || submittedMapping.getMapEntries().get(0).getRelation().equals("---"))) {
+            if (submittedMapping.getMapEntries().size() == 1 && submittedMapping.getMapEntries().get(0).getToCode().isEmpty()
+                && submittedMapping.getMapEntries().get(0).getToName().isEmpty()
+                && (submittedMapping.getMapEntries().get(0).getRelation() == null || submittedMapping.getMapEntries().get(0).getRelation().equals("---"))) {
                 LOG.info("No update required for mapping for {} - empty mapping with no pre-existing map entries", submittedMapping.getCode());
                 return submittedMapping;
             }
@@ -1980,9 +1963,8 @@ public class SnowstormMapping extends SnowstormAbstract {
                 for (final MapEntry submittedMapEntry : submittedMapping.getMapEntries()) {
                     if (existingMapEntry.getGroup() == submittedMapEntry.getGroup() && existingMapEntry.getPriority() == submittedMapEntry.getPriority()) {
                         matchFound = true;
-                        if (MapEntryUtility.areMapEntriesEquivalent(existingMapEntry, submittedMapEntry)) {
-                            // Equivalent map - no action required.
-                        } else {
+                        // Equivalent map - no action required.
+                        if (!MapEntryUtility.areMapEntriesEquivalent(existingMapEntry, submittedMapEntry)) {
                             if (MapEntryUtility.doMapEntriesShareUUID(existingMapEntry, submittedMapEntry)) {
                                 mapEntryModifyMap.put(existingMapEntry, submittedMapEntry);
                             } else {
@@ -2101,7 +2083,8 @@ public class SnowstormMapping extends SnowstormAbstract {
             // Clear out any existing UUID, since it's creating a new entry
             mapEntry.setId("");
 
-            final String mapEntryJson = mapEntryToSnowstormMap(mapProject, mapSetCode, submittedMapping.getCode(), submittedMapping.getName(), mapEntry, mapSet);
+            final String mapEntryJson =
+                mapEntryToSnowstormMap(mapProject, mapSetCode, submittedMapping.getCode(), submittedMapping.getName(), mapEntry, mapSet);
             LOG.info("Add mapping: {} with {}", targetUri, mapEntryJson);
             try (final Response response = SnowstormConnection.postResponse(targetUri, mapEntryJson)) {
                 if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
@@ -2142,7 +2125,8 @@ public class SnowstormMapping extends SnowstormAbstract {
         // Inactivate Map Entry (Refset member)
         for (final MapEntry mapEntry : mapEntryInactivateList) {
             mapEntry.setActive(false);
-            final String mapEntryJson = mapEntryToSnowstormMap(mapProject, mapSetCode, submittedMapping.getCode(), submittedMapping.getName(), mapEntry, mapSet);
+            final String mapEntryJson =
+                mapEntryToSnowstormMap(mapProject, mapSetCode, submittedMapping.getCode(), submittedMapping.getName(), mapEntry, mapSet);
             LOG.info("Inactivate mapping: {} with {}", targetUri, mapEntryJson);
             try (final Response response = SnowstormConnection.putResponse(targetUri + mapEntry.getId(), mapEntryJson)) {
                 if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
@@ -2163,7 +2147,8 @@ public class SnowstormMapping extends SnowstormAbstract {
         // Reactivate Map Entry (Refset member)
         for (final MapEntry mapEntry : mapEntryReactivateList) {
             mapEntry.setActive(true);
-            final String mapEntryJson = mapEntryToSnowstormMap(mapProject, mapSetCode, submittedMapping.getCode(), submittedMapping.getName(), mapEntry, mapSet);
+            final String mapEntryJson =
+                mapEntryToSnowstormMap(mapProject, mapSetCode, submittedMapping.getCode(), submittedMapping.getName(), mapEntry, mapSet);
             LOG.info("Reactivate mapping: {} with {}", targetUri, mapEntryJson);
             try (final Response response = SnowstormConnection.putResponse(targetUri + mapEntry.getId(), mapEntryJson)) {
                 if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
@@ -2183,7 +2168,8 @@ public class SnowstormMapping extends SnowstormAbstract {
             final MapEntry mapEntry = entry.getKey();
             final MapEntry originalMapEntry = entry.getValue();
 
-            final String mapEntryJson = mapEntryToSnowstormMap(mapProject, mapSetCode, submittedMapping.getCode(), submittedMapping.getName(), mapEntry, mapSet);
+            final String mapEntryJson =
+                mapEntryToSnowstormMap(mapProject, mapSetCode, submittedMapping.getCode(), submittedMapping.getName(), mapEntry, mapSet);
             LOG.info("Update mapping: {} with {}", targetUri, mapEntryJson);
             try (final Response response = SnowstormConnection.putResponse(targetUri + mapEntry.getId(), mapEntryJson)) {
                 if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
@@ -2375,8 +2361,8 @@ public class SnowstormMapping extends SnowstormAbstract {
      * @return the concepts from snowstorm
      * @throws Exception the exception
      */
-    private static Map<String, Concept> getConceptsFromSnowstorm(final String branch, final String terminology, final List<String> codes,
-        final String version) throws Exception {
+    private static Map<String, Concept> getConceptsFromSnowstorm(final String branch, final String terminology, final List<String> codes, final String version)
+        throws Exception {
 
         if (codes == null || codes.isEmpty()) {
             return new HashMap<>();
@@ -2522,11 +2508,11 @@ public class SnowstormMapping extends SnowstormAbstract {
         if (mapToSnomed) {
             final JsonNode additionalFields = mappingNode.get("additionalFields");
             if (additionalFields != null && additionalFields.hasNonNull("mapSource")) {
-                return additionalFields.get("mapSource").asText();
+                return additionalFields.get("mapSource").asString();
             }
             return "";
         }
-        return mappingNode.hasNonNull("referencedComponentId") ? mappingNode.get("referencedComponentId").asText() : "";
+        return mappingNode.hasNonNull("referencedComponentId") ? mappingNode.get("referencedComponentId").asString() : "";
     }
 
     /**
@@ -2893,7 +2879,6 @@ public class SnowstormMapping extends SnowstormAbstract {
     /**
      * Loads one page of members for a SNOMED source concept.
      *
-     * @param client the client
      * @param branch the branch
      * @param mapSetCode the map set code
      * @param conceptCode the SNOMED source concept
@@ -2904,16 +2889,15 @@ public class SnowstormMapping extends SnowstormAbstract {
      * @return the Snowstorm page
      * @throws Exception the exception
      */
-    private static JsonNode getMembersByReferencedComponent(final Client client, final String branch, final String mapSetCode, final String conceptCode,
-        final String moduleId, final boolean activeOnly, final String searchAfter, final int limit) throws Exception {
+    private static JsonNode getMembersByReferencedComponent(final String branch, final String mapSetCode, final String conceptCode, final String moduleId,
+        final boolean activeOnly, final String searchAfter, final int limit) throws Exception {
 
         final String targetUri = SnowstormConnection.getBaseUrl() + branch + "/members?referenceSet=" + mapSetCode + "&referencedComponentId=" + conceptCode
-            + (moduleId != null ? "&module=" + moduleId : "") + (activeOnly == false ? "" : "&active=true") + "&limit=" + limit
+            + (moduleId != null ? "&module=" + moduleId : "") + (!activeOnly ? "" : "&active=true") + "&limit=" + limit
             + (searchAfter != null ? "&searchAfter=" + searchAfter : "") + "&" + SnowstormApiPaging.getMemberSortQueryString();
         LOG.info("getSnowstormMapping url: " + targetUri);
 
-        final WebTarget target = client.target(targetUri);
-        try (final Response response = target.request(DEFAULT_ACCEPT).get()) {
+        try (final Response response = SnowstormConnection.getResponse(targetUri)) {
             final String resultString = SnowstormConnection.readEntityAsString(response);
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
                 throw new Exception(
@@ -2973,7 +2957,9 @@ public class SnowstormMapping extends SnowstormAbstract {
      * @param fromCode the from code
      * @param fromName the from name
      * @param mapEntry the map entry
+     * @param mapSet the map set
      * @return the string
+     * @throws LocalException the local exception
      */
     static String mapEntryToSnowstormMap(final MapProject mapProject, final String refsetId, final String fromCode, final String fromName,
         final MapEntry mapEntry, final MapSet mapSet) throws LocalException {
@@ -3242,6 +3228,7 @@ public class SnowstormMapping extends SnowstormAbstract {
      * @param branch the branch
      * @param mapSetCode the map set code
      * @param mappingExportRequest the mapping export request
+     * @param mapSet the map set
      * @return the file
      * @throws Exception the exception
      */
@@ -3275,7 +3262,7 @@ public class SnowstormMapping extends SnowstormAbstract {
         // Validate and create download directory if it doesn't exist
         final String outputDirPath = PropertyUtility.getProperty("mapexport.fileDir");
         final String outputFileName = PropertyUtility.getProperty("mapexport.file");
-        final String DILIMITER = "\t";
+        final String delimiter = "\t";
 
         final File downloadDir = new File(outputDirPath);
         if (!downloadDir.exists() && !downloadDir.mkdirs()) {
@@ -3308,7 +3295,7 @@ public class SnowstormMapping extends SnowstormAbstract {
             final StringBuilder header = new StringBuilder();
             for (final String column : allowedColumns) {
                 if (columnsToInclude.contains(column)) {
-                    header.append(column).append(DILIMITER);
+                    header.append(column).append(delimiter);
                 }
             }
 
@@ -3341,7 +3328,7 @@ public class SnowstormMapping extends SnowstormAbstract {
                             rowValues.add(dataRow.getOrDefault(column, ""));
                         }
                     }
-                    writer.println(String.join(DILIMITER, rowValues));
+                    writer.println(String.join(delimiter, rowValues));
                 }
             }
             writer.flush();
@@ -3556,31 +3543,53 @@ public class SnowstormMapping extends SnowstormAbstract {
      * Walks Snowstorm members and keeps a page of unique published source concepts.
      *
      * <p>
-     * Excluded codes are omitted. {@code pageOffset} unique published concepts are skipped so later pages stay aligned
-     * after exclusions punch holes in Snowstorm's member pages.
+     * Excluded codes are omitted. {@code pageOffset} unique published concepts are skipped so later pages stay aligned after exclusions punch holes in
+     * Snowstorm's member pages.
      */
     static final class ExcludeAwarePageCollector {
 
+        /**
+         * The Enum Decision.
+         */
         enum Decision {
+
+            /** The exclude. */
             EXCLUDE,
+            /** The skip offset. */
             SKIP_OFFSET,
+            /** The accept existing. */
             ACCEPT_EXISTING,
+            /** The accept new. */
             ACCEPT_NEW,
+            /** The drop. */
             DROP
         }
 
+        /** The exclude codes. */
         private final Set<String> excludeCodes;
 
+        /** The page limit. */
         private final int pageLimit;
 
+        /** The remaining skip. */
         private int remainingSkip;
 
+        /** The skipped codes. */
         private final Set<String> skippedCodes = new HashSet<>();
 
+        /** The accepted codes. */
         private final Set<String> acceptedCodes = new LinkedHashSet<>();
 
+        /** The page full. */
         private boolean pageFull;
 
+        /**
+         * Instantiates a new exclude aware page collector.
+         *
+         * @param excludeCodes the exclude codes
+         * @param pageLimit the page limit
+         * @param pageOffset the page offset
+         */
         ExcludeAwarePageCollector(final Set<String> excludeCodes, final int pageLimit, final int pageOffset) {
 
             this.excludeCodes = excludeCodes != null ? excludeCodes : Collections.emptySet();
@@ -3588,6 +3597,12 @@ public class SnowstormMapping extends SnowstormAbstract {
             this.remainingSkip = Math.max(0, pageOffset);
         }
 
+        /**
+         * Decide.
+         *
+         * @param mapCode the map code
+         * @return the decision
+         */
         Decision decide(final String mapCode) {
 
             if (mapCode == null || excludeCodes.contains(mapCode)) {
@@ -3614,11 +3629,21 @@ public class SnowstormMapping extends SnowstormAbstract {
             return Decision.ACCEPT_NEW;
         }
 
+        /**
+         * Checks for room.
+         *
+         * @return true, if successful
+         */
         boolean hasRoom() {
 
             return !pageFull;
         }
 
+        /**
+         * Accepted count.
+         *
+         * @return the int
+         */
         int acceptedCount() {
 
             return acceptedCodes.size();

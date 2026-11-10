@@ -177,7 +177,7 @@ public class MappingWorkflowServiceBranchTest {
                 () -> MappingWorkflowService.setWorkflowStatusByAction(context.getService(), context.getSpecialistUser(), MappingWorkflowAction.RELEASE,
                     context.getWorkflow(), context.getMapSet(), context.getMapProject(), "Release", null));
 
-            assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatus());
+            assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatusCode());
             assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, context.reloadWorkflow().getWorkflowStatus());
             assertEquals(context.getSpecialistUser().getUserName(), context.reloadWorkflow().getAssignedUser());
         }

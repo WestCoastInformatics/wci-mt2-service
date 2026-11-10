@@ -22,7 +22,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URL;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -68,11 +68,12 @@ public final class FileUtility {
     /** The local artifact file directory. */
     private static String serverArtifactDir;
 
-    /** Static initialization. */
-    static {
+    private static void ensureFileDirs() {
 
-        serverIconDir = PropertyUtility.getProperty("refset.service.icon.server.dir");
-        serverArtifactDir = PropertyUtility.getProperty("refset.service.artifact.server.dir");
+        if (serverIconDir == null) {
+            serverIconDir = PropertyUtility.getProperty("refset.service.icon.server.dir");
+            serverArtifactDir = PropertyUtility.getProperty("refset.service.artifact.server.dir");
+        }
     }
 
     /**
@@ -154,7 +155,7 @@ public final class FileUtility {
             }
         }
     }
-    
+
     /**
      * Extract files from a zip archive.
      *
@@ -242,7 +243,7 @@ public final class FileUtility {
         }
         return zipFile;
     }
-    
+
     /**
      * Zip files together.
      *
@@ -329,8 +330,7 @@ public final class FileUtility {
             }
         }
     }
-    
-    
+
     /**
      * Removes the effective time.
      *
@@ -372,7 +372,7 @@ public final class FileUtility {
             throw e;
         }
     }
-    
+
     /**
      * Removes the duplicate records.
      *
@@ -381,7 +381,7 @@ public final class FileUtility {
      * @throws IOException Signals that an I/O exception has occurred.
      */
     // Method to remove duplicate records from a file
-    public static List<String> removeDuplicateRecords(File file) throws IOException {
+    public static List<String> removeDuplicateRecords(final File file) throws IOException {
 
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             return reader.lines().distinct() // Filter out duplicate lines
@@ -395,13 +395,15 @@ public final class FileUtility {
      * @param folderPath the folder path
      * @throws IOException Signals that an I/O exception has occurred.
      */
-    public static void processFolder(String folderPath) throws IOException {
+    public static void processFolder(final String folderPath) throws IOException {
 
         Path sourceFolder = Paths.get(folderPath);
 
         // Find the file to preserve based on the prefix "der2_iisssccRefset_"
-        Optional<Path> targetFileOptional =
-            Files.walk(sourceFolder).filter(path -> Files.isRegularFile(path) && path.getFileName().toString().startsWith("der2_iisssccRefset_")).findFirst();
+        Optional<Path> targetFileOptional = Files.walk(sourceFolder).filter(path -> {
+            final Path fileName = path.getFileName();
+            return Files.isRegularFile(path) && fileName != null && fileName.toString().startsWith("der2_iisssccRefset_");
+        }).findFirst();
 
         if (targetFileOptional.isEmpty()) {
             throw new IOException("No file starting with 'der2_iisssccRefset_' found in the folder: " + folderPath);
@@ -456,7 +458,7 @@ public final class FileUtility {
                 return IOUtils.toString(in, StandardCharsets.UTF_8);
             }
         } else {
-            try (final InputStream in = new URL(uri).openStream()) {
+            try (final InputStream in = URI.create(uri).toURL().openStream()) {
                 return IOUtils.toString(new BufferedInputStream(in), StandardCharsets.UTF_8);
             }
         }
@@ -573,6 +575,7 @@ public final class FileUtility {
      */
     public static Resource getIconFile(final String fileName) throws Exception {
 
+        ensureFileDirs();
         final Resource file = getCachedFile(fileName, serverIconDir, S3ConnectionWrapper.getAwsIconPath());
 
         return file;
@@ -603,6 +606,7 @@ public final class FileUtility {
             final int maxFileSize = Integer.valueOf(PropertyUtility.getProperty("refset.service.icon.file.maxsize"));
             final List<String> fileTypes = Arrays.asList(PropertyUtility.getProperty("refset.service.icon.file.types").split(";"));
 
+            ensureFileDirs();
             final File file =
                 saveCachedFile(inputFile, fileName, serverIconDir, S3ConnectionWrapper.getAwsIconPath(), maxFileSize, fileTypes, fileNameToDelete);
 
@@ -621,6 +625,7 @@ public final class FileUtility {
      */
     public static Resource getArtifactFile(final String fileName) throws Exception {
 
+        ensureFileDirs();
         return getCachedFile(fileName, serverArtifactDir, S3ConnectionWrapper.getAwsArtifactPath());
 
     }
@@ -649,8 +654,8 @@ public final class FileUtility {
             final int maxFileSize = -1;
             final List<String> fileTypes = new ArrayList<>();
 
-            return 
-                saveCachedFile(inputFile, fileName, serverArtifactDir, S3ConnectionWrapper.getAwsArtifactPath(), maxFileSize, fileTypes, fileNameToDelete);
+            ensureFileDirs();
+            return saveCachedFile(inputFile, fileName, serverArtifactDir, S3ConnectionWrapper.getAwsArtifactPath(), maxFileSize, fileTypes, fileNameToDelete);
 
         }
         return null;
@@ -752,8 +757,7 @@ public final class FileUtility {
 
         return file;
     }
-    
-    
+
     /**
      * Creates a temporary directory for file operations.
      *
@@ -762,6 +766,7 @@ public final class FileUtility {
      * @throws IOException if there is an error creating the directory
      */
     public static Path createTempDirectory(final String prefix) throws IOException {
+
         return Files.createTempDirectory(prefix);
     }
 
@@ -772,6 +777,7 @@ public final class FileUtility {
      * @throws IOException if there is an error during cleanup
      */
     public static void cleanupTempFiles(final Path tempDir) throws IOException {
+
         if (tempDir != null) {
             try {
                 FileUtility.deleteDirectory(tempDir.toFile());

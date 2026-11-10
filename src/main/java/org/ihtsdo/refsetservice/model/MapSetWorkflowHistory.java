@@ -10,17 +10,18 @@
 
 package org.ihtsdo.refsetservice.model;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.hibernate.search.engine.backend.types.Projectable;
 import org.hibernate.search.engine.backend.types.Searchable;
 import org.hibernate.search.engine.backend.types.Sortable;
@@ -61,7 +62,7 @@ public class MapSetWorkflowHistory extends AbstractHasModified {
 
     /** The workflow status notes. */
     @Column(nullable = true, length = 10000)
-    @Type(type = "text")
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     private String notes;
 
     /** The refset version. */
@@ -91,15 +92,14 @@ public class MapSetWorkflowHistory extends AbstractHasModified {
     /**
      * Instantiates a {@link MapSetWorkflowHistory} from the specified parameters.
      *
-     * @param userName       the username
+     * @param userName the username
      * @param workflowStatus the workflow status
      * @param workflowAction the workflow action
-     * @param notes          the notes
-     * @param refset         the refset
+     * @param notes the notes
+     * @param mapSet the map set
      */
-    public MapSetWorkflowHistory(final String userName, final WorkflowStatus workflowStatus,
-            final WorkflowAction workflowAction, final String notes,
-            final MapSet mapSet) {
+    public MapSetWorkflowHistory(final String userName, final WorkflowStatus workflowStatus, final WorkflowAction workflowAction, final String notes,
+        final MapSet mapSet) {
 
         this.userName = userName;
         this.workflowStatus = workflowStatus;
@@ -222,7 +222,7 @@ public class MapSetWorkflowHistory extends AbstractHasModified {
     /**
      * Sets the refset.
      *
-     * @param refset the refset to set
+     * @param mapSet the new map set
      */
     public void setMapSet(final MapSet mapSet) {
 
@@ -236,7 +236,7 @@ public class MapSetWorkflowHistory extends AbstractHasModified {
      */
     @GenericField(searchable = Searchable.YES, projectable = Projectable.NO, sortable = Sortable.YES)
     @IndexingDependency(derivedFrom = @ObjectPath({
-            @PropertyValue(propertyName = "mapSet")
+        @PropertyValue(propertyName = "mapSet")
     }))
     @IndexingDependency(reindexOnUpdate = ReindexOnUpdate.SHALLOW)
     public String getMapSetId() {
@@ -339,7 +339,9 @@ public class MapSetWorkflowHistory extends AbstractHasModified {
         return result;
     }
 
-    /* see superclass */
+    /**
+     * Lazy init.
+     */
     @Override
     public void lazyInit() {
         // TODO Auto-generated method stub

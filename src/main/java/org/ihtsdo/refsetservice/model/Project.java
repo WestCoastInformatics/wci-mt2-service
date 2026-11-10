@@ -15,14 +15,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import javax.persistence.Column;
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.hibernate.search.engine.backend.types.Projectable;
@@ -41,7 +42,6 @@ import org.ihtsdo.refsetservice.util.ModelUtility;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-import io.micrometer.core.instrument.util.StringUtils;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
@@ -151,7 +151,11 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
         teams = other.getTeams();
     }
 
-    /* see superclass */
+    /**
+     * Patch from.
+     *
+     * @param other the other
+     */
     @Override
     public void patchFrom(final Project other) {
 
@@ -477,7 +481,11 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
         this.lockStatus = lockStatus != null && lockStatus;
     }
 
-    /* see superclass */
+    /**
+     * Hash code.
+     *
+     * @return the int
+     */
     @Override
     public int hashCode() {
 
@@ -495,9 +503,14 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
         return result;
     }
 
-    /* see superclass */
+    /**
+     * Equals.
+     *
+     * @param obj the obj
+     * @return true, if successful
+     */
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
 
         if (this == obj) {
             return true;
@@ -567,7 +580,11 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
         return true;
     }
 
-    /* see superclass */
+    /**
+     * To string.
+     *
+     * @return the string
+     */
     @Override
     public String toString() {
 
@@ -581,7 +598,9 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
 
     }
 
-    /* see superclass */
+    /**
+     * Lazy init.
+     */
     @Override
     public void lazyInit() {
 
@@ -589,7 +608,11 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
 
     }
 
-    /* see superclass */
+    /**
+     * Validate add.
+     *
+     * @throws Exception the exception
+     */
     @Override
     public void validateAdd() throws Exception {
 
@@ -610,7 +633,12 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
 
     }
 
-    /* see superclass */
+    /**
+     * Validate update.
+     *
+     * @param other the other
+     * @throws Exception the exception
+     */
     @Override
     public void validateUpdate(final Project other) throws Exception {
 
@@ -631,7 +659,11 @@ public class Project extends AbstractHasModified implements Copyable<Project>, V
 
     }
 
-    /* see superclass */
+    /**
+     * Validate delete.
+     *
+     * @throws Exception the exception
+     */
     @Override
     public void validateDelete() throws Exception {
 

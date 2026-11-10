@@ -28,20 +28,22 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.persistence.EntityManager;
-import javax.persistence.ManyToMany;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status.Family;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.ws.rs.WebApplicationException;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
@@ -63,13 +65,9 @@ import org.hibernate.search.mapper.orm.scope.SearchScope;
 import org.hibernate.search.mapper.orm.session.SearchSession;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmbedded;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordField;
 import org.ihtsdo.refsetservice.model.PfsParameter;
-import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
-import org.reflections.Reflections;
-import org.reflections.util.ConfigurationBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,6 +86,12 @@ public final class IndexUtility {
 
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(IndexUtility.class);
+
+    /** Default fetch size when PFS is unset; callers that need more must pass an explicit limit. */
+    private static final int DEFAULT_UNPAGED_FETCH_LIMIT = 1000;
+
+    /** Shared HTTP client for Elasticsearch admin calls. */
+    private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build();
 
     /** The sort field analyzed map. */
     private static Map<String, Map<String, Boolean>> sortFieldAnalyzedMap = new HashMap<>();
@@ -111,32 +115,7 @@ public final class IndexUtility {
     private static List<Class<?>> dateClasses =
         Arrays.asList(Date.class, LocalDate.class, LocalDateTime.class, ZonedDateTime.class, Instant.class, OffsetDateTime.class);
 
-    // Initialize the field names maps
-    static {
-        try {
-
-            final Map<String, Class<?>> reindexMap = new HashMap<>();
-            final String indexProp = PropertyUtility.getProperties().getProperty("app.entity_packages");
-
-            if (indexProp == null) {
-                throw new Exception("Property app.entity_packages must be present.");
-            }
-            final String[] packages = indexProp.split(";");
-            final Reflections reflections = new Reflections(new ConfigurationBuilder().forPackages(packages));
-            for (final Class<?> clazz : reflections.getTypesAnnotatedWith(Indexed.class)) {
-                reindexMap.put(clazz.getSimpleName(), clazz);
-            }
-            final Class<?>[] classes = reindexMap.values().toArray(new Class<?>[0]);
-
-            for (final Class<?> clazz : classes) {
-                stringFieldNames.put(clazz, IndexUtility.getIndexedFieldNames(clazz, "string"));
-                allFieldNames.put(clazz, IndexUtility.getIndexedFieldNames(clazz, "all"));
-                dateFieldNames.put(clazz, IndexUtility.getIndexedFieldNames(clazz, "date"));
-            }
-        } catch (final Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+    // Initialize the field names maps lazily so PropertyUtility is ready.
 
     /**
      * Returns the indexed field names for a given class.
@@ -679,7 +658,7 @@ public final class IndexUtility {
         if (!PropertyUtility.getProperties().getProperty("spring.jpa.properties.hibernate.search.backend.type").trim().equals("elasticsearch")) {
 
             @SuppressWarnings("resource")
-			final QueryParser queryParser = new MultiFieldQueryParser(IndexUtility.getIndexedFieldNames(clazz, "string").toArray(new String[] {}),
+            final QueryParser queryParser = new MultiFieldQueryParser(IndexUtility.getIndexedFieldNames(clazz, "string").toArray(new String[] {}),
                 mapping.indexedEntity(clazz).indexManager().unwrap(LuceneIndexManager.class).searchAnalyzer());
 
             predicate = predicateFactory.extension(LuceneExtension.get()).fromLuceneQuery(queryParser.parse(finalQuery)).toPredicate();
@@ -736,12 +715,12 @@ public final class IndexUtility {
                     dateRangeQueryString += dateSegment.getValue() + " , ";
                 }
 
-                dateRangeQueryString = StringUtils.removeEnd(dateRangeQueryString, " , ");
+                dateRangeQueryString = Strings.CS.removeEnd(dateRangeQueryString, " , ");
 
                 // Remove leading AND OR and clear out empty query_string
                 dateFreeQueryString = dateFreeQueryString.replace("() AND", "").replace("( AND", " (").replace("( OR", " (").replace("() OR", "");
-                dateFreeQueryString = StringUtils.removeStart(dateFreeQueryString, " AND ");
-                dateFreeQueryString = StringUtils.removeStart(dateFreeQueryString, " OR ");
+                dateFreeQueryString = Strings.CS.removeStart(dateFreeQueryString, " AND ");
+                dateFreeQueryString = Strings.CS.removeStart(dateFreeQueryString, " OR ");
 
                 final String queryString = "{\"query_string\":{\"default_operator\": \"AND\", \"analyze_wildcard\": true, \"query\":\""
                     + StringEscapeUtils.escapeJson(dateFreeQueryString) + "\"}}";
@@ -752,8 +731,8 @@ public final class IndexUtility {
 
                 // Remove leading AND OR and clear out empty query_string
                 finalQuery = finalQuery.replace("() AND", "").replace("( AND", " (").replace("( OR", " (").replace("() OR", "");
-                finalQuery = StringUtils.removeStart(finalQuery, " AND ");
-                finalQuery = StringUtils.removeStart(finalQuery, " OR ");
+                finalQuery = Strings.CS.removeStart(finalQuery, " AND ");
+                finalQuery = Strings.CS.removeStart(finalQuery, " OR ");
 
                 fullQueryString = "{\"query_string\":{\"default_operator\": \"AND\", \"analyze_wildcard\": true, \"query\":\""
                     + StringEscapeUtils.escapeJson(finalQuery) + "\"}}";
@@ -890,7 +869,11 @@ public final class IndexUtility {
         if (pfs != null && pfs.getOffset() >= 0 && pfs.getLimit() >= 0) {
             result = searchQuery.fetch(pfs.getOffset(), pfs.getLimit());
         } else {
-            result = searchQuery.fetch(0, 200000);
+            result = searchQuery.fetch(0, DEFAULT_UNPAGED_FETCH_LIMIT);
+            if (result.total().hitCount() > DEFAULT_UNPAGED_FETCH_LIMIT) {
+                LOG.warn("Hibernate Search unpaged fetch capped at {} of {} hits for {}; pass PfsParameter with an explicit limit",
+                    DEFAULT_UNPAGED_FETCH_LIMIT, result.total().hitCount(), clazz.getSimpleName());
+            }
         }
 
         return result;
@@ -970,34 +953,31 @@ public final class IndexUtility {
             final String esProtocol = PropertyUtility.getProperties().getProperty("spring.jpa.properties.hibernate.search.backend.protocol");
             final String esHost = PropertyUtility.getProperties().getProperty("spring.jpa.properties.hibernate.search.backend.hosts");
             final String esUrl = esProtocol + "://" + esHost + "/" + indexReadName + "/_search";
-            final Client client = ClientBuilder.newClient();
-            WebTarget target = client.target(esUrl);
-            try (Response response = target.request().get()) {
-                if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-                    final String resultString = SnowstormConnection.readEntityAsString(response);
+            final HttpRequest getRequest = HttpRequest.newBuilder().uri(URI.create(esUrl)).GET().build();
+            final HttpResponse<String> getResponse = HTTP_CLIENT.send(getRequest, HttpResponse.BodyHandlers.ofString());
+            if (getResponse.statusCode() < 200 || getResponse.statusCode() >= 300) {
+                final String resultString = getResponse.body() == null ? "" : getResponse.body();
 
-                    // if the index isn't found it then just log it and exit the
-                    // function
-                    if (resultString.contains("index_not_found_exception")) {
-                        LOG.warn("Elastic Search index not found = " + index);
-                        return;
-                    }
-
-                    LOG.error("Unexpected attempt to search index = " + index);
-                    throw new WebApplicationException(SnowstormConnection.readEntityAsString(response), response.getStatus());
+                // if the index isn't found it then just log it and exit the
+                // function
+                if (resultString.contains("index_not_found_exception")) {
+                    LOG.warn("Elastic Search index not found = " + index);
+                    return;
                 }
+
+                LOG.error("Unexpected attempt to search index = " + index);
+                throw new WebApplicationException(resultString, getResponse.statusCode());
             }
 
-            // Then, POST to make the max result window change
+            // Then, PUT to make the max result window change
             final String postUrl = esProtocol + "://" + esHost + "/" + indexWriteName + "/_settings";
             final String requestBody = "{\"index\" : {\"max_result_window\" : 2500000}}";
-            target = client.target(postUrl);
-
-            try (Response response = target.request().put(Entity.json(requestBody))) {
-                if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
-                    LOG.error("Unexpected attempt to set max index size = " + index);
-                    throw new WebApplicationException(SnowstormConnection.readEntityAsString(response), response.getStatus());
-                }
+            final HttpRequest putRequest = HttpRequest.newBuilder().uri(URI.create(postUrl)).header("Content-Type", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8)).build();
+            final HttpResponse<String> putResponse = HTTP_CLIENT.send(putRequest, HttpResponse.BodyHandlers.ofString());
+            if (putResponse.statusCode() < 200 || putResponse.statusCode() >= 300) {
+                LOG.error("Unexpected attempt to set max index size = " + index);
+                throw new WebApplicationException(putResponse.body(), putResponse.statusCode());
             }
         }
     }

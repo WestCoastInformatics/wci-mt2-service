@@ -9,17 +9,20 @@
  */
 package org.ihtsdo.refsetservice.util;
 
-public class TerminologyConstant {
+/**
+ * The Class TerminologyConstant.
+ */
+public final class TerminologyConstant {
 
-    
-    
     /**
      * Instantiates a new terminology constants.
      */
     private TerminologyConstant() {
+
         // Utility class, no instantiation
     }
-    
+
+    /** The Constant SNOMEDCT_TO_ICD10_MAP_MODULE. */
     // 449080006 | SNOMED CT to ICD-10 rule-based mapping module (core metadata concept)
     public static final String SNOMEDCT_TO_ICD10_MAP_MODULE = "449080006";
 

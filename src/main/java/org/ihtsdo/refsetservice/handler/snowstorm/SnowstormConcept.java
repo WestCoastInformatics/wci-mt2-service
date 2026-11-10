@@ -9,10 +9,6 @@
  */
 package org.ihtsdo.refsetservice.handler.snowstorm;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -28,17 +24,18 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status.Family;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status.Family;
 
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParserBase;
+import org.ihtsdo.refsetservice.util.BoundedExecutors;
 import org.ihtsdo.refsetservice.model.Concept;
 import org.ihtsdo.refsetservice.model.ConceptRef;
 import org.ihtsdo.refsetservice.model.Edition;
@@ -62,7 +59,6 @@ import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.util.CachingUtility;
 import org.ihtsdo.refsetservice.util.ConceptLookupParameters;
 import org.ihtsdo.refsetservice.util.ModelUtility;
-import org.ihtsdo.refsetservice.util.PropertyUtility;
 import org.ihtsdo.refsetservice.util.ResultList;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.StringUtility;
@@ -72,8 +68,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * The Class SnowstormConcept.
@@ -106,10 +102,10 @@ public final class SnowstormConcept extends SnowstormAbstract {
      */
     public static Concept getConcept(final String terminology, final String version, final String code) throws Exception {
 
-    	//Check for empty code (this can happen for empty target maps.
-    	if (StringUtils.isAnyBlank(code)) {
-    		return null;
-    	}
+        // Check for empty code (this can happen for empty target maps.
+        if (StringUtils.isAnyBlank(code)) {
+            return null;
+        }
 
         if (StringUtils.isAnyBlank(terminology, version)) {
             throw new Exception("Terminology and version are required parameters. Neither must not be null or empty");
@@ -184,7 +180,6 @@ public final class SnowstormConcept extends SnowstormAbstract {
      *
      * @param terminology the terminology
      * @param version the version
-     * @return the result list concept
      * @throws Exception the exception
      */
     public static void cacheConcepts(final String terminology, final String version) throws Exception {
@@ -295,7 +290,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                 if (conceptNodeBatch.size() < ELASTICSEARCH_MAX_RECORD_LENGTH) {
                     done = true;
                 } else {
-                    searchAfter = (doc.has("searchAfter") ? doc.get("searchAfter").asText() : "");
+                    searchAfter = (doc.has("searchAfter") ? doc.get("searchAfter").asString() : "");
                 }
             }
         }
@@ -322,8 +317,8 @@ public final class SnowstormConcept extends SnowstormAbstract {
         // Connect to snowstorm
 
         final String branch = "MAIN/" + terminology + "/" + version;
-        final String targetUri =
-            SnowstormConnection.getRestBaseUrl().concat(branch).concat("/concepts?activeFilter=true&includeLeafFlag=false&form=inferred&conceptIds=").concat(code);
+        final String targetUri = SnowstormConnection.getRestBaseUrl().concat(branch)
+            .concat("/concepts?activeFilter=true&includeLeafFlag=false&form=inferred&conceptIds=").concat(code);
         LOG.info("getSnowstormConcept url: {}", targetUri);
 
         try (final Response response = SnowstormConnection.getResponse(targetUri)) {
@@ -374,7 +369,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
             bodyConceptIds += "\"" + moduleId + "\",";
         }
 
-        bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",") + "]";
+        bodyConceptIds = Strings.CS.removeEnd(bodyConceptIds, ",") + "]";
 
         final String searchBody = bodyBase + bodyConceptIds + "}";
         LOG.debug("getModuleNames URL: " + conceptSearchUrl);
@@ -396,11 +391,11 @@ public final class SnowstormConcept extends SnowstormAbstract {
             while (iterator != null && iterator.hasNext()) {
 
                 final JsonNode conceptNode = iterator.next();
-                final String conceptId = conceptNode.get("conceptId").asText();
+                final String conceptId = conceptNode.get("conceptId").asString();
                 String name = "";
 
                 if (conceptNode.get("fsn") != null && conceptNode.get("fsn").get("term") != null) {
-                    name = conceptNode.get("fsn").get("term").asText();
+                    name = conceptNode.get("fsn").get("term").asString();
                 }
 
                 moduleNames.put(conceptId, name);
@@ -420,12 +415,12 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
         final ConceptRef conceptRef = new ConceptRef();
         conceptRef.setActive(conceptNode.get("active").asBoolean());
-        conceptRef.setId(conceptNode.get("id").asText());
-        conceptRef.setCode(conceptNode.get("id").asText());
-        conceptRef.setDefined(!"PRIMITIVE".equals(conceptNode.get("definitionStatus").asText()));
+        conceptRef.setId(conceptNode.get("id").asString());
+        conceptRef.setCode(conceptNode.get("id").asString());
+        conceptRef.setDefined(!"PRIMITIVE".equals(conceptNode.get("definitionStatus").asString()));
 
         if (conceptNode.has("pt") && conceptNode.get("pt").has("term")) {
-            conceptRef.setName(conceptNode.get("pt").get("term").asText());
+            conceptRef.setName(conceptNode.get("pt").get("term").asString());
         }
 
         return conceptRef;
@@ -441,16 +436,16 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
         final Concept concept = new Concept();
         concept.setActive(conceptNode.get("active").asBoolean());
-        concept.setId(conceptNode.get("id").asText());
-        concept.setCode(conceptNode.get("id").asText());
-        concept.setDefined(!"PRIMITIVE".equals(conceptNode.get("definitionStatus").asText()));
+        concept.setId(conceptNode.get("id").asString());
+        concept.setCode(conceptNode.get("id").asString());
+        concept.setDefined(!"PRIMITIVE".equals(conceptNode.get("definitionStatus").asString()));
 
         if (conceptNode.has("pt") && conceptNode.get("pt").has("term")) {
-            concept.setName(conceptNode.get("pt").get("term").asText());
+            concept.setName(conceptNode.get("pt").get("term").asString());
         }
 
         if (conceptNode.has("fsn") && conceptNode.get("fsn").has("term")) {
-            concept.setFsn(conceptNode.get("fsn").get("term").asText());
+            concept.setFsn(conceptNode.get("fsn").get("term").asString());
         }
 
         return concept;
@@ -490,7 +485,8 @@ public final class SnowstormConcept extends SnowstormAbstract {
         if (!areParentConcepts) {
 
             // get all the existing refsets for latest branch version
-            final String query = "(latestPublishedVersion: true AND hasVersionInDevelopment: false) OR versionStatus: (" + VersionStatus.IN_DEVELOPMENT.name() + ")";
+            final String query =
+                "(latestPublishedVersion: true AND hasVersionInDevelopment: false) OR versionStatus: (" + VersionStatus.IN_DEVELOPMENT.name() + ")";
             final ResultList<Refset> refsets = service.find(query, null, Refset.class, null);
 
             for (final Refset refset : refsets.getItems()) {
@@ -523,7 +519,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
                 final JsonNode conceptNode = iterator.next();
                 final Concept concept = new Concept();
-                final String conceptId = conceptNode.get("conceptId").asText();
+                final String conceptId = conceptNode.get("conceptId").asString();
 
                 // if this isn't for a parent concept and the refset already exists then
                 // skip it
@@ -532,7 +528,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                 }
 
                 concept.setCode(conceptId);
-                concept.setName(conceptNode.get("pt").get("term").asText());
+                concept.setName(conceptNode.get("pt").get("term").asString());
                 concept.setTerminology("SNOMEDCT");
 
                 results.getItems().add(concept);
@@ -712,7 +708,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
                 final JsonNode conceptNode = conceptIterator.next();
 
-                final String conceptId = conceptNode.get("conceptId").asText();
+                final String conceptId = conceptNode.get("conceptId").asString();
                 conceptNodes.put(conceptId, conceptNode);
             }
 
@@ -790,7 +786,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
             while (iterator.hasNext()) {
 
                 final JsonNode conceptNode = iterator.next();
-                // final String nodeConceptId = conceptNode.get("conceptId").asText();
+                // final String nodeConceptId = conceptNode.get("conceptId").asString();
                 final JsonNode ancestorPathNode = conceptNode.get("ancestorPath");
 
                 // get the ancestor list and reverse the order so the taxonomy
@@ -939,7 +935,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
                 if (limitReturnNumber < 0 && root.get("searchAfter") != null) {
 
-                    searchAfter = "&searchAfter=" + root.get("searchAfter").asText();
+                    searchAfter = "&searchAfter=" + root.get("searchAfter").asString();
                 }
 
                 // if the search returned results set the total
@@ -972,10 +968,10 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
                         final Concept concept = new Concept();
                         concept.setActive(conceptNode.get("active").asBoolean());
-                        concept.setId(conceptNode.get("id").asText());
-                        concept.setCode(conceptNode.get("id").asText());
+                        concept.setId(conceptNode.get("id").asString());
+                        concept.setCode(conceptNode.get("id").asString());
 
-                        if (!conceptNode.get("definitionStatus").asText().equals("PRIMITIVE")) {
+                        if (!conceptNode.get("definitionStatus").asString().equals("PRIMITIVE")) {
 
                             concept.setDefined(true);
                         } else {
@@ -985,12 +981,12 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
                         if (conceptNode.get("pt") != null) {
 
-                            concept.setName(conceptNode.get("pt").get("term").asText());
+                            concept.setName(conceptNode.get("pt").get("term").asString());
                         }
 
                         if (conceptNode.get("fsn") != null && conceptNode.get("fsn").get("term") != null) {
 
-                            concept.setFsn(conceptNode.get("fsn").get("term").asText());
+                            concept.setFsn(conceptNode.get("fsn").get("term").asString());
                         }
 
                         if (conceptNode.has("isLeafInferred")) {
@@ -1266,7 +1262,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                     keepSearching = false;
                 } else {
 
-                    searchAfter = "&searchAfter=" + root.get("searchAfter").asText();
+                    searchAfter = "&searchAfter=" + root.get("searchAfter").asString();
                 }
 
                 LOG.debug("getConceptIdsFromEcl totalReturned so far: " + totalReturned);
@@ -1275,7 +1271,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                 while (iterator != null && iterator.hasNext()) {
 
                     final JsonNode conceptNode = iterator.next();
-                    final String conceptId = conceptNode.get("conceptId").asText();
+                    final String conceptId = conceptNode.get("conceptId").asString();
 
                     if (concepts.contains(conceptId)) {
 
@@ -1299,6 +1295,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
      * @param service the service
      * @param user the user
      * @param refsetInternalId the refset internal id
+     * @param isForUpgrade the is for upgrade
      * @return the string
      * @throws Exception the exception
      */
@@ -1390,7 +1387,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
                 if (root.get("searchAfter") != null) {
 
-                    searchAfter = "&searchAfter=" + root.get("searchAfter").asText();
+                    searchAfter = "&searchAfter=" + root.get("searchAfter").asString();
                 }
 
                 if (conceptNodeBatch.size() == 0 || conceptNodeBatch.size() + inactiveMemberList.size() >= memberTotal) {
@@ -1418,7 +1415,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
         }
 
-        inactiveConceptIds = StringUtils.removeEnd(inactiveConceptIds, ", ");
+        inactiveConceptIds = Strings.CS.removeEnd(inactiveConceptIds, ", ");
         final String conceptDetailsBaseUrl = SnowstormConnection.getRestBaseUrl() + "browser/" + branchPath + "/concepts?conceptIds=";
         boolean searchAgain = true;
         int searchIndex = 0;
@@ -1428,9 +1425,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
             return status;
         }
 
-        // Change the numbers to '1's to avoid threading
-        final ExecutorService executor =
-            new ThreadPoolExecutor(30, 30, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(30), new ThreadPoolExecutor.CallerRunsPolicy());
+        final BoundedExecutors.Batch batch = BoundedExecutors.fanoutBatch();
 
         // use /browser/MAIN/concepts/bulk-load POST call to get the inactive
         // concept
@@ -1460,7 +1455,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
             }
 
-            bodyConceptIds = StringUtils.removeEnd(bodyConceptIds, ",");
+            bodyConceptIds = Strings.CS.removeEnd(bodyConceptIds, ",");
 
             final String memberDetailsUrl = conceptDetailsBaseUrl + bodyConceptIds;
             Iterator<JsonNode> iterator = null;
@@ -1488,7 +1483,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                 while (iterator != null && iterator.hasNext()) {
 
                     final JsonNode conceptNode = iterator.next();
-                    final UpgradeInactiveConcept inactiveConcept = inactiveData.get(conceptNode.get("conceptId").asText());
+                    final UpgradeInactiveConcept inactiveConcept = inactiveData.get(conceptNode.get("conceptId").asString());
 
                     if (conceptNode.get("descriptions") != null) {
 
@@ -1501,7 +1496,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
                     if (inactivationIndicatorNode != null) {
 
-                        inactiveConcept.setInactivationReason(inactivationIndicatorNode.asText());
+                        inactiveConcept.setInactivationReason(inactivationIndicatorNode.asString());
                     } else {
 
                         inactiveConcept.setInactivationReason("NOT SPECIFIED");
@@ -1509,11 +1504,11 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
                     final JsonNode associationTargets = conceptNode.get("associationTargets");
 
-                    if (associationTargets != null && associationTargets.size() != 0 && associationTargets.fields() != null) {
+                    if (associationTargets != null && !associationTargets.isEmpty()) {
 
                         LOG.debug("compileUpgradeData associationTargets: " + ModelUtility.toJson(associationTargets));
                         final Map<String, String> reasonMap = new HashMap<>();
-                        final Entry<String, JsonNode> entry = associationTargets.fields().next();
+                        final Entry<String, JsonNode> entry = associationTargets.properties().iterator().next();
                         final List<Concept> replacementConceptsToLookup = new ArrayList<>();
                         final String reason = entry.getKey();
                         String replacementConceptIds = entry.getValue().toString();
@@ -1534,14 +1529,14 @@ public final class SnowstormConcept extends SnowstormAbstract {
                             replacementBodyConceptIds += "\"" + replacementConceptId + "\",";
                         }
 
-                        final String threadReplacementBodyConceptIds = StringUtils.removeEnd(replacementBodyConceptIds, ",") + "]";
+                        final String threadReplacementBodyConceptIds = Strings.CS.removeEnd(replacementBodyConceptIds, ",") + "]";
 
                         LOG.debug("compileUpgradeData replacementConceptsToLookup: {}", replacementConceptsToLookup);
 
                         // process descriptions of any replacement concepts
                         if (!replacementConceptsToLookup.isEmpty()) {
 
-                            executor.submit(new Runnable() {
+                            batch.submit(new Runnable() {
 
                                 /* see superclass */
                                 @Override
@@ -1577,7 +1572,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
                                             while (iterator != null && iterator.hasNext()) {
 
                                                 final JsonNode conceptNode = iterator.next();
-                                                replacementThatAreMembers.add(conceptNode.get("conceptId").asText());
+                                                replacementThatAreMembers.add(conceptNode.get("conceptId").asString());
                                             }
 
                                         }
@@ -1645,8 +1640,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
         }
 
-        executor.shutdown();
-        executor.awaitTermination(600, TimeUnit.SECONDS);
+        batch.await(600, TimeUnit.SECONDS);
 
         return status;
     }
@@ -1836,8 +1830,8 @@ public final class SnowstormConcept extends SnowstormAbstract {
 
                             if (iterator.hasNext()) {
                                 final JsonNode conceptNode = iterator.next();
-                                if (conceptNode.get("referencedComponentId").asText().equals(conceptIdToChange)) {
-                                    upgradeReplacementConcept.setMemberId(conceptNode.get("memberId").asText());
+                                if (conceptNode.get("referencedComponentId").asString().equals(conceptIdToChange)) {
+                                    upgradeReplacementConcept.setMemberId(conceptNode.get("memberId").asString());
                                 } else {
                                     throw new Exception("There was a problem getting the member ID");
                                 }
@@ -1987,57 +1981,57 @@ public final class SnowstormConcept extends SnowstormAbstract {
     // }
 
     // /**
-    //  * Gets the ICPC 2 NO name.
-    //  *
-    //  * @param code the code
-    //  * @return the ICPC 2 NO name
-    //  * @throws Exception the exception
-    //  */
+    // * Gets the ICPC 2 NO name.
+    // *
+    // * @param code the code
+    // * @return the ICPC 2 NO name
+    // * @throws Exception the exception
+    // */
     // // TEMPORARY//
     // private static String getICPC2NOName(String code) throws Exception {
 
-    //     if (icpc2noCodeToName.isEmpty()) {
-    //         cacheICPC2NONames();
-    //     }
-    //     String ICPC2NOName = icpc2noCodeToName.get(code);
-    //     if (ICPC2NOName == null || ICPC2NOName.isBlank()) {
-    //         ICPC2NOName = code + " CONCEPT NOT FOUND";
-    //     }
-    //     return ICPC2NOName;
+    // if (icpc2noCodeToName.isEmpty()) {
+    // cacheICPC2NONames();
+    // }
+    // String ICPC2NOName = icpc2noCodeToName.get(code);
+    // if (ICPC2NOName == null || ICPC2NOName.isBlank()) {
+    // ICPC2NOName = code + " CONCEPT NOT FOUND";
+    // }
+    // return ICPC2NOName;
     // }
 
     // /**
-    //  * Cache ICPC 2 NO names.
-    //  *
-    //  * @throws Exception the exception
-    //  */
+    // * Cache ICPC 2 NO names.
+    // *
+    // * @throws Exception the exception
+    // */
     // // TEMPORARY//
     // private static void cacheICPC2NONames() throws Exception {
 
-    //     String dataDir = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.dir");
+    // String dataDir = PropertyUtility.getProperty("terminology.handler.SNOMED_SNOWSTORM.dir");
 
-    //     final File f = new File(dataDir + "/ICPC2NO_concepts.txt");
-    //     if (!f.exists()) {
-    //         LOG.error("ICPC2NO file doesn't exist: " + f.getPath());
-    //         return;
-    //     }
+    // final File f = new File(dataDir + "/ICPC2NO_concepts.txt");
+    // if (!f.exists()) {
+    // LOG.error("ICPC2NO file doesn't exist: " + f.getPath());
+    // return;
+    // }
 
-    //     try (BufferedReader br = new BufferedReader(new FileReader(f.getPath()))) {
-    //         String line;
-    //         while ((line = br.readLine()) != null) {
-    //             String[] parts = line.split("\\|", 2); // Split the line into two parts
-    //                                                    // at the first occurrence of '|'
-    //             if (parts.length >= 2) {
-    //                 String key = parts[0].trim();
-    //                 String value = parts[1].trim();
-    //                 icpc2noCodeToName.put(key, value);
-    //             } else {
-    //                 System.out.println("Ignoring malformed line: " + line);
-    //             }
-    //         }
-    //     } catch (IOException e) {
-    //         e.printStackTrace();
-    //     }
+    // try (BufferedReader br = new BufferedReader(new FileReader(f.getPath()))) {
+    // String line;
+    // while ((line = br.readLine()) != null) {
+    // String[] parts = line.split("\\|", 2); // Split the line into two parts
+    // // at the first occurrence of '|'
+    // if (parts.length >= 2) {
+    // String key = parts[0].trim();
+    // String value = parts[1].trim();
+    // icpc2noCodeToName.put(key, value);
+    // } else {
+    // System.out.println("Ignoring malformed line: " + line);
+    // }
+    // }
+    // } catch (IOException e) {
+    // e.printStackTrace();
+    // }
     // }
 
     /**
@@ -2220,8 +2214,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
             if (response.getStatusInfo().getFamily() != Family.SUCCESSFUL) {
 
                 if (response.getStatus() == 404) {
-                    LOG.warn("No concept found for terminology=" + terminology + ", version=" + version
-                        + ", code=" + code);
+                    LOG.warn("No concept found for terminology=" + terminology + ", version=" + version + ", code=" + code);
                     return null;
                 }
 
@@ -2233,7 +2226,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
             final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
 
             // Check if this is a Parameters resource (FHIR lookup response)
-            if (!root.has("resourceType") || !"Parameters".equals(root.get("resourceType").asText())) {
+            if (!root.has("resourceType") || !"Parameters".equals(root.get("resourceType").asString())) {
                 LOG.warn("Unexpected response format for FHIR lookup. Expected Parameters resource.");
                 return null;
             }
@@ -2252,14 +2245,14 @@ public final class SnowstormConcept extends SnowstormAbstract {
             final JsonNode parametersNode = root.get("parameter");
             if (parametersNode.isArray()) {
                 for (final JsonNode parameterNode : parametersNode) {
-                    final String name = parameterNode.get("name").asText();
+                    final String name = parameterNode.get("name").asString();
 
                     switch (name) {
                         case "display":
-                            concept.setName(parameterNode.get("valueString").asText());
+                            concept.setName(parameterNode.get("valueString").asString());
                             break;
                         case "version":
-                            concept.setVersion(parameterNode.get("valueString").asText());
+                            concept.setVersion(parameterNode.get("valueString").asString());
                             break;
                         case "property":
                             // Handle parent/child relationships
@@ -2270,18 +2263,20 @@ public final class SnowstormConcept extends SnowstormAbstract {
                                 String propertyDisplay = null;
 
                                 for (final JsonNode partNode : partArray) {
-                                    final String partName = partNode.get("name").asText();
+                                    final String partName = partNode.get("name").asString();
 
                                     switch (partName) {
                                         case "code":
-                                            propertyCode = partNode.get("valueCode").asText();
+                                            propertyCode = partNode.get("valueCode").asString();
                                             break;
                                         case "value":
                                             final JsonNode valueCoding = partNode.get("valueCoding");
                                             if (valueCoding != null) {
-                                                propertyValue = valueCoding.get("code").asText();
-                                                propertyDisplay = valueCoding.get("display").asText();
+                                                propertyValue = valueCoding.get("code").asString();
+                                                propertyDisplay = valueCoding.get("display").asString();
                                             }
+                                            break;
+                                        default:
                                             break;
                                     }
                                 }
@@ -2295,6 +2290,8 @@ public final class SnowstormConcept extends SnowstormAbstract {
                                     children.add(child);
                                 }
                             }
+                            break;
+                        default:
                             break;
                     }
                 }
@@ -2332,45 +2329,27 @@ public final class SnowstormConcept extends SnowstormAbstract {
             return;
         }
 
-        final int threadPoolSize = Math.min(10, conceptRefs.size());
-        final ExecutorService executor = new ThreadPoolExecutor(threadPoolSize, threadPoolSize, 0L, TimeUnit.MILLISECONDS,
-            new ArrayBlockingQueue<>(threadPoolSize), new ThreadPoolExecutor.CallerRunsPolicy());
+        final ExecutorService executor = BoundedExecutors.fanout();
+        final List<Future<Boolean>> futures = new ArrayList<>();
 
-        try {
-            // Submit tasks for each concept to check if it has children
-            final List<java.util.concurrent.Future<Boolean>> futures = new ArrayList<>();
-
-            for (final ConceptRef conceptRef : conceptRefs) {
-                futures.add(executor.submit(() -> {
-                    try {
-                        return checkConceptHasChildren(codeSystem, conceptRef);
-                    } catch (Exception e) {
-                        LOG.error("Error checking children for concept: {}", conceptRef.getCode(), e);
-                        return false;
-                    }
-                }));
-            }
-
-            // Wait for all tasks to complete and update the ConceptRef objects
-            for (int i = 0; i < conceptRefs.size(); i++) {
+        for (final ConceptRef conceptRef : conceptRefs) {
+            futures.add(executor.submit(() -> {
                 try {
-                    final boolean hasChildren = futures.get(i).get(30, TimeUnit.SECONDS);
-                    conceptRefs.get(i).setHasChildren(hasChildren);
+                    return checkConceptHasChildren(codeSystem, conceptRef);
                 } catch (Exception e) {
-                    LOG.error("Error getting result for concept: {}", conceptRefs.get(i).getCode(), e);
-                    conceptRefs.get(i).setHasChildren(false);
+                    LOG.error("Error checking children for concept: {}", conceptRef.getCode(), e);
+                    return false;
                 }
-            }
+            }));
+        }
 
-        } finally {
-            executor.shutdown();
+        for (int i = 0; i < conceptRefs.size(); i++) {
             try {
-                if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
-                    executor.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                executor.shutdownNow();
-                Thread.currentThread().interrupt();
+                final boolean hasChildren = futures.get(i).get(30, TimeUnit.SECONDS);
+                conceptRefs.get(i).setHasChildren(hasChildren);
+            } catch (Exception e) {
+                LOG.error("Error getting result for concept: {}", conceptRefs.get(i).getCode(), e);
+                conceptRefs.get(i).setHasChildren(false);
             }
         }
     }
@@ -2405,7 +2384,7 @@ public final class SnowstormConcept extends SnowstormAbstract {
             final JsonNode root = ThreadLocalMapper.get().readTree(resultString);
 
             // Check if this is a Parameters resource (FHIR lookup response)
-            if (!root.has("resourceType") || !"Parameters".equals(root.get("resourceType").asText())) {
+            if (!root.has("resourceType") || !"Parameters".equals(root.get("resourceType").asString())) {
                 return false;
             }
 
@@ -2414,16 +2393,18 @@ public final class SnowstormConcept extends SnowstormAbstract {
                 for (final JsonNode parameterNode : parametersNode) {
                     final JsonNode partArray = parameterNode.get("part");
                     if (partArray != null && partArray.isArray()) {
-                    	String propertyCode = null;
+                        String propertyCode = null;
 
                         for (final JsonNode partNode : partArray) {
-                        	final String partName = partNode.get("name").asText();
+                            final String partName = partNode.get("name").asString();
 
-                        	switch (partName) {
-	                            case "code":
-	                                propertyCode = partNode.get("valueCode").asText();
-	                                break;
-                        	}
+                            switch (partName) {
+                                case "code":
+                                    propertyCode = partNode.get("valueCode").asString();
+                                    break;
+                                default:
+                                    break;
+                            }
                             // if part contains valueCode with "child", it indicates children, return true
                             if ("child".equals(propertyCode)) {
                                 return true;
@@ -2444,7 +2425,6 @@ public final class SnowstormConcept extends SnowstormAbstract {
      * Gets the all concepts by code system fhir api.
      *
      * @param codeSystem the code system
-     * @return the all concepts by code system fhir api
      * @throws Exception the exception
      */
     private static void cacheSnowstormConceptRefsFhirApi(final SnowstormFhirCodeSystem codeSystem) throws Exception {
@@ -2499,9 +2479,9 @@ public final class SnowstormConcept extends SnowstormAbstract {
                 for (final JsonNode conceptNode : containsNode) {
 
                     final ConceptRef conceptRef = new ConceptRef();
-                    conceptRef.setId(conceptNode.get("code").asText());
-                    conceptRef.setCode(conceptNode.get("code").asText());
-                    conceptRef.setName(conceptNode.get("display").asText());
+                    conceptRef.setId(conceptNode.get("code").asString());
+                    conceptRef.setCode(conceptNode.get("code").asString());
+                    conceptRef.setName(conceptNode.get("display").asString());
                     conceptRef.setTerminology(terminology);
                     conceptRef.setVersion(version);
                     conceptRefs.add(conceptRef);
@@ -2578,9 +2558,9 @@ public final class SnowstormConcept extends SnowstormAbstract {
                 for (final JsonNode conceptNode : containsNode) {
 
                     final Concept concept = new Concept();
-                    concept.setId(conceptNode.get("code").asText());
-                    concept.setCode(conceptNode.get("code").asText());
-                    concept.setName(conceptNode.get("display").asText());
+                    concept.setId(conceptNode.get("code").asString());
+                    concept.setCode(conceptNode.get("code").asString());
+                    concept.setName(conceptNode.get("display").asString());
                     concept.setTerminology(terminology);
                     concept.setVersion(version);
                     concepts.add(concept);
@@ -2596,7 +2576,6 @@ public final class SnowstormConcept extends SnowstormAbstract {
     /**
      * Gets the code systems. Should be called before any other methods.
      *
-     * @return the code systems
      * @throws Exception the exception
      */
     private static void getCodeSystemsFromFhir() throws Exception {
@@ -2615,38 +2594,39 @@ public final class SnowstormConcept extends SnowstormAbstract {
             for (final JsonNode node : entryNode) {
 
                 final SnowstormFhirCodeSystem codeSystem = new SnowstormFhirCodeSystem();
-                codeSystem.setFullUrl(node.get("fullUrl").asText());
+                codeSystem.setFullUrl(node.get("fullUrl").asString());
 
                 final JsonNode resourceNode = node.get("resource");
-                if (resourceNode.has("resourceType"))
-                    codeSystem.setResourceType(resourceNode.get("resourceType").asText());
-
-                if (resourceNode.has("id"))
-                    codeSystem.setId(resourceNode.get("id").asText());
-
-                if (resourceNode.has("url"))
-                    codeSystem.setUrl(resourceNode.get("url").asText());
-
-                if (resourceNode.has("version"))
-                    codeSystem.setVersion(resourceNode.get("version").asText());
-
-                if (resourceNode.has("name"))
-                    codeSystem.setName(resourceNode.get("name").asText());
-
-                if (resourceNode.has("status"))
-                    codeSystem.setStatus(resourceNode.get("status").asText());
-
-                if (resourceNode.has("publisher"))
-                    codeSystem.setPublisher(resourceNode.get("publisher").asText());
-
-                if (resourceNode.has("hierarchyMeaning"))
-                    codeSystem.setHierarchyMeaning(resourceNode.get("hierarchyMeaning").asText());
-
-                if (resourceNode.has("compositional"))
+                if (resourceNode.has("resourceType")) {
+                    codeSystem.setResourceType(resourceNode.get("resourceType").asString());
+                }
+                if (resourceNode.has("id")) {
+                    codeSystem.setId(resourceNode.get("id").asString());
+                }
+                if (resourceNode.has("url")) {
+                    codeSystem.setUrl(resourceNode.get("url").asString());
+                }
+                if (resourceNode.has("version")) {
+                    codeSystem.setVersion(resourceNode.get("version").asString());
+                }
+                if (resourceNode.has("name")) {
+                    codeSystem.setName(resourceNode.get("name").asString());
+                }
+                if (resourceNode.has("status")) {
+                    codeSystem.setStatus(resourceNode.get("status").asString());
+                }
+                if (resourceNode.has("publisher")) {
+                    codeSystem.setPublisher(resourceNode.get("publisher").asString());
+                }
+                if (resourceNode.has("hierarchyMeaning")) {
+                    codeSystem.setHierarchyMeaning(resourceNode.get("hierarchyMeaning").asString());
+                }
+                if (resourceNode.has("compositional")) {
                     codeSystem.setCompositional(resourceNode.get("compositional").asBoolean());
-
-                if (resourceNode.has("content"))
-                    codeSystem.setContent(resourceNode.get("content").asText());
+                }
+                if (resourceNode.has("content")) {
+                    codeSystem.setContent(resourceNode.get("content").asString());
+                }
 
                 codeSystems.put(codeSystem.getName() + "_" + codeSystem.getVersion(), codeSystem);
             }

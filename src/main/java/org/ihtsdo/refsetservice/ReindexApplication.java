@@ -15,10 +15,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
-import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
+import org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
@@ -34,16 +32,18 @@ import org.springframework.context.annotation.FilterType;
  * <li>{@code ./gradlew reindex -PindexedObjects=MapSet} — reindex only MapSet</li>
  * <li>{@code ./gradlew reindex -PindexedObjects=MapSet,Refset} — reindex selected entities</li>
  * </ul>
- * Prefer running with the main MT2 service stopped (or before opening traffic) so searches do not hit
- * empty indexes during {@code dropAndCreate} / mass indexing.
+ * Prefer running with the main MT2 service stopped (or before opening traffic) so searches do not hit empty indexes during {@code dropAndCreate} / mass
+ * indexing.
  * <p>
- * Uses {@link Configuration} (not {@code @SpringBootConfiguration}) so Spring Boot tests continue to
- * resolve a single configuration class ({@link Application}).
+ * Uses {@link Configuration} (not {@code @SpringBootConfiguration}) so Spring Boot tests continue to resolve a single configuration class
+ * ({@link Application}).
  */
 @Configuration
 @EnableAutoConfiguration(exclude = {
-    FlywayAutoConfiguration.class, ElasticsearchRestClientAutoConfiguration.class, DataSourceAutoConfiguration.class,
-    HibernateJpaAutoConfiguration.class
+    FlywayAutoConfiguration.class, DataSourceAutoConfiguration.class
+}, excludeName = {
+    "org.springframework.boot.elasticsearch.autoconfigure.ElasticsearchRestClientAutoConfiguration",
+    "org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration"
 })
 @ComponentScan(basePackageClasses = PropertyUtility.class, useDefaultFilters = false,
     includeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = PropertyUtility.class))
@@ -56,6 +56,7 @@ public class ReindexApplication {
      * Instantiates an empty {@link ReindexApplication}.
      */
     protected ReindexApplication() {
+
         // Spring Boot entry point
     }
 
@@ -77,8 +78,7 @@ public class ReindexApplication {
                 .properties("spring.devtools.restart.enabled=false", "spring.cloud.consul.enabled=false", "spring.cloud.vault.enabled=false").run(args);
 
             final String indexedObjects = resolveIndexedObjects(args);
-            LOG.info("Starting Elasticsearch reindex for: {}",
-                indexedObjects == null || indexedObjects.isBlank() ? "ALL indexed entities" : indexedObjects);
+            LOG.info("Starting Elasticsearch reindex for: {}", indexedObjects == null || indexedObjects.isBlank() ? "ALL indexed entities" : indexedObjects);
 
             // Avoid TerminologyService constructor's one-shot reindex so we control clear + scope explicitly.
             TerminologyService.disableStartupReindex();

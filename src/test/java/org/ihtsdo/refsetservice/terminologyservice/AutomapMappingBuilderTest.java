@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Automap result shaping. These tests do not call Snowstorm or the automap service.
@@ -125,9 +125,9 @@ public class AutomapMappingBuilderTest {
 
         assertEquals(0.8d, task.get("minConfidence").asDouble());
         assertEquals(2, task.get("terms").size());
-        assertEquals("Heart attack", term.get("term").asText());
-        assertEquals("SNOMEDCT", term.get("toTerminology").asText());
-        assertEquals("condition", term.get("entityType").asText());
+        assertEquals("Heart attack", term.get("term").asString());
+        assertEquals("SNOMEDCT", term.get("toTerminology").asString());
+        assertEquals("condition", term.get("entityType").asString());
         assertFalse(term.has("code"));
         assertFalse(term.has("terminology"));
     }
@@ -163,7 +163,7 @@ public class AutomapMappingBuilderTest {
         assertEquals(List.of("22298006", "73211009"), AutomapMappingBuilder.distinctCodes(List.of(" 22298006 ", "", "22298006", "73211009")));
 
         final ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> AutomapService.resolveMinConfidence(1.5d));
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
     }
 
     @Test

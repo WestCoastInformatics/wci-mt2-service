@@ -18,13 +18,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.persistence.Column;
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
@@ -42,8 +42,8 @@ import org.ihtsdo.refsetservice.util.LanguageUtility;
 import org.ihtsdo.refsetservice.util.ModelUtility;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
 
 /**
  * Represents the edition information for a refset.
@@ -460,6 +460,9 @@ public class Edition extends AbstractHasModified {
     /**
      * Preferred term (FSN) of the language refset concept. Clients that need {@code SCTID | term} can join
      * {@code languageRefset} to this with {@code " | "}.
+     *
+     * @param qualifiedLanguageList the qualified language list
+     * @param branchPath the branch path
      */
     private static void addLanguageTermDescriptions(final List<Map<String, String>> qualifiedLanguageList, final String branchPath) {
 
@@ -672,7 +675,6 @@ public class Edition extends AbstractHasModified {
      *
      * @return the int
      */
-    /* see superclass */
     @Override
     public int hashCode() {
 
@@ -699,7 +701,6 @@ public class Edition extends AbstractHasModified {
      * @param obj the obj
      * @return true, if successful
      */
-    /* see superclass */
     @Override
     public boolean equals(final Object obj) {
 
@@ -807,7 +808,6 @@ public class Edition extends AbstractHasModified {
      *
      * @return the string
      */
-    /* see superclass */
     @Override
     public String toString() {
 

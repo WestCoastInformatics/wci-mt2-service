@@ -30,10 +30,10 @@ public class RESTUtils {
     /** The password. */
     private String password;
 
-    /** The read timeout. */
+    ///** The read timeout. */
     // private Duration readTimeout;
 
-    /** The connect timeout. */
+    // /** The connect timeout. */
     // private Duration connectTimeout;
 
     /**

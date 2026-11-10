@@ -48,11 +48,11 @@ import org.ihtsdo.refsetservice.util.ResultList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Integration tests for MetadataController.
@@ -64,8 +64,15 @@ public abstract class AbstractRefsetTests extends BaseTest {
     /** The Constant SIMPLE_DATE_FORMAT. */
     protected static final String YYYYMMDD_FORMAT = "yyyyMMdd";
 
-    /** The config properties. */
-    protected static final Properties PROPERTIES = PropertyUtility.getProperties();
+    /**
+     * Returns the test properties.
+     *
+     * @return the test properties
+     */
+    protected static Properties getTestProperties() {
+
+        return PropertyUtility.getProperties();
+    }
 
     /** The Constant LOG. */
     private static final Logger LOG = LoggerFactory.getLogger(AbstractRefsetTests.class);
@@ -159,7 +166,7 @@ public abstract class AbstractRefsetTests extends BaseTest {
     private MockMvc mvc;
 
     /** The object mapper. */
-    private static ObjectMapper objectMapper;
+    private static JsonMapper objectMapper;
 
     /** The base url. */
     private static String baseUrl = "/refset";
@@ -201,7 +208,7 @@ public abstract class AbstractRefsetTests extends BaseTest {
      *
      * @return the objectMapper
      */
-    protected static ObjectMapper getObjectMapper() {
+    protected static JsonMapper getObjectMapper() {
 
         return objectMapper;
     }
@@ -211,7 +218,7 @@ public abstract class AbstractRefsetTests extends BaseTest {
      *
      * @param objectMapper the objectMapper to set
      */
-    protected static void setObjectMapper(final ObjectMapper objectMapper) {
+    protected static void setObjectMapper(final JsonMapper objectMapper) {
 
         AbstractRefsetTests.objectMapper = objectMapper;
     }
@@ -401,7 +408,7 @@ public abstract class AbstractRefsetTests extends BaseTest {
     // concept name for validating descriptions
     protected void validateConcept(final Concept concept, final String conceptId, final String memberEfectiveTime, final boolean isRefsetMember,
         final List<String> descriptionList, final int roleGroupSize, final int parentSize, final int childSize, final boolean useDescriptions)
-            throws ParseException {
+        throws ParseException {
 
         assertThat(concept).isNotNull();
         assertThat(concept.getCode()).isEqualTo(conceptId);
@@ -497,10 +504,10 @@ public abstract class AbstractRefsetTests extends BaseTest {
     protected void validateExportFiles(final JsonNode root, final String expectedFilePath) throws IOException {
 
         // Get Zipped File
-        final String fileUrl = (root.get("url")).asText();
+        final String fileUrl = (root.get("url")).asString();
         LOG.info("File Url: " + fileUrl);
         final String zipFileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
-        final String exportRefsetPath = PROPERTIES.getProperty("REFSET_EXPORT_DIR");
+        final String exportRefsetPath = getTestProperties().getProperty("REFSET_EXPORT_DIR");
         LOG.info("Refset Directory: " + exportRefsetPath);
         final String downloadedZipFile = exportRefsetPath + "/" + zipFileName;
         LOG.info("Zip File Path: " + downloadedZipFile);

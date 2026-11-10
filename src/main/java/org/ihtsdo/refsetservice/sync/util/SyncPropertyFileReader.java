@@ -26,10 +26,8 @@ import org.springframework.core.io.ClassPathResource;
 
 /**
  * The Class SyncPropertyFileReader.
- */
-/**
- * @author jesseefron
  *
+ * @author jesseefron
  */
 public class SyncPropertyFileReader {
 
@@ -69,6 +67,7 @@ public class SyncPropertyFileReader {
     /** The Constant SPLIT_CHARACTER. */
     public static final String SPLIT_CHARACTER = "\t";
 
+    /** The Constant OLD_SNOMED_CORE_NAME. */
     private static final String OLD_SNOMED_CORE_NAME = "IHTSDO";
 
     /** The refset sct id to tags map. */

@@ -6,11 +6,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
@@ -48,20 +49,18 @@ public class Mapping extends AbstractHasModified {
     private String mapSetId;
 
     /** The map entries. */
-    @ManyToOne(targetEntity = MapEntry.class, optional = false)
+    @OneToMany(targetEntity = MapEntry.class, cascade = CascadeType.ALL, orphanRemoval = true)
     @Fetch(FetchMode.JOIN)
     private List<MapEntry> mapEntries;
 
     /**
-     * Map notes from the MT2 database (not Snowstorm). Hydrated by service layer using mapSet +
-     * source concept code.
+     * Map notes from the MT2 database (not Snowstorm). Hydrated by service layer using mapSet + source concept code.
      */
     @Transient
     private Set<MapNote> mapNotes = new HashSet<>();
 
     /**
-     * Per-concept mapping workflow from the MT2 database (not Snowstorm). Hydrated by service layer
-     * when requested; null when no workflow row exists.
+     * Per-concept mapping workflow from the MT2 database (not Snowstorm). Hydrated by service layer when requested; null when no workflow row exists.
      */
     @Transient
     private MappingWorkflow mappingWorkflow;
@@ -139,8 +138,11 @@ public class Mapping extends AbstractHasModified {
      * @return the map entries
      */
     public List<MapEntry> getMapEntries() {
-        
-        return mapEntries == null ? (mapEntries = new ArrayList<>()) : mapEntries;
+
+        if (mapEntries == null) {
+            mapEntries = new ArrayList<>();
+        }
+        return mapEntries;
     }
 
     /**
@@ -161,7 +163,7 @@ public class Mapping extends AbstractHasModified {
     @JsonGetter
     public Set<MapNote> getMapNotes() {
 
-        return mapNotes == null ? (mapNotes = new HashSet<>()) : mapNotes;
+        return mapNotes == null ? new HashSet<>() : mapNotes;
     }
 
     /**
@@ -204,7 +206,7 @@ public class Mapping extends AbstractHasModified {
     public List<Description> getDescriptions() {
 
         return (descriptions == null) ? new ArrayList<>() : descriptions;
-        
+
     }
 
     /**

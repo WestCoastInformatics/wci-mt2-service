@@ -21,8 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.MediaType;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.MediaType;
 
 import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.app.RecordMetric;
@@ -41,7 +41,6 @@ import org.ihtsdo.refsetservice.model.MappingWorkflowHistory;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.enums.MappingWorkflowAction;
-import org.ihtsdo.refsetservice.service.SecurityService;
 import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.terminologyservice.AutomapService;
 import org.ihtsdo.refsetservice.terminologyservice.BranchService;
@@ -78,12 +77,14 @@ import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * The Class MappingConroller.
  */
 @RestController
 @RequestMapping(value = "/", produces = MediaType.APPLICATION_JSON)
+@Tag(name = "mapset", description = "Map set and mapping endpoints")
 public class MappingController extends BaseController {
 
     /** The Constant LOG. */
@@ -121,7 +122,12 @@ public class MappingController extends BaseController {
     })
     @Parameters({
         @Parameter(name = "mapSetInternalId", description = "Mapset internal id, e.g. &lt;uuid&gt;", required = true),
-        @Parameter(name = "filter", description = "Search text. SNOMED-to-other maps: SNOMED source terms, map target code (e.g. ICD-10 R07.4), map target wildcard (e.g. R07* or K14.*), or a 6–18 digit SNOMED source concept id. Other-to-SNOMED maps: source code, source-code wildcard, SNOMED target terms, or a 6–18 digit SNOMED target concept id. Asterisks are code wildcards when the filter looks like a code; otherwise they are stripped.", required = false),
+        @Parameter(name = "filter",
+            description = "Search text. SNOMED-to-other maps: SNOMED source terms, map target code (e.g. ICD-10 R07.4), "
+                + "map target wildcard (e.g. R07* or K14.*), or a 6–18 digit SNOMED source concept id. "
+                + "Other-to-SNOMED maps: source code, source-code wildcard, SNOMED target terms, "
+                + "or a 6–18 digit SNOMED target concept id. Asterisks are code wildcards when the filter looks like a code; otherwise they are stripped.",
+            required = false),
         @Parameter(name = "showOverriddenEntries", description = "Show underlying entries that have been overridden by this extension", required = false),
         @Parameter(name = "conceptCodes", description = "Comma delimited list of concept codes, e.g. 880057004,880057005", required = false),
         @Parameter(name = "query", description = "The search query", required = false),
@@ -132,19 +138,19 @@ public class MappingController extends BaseController {
         @Parameter(name = "sortAscending", description = "Sort ascending (true) or descending (false)", required = false),
         @Parameter(name = "editing", description = "Search is for editing", required = false),
         @Parameter(name = "searchAfter", description = "Search after cursor", required = false),
-        @Parameter(name = "includeWorkflowStatus", description = "When true, include existing per-concept mapping workflow status on each mapping", required = false),
+        @Parameter(name = "includeWorkflowStatus", description = "When true, include existing per-concept mapping workflow status on each mapping",
+            required = false),
         @Parameter(name = "workflowStatus", description = "Optional per-concept workflow status filter", required = false),
         @Parameter(name = "assignedUser", description = "Optional assignee filter (username or user id)", required = false)
     })
     @RecordMetric
     public @ResponseBody ResponseEntity<ResultListMapping> getMappings(@PathVariable(value = "mapSetInternalId") final String mapSetInternalId,
-        @RequestParam(required = false) final String filter, @RequestParam(required = false, defaultValue = "true") boolean showOverriddenEntries,
+        @RequestParam(required = false) final String filter, @RequestParam(required = false, defaultValue = "true") final boolean showOverriddenEntries,
         @RequestParam(required = false) final String conceptCodes, @RequestParam(required = false) final String query,
         @RequestParam(required = false) final Integer limit, @RequestParam(required = false) final Integer offset,
         @RequestParam(required = false) final Boolean activeOnly, @RequestParam(required = false) final String sort,
         @RequestParam(required = false) final Boolean sortAscending, @RequestParam(required = false) final Boolean editing,
-        @RequestParam(required = false) final String searchAfter,
-        @RequestParam(required = false, defaultValue = "false") final boolean includeWorkflowStatus,
+        @RequestParam(required = false) final String searchAfter, @RequestParam(required = false, defaultValue = "false") final boolean includeWorkflowStatus,
         @RequestParam(required = false) final String workflowStatus, @RequestParam(required = false) final String assignedUser,
         final HttpServletRequest request) throws Exception {
 
@@ -327,9 +333,9 @@ public class MappingController extends BaseController {
         "mapset"
     }, responses = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
-        @ApiResponse(responseCode = "401", description = "Unauthorized"), @ApiResponse(responseCode = "403", description = "Forbidden"),
         @ApiResponse(responseCode = "404", description = "Resource not found"), @ApiResponse(responseCode = "417", description = "Failed Expectation")
-    })
+    }, requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Export request", required = true,
+        content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = MappingExportRequest.class))))
     @Parameters({
         @Parameter(name = "mapSetCode", description = "Mapset code identifier, e.g. 447562003", required = true)
     })
@@ -392,6 +398,7 @@ public class MappingController extends BaseController {
      * @author vparekh import mappings from external sources.
      * @param branch the branch
      * @param mappingFile the mappingFile
+     * @param request the request
      * @return the response entity
      */
     @PostMapping(value = "/mapset/{branch:.+}/mappings/import", consumes = MediaType.MULTIPART_FORM_DATA)
@@ -403,8 +410,8 @@ public class MappingController extends BaseController {
         @ApiResponse(responseCode = "400", description = "Invalid request parameters")
     })
     @RecordMetric
-    public ResponseEntity<String> importMappings(@PathVariable(name = "branch", required = true) String branch,
-        @RequestParam(name = "mappingFile", required = true) MultipartFile mappingFile, final HttpServletRequest request) {
+    public ResponseEntity<String> importMappings(@PathVariable(name = "branch", required = true) final String branch,
+        @RequestParam(name = "mappingFile", required = true) final MultipartFile mappingFile, final HttpServletRequest request) {
 
         LOG.info("RF2 Map Import file: {}", mappingFile);
         LOG.info("RF2 Map Import branch : {}", branch);
@@ -429,10 +436,12 @@ public class MappingController extends BaseController {
 
                 // Import RF2 mappings
                 final List<Mapping> updatedRF2Mappings = MappingService.importMappings(mapProject, decodedBranch, mappingFile, mapSet, user);
-                if (updatedRF2Mappings == null || updatedRF2Mappings.isEmpty())
+                if (updatedRF2Mappings == null || updatedRF2Mappings.isEmpty()) {
                     LOG.info("Mapping import wasn't successful for branch: {}", decodedBranch);
-                else
+                }
+                else {
                     LOG.info("Mapping import was successful for branch: {}", decodedBranch);
+                }
 
                 return new ResponseEntity<>(HttpStatus.OK);
 
@@ -458,7 +467,7 @@ public class MappingController extends BaseController {
      * @throws Exception the exception
      */
     @RequestMapping(method = RequestMethod.GET, value = "/mapset/{mapSetInternalId}/mappings/{conceptCode}", produces = MediaType.APPLICATION_JSON)
-    @Operation(summary = "Get mapping. This call requires authentication with the correct role.", tags = {
+    @Operation(summary = "Get mapping.", tags = {
         "mapset"
     }, responses = {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved the requested information"),
@@ -480,7 +489,7 @@ public class MappingController extends BaseController {
     })
     @RecordMetric
     public @ResponseBody ResponseEntity<Mapping> getMapping(@PathVariable final String mapSetInternalId, @PathVariable final String conceptCode,
-        @RequestParam(required = false, defaultValue = "true") boolean showOverriddenEntries,
+        @RequestParam(required = false, defaultValue = "true") final boolean showOverriddenEntries,
         @Parameter(hidden = true) @ModelAttribute final SearchParameters searchParameters) throws Exception {
 
         LOG.info("Mapping for Mapset: {}, Source Concept Code: {}, Search params: {}", mapSetInternalId, conceptCode, searchParameters);
@@ -777,7 +786,7 @@ public class MappingController extends BaseController {
      */
     @RequestMapping(method = RequestMethod.GET, value = "/mappings/workflow/assigned", produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Get currently assigned mapping workflows for the current user.", tags = {
-        "mapping"
+        "mapset"
     })
     @Parameters({
         @Parameter(name = "limit", description = "Maximum number of results (default 10, max 1000)", required = false),
@@ -825,8 +834,8 @@ public class MappingController extends BaseController {
     /**
      * Get mapping workflows most recently modified by the authenticated user.
      *
-     * <p>Uses {@code MappingWorkflow.modifiedBy}/{@code modified} (workflow-row updates), not Snowstorm
-     * content edits.
+     * <p>
+     * Uses {@code MappingWorkflow.modifiedBy}/{@code modified} (workflow-row updates), not Snowstorm content edits.
      *
      * @param limit max rows (default 10, max 100)
      * @param offset start index (default 0)
@@ -840,7 +849,7 @@ public class MappingController extends BaseController {
      */
     @RequestMapping(method = RequestMethod.GET, value = "/mappings/workflow/recentlyModified", produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Get mapping workflows most recently modified by the current user.", tags = {
-        "mapping"
+        "mapset"
     })
     @Parameters({
         @Parameter(name = "limit", description = "Maximum number of results (default 10, max 100)", required = false),
@@ -851,11 +860,10 @@ public class MappingController extends BaseController {
         @Parameter(name = "mapSetId", description = "Optional map set id filter", required = false)
     })
     @RecordMetric
-    public @ResponseBody ResponseEntity<ResultList<MappingWorkflow>> getRecentlyModifiedMappingWorkflows(
-        @RequestParam(required = false) final Integer limit, @RequestParam(required = false) final Integer offset,
-        @RequestParam(required = false) final String sort, @RequestParam(required = false) final Boolean sortAscending,
-        @RequestParam(required = false) final String mapProjectId, @RequestParam(required = false) final String mapSetId,
-        final HttpServletRequest request) throws Exception {
+    public @ResponseBody ResponseEntity<ResultList<MappingWorkflow>> getRecentlyModifiedMappingWorkflows(@RequestParam(required = false) final Integer limit,
+        @RequestParam(required = false) final Integer offset, @RequestParam(required = false) final String sort,
+        @RequestParam(required = false) final Boolean sortAscending, @RequestParam(required = false) final String mapProjectId,
+        @RequestParam(required = false) final String mapSetId, final HttpServletRequest request) throws Exception {
 
         final User user = requireAuthenticatedUser(request);
 
@@ -879,8 +887,8 @@ public class MappingController extends BaseController {
      * Get the per-concept mapping workflow state.
      *
      * <p>
-     * Returns a non-persisted {@code PUBLISHED} placeholder when the concept is in the mapset but has no
-     * workflow row. Returns 404 when the concept is not in the mapset.
+     * Returns a non-persisted {@code PUBLISHED} placeholder when the concept is in the mapset but has no workflow row. Returns 404 when the concept is not in
+     * the mapset.
      *
      * @param mapSetInternalId the map set internal id
      * @param conceptCode the source concept code
@@ -969,9 +977,8 @@ public class MappingController extends BaseController {
         "mapset"
     })
     public @ResponseBody ResponseEntity<MappingWorkflow> setMappingWorkflowStatus(@PathVariable final String mapSetInternalId,
-        @PathVariable final String conceptCode, @RequestParam final MappingWorkflowAction action,
-        @RequestParam(required = false) final String notes, @RequestParam(required = false) final String assignToUser,
-        final HttpServletRequest request) throws Exception {
+        @PathVariable final String conceptCode, @RequestParam final MappingWorkflowAction action, @RequestParam(required = false) final String notes,
+        @RequestParam(required = false) final String assignToUser, final HttpServletRequest request) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
             final User user = requireAuthenticatedUser(request);
@@ -995,8 +1002,8 @@ public class MappingController extends BaseController {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
 
-            final MappingWorkflow updated = MappingWorkflowService.setWorkflowStatusByAction(
-                service, user, action, workflow, mapSet, mapProject, notes, assignToUser);
+            final MappingWorkflow updated =
+                MappingWorkflowService.setWorkflowStatusByAction(service, user, action, workflow, mapSet, mapProject, notes, assignToUser);
             service.commit();
             return new ResponseEntity<>(updated, HttpStatus.OK);
         } catch (final Exception e) {
@@ -1028,8 +1035,8 @@ public class MappingController extends BaseController {
     })
     @Parameters({
         @Parameter(name = "action", description = "Mapping workflow action (e.g. FINISH_EDITING, START_REVIEW, ACCEPT_REVIEW, REJECT_REVIEW)", required = true),
-        @Parameter(name = "notes", description = "Optional transition notes applied to each concept", required = false),
-        @Parameter(name = "assignToUser", description = "Target user for ASSIGN (lead/admin), START_REVIEW, START_CONFLICT_RESOLUTION, or REASSIGN", required = false)
+        @Parameter(name = "notes", description = "Optional transition notes applied to each concept", required = false), @Parameter(name = "assignToUser",
+            description = "Target user for ASSIGN (lead/admin), START_REVIEW, START_CONFLICT_RESOLUTION, or REASSIGN", required = false)
     })
     @RecordMetric
     public @ResponseBody ResponseEntity<MappingWorkflowBulkResult> setMappingWorkflowStatusBulk(@PathVariable final String mapSetInternalId,
@@ -1104,8 +1111,8 @@ public class MappingController extends BaseController {
      * <p>
      * File format (optional header): {@code conceptCode|User name|Date|Map note text}
      * </p>
-     * Validates the entire file first. Unknown usernames are reported and nothing is imported,
-     * unless {@code createMissingUsers=true} (creates attribution-only VIEWER {@code MapUser}s).
+     * Validates the entire file first. Unknown usernames are reported and nothing is imported, unless {@code createMissingUsers=true} (creates attribution-only
+     * VIEWER {@code MapUser}s).
      *
      * @param mapSetInternalId the map set internal id
      * @param notesFile the notes file
@@ -1120,14 +1127,13 @@ public class MappingController extends BaseController {
     }, responses = {
         @ApiResponse(responseCode = "200", description = "Successfully imported map notes"),
         @ApiResponse(responseCode = "400", description = "Validation failed; response body is the preview"),
-        @ApiResponse(responseCode = "401", description = "Unauthorized"),
-        @ApiResponse(responseCode = "404", description = "Map set not found")
+        @ApiResponse(responseCode = "401", description = "Unauthorized"), @ApiResponse(responseCode = "404", description = "Map set not found")
     })
     @RecordMetric
     public @ResponseBody ResponseEntity<?> importMappingNotes(@PathVariable final String mapSetInternalId,
         @RequestParam(name = "notesFile", required = true) final MultipartFile notesFile,
-        @RequestParam(name = "createMissingUsers", required = false, defaultValue = "false") final boolean createMissingUsers,
-        final HttpServletRequest request) throws Exception {
+        @RequestParam(name = "createMissingUsers", required = false, defaultValue = "false") final boolean createMissingUsers, final HttpServletRequest request)
+        throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
             final User user = requireAuthenticatedUser(request);
@@ -1156,8 +1162,7 @@ public class MappingController extends BaseController {
     }
 
     /**
-     * List map notes for a source concept on a map set.
-     * Notes are stored by map product {@code refSetCode}, so they are shared across versions.
+     * List map notes for a source concept on a map set. Notes are stored by map product {@code refSetCode}, so they are shared across versions.
      *
      * @param mapSetInternalId the map set internal id
      * @param conceptCode the source concept code
@@ -1165,13 +1170,12 @@ public class MappingController extends BaseController {
      * @return the notes
      * @throws Exception the exception
      */
-    @RequestMapping(method = RequestMethod.GET, value = "/mapset/{mapSetInternalId}/mappings/{conceptCode}/notes",
-        produces = MediaType.APPLICATION_JSON)
+    @RequestMapping(method = RequestMethod.GET, value = "/mapset/{mapSetInternalId}/mappings/{conceptCode}/notes", produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "List map notes for a source concept.", tags = {
         "mapset"
     })
-    public @ResponseBody ResponseEntity<List<MapNote>> getMappingNotes(@PathVariable final String mapSetInternalId,
-        @PathVariable final String conceptCode, final HttpServletRequest request) throws Exception {
+    public @ResponseBody ResponseEntity<List<MapNote>> getMappingNotes(@PathVariable final String mapSetInternalId, @PathVariable final String conceptCode,
+        final HttpServletRequest request) throws Exception {
 
         final User user = requireAuthenticatedUser(request);
 
@@ -1198,15 +1202,15 @@ public class MappingController extends BaseController {
      * @return the created note
      * @throws Exception the exception
      */
-    @RequestMapping(method = RequestMethod.POST, value = "/mapset/{mapSetInternalId}/mappings/{conceptCode}/notes",
-        consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @RequestMapping(method = RequestMethod.POST, value = "/mapset/{mapSetInternalId}/mappings/{conceptCode}/notes", consumes = MediaType.APPLICATION_JSON,
+        produces = MediaType.APPLICATION_JSON)
     @Operation(summary = "Create a map note for a source concept.", tags = {
         "mapset"
     }, requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Note text", required = true, content = {
         @Content(mediaType = "application/json", schema = @Schema(implementation = String.class))
     }))
-    public @ResponseBody ResponseEntity<MapNote> createMappingNote(@PathVariable final String mapSetInternalId,
-        @PathVariable final String conceptCode, @RequestBody final String noteText, final HttpServletRequest request) throws Exception {
+    public @ResponseBody ResponseEntity<MapNote> createMappingNote(@PathVariable final String mapSetInternalId, @PathVariable final String conceptCode,
+        @RequestBody final String noteText, final HttpServletRequest request) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
             final User user = requireAuthenticatedUser(request);
@@ -1247,9 +1251,8 @@ public class MappingController extends BaseController {
     }, requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Note text", required = true, content = {
         @Content(mediaType = "application/json", schema = @Schema(implementation = String.class))
     }))
-    public @ResponseBody ResponseEntity<MapNote> updateMappingNote(@PathVariable final String mapSetInternalId,
-        @PathVariable final String conceptCode, @PathVariable final String noteId, @RequestBody final String noteText,
-        final HttpServletRequest request) throws Exception {
+    public @ResponseBody ResponseEntity<MapNote> updateMappingNote(@PathVariable final String mapSetInternalId, @PathVariable final String conceptCode,
+        @PathVariable final String noteId, @RequestBody final String noteText, final HttpServletRequest request) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
             final User user = requireAuthenticatedUser(request);
@@ -1287,8 +1290,8 @@ public class MappingController extends BaseController {
     @Operation(summary = "Delete a map note for a source concept.", tags = {
         "mapset"
     })
-    public @ResponseBody ResponseEntity<Void> deleteMappingNote(@PathVariable final String mapSetInternalId,
-        @PathVariable final String conceptCode, @PathVariable final String noteId, final HttpServletRequest request) throws Exception {
+    public @ResponseBody ResponseEntity<Void> deleteMappingNote(@PathVariable final String mapSetInternalId, @PathVariable final String conceptCode,
+        @PathVariable final String noteId, final HttpServletRequest request) throws Exception {
 
         try (final TerminologyService service = new TerminologyService()) {
             final User user = requireAuthenticatedUser(request);

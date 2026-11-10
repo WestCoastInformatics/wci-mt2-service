@@ -11,7 +11,7 @@ import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Tests ECL cache warmup after map saves and search wait behavior.
@@ -23,8 +23,8 @@ public class SnowstormMappingEclCacheWarmupTest {
 
         final JsonNode body = ThreadLocalMapper.get().readTree(SnowstormMapping.eclCacheWarmupRequestBody("447562003"));
 
-        assertEquals(SnowstormMapping.ECL_CACHE_WARMUP_TERM, body.get("termFilter").asText());
-        assertEquals("^447562003", body.get("eclFilter").asText());
+        assertEquals(SnowstormMapping.ECL_CACHE_WARMUP_TERM, body.get("termFilter").asString());
+        assertEquals("^447562003", body.get("eclFilter").asString());
         assertEquals(1, body.get("limit").asInt());
         assertTrue(body.get("termActive").asBoolean());
         assertTrue(body.get("returnIdOnly").asBoolean());

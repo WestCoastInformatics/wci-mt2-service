@@ -26,7 +26,7 @@ import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.util.MapEntryUtility;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Turns automap task results into unsaved map records.
@@ -338,7 +338,7 @@ public final class AutomapMappingBuilder {
         if (node == null || !node.hasNonNull(field)) {
             return "";
         }
-        return StringUtils.trimToEmpty(node.get(field).asText());
+        return StringUtils.trimToEmpty(node.get(field).asString());
     }
 
     /**

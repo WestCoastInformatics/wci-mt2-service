@@ -1,21 +1,41 @@
 package org.ihtsdo.refsetservice.handler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
+import org.ihtsdo.refsetservice.model.BrowserLoginCallback;
+import org.ihtsdo.refsetservice.model.BrowserLoginException;
+import org.ihtsdo.refsetservice.model.RestException;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
  * Basic unit tests for EntraIDSecurityServiceHandler configuration behavior.
  *
- * These tests focus on handler wiring and default user list parsing. Full token validation is exercised via integration tests.
+ * These tests focus on handler wiring, browser-login guards, and default user list parsing. Token crypto is covered by
+ * {@link EntraIDSecurityServiceHandlerStubJwksTest} and Keycloak Testcontainers.
  */
 public class EntraIDSecurityServiceHandlerTest {
+
+    /**
+     * Clears request attributes left by authenticate() tests.
+     */
+    @AfterEach
+    public void resetRequestAttributes() {
+
+        RequestContextHolder.resetRequestAttributes();
+    }
 
     /**
      * Test set properties and system user lists.
@@ -119,5 +139,211 @@ public class EntraIDSecurityServiceHandlerTest {
         assertEquals("all-all-all-admin", EntraMapBootstrap.ROLE_ADMIN);
         assertEquals("all-all-all-lead", EntraMapBootstrap.ROLE_LEAD);
         assertEquals("all-all-all-specialist", EntraMapBootstrap.ROLE_SPEC);
+    }
+
+    /**
+     * Timeout is owned by SecurityService, not the Entra handler.
+     */
+    @Test
+    public void testTimeoutUserAlwaysFalse() {
+
+        final EntraIDSecurityServiceHandler handler = new EntraIDSecurityServiceHandler();
+        assertFalse(handler.timeoutUser("anyone"));
+    }
+
+    /**
+     * Compute token returns the username unchanged.
+     */
+    @Test
+    public void testComputeTokenForUserReturnsUser() {
+
+        final EntraIDSecurityServiceHandler handler = new EntraIDSecurityServiceHandler();
+        assertEquals("mapper@example.test", handler.computeTokenForUser("mapper@example.test"));
+    }
+
+    /**
+     * Browser login requires CSRF state and supports the callback.
+     */
+    @Test
+    public void testBrowserLoginFlags() {
+
+        final EntraIDSecurityServiceHandler handler = new EntraIDSecurityServiceHandler();
+        assertTrue(handler.requiresBrowserLoginState());
+        assertTrue(handler.supportsBrowserCallback());
+    }
+
+    /**
+     * Authorize URL is built from handler properties.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testBuildBrowserLoginUrl() throws Exception {
+
+        final EntraIDSecurityServiceHandler handler = new EntraIDSecurityServiceHandler();
+        final Properties properties = new Properties();
+        properties.setProperty("authorization.endpoint", "https://login.example/tenant/oauth2/v2.0/authorize");
+        properties.setProperty("client.id", "client-guid");
+        properties.setProperty("redirect.uri", "http://localhost:8888/callback");
+        properties.setProperty("scopes", "openid profile email");
+        handler.setProperties(properties);
+
+        final String url = handler.buildBrowserLoginUrl("csrf-state");
+        assertTrue(url.startsWith("https://login.example/tenant/oauth2/v2.0/authorize?"));
+        assertTrue(url.contains("client_id=client-guid"));
+        assertTrue(url.contains("state=csrf-state"));
+        assertTrue(url.contains("response_type=code"));
+    }
+
+    /**
+     * Missing authorize pieces fail fast.
+     */
+    @Test
+    public void testBuildBrowserLoginUrlRejectsIncompleteConfig() {
+
+        final EntraIDSecurityServiceHandler handler = new EntraIDSecurityServiceHandler();
+        handler.setProperties(new Properties());
+        assertThrows(IllegalStateException.class, () -> handler.buildBrowserLoginUrl("state"));
+    }
+
+    /**
+     * Post-login redirect strips a trailing slash.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testGetPostLoginRedirectUriStripsTrailingSlash() throws Exception {
+
+        final EntraIDSecurityServiceHandler handler = new EntraIDSecurityServiceHandler();
+        final Properties properties = new Properties();
+        properties.setProperty("post.login.redirect.uri", "http://localhost:8888/");
+        handler.setProperties(properties);
+        assertEquals("http://localhost:8888", handler.getPostLoginRedirectUri());
+    }
+
+    /**
+     * Post-login redirect returns the configured value without a trailing slash.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testGetPostLoginRedirectUriReturnsConfiguredValue() throws Exception {
+
+        final EntraIDSecurityServiceHandler handler = new EntraIDSecurityServiceHandler();
+        final Properties properties = new Properties();
+        properties.setProperty("post.login.redirect.uri", "http://localhost:8888/app");
+        handler.setProperties(properties);
+        assertEquals("http://localhost:8888/app", handler.getPostLoginRedirectUri());
+    }
+
+    /**
+     * Authenticate without a request context is 401.
+     */
+    @Test
+    public void testAuthenticateRejectsMissingRequest() {
+
+        final EntraIDSecurityServiceHandler handler = new EntraIDSecurityServiceHandler();
+        final RestException ex = assertThrows(RestException.class, () -> handler.authenticate("ignored"));
+        assertEquals(401, ex.getError().getStatus());
+    }
+
+    /**
+     * Authenticate without a Bearer header is 401.
+     */
+    @Test
+    public void testAuthenticateRejectsMissingBearer() {
+
+        final MockHttpServletRequest request = new MockHttpServletRequest();
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+        final EntraIDSecurityServiceHandler handler = new EntraIDSecurityServiceHandler();
+        final RestException ex = assertThrows(RestException.class, () -> handler.authenticate("ignored"));
+        assertEquals(401, ex.getError().getStatus());
+    }
+
+    /**
+     * Null callback is missing_code.
+     */
+    @Test
+    public void testCompleteBrowserLoginRejectsNullCallback() {
+
+        final EntraIDSecurityServiceHandler handler = new EntraIDSecurityServiceHandler();
+        final BrowserLoginException ex = assertThrows(BrowserLoginException.class, () -> handler.completeBrowserLogin(null));
+        assertEquals("missing_code", ex.getErrorCode());
+    }
+
+    /**
+     * IdP error is passed through.
+     */
+    @Test
+    public void testCompleteBrowserLoginRejectsIdpError() {
+
+        final EntraIDSecurityServiceHandler handler = new EntraIDSecurityServiceHandler();
+        final BrowserLoginException ex = assertThrows(BrowserLoginException.class,
+            () -> handler.completeBrowserLogin(new BrowserLoginCallback(null, "access_denied", "user cancelled", "s", "s")));
+        assertEquals("access_denied", ex.getErrorCode());
+    }
+
+    /**
+     * Missing code is missing_code.
+     */
+    @Test
+    public void testCompleteBrowserLoginRejectsMissingCode() {
+
+        final EntraIDSecurityServiceHandler handler = new EntraIDSecurityServiceHandler();
+        final BrowserLoginException ex =
+            assertThrows(BrowserLoginException.class, () -> handler.completeBrowserLogin(new BrowserLoginCallback("  ", null, null, "s", "s")));
+        assertEquals("missing_code", ex.getErrorCode());
+    }
+
+    /**
+     * State mismatch is rejected.
+     */
+    @Test
+    public void testCompleteBrowserLoginRejectsStateMismatch() {
+
+        final EntraIDSecurityServiceHandler handler = new EntraIDSecurityServiceHandler();
+        final BrowserLoginException ex = assertThrows(BrowserLoginException.class,
+            () -> handler.completeBrowserLogin(new BrowserLoginCallback("code", null, null, "callback-state", "session-state")));
+        assertEquals("state_mismatch", ex.getErrorCode());
+    }
+
+    /**
+     * Missing token endpoint / secret is config.
+     */
+    @Test
+    public void testCompleteBrowserLoginRejectsIncompleteConfig() {
+
+        final EntraIDSecurityServiceHandler handler = new EntraIDSecurityServiceHandler();
+        handler.setProperties(new Properties());
+        final BrowserLoginException ex =
+            assertThrows(BrowserLoginException.class, () -> handler.completeBrowserLogin(new BrowserLoginCallback("code", null, null, "s", "s")));
+        assertEquals("config", ex.getErrorCode());
+    }
+
+    /**
+     * Authenticate URL falls back to authority when authorization.endpoint is unset.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testGetAuthenticateUrlFallsBackToAuthority() throws Exception {
+
+        final EntraIDSecurityServiceHandler handler = new EntraIDSecurityServiceHandler();
+        final Properties properties = new Properties();
+        properties.setProperty("authority", "https://login.example/tenant");
+        handler.setProperties(properties);
+        assertEquals("https://login.example/tenant", handler.getAuthenticateUrl());
+    }
+
+    /**
+     * Null properties yield null authenticate URL.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testGetAuthenticateUrlNullProperties() throws Exception {
+
+        final EntraIDSecurityServiceHandler handler = new EntraIDSecurityServiceHandler();
+        assertNull(handler.getAuthenticateUrl());
     }
 }

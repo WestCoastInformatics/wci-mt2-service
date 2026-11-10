@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
+import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.ihtsdo.refsetservice.model.Refset;
 import org.ihtsdo.refsetservice.model.RefsetWorkflowHistory;
 import org.ihtsdo.refsetservice.model.ResultListConcept;
@@ -35,10 +36,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.json.JacksonTester;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Integration tests for MetadataController.
@@ -83,7 +83,7 @@ public class RefsetWorkflowIntegrationTests extends AbstractRefsetTests {
             setWorkflowUtil(new WorkflowUnitTestUtilities(getMvc(), getBaseUrl(), REFSET_FILE_PATH));
         }
 
-        setObjectMapper(new ObjectMapper());
+        setObjectMapper(ThreadLocalMapper.newMapper());
         JacksonTester.initFields(this, getObjectMapper());
         setBaseUrl("/refset");
 
@@ -375,7 +375,8 @@ public class RefsetWorkflowIntegrationTests extends AbstractRefsetTests {
 
             // Update Workflow State to review
             comment = "The refset is at ready_for_review";
-            refset = RefsetWorkflowService.setWorkflowStatusByAction(service, SecurityService.getUserFromSession(), WorkflowAction.REQUEST_REVIEW, refset, comment);
+            refset =
+                RefsetWorkflowService.setWorkflowStatusByAction(service, SecurityService.getUserFromSession(), WorkflowAction.REQUEST_REVIEW, refset, comment);
 
             /* Merge/promote edit branch to refset branch */
             // Verify still have the same 5 members in the refset branch
@@ -393,8 +394,8 @@ public class RefsetWorkflowIntegrationTests extends AbstractRefsetTests {
 
             // Update Workflow State to review
             comment = "The refset is at ready_for_publication";
-            refset =
-                RefsetWorkflowService.setWorkflowStatusByAction(service, SecurityService.getUserFromSession(), WorkflowAction.REQUEST_PUBLICATION, refset, comment);
+            refset = RefsetWorkflowService.setWorkflowStatusByAction(service, SecurityService.getUserFromSession(), WorkflowAction.REQUEST_PUBLICATION, refset,
+                comment);
 
         } catch (final Exception e) {
 

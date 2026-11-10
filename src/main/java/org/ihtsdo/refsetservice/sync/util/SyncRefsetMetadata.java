@@ -13,7 +13,7 @@ import java.util.Set;
 
 import org.ihtsdo.refsetservice.model.Edition;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 /**
  * The Class SyncRefsetMetadata.
@@ -46,6 +46,7 @@ public class SyncRefsetMetadata {
      * @param allRefsetVersions the all refset versions
      * @param version the version
      * @param branchPath the branch path
+     * @param moduleId the module id
      */
     public SyncRefsetMetadata(final JsonNode refsetNode, final Edition edition, final Set<Long> allRefsetVersions, final long version, final String branchPath,
         final String moduleId) {
@@ -75,7 +76,7 @@ public class SyncRefsetMetadata {
      */
     public String getRefsetId() {
 
-        return refsetNode.get("conceptId").asText();
+        return refsetNode.get("conceptId").asString();
     }
 
     /**

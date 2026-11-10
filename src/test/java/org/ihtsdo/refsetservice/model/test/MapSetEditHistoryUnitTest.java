@@ -22,14 +22,25 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 public class MapSetEditHistoryUnitTest extends BaseTest {
 
+    /** The object. */
     private MapSetEditHistory object;
 
+    /**
+     * Setup.
+     *
+     * @throws Exception the exception
+     */
     @BeforeEach
     public void setup() throws Exception {
 
         object = new MapSetEditHistory();
     }
 
+    /**
+     * Test model get set.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelGetSet() throws Exception {
 
@@ -44,6 +55,11 @@ public class MapSetEditHistoryUnitTest extends BaseTest {
         tester.test();
     }
 
+    /**
+     * Test model equals hashcode.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelEqualsHashcode() throws Exception {
 
@@ -63,6 +79,11 @@ public class MapSetEditHistoryUnitTest extends BaseTest {
         assertTrue(tester.testIdentityFieldDifferentHashcode());
     }
 
+    /**
+     * Test constructor from map set.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testConstructorFromMapSet() throws Exception {
 
@@ -79,6 +100,11 @@ public class MapSetEditHistoryUnitTest extends BaseTest {
         assertEquals("Test MapSet", history.getName());
     }
 
+    /**
+     * Test compare to.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testCompareTo() throws Exception {
 
@@ -95,6 +121,11 @@ public class MapSetEditHistoryUnitTest extends BaseTest {
         assertEquals(0, a.compareTo(a));
     }
 
+    /**
+     * Test model serialization.
+     *
+     * @throws Exception the exception
+     */
     @Test
     public void testModelSerialization() throws Exception {
 

@@ -29,7 +29,7 @@ import org.ihtsdo.refsetservice.util.CrowdGroupNameAlgorithm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 /**
  * The Class SyncCrowdAgent.
@@ -67,7 +67,12 @@ public class SyncCrowdAgent extends SyncAgent {
         this.filteredCodeSystems = filteredCodeSystems;
     }
 
-    /* see superclass */
+    /**
+     * Sync component.
+     *
+     * @param service the service
+     * @throws Exception the exception
+     */
     @Override
     public void syncComponent(final TerminologyService service) throws Exception {
 
@@ -109,7 +114,13 @@ public class SyncCrowdAgent extends SyncAgent {
         LOG.info("Finished syncing SyncCrowdAgent");
     }
 
-    private void initializeSync(TerminologyService service) throws Exception {
+    /**
+     * Initialize sync.
+     *
+     * @param service the service
+     * @throws Exception the exception
+     */
+    private void initializeSync(final TerminologyService service) throws Exception {
 
         updateCodeSystemsToSync(service);
 
@@ -132,7 +143,7 @@ public class SyncCrowdAgent extends SyncAgent {
 
         for (JsonNode codeSystem : filteredCodeSystems) {
 
-            String codeSystemShortName = codeSystem.get("shortName").asText();
+            String codeSystemShortName = codeSystem.get("shortName").asString();
 
             if (allProjects.stream().noneMatch(p -> p.getEdition().getShortName().equals(codeSystemShortName))) {
                 updatedFilteredCodeSystems.add(codeSystem);
@@ -146,8 +157,8 @@ public class SyncCrowdAgent extends SyncAgent {
         // Log the findings
         final Set<String> syncingCodeSystems = new HashSet<>();
         final Set<String> ignoredCodeSystems = new HashSet<>();
-        filteredCodeSystems.stream().forEach(cs -> syncingCodeSystems.add(cs.get("shortName").asText()));
-        ignoredFilteredCodeSystems.stream().forEach(cs -> ignoredCodeSystems.add(cs.get("shortName").asText()));
+        filteredCodeSystems.stream().forEach(cs -> syncingCodeSystems.add(cs.get("shortName").asString()));
+        ignoredFilteredCodeSystems.stream().forEach(cs -> ignoredCodeSystems.add(cs.get("shortName").asString()));
         LOG.info("Syncing code systems against Crowd: " + syncingCodeSystems);
         LOG.info("Not Syncing against Crowd for the following code systems as they have been synced against Crowd once already: " + ignoredCodeSystems);
     }
@@ -318,7 +329,7 @@ public class SyncCrowdAgent extends SyncAgent {
         for (final Organization organization : allDbOrganizations) {
 
             if (OrganizationService.getOrganizationEditions(service, organization.getId()).getItems().stream()
-                .anyMatch(e -> shortNamesToSync.contains(e.getShortName()))) {
+                .anyMatch(e -> SHORT_NAMES_TO_SYNC.contains(e.getShortName()))) {
 
                 final String orgCrowdName = organization.getCrowdId();
                 final Set<String> groups = organizationCrowdGroupMap.get(orgCrowdName);
@@ -372,7 +383,7 @@ public class SyncCrowdAgent extends SyncAgent {
         // Determine which editions are relevant and prepare return map for their organizations
         for (final Edition edition : dbShortNameEditionMap.values()) {
 
-            if (filteredCodeSystems.stream().anyMatch(cs -> cs.get("shortName").asText().equals(edition.getShortName()))) {
+            if (filteredCodeSystems.stream().anyMatch(cs -> cs.get("shortName").asString().equals(edition.getShortName()))) {
 
                 // Add to editions to sync
                 editionsToSync.add(edition.getId());

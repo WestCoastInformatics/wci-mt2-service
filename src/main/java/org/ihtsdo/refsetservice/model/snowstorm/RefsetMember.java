@@ -249,7 +249,11 @@ public class RefsetMember {
         this.effectiveTime = effectiveTime;
     }
 
-    /* see superclass */
+    /**
+     * Hash code.
+     *
+     * @return the int
+     */
     @Override
     public int hashCode() {
 
@@ -268,9 +272,14 @@ public class RefsetMember {
         return result;
     }
 
-    /* see superclass */
+    /**
+     * Equals.
+     *
+     * @param obj the obj
+     * @return true, if successful
+     */
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
 
         if (this == obj) {
             return true;
@@ -352,7 +361,11 @@ public class RefsetMember {
         return true;
     }
 
-    /* see superclass */
+    /**
+     * To string.
+     *
+     * @return the string
+     */
     @Override
     public String toString() {
 
