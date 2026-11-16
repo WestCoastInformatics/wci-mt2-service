@@ -93,6 +93,18 @@ public class SnowstormMapping extends SnowstormAbstract {
     /** Shown when a search arrives while Snowstorm is still filling the ECL cache. */
     static final String ECL_CACHE_UPDATING_MESSAGE = "The map index is still updating after a recent save. Please try the search again in a minute.";
 
+    /** Snowstorm rejects a member search whose offset plus limit is above this. */
+    private static final int SNOWSTORM_MEMBER_PAGE_WINDOW = 10_000;
+
+    /**
+     * Page size for an explicit concept list. The caller's limit pages an unscoped map list. Batch edit sends that default, so a longer list keeps reading or
+     * later concepts come back with an empty target.
+     */
+    static final int EXPLICIT_CONCEPT_MEMBER_PAGE_SIZE = 1_000;
+
+    /** Safety stop for an explicit concept member read. */
+    static final int MAX_EXPLICIT_CONCEPT_MEMBER_PAGES = 500;
+
     /**
      * How long a user search will wait for an in-flight warmup before returning 503 so the UI can explain the delay instead of sitting on a spinner.
      */
@@ -438,12 +450,17 @@ public class SnowstormMapping extends SnowstormAbstract {
             memberSearchPaging.setLimit(Math.min(1000, Math.max(pageLimit * 2, 50)));
             memberSearchPaging.setOffset(0);
             memberSearchPaging.setSearchAfter(null);
+        } else if (explicitConceptCodes) {
+            // The caller's limit (default 100) is one grid page. Named concepts must be read in full before empty-target placeholders are created.
+            prepareExplicitConceptMemberSearch(memberSearchPaging);
         }
 
         final long memberSearchStartMs = System.currentTimeMillis();
         int snowstormPages = 0;
+        int membersFetched = 0;
         final int maxSnowstormPages = unscopedExclude ? 500 : 2;
         while (!done) {
+            int memberPageCount = 0;
 
             final String targetUri =
                 SnowstormConnection.getBaseUrl() + branch + "/members/search?" + SnowstormApiPaging.getMemberSearchPagingQueryString(memberSearchPaging);
@@ -476,6 +493,7 @@ public class SnowstormMapping extends SnowstormAbstract {
                     done = true;
                     continue;
                 }
+                memberPageCount = mappingsBatch.size();
 
                 final Iterator<JsonNode> itemIterator = mappingsBatch.iterator();
 
@@ -525,6 +543,7 @@ public class SnowstormMapping extends SnowstormAbstract {
             }
 
             snowstormPages++;
+            membersFetched += memberPageCount;
             if (scopedTextFilter) {
                 done = true;
             } else if (unscopedExclude) {
@@ -541,6 +560,8 @@ public class SnowstormMapping extends SnowstormAbstract {
                     final int fetchLimit = memberSearchPaging.getLimit() != null ? memberSearchPaging.getLimit() : pageLimit;
                     memberSearchPaging.setOffset((memberSearchPaging.getOffset() != null ? memberSearchPaging.getOffset() : 0) + fetchLimit);
                 }
+            } else if (explicitConceptCodes) {
+                done = !continueExplicitConceptMemberSearch(memberSearchPaging, memberPageCount, membersFetched, total, searchAfter, snowstormPages);
             } else {
                 i++;
                 memberSearchPaging.setOffset(i * memberSearchPaging.getLimit());
@@ -553,7 +574,8 @@ public class SnowstormMapping extends SnowstormAbstract {
         if (unscopedExclude) {
             total = publishedMemberTotal(total, excludeCodes.size());
         }
-        LOG.info("getMappings phase=memberSearch {}ms mappingConcepts={}", System.currentTimeMillis() - memberSearchStartMs, conceptIdToMappingMap.size());
+        LOG.info("getMappings phase=memberSearch {}ms mappingConcepts={} pages={}", System.currentTimeMillis() - memberSearchStartMs,
+            conceptIdToMappingMap.size(), snowstormPages);
 
         final List<String> invalidConceptIds = new ArrayList<>();
         Set<String> noMapConceptIds = new HashSet<>();
@@ -659,6 +681,67 @@ public class SnowstormMapping extends SnowstormAbstract {
             mapEntriesOnPage, mappings.getTotal());
         return mappings;
 
+    }
+
+    /**
+     * Sizes the member search so every row for an explicit concept list is requested.
+     *
+     * A caller limit of 100 is one mappings-grid page. Using it as the whole read drops every concept whose rows sort after that page, and batch edit shows
+     * those concepts with an empty target.
+     *
+     * @param memberSearchPaging the member search paging
+     */
+    static void prepareExplicitConceptMemberSearch(final SearchParameters memberSearchPaging) {
+
+        final int requestedLimit = memberSearchPaging.getLimit() != null && memberSearchPaging.getLimit() > 0 ? memberSearchPaging.getLimit()
+            : EXPLICIT_CONCEPT_MEMBER_PAGE_SIZE;
+        memberSearchPaging.setLimit(Math.min(SNOWSTORM_MEMBER_PAGE_WINDOW, Math.max(requestedLimit, EXPLICIT_CONCEPT_MEMBER_PAGE_SIZE)));
+        memberSearchPaging.setOffset(0);
+        memberSearchPaging.setSearchAfter(null);
+    }
+
+    /**
+     * Moves an explicit concept member search to its next page.
+     *
+     * @param memberSearchPaging the member search paging
+     * @param pageItemCount members returned on the page just read
+     * @param membersFetched members read so far
+     * @param total Snowstorm member total, or 0 when the response omitted it
+     * @param searchAfter cursor from the page just read
+     * @param pagesFetched pages read so far, including the page just read
+     * @return true when another page should be requested
+     */
+    static boolean continueExplicitConceptMemberSearch(final SearchParameters memberSearchPaging, final int pageItemCount, final int membersFetched,
+        final int total, final String searchAfter, final int pagesFetched) {
+
+        final int fetchLimit = memberSearchPaging.getLimit() != null && memberSearchPaging.getLimit() > 0 ? memberSearchPaging.getLimit()
+            : EXPLICIT_CONCEPT_MEMBER_PAGE_SIZE;
+        final boolean moreMembers = total <= 0 || membersFetched < total;
+        if (pageItemCount < fetchLimit || !moreMembers || pagesFetched >= MAX_EXPLICIT_CONCEPT_MEMBER_PAGES) {
+            if (pagesFetched >= MAX_EXPLICIT_CONCEPT_MEMBER_PAGES && pageItemCount >= fetchLimit && moreMembers) {
+                LOG.warn("getMappings stopped explicit concept member search after {} pages with {} of {} members", pagesFetched, membersFetched, total);
+            }
+            return false;
+        }
+
+        if (StringUtils.isNotBlank(searchAfter) && !searchAfter.equals(memberSearchPaging.getSearchAfter())) {
+            memberSearchPaging.setSearchAfter(searchAfter);
+            memberSearchPaging.setOffset(0);
+            return true;
+        }
+        if (StringUtils.isNotBlank(searchAfter)) {
+            LOG.warn("getMappings explicit concept member search cursor did not advance after {} pages", pagesFetched);
+            return false;
+        }
+
+        final int currentOffset = memberSearchPaging.getOffset() != null ? memberSearchPaging.getOffset() : 0;
+        final int nextOffset = currentOffset + fetchLimit;
+        if (nextOffset + fetchLimit > SNOWSTORM_MEMBER_PAGE_WINDOW) {
+            LOG.warn("getMappings explicit concept member search stopped at offset {} of {} members", nextOffset, total);
+            return false;
+        }
+        memberSearchPaging.setOffset(nextOffset);
+        return true;
     }
 
     /**
