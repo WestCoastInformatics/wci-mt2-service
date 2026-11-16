@@ -766,6 +766,9 @@ public class SnowstormMapping extends SnowstormAbstract {
         mapEntry.setId(mappingNode.get("memberId").asString());
         mapEntry.setReleased(mappingNode.get("released").asBoolean());
         mapEntry.setModuleId(mappingNode.get("moduleId").asString());
+        if (mappingNode.hasNonNull("active")) {
+            mapEntry.setActive(mappingNode.get("active").asBoolean());
+        }
 
         final JsonNode additionalFields = mappingNode.get("additionalFields");
 

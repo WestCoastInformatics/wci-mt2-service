@@ -658,6 +658,26 @@ public interface TerminologyServerHandler extends Configurable {
     public Mapping getMapping(final String branch, final String conceptCode, final boolean showOverriddenEntries, final MapSet mapSet) throws Exception;
 
     /**
+     * Returns the mapping, optionally including inactive members from both modules.
+     *
+     * The default keeps the existing call, which returns active members and still applies {@code showOverriddenEntries}. Handlers without a history
+     * implementation return that same result.
+     *
+     * @param branch the branch
+     * @param conceptCode the concept code
+     * @param showOverriddenEntries the show overridden entries
+     * @param includeInactive when true, return active and inactive members from the International module and the edition module
+     * @param mapSet the map set
+     * @return the mapping
+     * @throws Exception the exception
+     */
+    default Mapping getMapping(final String branch, final String conceptCode, final boolean showOverriddenEntries, final boolean includeInactive,
+        final MapSet mapSet) throws Exception {
+
+        return getMapping(branch, conceptCode, showOverriddenEntries, mapSet);
+    }
+
+    /**
      * Returns the concept.
      *
      * @param terminology the terminology

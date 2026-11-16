@@ -874,7 +874,28 @@ public class SNOMEDSnowstormTerminologyServerHandler implements TerminologyServe
     @Override
     public Mapping getMapping(final String branch, final String conceptCode, final boolean showOverriddenEntries, final MapSet mapSet) throws Exception {
 
-        return SnowstormMapping.getMapping(branch, mapSet.getRefSetCode(), conceptCode, null, true, showOverriddenEntries, true, mapSet);
+        return getMapping(branch, conceptCode, showOverriddenEntries, false, mapSet);
+
+    }
+
+    /**
+     * Gets the mapping.
+     *
+     * @param branch the branch
+     * @param conceptCode the concept code
+     * @param showOverriddenEntries the show overridden entries
+     * @param includeInactive when true, return active and inactive members from both modules
+     * @param mapSet the map set
+     * @return the mapping
+     * @throws Exception the exception
+     */
+    @Override
+    public Mapping getMapping(final String branch, final String conceptCode, final boolean showOverriddenEntries, final boolean includeInactive,
+        final MapSet mapSet) throws Exception {
+
+        // An inactive edition row would otherwise hide every International row, including inactive International history.
+        final boolean showAllModules = includeInactive || showOverriddenEntries;
+        return SnowstormMapping.getMapping(branch, mapSet.getRefSetCode(), conceptCode, null, !includeInactive, showAllModules, true, mapSet);
 
     }
 
