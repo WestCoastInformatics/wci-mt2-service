@@ -129,7 +129,24 @@ public final class MappingService {
      */
     public static Mapping getMapping(final String branch, final String conceptCode, final boolean showOverriddenEntries, final MapSet mapSet) throws Exception {
 
-        return getTerminologyHandler().getMapping(branch, conceptCode, showOverriddenEntries, mapSet);
+        return getMapping(branch, conceptCode, showOverriddenEntries, false, mapSet);
+    }
+
+    /**
+     * Returns the mapping.
+     *
+     * @param branch the branch
+     * @param conceptCode the concept code
+     * @param showOverriddenEntries the show overridden entries
+     * @param includeInactive when true, return active and inactive members from the International module and the edition module
+     * @param mapSet the map set
+     * @return the mapping
+     * @throws Exception the exception
+     */
+    public static Mapping getMapping(final String branch, final String conceptCode, final boolean showOverriddenEntries, final boolean includeInactive,
+        final MapSet mapSet) throws Exception {
+
+        return getTerminologyHandler().getMapping(branch, conceptCode, showOverriddenEntries, includeInactive, mapSet);
     }
 
     /**

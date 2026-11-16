@@ -462,6 +462,7 @@ public class MappingController extends BaseController {
      * @param mapSetInternalId the map set internal id
      * @param conceptCode the concept code
      * @param showOverriddenEntries the show overridden entries
+     * @param includeInactive when true, return active and inactive members from the International module and the edition module
      * @param searchParameters the search parameters
      * @return the mapping
      * @throws Exception the exception
@@ -478,6 +479,10 @@ public class MappingController extends BaseController {
         @Parameter(name = "mapSetInternalId", description = "Mapset internal id, e.g. &lt;uuid&gt;", required = true),
         @Parameter(name = "conceptCode", description = "Source concept code identifier, e.g. 880057004", required = true),
         @Parameter(name = "showOverriddenEntries", description = "Show underlying entries that have been overridden by this extension", required = false),
+        @Parameter(name = "includeInactive",
+            description = "When true, return active and inactive map entries from both the International module and the edition module. "
+                + "Omitted or false keeps the current active-entry result and still applies showOverriddenEntries.",
+            required = false),
         @Parameter(name = "query", description = "The search query", required = false),
         @Parameter(name = "limit", description = "Maximum number of search results", required = false),
         @Parameter(name = "offset", description = "Start index of search results", required = false),
@@ -490,6 +495,7 @@ public class MappingController extends BaseController {
     @RecordMetric
     public @ResponseBody ResponseEntity<Mapping> getMapping(@PathVariable final String mapSetInternalId, @PathVariable final String conceptCode,
         @RequestParam(required = false, defaultValue = "true") final boolean showOverriddenEntries,
+        @RequestParam(required = false, defaultValue = "false") final boolean includeInactive,
         @Parameter(hidden = true) @ModelAttribute final SearchParameters searchParameters) throws Exception {
 
         LOG.info("Mapping for Mapset: {}, Source Concept Code: {}, Search params: {}", mapSetInternalId, conceptCode, searchParameters);
@@ -502,7 +508,7 @@ public class MappingController extends BaseController {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
             final MapSet mapSet = MapSetService.getMapSet(service, mapSetInternalId);
-            final Mapping mapping = MappingService.getMapping(branch, conceptCode, showOverriddenEntries, mapSet);
+            final Mapping mapping = MappingService.getMapping(branch, conceptCode, showOverriddenEntries, includeInactive, mapSet);
             MapNoteService.attachNotes(service, mapSet, mapping);
 
             return new ResponseEntity<>(mapping, HttpStatus.OK);

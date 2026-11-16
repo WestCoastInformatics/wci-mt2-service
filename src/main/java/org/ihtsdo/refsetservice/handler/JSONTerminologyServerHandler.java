@@ -4779,6 +4779,24 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
     @Override
     public Mapping getMapping(final String branch, final String conceptCode, final boolean showOverriddenEntries, final MapSet mapSet) throws Exception {
 
+        return getMapping(branch, conceptCode, showOverriddenEntries, false, mapSet);
+    }
+
+    /**
+     * Gets the mapping.
+     *
+     * @param branch the branch
+     * @param conceptCode the concept code
+     * @param showOverriddenEntries the show overridden entries
+     * @param includeInactive when true, include inactive members as well as active ones
+     * @param mapSet the map set
+     * @return the mapping
+     * @throws Exception the exception
+     */
+    @Override
+    public Mapping getMapping(final String branch, final String conceptCode, final boolean showOverriddenEntries, final boolean includeInactive,
+        final MapSet mapSet) throws Exception {
+
         final File f = new File(handlerProperties.getProperty("dir") + "/Mappings.json");
         if (!f.exists()) {
             LOG.error("Mappings file doesn't exist: " + f.getPath());
@@ -4807,8 +4825,11 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             final JsonNode mappingNode = itemIterator.next();
 
-            // Only process active mappings from the correct mapset
-            if (!(mappingNode.get("refsetId").asString().equals(mapSetForLookup.getRefSetCode()) && mappingNode.get("active").asString().equals("true"))) {
+            // Only process mappings from the correct mapset. Inactive members are included only when requested.
+            if (!mappingNode.get("refsetId").asString().equals(mapSetForLookup.getRefSetCode())) {
+                continue;
+            }
+            if (!includeInactive && !"true".equals(mappingNode.path("active").asString())) {
                 continue;
             }
 
@@ -4831,6 +4852,9 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             final MapEntry mapEntry = new MapEntry();
 
             mapEntry.setModified(new SimpleDateFormat("yyyyMMdd").parse(mappingNode.get("effectiveTime").asString()));
+            if (mappingNode.hasNonNull("active")) {
+                mapEntry.setActive(mappingNode.get("active").asBoolean());
+            }
 
             final JsonNode additionalFields = mappingNode.get("additionalFields");
 
