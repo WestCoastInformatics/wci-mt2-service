@@ -9,6 +9,7 @@
  */
 package org.ihtsdo.refsetservice.model.test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashSet;
@@ -29,6 +30,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.datatype.hibernate7.Hibernate7Module;
 
 /**
  * Unit test for {@link User}.
@@ -138,6 +143,38 @@ public class UserUnitTest extends BaseTest {
         tester.exclude("teams");
         tester.exclude("authToken");
         assertTrue(tester.testJsonSerialization());
+    }
+
+    /**
+     * Hibernate7Module skips {@code @Transient} fields unless they have {@code @JsonGetter}. Session roles and the auth token must still appear in API JSON.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testRolesAndAuthTokenSerializedWhenPresent() throws Exception {
+
+        final User user = new User();
+        user.setUserName("rwood@westcoastinformatics.com");
+        user.setAuthToken("token");
+        user.getRoles().add("all-all-all-admin");
+        user.getRoles().add("all-all-all-lead");
+
+        final JsonNode node = hibernateObjectMapper().readTree(hibernateObjectMapper().writeValueAsString(user));
+        assertTrue(node.has("authToken"), node.toString());
+        assertEquals("token", node.get("authToken").asString());
+        assertTrue(node.has("roles"), node.toString());
+        assertTrue(node.get("roles").isArray());
+        assertEquals(2, node.get("roles").size());
+    }
+
+    /**
+     * Object mapper matching production {@code JacksonConfiguration} (Hibernate7Module).
+     *
+     * @return the object mapper
+     */
+    private static JsonMapper hibernateObjectMapper() {
+
+        return JsonMapper.builder().addModule(new Hibernate7Module()).build();
     }
 
     /**

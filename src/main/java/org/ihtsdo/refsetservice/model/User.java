@@ -273,6 +273,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
      *
      * @return the auth token
      */
+    @JsonGetter()
     public String getAuthToken() {
 
         return authToken;
@@ -293,6 +294,7 @@ public class User extends AbstractHasModified implements Comparable<User>, Copya
      *
      * @return the roles
      */
+    @JsonGetter()
     public Set<String> getRoles() {
 
         if (roles == null) {
