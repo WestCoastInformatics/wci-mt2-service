@@ -1241,8 +1241,9 @@ public final class MapSetWorkflowService {
     /**
      * Stamp the published source version onto a map set.
      *
-     * The source branch path becomes the edition branch plus the publication date. Extensions use that same date as the base content version. Derivatives of the
-     * international edition keep the international dependency date, because that date is their content version.
+     * The source branch path becomes the edition branch plus the publication date. Extensions use that same date as the
+     * base content version. Derivatives of the international edition keep the international dependency date,
+     * because that date is their content version.
      *
      * @param mapSet the map set being published
      * @param publicationDateString the publication date in yyyy-MM-dd format
@@ -1251,7 +1252,7 @@ public final class MapSetWorkflowService {
 
         final String editionBranch = mapSet.getEditionBranch();
         if (StringUtils.isNotBlank(editionBranch)) {
-            mapSet.setFromBranchPath(StringUtils.removeEnd(editionBranch, "/") + "/" + publicationDateString);
+            mapSet.setFromBranchPath(Strings.CS.removeEnd(editionBranch, "/") + "/" + publicationDateString);
         }
 
         final String baseContentVersion = mapSet.getBaseContentVersion();
