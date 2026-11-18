@@ -9,6 +9,7 @@
  */
 package org.ihtsdo.refsetservice.terminologyservice;
 
+import org.apache.commons.lang3.StringUtils;
 import org.ihtsdo.refsetservice.model.Job;
 import org.ihtsdo.refsetservice.model.MapProject;
 import org.ihtsdo.refsetservice.model.MapSet;
@@ -76,6 +77,34 @@ public final class JobService {
             return createdJob;
         }
 
+    }
+
+    /**
+     * Creates a job that tracks a bulk mapping save.
+     *
+     * @param user the acting user
+     * @param mapSetId the map set internal id
+     * @param mappingCount the number of mappings in the request
+     * @return the job
+     * @throws Exception the exception
+     */
+    public static Job createMappingBulkSaveJob(final User user, final String mapSetId, final int mappingCount) throws Exception {
+
+        try (final TerminologyService service = new TerminologyService()) {
+
+            service.setModifiedBy(StringUtils.defaultIfBlank(user.getName(), user.getUserName()));
+            service.beginTransaction();
+
+            final Job job = new Job();
+            job.setJobType(Job.Type.MAPPING_BULK_SAVE);
+            job.setResourceId(mapSetId);
+            job.setStatus(Job.Status.PENDING);
+            job.setParameters("mappingCount=" + mappingCount);
+
+            final Job createdJob = service.add(job);
+            service.commit();
+            return createdJob;
+        }
     }
 
     /**

@@ -357,7 +357,9 @@ public class Job extends AbstractHasModified {
         /** The rf2 snapshot export. */
         RF2_SNAPSHOT_EXPORT,
         /** The rf2 delta export. */
-        RF2_DELTA_EXPORT
+        RF2_DELTA_EXPORT,
+        /** Bulk mapping save that may finish after the HTTP request returns. */
+        MAPPING_BULK_SAVE
     }
 
     /**
