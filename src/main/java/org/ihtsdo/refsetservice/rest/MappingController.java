@@ -47,6 +47,7 @@ import org.ihtsdo.refsetservice.terminologyservice.BranchService;
 import org.ihtsdo.refsetservice.terminologyservice.MapNoteService;
 import org.ihtsdo.refsetservice.terminologyservice.MapProjectService;
 import org.ihtsdo.refsetservice.terminologyservice.MapSetService;
+import org.ihtsdo.refsetservice.terminologyservice.MappingBulkSave;
 import org.ihtsdo.refsetservice.terminologyservice.MappingService;
 import org.ihtsdo.refsetservice.terminologyservice.MappingWorkflowService;
 import org.ihtsdo.refsetservice.util.ModelUtility;
@@ -732,22 +733,29 @@ public class MappingController extends BaseController {
      */
     @RequestMapping(method = RequestMethod.PUT, value = "/mapset/{mapSetInternalId}/bulk", consumes = MediaType.APPLICATION_JSON,
         produces = MediaType.APPLICATION_JSON)
-    @Operation(summary = "Update mapping for the mapSetInternalId. This call requires authentication with the correct role.", tags = {
-        "mapset"
-    }, responses = {
-        @ApiResponse(responseCode = "200", description = "Successfully updated the mapping"), @ApiResponse(responseCode = "401", description = "Unauthorized"),
-        @ApiResponse(responseCode = "403", description = "Forbidden"), @ApiResponse(responseCode = "404", description = "Resource not found"),
-        @ApiResponse(responseCode = "417", description = "Failed Expectation")
-    })
+    @Operation(
+        summary = "Update mappings for the mapSetInternalId. Returns the updated mappings when the save finishes before the gateway timeout. "
+            + "When it does not, returns {\"url\":\"job/{id}\"} and the save continues in the background. Poll GET /job/{id} the same way as map-set export. "
+            + "This call requires authentication with the correct role.",
+        tags = {
+            "mapset"
+        }, responses = {
+            @ApiResponse(responseCode = "200",
+                description = "Updated mapping list, or {\"url\":\"job/{id}\"} when the save is still running. Job status is COMPLETED or FAILED."),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"), @ApiResponse(responseCode = "403", description = "Forbidden"),
+            @ApiResponse(responseCode = "404", description = "Resource not found"),
+            @ApiResponse(responseCode = "409", description = "A mapping save is already in progress for this map set"),
+            @ApiResponse(responseCode = "417", description = "Failed Expectation")
+        })
     @Parameters({
         @Parameter(name = "mapSetInternalId", description = "Mapset internal id, e.g. &lt;uuid&gt;", required = true),
-        @Parameter(description = "Mapping object to update", required = true)
+        @Parameter(description = "Mapping objects to update", required = true)
     })
     @RecordMetric
-    public @ResponseBody ResponseEntity<List<Mapping>> updateMappings(@PathVariable final String mapSetInternalId, @RequestBody final List<Mapping> mappings,
+    public @ResponseBody ResponseEntity<?> updateMappings(@PathVariable final String mapSetInternalId, @RequestBody final List<Mapping> mappings,
         final HttpServletRequest request) throws Exception {
 
-        LOG.info("Update Mapping mapSetInternalId:{}, mapping:{}", mapSetInternalId, ModelUtility.toJson(mappings));
+        LOG.info("Update Mapping mapSetInternalId:{}, mapping count:{}", mapSetInternalId, mappings == null ? 0 : mappings.size());
 
         try (final TerminologyService service = new TerminologyService()) {
             final MapSet mapSet;
@@ -765,9 +773,7 @@ public class MappingController extends BaseController {
             }
             final User user = requireAuthenticatedUser(request);
             MappingWorkflowService.canUserEditMappings(user, mapSet, mappings, service);
-            final List<Mapping> updatedMappings = MappingService.updateMappings(mapSet.getMapProject(), branch, mapSet.getRefSetCode(), mappings, mapSet, user);
-
-            return new ResponseEntity<>(updatedMappings, HttpStatus.OK);
+            return new ResponseEntity<>(MappingBulkSave.save(user, mapSet.getId(), mappings), HttpStatus.OK);
 
         } catch (final Exception e) {
 
