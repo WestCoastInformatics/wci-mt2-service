@@ -389,12 +389,15 @@ public class SnowstormMapping extends SnowstormAbstract {
             return emptyMappings(paging);
         }
 
+        final boolean includeInactive = paging.isIncludeInactive();
         final StringBuilder requestBody = new StringBuilder();
         if (mapToSnomed) {
-            requestBody.append(mapToSnomedMemberSearchBody(mapSet.getRefSetCode(), filteredConceptList));
+            requestBody.append(mapToSnomedMemberSearchBody(mapSet.getRefSetCode(), filteredConceptList, includeInactive));
         } else {
             requestBody.append("{");
-            requestBody.append("\"active\": true,");
+            if (!includeInactive) {
+                requestBody.append("\"active\": true,");
+            }
             requestBody.append("\"referenceSet\": \"").append(mapSet.getRefSetCode()).append("\"");
             if (filteredConceptList != null && !filteredConceptList.isEmpty()) {
                 requestBody.append(",").append("\"referencedComponentIds\": [").append(String.join(",", filteredConceptList)).append("]");
@@ -629,8 +632,8 @@ public class SnowstormMapping extends SnowstormAbstract {
 
         populateMappingsNamesFromConceptMap(conceptIdToMappingMap.values(), fromTerminology, toTerminology, terminologyConceptMap);
 
-        // Handle edition-precedence in the map entries
-        if (!showOverriddenEntries) {
+        // An inactive edition row would otherwise hide every International row, including inactive International history.
+        if (!showOverriddenEntries && !includeInactive) {
             for (final Mapping mapping : conceptIdToMappingMap.values()) {
                 handleEditionPrecedence(mapping);
             }
@@ -2610,8 +2613,23 @@ public class SnowstormMapping extends SnowstormAbstract {
      */
     static String mapToSnomedMemberSearchBody(final String refsetId, final List<String> sourceCodes) {
 
+        return mapToSnomedMemberSearchBody(refsetId, sourceCodes, false);
+    }
+
+    /**
+     * Member search body that selects map-to-SNOMED rows by source code.
+     *
+     * @param refsetId the reference set id
+     * @param sourceCodes source codes to match, or empty to return members of the reference set
+     * @param includeInactive when true, omit the active filter so inactive members are included
+     * @return JSON body
+     */
+    static String mapToSnomedMemberSearchBody(final String refsetId, final List<String> sourceCodes, final boolean includeInactive) {
+
         final ObjectNode body = ThreadLocalMapper.get().createObjectNode();
-        body.put("active", true);
+        if (!includeInactive) {
+            body.put("active", true);
+        }
         body.put("referenceSet", refsetId);
         if (sourceCodes != null && !sourceCodes.isEmpty()) {
             final ObjectNode additionalFieldSets = ThreadLocalMapper.get().createObjectNode();

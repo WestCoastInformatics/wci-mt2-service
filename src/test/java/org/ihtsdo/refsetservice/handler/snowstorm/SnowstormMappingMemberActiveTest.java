@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.ihtsdo.refsetservice.model.MapEntry;
+import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.ihtsdo.refsetservice.util.ThreadLocalMapper;
 import org.junit.jupiter.api.Test;
 
@@ -33,6 +34,18 @@ public class SnowstormMappingMemberActiveTest {
         final MapEntry mapEntry = SnowstormMapping.convertSnowstormMemberToMapEntry(member, null, null, "MAIN");
 
         assertTrue(mapEntry.isActive());
+    }
+
+    @Test
+    public void includeInactiveOmitsTheActiveMemberFilter() {
+
+        final SearchParameters paging = new SearchParameters();
+        final String activeOnly = SnowstormApiPaging.getMemberSearchPagingQueryString(paging);
+        assertTrue(activeOnly.contains("active=true"));
+
+        paging.setIncludeInactive(true);
+        final String withInactive = SnowstormApiPaging.getMemberSearchPagingQueryString(paging);
+        assertFalse(withInactive.contains("active="));
     }
 
     private static ObjectNode member(final boolean active) {

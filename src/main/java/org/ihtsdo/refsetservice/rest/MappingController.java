@@ -97,6 +97,7 @@ public class MappingController extends BaseController {
      * @param mapSetInternalId the map set internal id
      * @param filter the filter
      * @param showOverriddenEntries the show overridden entries
+     * @param includeInactive when true, return active and inactive members from the International module and the edition module
      * @param conceptCodes the concept codes
      * @param query the query
      * @param limit the limit
@@ -130,6 +131,10 @@ public class MappingController extends BaseController {
                 + "or a 6–18 digit SNOMED target concept id. Asterisks are code wildcards when the filter looks like a code; otherwise they are stripped.",
             required = false),
         @Parameter(name = "showOverriddenEntries", description = "Show underlying entries that have been overridden by this extension", required = false),
+        @Parameter(name = "includeInactive",
+            description = "When true, return active and inactive map entries from both the International module and the edition module. "
+                + "Omitted or false keeps the current active-entry result and still applies showOverriddenEntries.",
+            required = false),
         @Parameter(name = "conceptCodes", description = "Comma delimited list of concept codes, e.g. 880057004,880057005", required = false),
         @Parameter(name = "query", description = "The search query", required = false),
         @Parameter(name = "limit", description = "Maximum number of search results", required = false),
@@ -147,7 +152,8 @@ public class MappingController extends BaseController {
     @RecordMetric
     public @ResponseBody ResponseEntity<ResultListMapping> getMappings(@PathVariable(value = "mapSetInternalId") final String mapSetInternalId,
         @RequestParam(required = false) final String filter, @RequestParam(required = false, defaultValue = "true") final boolean showOverriddenEntries,
-        @RequestParam(required = false) final String conceptCodes, @RequestParam(required = false) final String query,
+        @RequestParam(required = false, defaultValue = "false") final boolean includeInactive, @RequestParam(required = false) final String conceptCodes,
+        @RequestParam(required = false) final String query,
         @RequestParam(required = false) final Integer limit, @RequestParam(required = false) final Integer offset,
         @RequestParam(required = false) final Boolean activeOnly, @RequestParam(required = false) final String sort,
         @RequestParam(required = false) final Boolean sortAscending, @RequestParam(required = false) final Boolean editing,
@@ -171,6 +177,7 @@ public class MappingController extends BaseController {
         sp.setLimit(limit != null && limit > 0 ? limit : 100);
         sp.setOffset(offset);
         sp.setActiveOnly(activeOnly);
+        sp.setIncludeInactive(includeInactive);
         sp.setSort(sort);
         sp.setSortAscending(sortAscending);
         sp.setEditing(Boolean.TRUE.equals(editing));

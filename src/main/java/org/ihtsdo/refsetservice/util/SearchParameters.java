@@ -37,6 +37,9 @@ public class SearchParameters {
     /** The active only. */
     private Boolean activeOnly;
 
+    /** When true, member searches return active and inactive rows. */
+    private boolean includeInactive;
+
     /** The sort. */
     private String sort;
 
@@ -92,6 +95,7 @@ public class SearchParameters {
         limit = other.getLimit();
         offset = other.getOffset();
         activeOnly = other.getActiveOnly();
+        includeInactive = other.isIncludeInactive();
         sort = other.getSort();
         sortAscending = other.getSortAscending();
         editing = other.getEditing();
@@ -180,6 +184,26 @@ public class SearchParameters {
     public void setActiveOnly(final Boolean activeOnly) {
 
         this.activeOnly = activeOnly;
+    }
+
+    /**
+     * Returns whether inactive members should be included with active ones.
+     *
+     * @return true when both active and inactive members are requested
+     */
+    public boolean isIncludeInactive() {
+
+        return includeInactive;
+    }
+
+    /**
+     * Sets whether inactive members should be included with active ones.
+     *
+     * @param includeInactive true to return active and inactive members
+     */
+    public void setIncludeInactive(final boolean includeInactive) {
+
+        this.includeInactive = includeInactive;
     }
 
     /**
@@ -337,6 +361,10 @@ public class SearchParameters {
             return false;
         }
 
+        if (includeInactive != other.includeInactive) {
+            return false;
+        }
+
         if (sortAscending == null) {
             if (other.sortAscending != null) {
                 return false;
@@ -379,6 +407,7 @@ public class SearchParameters {
         result = prime * result + ((query == null) ? 0 : query.hashCode());
         result = prime * result + ((sort == null) ? 0 : sort.hashCode());
         result = prime * result + ((activeOnly == null) ? 0 : activeOnly.hashCode());
+        result = prime * result + Boolean.hashCode(includeInactive);
         result = prime * result + ((sortAscending == null) ? 0 : sortAscending.hashCode());
         result = prime * result + ((editing == null) ? 0 : editing.hashCode());
         result = prime * result + ((searchAfter == null) ? 0 : searchAfter.hashCode());

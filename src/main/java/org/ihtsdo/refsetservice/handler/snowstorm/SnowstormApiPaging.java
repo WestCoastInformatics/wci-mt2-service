@@ -68,11 +68,13 @@ public final class SnowstormApiPaging {
             pagingQueryString.append("&offset=").append(0);
         }
 
-        // active=true
-        if (searchParameters.getActiveOnly() != null) {
-            pagingQueryString.append("&active=").append(searchParameters.getActiveOnly());
-        } else {
-            pagingQueryString.append("&active=true");
+        // includeInactive omits the filter so Snowstorm returns active and inactive members.
+        if (!searchParameters.isIncludeInactive()) {
+            if (searchParameters.getActiveOnly() != null) {
+                pagingQueryString.append("&active=").append(searchParameters.getActiveOnly());
+            } else {
+                pagingQueryString.append("&active=true");
+            }
         }
 
         if (pagingQueryString.toString().startsWith("&")) {

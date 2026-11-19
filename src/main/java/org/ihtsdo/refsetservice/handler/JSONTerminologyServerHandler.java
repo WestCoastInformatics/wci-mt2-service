@@ -4664,8 +4664,12 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
 
             final JsonNode mappingNode = itemIterator.next();
 
-            // Only process active mappings from the correct mapset
-            if (!(mappingNode.get("refsetId").asString().equals(mapSet.getRefSetCode()) && mappingNode.get("active").asString().equals("true"))) {
+            // Inactive members are included only when requested.
+            final boolean includeInactive = searchParameters != null && searchParameters.isIncludeInactive();
+            if (!mappingNode.get("refsetId").asString().equals(mapSet.getRefSetCode())) {
+                continue;
+            }
+            if (!includeInactive && !"true".equals(mappingNode.path("active").asString())) {
                 continue;
             }
 
@@ -4686,6 +4690,9 @@ public class JSONTerminologyServerHandler implements TerminologyServerHandler {
             final MapEntry mapEntry = new MapEntry();
 
             mapEntry.setModified(new SimpleDateFormat("yyyyMMdd").parse(mappingNode.get("effectiveTime").asString()));
+            if (mappingNode.hasNonNull("active")) {
+                mapEntry.setActive(mappingNode.get("active").asBoolean());
+            }
 
             final JsonNode additionalFields = mappingNode.get("additionalFields");
 

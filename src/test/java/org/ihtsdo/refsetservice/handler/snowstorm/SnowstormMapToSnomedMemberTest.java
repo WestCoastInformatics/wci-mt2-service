@@ -114,6 +114,16 @@ public class SnowstormMapToSnomedMemberTest {
         assertEquals("A01", body.get("additionalFieldSets").get("mapSource").get(0).asString());
         assertEquals("R07.4", body.get("additionalFieldSets").get("mapSource").get(1).asString());
         assertFalse(body.has("referencedComponentIds"));
+        assertTrue(body.get("active").asBoolean());
+    }
+
+    @Test
+    public void searchBodyOmitsActiveWhenInactiveMembersAreIncluded() throws Exception {
+
+        final JsonNode body = ThreadLocalMapper.get().readTree(SnowstormMapping.mapToSnomedMemberSearchBody("999", List.of("A01"), true));
+
+        assertFalse(body.has("active"));
+        assertEquals("999", body.get("referenceSet").asString());
     }
 
     @Test
