@@ -74,17 +74,17 @@ public class MappingWorkflowMapsetGateTest {
     }
 
     /**
-     * Finish edit allowed when all terminal.
+     * Finish edit allowed when every mapping is published or ready for publication.
      *
      * @throws Exception the exception
      */
     @Test
-    public void finishEditAllowedWhenAllTerminal() throws Exception {
+    public void finishEditAllowedWhenAllPublishedOrReady() throws Exception {
 
         try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
-            context.setWorkflowStatus(MapWorkflowStatus.EDITING_DONE);
-            context.addWorkflowForConcept("concept-new", MapWorkflowStatus.NEW);
+            context.setWorkflowStatus(MapWorkflowStatus.PUBLISHED);
             context.addWorkflowForConcept("concept-ready", MapWorkflowStatus.READY_FOR_PUBLICATION);
+            context.addWorkflowForConcept("concept-published", MapWorkflowStatus.PUBLISHED);
 
             MappingWorkflowService.assertMapsetTransitionAllowed(context.getService(), context.getMapSet(), WorkflowAction.FINISH_EDIT);
             MapSetWorkflowService.setWorkflowStatus(context.getService(), context.getAdminUser(), WorkflowAction.FINISH_EDIT, context.getMapSet(),
@@ -95,26 +95,29 @@ public class MappingWorkflowMapsetGateTest {
     }
 
     /**
-     * Finish edit allowed with untouched new.
+     * Finish edit blocked by any mapping phase other than published or ready for publication.
      *
      * @throws Exception the exception
      */
     @Test
-    public void finishEditAllowedWithUntouchedNew() throws Exception {
+    public void finishEditBlockedByNonTerminalStatuses() throws Exception {
 
-        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
-            context.setWorkflowStatus(MapWorkflowStatus.NEW);
-            for (int index = 0; index < 5; index++) {
-                context.addWorkflowForConcept("untouched-" + index, MapWorkflowStatus.NEW);
+        final MapWorkflowStatus[] blockingStatuses = { MapWorkflowStatus.NEW, MapWorkflowStatus.EDITING_DONE, MapWorkflowStatus.REVIEW_NEEDED,
+            MapWorkflowStatus.REVIEW_RESOLVED, MapWorkflowStatus.QA_NEEDED, MapWorkflowStatus.REVISION };
+
+        for (final MapWorkflowStatus blockingStatus : blockingStatuses) {
+            try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+                context.setWorkflowStatus(MapWorkflowStatus.READY_FOR_PUBLICATION);
+                context.addWorkflowForConcept("blocking-" + blockingStatus, blockingStatus);
+
+                final ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                    () -> MappingWorkflowService.assertMapsetTransitionAllowed(context.getService(), context.getMapSet(), WorkflowAction.FINISH_EDIT));
+
+                assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
+                assertTrue(exception.getReason().contains(blockingStatus.name()), exception.getReason());
+                assertEquals(WorkflowStatus.IN_EDIT, context.reloadMapSet().getWorkflowStatus());
+                assertFalse(promotionCalled.get());
             }
-            context.addWorkflowForConcept("ready-1", MapWorkflowStatus.READY_FOR_PUBLICATION);
-            context.addWorkflowForConcept("ready-2", MapWorkflowStatus.READY_FOR_PUBLICATION);
-
-            MappingWorkflowService.assertMapsetTransitionAllowed(context.getService(), context.getMapSet(), WorkflowAction.FINISH_EDIT);
-            MapSetWorkflowService.setWorkflowStatus(context.getService(), context.getAdminUser(), WorkflowAction.FINISH_EDIT, context.getMapSet(),
-                "Finish edit", WorkflowStatus.READY_FOR_EDIT, null);
-
-            assertEquals(WorkflowStatus.READY_FOR_EDIT, context.reloadMapSet().getWorkflowStatus());
         }
     }
 

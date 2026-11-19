@@ -101,7 +101,14 @@ public final class MappingWorkflowService {
         Arrays.asList(MappingWorkflowAction.RELEASE, MappingWorkflowAction.FINISH_EDITING, MappingWorkflowAction.ACCEPT_REVIEW,
             MappingWorkflowAction.REJECT_REVIEW, MappingWorkflowAction.REQUEST_REVISION, MappingWorkflowAction.RESOLVE_CONFLICT);
 
-    /** Mapping phases that block mapset FINISH_EDIT and REQUEST_PUBLICATION. */
+    /**
+     * Mapping phases that allow mapset {@code FINISH_EDIT}. Any other phase, including {@code NEW}, {@code EDITING_DONE}, and {@code REVIEW_NEEDED}, blocks
+     * the transition.
+     */
+    private static final List<MapWorkflowStatus> FINISH_EDIT_ALLOWED_STATUSES =
+        Arrays.asList(MapWorkflowStatus.PUBLISHED, MapWorkflowStatus.READY_FOR_PUBLICATION);
+
+    /** Mapping phases that block mapset REQUEST_PUBLICATION. */
     private static final List<MapWorkflowStatus> MAPSET_GATE_BLOCKING_STATUSES =
         Arrays.asList(MapWorkflowStatus.EDITING_IN_PROGRESS, MapWorkflowStatus.REVIEW_IN_PROGRESS, MapWorkflowStatus.CONFLICT_IN_PROGRESS);
 
@@ -1756,12 +1763,14 @@ public final class MappingWorkflowService {
             return;
         }
 
-        final List<MappingWorkflow> blockingMappings = findBlockingMappings(service, mapSet);
+        final List<MappingWorkflow> blockingMappings = findBlockingMappings(service, mapSet, action);
         if (blockingMappings.isEmpty()) {
             return;
         }
 
-        final StringBuilder message = new StringBuilder("Mapset transition blocked by mapping(s) in progress: ");
+        final StringBuilder message = new StringBuilder(action == WorkflowAction.FINISH_EDIT
+            ? "Mapset transition blocked by mapping(s) not Published or Ready For Publication: "
+            : "Mapset transition blocked by mapping(s) in progress: ");
         for (int index = 0; index < blockingMappings.size(); index++) {
             if (index > 0) {
                 message.append(", ");
@@ -1773,25 +1782,36 @@ public final class MappingWorkflowService {
     }
 
     /**
-     * Find mapping workflow rows that block mapset finish or publication requests.
+     * Find mapping workflow rows that block the requested mapset transition.
+     *
+     * <p>
+     * {@code FINISH_EDIT} is blocked by every phase other than {@code PUBLISHED} and {@code READY_FOR_PUBLICATION}. {@code REQUEST_PUBLICATION} is blocked only
+     * by in-progress editing, review, or conflict resolution.
      *
      * @param service the terminology service
      * @param mapSet the map set
+     * @param action the mapset workflow action
      * @return blocking mapping workflow rows
      * @throws Exception the exception
      */
-    public static List<MappingWorkflow> findBlockingMappings(final TerminologyService service, final MapSet mapSet) throws Exception {
+    public static List<MappingWorkflow> findBlockingMappings(final TerminologyService service, final MapSet mapSet, final WorkflowAction action)
+        throws Exception {
 
-        if (mapSet == null || StringUtils.isBlank(mapSet.getId())) {
+        if (mapSet == null || StringUtils.isBlank(mapSet.getId()) || action == null) {
             return List.of();
         }
 
-        final List<MappingWorkflow> results =
-            service.getEntityManager()
-                .createQuery("from MappingWorkflow mw where mw.mapSet.id = :mapSetId and mw.active = true" + " and mw.workflowStatus in :blockingStatuses",
-                    MappingWorkflow.class)
-                .setParameter("mapSetId", mapSet.getId()).setParameter("blockingStatuses", MAPSET_GATE_BLOCKING_STATUSES).getResultList();
-        return results;
+        if (action == WorkflowAction.FINISH_EDIT) {
+            return service.getEntityManager()
+                .createQuery("from MappingWorkflow mw where mw.mapSet.id = :mapSetId and mw.active = true"
+                    + " and (mw.workflowStatus is null or mw.workflowStatus not in :allowedStatuses)", MappingWorkflow.class)
+                .setParameter("mapSetId", mapSet.getId()).setParameter("allowedStatuses", FINISH_EDIT_ALLOWED_STATUSES).getResultList();
+        }
+
+        return service.getEntityManager()
+            .createQuery("from MappingWorkflow mw where mw.mapSet.id = :mapSetId and mw.active = true and mw.workflowStatus in :blockingStatuses",
+                MappingWorkflow.class)
+            .setParameter("mapSetId", mapSet.getId()).setParameter("blockingStatuses", MAPSET_GATE_BLOCKING_STATUSES).getResultList();
     }
 
     /**
