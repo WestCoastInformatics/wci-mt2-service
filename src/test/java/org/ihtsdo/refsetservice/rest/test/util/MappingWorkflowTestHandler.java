@@ -13,6 +13,7 @@ import org.ihtsdo.refsetservice.model.MapSet;
 import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.terminologyservice.MappingContentChanges;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 
 /**
@@ -115,6 +116,11 @@ public class MappingWorkflowTestHandler extends MapSetWorkflowTestHandler {
 
         updateCalled = true;
         lastUpdatedMappings = mappings == null ? new ArrayList<>() : new ArrayList<>(mappings);
+        for (final Mapping mapping : lastUpdatedMappings) {
+            if (mapping != null) {
+                MappingContentChanges.record(mapping.getCode());
+            }
+        }
         return lastUpdatedMappings;
     }
 

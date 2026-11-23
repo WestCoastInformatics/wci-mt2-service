@@ -11,7 +11,9 @@ package org.ihtsdo.refsetservice.terminologyservice;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.ihtsdo.refsetservice.handler.TerminologyServerHandler;
 import org.ihtsdo.refsetservice.model.MapProject;
@@ -20,6 +22,7 @@ import org.ihtsdo.refsetservice.model.Mapping;
 import org.ihtsdo.refsetservice.model.MappingExportRequest;
 import org.ihtsdo.refsetservice.model.ResultListMapping;
 import org.ihtsdo.refsetservice.model.User;
+import org.ihtsdo.refsetservice.service.TerminologyService;
 import org.ihtsdo.refsetservice.util.HandlerUtility;
 import org.ihtsdo.refsetservice.util.SearchParameters;
 import org.slf4j.Logger;
@@ -180,7 +183,34 @@ public final class MappingService {
     public static List<Mapping> updateMappings(final MapProject mapProject, final String branch, final String mapSetCode, final List<Mapping> mapping,
         final MapSet mapSet, final User user) throws Exception {
 
-        return getTerminologyHandler().updateMappings(mapProject, branch, mapSetCode, mapping, mapSet, user);
+        final Set<String> changedConceptCodes = new LinkedHashSet<>();
+        MappingContentChanges.begin(changedConceptCodes);
+        final List<Mapping> updated;
+        try {
+            updated = getTerminologyHandler().updateMappings(mapProject, branch, mapSetCode, mapping, mapSet, user);
+        } finally {
+            MappingContentChanges.end();
+        }
+        recordContentEdits(mapSet, user, changedConceptCodes);
+        return updated;
+    }
+
+    /**
+     * Stamp workflow rows for concepts whose mapping content was written, so they appear on the dashboard.
+     *
+     * @param mapSet the map set
+     * @param user the acting user
+     * @param changedConceptCodes source concept codes that were written
+     * @throws Exception the exception
+     */
+    private static void recordContentEdits(final MapSet mapSet, final User user, final Set<String> changedConceptCodes) throws Exception {
+
+        if (changedConceptCodes == null || changedConceptCodes.isEmpty()) {
+            return;
+        }
+        try (final TerminologyService service = new TerminologyService()) {
+            MappingWorkflowService.recordContentEdits(service, user, mapSet, changedConceptCodes);
+        }
     }
 
     /**

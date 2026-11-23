@@ -425,8 +425,8 @@ public final class MappingWorkflowService {
      * Find mapping workflow rows most recently modified by a user across map sets / projects.
      *
      * <p>
-     * "Modified" means {@link MappingWorkflow#getModifiedBy()} / {@link MappingWorkflow#getModified()} (workflow-row updates such as assignment and status
-     * transitions), not Snowstorm mapping content edits and not {@code MappingWorkflowHistory} alone.
+     * "Modified" means {@link MappingWorkflow#getModifiedBy()} / {@link MappingWorkflow#getModified()}. Workflow transitions and mapping content edits both
+     * update those fields. {@code MappingWorkflowHistory} alone does not.
      *
      * @param service the terminology service
      * @param modifiedBy the modifying user name (session user)
@@ -1843,6 +1843,54 @@ public final class MappingWorkflowService {
             Hibernate.initialize(mapProject.getMapLeads());
         }
         return mapProject;
+    }
+
+    /**
+     * Stamp workflow rows so a mapping content edit shows on the dashboard.
+     *
+     * <p>
+     * Updates {@code modified} and {@code modifiedBy} on active rows for these concepts that are assigned to {@code user} and in an editable phase. Does not
+     * change workflow status, assignment, or history.
+     *
+     * @param service the terminology service
+     * @param user the user who edited the mapping content
+     * @param mapSet the map set
+     * @param conceptCodes source concept codes whose mapping content changed
+     * @throws Exception the exception
+     */
+    public static void recordContentEdits(final TerminologyService service, final User user, final MapSet mapSet, final Collection<String> conceptCodes)
+        throws Exception {
+
+        if (service == null || user == null || StringUtils.isBlank(user.getUserName()) || mapSet == null || StringUtils.isBlank(mapSet.getId())
+            || conceptCodes == null || conceptCodes.isEmpty()) {
+            return;
+        }
+
+        final List<String> codes = new ArrayList<>();
+        for (final String conceptCode : conceptCodes) {
+            if (StringUtils.isNotBlank(conceptCode)) {
+                codes.add(conceptCode.trim());
+            }
+        }
+        if (codes.isEmpty()) {
+            return;
+        }
+
+        service.setModifiedBy(user.getUserName());
+        service.setModifiedFlag(true);
+
+        final int batchSize = 500;
+        for (int start = 0; start < codes.size(); start += batchSize) {
+            final List<String> batch = codes.subList(start, Math.min(start + batchSize, codes.size()));
+            final List<MappingWorkflow> rows = service.getEntityManager()
+                .createQuery("from MappingWorkflow mw where mw.mapSet.id = :mapSetId and mw.sourceConceptCode in :codes and mw.active = true"
+                    + " and mw.assignedUser = :assignedUser and mw.workflowStatus in :statuses", MappingWorkflow.class)
+                .setParameter("mapSetId", mapSet.getId()).setParameter("codes", batch).setParameter("assignedUser", user.getUserName())
+                .setParameter("statuses", MAPPING_EDITABLE_STATUSES).getResultList();
+            for (final MappingWorkflow row : rows) {
+                service.update(row);
+            }
+        }
     }
 
     /**

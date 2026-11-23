@@ -57,6 +57,7 @@ import org.ihtsdo.refsetservice.model.RestException;
 import org.ihtsdo.refsetservice.model.User;
 import org.ihtsdo.refsetservice.model.enums.VersionStatus;
 import org.ihtsdo.refsetservice.service.TerminologyService;
+import org.ihtsdo.refsetservice.terminologyservice.MappingContentChanges;
 import org.ihtsdo.refsetservice.terminologyservice.SnowstormConnection;
 import org.ihtsdo.refsetservice.util.AuditEntryHelper;
 import org.ihtsdo.refsetservice.util.DateUtility;
@@ -2299,7 +2300,28 @@ public class SnowstormMapping extends SnowstormAbstract {
         // Sort all of the map entries in Group/Priority order
         MapEntryUtility.sortMapEntries(submittedMapping);
 
+        if (mappingContentWasWritten(mapEntryCreateList, mapEntryDeleteList, mapEntryInactivateList, mapEntryReactivateList, mapEntryUpdateList)) {
+            MappingContentChanges.record(submittedMapping.getCode());
+        }
+
         return submittedMapping;
+    }
+
+    /**
+     * Returns whether this save wrote map members to Snowstorm.
+     *
+     * @param created members created
+     * @param deleted members deleted
+     * @param inactivated members inactivated
+     * @param reactivated members reactivated
+     * @param updated members updated
+     * @return true when at least one member write was prepared
+     */
+    private static boolean mappingContentWasWritten(final Map<MapEntry, MapEntry> created, final List<MapEntry> deleted, final List<MapEntry> inactivated,
+        final Set<MapEntry> reactivated, final Map<MapEntry, MapEntry> updated) {
+
+        return (created != null && !created.isEmpty()) || (deleted != null && !deleted.isEmpty()) || (inactivated != null && !inactivated.isEmpty())
+            || (reactivated != null && !reactivated.isEmpty()) || (updated != null && !updated.isEmpty());
     }
 
     /**
