@@ -240,6 +240,41 @@ public class MappingWorkflowApiUnitTest extends BaseTest {
     }
 
     /**
+     * Saving mapping content puts the concept on the current user's dashboard without a workflow transition.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void testContentEditAppearsInRecentlyModifiedWorkflows() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createInEdit()) {
+            context.setWorkflowAssignedTo(context.getSpecialistUser().getUserName());
+
+            final ResultList<MappingWorkflow> before = workflowUtil.getRecentlyModifiedWorkflows(context.getSpecialistUser(), null);
+            assertEquals(0, before.getTotal());
+
+            final Mapping mapping = new Mapping();
+            mapping.setCode(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE);
+            mapping.setName("Content edit");
+            workflowUtil.updateMappings(context.getMapSet().getId(), Collections.singletonList(mapping), context.getSpecialistUser());
+
+            final ResultList<MappingWorkflow> after =
+                workflowUtil.getRecentlyModifiedWorkflows(context.getSpecialistUser(), "limit=10&sort=modified&sortAscending=false");
+            assertEquals(1, after.getTotal());
+            assertEquals(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, after.getItems().get(0).getSourceConceptCode());
+            assertEquals(context.getSpecialistUser().getUserName(), after.getItems().get(0).getModifiedBy());
+            assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, after.getItems().get(0).getWorkflowStatus());
+
+            final List<MappingWorkflowHistory> history =
+                workflowUtil.getWorkflowHistory(context.getMapSet().getId(), MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, context.getSpecialistUser());
+            assertThat(history).isEmpty();
+
+            final ResultList<MappingWorkflow> otherUser = workflowUtil.getRecentlyModifiedWorkflows(context.getOtherSpecialistUser(), null);
+            assertEquals(0, otherUser.getTotal());
+        }
+    }
+
+    /**
      * Test lead may save mapping data while assigned for review; phase stays REVIEW_IN_PROGRESS.
      *
      * @throws Exception the exception

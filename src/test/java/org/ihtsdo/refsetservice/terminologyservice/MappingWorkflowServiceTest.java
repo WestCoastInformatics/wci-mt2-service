@@ -803,6 +803,53 @@ public class MappingWorkflowServiceTest {
     }
 
     /**
+     * A content edit shows on the dashboard without changing workflow status or history.
+     *
+     * @throws Exception the exception
+     */
+    @Test
+    public void recordContentEditAppearsOnDashboardWithoutChangingWorkflow() throws Exception {
+
+        try (MappingWorkflowTestFixtures.Context context = MappingWorkflowTestFixtures.Context.createConflictProjectInEdit()) {
+            final TerminologyService service = context.getService();
+            context.setWorkflowAssignedTo(context.getSpecialistUser().getUserName());
+            context.setWorkflowSlot2AssignedTo(context.getOtherSpecialistUser().getUserName());
+            final String slot2ModifiedBy = context.getWorkflowSlot2().getModifiedBy();
+            final Date modifiedBefore = context.getWorkflow().getModified();
+
+            MappingWorkflowService.recordContentEdits(service, context.getSpecialistUser(), context.getMapSet(),
+                List.of(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE));
+
+            final MappingWorkflow updated = context.reloadWorkflow();
+            assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, updated.getWorkflowStatus());
+            assertEquals(context.getSpecialistUser().getUserName(), updated.getAssignedUser());
+            assertEquals(context.getSpecialistUser().getUserName(), updated.getModifiedBy());
+            assertTrue(updated.getModified() != null && (modifiedBefore == null || !updated.getModified().before(modifiedBefore)));
+
+            final MappingWorkflow slot2 = context.reloadWorkflowSlot2();
+            assertEquals(slot2ModifiedBy, slot2.getModifiedBy());
+            assertEquals(context.getOtherSpecialistUser().getUserName(), slot2.getAssignedUser());
+            assertEquals(MapWorkflowStatus.EDITING_IN_PROGRESS, slot2.getWorkflowStatus());
+
+            final SearchParameters searchParameters = new SearchParameters();
+            searchParameters.setLimit(10);
+            searchParameters.setSort("modified");
+            searchParameters.setSortAscending(false);
+            final ResultList<MappingWorkflow> mine = MappingWorkflowService.findRecentlyModifiedWorkflows(service,
+                context.getSpecialistUser().getUserName(), null, null, searchParameters);
+            assertEquals(1, mine.getTotal());
+            assertEquals(MappingWorkflowTestFixtures.SOURCE_CONCEPT_CODE, mine.getItems().get(0).getSourceConceptCode());
+
+            final ResultList<MappingWorkflow> other = MappingWorkflowService.findRecentlyModifiedWorkflows(service,
+                context.getOtherSpecialistUser().getUserName(), null, null, searchParameters);
+            assertEquals(0, other.getTotal());
+
+            final ResultList<MappingWorkflowHistory> history = MappingWorkflowService.getWorkflowHistory(service, updated, new SearchParameters());
+            assertTrue(history.getItems() == null || history.getItems().isEmpty());
+        }
+    }
+
+    /**
      * Attach workflows hydrates existing rows and attaches a non-persisted PUBLISHED placeholder when missing.
      *
      * @throws Exception the exception

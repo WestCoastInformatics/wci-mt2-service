@@ -854,7 +854,7 @@ public class MappingController extends BaseController {
      * Get mapping workflows most recently modified by the authenticated user.
      *
      * <p>
-     * Uses {@code MappingWorkflow.modifiedBy}/{@code modified} (workflow-row updates), not Snowstorm content edits.
+     * Uses {@code MappingWorkflow.modifiedBy}/{@code modified}. Workflow transitions and mapping content edits both update those fields.
      *
      * @param limit max rows (default 10, max 100)
      * @param offset start index (default 0)
