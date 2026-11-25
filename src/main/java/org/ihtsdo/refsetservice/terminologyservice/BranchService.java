@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import jakarta.ws.rs.core.Response;
 
@@ -77,6 +78,12 @@ public final class BranchService {
 
     /** The app url root. */
     private static Boolean useManageServiceInitials;
+
+    /**
+     * Last branch id issued by this process. A map branch and its edit branch are created in the same millisecond, and Norway's nightly rebase skips a
+     * child whose timestamp matches its parent. Each id is at least one millisecond after the previous one.
+     */
+    private static final AtomicLong LAST_BRANCH_ID_MILLIS = new AtomicLong(0L);
 
     /**
      * Instantiates an empty {@link BranchService}.
@@ -278,14 +285,19 @@ public final class BranchService {
     }
 
     /**
-     * Generate a ID for a branch based on a millisecond unix timestamp.
+     * Generate a branch id from a millisecond unix timestamp.
+     *
+     * <p>
+     * Two calls in the same millisecond, such as creating a map branch and its edit branch, receive different ids. Norway's nightly rebase skips a child
+     * branch whose timestamp is the same as its parent's, so those two branches must not share one.
      *
      * @return the ID for the branch
      */
     public static String generateBranchId() {
 
-        final long unixTime = Instant.now().toEpochMilli();
-        return unixTime + "";
+        final long now = Instant.now().toEpochMilli();
+        final long branchId = LAST_BRANCH_ID_MILLIS.updateAndGet(previous -> Math.max(now, previous + 1));
+        return Long.toString(branchId);
     }
 
     /**
